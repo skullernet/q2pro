@@ -83,10 +83,15 @@ else
     CFLAGS_g += -fvisibility=hidden
 
     # Resolve all symbols at link time
-    ifneq ($(SYS),OpenBSD)
+    ifeq ($(SYS),Linux)
         LDFLAGS_s += -Wl,--no-undefined
         LDFLAGS_c += -Wl,--no-undefined
         LDFLAGS_g += -Wl,--no-undefined
+    endif
+
+    # Include Macports on Darwin
+    ifeq ($(SYS),Darwin)
+        CFLAGS += -I/opt/local/include
     endif
 
     CFLAGS_g += -fPIC
@@ -464,8 +469,8 @@ ifdef CONFIG_WINDOWS
 else
     SDL_CFLAGS ?= $(shell sdl-config --cflags)
     SDL_LIBS ?= $(shell sdl-config --libs)
-    CFLAGS_c += -DUSE_SDL=1 $(SDL_CFLAGS)
-    LIBS_c += $(SDL_LIBS)
+    CFLAGS += -DUSE_SDL=1 $(SDL_CFLAGS)
+    LIBS += $(SDL_LIBS)
     OBJS_c += src/unix/sdl/video.o
     OBJS_c += src/unix/sdl/clipboard.o
 
