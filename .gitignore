@@ -1,3 +1,4 @@
+*.swp
 .config*
 .q2pro/
 .q2proded/
