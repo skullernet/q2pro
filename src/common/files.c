@@ -33,6 +33,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <zlib.h>
 #endif
 
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
+
 /*
 =============================================================================
 
@@ -3412,6 +3416,55 @@ static void free_game_paths(void)
 
 static void setup_base_paths(void)
 {
+#ifdef __APPLE__
+	// add Contents/MacOS and Contents/Resources to the search path
+	char path[MAX_OSPATH], *c;
+	unsigned int i = sizeof(path);
+
+	if (_NSGetExecutablePath(path, &i) > -1) {
+
+		FS_DPrintf("FS_Init: Resolved application bundle: %s\n", path);
+
+		if ((c = strstr(path, "Q2PRO.app"))) {
+			strcpy(c + strlen("Q2PRO.app/Contents/"), "MacOS/"BASEGAME);
+			add_game_dir(FS_PATH_BASE | FS_PATH_GAME, "%s", path);
+
+			strcpy(c + strlen("Q2PRO.app/Contents/"), "Resources/"BASEGAME);
+			add_game_dir(FS_PATH_BASE | FS_PATH_GAME, "%s", path);
+
+			*strrchr(path, '/') = '\0';
+			Cvar_FullSet("basedir", path, CVAR_NOSET, FROM_CODE);
+		}
+	}
+	else {
+		FS_DPrintf("FS_Init: Failed to resolve executable path\n");
+	}
+#elif __linux
+	// add ./lib/baseq2 and ./share/baseq2 to the search path
+	char path[MAX_OSPATH], *c;
+
+	memset(path, 0, sizeof(path));
+
+	if (readlink(va("/proc/%d/exe", getpid()), path, sizeof(path)) > -1) {
+
+		FS_DPrintf("FS_Init: Resolved executable path %s\n", path);
+
+		if ((c = strstr(path, "quake2/bin"))) {
+			strcpy(c + strlen("quake2/"), "lib/"BASEGAME);
+			add_game_dir(FS_PATH_BASE | FS_PATH_GAME, "%s", path);
+
+			strcpy(c + strlen("quake2/"), "share/"BASEGAME);
+			add_game_dir(FS_PATH_BASE | FS_PATH_GAME, "%s", path);
+
+			*strrchr(path, '/') = '\0';
+			Cvar_FullSet("basedir", path, CVAR_NOSET, FROM_CODE);
+		}
+	}
+	else {
+		FS_DPrintf("FS_Init: Failed to read /proc/%d/exe\n", getpid());
+	}
+#endif
+
     // base paths have both BASE and GAME bits set by default
     // the GAME bit will be removed once gamedir is set,
     // and will be put back once gamedir is reset to basegame
