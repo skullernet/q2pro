@@ -38,6 +38,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <dlfcn.h>
 #include <errno.h>
 
+#if USE_SDL
+// SDL_main must come before main()
+#include <SDL/SDL.h>
+#endif
+
 cvar_t  *sys_basedir;
 cvar_t  *sys_libdir;
 cvar_t  *sys_homedir;

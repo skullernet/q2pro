@@ -28,7 +28,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <GL/gl.h>
 #include <GL/glext.h>
 #else
-#include <GL/gl.h>
+#include <SDL/SDL_opengl.h>
 #endif
 
 #ifndef APIENTRY

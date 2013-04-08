@@ -81,10 +81,15 @@ else
     CFLAGS_g += -fvisibility=hidden
 
     # Resolve all symbols at link time
-    ifneq ($(SYS),OpenBSD)
+    ifeq ($(SYS),Linux)
         LDFLAGS_s += -Wl,--no-undefined
         LDFLAGS_c += -Wl,--no-undefined
         LDFLAGS_g += -Wl,--no-undefined
+    endif
+
+    # Include Macports on Darwin
+    ifeq ($(SYS),Darwin)
+        CFLAGS += -I/opt/local/include
     endif
 
     CFLAGS_g += -fPIC
@@ -105,7 +110,7 @@ PATH_DEFS += -DDEFGAME='"$(CONFIG_GAME_DEFAULT)"'
 ifndef CONFIG_WINDOWS
     CONFIG_PATH_DATA ?= .
     CONFIG_PATH_LIB ?= .
-    CONFIG_PATH_HOME ?=
+    CONFIG_PATH_HOME ?= ~/.quake2
     PATH_DEFS += -DDATADIR='"$(CONFIG_PATH_DATA)"'
     PATH_DEFS += -DLIBDIR='"$(CONFIG_PATH_LIB)"'
     PATH_DEFS += -DHOMEDIR='"$(CONFIG_PATH_HOME)"'
@@ -462,8 +467,8 @@ ifdef CONFIG_WINDOWS
 else
     SDL_CFLAGS ?= $(shell sdl-config --cflags)
     SDL_LIBS ?= $(shell sdl-config --libs)
-    CFLAGS_c += -DUSE_SDL=1 $(SDL_CFLAGS)
-    LIBS_c += $(SDL_LIBS)
+    CFLAGS += -DUSE_SDL=1 $(SDL_CFLAGS)
+    LIBS += $(SDL_LIBS)
     OBJS_c += src/unix/sdl/video.o
     OBJS_c += src/unix/sdl/clipboard.o
 
