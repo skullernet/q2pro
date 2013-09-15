@@ -1,10 +1,8 @@
 *.swp
-.DS_Store
 .config*
 .q2pro/
 .q2proded/
 .baseq2/
-dist/*/target
 q2pro
 q2proded
 game*.so

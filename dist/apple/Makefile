@@ -1,6 +1,5 @@
 # Makefile for Q2PRO.app, requires http://macdylibbundler.sourceforge.net/
 
-DATA = ../../src/client/ui
 TARGET = target
 Q2PRO = $(TARGET)/Q2PRO.app
 LIBRARIES = $(Q2PRO)/Contents/Libraries
@@ -18,14 +17,9 @@ pre-install:
 
 install: pre-install
 	install ../../q2pro $(BINARIES)/q2pro
-	install ../../q2proded $(BINARIES)/q2proded
 	install ../../gamex86_64.so $(BINARIES)/baseq2/gamex86_64.so
 
-install-data:
-	install -d  $(RESOURCES)/baseq2
-	install -m 0644 $(DATA)/q2pro.menu $(RESOURCES)/baseq2/q2pro.menu
-
-bundle: install install-data
+bundle: install
 	dylibbundler -b \
 		-x "$(BINARIES)/q2pro" \
 	-d "$(LIBRARIES)" -of -p @executable_path/../Libraries
