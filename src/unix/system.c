@@ -38,6 +38,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <dlfcn.h>
 #include <errno.h>
 
+#if USE_SDL
+#include <SDL_main.h>
+#endif
+
 cvar_t  *sys_basedir;
 cvar_t  *sys_libdir;
 cvar_t  *sys_homedir;
@@ -275,6 +279,7 @@ void *Sys_LoadLibrary(const char *path, const char *sym, void **handle)
 
     *handle = NULL;
 
+    dlerror();
     module = dlopen(path, RTLD_LAZY);
     if (!module) {
         Com_SetLastError(dlerror());
@@ -299,7 +304,14 @@ void *Sys_LoadLibrary(const char *path, const char *sym, void **handle)
 
 void *Sys_GetProcAddress(void *handle, const char *sym)
 {
-    return dlsym(handle, sym);
+    void    *entry;
+
+    dlerror();
+    entry = dlsym(handle, sym);
+    if (!entry)
+        Com_SetLastError(dlerror());
+
+    return entry;
 }
 
 /*

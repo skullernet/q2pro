@@ -15,25 +15,23 @@ You should have received a copy of the GNU General Public License along
 with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-/*
-** QGL.H
-*/
 
-#ifndef __QGL_H__
-#define __QGL_H__
+#ifndef QGL_H
+#define QGL_H
 
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
+#if USE_SDL
+#include <SDL_opengl.h>
+#else	// USE_SDL
+#ifdef _MSC_VER
+#define WIN32_LEAN_AND_MEAN 1
 #include <windows.h>
+#endif	// _MSC_VER
 #include <GL/gl.h>
 #include <GL/glext.h>
-#else
-#include <GL/gl.h>
-#endif
-
 #ifndef APIENTRY
 #define APIENTRY
 #endif
+#endif	// !USE_SDL
 
 // subset of OpenGL 1.1 core functions
 #define QGL_core_IMP \
@@ -160,6 +158,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define QGL_EXT_compiled_vertex_array       (1 << 3)
 #define QGL_EXT_texture_filter_anisotropic  (1 << 4)
 
+#define QGL_3_0_core_functions              (1 << 31)
+
 // ==========================================================
 
 // subset of OpenGL 1.1 core functions
@@ -242,6 +242,9 @@ typedef void (APIENTRY * qglTranslatef_t)(GLfloat x, GLfloat y, GLfloat z);
 typedef void (APIENTRY * qglVertexPointer_t)(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 typedef void (APIENTRY * qglViewport_t)(GLint x, GLint y, GLsizei width, GLsizei height);
 
+// OpenGL 3.0 core function
+typedef void (APIENTRY * qglGenerateMipmap_t)(GLenum target);
+
 // GL_ARB_fragment_program
 typedef void (APIENTRY * qglProgramStringARB_t)(GLenum target, GLenum format, GLsizei len, const GLvoid *string);
 typedef void (APIENTRY * qglBindProgramARB_t)(GLenum target, GLuint program);
@@ -278,7 +281,7 @@ typedef void (APIENTRY * qglUnlockArraysEXT_t)(void);
 
 // ==========================================================
 
-void QGL_Init(void);
+qboolean QGL_Init(void);
 void QGL_Shutdown(void);
 void QGL_InitExtensions(unsigned mask);
 void QGL_ShutdownExtensions(unsigned mask);
@@ -299,5 +302,7 @@ QGL_ARB_vertex_buffer_object_IMP
 QGL_EXT_compiled_vertex_array_IMP
 #undef QGL
 
-#endif
+extern qglGenerateMipmap_t qglGenerateMipmap;
+
+#endif  // QGL_H
 

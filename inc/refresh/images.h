@@ -49,6 +49,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define LUMINANCE(r, g, b) ((r) * 0.2126f + (g) * 0.7152f + (b) * 0.0722f)
 
+#define U32_ALPHA   MakeColor(  0,   0,   0, 255)
+#define U32_RGB     MakeColor(255, 255, 255,   0)
+
 // absolute limit for OpenGL renderer
 #define MAX_TEXTURE_SIZE            2048
 
@@ -111,7 +114,7 @@ void IMG_MipMap(byte *out, byte *in, int width, int height);
 
 // these are implemented in src/refresh/[gl,sw]/images.c
 void IMG_Unload(image_t *image);
-void IMG_Load(image_t *image, byte *pic, int width, int height);
+void IMG_Load(image_t *image, byte *pic);
 byte *IMG_ReadPixels(qboolean reverse, int *width, int *height);
 
 #endif // IMAGES_H

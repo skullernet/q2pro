@@ -63,20 +63,23 @@ void CL_ParsePlayerSkin(char *name, char *model, char *skin, const char *s)
     if (!t)
         t = strchr(model, '\\');
     if (!t)
-        t = model;
-    if (t == model)
         goto default_model;
-    *t++ = 0;
+    *t = 0;
+
+    // isolate the skin name
+    strcpy(skin, t + 1);
+
+    // fix empty model to male
+    if (t == model)
+        strcpy(model, "male");
 
     // apply restrictions on skins
-    if (cl_noskins->integer == 2 || !COM_IsPath(t))
+    if (cl_noskins->integer == 2 || !COM_IsPath(skin))
         goto default_skin;
 
     if (cl_noskins->integer || !COM_IsPath(model))
         goto default_model;
 
-    // isolate the skin name
-    strcpy(skin, t);
     return;
 
 default_skin:
@@ -159,7 +162,7 @@ void CL_LoadClientinfo(clientinfo_t *ci, const char *s)
         Q_concat(weapon_filename, sizeof(weapon_filename),
                  "players/", model_name, "/", cl.weaponModels[i], NULL);
         ci->weaponmodel[i] = R_RegisterModel(weapon_filename);
-        if (!ci->weaponmodel[i] && Q_stricmp(model_name, "male")) {
+        if (!ci->weaponmodel[i] && !Q_stricmp(model_name, "cyborg")) {
             // try male
             Q_concat(weapon_filename, sizeof(weapon_filename),
                      "players/male/", cl.weaponModels[i], NULL);

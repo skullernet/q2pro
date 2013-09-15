@@ -19,7 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "shared/shared.h"
 #include "common/common.h"
 #include "client/video.h"
-#include "qgl.h"
+#include "dynamic.h"
 
 // ==========================================================
 
@@ -30,6 +30,8 @@ QGL_ARB_multitexture_IMP
 QGL_ARB_vertex_buffer_object_IMP
 QGL_EXT_compiled_vertex_array_IMP
 #undef QGL
+
+qglGenerateMipmap_t qglGenerateMipmap;
 
 // ==========================================================
 
@@ -634,10 +636,8 @@ void QGL_Shutdown(void)
 #define QGL(x)  qgl##x = NULL
 #endif
     QGL_core_IMP
-    QGL_ARB_fragment_program_IMP
-    QGL_ARB_multitexture_IMP
-    QGL_ARB_vertex_buffer_object_IMP
-    QGL_EXT_compiled_vertex_array_IMP
+
+    QGL_ShutdownExtensions(~0);
 }
 
 void QGL_ShutdownExtensions(unsigned mask)
@@ -657,21 +657,27 @@ void QGL_ShutdownExtensions(unsigned mask)
     if (mask & QGL_EXT_compiled_vertex_array) {
         QGL_EXT_compiled_vertex_array_IMP
     }
+
+    if (mask & QGL_3_0_core_functions) {
+        qglGenerateMipmap = NULL;
+    }
 #undef QGL
 }
 
 #define GCA(x)  VID_GetCoreAddr("gl"#x)
 #define GPA(x)  VID_GetProcAddr("gl"#x)
 
-void QGL_Init(void)
+qboolean QGL_Init(void)
 {
 #ifdef _DEBUG
-#define QGL(x)  qgl##x = dll##x = GCA(x)
+#define QGL(x)  if ((qgl##x = dll##x = GCA(x)) == NULL) return qfalse;
 #else
-#define QGL(x)  qgl##x = GCA(x)
+#define QGL(x)  if ((qgl##x = GCA(x)) == NULL)          return qfalse;
 #endif
     QGL_core_IMP
 #undef QGL
+
+    return qtrue;
 }
 
 void QGL_InitExtensions(unsigned mask)
@@ -696,12 +702,16 @@ void QGL_InitExtensions(unsigned mask)
     if (mask & QGL_EXT_compiled_vertex_array) {
         QGL_EXT_compiled_vertex_array_IMP
     }
+
+    if (mask & QGL_3_0_core_functions) {
+        qglGenerateMipmap = GPA(GenerateMipmap);
+    }
 #undef QGL
 }
 
 unsigned QGL_ParseExtensionString(const char *s)
 {
-    // must match defines in qgl_api.h!
+    // must match defines in dynamic.h!
     static const char *const extnames[] = {
         "GL_ARB_fragment_program",
         "GL_ARB_multitexture",

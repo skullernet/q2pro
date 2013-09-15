@@ -820,10 +820,19 @@ static qboolean GL_SetupConfig(void)
     }
 
     // OpenGL 1.0 doesn't have vertex arrays
-    // OpenGL 1.1 doesn't have GL_CLAMP_TO_EDGE, GL_TEXTURE_MAX_LEVEL
-    if (gl_config.version_major == 1 && gl_config.version_minor < 2) {
-        Com_EPrintf("OpenGL version 1.2 or higher required\n");
+    if (!AT_LEAST_OPENGL(1, 1)) {
+        Com_EPrintf("OpenGL version 1.1 or higher required\n");
         return qfalse;
+    }
+
+    // allow version override for debugging purposes
+    p = Cvar_Get("gl_versionoverride", "", CVAR_REFRESH)->string;
+    if (*p) {
+        gl_config.version_major = strtoul(p, &p, 10);
+        if (*p == '.')
+            gl_config.version_minor = strtoul(p + 1, NULL, 10);
+        else
+            gl_config.version_minor = 0;
     }
 
     // get and parse extension string
@@ -870,6 +879,10 @@ static qboolean GL_SetupConfig(void)
         }
     } else {
         Com_Printf("GL_EXT_texture_filter_anisotropic not found\n");
+    }
+
+    if (AT_LEAST_OPENGL(3, 0)) {
+        gl_config.ext_enabled |= QGL_3_0_core_functions;
     }
 
     QGL_InitExtensions(gl_config.ext_enabled);
@@ -981,7 +994,9 @@ qboolean R_Init(qboolean total)
     }
 
     // initialize our QGL dynamic bindings
-    QGL_Init();
+    if (!QGL_Init()) {
+        goto fail;
+    }
 
     // initialize extensions and get various limits from OpenGL
     if (!GL_SetupConfig()) {

@@ -24,8 +24,13 @@ static cvar_t  *cl_http_filelists;
 static cvar_t  *cl_http_max_connections;
 static cvar_t  *cl_http_proxy;
 static cvar_t  *cl_http_default_url;
+
 #ifdef _DEBUG
 static cvar_t  *cl_http_debug;
+#endif
+
+#if USE_UI
+static cvar_t  *cl_http_blocking_timeout;
 #endif
 
 // size limits for filelists, must be power of two
@@ -41,6 +46,7 @@ typedef struct {
     size_t      position;
     char        url[576];
     char        *buffer;
+    qboolean    multi_added;    //to prevent multiple removes
 } dlhandle_t;
 
 static dlhandle_t   download_handles[4]; //actual download handles, don't raise this!
@@ -310,6 +316,7 @@ fail:
 
     Com_DPrintf("[HTTP] Fetching %s...\n", dl->url);
     entry->state = DL_RUNNING;
+    dl->multi_added = qtrue;
     curl_handles++;
 }
 
@@ -345,6 +352,7 @@ ssize_t HTTP_FetchFile(const char *url, void **data) {
     curl_easy_setopt(curl, CURLOPT_PROXY, cl_http_proxy->string);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, com_version->string);
     curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, cl_http_blocking_timeout->integer);
 
     ret = curl_easy_perform(curl);
 
@@ -401,13 +409,14 @@ void HTTP_CleanupDownloads(void)
         }
 
         if (dl->curl) {
-            if (curl_multi)
+            if (curl_multi && dl->multi_added)
                 curl_multi_remove_handle(curl_multi, dl->curl);
             curl_easy_cleanup(dl->curl);
             dl->curl = NULL;
         }
 
         dl->queue = NULL;
+        dl->multi_added = qfalse;
     }
 
     if (curl_multi) {
@@ -432,8 +441,13 @@ void HTTP_Init(void)
     //cl_http_max_connections->changed = _cl_http_max_connections_changed;
     cl_http_proxy = Cvar_Get("cl_http_proxy", "", 0);
     cl_http_default_url = Cvar_Get("cl_http_default_url", "", 0);
+
 #ifdef _DEBUG
     cl_http_debug = Cvar_Get("cl_http_debug", "0", 0);
+#endif
+
+#if USE_UI
+    cl_http_blocking_timeout = Cvar_Get("cl_http_blocking_timeout", "15", 0);
 #endif
 
     curl_global_init(CURL_GLOBAL_NOTHING);
@@ -818,7 +832,11 @@ fail2:
                 Z_Free(dl->buffer);
                 dl->buffer = NULL;
             }
-            curl_multi_remove_handle(curl_multi, curl);
+            if (dl->multi_added) {
+                //remove the handle and mark it as such
+                curl_multi_remove_handle(curl_multi, curl);
+                dl->multi_added = qfalse;
+            }
             continue;
         }
 
@@ -833,12 +851,11 @@ fail2:
         Com_FormatSizeLong(size, sizeof(size), bytes);
         Com_FormatSizeLong(speed, sizeof(speed), bytes / sec);
 
-        //FIXME:
-        //technically i shouldn't need to do this as curl will auto reuse the
-        //existing handle when you change the url. however, the curl_handles goes
-        //all weird when reusing a download slot in this way. if you can figure
-        //out why, please let me know.
-        curl_multi_remove_handle(curl_multi, curl);
+        if (dl->multi_added) {
+            //remove the handle and mark it as such
+            curl_multi_remove_handle(curl_multi, curl);
+            dl->multi_added = qfalse;
+        }
 
         Com_Printf("[HTTP] %s [%s, %s/sec] [%d remaining file%s]\n",
                    dl->queue->path, size, speed, cls.download.pending,

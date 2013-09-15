@@ -24,6 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client/client.h"
 #include "client/input.h"
 #include "client/keys.h"
+#include "client/ui.h"
 #include "client/video.h"
 #include "refresh/refresh.h"
 
@@ -36,7 +37,7 @@ typedef struct {
     vidFlags_t      flags;
     struct {
         qboolean    initialized;
-        grab_t      grabbed;
+        qboolean    grabbed;
     } mouse;
 } sdl_state_t;
 
@@ -46,3 +47,7 @@ qboolean VID_SDL_Init(void);
 void VID_SDL_Shutdown(void);
 qboolean VID_SDL_SetMode(int flags, int forcedepth);
 void VID_SDL_SurfaceChanged(void);
+
+#if USE_X11
+void VID_GLX_SurfaceChanged(void);
+#endif

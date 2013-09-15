@@ -20,22 +20,19 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "gl.h"
 #include "common/prompt.h"
 
-#define MAX_STACK_PIXELS    (256 * 256)
-
 static int gl_filter_min;
 static int gl_filter_max;
 static float gl_filter_anisotropy;
 static int gl_tex_alpha_format;
 static int gl_tex_solid_format;
 
-static int  upload_width;
-static int  upload_height;
+static int upload_width;
+static int upload_height;
 static qboolean upload_alpha;
 
 static cvar_t *gl_noscrap;
 static cvar_t *gl_round_down;
 static cvar_t *gl_picmip;
-static cvar_t *gl_maxmip;
 static cvar_t *gl_downsample_skins;
 static cvar_t *gl_gamma_scale_pics;
 static cvar_t *gl_bilerp_chars;
@@ -43,15 +40,17 @@ static cvar_t *gl_bilerp_pics;
 static cvar_t *gl_upscale_pcx;
 static cvar_t *gl_texturemode;
 static cvar_t *gl_texturebits;
+static cvar_t *gl_texture_non_power_of_two;
 static cvar_t *gl_anisotropy;
 static cvar_t *gl_saturation;
 static cvar_t *gl_intensity;
 static cvar_t *gl_gamma;
 static cvar_t *gl_invert;
 
+static int GL_UpscaleLevel(int width, int height, imagetype_t type, imageflags_t flags);
+static void GL_Upload32(byte *data, int width, int height, int baselevel, imagetype_t type, imageflags_t flags);
+static void GL_Upscale32(byte *data, int width, int height, int maxlevel, imagetype_t type, imageflags_t flags);
 static void GL_SetFilterAndRepeat(imagetype_t type, imageflags_t flags);
-static void GL_Upload8(byte *data, int width, int height, int baselevel, imagetype_t type, imageflags_t flags);
-static void GL_Upscale8(byte *data, int width, int height, imagetype_t type, imageflags_t flags);
 
 typedef struct {
     const char *name;
@@ -189,7 +188,7 @@ static void gl_texturebits_changed(cvar_t *self)
 #define SCRAP_BLOCK_HEIGHT      256
 
 static int scrap_inuse[SCRAP_BLOCK_WIDTH];
-static byte scrap_data[SCRAP_BLOCK_WIDTH * SCRAP_BLOCK_HEIGHT];
+static byte scrap_data[SCRAP_BLOCK_WIDTH * SCRAP_BLOCK_HEIGHT * 4];
 static qboolean scrap_dirty;
 
 #define Scrap_AllocBlock(w, h, s, t) \
@@ -198,7 +197,7 @@ static qboolean scrap_dirty;
 static void Scrap_Init(void)
 {
     // make scrap texture initially transparent
-    memset(scrap_data, 255, sizeof(scrap_data));
+    memset(scrap_data, 0, sizeof(scrap_data));
 }
 
 static void Scrap_Shutdown(void)
@@ -214,99 +213,24 @@ static void Scrap_Shutdown(void)
 
 void Scrap_Upload(void)
 {
+    int maxlevel;
+
     if (!scrap_dirty) {
         return;
     }
 
     GL_ForceTexture(0, TEXNUM_SCRAP);
-    if (gl_upscale_pcx->integer) {
-        GL_Upscale8(scrap_data, SCRAP_BLOCK_WIDTH, SCRAP_BLOCK_HEIGHT, IT_PIC, IF_SCRAP);
+
+    maxlevel = GL_UpscaleLevel(SCRAP_BLOCK_WIDTH, SCRAP_BLOCK_HEIGHT, IT_PIC, IF_SCRAP);
+    if (maxlevel) {
+        GL_Upscale32(scrap_data, SCRAP_BLOCK_WIDTH, SCRAP_BLOCK_HEIGHT, maxlevel, IT_PIC, IF_SCRAP);
         GL_SetFilterAndRepeat(IT_PIC, IF_SCRAP | IF_UPSCALED);
     } else {
-        GL_Upload8(scrap_data, SCRAP_BLOCK_WIDTH, SCRAP_BLOCK_HEIGHT, 0, IT_PIC, IF_SCRAP);
+        GL_Upload32(scrap_data, SCRAP_BLOCK_WIDTH, SCRAP_BLOCK_HEIGHT, maxlevel, IT_PIC, IF_SCRAP);
         GL_SetFilterAndRepeat(IT_PIC, IF_SCRAP);
     }
 
     scrap_dirty = qfalse;
-}
-
-/*
-====================================================================
-
-IMAGE FLOOD FILLING
-
-====================================================================
-*/
-
-typedef struct {
-    short       x, y;
-} floodfill_t;
-
-// must be a power of 2
-#define FLOODFILL_FIFO_SIZE 0x1000
-#define FLOODFILL_FIFO_MASK (FLOODFILL_FIFO_SIZE - 1)
-
-#define FLOODFILL_STEP(off, dx, dy) \
-    do { \
-        if (pos[off] == fillcolor) { \
-            pos[off] = 255; \
-            fifo[inpt].x = x + (dx); \
-            fifo[inpt].y = y + (dy); \
-            inpt = (inpt + 1) & FLOODFILL_FIFO_MASK; \
-        } else if (pos[off] != 255) { \
-            fdc = pos[off]; \
-        } \
-    } while(0)
-
-/*
-=================
-Mod_FloodFillSkin
-
-Fill background pixels so mipmapping doesn't have haloes
-=================
-*/
-static void R_FloodFillSkin(byte *skin, int skinwidth, int skinheight)
-{
-    byte                fillcolor = *skin; // assume this is the pixel to fill
-    floodfill_t         fifo[FLOODFILL_FIFO_SIZE];
-    int                 inpt = 0, outpt = 0;
-    int                 filledcolor = -1;
-    int                 i;
-
-    if (filledcolor == -1) {
-        filledcolor = 0;
-        // attempt to find opaque black
-        for (i = 0; i < 256; ++i)
-            if (d_8to24table[i] == 255) {
-                // alpha 1.0
-                filledcolor = i;
-                break;
-            }
-    }
-
-    // can't fill to filled color or to transparent color
-    // (used as visited marker)
-    if ((fillcolor == filledcolor) || (fillcolor == 255)) {
-        return;
-    }
-
-    fifo[inpt].x = 0, fifo[inpt].y = 0;
-    inpt = (inpt + 1) & FLOODFILL_FIFO_MASK;
-
-    while (outpt != inpt) {
-        int         x = fifo[outpt].x, y = fifo[outpt].y;
-        int         fdc = filledcolor;
-        byte        *pos = &skin[x + skinwidth * y];
-
-        outpt = (outpt + 1) & FLOODFILL_FIFO_MASK;
-
-        if (x > 0) FLOODFILL_STEP(-1, -1, 0);
-        if (x < skinwidth - 1) FLOODFILL_STEP(1, 1, 0);
-        if (y > 0) FLOODFILL_STEP(-skinwidth, 0, -1);
-        if (y < skinheight - 1) FLOODFILL_STEP(skinwidth, 0, 1);
-
-        skin[x + skinwidth * y] = fdc;
-    }
 }
 
 //=======================================================
@@ -428,6 +352,19 @@ static qboolean GL_TextureHasAlpha(byte *data, int width, int height)
     return qfalse;
 }
 
+static qboolean GL_MakePowerOfTwo(int *width, int *height)
+{
+    if (!(*width & (*width - 1)) && !(*height & (*height - 1)))
+        return qtrue;   // already power of two
+
+    if (AT_LEAST_OPENGL(3, 0) && gl_texture_non_power_of_two->integer)
+        return qfalse;  // assume full NPOT texture support
+
+    *width = npot32(*width);
+    *height = npot32(*height);
+    return qfalse;
+}
+
 /*
 ===============
 GL_Upload32
@@ -436,17 +373,13 @@ GL_Upload32
 static void GL_Upload32(byte *data, int width, int height, int baselevel, imagetype_t type, imageflags_t flags)
 {
     byte        *scaled;
-    int         scaled_width, scaled_height, maxsize, comp;
+    int         scaled_width, scaled_height, comp;
     qboolean    power_of_two;
 
-    // find the next-highest power of two
-    scaled_width = npot32(width);
-    scaled_height = npot32(height);
+    scaled_width = width;
+    scaled_height = height;
+    power_of_two = GL_MakePowerOfTwo(&scaled_width, &scaled_height);
 
-    // save the flag indicating if costly resampling can be avoided
-    power_of_two = (scaled_width == width && scaled_height == height);
-
-    maxsize = gl_config.maxTextureSize;
     if (type == IT_WALL || (type == IT_SKIN && gl_downsample_skins->integer)) {
         // round world textures down, if requested
         if (gl_round_down->integer) {
@@ -459,17 +392,10 @@ static void GL_Upload32(byte *data, int width, int height, int baselevel, imaget
         // let people sample down the world textures for speed
         scaled_width >>= gl_picmip->integer;
         scaled_height >>= gl_picmip->integer;
-
-        if (gl_maxmip->integer > 0) {
-            maxsize = 1 << Cvar_ClampInteger(gl_maxmip, 1, 12);
-            if (maxsize > gl_config.maxTextureSize) {
-                maxsize = gl_config.maxTextureSize;
-            }
-        }
     }
 
     // don't ever bother with >256 textures
-    while (scaled_width > maxsize || scaled_height > maxsize) {
+    while (scaled_width > gl_config.maxTextureSize || scaled_height > gl_config.maxTextureSize) {
         scaled_width >>= 1;
         scaled_height >>= 1;
     }
@@ -479,10 +405,8 @@ static void GL_Upload32(byte *data, int width, int height, int baselevel, imaget
     if (scaled_height < 1)
         scaled_height = 1;
 
-    if (baselevel == 0) {
-        upload_width = scaled_width;
-        upload_height = scaled_height;
-    }
+    upload_width = scaled_width;
+    upload_height = scaled_height;
 
     // set colorscale and lightscale before mipmap
     comp = GL_GrayScaleTexture(data, width, height, type, flags);
@@ -506,8 +430,15 @@ static void GL_Upload32(byte *data, int width, int height, int baselevel, imaget
                             scaled_width, scaled_height);
     }
 
-    // scan the texture for any non-255 alpha
-    upload_alpha = GL_TextureHasAlpha(scaled, scaled_width, scaled_height);
+    if (flags & IF_TRANSPARENT) {
+        upload_alpha = qtrue;
+    } else if (flags & IF_OPAQUE) {
+        upload_alpha = qfalse;
+    } else {
+        // scan the texture for any non-255 alpha
+        upload_alpha = GL_TextureHasAlpha(scaled, scaled_width, scaled_height);
+    }
+
     if (upload_alpha) {
         comp = gl_tex_alpha_format;
     }
@@ -518,19 +449,23 @@ static void GL_Upload32(byte *data, int width, int height, int baselevel, imaget
     c.texUploads++;
 
     if (type == IT_WALL || type == IT_SKIN) {
-        int miplevel = 0;
+        if (qglGenerateMipmap) {
+            qglGenerateMipmap(GL_TEXTURE_2D);
+        } else {
+            int miplevel = 0;
 
-        while (scaled_width > 1 || scaled_height > 1) {
-            IMG_MipMap(scaled, scaled, scaled_width, scaled_height);
-            scaled_width >>= 1;
-            scaled_height >>= 1;
-            if (scaled_width < 1)
-                scaled_width = 1;
-            if (scaled_height < 1)
-                scaled_height = 1;
-            miplevel++;
-            qglTexImage2D(GL_TEXTURE_2D, miplevel, comp, scaled_width,
-                          scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaled);
+            while (scaled_width > 1 || scaled_height > 1) {
+                IMG_MipMap(scaled, scaled, scaled_width, scaled_height);
+                scaled_width >>= 1;
+                scaled_height >>= 1;
+                if (scaled_width < 1)
+                    scaled_width = 1;
+                if (scaled_height < 1)
+                    scaled_height = 1;
+                miplevel++;
+                qglTexImage2D(GL_TEXTURE_2D, miplevel, comp, scaled_width,
+                              scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaled);
+            }
         }
     }
 
@@ -539,86 +474,66 @@ static void GL_Upload32(byte *data, int width, int height, int baselevel, imaget
     }
 }
 
-/*
-===============
-GL_Upload8
-===============
-*/
-static void GL_Upload8(byte *data, int width, int height, int baselevel, imagetype_t type, imageflags_t flags)
+static int GL_UpscaleLevel(int width, int height, imagetype_t type, imageflags_t flags)
 {
-    byte    stackbuf[MAX_STACK_PIXELS * 4];
-    byte    *buffer, *dest;
-    int     i, s, p;
+    int maxlevel;
 
-    s = width * height;
-    if (s > MAX_STACK_PIXELS)
-        buffer = FS_AllocTempMem(s * 4);
-    else
-        buffer = stackbuf;
+    // only upscale pics, fonts and sprites
+    if (type != IT_PIC && type != IT_FONT && type != IT_SPRITE)
+        return 0;
 
-    dest = buffer;
-    for (i = 0; i < s; i++) {
-        p = data[i];
-        *(uint32_t *)dest = d_8to24table[p];
+    // only upscale 8-bit and small 32-bit pics
+    if (!(flags & (IF_PALETTED | IF_SCRAP)))
+        return 0;
 
-        if (p == 255) {
-            // transparent, so scan around for another color
-            // to avoid alpha fringes
-            // FIXME: do a full flood fill so mips work...
-            if (i > width && data[i - width] != 255)
-                p = data[i - width];
-            else if (i < s - width && data[i + width] != 255)
-                p = data[i + width];
-            else if (i > 0 && data[i - 1] != 255)
-                p = data[i - 1];
-            else if (i < s - 1 && data[i + 1] != 255)
-                p = data[i + 1];
-            else
-                p = 0;
-            // copy rgb components
-            dest[0] = ((byte *)&d_8to24table[p])[0];
-            dest[1] = ((byte *)&d_8to24table[p])[1];
-            dest[2] = ((byte *)&d_8to24table[p])[2];
-        }
+    GL_MakePowerOfTwo(&width, &height);
 
-        dest += 4;
+    maxlevel = Cvar_ClampInteger(gl_upscale_pcx, 0, 2);
+    while (maxlevel) {
+        int maxsize = gl_config.maxTextureSize >> maxlevel;
+
+        // don't bother upscaling larger than max texture size
+        if (width <= maxsize && height <= maxsize)
+            break;
+
+        maxlevel--;
     }
 
-    GL_Upload32(buffer, width, height, baselevel, type, flags);
-
-    if (s > MAX_STACK_PIXELS)
-        FS_FreeTempMem(buffer);
+    return maxlevel;
 }
 
-static void GL_Upscale8(byte *data, int width, int height, imagetype_t type, imageflags_t flags)
+static void GL_Upscale32(byte *data, int width, int height, int maxlevel, imagetype_t type, imageflags_t flags)
 {
-    int         maxlevel;
-    byte        *buffer;
-    uint32_t    saved;
+    byte    *buffer;
 
-    maxlevel = Cvar_ClampInteger(gl_upscale_pcx, 1, 2);
     buffer = FS_AllocTempMem((width * height) << ((maxlevel + 1) * 2));
 
-    // small hack for optimization
-    saved = d_8to24table[255];
-    d_8to24table[255] = 0;
-
     if (maxlevel >= 2) {
-        HQ4x_Render((uint32_t *)buffer, data, width, height);
+        HQ4x_Render((uint32_t *)buffer, (uint32_t *)data, width, height);
         GL_Upload32(buffer, width * 4, height * 4, maxlevel - 2, type, flags);
     }
 
     if (maxlevel >= 1) {
-        HQ2x_Render((uint32_t *)buffer, data, width, height);
+        HQ2x_Render((uint32_t *)buffer, (uint32_t *)data, width, height);
         GL_Upload32(buffer, width * 2, height * 2, maxlevel - 1, type, flags);
     }
 
-    d_8to24table[255] = saved;
-
     FS_FreeTempMem(buffer);
 
-    GL_Upload8(data, width, height, maxlevel, type, flags);
-    qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, maxlevel);
+    GL_Upload32(data, width, height, maxlevel, type, flags);
+
+    if (AT_LEAST_OPENGL(1, 2))
+        qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, maxlevel);
+
+    // adjust LOD for resampled textures
+    if (upload_width != width || upload_height != height) {
+        float du    = upload_width / (float)width;
+        float dv    = upload_height / (float)height;
+        float bias  = -log(max(du, dv)) / M_LN2;
+
+        if (AT_LEAST_OPENGL(1, 4))
+            qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, bias);
+    }
 }
 
 static void GL_SetFilterAndRepeat(imagetype_t type, imageflags_t flags)
@@ -642,7 +557,7 @@ static void GL_SetFilterAndRepeat(imagetype_t type, imageflags_t flags)
             nearest = qfalse;
         }
 
-        if (flags & IF_UPSCALED) {
+        if ((flags & IF_UPSCALED) && AT_LEAST_OPENGL(1, 2)) {
             if (nearest) {
                 qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
                 qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -671,9 +586,12 @@ static void GL_SetFilterAndRepeat(imagetype_t type, imageflags_t flags)
     if (type == IT_WALL || type == IT_SKIN || (flags & IF_REPEAT)) {
         qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    } else {
+    } else if (AT_LEAST_OPENGL(1, 2)) {
         qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    } else {
+        qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+        qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
     }
 }
 
@@ -682,68 +600,65 @@ static void GL_SetFilterAndRepeat(imagetype_t type, imageflags_t flags)
 IMG_Load
 ================
 */
-void IMG_Load(image_t *image, byte *pic, int width, int height)
+void IMG_Load(image_t *image, byte *pic)
 {
-    byte *src, *dst;
-    int i, s, t;
+    byte    *src, *dst;
+    int     i, s, t, maxlevel;
+    int     width, height;
 
-    if (!pic) {
-        Com_Error(ERR_FATAL, "%s: NULL", __func__);
-    }
+    width = image->upload_width;
+    height = image->upload_height;
 
-    // load small 8-bit pics onto the scrap
-    if (image->type == IT_PIC && (image->flags & IF_PALETTED) &&
-        width < 64 && height < 64 && !gl_noscrap->integer &&
-        Scrap_AllocBlock(width, height, &s, &t)) {
+    // load small pics onto the scrap
+    if (image->type == IT_PIC && width < 64 && height < 64 &&
+        gl_noscrap->integer == 0 && Scrap_AllocBlock(width, height, &s, &t)) {
         src = pic;
-        dst = &scrap_data[t * SCRAP_BLOCK_WIDTH + s];
+        dst = &scrap_data[(t * SCRAP_BLOCK_WIDTH + s) * 4];
         for (i = 0; i < height; i++) {
-            memcpy(dst, src, width);
-            src += width;
-            dst += SCRAP_BLOCK_WIDTH;
+            memcpy(dst, src, width * 4);
+            src += width * 4;
+            dst += SCRAP_BLOCK_WIDTH * 4;
         }
 
         image->texnum = TEXNUM_SCRAP;
-        image->upload_width = width;
-        image->upload_height = height;
         image->flags |= IF_SCRAP | IF_TRANSPARENT;
         image->sl = (s + 0.01f) / (float)SCRAP_BLOCK_WIDTH;
         image->sh = (s + width - 0.01f) / (float)SCRAP_BLOCK_WIDTH;
         image->tl = (t + 0.01f) / (float)SCRAP_BLOCK_HEIGHT;
         image->th = (t + height - 0.01f) / (float)SCRAP_BLOCK_HEIGHT;
 
-        if (gl_upscale_pcx->integer)
+        maxlevel = GL_UpscaleLevel(SCRAP_BLOCK_WIDTH, SCRAP_BLOCK_HEIGHT, IT_PIC, IF_SCRAP);
+        if (maxlevel)
             image->flags |= IF_UPSCALED;
 
         scrap_dirty = qtrue;
-        return;
-    }
+    } else {
+        qglGenTextures(1, &image->texnum);
+        GL_ForceTexture(0, image->texnum);
 
-    if (image->type == IT_SKIN && (image->flags & IF_PALETTED))
-        R_FloodFillSkin(pic, width, height);
-
-    qglGenTextures(1, &image->texnum);
-    GL_ForceTexture(0, image->texnum);
-    if (image->flags & IF_PALETTED) {
-        if (image->type != IT_WALL && image->type != IT_SKIN && gl_upscale_pcx->integer) {
-            GL_Upscale8(pic, width, height, image->type, image->flags);
+        maxlevel = GL_UpscaleLevel(width, height, image->type, image->flags);
+        if (maxlevel) {
+            GL_Upscale32(pic, width, height, maxlevel, image->type, image->flags);
             image->flags |= IF_UPSCALED;
         } else {
-            GL_Upload8(pic, width, height, 0, image->type, image->flags);
+            GL_Upload32(pic, width, height, maxlevel, image->type, image->flags);
         }
-    } else {
-        GL_Upload32(pic, width, height, 0, image->type, image->flags);
+
+        GL_SetFilterAndRepeat(image->type, image->flags);
+
+        if (upload_alpha) {
+            image->flags |= IF_TRANSPARENT;
+        }
+        image->upload_width = upload_width << maxlevel;     // after power of 2 and scales
+        image->upload_height = upload_height << maxlevel;
+        image->sl = 0;
+        image->sh = 1;
+        image->tl = 0;
+        image->th = 1;
     }
-    GL_SetFilterAndRepeat(image->type, image->flags);
-    if (upload_alpha) {
-        image->flags |= IF_TRANSPARENT;
-    }
-    image->upload_width = upload_width;     // after power of 2 and scales
-    image->upload_height = upload_height;
-    image->sl = 0;
-    image->sh = 1;
-    image->tl = 0;
-    image->th = 1;
+
+    // don't need pics in memory after GL upload
+    Z_Free(pic);
 }
 
 void IMG_Unload(image_t *image)
@@ -933,24 +848,31 @@ void GL_InitImages(void)
     gl_texturemode->changed = gl_texturemode_changed;
     gl_texturemode->generator = gl_texturemode_g;
     gl_texturebits = Cvar_Get("gl_texturebits", "0", CVAR_FILES);
+    gl_texture_non_power_of_two = Cvar_Get("gl_texture_non_power_of_two", "1", 0);
     gl_anisotropy = Cvar_Get("gl_anisotropy", "1", 0);
     gl_anisotropy->changed = gl_anisotropy_changed;
     gl_noscrap = Cvar_Get("gl_noscrap", "0", CVAR_FILES);
     gl_round_down = Cvar_Get("gl_round_down", "0", CVAR_FILES);
     gl_picmip = Cvar_Get("gl_picmip", "0", CVAR_FILES);
-    gl_maxmip = Cvar_Get("gl_maxmip", "0", CVAR_FILES);
     gl_downsample_skins = Cvar_Get("gl_downsample_skins", "1", CVAR_FILES);
     gl_gamma_scale_pics = Cvar_Get("gl_gamma_scale_pics", "0", CVAR_FILES);
     gl_upscale_pcx = Cvar_Get("gl_upscale_pcx", "0", CVAR_FILES);
     gl_saturation = Cvar_Get("gl_saturation", "1", CVAR_FILES);
     gl_intensity = Cvar_Get("intensity", "1", CVAR_FILES);
     gl_invert = Cvar_Get("gl_invert", "0", CVAR_FILES);
+    gl_gamma = Cvar_Get("vid_gamma", "1", CVAR_ARCHIVE);
+
     if (r_config.flags & QVF_GAMMARAMP) {
-        gl_gamma = Cvar_Get("vid_gamma", "1", CVAR_ARCHIVE);
         gl_gamma->changed = gl_gamma_changed;
         gl_gamma->flags &= ~CVAR_FILES;
     } else {
-        gl_gamma = Cvar_Get("vid_gamma", "1", CVAR_ARCHIVE | CVAR_FILES);
+        gl_gamma->flags |= CVAR_FILES;
+    }
+
+    if (AT_LEAST_OPENGL(3, 0)) {
+        gl_texture_non_power_of_two->flags |= CVAR_FILES;
+    } else {
+        gl_texture_non_power_of_two->flags &= ~CVAR_FILES;
     }
 
     IMG_Init();

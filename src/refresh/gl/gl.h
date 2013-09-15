@@ -29,7 +29,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "refresh/images.h"
 #include "refresh/models.h"
 #include "system/hunk.h"
-#include "qgl.h"
+
+#if USE_FIXED_LIBGL
+#include "qgl/fixed.h"
+#else
+#include "qgl/dynamic.h"
+#endif
 
 /*
  * gl_main.c
@@ -107,6 +112,9 @@ typedef struct {
     int         depthbits;
     int         stencilbits;
 } glConfig_t;
+
+#define AT_LEAST_OPENGL(major, minor) \
+    (gl_config.version_major > major || (gl_config.version_major == major && gl_config.version_minor >= minor))
 
 extern glStatic_t gl_static;
 extern glConfig_t gl_config;
@@ -480,6 +488,6 @@ void GL_DrawAliasModel(model_t *model);
  * hq2x.c
  *
  */
-void HQ2x_Render(uint32_t *output, const uint8_t *input, int width, int height);
-void HQ4x_Render(uint32_t *output, const uint8_t *input, int width, int height);
+void HQ2x_Render(uint32_t *output, const uint32_t *input, int width, int height);
+void HQ4x_Render(uint32_t *output, const uint32_t *input, int width, int height);
 void HQ2x_Init(void);

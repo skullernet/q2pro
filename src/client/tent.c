@@ -44,6 +44,7 @@ qhandle_t   cl_mod_explo4;
 qhandle_t   cl_mod_bfg_explo;
 qhandle_t   cl_mod_powerscreen;
 qhandle_t   cl_mod_laser;
+qhandle_t   cl_mod_dmspot;
 
 qhandle_t   cl_mod_lightning;
 qhandle_t   cl_mod_heatbeam;
@@ -100,6 +101,7 @@ void CL_RegisterTEntModels(void)
     cl_mod_bfg_explo = R_RegisterModel("sprites/s_bfg2.sp2");
     cl_mod_powerscreen = R_RegisterModel("models/items/armor/effect/tris.md2");
     cl_mod_laser = R_RegisterModel("models/objects/laser/tris.md2");
+    cl_mod_dmspot = R_RegisterModel("models/objects/dmspot/tris.md2");
 
     cl_mod_lightning = R_RegisterModel("models/proj/lightning/tris.md2");
     cl_mod_heatbeam = R_RegisterModel("models/proj/beam/tris.md2");
@@ -202,7 +204,7 @@ void CL_SmokeAndFlash(vec3_t origin)
     VectorCopy(origin, ex->ent.origin);
     ex->type = ex_misc;
     ex->frames = 4;
-    ex->ent.flags = RF_TRANSLUCENT;
+    ex->ent.flags = RF_TRANSLUCENT | RF_NOSHADOW;
     ex->start = cl.servertime - CL_FRAMETIME;
     ex->ent.model = cl_mod_smoke;
 

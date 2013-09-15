@@ -51,7 +51,6 @@ ifdef CONFIG_WINDOWS
         CONFIG_X86_GAME_ABI_HACK := y
     else
         CONFIG_X86_GAME_ABI_HACK :=
-        CONFIG_X86_ASSEMBLY :=
     endif
 
     LDFLAGS_s += -mconsole
@@ -68,7 +67,6 @@ else
     # Disable x86 features on other arches
     ifneq ($(CPU),i386)
         CONFIG_X86_GAME_ABI_HACK :=
-        CONFIG_X86_ASSEMBLY :=
     endif
 
     # Disable Linux features on other systems
@@ -83,7 +81,7 @@ else
     CFLAGS_g += -fvisibility=hidden
 
     # Resolve all symbols at link time
-    ifneq ($(SYS),OpenBSD)
+    ifeq ($(SYS),Linux)
         LDFLAGS_s += -Wl,--no-undefined
         LDFLAGS_c += -Wl,--no-undefined
         LDFLAGS_g += -Wl,--no-undefined
@@ -270,7 +268,15 @@ endif
 ifdef CONFIG_OPENAL
     CFLAGS_c += -DUSE_OPENAL=1
     OBJS_c += src/client/sound/al.o
-    OBJS_c += src/client/sound/qal.o
+    ifdef CONFIG_FIXED_LIBAL
+        AL_CFLAGS ?= $(shell pkg-config openal --cflags)
+        AL_LIBS ?= $(shell pkg-config openal --libs)
+        CFLAGS_c += -DUSE_FIXED_LIBAL=1 $(AL_CFLAGS)
+        LIBS_c += $(AL_LIBS)
+        OBJS_c += src/client/sound/qal/fixed.o
+    else
+        OBJS_c += src/client/sound/qal/dynamic.o
+    endif
 endif
 
 ifndef CONFIG_NO_MENUS
@@ -322,6 +328,7 @@ ifdef CONFIG_SOFTWARE_RENDERER
 else
     CFLAGS_c += -DREF_GL=1 -DUSE_REF=1 -DVID_REF='"gl"'
     OBJS_c += src/refresh/gl/draw.o
+    OBJS_c += src/refresh/gl/hq2x.o
     OBJS_c += src/refresh/gl/images.o
     OBJS_c += src/refresh/gl/main.o
     OBJS_c += src/refresh/gl/mesh.o
@@ -331,8 +338,15 @@ else
     OBJS_c += src/refresh/gl/surf.o
     OBJS_c += src/refresh/gl/tess.o
     OBJS_c += src/refresh/gl/world.o
-    OBJS_c += src/refresh/gl/qgl.o
-    OBJS_c += src/refresh/gl/hq2x.o
+    ifdef CONFIG_FIXED_LIBGL
+        GL_CFLAGS ?=
+        GL_LIBS ?= -lGL
+        CFLAGS_c += -DUSE_FIXED_LIBGL=1 $(GL_CFLAGS)
+        LIBS_c += $(GL_LIBS)
+        OBJS_c += src/refresh/gl/qgl/fixed.o
+    else
+        OBJS_c += src/refresh/gl/qgl/dynamic.o
+    endif
 endif
 
 CONFIG_DEFAULT_MODELIST ?= 640x480 800x600 1024x768
@@ -347,21 +361,21 @@ ifndef CONFIG_SOFTWARE_RENDERER
 endif
 
 ifndef CONFIG_NO_TGA
-	CFLAGS_c += -DUSE_TGA=1
+    CFLAGS_c += -DUSE_TGA=1
 endif
 
 ifdef CONFIG_PNG
-	PNG_CFLAGS ?= $(shell libpng-config --cflags)
-	PNG_LIBS ?= $(shell libpng-config --libs)
-	CFLAGS_c += -DUSE_PNG=1 $(PNG_CFLAGS)
-	LIBS_c += $(PNG_LIBS)
+    PNG_CFLAGS ?= $(shell libpng-config --cflags)
+    PNG_LIBS ?= $(shell libpng-config --libs)
+    CFLAGS_c += -DUSE_PNG=1 $(PNG_CFLAGS)
+    LIBS_c += $(PNG_LIBS)
 endif
 
 ifdef CONFIG_JPEG
-	JPG_CFLAGS ?=
-	JPG_LIBS ?= -ljpeg
-	CFLAGS_c += -DUSE_JPG=1 $(JPG_CFLAGS)
-	LIBS_c += $(JPG_LIBS)
+    JPG_CFLAGS ?=
+    JPG_LIBS ?= -ljpeg
+    CFLAGS_c += -DUSE_JPG=1 $(JPG_CFLAGS)
+    LIBS_c += $(JPG_LIBS)
 endif
 
 ifdef CONFIG_ANTICHEAT_SERVER
@@ -462,37 +476,45 @@ ifdef CONFIG_WINDOWS
     LIBS_s += -lws2_32 -lwinmm -ladvapi32
     LIBS_c += -lws2_32 -lwinmm
 else
-    SDL_CFLAGS ?= $(shell sdl-config --cflags)
-    SDL_LIBS ?= $(shell sdl-config --libs)
-    CFLAGS_c += -DUSE_SDL=1 $(SDL_CFLAGS)
-    LIBS_c += $(SDL_LIBS)
-    OBJS_c += src/unix/sdl/video.o
-    OBJS_c += src/unix/sdl/clipboard.o
-
-    ifdef CONFIG_SOFTWARE_RENDERER
-        OBJS_c += src/unix/sdl/swimp.o
+    ifdef CONFIG_SDL2
+        SDL_CFLAGS ?= $(shell sdl2-config --cflags)
+        SDL_LIBS ?= $(shell sdl2-config --libs)
+        CFLAGS_c += -DUSE_SDL=2 $(SDL_CFLAGS)
+        LIBS_c += $(SDL_LIBS)
+        OBJS_c += src/unix/sdl2/video.o
     else
-        OBJS_c += src/unix/sdl/glimp.o
-    endif
+        SDL_CFLAGS ?= $(shell sdl-config --cflags)
+        SDL_LIBS ?= $(shell sdl-config --libs)
+        CFLAGS_c += -DUSE_SDL=1 $(SDL_CFLAGS)
+        LIBS_c += $(SDL_LIBS)
+        OBJS_c += src/unix/sdl/video.o
+        OBJS_c += src/unix/sdl/clipboard.o
 
-    ifdef CONFIG_X11
-        X11_CFLAGS ?=
-        X11_LIBS ?= -lX11
-        CFLAGS_c += -DUSE_X11=1 $(X11_CFLAGS)
-        LIBS_c += $(X11_LIBS)
-        ifndef CONFIG_SOFTWARE_RENDERER
-            OBJS_c += src/unix/sdl/glx.o
+        ifdef CONFIG_SOFTWARE_RENDERER
+            OBJS_c += src/unix/sdl/swimp.o
+        else
+            OBJS_c += src/unix/sdl/glimp.o
         endif
-    endif
 
-    ifdef CONFIG_DIRECT_INPUT
-        CFLAGS_c += -DUSE_DINPUT=1
-        OBJS_c += src/unix/evdev.o
-        ifndef CONFIG_NO_UDEV
-            UDEV_CFLAGS ?=
-            UDEV_LIBS ?= -ludev
-            CFLAGS_c += -DUSE_UDEV=1 $(UDEV_CFLAGS)
-            LIBS_c += $(UDEV_LIBS)
+        ifdef CONFIG_X11
+            X11_CFLAGS ?=
+            X11_LIBS ?= -lX11
+            CFLAGS_c += -DUSE_X11=1 $(X11_CFLAGS)
+            LIBS_c += $(X11_LIBS)
+            ifndef CONFIG_SOFTWARE_RENDERER
+                OBJS_c += src/unix/sdl/glx.o
+            endif
+        endif
+
+        ifdef CONFIG_DIRECT_INPUT
+            CFLAGS_c += -DUSE_DINPUT=1
+            OBJS_c += src/unix/evdev.o
+            ifndef CONFIG_NO_UDEV
+                UDEV_CFLAGS ?=
+                UDEV_LIBS ?= -ludev
+                CFLAGS_c += -DUSE_UDEV=1 $(UDEV_CFLAGS)
+                LIBS_c += $(UDEV_LIBS)
+            endif
         endif
     endif
 
@@ -505,7 +527,11 @@ else
     endif
 
     ifndef CONFIG_NO_SOFTWARE_SOUND
-        OBJS_c += src/unix/sdl/sound.o
+        ifdef CONFIG_SDL2
+            OBJS_c += src/unix/sdl2/sound.o
+        else
+            OBJS_c += src/unix/sdl/sound.o
+        endif
         ifdef CONFIG_DIRECT_SOUND
             CFLAGS_c += -DUSE_DSOUND=1
             OBJS_c += src/unix/oss.o
