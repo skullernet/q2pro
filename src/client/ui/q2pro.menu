@@ -121,7 +121,7 @@ begin effects
     title "Effects Setup"
     values "dynamic lighting" gl_dynamic "no" "yes" "only switchable"
     values "entity cel-shading" gl_celshading no 1x 2x 3x
-    toggle "entity glowing" cl_noglow ~0
+    toggle "entity glowing" cl_noglow ~
     toggle "ground shadows" gl_shadows
     toggle "screen blending" gl_polyblend
     toggle "grenade explosions" cl_disable_explosions ~0
@@ -148,9 +148,9 @@ begin screen
     values "demo bar" scr_demobar no yes verbose
     range "HUD opacity" scr_alpha 0 1
     range "console opacity" con_alpha 0 1
-    pairs "HUD scale" scr_scale 1x 1 2x 2 4x 4
-    pairs "console scale" con_scale 1x 1 2x 2 4x 4
-    pairs "menu scale" ui_scale 1x 1 2x 2 4x 4
+    pairs "HUD scale" scr_scale auto 0 1x 1 2x 2 4x 4
+    pairs "console scale" con_scale auto 0 1x 1 2x 2 4x 4
+    pairs "menu scale" ui_scale auto 0 1x 1 2x 2 4x 4
     blank
     action --align "crosshair setup..." pushmenu crosshair
 end
