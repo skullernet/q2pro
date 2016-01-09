@@ -72,6 +72,12 @@ unsigned Sys_Milliseconds(void)
     return time;
 }
 
+unsigned long long int Sys_Microseconds(void)
+{
+    struct timeval tp;
+    gettimeofday(&tp, NULL);
+    return tp.tv_sec * 1000000 + tp.tv_usec;
+}
 /*
 =================
 Sys_Quit
