@@ -92,6 +92,10 @@ static cvar_t   *scr_showfps;
 static cvar_t   *scr_showfpsx;
 static cvar_t   *scr_showfpsy;
 
+static cvar_t   *scr_showtime;
+static cvar_t   *scr_showtimex;
+static cvar_t   *scr_showtimey;
+
 #ifdef _DEBUG
 cvar_t      *scr_netgraph;
 cvar_t      *scr_timegraph;
@@ -1379,8 +1383,11 @@ void SCR_Init(void)
     scr_lag_max = Cvar_Get("scr_lag_max", "200", 0);
     scr_alpha = Cvar_Get("scr_alpha", "1", 0);
     scr_showfps =  Cvar_Get("scr_showfps",  "0", CVAR_ARCHIVE);
-    scr_showfpsx = Cvar_Get("scr_showfpsx", "0", 0);
-    scr_showfpsy = Cvar_Get("scr_showfpsy", "0", 0);
+    scr_showfpsx = Cvar_Get("scr_showfpsx", "0", CVAR_ARCHIVE);
+    scr_showfpsy = Cvar_Get("scr_showfpsy", "0", CVAR_ARCHIVE);
+    scr_showtime =  Cvar_Get("scr_showtime",  "0", CVAR_ARCHIVE);
+    scr_showtimex = Cvar_Get("scr_showtimex", "0", CVAR_ARCHIVE);
+    scr_showtimey = Cvar_Get("scr_showtimey", "0", CVAR_ARCHIVE);
 #ifdef _DEBUG
     scr_showstats = Cvar_Get("scr_showstats", "0", 0);
     scr_showpmove = Cvar_Get("scr_showpmove", "0", 0);
@@ -2043,11 +2050,14 @@ static void SCR_DrawFPS( void )
         prevTime = Sys_Milliseconds();
     }
 
-    if(scr_showfpsx->integer || scr_showfpsy->integer)
-        SCR_DrawString(scr_showfpsx->integer, scr_showfpsy->integer, 0, fps);
-    else
-        SCR_DrawString(0, 0, 0, fps);
+    SCR_DrawString(scr_showfpsx->integer, scr_showfpsy->integer, 0, fps);
+}
 
+static void SCR_DrawTime( void )
+{
+	char time_string[10];
+	Q_strftime(time_string, 10, "%k:%M:%S");
+	SCR_DrawString(scr_showtimex->integer, scr_showtimey->integer, 0, time_string);
 }
 
 static void SCR_Draw2D(void)
@@ -2090,6 +2100,9 @@ static void SCR_Draw2D(void)
 
     if (scr_showfps->integer)
         SCR_DrawFPS();
+
+    if (scr_showtime->integer)
+        SCR_DrawTime();
 
     // debug stats have no alpha
     R_ClearColor();
