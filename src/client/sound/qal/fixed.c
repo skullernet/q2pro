@@ -20,7 +20,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/cvar.h"
 #include "common/common.h"
 #include "fixed.h"
-#include <AL/alc.h>
 
 static cvar_t   *al_device;
 
