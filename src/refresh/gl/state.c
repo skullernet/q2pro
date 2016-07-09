@@ -145,6 +145,7 @@ void GL_StateBits(glStateBits_t bits)
         }
     }
 
+#ifdef GL_ARB_fragment_program
     if ((diff & GLS_WARP_ENABLE) && gl_static.prognum_warp) {
         if (bits & GLS_WARP_ENABLE) {
             vec4_t param;
@@ -160,6 +161,7 @@ void GL_StateBits(glStateBits_t bits)
             qglDisable(GL_FRAGMENT_PROGRAM_ARB);
         }
     }
+#endif
 
     if (diff & GLS_CULL_DISABLE) {
         if (bits & GLS_CULL_DISABLE) {
@@ -422,7 +424,7 @@ void GL_SetDefaultState(void)
 }
 
 // for screenshots
-byte *IMG_ReadPixels(qboolean reverse, int *width, int *height, int *rowbytes)
+byte *IMG_ReadPixels(int *width, int *height, int *rowbytes)
 {
     int align = 4;
     int pitch;
@@ -433,7 +435,7 @@ byte *IMG_ReadPixels(qboolean reverse, int *width, int *height, int *rowbytes)
     pixels = FS_AllocTempMem(pitch * r_config.height);
 
     qglReadPixels(0, 0, r_config.width, r_config.height,
-                  reverse ? GL_BGR : GL_RGB, GL_UNSIGNED_BYTE, pixels);
+                  GL_RGB, GL_UNSIGNED_BYTE, pixels);
 
     *width = r_config.width;
     *height = r_config.height;
@@ -461,6 +463,7 @@ void GL_DisableOutlines(void)
 
 void GL_InitPrograms(void)
 {
+#ifdef GL_ARB_fragment_program
     GLuint prog = 0;
 
     if (gl_config.ext_supported & QGL_ARB_fragment_program) {
@@ -496,10 +499,12 @@ void GL_InitPrograms(void)
 
     qglBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, 0);
     gl_static.prognum_warp = prog;
+#endif
 }
 
 void GL_ShutdownPrograms(void)
 {
+#ifdef GL_ARB_fragment_program
     if (!qglDeleteProgramsARB) {
         return;
     }
@@ -511,4 +516,5 @@ void GL_ShutdownPrograms(void)
 
     QGL_ShutdownExtensions(QGL_ARB_fragment_program);
     gl_config.ext_enabled &= ~QGL_ARB_fragment_program;
+#endif
 }

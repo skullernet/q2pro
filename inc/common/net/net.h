@@ -62,10 +62,11 @@ typedef struct {
 } ioentry_t;
 
 typedef enum {
-    NA_BAD,
+    NA_UNSPECIFIED,
     NA_LOOPBACK,
     NA_BROADCAST,
-    NA_IP
+    NA_IP,
+    NA_IP6
 } netadrtype_t;
 
 typedef enum {
@@ -81,15 +82,17 @@ typedef enum {
 } netflag_t;
 
 typedef union {
-    uint8_t u8[4];
-    uint16_t u16[2];
-    uint32_t u32;
+    uint8_t u8[16];
+    uint16_t u16[8];
+    uint32_t u32[4];
+    uint64_t u64[2];
 } netadrip_t;
 
 typedef struct netadr_s {
     netadrtype_t type;
     netadrip_t ip;
     uint16_t port;
+    uint32_t scope_id;  // IPv6 crap
 } netadr_t;
 
 typedef enum netstate_e {
@@ -119,10 +122,15 @@ static inline qboolean NET_IsEqualAdr(const netadr_t *a, const netadr_t *b)
         return qtrue;
     case NA_IP:
     case NA_BROADCAST:
-        if (a->ip.u32 == b->ip.u32 && a->port == b->port) {
+        if (a->ip.u32[0] == b->ip.u32[0] && a->port == b->port) {
             return qtrue;
         }
-        // fall through
+        return qfalse;
+    case NA_IP6:
+        if (memcmp(a->ip.u8, b->ip.u8, 16) == 0 && a->port == b->port) {
+            return qtrue;
+        }
+        return qfalse;
     default:
         break;
     }
@@ -141,10 +149,43 @@ static inline qboolean NET_IsEqualBaseAdr(const netadr_t *a, const netadr_t *b)
         return qtrue;
     case NA_IP:
     case NA_BROADCAST:
-        if (a->ip.u32 == b->ip.u32) {
+        if (a->ip.u32[0] == b->ip.u32[0]) {
             return qtrue;
         }
-        // fall through
+        return qfalse;
+    case NA_IP6:
+        if (memcmp(a->ip.u8, b->ip.u8, 16) == 0) {
+            return qtrue;
+        }
+        return qfalse;
+    default:
+        break;
+    }
+
+    return qfalse;
+}
+
+static inline qboolean NET_IsEqualBaseAdrMask(const netadr_t *a,
+                                              const netadr_t *b,
+                                              const netadr_t *m)
+{
+    if (a->type != b->type) {
+        return qfalse;
+    }
+
+    switch (a->type) {
+    case NA_IP:
+        return !((a->ip.u32[0] ^ b->ip.u32[0]) & m->ip.u32[0]);
+    case NA_IP6:
+#if (defined __amd64__) || (defined _M_AMD64)
+        return !(((a->ip.u64[0] ^ b->ip.u64[0]) & m->ip.u64[0]) |
+                 ((a->ip.u64[1] ^ b->ip.u64[1]) & m->ip.u64[1]));
+#else
+        return !(((a->ip.u32[0] ^ b->ip.u32[0]) & m->ip.u32[0]) |
+                 ((a->ip.u32[1] ^ b->ip.u32[1]) & m->ip.u32[1]) |
+                 ((a->ip.u32[2] ^ b->ip.u32[2]) & m->ip.u32[2]) |
+                 ((a->ip.u32[3] ^ b->ip.u32[3]) & m->ip.u32[3]));
+#endif
     default:
         break;
     }
@@ -166,7 +207,12 @@ static inline qboolean NET_IsLanAddress(const netadr_t *adr)
             adr->ip.u16[0] == MakeRawShort(172,  16)) {
             return qtrue;
         }
-        // fall through
+        return qfalse;
+    case NA_IP6:
+        if (adr->ip.u8[0] == 0xfe && (adr->ip.u8[1] & 0xc0) == 0x80) {
+            return qtrue;
+        }
+        return qfalse;
     default:
         break;
     }
@@ -195,6 +241,10 @@ qboolean    NET_SendPacket(netsrc_t sock, const void *data,
 
 char        *NET_AdrToString(const netadr_t *a);
 qboolean    NET_StringToAdr(const char *s, netadr_t *a, int default_port);
+qboolean    NET_StringPairToAdr(const char *host, const char *port, netadr_t *a);
+
+char        *NET_BaseAdrToString(const netadr_t *a);
+#define     NET_StringToBaseAdr(s, a)   NET_StringPairToAdr(s, NULL, a)
 
 const char  *NET_ErrorString(void);
 

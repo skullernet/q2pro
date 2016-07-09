@@ -232,14 +232,25 @@ static void entity_event(int number)
 
 static void set_active_state(void)
 {
+    cls.state = ca_active;
+
     cl.serverdelta = Q_align(cl.frame.number, CL_FRAMEDIV);
     cl.time = cl.servertime = 0; // set time, needed for demos
 #if USE_FPS
     cl.keytime = cl.keyservertime = 0;
+    cl.keyframe = cl.frame; // initialize keyframe to make sure it's valid
 #endif
-    cls.state = ca_active;
+
+    // initialize oldframe so lerping doesn't hurt anything
     cl.oldframe.valid = qfalse;
+    cl.oldframe.ps = cl.frame.ps;
+#if USE_FPS
+    cl.oldkeyframe.valid = qfalse;
+    cl.oldkeyframe.ps = cl.keyframe.ps;
+#endif
+
     cl.frameflags = 0;
+
     if (cls.netchan) {
         cl.initialSeq = cls.netchan->outgoing_sequence;
     }
@@ -1200,10 +1211,6 @@ void CL_CalcViewValues(void)
     cl.delta_angles[2] = LerpShort(ops->pmove.delta_angles[2], ps->pmove.delta_angles[2], lerp);
 #endif
 
-    // interpolate field of view
-    cl.fov_x = lerp_client_fov(ops->fov, ps->fov, lerp);
-    cl.fov_y = V_CalcFov(cl.fov_x, 4, 3);
-
     // don't interpolate blend color
     Vector4Copy(ps->blend, cl.refdef.blend);
 
@@ -1213,6 +1220,10 @@ void CL_CalcViewValues(void)
 
     lerp = cl.keylerpfrac;
 #endif
+
+    // interpolate field of view
+    cl.fov_x = lerp_client_fov(ops->fov, ps->fov, lerp);
+    cl.fov_y = V_CalcFov(cl.fov_x, 4, 3);
 
     LerpVector(ops->viewoffset, ps->viewoffset, lerp, viewoffset);
 

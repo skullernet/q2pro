@@ -393,8 +393,8 @@ typedef struct {
 
 typedef struct {
     list_t      entry;
-    netadrip_t  addr;
-    uint32_t    mask;
+    netadr_t    addr;
+    netadr_t    mask;
     unsigned    hits;
     time_t      time;   // time of the last hit
     char        comment[1];
@@ -523,6 +523,8 @@ extern cvar_t       *sv_status_show;
 extern cvar_t       *sv_auth_limit;
 extern cvar_t       *sv_rcon_limit;
 extern cvar_t       *sv_uptime;
+
+extern cvar_t       *sv_allow_unconnected_cmds;
 
 extern cvar_t       *g_features;
 
