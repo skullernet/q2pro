@@ -3174,7 +3174,7 @@ unsigned CL_Frame(unsigned msec)
         // everything ticks in sync with refresh
         if (main_extra < main_msec) {
             if (!cl.sendPacketNow) {
-                return 0;
+                return main_msec - main_extra;
             }
             ref_frame = qfalse;
         }
@@ -3283,8 +3283,12 @@ run_fx:
 
     cls.framecount++;
 
-    main_extra = 0;
-    return main_msec;
+    if (sync_mode == SYNC_MAXFPS && ref_frame)
+        main_extra -= main_msec;
+    else
+        main_extra = 0;
+
+    return max(0, main_msec - max(main_extra, 0));
 }
 
 /*
