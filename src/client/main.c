@@ -81,6 +81,7 @@ cvar_t  *info_msg;
 cvar_t  *info_hand;
 cvar_t  *info_gender;
 cvar_t  *info_uf;
+cvar_t  *fov_fast;
 
 #if USE_REF == REF_GL
 extern cvar_t *gl_modulate_world;
@@ -2750,6 +2751,7 @@ static void CL_InitLocal(void)
     info_hand = Cvar_Get("hand", "0", CVAR_USERINFO | CVAR_ARCHIVE);
     info_hand->changed = info_hand_changed;
     info_fov = Cvar_Get("fov", "90", CVAR_USERINFO | CVAR_ARCHIVE);
+    fov_fast = Cvar_Get("fov_fast", "1", CVAR_ARCHIVE);
     info_gender = Cvar_Get("gender", "male", CVAR_USERINFO | CVAR_ARCHIVE);
     info_gender->modified = qfalse; // clear this so we know when user sets it manually
     info_uf = Cvar_Get("uf", "", CVAR_USERINFO);
