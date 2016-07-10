@@ -1,7 +1,10 @@
-.config*
-.q2pro/
-.q2proded/
-.baseq2/
+.*.swp
+.DS_Store
+.baseq2
+.config
+.q2pro
+.q2proded
 q2pro
 q2proded
 game*.so
+target/*
