@@ -3088,7 +3088,7 @@ void CL_UpdateFrameTimes(void)
             ref_msec = 1;
             sync_mode = ASYNC_FULL;
         }
-        main_msec = 0;
+        main_msec = 1;
     } else {
         // everything ticks in sync with refresh
         phys_msec = ref_msec = 0;
@@ -3284,7 +3284,7 @@ run_fx:
     cls.framecount++;
 
     main_extra = 0;
-    return 0;
+    return main_msec;
 }
 
 /*
