@@ -7,4 +7,4 @@
 q2pro
 q2proded
 game*.so
-target/*
+*target/
