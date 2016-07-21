@@ -674,7 +674,9 @@ void Sys_Init(void)
     HMODULE module;
     BOOL (WINAPI * pSetProcessDEPPolicy)(DWORD);
 #endif
+#if USE_DBGHELP
     cvar_t *var = NULL;
+#endif
 
     timeBeginPeriod(1);
 
