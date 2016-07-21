@@ -2056,7 +2056,7 @@ static void SCR_DrawFPS( void )
 static void SCR_DrawTime( void )
 {
 	char time_string[10];
-	Q_strftime(time_string, 10, "%k:%M:%S");
+	Q_strftime(time_string, 10, "%H:%M:%S");
 	SCR_DrawString(scr_showtimex->integer, scr_showtimey->integer, 0, time_string);
 }
 
