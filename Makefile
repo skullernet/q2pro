@@ -3,7 +3,11 @@
 -include .config
 
 ifdef CONFIG_WINDOWS
-    CPU ?= x86
+    ifdef CONFIG_WINDOWS64
+        CPU ?= x86_64
+    else
+        CPU ?= x86
+    endif
     SYS ?= Win32
 else
     ifndef CPU
