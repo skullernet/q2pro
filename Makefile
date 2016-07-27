@@ -2,6 +2,9 @@
 
 -include .config
 
+ifdef CONFIG_WINDOWS64
+    CONFIG_WINDOWS := y
+endif
 ifdef CONFIG_WINDOWS
     ifdef CONFIG_WINDOWS64
         CPU ?= x86_64
