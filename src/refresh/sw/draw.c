@@ -106,6 +106,10 @@ void R_SetScale(float scale)
 {
 }
 
+void R_SetStringScale(float scale)
+{
+}
+
 void R_InitDraw(void)
 {
     memset(&draw, 0, sizeof(draw));
