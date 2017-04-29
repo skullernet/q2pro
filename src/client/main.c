@@ -3079,7 +3079,7 @@ void CL_UpdateFrameTimes(void)
         }
     } else if (cl_async->integer > 0) {
         // run physics and refresh separately
-        phys_msec = fps_to_msec(Cvar_ClampInteger(cl_maxfps, 10, 120));
+        phys_msec = fps_to_msec(Cvar_ClampInteger(cl_maxfps, 10, 1000));
         if (cl_async->integer > 1) {
             ref_msec = 0;
             sync_mode = ASYNC_VIDEO;
