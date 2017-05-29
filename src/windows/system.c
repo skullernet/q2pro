@@ -636,9 +636,36 @@ void Sys_DebugBreak(void)
     DebugBreak();
 }
 
+static LARGE_INTEGER* get_timer_frequency(void)
+{
+    static LARGE_INTEGER freq;
+    BOOL ret = QueryPerformanceFrequency(&freq);
+    if (!ret)
+        abort();
+    return &freq;
+}
+
+#ifdef _MSC_VER
+static LARGE_INTEGER* timer_freq = NULL;
+#else
+static LARGE_INTEGER* timer_freq;
+__attribute__((constructor))
+void save_timer_frequency(void)
+{
+    timer_freq = get_timer_frequency();
+}
+#endif
+
 unsigned Sys_Milliseconds(void)
 {
-    return timeGetTime();
+#ifdef _MSC_VER
+    if (q_unlikely(!timer_freq))
+        timer_freq = get_timer_frequency();
+#endif
+    LARGE_INTEGER tm;
+    (void) QueryPerformanceCounter(&tm);
+    unsigned msecs = (unsigned)((tm.QuadPart * 1000ll) / timer_freq->QuadPart);
+    return msecs;
 }
 
 void Sys_AddDefaultConfig(void)
