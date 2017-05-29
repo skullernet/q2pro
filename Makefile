@@ -35,7 +35,7 @@ LIBS ?=
 
 CFLAGS_s := -iquote./inc
 CFLAGS_c := -iquote./inc
-CFLAGS_g := -iquote./inc -fno-strict-aliasing
+CFLAGS_g := -iquote./inc
 
 RCFLAGS_s :=
 RCFLAGS_c :=
