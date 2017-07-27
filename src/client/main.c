@@ -3118,7 +3118,7 @@ CL_Frame
 unsigned CL_Frame(unsigned msec)
 {
     qboolean phys_frame, ref_frame;
-
+	int sleep_time;
     time_after_ref = time_before_ref = 0;
 
     if (!cl_running->integer) {
@@ -3285,12 +3285,13 @@ run_fx:
 
     cls.framecount++;
 
-    if (sync_mode == SYNC_MAXFPS && ref_frame)
-        main_extra -= main_msec;
-    else
-        main_extra = 0;
+	if (sync_mode == SYNC_MAXFPS && ref_frame)
+		sleep_time = max(0, main_extra - main_msec);
+	else
+		sleep_time = 0;
 
-    return max(0, main_msec - max(main_extra, 0));
+	main_extra = 0;
+    return sleep_time;
 }
 
 /*
