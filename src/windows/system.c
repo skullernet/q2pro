@@ -641,6 +641,18 @@ unsigned Sys_Milliseconds(void)
     return timeGetTime();
 }
 
+unsigned long long int Sys_Microseconds(void)
+{
+	FILETIME ft;
+	GetSystemTimeAsFileTime(&ft);
+	unsigned long long tt = ft.dwHighDateTime;
+	tt <<= 32;
+	tt |= ft.dwLowDateTime;
+	tt /= 10;
+	tt -= 11644473600000000ULL;
+	return tt;
+}
+
 void Sys_AddDefaultConfig(void)
 {
 }

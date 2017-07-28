@@ -88,6 +88,16 @@ static cvar_t   *ch_scale;
 static cvar_t   *ch_x;
 static cvar_t   *ch_y;
 
+static cvar_t   *scr_showfps;
+static cvar_t   *scr_showfpsx;
+static cvar_t   *scr_showfpsy;
+static cvar_t   *scr_showfpsscale;
+
+static cvar_t   *scr_showtime;
+static cvar_t   *scr_showtimex;
+static cvar_t   *scr_showtimey;
+static cvar_t   *scr_showtimescale;
+
 #ifdef _DEBUG
 cvar_t      *scr_netgraph;
 cvar_t      *scr_timegraph;
@@ -1374,6 +1384,14 @@ void SCR_Init(void)
     scr_lag_min = Cvar_Get("scr_lag_min", "0", 0);
     scr_lag_max = Cvar_Get("scr_lag_max", "200", 0);
     scr_alpha = Cvar_Get("scr_alpha", "1", 0);
+    scr_showfps =  Cvar_Get("scr_showfps",  "0", CVAR_ARCHIVE);
+    scr_showfpsx = Cvar_Get("scr_showfpsx", "0", CVAR_ARCHIVE);
+    scr_showfpsy = Cvar_Get("scr_showfpsy", "0", CVAR_ARCHIVE);
+    scr_showfpsscale = Cvar_Get("scr_showfpsscale", "1", CVAR_ARCHIVE);
+    scr_showtime =  Cvar_Get("scr_showtime",  "0", CVAR_ARCHIVE);
+    scr_showtimex = Cvar_Get("scr_showtimex", "0", CVAR_ARCHIVE);
+    scr_showtimey = Cvar_Get("scr_showtimey", "0", CVAR_ARCHIVE);
+    scr_showtimescale = Cvar_Get("scr_showtimescale", "1", CVAR_ARCHIVE);
 #ifdef _DEBUG
     scr_showstats = Cvar_Get("scr_showstats", "0", 0);
     scr_showpmove = Cvar_Get("scr_showpmove", "0", 0);
@@ -2018,6 +2036,38 @@ draw:
     SCR_ExecuteLayoutString(cl.layout);
 }
 
+#define FPS_FRAMES 64
+static void SCR_DrawFPS( void )
+{
+    static unsigned int prevTime = 0, index = 0;
+    static char fps[32];
+
+    index++;
+
+    if (index < FPS_FRAMES)
+        return;
+
+    if ((index % FPS_FRAMES) == 0)
+    {
+        Q_snprintf(fps, 32, "%ifps",
+            (int) (1000 / ((float) (Sys_Milliseconds() - prevTime) / FPS_FRAMES)));
+        prevTime = Sys_Milliseconds();
+    }
+
+    R_SetStringScale(scr_showfpsscale->value);
+    SCR_DrawString(scr_showfpsx->integer, scr_showfpsy->integer, 0, fps);
+	R_SetStringScale(1);
+}
+
+static void SCR_DrawTime( void )
+{
+	char time_string[10];
+	Q_strftime(time_string, 10, "%k:%M:%S");
+    R_SetStringScale(scr_showtimescale->value);
+	SCR_DrawString(scr_showtimex->integer, scr_showtimey->integer, 0, time_string);
+    R_SetStringScale(1);
+}
+
 static void SCR_Draw2D(void)
 {
     if (scr_draw2d->integer <= 0)
@@ -2055,6 +2105,12 @@ static void SCR_Draw2D(void)
     SCR_DrawTurtle();
 
     SCR_DrawPause();
+
+    if (scr_showfps->integer)
+        SCR_DrawFPS();
+
+    if (scr_showtime->integer)
+        SCR_DrawTime();
 
     // debug stats have no alpha
     R_ClearColor();
@@ -2139,6 +2195,8 @@ void SCR_UpdateScreen(void)
     recursive++;
 
     R_BeginFrame();
+
+	R_SetStringScale(1);
 
     // do 3D refresh drawing
     SCR_DrawActive();

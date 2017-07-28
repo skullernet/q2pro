@@ -81,6 +81,7 @@ cvar_t  *info_msg;
 cvar_t  *info_hand;
 cvar_t  *info_gender;
 cvar_t  *info_uf;
+cvar_t  *fov_fast;
 
 #if USE_REF == REF_GL
 extern cvar_t *gl_modulate_world;
@@ -2750,6 +2751,7 @@ static void CL_InitLocal(void)
     info_hand = Cvar_Get("hand", "0", CVAR_USERINFO | CVAR_ARCHIVE);
     info_hand->changed = info_hand_changed;
     info_fov = Cvar_Get("fov", "90", CVAR_USERINFO | CVAR_ARCHIVE);
+    fov_fast = Cvar_Get("fov_fast", "1", CVAR_ARCHIVE);
     info_gender = Cvar_Get("gender", "male", CVAR_USERINFO | CVAR_ARCHIVE);
     info_gender->modified = qfalse; // clear this so we know when user sets it manually
     info_uf = Cvar_Get("uf", "", CVAR_USERINFO);
@@ -3077,7 +3079,7 @@ void CL_UpdateFrameTimes(void)
         }
     } else if (cl_async->integer > 0) {
         // run physics and refresh separately
-        phys_msec = fps_to_msec(Cvar_ClampInteger(cl_maxfps, 10, 120));
+        phys_msec = fps_to_msec(Cvar_ClampInteger(cl_maxfps, 10, 1000));
         if (cl_async->integer > 1) {
             ref_msec = 0;
             sync_mode = ASYNC_VIDEO;
@@ -3088,7 +3090,7 @@ void CL_UpdateFrameTimes(void)
             ref_msec = 1;
             sync_mode = ASYNC_FULL;
         }
-        main_msec = 0;
+        main_msec = 1;
     } else {
         // everything ticks in sync with refresh
         phys_msec = ref_msec = 0;
@@ -3116,7 +3118,7 @@ CL_Frame
 unsigned CL_Frame(unsigned msec)
 {
     qboolean phys_frame, ref_frame;
-
+	int sleep_time;
     time_after_ref = time_before_ref = 0;
 
     if (!cl_running->integer) {
@@ -3174,7 +3176,7 @@ unsigned CL_Frame(unsigned msec)
         // everything ticks in sync with refresh
         if (main_extra < main_msec) {
             if (!cl.sendPacketNow) {
-                return 0;
+                return main_msec - main_extra;
             }
             ref_frame = qfalse;
         }
@@ -3283,8 +3285,13 @@ run_fx:
 
     cls.framecount++;
 
-    main_extra = 0;
-    return 0;
+	if (sync_mode == SYNC_MAXFPS && ref_frame)
+		sleep_time = max(0, main_extra - main_msec);
+	else
+		sleep_time = 0;
+
+	main_extra = 0;
+    return sleep_time;
 }
 
 /*

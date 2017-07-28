@@ -925,6 +925,18 @@ void Q_setenv(const char *name, const char *value)
 #endif // !_WIN32
 }
 
+size_t Q_strftime(char *time_string, size_t len, const char *fmt)
+{
+	struct tm *tmp;
+	time_t t;
+	t = time(NULL);
+	if ((tmp = localtime(&t)))
+		return strftime(time_string, len, fmt, tmp);
+	if (len)
+		time_string[0] = '\0';
+	return -1;
+}
+
 /*
 =====================================================================
 

@@ -65,6 +65,7 @@ typedef struct {
     inputAPI_t  api;
     int         old_dx;
     int         old_dy;
+    unsigned long long last_time;
 } in_state_t;
 
 static in_state_t   input;
@@ -245,6 +246,7 @@ void IN_Init(void)
 
     in_grab = Cvar_Get("in_grab", "1", 0);
     in_grab->changed = in_changed_soft;
+    input.last_time = Sys_Microseconds();
 
     IN_Activate();
 }
@@ -499,6 +501,7 @@ static void CL_MouseMove(void)
     int dx, dy;
     float mx, my;
     float speed;
+    long long int input_frame, input_time;
 
     if (!input.api.GetMotion) {
         return;
@@ -509,6 +512,7 @@ static void CL_MouseMove(void)
     if (!input.api.GetMotion(&dx, &dy)) {
         return;
     }
+    input_time = Sys_Microseconds();
 
     if (m_filter->integer) {
         mx = (dx + input.old_dx) * 0.5f;
@@ -527,8 +531,14 @@ static void CL_MouseMove(void)
 
     Cvar_ClampValue(m_accel, 0, 1);
 
-    speed = sqrt(mx * mx + my * my);
-    speed = sensitivity->value + speed * m_accel->value;
+    speed = sensitivity->value;
+    if (m_accel->value) {
+        input_frame = input_time - input.last_time;
+        if (input_frame > 0) {
+            speed += (sqrt(mx * mx + my * my) * 1000 / input_frame * m_accel->value);
+        }
+    }
+    input.last_time = input_time;;
 
     mx *= speed;
     my *= speed;
