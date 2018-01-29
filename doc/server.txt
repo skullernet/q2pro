@@ -191,8 +191,10 @@ sv_downloadserver::
 
 sv_show_name_changes::
     Broadcast player name changes to everyone. You should probably enable this
-    unless game mod already shows name changes. Default value is 0 (don't
-    show).
+    unless game mod already shows name changes. Default value is 0.
+       - 0 — don't show name changes
+       - 1 — show name changes of players fully spawned in game
+       - 2 — show name changes of all players, including connecting players
 
 sv_allow_nodelta::
     Enables automatic removal of clients that abuse the server with requests
