@@ -936,7 +936,7 @@ static void CL_AddViewWeapon(void)
         return;
     }
 
-    if (info_hand->integer == 2) {
+    if (info_hand->integer == 2 && cl_gun->integer == 1) {
         return;
     }
 
@@ -985,7 +985,7 @@ static void CL_AddViewWeapon(void)
     }
 
     gun.flags = RF_MINLIGHT | RF_DEPTHHACK | RF_WEAPONMODEL;
-    if (info_hand->integer == 1) {
+    if ((info_hand->integer == 1 && cl_gun->integer == 1) || cl_gun->integer == 3) {
         gun.flags |= RF_LEFTHAND;
     }
 

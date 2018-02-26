@@ -183,7 +183,7 @@ static void CL_UpdateGunSetting(void)
 
     if (cl_gun->integer == -1) {
         nogun = 2;
-    } else if (cl_gun->integer == 0 || info_hand->integer == 2) {
+    } else if (cl_gun->integer == 0 || (info_hand->integer == 2 && cl_gun->integer == 1)) {
         nogun = 1;
     } else {
         nogun = 0;
