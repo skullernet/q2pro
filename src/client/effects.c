@@ -1180,51 +1180,6 @@ void CL_BlasterTrail(vec3_t start, vec3_t end)
 
 /*
 ===============
-CL_QuadTrail
-
-===============
-*/
-void CL_QuadTrail(vec3_t start, vec3_t end)
-{
-    vec3_t      move;
-    vec3_t      vec;
-    float       len;
-    int         j;
-    cparticle_t *p;
-    int         dec;
-
-    VectorCopy(start, move);
-    VectorSubtract(end, start, vec);
-    len = VectorNormalize(vec);
-
-    dec = 5;
-    VectorScale(vec, 5, vec);
-
-    while (len > 0) {
-        len -= dec;
-
-        p = CL_AllocParticle();
-        if (!p)
-            return;
-        VectorClear(p->accel);
-
-        p->time = cl.time;
-
-        p->alpha = 1.0;
-        p->alphavel = -1.0 / (0.8 + frand() * 0.2);
-        p->color = 115;
-        for (j = 0; j < 3; j++) {
-            p->org[j] = move[j] + crand() * 16;
-            p->vel[j] = crand() * 5;
-            p->accel[j] = 0;
-        }
-
-        VectorAdd(move, vec, move);
-    }
-}
-
-/*
-===============
 CL_FlagTrail
 
 ===============
