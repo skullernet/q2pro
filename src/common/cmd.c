@@ -985,12 +985,7 @@ void Cmd_Shift(void)
 {
     int i;
 
-    if (!cmd_argc) {
-        return;
-    }
-
-    if (cmd_argc == 1) {
-        cmd_string[0] = 0;
+    if (cmd_argc < 1) {
         return;
     }
 
@@ -1000,8 +995,8 @@ void Cmd_Shift(void)
         cmd_argv[i] = cmd_argv[i + 1];
     }
 
-    memmove(cmd_string, cmd_string + cmd_offsets[1],
-            MAX_STRING_CHARS - cmd_offsets[1]);
+    cmd_offsets[i] = 0;
+    cmd_argv[i] = NULL;
 }
 
 int Cmd_ParseOptions(const cmd_option_t *opt)
