@@ -191,11 +191,9 @@ typedef struct {
 #define DVIS_PVS    0
 #define DVIS_PHS    1
 
-#define DVIS_CLUSTERS   8
-
 typedef struct {
     uint32_t    numclusters;
-    uint32_t    bitofs[DVIS_CLUSTERS][2];    // bitofs[numclusters][2]
+    uint32_t    bitofs[][2];    // bitofs[numclusters][2]
 } dvis_t;
 
 // each area has a list of portals that lead into other areas
