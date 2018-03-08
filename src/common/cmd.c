@@ -810,6 +810,9 @@ int Cmd_FindArgForOffset(size_t offset)
 {
     int i;
 
+    if (offset > cmd_string_len)
+        return cmd_argc;
+
     for (i = 1; i < cmd_argc; i++) {
         if (offset < cmd_offsets[i]) {
             break;
