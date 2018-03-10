@@ -182,6 +182,7 @@ void Sys_Init(void)
     signal(SIGINT, term_handler);
     signal(SIGTTIN, SIG_IGN);
     signal(SIGTTOU, SIG_IGN);
+    signal(SIGPIPE, SIG_IGN);
     signal(SIGUSR1, hup_handler);
 
     // basedir <path>
