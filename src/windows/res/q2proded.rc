@@ -35,7 +35,7 @@ BEGIN
     BEGIN
         BLOCK "040904B0"
         BEGIN
-            VALUE "Comments", "http://skuller.net/q2pro/"
+            VALUE "Comments", "https://github.com/skullernet/q2pro"
             VALUE "CompanyName", "skuller.net"
             VALUE "FileDescription", VER_FILEDESCRIPTION_STR
             VALUE "OriginalFilename", VER_ORIGINALFILENAME_STR
