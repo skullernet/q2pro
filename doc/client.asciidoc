@@ -68,7 +68,7 @@ cl_async::
         - 0 — run synchronous, like original Quake 2 does
         - 1 — run asynchronous
         - 2 — run asynchronous, limit rendering frame rate to monitor's vertical
-        retrace frequency (supported only by X11/GLX drivers)
+        retrace frequency (supported only when using SDL 1 with X11/GLX)
 
 .Rate limits depending on ‘cl_async’ value
 [options="header"]
@@ -150,7 +150,7 @@ net_maxmsglen::
     bytes 1462 can be specified (10 bytes quake header, 8 bytes UDP header, 20
     bytes IPv4 header). Higher values may cause IP fragmentation which is
     better to avoid. Servers will cap this variable to their own maximum
-    values.  Please don't change this variable unless you know exactly what you
+    values. Don't change this variable unless you know exactly what you
     are doing.
 
 net_chantype::
@@ -279,17 +279,8 @@ al_device::
     your OpenAL implementation. Default value is empty, which means default
     sound output device is used.
 
-TIP: On Windows, there are two well-known OpenAL implementations available:
-http://connect.creativelabs.com/openal/[OpenAL32] from Creative, with
-support for harware acceleration on certain audio cards, and an open source
-software implementation named http://kcat.strangesoft.net/openal.html[OpenAL Soft].
-Both should work with Q2PRO, but to get the results most perceptually close to
-original Quake 2 sound, I recommend using OpenAL Soft. Creative's
-implementation seems to perform some default effects processing even when not
-requested, and that makes it sound somewhat differently. With OpenAL Soft in
-stereo configuration I can't really tell if I'm using OpenAL or default Quake 2
-sound engine. Of course you can install both implementations and switch between
-them by changing ‘al_driver’ variable between ‘openal32’ and ‘soft_oal’.
+TIP: Using http://kcat.strangesoft.net/openal.html[OpenAL Soft] implementation
+of OpenAL is recommended.
 
 
 Graphical Console
@@ -323,8 +314,8 @@ con_notifylines::
 
 con_history::
     Specifies how many lines to save into console history file before exiting
-    Q2PRO, to be reloaded on next startup. Maximum number of history lines is
-    128. Default value is 0.
+    Q2PRO, to be reloaded on next startup. Maximum number of history lines is 128.
+    Default value is 0.
 
 con_scroll::
     Controls automatic scrolling of console text when some event occurs. This
@@ -659,8 +650,9 @@ similar effect, set the legacy ‘gl_modulate’ variable to 1, and configure
 
 gl_doublelight_entities::
     Specifies if combined modulation factor is applied to entity lighting one
-    more time just before final lighting value is calculated, to simulate a bug
-    (?) in the original Quake 2 renderer. Default value is 1 (apply twice).
+    more time just before final lighting value is calculated, to simulate a
+    well-known bug in the original Quake 2 renderer. Default value is 1 (apply
+    twice).
 
 .Entity lighting
 ****************
@@ -695,13 +687,14 @@ gl_fragment_program::
 gl_vertex_buffer_object::
     Enables ‘GL_ARB_vertex_buffer_object’ extension, if supported by your
     OpenGL implementation. This extension allows world surfaces to be stored in
-    high-performance video memory, which usually speeds up rendering. Default
-    value is 1 (enabled).
+    static memory area, which speeds up rendering. Default value is 1
+    (enabled).
 
 gl_video_sync::
-    On X11/GLX, enables ‘GLX_SGI_video_sync’ extension. This extension allows
-    synchronizing rendering framerate to monitor vertical retrace frequency.
-    Default value is 1 (enabled). See also ‘cl_async’ variable.
+    Enables ‘GLX_SGI_video_sync’ extension when using SDL 1 with X11/GLX. This
+    extension allows synchronizing rendering framerate to monitor vertical
+    retrace frequency. Default value is 1 (enabled). See also ‘cl_async’
+    variable.
 
 gl_colorbits::
     Specifies desired size of color buffer, in bits, requested from OpenGL
