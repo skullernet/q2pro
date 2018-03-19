@@ -1011,7 +1011,7 @@ Macros behave like automated console variables. When macro expansion is
 performed, macros are searched first, then console variables.
 
 .Macro expansion syntax
-=======================
+============
 Each of the following examples are valid and produce the same output:
 ------------
 /echo $loc_here
@@ -1019,7 +1019,7 @@ Each of the following examples are valid and produce the same output:
 /echo ${loc_here}
 /echo ${$loc_here}
 ------------
-======================
+============
 
 [horizontal]
 .List of client macros
@@ -1260,12 +1260,12 @@ undraw [all] | <name>::
     screen. Specify _all_ to remove all objects.
 
 .Drawing FPS and a clock
-========================
+===================
 -------------------
 /draw cl_fps -1 -1  // bottom right
 /draw com_time 0 -1 // bottom left
 -------------------
-=======================
+===================
 
 
 Screenshots
