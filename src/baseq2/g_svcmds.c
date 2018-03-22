@@ -125,6 +125,9 @@ qboolean SV_FilterPacket(char *from)
     } m;
     char *p;
 
+    if (numipfilters == 0)
+        return qfalse;
+
     i = 0;
     p = from;
     while (*p && i < 4) {
