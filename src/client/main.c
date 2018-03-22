@@ -1374,10 +1374,12 @@ static void CL_ConnectionlessPacket(void)
                 break;
             }
             cls.serverProtocol = PROTOCOL_VERSION_R1Q2;
+            /*FALLTHROUGH*/
         case PROTOCOL_VERSION_R1Q2:
             if (mask & 1) {
                 break;
             }
+            /*FALLTHROUGH*/
         default:
             cls.serverProtocol = PROTOCOL_VERSION_DEFAULT;
             break;
@@ -3136,7 +3138,7 @@ unsigned CL_Frame(unsigned msec)
     case SYNC_SLEEP_10:
         // don't run refresh at all
         ref_frame = qfalse;
-        // fall through
+        /*FALLTHROUGH*/
     case SYNC_SLEEP_60:
         // run at limited fps if not active
         if (main_extra < main_msec) {
