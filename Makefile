@@ -1,6 +1,10 @@
 ### Q2PRO Makefile ###
 
--include .config
+ifneq ($(CONFIG_FILE),)
+    include $(CONFIG_FILE)
+else
+    -include .config
+endif
 
 ifdef CONFIG_WINDOWS
     CPU ?= x86
