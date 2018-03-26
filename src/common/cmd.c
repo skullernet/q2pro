@@ -1213,7 +1213,7 @@ char *Cmd_MacroExpandString(const char *text, qboolean aliasHack)
 
     len = strlen(text);
     if (len >= MAX_STRING_CHARS) {
-        Com_Printf("Line exceeded %i chars, discarded.\n", MAX_STRING_CHARS);
+        Com_Printf("Line exceeded %i chars, discarded.\nLine: %s\n", MAX_STRING_CHARS, text);
         return NULL;
     }
 
@@ -1261,7 +1261,7 @@ char *Cmd_MacroExpandString(const char *text, qboolean aliasHack)
 
         j = strlen(result);
         if (j >= remaining) {
-            Com_Printf("Expanded line exceeded %i chars, discarded.\n", MAX_STRING_CHARS);
+            Com_Printf("Expanded line exceeded %i chars, discarded.\nLine: %s\n", remaining, result);
             return NULL;
         }
 
