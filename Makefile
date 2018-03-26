@@ -300,9 +300,6 @@ ifndef CONFIG_NO_MENUS
     OBJS_c += src/client/ui/ui.o
 endif
 
-# Light styles are always enabled
-CFLAGS_c += -DUSE_LIGHTSTYLES=1
-
 ifndef CONFIG_NO_DYNAMIC_LIGHTS
     CFLAGS_c += -DUSE_DLIGHTS=1
 endif

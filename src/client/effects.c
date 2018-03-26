@@ -31,8 +31,6 @@ LIGHT STYLE MANAGEMENT
 ==============================================================
 */
 
-#if USE_LIGHTSTYLES
-
 typedef struct clightstyle_s {
     list_t  entry;
     int     length;
@@ -136,8 +134,6 @@ void CL_AddLightStyles(void)
     for (i = 0, ls = cl_lightstyles; i < MAX_LIGHTSTYLES; i++, ls++)
         V_AddLightStyle(i, ls->value);
 }
-
-#endif
 
 /*
 ==============================================================

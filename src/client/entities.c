@@ -1263,9 +1263,7 @@ void CL_AddEntities(void)
 #if USE_DLIGHTS
     CL_AddDLights();
 #endif
-#if USE_LIGHTSTYLES
     CL_AddLightStyles();
-#endif
     LOC_AddLocationsToScene();
 }
 

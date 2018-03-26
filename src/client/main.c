@@ -689,9 +689,7 @@ void CL_ClearState(void)
 {
     S_StopAllSounds();
     CL_ClearEffects();
-#if USE_LIGHTSTYLES
     CL_ClearLightStyles();
-#endif
     CL_ClearTEnts();
     LOC_FreeLocations();
 
@@ -3265,10 +3263,7 @@ run_fx:
 #if USE_DLIGHTS
         CL_RunDLights();
 #endif
-
-#if USE_LIGHTSTYLES
         CL_RunLightStyles();
-#endif
     } else if (sync_mode == SYNC_SLEEP_10) {
         // force audio and effects update if not rendering
         CL_CalcViewValues();
