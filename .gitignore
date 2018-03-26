@@ -1,7 +1,9 @@
-.config*
-.q2pro/
-.q2proded/
-.baseq2/
-q2pro
-q2proded
-game*.so
+/.config*
+/.q2pro/
+/.q2proded/
+/.baseq2/
+/q2pro*
+/q2proded*
+/baseq2/
+/game*.so
+/game*.dll
