@@ -283,6 +283,7 @@ CL_InitRefresh
 void CL_InitRefresh(void)
 {
     char *modelist;
+    unsigned modelist_len;
 
     if (cls.ref_initialized) {
         return;
@@ -293,6 +294,21 @@ void CL_InitRefresh(void)
     modelist = VID_GetDefaultModeList();
     if (!modelist) {
         Com_Error(ERR_FATAL, "Couldn't initialize refresh: %s", Com_GetLastError());
+    }
+
+    // the modelist grows over MAX_STRING_CHARS on 4K displays
+    modelist_len = strlen(modelist);
+
+    // there's some arbitrary additional space taken into account
+    if (modelist_len > MAX_STRING_CHARS - 128) {
+        unsigned k;
+
+        for (k = MAX_STRING_CHARS - 1 - 128; k > 0; k--)
+            if (modelist[k] == ' ')
+            {
+                modelist[k] = '\0';
+                break;
+            }
     }
 
     // Create the video variables so we know how to start the graphics drivers
