@@ -2092,7 +2092,7 @@ static pack_t *load_pak_file(const char *packfile)
     }
 
     header.dirlen = LittleLong(header.dirlen);
-    if ((unsigned long)header.dirlen > LONG_MAX || header.dirlen % sizeof(dpackfile_t)) {
+    if (header.dirlen % sizeof(dpackfile_t)) {
         Com_Printf("%s has bad directory length\n", packfile);
         goto fail;
     }
@@ -2108,10 +2108,12 @@ static pack_t *load_pak_file(const char *packfile)
     }
 
     header.dirofs = LittleLong(header.dirofs);
+#ifndef _LP64
     if (header.dirofs > LONG_MAX - header.dirlen) {
         Com_Printf("%s has bad directory offset\n", packfile);
         goto fail;
     }
+#endif
     if (fseek(fp, (long)header.dirofs, SEEK_SET)) {
         Com_Printf("Seeking to directory failed on %s\n", packfile);
         goto fail;
@@ -2125,10 +2127,12 @@ static pack_t *load_pak_file(const char *packfile)
     for (i = 0, dfile = info; i < num_files; i++, dfile++) {
         dfile->filepos = LittleLong(dfile->filepos);
         dfile->filelen = LittleLong(dfile->filelen);
-        if ((unsigned long)dfile->filelen > LONG_MAX || dfile->filepos > LONG_MAX - dfile->filelen) {
+#ifndef _LP64
+        if (dfile->filelen > LONG_MAX || dfile->filepos > LONG_MAX - dfile->filelen) {
             Com_Printf("%s has bad directory structure\n", packfile);
             goto fail;
         }
+#endif
         dfile->name[sizeof(dfile->name) - 1] = 0;
         names_len += strlen(dfile->name) + 1;
     }
