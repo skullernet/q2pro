@@ -1761,8 +1761,14 @@ Menu_AddItem
 */
 void Menu_AddItem(menuFrameWork_t *menu, void *item)
 {
-    if (menu->nitems >= MAXMENUITEMS) {
+    if (menu->nitems >= MAX_MENU_ITEMS) {
         Com_Error(ERR_FATAL, "Menu_AddItem: too many items");
+    }
+
+    if (!menu->nitems) {
+        menu->items = UI_Malloc(MIN_MENU_ITEMS * sizeof(void *));
+    } else {
+        menu->items = Z_Realloc(menu->items, ALIGN(menu->nitems + 1, MIN_MENU_ITEMS) * sizeof(void *));
     }
 
     menu->items[menu->nitems++] = item;
@@ -2569,6 +2575,7 @@ void Menu_Free(menuFrameWork_t *menu)
         }
     }
 
+    Z_Free(menu->items);
     Z_Free(menu->title);
     Z_Free(menu->name);
     Z_Free(menu);

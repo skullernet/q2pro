@@ -291,6 +291,7 @@ static qboolean Push(menuFrameWork_t *self)
 
 static void Free(menuFrameWork_t *self)
 {
+    Z_Free(m_player.menu.items);
     memset(&m_player, 0, sizeof(m_player));
 }
 
