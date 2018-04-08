@@ -1279,7 +1279,7 @@ $Cvars will be expanded unless they are in a quoted token
 void Cmd_TokenizeString(const char *text, qboolean macroExpand)
 {
     int     i, len;
-    char    *data, *start, *dest;
+    char    *data, *dest;
 
 // clear the args from the last string
     for (i = 0; i < cmd_argc; i++) {
@@ -1321,7 +1321,7 @@ void Cmd_TokenizeString(const char *text, qboolean macroExpand)
     cmd_string_len = len;
 
     dest = cmd_data;
-    start = data = cmd_string;
+    data = cmd_string;
     while (cmd_argc < MAX_STRING_TOKENS) {
 // skip whitespace up to a /n
         while (*data <= ' ') {
@@ -1335,7 +1335,7 @@ void Cmd_TokenizeString(const char *text, qboolean macroExpand)
         }
 
 // add new argument
-        cmd_offsets[cmd_argc] = data - start;
+        cmd_offsets[cmd_argc] = data - cmd_string;
         cmd_argv[cmd_argc] = dest;
         cmd_argc++;
 
