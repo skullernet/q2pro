@@ -946,4 +946,3 @@ void SV_InitGameProgs(void)
         Com_Error(ERR_DROP, "Game DLL returned bad number of max_edicts");
     }
 }
-

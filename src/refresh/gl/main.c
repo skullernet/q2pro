@@ -1130,4 +1130,3 @@ void R_ModeChanged(int width, int height, int flags, int rowbytes, void *pixels)
     r_config.height = height;
     r_config.flags = flags;
 }
-

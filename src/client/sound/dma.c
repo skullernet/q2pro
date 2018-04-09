@@ -179,5 +179,3 @@ void DMA_Update(void)
 
     snddma.Submit();
 }
-
-

@@ -364,4 +364,3 @@ void CL_ShutdownRefresh(void)
 
     Z_LeakTest(TAG_RENDERER);
 }
-

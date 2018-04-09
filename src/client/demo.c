@@ -1279,5 +1279,3 @@ void CL_InitDemos(void)
     Cmd_Register(c_demo);
     List_Init(&cls.demo.snapshots);
 }
-
-

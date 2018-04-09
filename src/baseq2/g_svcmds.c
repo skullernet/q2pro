@@ -301,4 +301,3 @@ void    ServerCommand(void)
     else
         gi.cprintf(NULL, PRINT_HIGH, "Unknown server command \"%s\"\n", cmd);
 }
-

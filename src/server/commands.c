@@ -1584,4 +1584,3 @@ void SV_InitOperatorCommands(void)
     if (COM_DEDICATED)
         Cmd_AddCommand("say", SV_ConSay_f);
 }
-

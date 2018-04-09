@@ -2287,4 +2287,3 @@ void SV_Shutdown(const char *finalmsg, error_type_t type)
 
     Z_LeakTest(TAG_SERVER);
 }
-

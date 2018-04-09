@@ -179,4 +179,3 @@ void S_BuildSoundList(int *sounds);
 void S_InitScaletable(void);
 void S_PaintChannels(int endtime);
 #endif
-

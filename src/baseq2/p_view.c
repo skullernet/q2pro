@@ -1009,4 +1009,3 @@ void ClientEndServerFrame(edict_t *ent)
         gi.unicast(ent, qfalse);
     }
 }
-

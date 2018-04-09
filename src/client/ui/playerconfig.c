@@ -350,4 +350,3 @@ void M_Menu_PlayerConfig(void)
 
     List_Append(&ui_menus, &m_player.menu.entry);
 }
-

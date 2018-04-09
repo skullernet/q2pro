@@ -14,4 +14,3 @@ static const char gl_prog_warp[] =
     "MUL result.color, diffuse, fragment.color;\n"
     "END\n"
 ;
-

@@ -883,4 +883,3 @@ void Key_WaitKey(keywaitcb_t wait, void *arg)
     key_wait_cb = wait;
     key_wait_arg = arg;
 }
-

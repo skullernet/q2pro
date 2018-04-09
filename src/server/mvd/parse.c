@@ -1170,4 +1170,3 @@ qboolean MVD_ParseMessage(mvd_t *mvd)
 
     return ret;
 }
-

@@ -1539,4 +1539,3 @@ badbyte:
 
     X86_POP_FPCW;
 }
-

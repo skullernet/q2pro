@@ -2584,4 +2584,3 @@ void Menu_Free(menuFrameWork_t *menu)
     Z_Free(menu->name);
     Z_Free(menu);
 }
-

@@ -939,4 +939,3 @@ void CL_InitDownloads(void)
 
     List_Init(&cls.download.queue);
 }
-

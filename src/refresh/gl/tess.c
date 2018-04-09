@@ -479,4 +479,3 @@ void GL_AddAlphaFace(mface_t *face)
     face->next = faces_alpha;
     faces_alpha = face;
 }
-

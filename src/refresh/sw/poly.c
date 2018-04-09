@@ -906,4 +906,3 @@ void R_DrawSprite(void)
     else
         R_ClipAndDrawPoly(1.0F, qfalse, textured);
 }
-

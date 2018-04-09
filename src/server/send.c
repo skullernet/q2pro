@@ -1069,4 +1069,3 @@ void SV_ShutdownClientSend(client_t *client)
 
     List_Init(&client->msg_free_list);
 }
-

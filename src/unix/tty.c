@@ -476,4 +476,3 @@ void Sys_Printf(const char *fmt, ...)
 
     Sys_ConsoleOutput(msg);
 }
-

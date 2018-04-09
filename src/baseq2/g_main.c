@@ -516,4 +516,3 @@ void G_RunFrame(void)
     // build the playerstate_t structures for all players
     ClientEndServerFrames();
 }
-

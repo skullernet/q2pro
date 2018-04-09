@@ -810,4 +810,3 @@ void QGL_LogComment(const char *fmt, ...)
 }
 
 #endif // _DEBUG
-

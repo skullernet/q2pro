@@ -1930,4 +1930,3 @@ void SP_func_killbox(edict_t *ent)
     ent->use = use_killbox;
     ent->svflags = SVF_NOCLIENT;
 }
-

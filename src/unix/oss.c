@@ -250,4 +250,3 @@ void DS_FillAPI(snddmaAPI_t *api)
     api->BeginPainting = OSS_BeginPainting;
     api->Submit = OSS_Submit;
 }
-

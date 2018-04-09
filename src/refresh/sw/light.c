@@ -377,4 +377,3 @@ void R_BuildLightMap(void)
         block += LIGHTMAP_BYTES;
     }
 }
-

@@ -268,4 +268,3 @@ void CL_PredictMovement(void)
     VectorScale(pm.s.velocity, 0.125f, cl.predicted_velocity);
     VectorCopy(pm.viewangles, cl.predicted_angles);
 }
-

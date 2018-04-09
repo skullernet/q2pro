@@ -797,4 +797,3 @@ trace_t q_gameabi SV_Trace(vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end,
 // to an open area
 
 // passedict is explicitly excluded from clipping checks (normally NULL)
-

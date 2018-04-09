@@ -372,4 +372,3 @@ void CL_InitAscii(void)
     Cmd_AddCommand("aashot", SCR_ScoreShot_f);
     Cmd_AddCommand("aadump", SCR_ScoreDump_f);
 }
-

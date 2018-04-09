@@ -321,4 +321,3 @@ void DI_FillAPI(inputAPI_t *api)
     api->GetEvents = DI_GetMouseEvents;
     api->GetMotion = DI_GetMouseMotion;
 }
-

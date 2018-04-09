@@ -172,4 +172,3 @@ void R_SetSky(const char *name, float rotate, vec3_t axis)
         r_skytexinfo[i].image = IMG_Find(path, IT_SKY, IF_NONE);
     }
 }
-

@@ -1257,4 +1257,3 @@ void PmoveEnableQW(pmoveParams_t *pmp)
     pmp->waterfriction = 4;
     pmp->airaccelerate = qtrue;
 }
-

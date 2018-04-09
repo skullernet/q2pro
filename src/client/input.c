@@ -1200,4 +1200,3 @@ void CL_SendCmd(void)
 
     cl.sendPacketNow = qfalse;
 }
-

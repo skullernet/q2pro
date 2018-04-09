@@ -367,5 +367,3 @@ void R_EndRegistration(void)
     MOD_FreeUnused();
     IMG_FreeUnused();
 }
-
-

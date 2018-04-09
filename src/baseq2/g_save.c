@@ -995,4 +995,3 @@ void ReadLevel(const char *filename)
         }
     }
 }
-

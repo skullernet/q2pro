@@ -34,4 +34,3 @@ void MVD_GameClientNameChanged(edict_t *ent, const char *name);
 void MVD_StreamedStop_f(void);
 void MVD_StreamedRecord_f(void);
 void MVD_File_g(genctx_t *ctx);
-

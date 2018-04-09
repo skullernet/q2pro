@@ -867,4 +867,3 @@ void Netchan_Close(netchan_t *netchan)
 {
     Z_Free(netchan);
 }
-

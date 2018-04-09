@@ -1157,4 +1157,3 @@ void M_Menu_Servers(void)
 
     List_Append(&ui_menus, &m_servers.menu.entry);
 }
-

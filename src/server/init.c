@@ -463,4 +463,3 @@ void SV_InitGame(unsigned mvd_spawn)
 
     svs.initialized = qtrue;
 }
-

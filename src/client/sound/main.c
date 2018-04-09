@@ -1156,5 +1156,3 @@ void S_Update(void)
     DMA_Update();
 #endif
 }
-
-

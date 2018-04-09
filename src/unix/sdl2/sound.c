@@ -156,4 +156,3 @@ void WAVE_FillAPI(snddmaAPI_t *api)
     api->Submit = Submit;
     api->Activate = Activate;
 }
-

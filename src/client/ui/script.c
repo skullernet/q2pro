@@ -768,4 +768,3 @@ void UI_LoadScript(void)
 {
     Parse_File("q2pro.menu", 0);
 }
-

@@ -905,4 +905,3 @@ void CL_ParticleEffect3(vec3_t org, vec3_t dir, int color, int count)
         p->alphavel = -1.0 / (0.5 + frand() * 0.3);
     }
 }
-

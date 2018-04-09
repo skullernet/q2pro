@@ -1925,4 +1925,3 @@ void Cmd_Init(void)
 
     Cmd_Register(c_cmd);
 }
-

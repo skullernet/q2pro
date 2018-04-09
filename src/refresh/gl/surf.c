@@ -961,4 +961,3 @@ void GL_LoadWorld(const char *name)
 
     GL_ShowErrors(__func__);
 }
-

@@ -459,4 +459,3 @@ int main(int argc, char **argv)
     Com_Quit(NULL, ERR_DISCONNECT);
     return EXIT_FAILURE; // never gets here
 }
-

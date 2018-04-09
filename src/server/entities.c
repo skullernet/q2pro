@@ -546,4 +546,3 @@ void SV_BuildClientFrame(client_t *client)
         }
     }
 }
-

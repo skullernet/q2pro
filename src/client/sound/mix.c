@@ -278,4 +278,3 @@ void S_InitScaletable(void)
 
     s_volume->modified = qfalse;
 }
-

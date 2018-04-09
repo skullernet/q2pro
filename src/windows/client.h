@@ -136,4 +136,3 @@ extern LPTOP_LEVEL_EXCEPTION_FILTER prevExceptionFilter;
 
 LONG WINAPI Sys_ExceptionFilter(LPEXCEPTION_POINTERS);
 #endif
-

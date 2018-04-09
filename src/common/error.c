@@ -69,4 +69,3 @@ const char *Q_ErrorString(qerror_t error)
 
     return error_table[e >= num_errors ? 0 : e];
 }
-

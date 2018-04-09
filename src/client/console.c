@@ -1290,5 +1290,3 @@ void Char_Message(int key)
 {
     IF_CharEvent(&con.chatPrompt.inputLine, key);
 }
-
-

@@ -3646,4 +3646,3 @@ void FS_Init(void)
 
     Com_Printf("-----------------------\n");
 }
-

@@ -1793,4 +1793,3 @@ void CL_InitEffects(void)
             avelocities[i][j] = (rand() & 255) * 0.01f;
 
 }
-

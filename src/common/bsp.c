@@ -1315,4 +1315,3 @@ void BSP_Init(void)
 
     List_Init(&bsp_cache);
 }
-

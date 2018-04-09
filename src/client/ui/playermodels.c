@@ -201,4 +201,3 @@ void PlayerModel_Free(void)
 
     uis.numPlayerModels = 0;
 }
-

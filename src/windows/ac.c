@@ -82,4 +82,3 @@ reInit:
 
     return qfalse;
 }
-

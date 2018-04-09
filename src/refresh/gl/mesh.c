@@ -711,4 +711,3 @@ void GL_DrawAliasModel(model_t *model)
         qglFrontFace(GL_CW);
     }
 }
-

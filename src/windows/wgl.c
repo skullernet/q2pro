@@ -131,4 +131,3 @@ unsigned WGL_ParseExtensionString(const char *s)
 
     return Com_ParseExtensionString(s, extnames);
 }
-

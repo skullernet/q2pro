@@ -523,4 +523,3 @@ void G_SetSpectatorStats(edict_t *ent)
     else
         cl->ps.stats[STAT_CHASE] = 0;
 }
-

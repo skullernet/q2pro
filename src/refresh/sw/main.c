@@ -919,4 +919,3 @@ void R_DrawBeam(entity_t *e)
                            e->alpha);
     }
 }
-

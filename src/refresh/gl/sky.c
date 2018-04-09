@@ -412,4 +412,3 @@ void R_SetSky(const char *name, float rotate, vec3_t axis)
         sky_images[i] = image->texnum;
     }
 }
-

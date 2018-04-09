@@ -3411,4 +3411,3 @@ void CL_Shutdown(void)
 
     isdown = qfalse;
 }
-

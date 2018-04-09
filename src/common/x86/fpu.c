@@ -40,4 +40,3 @@ void X86_SetFPCW(void)
 }
 
 #endif
-

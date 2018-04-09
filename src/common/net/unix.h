@@ -364,4 +364,3 @@ static void os_net_init(void)
 static void os_net_shutdown(void)
 {
 }
-

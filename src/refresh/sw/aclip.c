@@ -264,4 +264,3 @@ void R_AliasClipTriangle(finalvert_t *index0, finalvert_t *index1, finalvert_t *
         R_DrawTriangle();
     }
 }
-

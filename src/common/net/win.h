@@ -398,4 +398,3 @@ static void os_net_shutdown(void)
 {
     WSACleanup();
 }
-

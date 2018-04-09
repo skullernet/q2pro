@@ -197,4 +197,3 @@ uint32_t Com_BlockChecksum(void *buffer, size_t len)
 
     return val;
 }
-

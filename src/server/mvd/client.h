@@ -237,4 +237,3 @@ void MVD_FreePlayer(mvd_player_t *player);
 void MVD_UpdateConfigstring(mvd_t *mvd, int index);
 void MVD_SetPlayerNames(mvd_t *mvd);
 void MVD_LinkEdict(mvd_t *mvd, edict_t *ent);
-

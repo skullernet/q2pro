@@ -148,4 +148,3 @@ void R_DrawParticles(void)
         R_DrawParticle();
     }
 }
-

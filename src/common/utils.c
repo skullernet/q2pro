@@ -496,5 +496,3 @@ size_t Com_FormatSizeLong(char *dest, size_t destsize, off_t bytes)
     }
     return Q_scnprintf(dest, destsize, "unknown size");
 }
-
-

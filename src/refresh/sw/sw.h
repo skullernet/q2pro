@@ -544,4 +544,3 @@ void R_ApplySIRDAlgorithum(void);
 void R_IMFlatShadedQuad(vec3_t a, vec3_t b, vec3_t c, vec3_t d, color_t color, float alpha);
 
 void R_InitDraw(void);
-

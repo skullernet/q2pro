@@ -569,4 +569,3 @@ void *VID_GetProcAddr(const char *sym)
 
     return entry;
 }
-

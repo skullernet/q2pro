@@ -1308,4 +1308,3 @@ void CL_InitTEnts(void)
     cl_railspiral_color_changed(cl_railspiral_color);
     cl_railspiral_radius = Cvar_Get("cl_railspiral_radius", "3", 0);
 }
-

@@ -1737,5 +1737,3 @@ void AC_Register(void)
 
     Cmd_Register(c_ac);
 }
-
-

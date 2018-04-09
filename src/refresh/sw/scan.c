@@ -397,4 +397,3 @@ void D_DrawZSpans(espan_t *pspan)
 
     } while ((pspan = pspan->pnext) != NULL);
 }
-

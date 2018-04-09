@@ -107,5 +107,3 @@ qboolean FIFO_ReadMessage(fifo_t *fifo, size_t msglen)
     msg_read.cursize = msglen;
     return qtrue;
 }
-
-

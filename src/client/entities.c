@@ -1304,4 +1304,3 @@ void CL_GetEntitySoundOrigin(int entnum, vec3_t org)
         }
     }
 }
-

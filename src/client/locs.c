@@ -387,4 +387,3 @@ void LOC_Init(void)
     Cmd_AddCommand("loc_update", LOC_Update_f);
     Cmd_AddCommand("loc_write", LOC_Write_f);
 }
-

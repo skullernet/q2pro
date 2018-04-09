@@ -967,4 +967,3 @@ void HTTP_RunDownloads(void)
 
     start_next_download();
 }
-

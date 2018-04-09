@@ -1998,4 +1998,3 @@ void NET_Shutdown(void)
     Cmd_RemoveCommand("showip");
     Cmd_RemoveCommand("dns");
 }
-

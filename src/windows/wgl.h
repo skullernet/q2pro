@@ -50,4 +50,3 @@ extern const char * (WINAPI * qwglGetExtensionsStringARB)(HDC hdc);
 extern BOOL (WINAPI * qwglChoosePixelFormatARB)(HDC, const int *, const FLOAT *, UINT, int *, UINT *);
 
 extern BOOL (WINAPI * qwglSwapIntervalEXT)(int interval);
-

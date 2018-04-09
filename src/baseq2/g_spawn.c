@@ -1019,4 +1019,3 @@ void SP_worldspawn(edict_t *ent)
     // 63 testing
     gi.configstring(CS_LIGHTS + 63, "a");
 }
-

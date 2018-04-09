@@ -577,4 +577,3 @@ void GL_DrawWorld(void)
 
     R_DrawSkyBox();
 }
-

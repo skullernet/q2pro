@@ -305,4 +305,3 @@ QGL_EXT_compiled_vertex_array_IMP
 extern qglGenerateMipmap_t qglGenerateMipmap;
 
 #endif  // QGL_H
-

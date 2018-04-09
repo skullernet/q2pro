@@ -1787,4 +1787,3 @@ void SP_misc_teleporter_dest(edict_t *ent)
     VectorSet(ent->maxs, 32, 32, -16);
     gi.linkentity(ent);
 }
-

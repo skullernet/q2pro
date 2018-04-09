@@ -168,4 +168,3 @@ void VID_EndFrame(void)
 {
     BitBlt(win.dc, 0, 0, win.rc.width, win.rc.height, sww.dibdc, 0, 0, SRCCOPY);
 }
-

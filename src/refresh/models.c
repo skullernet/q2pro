@@ -405,4 +405,3 @@ void MOD_Shutdown(void)
     MOD_FreeAll();
     Cmd_RemoveCommand("modellist");
 }
-

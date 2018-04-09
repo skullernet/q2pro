@@ -540,4 +540,3 @@ void TST_Init(void)
     Cmd_AddCommand("modeltest", Com_TestModels_f);
 #endif
 }
-

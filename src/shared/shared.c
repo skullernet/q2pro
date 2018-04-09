@@ -1168,4 +1168,3 @@ void Info_Print(const char *infostring)
         Com_Printf("%-20s %s\n", key, value);
     }
 }
-

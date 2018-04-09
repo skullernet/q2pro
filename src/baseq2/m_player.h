@@ -219,4 +219,3 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define FRAME_death308          197
 
 #define MODEL_SCALE     1.000000
-

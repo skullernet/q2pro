@@ -32,4 +32,3 @@ typedef struct {
 } glwstate_t;
 
 extern glwstate_t glw;
-

@@ -530,6 +530,3 @@ void V_Shutdown(void)
 {
     Cmd_Deregister(v_cmds);
 }
-
-
-

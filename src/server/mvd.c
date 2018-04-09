@@ -2388,4 +2388,3 @@ void SV_MvdRegister(void)
 
     Cmd_Register(c_svmvd);
 }
-

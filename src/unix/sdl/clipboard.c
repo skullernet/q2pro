@@ -99,4 +99,3 @@ VID_SetClipboardData
 void VID_SetClipboardData(const char *data)
 {
 }
-

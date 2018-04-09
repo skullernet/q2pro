@@ -1170,4 +1170,3 @@ void Cvar_Init(void)
 {
     Cmd_Register(c_cvar);
 }
-

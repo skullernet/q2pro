@@ -141,5 +141,3 @@ qboolean Lirc_Init(void)
 
     return qtrue;
 }
-
-

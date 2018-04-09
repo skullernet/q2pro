@@ -328,4 +328,3 @@ void R_SetupFrame(void)
     for (i = 0; i < (NUM_MIPS - 1); i++)
         d_scalemip[i] = basemip[i] * sw_mipscale->value;
 }
-

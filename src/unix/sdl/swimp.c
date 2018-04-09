@@ -61,5 +61,3 @@ void VID_EndFrame(void)
     SDL_UnlockSurface(sdl.surface);
     SDL_Flip(sdl.surface);
 }
-
-

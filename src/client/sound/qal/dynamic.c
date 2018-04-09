@@ -138,4 +138,3 @@ fail:
     QAL_Shutdown();
     return qfalse;
 }
-

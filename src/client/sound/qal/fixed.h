@@ -103,4 +103,3 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 qboolean QAL_Init(void);
 void QAL_Shutdown(void);
-

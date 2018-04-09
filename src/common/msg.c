@@ -2562,4 +2562,3 @@ const char *MSG_ServerCommandString(int cmd)
 #endif // USE_CLIENT || USE_MVD_CLIENT
 
 #endif // _DEBUG
-

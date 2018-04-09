@@ -581,4 +581,3 @@ void R_RenderBmodelFace(bedge_t *pedges, mface_t *psurf)
 
     surface_p++;
 }
-

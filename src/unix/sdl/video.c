@@ -584,4 +584,3 @@ void VID_FillInputAPI(inputAPI_t *api)
     api->GetEvents = NULL;
     api->GetMotion = GetMouseMotion;
 }
-

@@ -716,4 +716,3 @@ exit:
     if ((currententity->flags & (RF_WEAPONMODEL | RF_LEFTHAND)) == (RF_WEAPONMODEL | RF_LEFTHAND))
         r_refdef.xscale = -r_refdef.xscale;
 }
-

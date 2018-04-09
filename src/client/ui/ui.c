@@ -683,5 +683,3 @@ void UI_Shutdown(void)
 
     Z_LeakTest(TAG_UI);
 }
-
-

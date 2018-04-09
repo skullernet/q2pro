@@ -960,4 +960,3 @@ void GL_ShutdownImages(void)
 
     Scrap_Shutdown();
 }
-

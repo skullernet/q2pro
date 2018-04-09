@@ -728,5 +728,3 @@ static void R_PolysetSetEdgeTable(void)
 
     pedgetable = &edgetables[edgetableindex];
 }
-
-

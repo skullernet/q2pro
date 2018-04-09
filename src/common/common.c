@@ -1156,4 +1156,3 @@ void Qcommon_Frame(void)
     }
 #endif
 }
-

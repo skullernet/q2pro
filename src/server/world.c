@@ -579,4 +579,3 @@ trace_t q_gameabi SV_Trace(vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end,
     SV_ClipMoveToEntities(start, mins, maxs, end, passedict, contentmask, &trace);
     return trace;
 }
-

@@ -181,4 +181,3 @@ void R_ShutdownImages(void)
 {
     IMG_FreeAll();
 }
-

@@ -388,4 +388,3 @@ void AL_Update(void)
 
     AL_IssuePlaysounds();
 }
-

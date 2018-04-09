@@ -449,4 +449,3 @@ void MOD_Reference(model_t *model)
 
     model->registration_sequence = registration_sequence;
 }
-
