@@ -71,7 +71,7 @@ begin video
         linear GL_LINEAR \
         bilinear GL_LINEAR_MIPMAP_NEAREST \
         trilinear GL_LINEAR_MIPMAP_LINEAR
-    pairs "anisotropic filter" gl_anisotropy no 0 2x 2 4x 4 8x 8 16x 16
+    pairs "anisotropic filter" gl_anisotropy no 1 2x 2 4x 4 8x 8 16x 16
     range "texture saturation" gl_saturation 0 1
     pairs "texture intensity" intensity 1x 1 2x 2 3x 3
     range "lightmap saturation" gl_coloredlightmaps 0 1

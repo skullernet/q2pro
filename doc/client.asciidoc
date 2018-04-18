@@ -612,7 +612,7 @@ gl_invert::
 
 gl_anisotropy::
     When set to 2 and higher, enables anisotropic filtering of world textures,
-    if supported by your OpenGL implementation. Default value is 0 (anisotropic
+    if supported by your OpenGL implementation. Default value is 1 (anisotropic
     filtering disabled).
 
 gl_brightness::
