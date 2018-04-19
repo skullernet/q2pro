@@ -1566,10 +1566,6 @@ if necessary
 static void SV_CheckTimeouts(void)
 {
     client_t    *client;
-    unsigned    zombie_time = 1000 * sv_zombietime->value;
-    unsigned    drop_time   = 1000 * sv_timeout->value;
-    unsigned    ghost_time  = 1000 * sv_ghostime->value;
-    unsigned    idle_time   = 1000 * sv_idlekick->value;
     unsigned    delta;
 
     FOR_EACH_CLIENT(client) {
@@ -1580,7 +1576,7 @@ static void SV_CheckTimeouts(void)
         // NOTE: delta calculated this way is not sensitive to overflow
         delta = svs.realtime - client->lastmessage;
         if (client->state == cs_zombie) {
-            if (delta > zombie_time) {
+            if (delta > sv_zombietime->integer) {
                 SV_RemoveClient(client);
             }
             continue;
@@ -1591,14 +1587,14 @@ static void SV_CheckTimeouts(void)
         }
 #if USE_ICMP
         if (client->unreachable) {
-            if (delta > ghost_time) {
+            if (delta > sv_ghostime->integer) {
                 SV_DropClient(client, "connection reset by peer");
                 SV_RemoveClient(client);      // don't bother with zombie state
                 continue;
             }
         }
 #endif
-        if (delta > drop_time || (client->state == cs_assigned && delta > ghost_time)) {
+        if (delta > sv_timeout->integer || (client->state == cs_assigned && delta > sv_ghostime->integer)) {
             SV_DropClient(client, "?timed out");
             SV_RemoveClient(client);      // don't bother with zombie state
             continue;
@@ -1609,8 +1605,7 @@ static void SV_CheckTimeouts(void)
             continue;
         }
 
-        delta = svs.realtime - client->lastactivity;
-        if (idle_time && delta > idle_time) {
+        if (sv_idlekick->integer && svs.realtime - client->lastactivity > sv_idlekick->integer) {
             SV_DropClient(client, "idling");
             continue;
         }
@@ -2010,6 +2005,16 @@ static void init_rate_limits(void)
     SV_RateInit(&svs.ratelimit_rcon, sv_rcon_limit->string);
 }
 
+void sv_sec_timeout_changed(cvar_t *self)
+{
+    self->integer = 1000 * Cvar_ClampValue(self, 0, 24 * 24 * 60 * 60);
+}
+
+void sv_min_timeout_changed(cvar_t *self)
+{
+    self->integer = 1000 * 60 * Cvar_ClampValue(self, 0, 24 * 24 * 60);
+}
+
 static void sv_namechange_limit_changed(cvar_t *self)
 {
     client_t *client;
@@ -2076,9 +2081,17 @@ void SV_Init(void)
     sv_hostname->changed = sv_hostname_changed;
 #endif
     sv_timeout = Cvar_Get("timeout", "90", 0);
+    sv_timeout->changed = sv_sec_timeout_changed;
+    sv_timeout->changed(sv_timeout);
     sv_zombietime = Cvar_Get("zombietime", "2", 0);
+    sv_zombietime->changed = sv_sec_timeout_changed;
+    sv_zombietime->changed(sv_zombietime);
     sv_ghostime = Cvar_Get("sv_ghostime", "6", 0);
+    sv_ghostime->changed = sv_sec_timeout_changed;
+    sv_ghostime->changed(sv_ghostime);
     sv_idlekick = Cvar_Get("sv_idlekick", "0", 0);
+    sv_idlekick->changed = sv_sec_timeout_changed;
+    sv_idlekick->changed(sv_idlekick);
     sv_enforcetime = Cvar_Get("sv_enforcetime", "1", 0);
     sv_allow_nodelta = Cvar_Get("sv_allow_nodelta", "1", 0);
 #if USE_FPS
