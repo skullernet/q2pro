@@ -561,6 +561,7 @@ void CL_CheckForPause(void);
 void CL_UpdateFrameTimes(void);
 qboolean CL_CheckForIgnore(const char *s);
 
+void cl_timeout_changed(cvar_t *self);
 
 //
 // precache.c
