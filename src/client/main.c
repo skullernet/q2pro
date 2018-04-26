@@ -1579,10 +1579,6 @@ static void CL_PacketEvent(void)
     if (!cls.netchan)
         return;     // might have disconnected
 
-#ifdef _DEBUG
-    CL_AddNetgraph();
-#endif
-
     SCR_LagSample();
 }
 
