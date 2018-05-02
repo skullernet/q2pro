@@ -27,11 +27,6 @@
 # option has no effect if CONFIG_NO_SOFTWARE_SOUND is set.
 #CONFIG_DIRECT_SOUND=y
 
-# Enable direct mouse driver (DirectInput on Windows, evdev kernel interface on
-# Linux). NOTE: you don't normally need this on Windows (raw input is preferred
-# and enabled by default). This option has no effect if CONFIG_SDL2 is set.
-#CONFIG_DIRECT_INPUT=y
-
 # Enable reading input events from LIRC by linking against liblirc_client.
 # This option has no effect on Windows.
 #CONFIG_LIRC=y

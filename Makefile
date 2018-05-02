@@ -81,7 +81,6 @@ else
 
     # Disable Linux features on other systems
     ifneq ($(SYS),Linux)
-        CONFIG_DIRECT_INPUT :=
         CONFIG_NO_ICMP := y
     endif
 
@@ -439,11 +438,6 @@ endif
 
 ifdef CONFIG_WINDOWS
     OBJS_c += src/windows/client.o
-
-    ifdef CONFIG_DIRECT_INPUT
-        CFLAGS_c += -DUSE_DINPUT=1
-        OBJS_c += src/windows/dinput.o
-    endif
 
     ifndef CONFIG_NO_SOFTWARE_SOUND
         OBJS_c += src/windows/wave.o
