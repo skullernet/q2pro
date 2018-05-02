@@ -27,10 +27,6 @@
 # option has no effect if CONFIG_NO_SOFTWARE_SOUND is set.
 #CONFIG_DIRECT_SOUND=y
 
-# Enable reading input events from LIRC by linking against liblirc_client.
-# This option has no effect on Windows.
-#CONFIG_LIRC=y
-
 # Build software renderer instead of OpenGL renderer.
 #CONFIG_SOFTWARE_RENDERER=y
 

@@ -483,14 +483,6 @@ else
     LIBS_c += $(SDL_LIBS)
     OBJS_c += src/unix/video.o
 
-    ifdef CONFIG_LIRC
-        LIRC_CFLAGS ?=
-        LIRC_LIBS ?= -llirc_client
-        CFLAGS_c += -DUSE_LIRC=1 $(LIRC_CFLAGS)
-        OBJS_c += src/unix/lirc.o
-        LIBS_c += $(LIRC_LIBS)
-    endif
-
     ifndef CONFIG_NO_SOFTWARE_SOUND
         OBJS_c += src/unix/sound.o
         ifdef CONFIG_DIRECT_SOUND
