@@ -7,7 +7,7 @@ of GCC or Clang.
 Cross-compiling Q2PRO for Windows is also possible, see the MinGW-w64 section
 below.
 
-Q2PRO client requires libSDL 1 or 2 for video and sound output. Both client and
+Q2PRO client requires libSDL 2 for video and sound output. Both client and
 dedicated server require zlib support for full compatibility at network
 protocol level. The rest of dependencies are optional.
 
@@ -63,15 +63,6 @@ Then change directory to `~/.q2pro` and run `./q2pro` from there.
 
 Alternatively, you can do a system-wide installation (see documentation for
 `CONFIG_PATH_*` variables in `doc/examples/buildconfig`).
-
-
-Mouse input
------------
-
-SDL 1 way of handling mouse input in X11 environment doesn't work very well.
-Build either with SDL 2 support by defining `CONFIG_SDL2` option in `.config`,
-or enable evdev interface for reading mouse input directly from the kernel with
-`CONFIG_DIRECT_INPUT`.
 
 
 MinGW-w64

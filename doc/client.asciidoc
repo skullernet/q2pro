@@ -67,8 +67,6 @@ cl_async::
     the table below.
         - 0 — run synchronous, like original Quake 2 does
         - 1 — run asynchronous
-        - 2 — run asynchronous, limit rendering frame rate to monitor's vertical
-        retrace frequency (supported only when using SDL 1 with X11/GLX)
 
 .Rate limits depending on ‘cl_async’ value
 [options="header"]
@@ -76,7 +74,6 @@ cl_async::
 | Value of ‘cl_async’ | Rendering          | Physics   | Main loop
 | 0                   | cl_maxfps          | cl_maxfps | cl_maxfps
 | 1                   | r_maxfps           | cl_maxfps | _unlimited_
-| 2                   | _vertical refresh_ | cl_maxfps | _unlimited_
 |===================================================================
 
 r_maxfps::
@@ -689,12 +686,6 @@ gl_vertex_buffer_object::
     OpenGL implementation. This extension allows world surfaces to be stored in
     static memory area, which speeds up rendering. Default value is 1
     (enabled).
-
-gl_video_sync::
-    Enables ‘GLX_SGI_video_sync’ extension when using SDL 1 with X11/GLX. This
-    extension allows synchronizing rendering framerate to monitor vertical
-    retrace frequency. Default value is 1 (enabled). See also ‘cl_async’
-    variable.
 
 gl_colorbits::
     Specifies desired size of color buffer, in bits, requested from OpenGL
