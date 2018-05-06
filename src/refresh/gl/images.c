@@ -46,6 +46,8 @@ static cvar_t *gl_saturation;
 static cvar_t *gl_intensity;
 static cvar_t *gl_gamma;
 static cvar_t *gl_invert;
+// [slipyx] particle shape
+static cvar_t *gl_partshape;
 
 static int GL_UpscaleLevel(int width, int height, imagetype_t type, imageflags_t flags);
 static void GL_Upload32(byte *data, int width, int height, int baselevel, imagetype_t type, imageflags_t flags);
@@ -597,16 +599,12 @@ static void GL_SetFilterAndRepeat(imagetype_t type, imageflags_t flags)
     if (type == IT_WALL || type == IT_SKIN || (flags & IF_REPEAT)) {
         qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-#ifdef GL_CLAMP_TO_EDGE
     } else if (AT_LEAST_OPENGL(1, 2) || AT_LEAST_OPENGL_ES(1, 0)) {
         qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-#endif
-#ifdef GL_CLAMP
     } else {
         qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
         qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-#endif
     }
 }
 
@@ -786,8 +784,29 @@ static void GL_InitParticleTexture(void)
     byte *dst;
     float x, y, f;
     int i, j;
+    int shape;
 
+    // [slipyx] particle shape
+    shape = gl_partshape->value;
+
+    memset(pixels, 0, sizeof(pixels));
     dst = pixels;
+
+    if (shape == 1) // square
+        for (j = 0; j < 16; ++j) {
+            for (i = 0; i < 16; ++i) {
+                // 0 - 13
+                if (j >= 3 && j <= 12 && i >= 3 && i <= 12) {
+                    dst[0] = 255;
+                    dst[1] = 255;
+                    dst[2] = 255;
+                    dst[3] = 255 * 0.6f;
+                }
+                dst += 4;
+            }
+        }
+    else // default circle
+
     for (i = 0; i < 16; i++) {
         for (j = 0; j < 16; j++) {
             x = j - 16 / 2 + 0.5f;
@@ -803,8 +822,9 @@ static void GL_InitParticleTexture(void)
     }
 
     GL_ForceTexture(0, TEXNUM_PARTICLE);
-    GL_Upload32(pixels, 16, 16, 0, IT_SPRITE, IF_NONE);
-    GL_SetFilterAndRepeat(IT_SPRITE, IF_NONE);
+    // [slipyx] disable linear filtering if shape is square
+    GL_Upload32(pixels, 16, 16, 0, IT_SPRITE, (shape == 1) ? IF_NEAREST : IF_NONE);
+    GL_SetFilterAndRepeat(IT_SPRITE, (shape == 1) ? IF_NEAREST : IF_NONE);
 }
 
 static void GL_InitWhiteImage(void)
@@ -876,6 +896,9 @@ void GL_InitImages(void)
     gl_intensity = Cvar_Get("intensity", "1", CVAR_FILES);
     gl_invert = Cvar_Get("gl_invert", "0", CVAR_FILES);
     gl_gamma = Cvar_Get("vid_gamma", "1", CVAR_ARCHIVE);
+    // [slipyx] particle shape. 0 = default circle. 1 = square
+    gl_partshape = Cvar_Get("gl_partshape", "0", 0);
+    gl_partshape->changed = (xchanged_t)GL_InitParticleTexture;
 
     if (r_config.flags & QVF_GAMMARAMP) {
         gl_gamma->changed = gl_gamma_changed;
@@ -945,6 +968,7 @@ void GL_ShutdownImages(void)
     gl_texturemode->generator = NULL;
     gl_anisotropy->changed = NULL;
     gl_gamma->changed = NULL;
+    gl_partshape->changed = NULL;
 
     // delete auto textures
     qglDeleteTextures(NUM_TEXNUMS, gl_static.texnums);
