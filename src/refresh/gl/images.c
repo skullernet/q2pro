@@ -599,12 +599,16 @@ static void GL_SetFilterAndRepeat(imagetype_t type, imageflags_t flags)
     if (type == IT_WALL || type == IT_SKIN || (flags & IF_REPEAT)) {
         qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+#ifdef GL_CLAMP_TO_EDGE
     } else if (AT_LEAST_OPENGL(1, 2) || AT_LEAST_OPENGL_ES(1, 0)) {
         qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+#endif
+#ifdef GL_CLAMP
     } else {
         qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
         qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+#endif
     }
 }
 
@@ -827,6 +831,15 @@ static void GL_InitParticleTexture(void)
     GL_SetFilterAndRepeat(IT_SPRITE, (shape == 1) ? IF_NEAREST : IF_NONE);
 }
 
+// [slipyx] particle shape changed
+static void gl_partshape_changed(cvar_t *self)
+{
+    // delete, regen, and init new texture
+    qglDeleteTextures(1, &TEXNUM_PARTICLE);
+    qglGenTextures(1, &TEXNUM_PARTICLE);
+    GL_InitParticleTexture();
+}
+
 static void GL_InitWhiteImage(void)
 {
     uint32_t pixel;
@@ -898,7 +911,7 @@ void GL_InitImages(void)
     gl_gamma = Cvar_Get("vid_gamma", "1", CVAR_ARCHIVE);
     // [slipyx] particle shape. 0 = default circle. 1 = square
     gl_partshape = Cvar_Get("gl_partshape", "0", 0);
-    gl_partshape->changed = (xchanged_t)GL_InitParticleTexture;
+    gl_partshape->changed = gl_partshape_changed;
 
     if (r_config.flags & QVF_GAMMARAMP) {
         gl_gamma->changed = gl_gamma_changed;

@@ -50,6 +50,9 @@ qhandle_t   cl_mod_lightning;
 qhandle_t   cl_mod_heatbeam;
 qhandle_t   cl_mod_explo4_big;
 
+// [slipyx] use of explosion sprite cvar
+static cvar_t* cl_explosion_sprite;
+
 /*
 =================
 CL_RegisterTEntSounds
@@ -97,7 +100,10 @@ void CL_RegisterTEntModels(void)
     cl_mod_flash = R_RegisterModel("models/objects/flash/tris.md2");
     cl_mod_parasite_segment = R_RegisterModel("models/monsters/parasite/segment/tris.md2");
     cl_mod_grapple_cable = R_RegisterModel("models/ctf/segment/tris.md2");
-    cl_mod_explo4 = R_RegisterModel("models/objects/r_explode/tris.md2");
+    if ( cl_explosion_sprite->value )
+        cl_mod_explo4 = R_RegisterModel("sprites/s_explo3.sp2");
+    else
+        cl_mod_explo4 = R_RegisterModel("models/objects/r_explode/tris.md2");
     cl_mod_bfg_explo = R_RegisterModel("sprites/s_bfg2.sp2");
     cl_mod_powerscreen = R_RegisterModel("models/items/armor/effect/tris.md2");
     cl_mod_laser = R_RegisterModel("models/objects/laser/tris.md2");
@@ -177,7 +183,11 @@ static explosion_t *CL_PlainExplosion(void)
 
     ex = CL_AllocExplosion();
     VectorCopy(te.pos1, ex->ent.origin);
-    ex->type = ex_poly;
+    // [slipyx] use type poly2 for sprite based explosions
+    if ( cl_explosion_sprite->value )
+        ex->type = ex_poly2;
+    else
+        ex->type = ex_poly;
     ex->ent.flags = RF_FULLBRIGHT;
     ex->start = cl.servertime - CL_FRAMETIME;
     ex->light = 350;
@@ -1309,4 +1319,6 @@ void CL_InitTEnts(void)
     cl_railspiral_color->generator = Com_Color_g;
     cl_railspiral_color_changed(cl_railspiral_color);
     cl_railspiral_radius = Cvar_Get("cl_railspiral_radius", "3", 0);
+    // [slipyx] whether or not to use sprite for explosions
+    cl_explosion_sprite = Cvar_Get("cl_explosion_sprite", "0", 0);
 }
