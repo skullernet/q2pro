@@ -33,19 +33,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define R_Malloc(size)      Z_TagMalloc(size, TAG_RENDERER)
 #define R_Mallocz(size)     Z_TagMallocz(size, TAG_RENDERER)
 
-#if USE_REF == REF_GL
 #define IMG_AllocPixels(x)  FS_AllocTempMem(x)
 #define IMG_FreePixels(x)   FS_FreeTempMem(x)
-#else
-#define IMG_AllocPixels(x)  R_Malloc(x)
-#define IMG_FreePixels(x)   Z_Free(x)
-#endif
-
-#if USE_REF == REF_SOFT
-#define MIPSIZE(c) ((c) * (256 + 64 + 16 + 4) / 256)
-#else
-#define MIPSIZE(c) (c)
-#endif
 
 #define LUMINANCE(r, g, b) ((r) * 0.2126f + (g) * 0.7152f + (b) * 0.0722f)
 
@@ -79,12 +68,8 @@ typedef struct image_s {
     int             width, height; // source image
     int             upload_width, upload_height; // after power of two and picmip
     int             registration_sequence; // 0 = free
-#if USE_REF == REF_GL
     unsigned        texnum; // gl texture binding
     float           sl, sh, tl, th;
-#else
-    byte            *pixels[4]; // mip levels
-#endif
 } image_t;
 
 #define MAX_RIMAGES     1024

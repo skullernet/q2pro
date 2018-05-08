@@ -46,9 +46,6 @@ typedef struct mtexinfo_s {  // used internally due to name len probs //ZOID
     struct image_s      *image; // used for texturing
     int                 numframes;
     struct mtexinfo_s   *next; // used for animation
-#if USE_REF == REF_SOFT
-    vec_t               mipadjust;
-#endif
 #endif
 } mtexinfo_t;
 
@@ -59,9 +56,6 @@ typedef struct {
 
 typedef struct {
     mvertex_t   *v[2];
-#if USE_REF == REF_SOFT
-    uintptr_t   cachededgeoffset;
-#endif
 } medge_t;
 
 typedef struct {
@@ -94,14 +88,12 @@ typedef struct mface_s {
     int             texturemins[2];
     int             extents[2];
 
-#if USE_REF == REF_GL
+#if USE_REF
     int             texnum[2];
     int             statebits;
     int             firstvert;
     int             light_s, light_t;
     float           stylecache[MAX_LIGHTMAPS];
-#else
-    struct surfcache_s    *cachespots[MIPLEVELS]; // surface generation data
 #endif
 
     int             drawframe;
@@ -171,9 +163,6 @@ typedef struct {
 #if USE_REF
     mface_t         **firstleafface;
     int             numleaffaces;
-#if USE_REF == REF_SOFT
-    unsigned        key;
-#endif
 #endif
 } mleaf_t;
 
@@ -204,9 +193,7 @@ typedef struct mmodel_s {
     int             numfaces;
     mface_t         *firstface;
 
-#if USE_REF == REF_GL
     int             drawframe;
-#endif
 #endif
 } mmodel_t;
 

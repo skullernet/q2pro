@@ -46,8 +46,6 @@ OPENGL STUFF
 ===============================================================================
 */
 
-#if USE_REF == REF_GL
-
 static SDL_GLContext    *sdl_context;
 
 static void gl_swapinterval_changed(cvar_t *self)
@@ -161,8 +159,6 @@ void *VID_GetProcAddr(const char *sym)
     return entry;
 }
 
-#endif
-
 /*
 ===============================================================================
 
@@ -174,9 +170,6 @@ VIDEO
 static void VID_SDL_ModeChanged(void)
 {
     int width, height;
-    void *pixels;
-    int rowbytes;
-
     SDL_GetWindowSize(sdl_window, &width, &height);
 
     Uint32 flags = SDL_GetWindowFlags(sdl_window);
@@ -185,18 +178,7 @@ static void VID_SDL_ModeChanged(void)
     else
         sdl_flags &= ~QVF_FULLSCREEN;
 
-#if USE_REF == REF_SOFT
-    SDL_Surface *surf = SDL_GetWindowSurface(sdl_window);
-    if (!surf)
-        Com_Error(ERR_FATAL, "Couldn't (re)create window surface: %s", SDL_GetError());
-    pixels = surf->pixels;
-    rowbytes = surf->pitch;
-#else
-    pixels = NULL;
-    rowbytes = 0;
-#endif
-
-    R_ModeChanged(width, height, sdl_flags, rowbytes, pixels);
+    R_ModeChanged(width, height, sdl_flags);
     SCR_ModeChanged();
 }
 
@@ -255,11 +237,7 @@ void VID_BeginFrame(void)
 
 void VID_EndFrame(void)
 {
-#if USE_REF == REF_GL
     SDL_GL_SwapWindow(sdl_window);
-#else
-    SDL_UpdateWindowSurface(sdl_window);
-#endif
 }
 
 void VID_FatalShutdown(void)
@@ -359,21 +337,17 @@ char *VID_GetDefaultModeList(void)
 
 qboolean VID_Init(void)
 {
-    Uint32 flags = SDL_WINDOW_RESIZABLE;
     vrect_t rc;
 
     if (VID_SDL_InitSubSystem()) {
         return qfalse;
     }
 
-#if USE_REF == REF_GL
     if (!VID_SDL_GL_LoadLibrary()) {
         goto fail;
     }
 
     VID_SDL_GL_SetAttributes();
-    flags |= SDL_WINDOW_OPENGL;
-#endif
 
     SDL_SetEventFilter(VID_SDL_EventFilter, NULL);
 
@@ -382,7 +356,7 @@ qboolean VID_Init(void)
         rc.y = SDL_WINDOWPOS_UNDEFINED;
     }
 
-    sdl_window = SDL_CreateWindow(PRODUCT, rc.x, rc.y, rc.width, rc.height, flags);
+    sdl_window = SDL_CreateWindow(PRODUCT, rc.x, rc.y, rc.width, rc.height, SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
     if (!sdl_window) {
         Com_EPrintf("Couldn't create SDL window: %s\n", SDL_GetError());
         goto fail;
@@ -405,7 +379,6 @@ qboolean VID_Init(void)
 
     VID_SDL_SetMode();
 
-#if USE_REF == REF_GL
     sdl_context = SDL_GL_CreateContext(sdl_window);
     if (!sdl_context) {
         Com_EPrintf("Couldn't create OpenGL context: %s\n", SDL_GetError());
@@ -415,7 +388,6 @@ qboolean VID_Init(void)
     cvar_t *gl_swapinterval = Cvar_Get("gl_swapinterval", "0", 0);
     gl_swapinterval->changed = gl_swapinterval_changed;
     gl_swapinterval_changed(gl_swapinterval);
-#endif
 
     cvar_t *vid_hwgamma = Cvar_Get("vid_hwgamma", "0", CVAR_REFRESH);
     if (vid_hwgamma->integer) {
@@ -441,12 +413,10 @@ fail:
 
 void VID_Shutdown(void)
 {
-#if USE_REF == REF_GL
     if (sdl_context) {
         SDL_GL_DeleteContext(sdl_context);
         sdl_context = NULL;
     }
-#endif
     if (sdl_window) {
         SDL_DestroyWindow(sdl_window);
         sdl_window = NULL;

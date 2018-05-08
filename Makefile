@@ -311,28 +311,8 @@ ifndef CONFIG_NO_MAPCHECKSUM
     CFLAGS_c += -DUSE_MAPCHECKSUM=1
 endif
 
-ifdef CONFIG_SOFTWARE_RENDERER
-    CFLAGS_c += -DREF_SOFT=1 -DUSE_REF=1 -DVID_REF='"soft"'
-    OBJS_c += src/refresh/sw/aclip.o
-    OBJS_c += src/refresh/sw/alias.o
-    OBJS_c += src/refresh/sw/bsp.o
-    OBJS_c += src/refresh/sw/draw.o
-    OBJS_c += src/refresh/sw/edge.o
-    OBJS_c += src/refresh/sw/image.o
-    OBJS_c += src/refresh/sw/light.o
-    OBJS_c += src/refresh/sw/main.o
-    OBJS_c += src/refresh/sw/misc.o
-    OBJS_c += src/refresh/sw/model.o
-    OBJS_c += src/refresh/sw/part.o
-    OBJS_c += src/refresh/sw/poly.o
-    OBJS_c += src/refresh/sw/polyset.o
-    OBJS_c += src/refresh/sw/raster.o
-    OBJS_c += src/refresh/sw/scan.o
-    OBJS_c += src/refresh/sw/surf.o
-    OBJS_c += src/refresh/sw/sird.o
-    OBJS_c += src/refresh/sw/sky.o
-else
-    CFLAGS_c += -DREF_GL=1 -DUSE_REF=1 -DVID_REF='"gl"'
+ifndef CONFIG_NO_REFRESH
+    CFLAGS_c += -DUSE_REF=1 -DVID_REF='"gl"'
     OBJS_c += src/refresh/gl/draw.o
     OBJS_c += src/refresh/gl/hq2x.o
     OBJS_c += src/refresh/gl/images.o
@@ -360,10 +340,8 @@ CONFIG_DEFAULT_GEOMETRY ?= 640x480
 CFLAGS_c += -DVID_MODELIST='"$(CONFIG_DEFAULT_MODELIST)"'
 CFLAGS_c += -DVID_GEOMETRY='"$(CONFIG_DEFAULT_GEOMETRY)"'
 
-ifndef CONFIG_SOFTWARE_RENDERER
-    ifndef CONFIG_NO_MD3
-        CFLAGS_c += -DUSE_MD3=1
-    endif
+ifndef CONFIG_NO_MD3
+    CFLAGS_c += -DUSE_MD3=1
 endif
 
 ifndef CONFIG_NO_TGA
@@ -447,12 +425,8 @@ ifdef CONFIG_WINDOWS
         endif
     endif
 
-    ifdef CONFIG_SOFTWARE_RENDERER
-        OBJS_c += src/windows/swimp.o
-    else
-        OBJS_c += src/windows/glimp.o
-        OBJS_c += src/windows/wgl.o
-    endif
+    OBJS_c += src/windows/glimp.o
+    OBJS_c += src/windows/wgl.o
 
     ifdef CONFIG_WINDOWS_CRASH_DUMPS
         CFLAGS_c += -DUSE_DBGHELP=1

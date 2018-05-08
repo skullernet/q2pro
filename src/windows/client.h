@@ -85,8 +85,6 @@ typedef struct {
     HHOOK   kbdHook;
 
     vidFlags_t flags;
-    byte    *buffer;
-    int     pitch;
 
     SHORT   gamma_cust[3][256];
     SHORT   gamma_orig[3][256];

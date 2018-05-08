@@ -52,20 +52,8 @@ typedef struct model_s {
     // alias models
     int numframes;
     struct maliasframe_s *frames;
-#if USE_REF == REF_GL
     int nummeshes;
     struct maliasmesh_s *meshes;
-#else
-    int numskins;
-    struct image_s *skins[MAX_ALIAS_SKINS];
-    int numtris;
-    struct maliastri_s *tris;
-    int numsts;
-    struct maliasst_s *sts;
-    int numverts;
-    int skinwidth;
-    int skinheight;
-#endif
 
     // sprite models
     struct mspriteframe_s *spriteframes;
