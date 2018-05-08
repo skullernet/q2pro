@@ -26,9 +26,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client/video.h"
 #include "client/client.h"
 #include "refresh/refresh.h"
-#include "refresh/images.h"
-#include "refresh/models.h"
 #include "system/hunk.h"
+#include "images.h"
 
 #if USE_FIXED_LIBGL
 #include "qgl/fixed.h"
@@ -130,6 +129,8 @@ extern glRefdef_t glr;
 
 extern entity_t gl_world;
 
+extern int registration_sequence;
+
 typedef struct {
     int nodesVisible;
     int nodesDrawn;
@@ -208,10 +209,14 @@ void GL_RotateForEntity(vec3_t origin);
 void GL_ClearErrors(void);
 qboolean GL_ShowErrors(const char *func);
 
+
 /*
  * gl_model.c
  *
  */
+
+#define MAX_ALIAS_SKINS     32
+#define MAX_ALIAS_VERTS     4096
 
 typedef struct maliastc_s {
     float   st[2];
@@ -240,9 +245,45 @@ typedef struct maliasmesh_s {
     int             numskins;
 } maliasmesh_t;
 
+typedef struct mspriteframe_s {
+    int             width, height;
+    int             origin_x, origin_y;
+    struct image_s  *image;
+} mspriteframe_t;
+
+typedef struct model_s {
+    enum {
+        MOD_FREE,
+        MOD_ALIAS,
+        MOD_SPRITE,
+        MOD_EMPTY
+    } type;
+
+    char name[MAX_QPATH];
+    int registration_sequence;
+    memhunk_t hunk;
+
+    // alias models
+    int numframes;
+    struct maliasframe_s *frames;
+    int nummeshes;
+    struct maliasmesh_s *meshes;
+
+    // sprite models
+    struct mspriteframe_s *spriteframes;
+} model_t;
+
 // xyz[3] | color[1]  | st[2]    | lmst[2]
 // xyz[3] | unused[1] | color[4]
 #define VERTEX_SIZE 8
+
+void MOD_FreeUnused(void);
+void MOD_FreeAll(void);
+void MOD_Init(void);
+void MOD_Shutdown(void);
+
+model_t *MOD_ForHandle(qhandle_t h);
+qhandle_t R_RegisterModel(const char *name);
 
 /*
  * gl_surf.c

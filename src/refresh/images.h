@@ -30,9 +30,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/error.h"
 #include "refresh/refresh.h"
 
-#define R_Malloc(size)      Z_TagMalloc(size, TAG_RENDERER)
-#define R_Mallocz(size)     Z_TagMallocz(size, TAG_RENDERER)
-
 #define IMG_AllocPixels(x)  FS_AllocTempMem(x)
 #define IMG_FreePixels(x)   FS_FreeTempMem(x)
 
@@ -83,7 +80,6 @@ extern int registration_sequence;
 
 extern uint32_t d_8to24table[256];
 
-// these are implemented in src/refresh/images.c
 image_t *IMG_Find(const char *name, imagetype_t type, imageflags_t flags);
 void IMG_FreeUnused(void);
 void IMG_FreeAll(void);
@@ -93,11 +89,6 @@ void IMG_GetPalette(void);
 
 image_t *IMG_ForHandle(qhandle_t h);
 
-void IMG_ResampleTexture(const byte *in, int inwidth, int inheight,
-                         byte *out, int outwidth, int outheight);
-void IMG_MipMap(byte *out, byte *in, int width, int height);
-
-// these are implemented in src/refresh/[gl,sw]/images.c
 void IMG_Unload(image_t *image);
 void IMG_Load(image_t *image, byte *pic);
 byte *IMG_ReadPixels(int *width, int *height, int *rowbytes);

@@ -177,8 +177,6 @@ OBJS_c := \
     src/client/view.o       \
     src/client/sound/main.o \
     src/client/sound/mem.o  \
-    src/refresh/images.o    \
-    src/refresh/models.o    \
     src/server/commands.o   \
     src/server/entities.o   \
     src/server/game.o       \
@@ -313,25 +311,26 @@ endif
 
 ifndef CONFIG_NO_REFRESH
     CFLAGS_c += -DUSE_REF=1 -DVID_REF='"gl"'
-    OBJS_c += src/refresh/gl/draw.o
-    OBJS_c += src/refresh/gl/hq2x.o
-    OBJS_c += src/refresh/gl/images.o
-    OBJS_c += src/refresh/gl/main.o
-    OBJS_c += src/refresh/gl/mesh.o
-    OBJS_c += src/refresh/gl/models.o
-    OBJS_c += src/refresh/gl/sky.o
-    OBJS_c += src/refresh/gl/state.o
-    OBJS_c += src/refresh/gl/surf.o
-    OBJS_c += src/refresh/gl/tess.o
-    OBJS_c += src/refresh/gl/world.o
+    OBJS_c += src/refresh/draw.o
+    OBJS_c += src/refresh/hq2x.o
+    OBJS_c += src/refresh/images.o
+    OBJS_c += src/refresh/main.o
+    OBJS_c += src/refresh/mesh.o
+    OBJS_c += src/refresh/models.o
+    OBJS_c += src/refresh/sky.o
+    OBJS_c += src/refresh/state.o
+    OBJS_c += src/refresh/surf.o
+    OBJS_c += src/refresh/tess.o
+    OBJS_c += src/refresh/texture.o
+    OBJS_c += src/refresh/world.o
     ifdef CONFIG_FIXED_LIBGL
         GL_CFLAGS ?=
         GL_LIBS ?= -lGL
         CFLAGS_c += -DUSE_FIXED_LIBGL=1 $(GL_CFLAGS)
         LIBS_c += $(GL_LIBS)
-        OBJS_c += src/refresh/gl/qgl/fixed.o
+        OBJS_c += src/refresh/qgl/fixed.o
     else
-        OBJS_c += src/refresh/gl/qgl/dynamic.o
+        OBJS_c += src/refresh/qgl/dynamic.o
     endif
 endif
 
