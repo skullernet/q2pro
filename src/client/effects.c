@@ -19,6 +19,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "client.h"
 
+// [sq2] blood color override
+extern cvar_t* cl_blood_color;
+
 static void CL_LogoutEffect(vec3_t org, int type);
 
 static vec3_t avelocities[NUMVERTEXNORMALS];
@@ -1269,7 +1272,7 @@ void CL_DiminishingTrail(vec3_t start, vec3_t end, centity_t *old, int flags)
             if (flags & EF_GIB) {
                 p->alpha = 1.0;
                 p->alphavel = -1.0 / (1 + frand() * 0.4);
-                p->color = 0xe8 + (rand() & 7);
+                p->color = cl_blood_color->integer + (rand() & 7);
                 for (j = 0; j < 3; j++) {
                     p->org[j] = move[j] + crand() * orgscale;
                     p->vel[j] = crand() * velscale;

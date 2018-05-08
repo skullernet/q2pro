@@ -46,7 +46,7 @@ static cvar_t *gl_saturation;
 static cvar_t *gl_intensity;
 static cvar_t *gl_gamma;
 static cvar_t *gl_invert;
-// [slipyx] particle shape
+// [sq2] particle shape
 static cvar_t *gl_partshape;
 
 static int GL_UpscaleLevel(int width, int height, imagetype_t type, imageflags_t flags);
@@ -790,7 +790,7 @@ static void GL_InitParticleTexture(void)
     int i, j;
     int shape;
 
-    // [slipyx] particle shape
+    // [sq2] particle shape
     shape = gl_partshape->value;
 
     memset(pixels, 0, sizeof(pixels));
@@ -826,12 +826,12 @@ static void GL_InitParticleTexture(void)
     }
 
     GL_ForceTexture(0, TEXNUM_PARTICLE);
-    // [slipyx] disable linear filtering if shape is square
+    // [sq2] disable linear filtering if shape is square
     GL_Upload32(pixels, 16, 16, 0, IT_SPRITE, (shape == 1) ? IF_NEAREST : IF_NONE);
     GL_SetFilterAndRepeat(IT_SPRITE, (shape == 1) ? IF_NEAREST : IF_NONE);
 }
 
-// [slipyx] particle shape changed
+// [sq2] particle shape changed
 static void gl_partshape_changed(cvar_t *self)
 {
     // delete, regen, and init new texture
@@ -909,7 +909,7 @@ void GL_InitImages(void)
     gl_intensity = Cvar_Get("intensity", "1", CVAR_FILES);
     gl_invert = Cvar_Get("gl_invert", "0", CVAR_FILES);
     gl_gamma = Cvar_Get("vid_gamma", "1", CVAR_ARCHIVE);
-    // [slipyx] particle shape. 0 = default circle. 1 = square
+    // [sq2] particle shape. 0 = default circle. 1 = square
     gl_partshape = Cvar_Get("gl_partshape", "0", 0);
     gl_partshape->changed = gl_partshape_changed;
 

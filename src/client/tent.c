@@ -50,8 +50,18 @@ qhandle_t   cl_mod_lightning;
 qhandle_t   cl_mod_heatbeam;
 qhandle_t   cl_mod_explo4_big;
 
-// [slipyx] use of explosion sprite cvar
+// [sq2] use of explosion sprite cvar
 static cvar_t* cl_explosion_sprite;
+// explosion sprites 1 and 2
+static qhandle_t cl_spr_explo;
+static qhandle_t cl_spr_explo2;
+// total number of frames in explosion sprites
+static int numexpframes;
+static int numexpframes2;
+// for getting number of frames from a model handle
+#include "refresh/models.h"
+// override blood palette color
+cvar_t* cl_blood_color;
 
 /*
 =================
@@ -100,10 +110,7 @@ void CL_RegisterTEntModels(void)
     cl_mod_flash = R_RegisterModel("models/objects/flash/tris.md2");
     cl_mod_parasite_segment = R_RegisterModel("models/monsters/parasite/segment/tris.md2");
     cl_mod_grapple_cable = R_RegisterModel("models/ctf/segment/tris.md2");
-    if ( cl_explosion_sprite->value )
-        cl_mod_explo4 = R_RegisterModel("sprites/s_explo3.sp2");
-    else
-        cl_mod_explo4 = R_RegisterModel("models/objects/r_explode/tris.md2");
+    cl_mod_explo4 = R_RegisterModel("models/objects/r_explode/tris.md2");
     cl_mod_bfg_explo = R_RegisterModel("sprites/s_bfg2.sp2");
     cl_mod_powerscreen = R_RegisterModel("models/items/armor/effect/tris.md2");
     cl_mod_laser = R_RegisterModel("models/objects/laser/tris.md2");
@@ -112,6 +119,19 @@ void CL_RegisterTEntModels(void)
     cl_mod_lightning = R_RegisterModel("models/proj/lightning/tris.md2");
     cl_mod_heatbeam = R_RegisterModel("models/proj/beam/tris.md2");
     cl_mod_explo4_big = R_RegisterModel("models/objects/r_explode2/tris.md2");
+    // [sq2] register both explosion sprites get number of frames for each
+    cl_spr_explo = R_RegisterModel("sprites/s_explo3.sp2");
+    cl_spr_explo2 = R_RegisterModel("sprites/s_explo2.sp2");
+    numexpframes = MOD_ForHandle(cl_spr_explo)->numframes;
+    {
+        int i;
+        model_t* spr_explo2 = MOD_ForHandle(cl_spr_explo2);
+        numexpframes2 = spr_explo2->numframes;
+        // hack for explosion 2's bottom middle origin
+        for (i = 0; i < numexpframes2; ++i) {
+            spr_explo2->spriteframes[i].origin_y = 0;
+        }
+    }
 }
 
 /*
@@ -183,11 +203,7 @@ static explosion_t *CL_PlainExplosion(void)
 
     ex = CL_AllocExplosion();
     VectorCopy(te.pos1, ex->ent.origin);
-    // [slipyx] use type poly2 for sprite based explosions
-    if ( cl_explosion_sprite->value )
-        ex->type = ex_poly2;
-    else
-        ex->type = ex_poly;
+    ex->type = ex_poly;
     ex->ent.flags = RF_FULLBRIGHT;
     ex->start = cl.servertime - CL_FRAMETIME;
     ex->light = 350;
@@ -197,6 +213,15 @@ static explosion_t *CL_PlainExplosion(void)
     if (frand() < 0.5)
         ex->baseframe = 15;
     ex->frames = 15;
+
+    // [sq2] use type poly2 for sprite based explosions
+    // and set appropriate model and frames
+    if (cl_explosion_sprite->value) {
+        ex->type = ex_poly2;
+        ex->ent.model = cl_spr_explo;
+        ex->baseframe = 0;
+        ex->frames = numexpframes;
+    }
 
     return ex;
 }
@@ -291,7 +316,16 @@ static void CL_AddExplosions(void)
                 break;
             }
 
-            ent->alpha = (5.0 - (float)f) / 5.0;
+            // [sq2] baseframe is 30 for grenade or TE_EX2,
+            // so adjust frames and model accordingly
+            if (ex->baseframe == 30) {
+                ex->baseframe = 0;
+                ex->frames = numexpframes2;
+                ex->ent.model = cl_spr_explo2;
+            }
+
+            // fade out across all frames
+            ent->alpha = (ex->frames - (float)f) / ex->frames;
             ent->skinnum = 0;
             ent->flags |= RF_TRANSLUCENT;
             break;
@@ -939,7 +973,7 @@ void CL_ParseTEnt(void)
     switch (te.type) {
     case TE_BLOOD:          // bullet hitting flesh
         if (!(cl_disable_particles->integer & NOPART_BLOOD))
-            CL_ParticleEffect(te.pos1, te.dir, 0xe8, 60);
+            CL_ParticleEffect(te.pos1, te.dir, cl_blood_color->integer, 60);
         break;
 
     case TE_GUNSHOT:            // bullet hitting wall
@@ -1319,6 +1353,8 @@ void CL_InitTEnts(void)
     cl_railspiral_color->generator = Com_Color_g;
     cl_railspiral_color_changed(cl_railspiral_color);
     cl_railspiral_radius = Cvar_Get("cl_railspiral_radius", "3", 0);
-    // [slipyx] whether or not to use sprite for explosions
+    // [sq2] whether or not to use sprite for explosions
     cl_explosion_sprite = Cvar_Get("cl_explosion_sprite", "0", 0);
+    // palette entry to use for default blood color
+    cl_blood_color = Cvar_Get("cl_blood_color", "232", 0);
 }
