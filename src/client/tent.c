@@ -123,15 +123,13 @@ void CL_RegisterTEntModels(void)
     cl_spr_explo = R_RegisterModel("sprites/s_explo3.sp2");
     cl_spr_explo2 = R_RegisterModel("sprites/s_explo2.sp2");
     numexpframes = MOD_ForHandle(cl_spr_explo)->numframes;
-    {
-        int i;
-        model_t* spr_explo2 = MOD_ForHandle(cl_spr_explo2);
-        numexpframes2 = spr_explo2->numframes;
-        // hack for explosion 2's bottom middle origin
-        for (i = 0; i < numexpframes2; ++i) {
-            spr_explo2->spriteframes[i].origin_y = 0;
-        }
-    }
+    {int i;
+    model_t* spr_explo2 = MOD_ForHandle(cl_spr_explo2);
+    numexpframes2 = spr_explo2->numframes;
+    // hack for explosion sprite 2's bottom center origin
+    for (i = 0; i < numexpframes2; ++i) {
+        spr_explo2->spriteframes[i].origin_y = 0;
+    }}
 }
 
 /*
@@ -317,7 +315,7 @@ static void CL_AddExplosions(void)
             }
 
             // [sq2] baseframe is 30 for grenade or TE_EX2,
-            // so adjust frames and model accordingly
+            // so set frames and model accordingly
             if (ex->baseframe == 30) {
                 ex->baseframe = 0;
                 ex->frames = numexpframes2;

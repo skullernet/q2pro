@@ -791,7 +791,7 @@ static void GL_InitParticleTexture(void)
     int shape;
 
     // [sq2] particle shape
-    shape = gl_partshape->value;
+    shape = gl_partshape->integer;
 
     memset(pixels, 0, sizeof(pixels));
     dst = pixels;
@@ -809,18 +809,20 @@ static void GL_InitParticleTexture(void)
                 dst += 4;
             }
         }
-    else // default circle
+    else // circle
 
     for (i = 0; i < 16; i++) {
         for (j = 0; j < 16; j++) {
             x = j - 16 / 2 + 0.5f;
             y = i - 16 / 2 + 0.5f;
             f = sqrt(x * x + y * y);
-            f = 1.0f - f / (16 / 2 - 0.5f);
+            // [sq2] shape 2 is a smaller, fuller circle
+            f = 1.0f - f / (((shape == 2) ? 14 : 16) / 2 - 0.5f);
+            if (shape == 2) f *= 4;
             dst[0] = 255;
             dst[1] = 255;
             dst[2] = 255;
-            dst[3] = 255 * clamp(f, 0, 1);
+            dst[3] = 255 * clamp(f, 0, (shape == 2) ? 0.6f : 1);
             dst += 4;
         }
     }
@@ -834,7 +836,7 @@ static void GL_InitParticleTexture(void)
 // [sq2] particle shape changed
 static void gl_partshape_changed(cvar_t *self)
 {
-    // delete, regen, and init new texture
+    // delete, regen, and init new particle texture
     qglDeleteTextures(1, &TEXNUM_PARTICLE);
     qglGenTextures(1, &TEXNUM_PARTICLE);
     GL_InitParticleTexture();
@@ -909,7 +911,7 @@ void GL_InitImages(void)
     gl_intensity = Cvar_Get("intensity", "1", CVAR_FILES);
     gl_invert = Cvar_Get("gl_invert", "0", CVAR_FILES);
     gl_gamma = Cvar_Get("vid_gamma", "1", CVAR_ARCHIVE);
-    // [sq2] particle shape. 0 = default circle. 1 = square
+    // [sq2] particle shape. 0 = default circle. 1 = square. 2 = fuller circle
     gl_partshape = Cvar_Get("gl_partshape", "0", 0);
     gl_partshape->changed = gl_partshape_changed;
 
