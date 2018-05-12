@@ -689,57 +689,6 @@ METHODDEF(void) my_error_exit(j_common_ptr cinfo)
     longjmp(jerr->setjmp_buffer, 1);
 }
 
-#if JPEG_LIB_VERSION < 80
-
-METHODDEF(void) mem_init_source(j_decompress_ptr cinfo) { }
-
-METHODDEF(boolean) mem_fill_input_buffer(j_decompress_ptr cinfo)
-{
-    my_error_ptr jerr = (my_error_ptr)cinfo->err;
-
-    jerr->error = Q_ERR_FILE_TOO_SMALL;
-    longjmp(jerr->setjmp_buffer, 1);
-    return TRUE;
-}
-
-METHODDEF(void) mem_skip_input_data(j_decompress_ptr cinfo, long num_bytes)
-{
-    struct jpeg_source_mgr *src = cinfo->src;
-    my_error_ptr jerr = (my_error_ptr)cinfo->err;
-
-    if (num_bytes < 1) {
-        return;
-    }
-
-    if (src->bytes_in_buffer < num_bytes) {
-        jerr->error = Q_ERR_FILE_TOO_SMALL;
-        longjmp(jerr->setjmp_buffer, 1);
-    }
-
-    src->next_input_byte += (size_t)num_bytes;
-    src->bytes_in_buffer -= (size_t)num_bytes;
-}
-
-METHODDEF(void) mem_term_source(j_decompress_ptr cinfo) { }
-
-METHODDEF(void) my_mem_src(j_decompress_ptr cinfo, byte *data, size_t size)
-{
-    cinfo->src = (struct jpeg_source_mgr *)(*cinfo->mem->alloc_small)(
-                     (j_common_ptr)cinfo, JPOOL_PERMANENT, sizeof(struct jpeg_source_mgr));
-
-    cinfo->src->init_source = mem_init_source;
-    cinfo->src->fill_input_buffer = mem_fill_input_buffer;
-    cinfo->src->skip_input_data = mem_skip_input_data;
-    cinfo->src->resync_to_restart = jpeg_resync_to_restart;
-    cinfo->src->term_source = mem_term_source;
-    cinfo->src->bytes_in_buffer = size;
-    cinfo->src->next_input_byte = data;
-}
-
-#define jpeg_mem_src my_mem_src
-
-#endif
-
 IMG_LOAD(JPG)
 {
     struct jpeg_decompress_struct cinfo;
