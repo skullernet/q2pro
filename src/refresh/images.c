@@ -45,7 +45,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
         image_t *image, byte **pic)
 
 #define IMG_SAVE(x) \
-    static qerror_t IMG_Save##x(qhandle_t f, const char *filename, \
+    static qerror_t IMG_Save##x(FILE *f, const char *filename, \
         byte *pic, int width, int height, int row_stride, int param)
 
 /*
@@ -603,7 +603,6 @@ IMG_LOAD(TGA)
 IMG_SAVE(TGA)
 {
     byte header[TARGA_HEADER_SIZE], *p;
-    ssize_t ret;
     int i, j;
 
     memset(&header, 0, sizeof(header));
@@ -614,9 +613,8 @@ IMG_SAVE(TGA)
     header[15] = height >> 8;
     header[16] = 24;     // pixel size
 
-    ret = FS_Write(&header, sizeof(header), f);
-    if (ret < 0) {
-        return ret;
+    if (!fwrite(&header, sizeof(header), 1, f)) {
+        return -errno;
     }
 
     // swap RGB to BGR
@@ -634,20 +632,18 @@ IMG_SAVE(TGA)
     }
 
     if (row_stride == width * 3) {
-        ret = FS_Write(pic, width * height * 3, f);
-        if (ret < 0) {
-            return ret;
+        if (!fwrite(pic, width * height * 3, 1, f)) {
+            return -errno;
         }
     } else {
         for (i = 0; i < height; i++) {
-            ret = FS_Write(pic + i * row_stride, width * 3, f);
-            if (ret < 0) {
-                return ret;
+            if (!fwrite(pic + i * row_stride, width * 3, 1, f)) {
+                return -errno;
             }
         }
     }
 
-    return Q_ERR_SUCCESS;
+    return 0;
 }
 
 #endif // USE_TGA
@@ -783,76 +779,6 @@ fail:
     return ret;
 }
 
-#define OUTPUT_BUF_SIZE         0x10000 // 64 KiB
-
-typedef struct my_destination_mgr {
-    struct jpeg_destination_mgr pub;
-
-    qhandle_t f;
-    JOCTET *buffer;
-} *my_dest_ptr;
-
-METHODDEF(void) vfs_init_destination(j_compress_ptr cinfo)
-{
-    my_dest_ptr dest = (my_dest_ptr)cinfo->dest;
-
-    // Allocate the output buffer --- it will be released when done with image
-    dest->buffer = (JOCTET *)(*cinfo->mem->alloc_small)
-                   ((j_common_ptr)cinfo, JPOOL_IMAGE, OUTPUT_BUF_SIZE * sizeof(JOCTET));
-
-    dest->pub.next_output_byte = dest->buffer;
-    dest->pub.free_in_buffer = OUTPUT_BUF_SIZE;
-}
-
-METHODDEF(boolean) vfs_empty_output_buffer(j_compress_ptr cinfo)
-{
-    my_dest_ptr dest = (my_dest_ptr)cinfo->dest;
-    my_error_ptr jerr = (my_error_ptr)cinfo->err;
-    ssize_t ret;
-
-    ret = FS_Write(dest->buffer, OUTPUT_BUF_SIZE, dest->f);
-    if (ret != OUTPUT_BUF_SIZE) {
-        jerr->error = ret < 0 ? ret : Q_ERR_FAILURE;
-        longjmp(jerr->setjmp_buffer, 1);
-    }
-
-    dest->pub.next_output_byte = dest->buffer;
-    dest->pub.free_in_buffer = OUTPUT_BUF_SIZE;
-
-    return TRUE;
-}
-
-METHODDEF(void) vfs_term_destination(j_compress_ptr cinfo)
-{
-    my_dest_ptr dest = (my_dest_ptr)cinfo->dest;
-    my_error_ptr jerr = (my_error_ptr)cinfo->err;
-    size_t remaining = OUTPUT_BUF_SIZE - dest->pub.free_in_buffer;
-    ssize_t ret;
-
-    // Write any data remaining in the buffer
-    if (remaining > 0) {
-        ret = FS_Write(dest->buffer, remaining, dest->f);
-        if (ret != remaining) {
-            jerr->error = ret < 0 ? ret : Q_ERR_FAILURE;
-            longjmp(jerr->setjmp_buffer, 1);
-        }
-    }
-}
-
-METHODDEF(void) my_vfs_dst(j_compress_ptr cinfo, qhandle_t f)
-{
-    my_dest_ptr dest;
-
-    dest = (my_dest_ptr)(*cinfo->mem->alloc_small)
-           ((j_common_ptr)cinfo, JPOOL_PERMANENT, sizeof(struct my_destination_mgr));
-    cinfo->dest = &dest->pub;
-
-    dest->pub.init_destination = vfs_init_destination;
-    dest->pub.empty_output_buffer = vfs_empty_output_buffer;
-    dest->pub.term_destination = vfs_term_destination;
-    dest->f = f;
-}
-
 IMG_SAVE(JPG)
 {
     struct jpeg_compress_struct cinfo;
@@ -873,7 +799,7 @@ IMG_SAVE(JPG)
 
     jpeg_create_compress(&cinfo);
 
-    my_vfs_dst(&cinfo, f);
+    jpeg_stdio_dest(&cinfo, f);
 
     cinfo.image_width = width;      // image width and height, in pixels
     cinfo.image_height = height;
@@ -1079,22 +1005,6 @@ fail:
     return ret;
 }
 
-static void my_png_write_fn(png_structp png_ptr, png_bytep buf, png_size_t size)
-{
-    qhandle_t *f = png_get_io_ptr(png_ptr);
-    ssize_t ret = FS_Write(buf, size, *f);
-
-    if (ret != size) {
-        my_png_error *err = png_get_error_ptr(png_ptr);
-        err->error = ret < 0 ? ret : Q_ERR_FAILURE;
-        png_error(png_ptr, "write error");
-    }
-}
-
-static void my_png_flush_fn(png_structp png_ptr)
-{
-}
-
 IMG_SAVE(PNG)
 {
     png_structp png_ptr;
@@ -1124,8 +1034,7 @@ IMG_SAVE(PNG)
         goto fail1;
     }
 
-    png_set_write_fn(png_ptr, (png_voidp)&f,
-                     my_png_write_fn, my_png_flush_fn);
+    png_init_io(png_ptr, f);
 
     png_set_IHDR(png_ptr, info_ptr, width, height, 8, PNG_COLOR_TYPE_RGB,
                  PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
@@ -1177,49 +1086,63 @@ static cvar_t *r_screenshot_compression;
 #endif
 
 #if USE_TGA || USE_JPG || USE_PNG
-static qhandle_t create_screenshot(char *buffer, size_t size,
-                                   const char *name, const char *ext)
+static int create_screenshot(char *buffer, size_t size, FILE **f,
+                             const char *name, const char *ext)
 {
-    qhandle_t f;
-    qerror_t ret;
-    int i;
+    char temp[MAX_OSPATH];
+    int i, ret;
+
+    if (Q_snprintf(temp, sizeof(temp), "%s/screenshots", fs_gamedir) >= sizeof(temp)) {
+        return -ENAMETOOLONG;
+    }
+    if ((ret = FS_CreatePath(temp)) < 0) {
+        return ret;
+    }
 
     if (name && *name) {
         // save to user supplied name
-        return FS_EasyOpenFile(buffer, size, FS_MODE_WRITE,
-                               "screenshots/", name, ext);
+        if (FS_NormalizePathBuffer(temp, name, sizeof(temp)) >= sizeof(temp)) {
+            return -ENAMETOOLONG;
+        }
+        FS_CleanupPath(temp);
+        if (Q_snprintf(buffer, size, "%s/screenshots/%s%s", fs_gamedir, temp, ext) >= size) {
+            return -ENAMETOOLONG;
+        }
+        if (!(*f = fopen(buffer, "wb"))) {
+            return -errno;
+        }
+        return 0;
     }
 
     // find a file name to save it to
     for (i = 0; i < 1000; i++) {
-        Q_snprintf(buffer, size, "screenshots/quake%03d%s", i, ext);
-        ret = FS_FOpenFile(buffer, &f, FS_MODE_WRITE | FS_FLAG_EXCL);
-        if (f) {
-            return f;
+        if (Q_snprintf(buffer, size, "%s/screenshots/quake%03d%s", fs_gamedir, i, ext) >= size) {
+            return -ENAMETOOLONG;
         }
-        if (ret != Q_ERR_EXIST) {
-            Com_EPrintf("Couldn't exclusively open %s for writing: %s\n",
-                        buffer, Q_ErrorString(ret));
+        if ((*f = Q_fopen(buffer, "wxb"))) {
             return 0;
+        }
+        if (errno != EEXIST) {
+            return -errno;
         }
     }
 
-    Com_EPrintf("All screenshot slots are full.\n");
-    return 0;
+    return Q_ERR_OUT_OF_SLOTS;
 }
 
 static void make_screenshot(const char *name, const char *ext,
-                            qerror_t (*save)(qhandle_t, const char *, byte *, int, int, int, int),
+                            qerror_t (*save)(FILE *, const char *, byte *, int, int, int, int),
                             int param)
 {
     char        buffer[MAX_OSPATH];
     byte        *pixels;
     qerror_t    ret;
-    qhandle_t   f;
+    FILE        *f;
     int         w, h, rowbytes;
 
-    f = create_screenshot(buffer, sizeof(buffer), name, ext);
-    if (!f) {
+    ret = create_screenshot(buffer, sizeof(buffer), &f, name, ext);
+    if (ret < 0) {
+        Com_EPrintf("Couldn't create screenshot: %s\n", Q_ErrorString(ret));
         return;
     }
 
@@ -1227,7 +1150,7 @@ static void make_screenshot(const char *name, const char *ext,
     ret = save(f, buffer, pixels, w, h, rowbytes, param);
     FS_FreeTempMem(pixels);
 
-    FS_FCloseFile(f);
+    fclose(f);
 
     if (ret < 0) {
         Com_EPrintf("Couldn't write %s: %s\n", buffer, Q_ErrorString(ret));
