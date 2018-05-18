@@ -26,6 +26,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/cvar.h"
 #include "common/files.h"
 #include "refresh/images.h"
+#include "system/system.h"
 #include "format/pcx.h"
 #include "format/wal.h"
 
@@ -44,9 +45,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
     static qerror_t IMG_Load##x(byte *rawdata, size_t rawlen, \
         image_t *image, byte **pic)
 
-#define IMG_SAVE(x) \
-    static qerror_t IMG_Save##x(FILE *f, const char *filename, \
-        byte *pic, int width, int height, int row_stride, int param)
+typedef struct screenshot_s {
+    int (*save_cb)(struct screenshot_s *);
+    byte *pixels;
+    FILE *fp;
+    char *filename;
+    int width, height, row_stride, status, param;
+    qboolean async;
+} screenshot_t;
 
 /*
 ====================================================================
@@ -600,27 +606,27 @@ IMG_LOAD(TGA)
     return Q_ERR_SUCCESS;
 }
 
-IMG_SAVE(TGA)
+static int IMG_SaveTGA(screenshot_t *s)
 {
     byte header[TARGA_HEADER_SIZE], *p;
     int i, j;
 
     memset(&header, 0, sizeof(header));
     header[ 2] = 2;        // uncompressed type
-    header[12] = width & 255;
-    header[13] = width >> 8;
-    header[14] = height & 255;
-    header[15] = height >> 8;
+    header[12] = s->width & 255;
+    header[13] = s->width >> 8;
+    header[14] = s->height & 255;
+    header[15] = s->height >> 8;
     header[16] = 24;     // pixel size
 
-    if (!fwrite(&header, sizeof(header), 1, f)) {
+    if (!fwrite(&header, sizeof(header), 1, s->fp)) {
         return -errno;
     }
 
     // swap RGB to BGR
-    for (i = 0; i < height; i++) {
-        p = pic + i * row_stride;
-        for (j = 0; j < width; j++) {
+    for (i = 0; i < s->height; i++) {
+        p = s->pixels + i * s->row_stride;
+        for (j = 0; j < s->width; j++) {
             byte tmp;
 
             tmp = p[2];
@@ -631,13 +637,13 @@ IMG_SAVE(TGA)
         }
     }
 
-    if (row_stride == width * 3) {
-        if (!fwrite(pic, width * height * 3, 1, f)) {
+    if (s->row_stride == s->width * 3) {
+        if (!fwrite(s->pixels, s->width * s->height * 3, 1, s->fp)) {
             return -errno;
         }
     } else {
-        for (i = 0; i < height; i++) {
-            if (!fwrite(pic + i * row_stride, width * 3, 1, f)) {
+        for (i = 0; i < s->height; i++) {
+            if (!fwrite(s->pixels + i * s->row_stride, s->width * 3, 1, s->fp)) {
                 return -errno;
             }
         }
@@ -671,7 +677,8 @@ static void my_output_message(j_common_ptr cinfo)
 
     (*cinfo->err->format_message)(cinfo, buffer);
 
-    Com_EPrintf("libjpeg: %s: %s\n", jerr->filename, buffer);
+    if (jerr->filename)
+        Com_EPrintf("libjpeg: %s: %s\n", jerr->filename, buffer);
 }
 
 static void my_error_exit(j_common_ptr cinfo)
@@ -787,8 +794,7 @@ fail:
     return ret;
 }
 
-static int my_jpeg_compress(j_compress_ptr cinfo, JSAMPARRAY row_pointers,
-                            FILE *f, int width, int height, int param)
+static int my_jpeg_compress(j_compress_ptr cinfo, JSAMPARRAY row_pointers, screenshot_t *s)
 {
     my_error_ptr jerr = (my_error_ptr)cinfo->err;
 
@@ -797,41 +803,42 @@ static int my_jpeg_compress(j_compress_ptr cinfo, JSAMPARRAY row_pointers,
     }
 
     jpeg_create_compress(cinfo);
-    jpeg_stdio_dest(cinfo, f);
+    jpeg_stdio_dest(cinfo, s->fp);
 
-    cinfo->image_width = width;      // image width and height, in pixels
-    cinfo->image_height = height;
+    cinfo->image_width = s->width;      // image width and height, in pixels
+    cinfo->image_height = s->height;
     cinfo->input_components = 3;     // # of color components per pixel
     cinfo->in_color_space = JCS_RGB; // colorspace of input image
 
     jpeg_set_defaults(cinfo);
-    jpeg_set_quality(cinfo, clamp(param, 0, 100), TRUE);
+    jpeg_set_quality(cinfo, clamp(s->param, 0, 100), TRUE);
 
     jpeg_start_compress(cinfo, TRUE);
-    jpeg_write_scanlines(cinfo, row_pointers, height);
+    jpeg_write_scanlines(cinfo, row_pointers, s->height);
     jpeg_finish_compress(cinfo);
 
     return 0;
 }
 
-IMG_SAVE(JPG)
+static int IMG_SaveJPG(screenshot_t *s)
 {
     struct jpeg_compress_struct cinfo;
     struct my_error_mgr jerr;
     JSAMPARRAY row_pointers;
-    int i, ret;
+    int i, h, ret;
 
     cinfo.err = jpeg_std_error(&jerr.pub);
     jerr.pub.error_exit = my_error_exit;
     jerr.pub.output_message = my_output_message;
-    jerr.filename = filename;
+    jerr.filename = s->async ? NULL : s->filename;
 
-    row_pointers = malloc(sizeof(JSAMPROW) * height);
-    for (i = 0; i < height; i++) {
-        row_pointers[i] = (JSAMPROW)(pic + (height - i - 1) * row_stride);
+    h = s->height;
+    row_pointers = malloc(sizeof(JSAMPROW) * h);
+    for (i = 0; i < h; i++) {
+        row_pointers[i] = (JSAMPROW)(s->pixels + (h - i - 1) * s->row_stride);
     }
 
-    ret = my_jpeg_compress(&cinfo, row_pointers, f, width, height, param);
+    ret = my_jpeg_compress(&cinfo, row_pointers, s);
     free(row_pointers);
     jpeg_destroy_compress(&cinfo);
     return ret;
@@ -877,7 +884,8 @@ static void my_png_error_fn(png_structp png_ptr, png_const_charp error_msg)
 {
     my_png_error *err = png_get_error_ptr(png_ptr);
 
-    Com_EPrintf("libpng: %s: %s\n", err->filename, error_msg);
+    if (err->filename)
+        Com_EPrintf("libpng: %s: %s\n", err->filename, error_msg);
     longjmp(err->setjmp_buffer, -1);
 }
 
@@ -885,7 +893,8 @@ static void my_png_warning_fn(png_structp png_ptr, png_const_charp warning_msg)
 {
     my_png_error *err = png_get_error_ptr(png_ptr);
 
-    Com_WPrintf("libpng: %s: %s\n", err->filename, warning_msg);
+    if (err->filename)
+        Com_WPrintf("libpng: %s: %s\n", err->filename, warning_msg);
 }
 
 static int my_png_read_header(png_structp png_ptr, png_infop info_ptr,
@@ -1024,8 +1033,7 @@ fail:
 }
 
 static int my_png_write_image(png_structp png_ptr, png_infop info_ptr,
-                              png_bytepp row_pointers, FILE *f,
-                              int width, int height, int param)
+                              png_bytepp row_pointers, screenshot_t *s)
 {
     my_png_error *err = png_get_error_ptr(png_ptr);
 
@@ -1033,24 +1041,24 @@ static int my_png_write_image(png_structp png_ptr, png_infop info_ptr,
         return Q_ERR_LIBRARY_ERROR;
     }
 
-    png_init_io(png_ptr, f);
-    png_set_IHDR(png_ptr, info_ptr, width, height, 8, PNG_COLOR_TYPE_RGB,
+    png_init_io(png_ptr, s->fp);
+    png_set_IHDR(png_ptr, info_ptr, s->width, s->height, 8, PNG_COLOR_TYPE_RGB,
                  PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
-    png_set_compression_level(png_ptr, clamp(param, 0, 9));
+    png_set_compression_level(png_ptr, clamp(s->param, 0, 9));
     png_set_rows(png_ptr, info_ptr, row_pointers);
     png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
     return 0;
 }
 
-IMG_SAVE(PNG)
+static int IMG_SavePNG(screenshot_t *s)
 {
     png_structp png_ptr;
     png_infop info_ptr;
     png_bytepp row_pointers;
     my_png_error my_err;
-    int i, ret;
+    int i, h, ret;
 
-    my_err.filename = filename;
+    my_err.filename = s->async ? NULL : s->filename;
     png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING,
                                       (png_voidp)&my_err, my_png_error_fn, my_png_warning_fn);
     if (!png_ptr) {
@@ -1063,12 +1071,13 @@ IMG_SAVE(PNG)
         goto fail;
     }
 
-    row_pointers = malloc(sizeof(png_bytep) * height);
-    for (i = 0; i < height; i++) {
-        row_pointers[i] = (png_bytep)(pic + (height - i - 1) * row_stride);
+    h = s->height;
+    row_pointers = malloc(sizeof(png_bytep) * h);
+    for (i = 0; i < h; i++) {
+        row_pointers[i] = (png_bytep)(s->pixels + (h - i - 1) * s->row_stride);
     }
 
-    ret = my_png_write_image(png_ptr, info_ptr, row_pointers, f, width, height, param);
+    ret = my_png_write_image(png_ptr, info_ptr, row_pointers, s);
     free(row_pointers);
 fail:
     png_destroy_write_struct(&png_ptr, &info_ptr);
@@ -1087,6 +1096,7 @@ SCREEN SHOTS
 
 #if USE_JPG || USE_PNG
 static cvar_t *r_screenshot_format;
+static cvar_t *r_screenshot_async;
 #endif
 #if USE_JPG
 static cvar_t *r_screenshot_quality;
@@ -1140,34 +1150,78 @@ static int create_screenshot(char *buffer, size_t size, FILE **f,
     return Q_ERR_OUT_OF_SLOTS;
 }
 
+static void screenshot_work_cb(void *arg)
+{
+    screenshot_t *s = arg;
+    s->status = s->save_cb(s);
+}
+
+static void screenshot_done_cb(void *arg)
+{
+    screenshot_t *s = arg;
+
+    fclose(s->fp);
+    Z_Free(s->pixels);
+
+    if (s->status < 0) {
+        Com_EPrintf("Couldn't write %s: %s\n", s->filename, Q_ErrorString(s->status));
+        remove(s->filename);
+    } else {
+        Com_Printf("Wrote %s\n", s->filename);
+    }
+
+    if (s->async) {
+        Z_Free(s->filename);
+        Z_Free(s);
+    }
+}
+
 static void make_screenshot(const char *name, const char *ext,
-                            qerror_t (*save)(FILE *, const char *, byte *, int, int, int, int),
-                            int param)
+                            int (*save_cb)(struct screenshot_s *),
+                            qboolean async, int param)
 {
     char        buffer[MAX_OSPATH];
     byte        *pixels;
-    qerror_t    ret;
-    FILE        *f;
-    int         w, h, rowbytes;
+    FILE        *fp;
+    int         w, h, ret, row_stride;
 
-    ret = create_screenshot(buffer, sizeof(buffer), &f, name, ext);
+    ret = create_screenshot(buffer, sizeof(buffer), &fp, name, ext);
     if (ret < 0) {
         Com_EPrintf("Couldn't create screenshot: %s\n", Q_ErrorString(ret));
         return;
     }
 
-    pixels = IMG_ReadPixels(&w, &h, &rowbytes);
-    ret = save(f, buffer, pixels, w, h, rowbytes, param);
-    FS_FreeTempMem(pixels);
+    if (async)
+        Com_Printf("Taking async screenshot...\n");
 
-    fclose(f);
+    pixels = IMG_ReadPixels(&w, &h, &row_stride);
 
-    if (ret < 0) {
-        Com_EPrintf("Couldn't write %s: %s\n", buffer, Q_ErrorString(ret));
+    screenshot_t s = {
+        .save_cb = save_cb,
+        .pixels = pixels,
+        .fp = fp,
+        .filename = async ? Z_CopyString(buffer) : buffer,
+        .width = w,
+        .height = h,
+        .row_stride = row_stride,
+        .status = -1,
+        .param = param,
+        .async = async,
+    };
+
+    if (async) {
+        asyncwork_t work = {
+            .work_cb = screenshot_work_cb,
+            .done_cb = screenshot_done_cb,
+            .cb_arg = Z_CopyStruct(&s),
+        };
+        Sys_QueueAsyncWork(&work);
     } else {
-        Com_Printf("Wrote %s\n", buffer);
+        screenshot_work_cb(&s);
+        screenshot_done_cb(&s);
     }
 }
+
 #endif // USE_TGA || USE_JPG || USE_PNG
 
 /*
@@ -1199,6 +1253,7 @@ static void IMG_ScreenShot_f(void)
 #if USE_JPG
     if (*s == 'j') {
         make_screenshot(NULL, ".jpg", IMG_SaveJPG,
+                        r_screenshot_async->integer > 1,
                         r_screenshot_quality->integer);
         return;
     }
@@ -1207,6 +1262,7 @@ static void IMG_ScreenShot_f(void)
 #if USE_PNG
     if (*s == 'p') {
         make_screenshot(NULL, ".png", IMG_SavePNG,
+                        r_screenshot_async->integer > 0,
                         r_screenshot_compression->integer);
         return;
     }
@@ -1214,7 +1270,7 @@ static void IMG_ScreenShot_f(void)
 #endif // USE_JPG || USE_PNG
 
 #if USE_TGA
-    make_screenshot(NULL, ".tga", IMG_SaveTGA, 0);
+    make_screenshot(NULL, ".tga", IMG_SaveTGA, qfalse, 0);
 #else
     Com_Printf("Can't take screenshot, TGA format not available.\n");
 #endif
@@ -1237,7 +1293,7 @@ static void IMG_ScreenShotTGA_f(void)
         return;
     }
 
-    make_screenshot(Cmd_Argv(1), ".tga", IMG_SaveTGA, 0);
+    make_screenshot(Cmd_Argv(1), ".tga", IMG_SaveTGA, qfalse, 0);
 }
 #endif
 
@@ -1257,7 +1313,8 @@ static void IMG_ScreenShotJPG_f(void)
         quality = r_screenshot_quality->integer;
     }
 
-    make_screenshot(Cmd_Argv(1), ".jpg", IMG_SaveJPG, quality);
+    make_screenshot(Cmd_Argv(1), ".jpg", IMG_SaveJPG,
+                    r_screenshot_async->integer > 1, quality);
 }
 #endif
 
@@ -1277,7 +1334,8 @@ static void IMG_ScreenShotPNG_f(void)
         compression = r_screenshot_compression->integer;
     }
 
-    make_screenshot(Cmd_Argv(1), ".png", IMG_SavePNG, compression);
+    make_screenshot(Cmd_Argv(1), ".png", IMG_SavePNG,
+                    r_screenshot_async->integer > 0, compression);
 }
 #endif
 
@@ -1992,6 +2050,9 @@ void IMG_Init(void)
     r_screenshot_format = Cvar_Get("gl_screenshot_format", "jpg", 0);
 #elif USE_PNG
     r_screenshot_format = Cvar_Get("gl_screenshot_format", "png", 0);
+#endif
+#if USE_JPG || USE_PNG
+    r_screenshot_async = Cvar_Get("gl_screenshot_async", "1", 0);
 #endif
 #if USE_JPG
     r_screenshot_quality = Cvar_Get("gl_screenshot_quality", "100", 0);
