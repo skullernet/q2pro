@@ -52,6 +52,7 @@ cvar_t  *sys_homedir;
 cvar_t  *sys_forcegamelib;
 
 static qboolean terminate;
+static qboolean flush_logs;
 
 /*
 ===============================================================================
@@ -237,7 +238,7 @@ qboolean Sys_GetAntiCheatAPI(void)
 
 static void hup_handler(int signum)
 {
-    Com_FlushLogs();
+    flush_logs = qtrue;
 }
 
 static void term_handler(int signum)
@@ -567,6 +568,10 @@ int main(int argc, char **argv)
     Qcommon_Init(argc, argv);
     while (!terminate) {
         complete_work();
+        if (flush_logs) {
+            Com_FlushLogs();
+            flush_logs = qfalse;
+        }
         Qcommon_Frame();
     }
 
