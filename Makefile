@@ -560,7 +560,7 @@ else
 
     ifeq ($(SYS),Linux)
         LIBS_s += -ldl
-        LIBS_c += -ldl
+        LIBS_c += -ldl -lpthread
     endif
 endif
 
