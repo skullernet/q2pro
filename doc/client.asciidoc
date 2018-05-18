@@ -729,7 +729,7 @@ gl_screenshot_format::
 
 gl_screenshot_quality::
     Specifies image quality of JPG screenshots. Values range from 0 (worst
-    quality) to 100 (best quality). Default value is 100.
+    quality) to 100 (best quality). Default value is 90.
 
 gl_screenshot_compression::
     Specifies compression level of PNG screenshots. Values range from 0 (no

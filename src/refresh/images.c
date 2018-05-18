@@ -2055,7 +2055,7 @@ void IMG_Init(void)
     r_screenshot_async = Cvar_Get("gl_screenshot_async", "1", 0);
 #endif
 #if USE_JPG
-    r_screenshot_quality = Cvar_Get("gl_screenshot_quality", "100", 0);
+    r_screenshot_quality = Cvar_Get("gl_screenshot_quality", "90", 0);
 #endif
 #if USE_PNG
     r_screenshot_compression = Cvar_Get("gl_screenshot_compression", "6", 0);
