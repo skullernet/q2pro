@@ -66,6 +66,8 @@ typedef struct {
         vec_t       size;
     } world;
     GLuint          prognum_warp;
+    GLuint          prognum_lightmapped;
+    GLuint          prognum_alias;
     GLuint          texnums[NUM_TEXNUMS];
     GLbitfield      stencil_buffer_bit;
     float           entity_modulate;
@@ -169,6 +171,7 @@ extern cvar_t *gl_modulate_entities;
 extern cvar_t *gl_doublelight_entities;
 extern cvar_t *gl_fragment_program;
 extern cvar_t *gl_fontshadow;
+extern cvar_t *gl_intensity;
 
 // development variables
 extern cvar_t *gl_znear;
@@ -291,7 +294,8 @@ typedef enum {
     GLS_LIGHTMAP_ENABLE     = (1 << 8),
     GLS_WARP_ENABLE         = (1 << 9),
     GLS_CULL_DISABLE        = (1 << 10),
-    GLS_SHADE_SMOOTH        = (1 << 11)
+    GLS_SHADE_SMOOTH        = (1 << 11),
+    GLS_ALIAS_MESH          = (1 << 12)
 } glStateBits_t;
 
 #define GLS_BLEND_MASK  (GLS_BLEND_BLEND | GLS_BLEND_ADD | GLS_BLEND_MODULATE)

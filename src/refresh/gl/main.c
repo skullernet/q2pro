@@ -694,9 +694,8 @@ static void gl_lightmap_changed(cvar_t *self)
         lm.comp = GL_RGBA; // ES doesn't support internal format != external
     else
         lm.comp = lm.scale ? GL_RGB : GL_LUMINANCE;
-    lm.add = 255 * Cvar_ClampValue(gl_brightness, -1, 1);
-    lm.modulate = Cvar_ClampValue(gl_modulate, 0, 1e6);
-    lm.modulate *= Cvar_ClampValue(gl_modulate_world, 0, 1e6);
+    lm.add = 0.0f;
+    lm.modulate = 1.0f;
     lm.dirty = qtrue; // rebuild all lightmaps next frame
 }
 

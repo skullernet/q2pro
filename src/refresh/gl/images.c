@@ -43,9 +43,10 @@ static cvar_t *gl_texturebits;
 static cvar_t *gl_texture_non_power_of_two;
 static cvar_t *gl_anisotropy;
 static cvar_t *gl_saturation;
-static cvar_t *gl_intensity;
 static cvar_t *gl_gamma;
 static cvar_t *gl_invert;
+
+cvar_t *gl_intensity;
 
 static int GL_UpscaleLevel(int width, int height, imagetype_t type, imageflags_t flags);
 static void GL_Upload32(byte *data, int width, int height, int baselevel, imagetype_t type, imageflags_t flags);
@@ -691,7 +692,8 @@ static void GL_BuildIntensityTable(void)
     int i, j;
     float f;
 
-    f = Cvar_ClampValue(gl_intensity, 1, 5);
+    f = 1.0f;
+
     for (i = 0; i < 256; i++) {
         j = i * f;
         if (j > 255) {
@@ -873,7 +875,7 @@ void GL_InitImages(void)
     gl_gamma_scale_pics = Cvar_Get("gl_gamma_scale_pics", "0", CVAR_FILES);
     gl_upscale_pcx = Cvar_Get("gl_upscale_pcx", "0", CVAR_FILES);
     gl_saturation = Cvar_Get("gl_saturation", "1", CVAR_FILES);
-    gl_intensity = Cvar_Get("intensity", "1", CVAR_FILES);
+    gl_intensity = Cvar_Get("intensity", "1", CVAR_ARCHIVE);
     gl_invert = Cvar_Get("gl_invert", "0", CVAR_FILES);
     gl_gamma = Cvar_Get("vid_gamma", "1", CVAR_ARCHIVE);
 
