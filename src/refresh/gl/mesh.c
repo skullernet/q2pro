@@ -570,7 +570,7 @@ static int texnum_for_mesh(maliasmesh_t *mesh)
 
 static void draw_alias_mesh(maliasmesh_t *mesh)
 {
-    glStateBits_t state = GLS_DEFAULT;
+    glStateBits_t state = GLS_ALIAS_MESH;
 
     // fall back to entity matrix
     GL_LoadMatrix(glr.entmatrix);
