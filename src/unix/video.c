@@ -36,6 +36,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <SDL.h>
 
 static SDL_Window       *sdl_window;
+static SDL_GLContext    *sdl_context;
 static vidFlags_t       sdl_flags;
 
 /*
@@ -45,8 +46,6 @@ OPENGL STUFF
 
 ===============================================================================
 */
-
-static SDL_GLContext    *sdl_context;
 
 static void gl_swapinterval_changed(cvar_t *self)
 {
@@ -189,9 +188,6 @@ static void VID_SDL_SetMode(void)
     int freq;
 
     if (vid_fullscreen->integer) {
-        // FIXME: force update by toggling fullscreen mode
-        SDL_SetWindowFullscreen(sdl_window, 0);
-
         if (VID_GetFullscreen(&rc, &freq, NULL)) {
             SDL_DisplayMode mode = {
                 .format         = SDL_PIXELFORMAT_UNKNOWN,
@@ -279,14 +275,10 @@ static int VID_SDL_InitSubSystem(void)
 {
     int ret;
 
-    ret = SDL_WasInit(SDL_INIT_EVERYTHING);
-    if (ret == 0)
-        ret = SDL_Init(SDL_INIT_VIDEO);
-    else if (!(ret & SDL_INIT_VIDEO))
-        ret = SDL_InitSubSystem(SDL_INIT_VIDEO);
-    else
-        ret = 0;
+    if (SDL_WasInit(SDL_INIT_VIDEO))
+        return 0;
 
+    ret = SDL_InitSubSystem(SDL_INIT_VIDEO);
     if (ret == -1)
         Com_EPrintf("Couldn't initialize SDL video: %s\n", SDL_GetError());
 
@@ -343,11 +335,11 @@ qboolean VID_Init(void)
         return qfalse;
     }
 
+    VID_SDL_GL_SetAttributes();
+
     if (!VID_SDL_GL_LoadLibrary()) {
         goto fail;
     }
-
-    VID_SDL_GL_SetAttributes();
 
     SDL_SetEventFilter(VID_SDL_EventFilter, NULL);
 
@@ -421,12 +413,8 @@ void VID_Shutdown(void)
         SDL_DestroyWindow(sdl_window);
         sdl_window = NULL;
     }
+    SDL_QuitSubSystem(SDL_INIT_VIDEO);
     sdl_flags = 0;
-    if (SDL_WasInit(SDL_INIT_EVERYTHING) == SDL_INIT_VIDEO) {
-        SDL_Quit();
-    } else {
-        SDL_QuitSubSystem(SDL_INIT_VIDEO);
-    }
 }
 
 /*
@@ -642,7 +630,7 @@ static void ShutdownMouse(void)
 
 static qboolean InitMouse(void)
 {
-    if (SDL_WasInit(SDL_INIT_VIDEO) != SDL_INIT_VIDEO) {
+    if (!SDL_WasInit(SDL_INIT_VIDEO)) {
         return qfalse;
     }
 
@@ -652,13 +640,10 @@ static qboolean InitMouse(void)
 
 static void GrabMouse(qboolean grab)
 {
-    SDL_bool relative = grab && !(Key_GetDest() & KEY_MENU);
-    int cursor = (sdl_flags & QVF_FULLSCREEN) ? SDL_DISABLE : SDL_ENABLE;
-
-    SDL_SetWindowGrab(sdl_window, (SDL_bool)grab);
-    SDL_SetRelativeMouseMode(relative);
+    SDL_SetWindowGrab(sdl_window, grab);
+    SDL_SetRelativeMouseMode(grab && !(Key_GetDest() & KEY_MENU));
     SDL_GetRelativeMouseState(NULL, NULL);
-    SDL_ShowCursor(cursor);
+    SDL_ShowCursor(!(sdl_flags & QVF_FULLSCREEN));
 }
 
 /*
