@@ -317,21 +317,13 @@ ifndef CONFIG_NO_REFRESH
     OBJS_c += src/refresh/main.o
     OBJS_c += src/refresh/mesh.o
     OBJS_c += src/refresh/models.o
+    OBJS_c += src/refresh/qgl.o
     OBJS_c += src/refresh/sky.o
     OBJS_c += src/refresh/state.o
     OBJS_c += src/refresh/surf.o
     OBJS_c += src/refresh/tess.o
     OBJS_c += src/refresh/texture.o
     OBJS_c += src/refresh/world.o
-    ifdef CONFIG_FIXED_LIBGL
-        GL_CFLAGS ?=
-        GL_LIBS ?= -lGL
-        CFLAGS_c += -DUSE_FIXED_LIBGL=1 $(GL_CFLAGS)
-        LIBS_c += $(GL_LIBS)
-        OBJS_c += src/refresh/qgl/fixed.o
-    else
-        OBJS_c += src/refresh/qgl/dynamic.o
-    endif
 endif
 
 CONFIG_DEFAULT_MODELIST ?= 640x480 800x600 1024x768
