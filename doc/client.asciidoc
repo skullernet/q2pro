@@ -678,14 +678,14 @@ gl_dlight_falloff::
 
 gl_fragment_program::
     Enables ‘GL_ARB_fragment_program’ extension, if supported by your OpenGL
-    implementation.  Currently this extension is used only for warping effect
-    when drawing liquid surfaces. Default value is 1 (enabled).
+    implementation. This extension is used for warping effect on liquid
+    surfaces when using legacy OpenGL backend. Default value is 1 (enabled).
+    Ignored if ‘gl_shaders’ is enabled.
 
-gl_vertex_buffer_object::
-    Enables ‘GL_ARB_vertex_buffer_object’ extension, if supported by your
-    OpenGL implementation. This extension allows world surfaces to be stored in
-    static memory area, which speeds up rendering. Default value is 1
-    (enabled).
+gl_shaders::
+    Enables experimental GLSL rendering backend. This requires at least OpenGL
+    3.1 and changes how ‘gl_modulate’, ‘gl_brightness’ and ‘intensity’
+    parameters work. Default value is 0 (disabled).
 
 gl_colorbits::
     Specifies desired size of color buffer, in bits, requested from OpenGL

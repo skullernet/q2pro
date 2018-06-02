@@ -314,10 +314,12 @@ ifndef CONFIG_NO_REFRESH
     OBJS_c += src/refresh/draw.o
     OBJS_c += src/refresh/hq2x.o
     OBJS_c += src/refresh/images.o
+    OBJS_c += src/refresh/legacy.o
     OBJS_c += src/refresh/main.o
     OBJS_c += src/refresh/mesh.o
     OBJS_c += src/refresh/models.o
     OBJS_c += src/refresh/qgl.o
+    OBJS_c += src/refresh/shader.o
     OBJS_c += src/refresh/sky.o
     OBJS_c += src/refresh/state.o
     OBJS_c += src/refresh/surf.o
