@@ -81,7 +81,6 @@ else
 
     # Disable Linux features on other systems
     ifneq ($(SYS),Linux)
-        CONFIG_DIRECT_INPUT :=
         CONFIG_NO_ICMP := y
     endif
 
@@ -178,8 +177,6 @@ OBJS_c := \
     src/client/view.o       \
     src/client/sound/main.o \
     src/client/sound/mem.o  \
-    src/refresh/images.o    \
-    src/refresh/models.o    \
     src/server/commands.o   \
     src/server/entities.o   \
     src/server/game.o       \
@@ -312,48 +309,23 @@ ifndef CONFIG_NO_MAPCHECKSUM
     CFLAGS_c += -DUSE_MAPCHECKSUM=1
 endif
 
-ifdef CONFIG_SOFTWARE_RENDERER
-    CFLAGS_c += -DREF_SOFT=1 -DUSE_REF=1 -DVID_REF='"soft"'
-    OBJS_c += src/refresh/sw/aclip.o
-    OBJS_c += src/refresh/sw/alias.o
-    OBJS_c += src/refresh/sw/bsp.o
-    OBJS_c += src/refresh/sw/draw.o
-    OBJS_c += src/refresh/sw/edge.o
-    OBJS_c += src/refresh/sw/image.o
-    OBJS_c += src/refresh/sw/light.o
-    OBJS_c += src/refresh/sw/main.o
-    OBJS_c += src/refresh/sw/misc.o
-    OBJS_c += src/refresh/sw/model.o
-    OBJS_c += src/refresh/sw/part.o
-    OBJS_c += src/refresh/sw/poly.o
-    OBJS_c += src/refresh/sw/polyset.o
-    OBJS_c += src/refresh/sw/raster.o
-    OBJS_c += src/refresh/sw/scan.o
-    OBJS_c += src/refresh/sw/surf.o
-    OBJS_c += src/refresh/sw/sird.o
-    OBJS_c += src/refresh/sw/sky.o
-else
-    CFLAGS_c += -DREF_GL=1 -DUSE_REF=1 -DVID_REF='"gl"'
-    OBJS_c += src/refresh/gl/draw.o
-    OBJS_c += src/refresh/gl/hq2x.o
-    OBJS_c += src/refresh/gl/images.o
-    OBJS_c += src/refresh/gl/main.o
-    OBJS_c += src/refresh/gl/mesh.o
-    OBJS_c += src/refresh/gl/models.o
-    OBJS_c += src/refresh/gl/sky.o
-    OBJS_c += src/refresh/gl/state.o
-    OBJS_c += src/refresh/gl/surf.o
-    OBJS_c += src/refresh/gl/tess.o
-    OBJS_c += src/refresh/gl/world.o
-    ifdef CONFIG_FIXED_LIBGL
-        GL_CFLAGS ?=
-        GL_LIBS ?= -lGL
-        CFLAGS_c += -DUSE_FIXED_LIBGL=1 $(GL_CFLAGS)
-        LIBS_c += $(GL_LIBS)
-        OBJS_c += src/refresh/gl/qgl/fixed.o
-    else
-        OBJS_c += src/refresh/gl/qgl/dynamic.o
-    endif
+ifndef CONFIG_NO_REFRESH
+    CFLAGS_c += -DUSE_REF=1 -DVID_REF='"gl"'
+    OBJS_c += src/refresh/draw.o
+    OBJS_c += src/refresh/hq2x.o
+    OBJS_c += src/refresh/images.o
+    OBJS_c += src/refresh/legacy.o
+    OBJS_c += src/refresh/main.o
+    OBJS_c += src/refresh/mesh.o
+    OBJS_c += src/refresh/models.o
+    OBJS_c += src/refresh/qgl.o
+    OBJS_c += src/refresh/shader.o
+    OBJS_c += src/refresh/sky.o
+    OBJS_c += src/refresh/state.o
+    OBJS_c += src/refresh/surf.o
+    OBJS_c += src/refresh/tess.o
+    OBJS_c += src/refresh/texture.o
+    OBJS_c += src/refresh/world.o
 endif
 
 CONFIG_DEFAULT_MODELIST ?= 640x480 800x600 1024x768
@@ -361,10 +333,8 @@ CONFIG_DEFAULT_GEOMETRY ?= 640x480
 CFLAGS_c += -DVID_MODELIST='"$(CONFIG_DEFAULT_MODELIST)"'
 CFLAGS_c += -DVID_GEOMETRY='"$(CONFIG_DEFAULT_GEOMETRY)"'
 
-ifndef CONFIG_SOFTWARE_RENDERER
-    ifndef CONFIG_NO_MD3
-        CFLAGS_c += -DUSE_MD3=1
-    endif
+ifndef CONFIG_NO_MD3
+    CFLAGS_c += -DUSE_MD3=1
 endif
 
 ifndef CONFIG_NO_TGA
@@ -440,11 +410,6 @@ endif
 ifdef CONFIG_WINDOWS
     OBJS_c += src/windows/client.o
 
-    ifdef CONFIG_DIRECT_INPUT
-        CFLAGS_c += -DUSE_DINPUT=1
-        OBJS_c += src/windows/dinput.o
-    endif
-
     ifndef CONFIG_NO_SOFTWARE_SOUND
         OBJS_c += src/windows/wave.o
         ifdef CONFIG_DIRECT_SOUND
@@ -453,12 +418,8 @@ ifdef CONFIG_WINDOWS
         endif
     endif
 
-    ifdef CONFIG_SOFTWARE_RENDERER
-        OBJS_c += src/windows/swimp.o
-    else
-        OBJS_c += src/windows/glimp.o
-        OBJS_c += src/windows/wgl.o
-    endif
+    OBJS_c += src/windows/glimp.o
+    OBJS_c += src/windows/wgl.o
 
     ifdef CONFIG_WINDOWS_CRASH_DUMPS
         CFLAGS_c += -DUSE_DBGHELP=1
@@ -483,62 +444,14 @@ ifdef CONFIG_WINDOWS
     LIBS_s += -lws2_32 -lwinmm -ladvapi32
     LIBS_c += -lws2_32 -lwinmm
 else
-    ifdef CONFIG_SDL2
-        SDL_CFLAGS ?= $(shell sdl2-config --cflags)
-        SDL_LIBS ?= $(shell sdl2-config --libs)
-        CFLAGS_c += -DUSE_SDL=2 $(SDL_CFLAGS)
-        LIBS_c += $(SDL_LIBS)
-        OBJS_c += src/unix/sdl2/video.o
-    else
-        SDL_CFLAGS ?= $(shell sdl-config --cflags)
-        SDL_LIBS ?= $(shell sdl-config --libs)
-        CFLAGS_c += -DUSE_SDL=1 $(SDL_CFLAGS)
-        LIBS_c += $(SDL_LIBS)
-        OBJS_c += src/unix/sdl/video.o
-        OBJS_c += src/unix/sdl/clipboard.o
-
-        ifdef CONFIG_SOFTWARE_RENDERER
-            OBJS_c += src/unix/sdl/swimp.o
-        else
-            OBJS_c += src/unix/sdl/glimp.o
-        endif
-
-        ifdef CONFIG_X11
-            X11_CFLAGS ?=
-            X11_LIBS ?= -lX11
-            CFLAGS_c += -DUSE_X11=1 $(X11_CFLAGS)
-            LIBS_c += $(X11_LIBS)
-            ifndef CONFIG_SOFTWARE_RENDERER
-                OBJS_c += src/unix/sdl/glx.o
-            endif
-        endif
-
-        ifdef CONFIG_DIRECT_INPUT
-            CFLAGS_c += -DUSE_DINPUT=1
-            OBJS_c += src/unix/evdev.o
-            ifndef CONFIG_NO_UDEV
-                UDEV_CFLAGS ?=
-                UDEV_LIBS ?= -ludev
-                CFLAGS_c += -DUSE_UDEV=1 $(UDEV_CFLAGS)
-                LIBS_c += $(UDEV_LIBS)
-            endif
-        endif
-    endif
-
-    ifdef CONFIG_LIRC
-        LIRC_CFLAGS ?=
-        LIRC_LIBS ?= -llirc_client
-        CFLAGS_c += -DUSE_LIRC=1 $(LIRC_CFLAGS)
-        OBJS_c += src/unix/lirc.o
-        LIBS_c += $(LIRC_LIBS)
-    endif
+    SDL_CFLAGS ?= $(shell sdl2-config --cflags)
+    SDL_LIBS ?= $(shell sdl2-config --libs)
+    CFLAGS_c += -DUSE_SDL=2 $(SDL_CFLAGS)
+    LIBS_c += $(SDL_LIBS)
+    OBJS_c += src/unix/video.o
 
     ifndef CONFIG_NO_SOFTWARE_SOUND
-        ifdef CONFIG_SDL2
-            OBJS_c += src/unix/sdl2/sound.o
-        else
-            OBJS_c += src/unix/sdl/sound.o
-        endif
+        OBJS_c += src/unix/sound.o
         ifdef CONFIG_DIRECT_SOUND
             CFLAGS_c += -DUSE_DSOUND=1
             OBJS_c += src/unix/oss.o

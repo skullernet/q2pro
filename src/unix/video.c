@@ -32,10 +32,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client/video.h"
 #include "refresh/refresh.h"
 #include "system/system.h"
-#include "../res/q2pro.xbm"
+#include "res/q2pro.xbm"
 #include <SDL.h>
 
 static SDL_Window       *sdl_window;
+static SDL_GLContext    *sdl_context;
 static vidFlags_t       sdl_flags;
 
 /*
@@ -45,10 +46,6 @@ OPENGL STUFF
 
 ===============================================================================
 */
-
-#if USE_REF == REF_GL
-
-static SDL_GLContext    *sdl_context;
 
 static void gl_swapinterval_changed(cvar_t *self)
 {
@@ -139,29 +136,10 @@ static void VID_SDL_GL_SetAttributes(void)
     }
 }
 
-#if !USE_FIXED_LIBGL
-void *VID_GetCoreAddr(const char *sym)
-{
-    void    *entry = SDL_GL_GetProcAddress(sym);
-
-    if (!entry)
-        Com_EPrintf("Couldn't get OpenGL entry point: %s\n", sym);
-
-    return entry;
-}
-#endif
-
 void *VID_GetProcAddr(const char *sym)
 {
-    void    *entry = SDL_GL_GetProcAddress(sym);
-
-    if (!entry)
-        Com_EPrintf("Couldn't get OpenGL entry point: %s\n", sym);
-
-    return entry;
+    return SDL_GL_GetProcAddress(sym);
 }
-
-#endif
 
 /*
 ===============================================================================
@@ -174,9 +152,6 @@ VIDEO
 static void VID_SDL_ModeChanged(void)
 {
     int width, height;
-    void *pixels;
-    int rowbytes;
-
     SDL_GetWindowSize(sdl_window, &width, &height);
 
     Uint32 flags = SDL_GetWindowFlags(sdl_window);
@@ -185,18 +160,7 @@ static void VID_SDL_ModeChanged(void)
     else
         sdl_flags &= ~QVF_FULLSCREEN;
 
-#if USE_REF == REF_SOFT
-    SDL_Surface *surf = SDL_GetWindowSurface(sdl_window);
-    if (!surf)
-        Com_Error(ERR_FATAL, "Couldn't (re)create window surface: %s", SDL_GetError());
-    pixels = surf->pixels;
-    rowbytes = surf->pitch;
-#else
-    pixels = NULL;
-    rowbytes = 0;
-#endif
-
-    R_ModeChanged(width, height, sdl_flags, rowbytes, pixels);
+    R_ModeChanged(width, height, sdl_flags);
     SCR_ModeChanged();
 }
 
@@ -207,9 +171,6 @@ static void VID_SDL_SetMode(void)
     int freq;
 
     if (vid_fullscreen->integer) {
-        // FIXME: force update by toggling fullscreen mode
-        SDL_SetWindowFullscreen(sdl_window, 0);
-
         if (VID_GetFullscreen(&rc, &freq, NULL)) {
             SDL_DisplayMode mode = {
                 .format         = SDL_PIXELFORMAT_UNKNOWN,
@@ -255,11 +216,7 @@ void VID_BeginFrame(void)
 
 void VID_EndFrame(void)
 {
-#if USE_REF == REF_GL
     SDL_GL_SwapWindow(sdl_window);
-#else
-    SDL_UpdateWindowSurface(sdl_window);
-#endif
 }
 
 void VID_FatalShutdown(void)
@@ -301,14 +258,10 @@ static int VID_SDL_InitSubSystem(void)
 {
     int ret;
 
-    ret = SDL_WasInit(SDL_INIT_EVERYTHING);
-    if (ret == 0)
-        ret = SDL_Init(SDL_INIT_VIDEO);
-    else if (!(ret & SDL_INIT_VIDEO))
-        ret = SDL_InitSubSystem(SDL_INIT_VIDEO);
-    else
-        ret = 0;
+    if (SDL_WasInit(SDL_INIT_VIDEO))
+        return 0;
 
+    ret = SDL_InitSubSystem(SDL_INIT_VIDEO);
     if (ret == -1)
         Com_EPrintf("Couldn't initialize SDL video: %s\n", SDL_GetError());
 
@@ -359,21 +312,17 @@ char *VID_GetDefaultModeList(void)
 
 qboolean VID_Init(void)
 {
-    Uint32 flags = SDL_WINDOW_RESIZABLE;
     vrect_t rc;
 
     if (VID_SDL_InitSubSystem()) {
         return qfalse;
     }
 
-#if USE_REF == REF_GL
+    VID_SDL_GL_SetAttributes();
+
     if (!VID_SDL_GL_LoadLibrary()) {
         goto fail;
     }
-
-    VID_SDL_GL_SetAttributes();
-    flags |= SDL_WINDOW_OPENGL;
-#endif
 
     SDL_SetEventFilter(VID_SDL_EventFilter, NULL);
 
@@ -382,7 +331,7 @@ qboolean VID_Init(void)
         rc.y = SDL_WINDOWPOS_UNDEFINED;
     }
 
-    sdl_window = SDL_CreateWindow(PRODUCT, rc.x, rc.y, rc.width, rc.height, flags);
+    sdl_window = SDL_CreateWindow(PRODUCT, rc.x, rc.y, rc.width, rc.height, SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
     if (!sdl_window) {
         Com_EPrintf("Couldn't create SDL window: %s\n", SDL_GetError());
         goto fail;
@@ -405,7 +354,6 @@ qboolean VID_Init(void)
 
     VID_SDL_SetMode();
 
-#if USE_REF == REF_GL
     sdl_context = SDL_GL_CreateContext(sdl_window);
     if (!sdl_context) {
         Com_EPrintf("Couldn't create OpenGL context: %s\n", SDL_GetError());
@@ -415,7 +363,6 @@ qboolean VID_Init(void)
     cvar_t *gl_swapinterval = Cvar_Get("gl_swapinterval", "0", 0);
     gl_swapinterval->changed = gl_swapinterval_changed;
     gl_swapinterval_changed(gl_swapinterval);
-#endif
 
     cvar_t *vid_hwgamma = Cvar_Get("vid_hwgamma", "0", CVAR_REFRESH);
     if (vid_hwgamma->integer) {
@@ -441,22 +388,16 @@ fail:
 
 void VID_Shutdown(void)
 {
-#if USE_REF == REF_GL
     if (sdl_context) {
         SDL_GL_DeleteContext(sdl_context);
         sdl_context = NULL;
     }
-#endif
     if (sdl_window) {
         SDL_DestroyWindow(sdl_window);
         sdl_window = NULL;
     }
+    SDL_QuitSubSystem(SDL_INIT_VIDEO);
     sdl_flags = 0;
-    if (SDL_WasInit(SDL_INIT_EVERYTHING) == SDL_INIT_VIDEO) {
-        SDL_Quit();
-    } else {
-        SDL_QuitSubSystem(SDL_INIT_VIDEO);
-    }
 }
 
 /*
@@ -672,7 +613,7 @@ static void ShutdownMouse(void)
 
 static qboolean InitMouse(void)
 {
-    if (SDL_WasInit(SDL_INIT_VIDEO) != SDL_INIT_VIDEO) {
+    if (!SDL_WasInit(SDL_INIT_VIDEO)) {
         return qfalse;
     }
 
@@ -682,13 +623,10 @@ static qboolean InitMouse(void)
 
 static void GrabMouse(qboolean grab)
 {
-    SDL_bool relative = grab && !(Key_GetDest() & KEY_MENU);
-    int cursor = (sdl_flags & QVF_FULLSCREEN) ? SDL_DISABLE : SDL_ENABLE;
-
-    SDL_SetWindowGrab(sdl_window, (SDL_bool)grab);
-    SDL_SetRelativeMouseMode(relative);
+    SDL_SetWindowGrab(sdl_window, grab);
+    SDL_SetRelativeMouseMode(grab && !(Key_GetDest() & KEY_MENU));
     SDL_GetRelativeMouseState(NULL, NULL);
-    SDL_ShowCursor(cursor);
+    SDL_ShowCursor(!(sdl_flags & QVF_FULLSCREEN));
 }
 
 /*

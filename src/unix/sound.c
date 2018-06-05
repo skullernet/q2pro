@@ -47,11 +47,7 @@ static void Shutdown(void)
     Com_Printf("Shutting down SDL audio.\n");
 
     SDL_CloseAudio();
-    if (SDL_WasInit(SDL_INIT_EVERYTHING) == SDL_INIT_AUDIO) {
-        SDL_Quit();
-    } else {
-        SDL_QuitSubSystem(SDL_INIT_AUDIO);
-    }
+    SDL_QuitSubSystem(SDL_INIT_AUDIO);
 
     if (dma.buffer) {
         Z_Free(dma.buffer);
@@ -62,14 +58,9 @@ static void Shutdown(void)
 static sndinitstat_t Init(void)
 {
     SDL_AudioSpec desired, obtained;
-    char buffer[MAX_QPATH];
     int ret;
 
-    if (SDL_WasInit(SDL_INIT_EVERYTHING) == 0) {
-        ret = SDL_Init(SDL_INIT_AUDIO | SDL_INIT_NOPARACHUTE);
-    } else {
-        ret = SDL_InitSubSystem(SDL_INIT_AUDIO);
-    }
+    ret = SDL_InitSubSystem(SDL_INIT_AUDIO);
     if (ret == -1) {
         Com_EPrintf("Couldn't initialize SDL audio: %s\n", SDL_GetError());
         return SIS_FAILURE;
@@ -98,17 +89,17 @@ static sndinitstat_t Init(void)
     ret = SDL_OpenAudio(&desired, &obtained);
     if (ret == -1) {
         Com_EPrintf("Couldn't open SDL audio: %s\n", SDL_GetError());
-        return SIS_FAILURE;
+        goto fail1;
     }
 
     if (obtained.format != AUDIO_S16LSB) {
         Com_EPrintf("SDL audio format %d unsupported.\n", obtained.format);
-        goto fail;
+        goto fail2;
     }
 
     if (obtained.channels != 1 && obtained.channels != 2) {
         Com_EPrintf("SDL audio channels %d unsupported.\n", obtained.channels);
-        goto fail;
+        goto fail2;
     }
 
     dma.speed = obtained.freq;
@@ -119,15 +110,16 @@ static sndinitstat_t Init(void)
     dma.buffer = Z_Mallocz(dma.samples * 2);
     dma.samplepos = 0;
 
-    Com_Printf("Using SDL audio driver: %s\n",
-               SDL_AudioDriverName(buffer, sizeof(buffer)));
+    Com_Printf("Using SDL audio driver: %s\n", SDL_GetCurrentAudioDriver());
 
     SDL_PauseAudio(0);
 
     return SIS_SUCCESS;
 
-fail:
-    Shutdown();
+fail2:
+    SDL_CloseAudio();
+fail1:
+    SDL_QuitSubSystem(SDL_INIT_AUDIO);
     return SIS_FAILURE;
 }
 

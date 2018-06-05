@@ -30,22 +30,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/error.h"
 #include "refresh/refresh.h"
 
-#define R_Malloc(size)      Z_TagMalloc(size, TAG_RENDERER)
-#define R_Mallocz(size)     Z_TagMallocz(size, TAG_RENDERER)
-
-#if USE_REF == REF_GL
 #define IMG_AllocPixels(x)  FS_AllocTempMem(x)
 #define IMG_FreePixels(x)   FS_FreeTempMem(x)
-#else
-#define IMG_AllocPixels(x)  R_Malloc(x)
-#define IMG_FreePixels(x)   Z_Free(x)
-#endif
-
-#if USE_REF == REF_SOFT
-#define MIPSIZE(c) ((c) * (256 + 64 + 16 + 4) / 256)
-#else
-#define MIPSIZE(c) (c)
-#endif
 
 #define LUMINANCE(r, g, b) ((r) * 0.2126f + (g) * 0.7152f + (b) * 0.0722f)
 
@@ -79,12 +65,8 @@ typedef struct image_s {
     int             width, height; // source image
     int             upload_width, upload_height; // after power of two and picmip
     int             registration_sequence; // 0 = free
-#if USE_REF == REF_GL
     unsigned        texnum; // gl texture binding
     float           sl, sh, tl, th;
-#else
-    byte            *pixels[4]; // mip levels
-#endif
 } image_t;
 
 #define MAX_RIMAGES     1024
@@ -98,7 +80,6 @@ extern int registration_sequence;
 
 extern uint32_t d_8to24table[256];
 
-// these are implemented in src/refresh/images.c
 image_t *IMG_Find(const char *name, imagetype_t type, imageflags_t flags);
 void IMG_FreeUnused(void);
 void IMG_FreeAll(void);
@@ -108,11 +89,6 @@ void IMG_GetPalette(void);
 
 image_t *IMG_ForHandle(qhandle_t h);
 
-void IMG_ResampleTexture(const byte *in, int inwidth, int inheight,
-                         byte *out, int outwidth, int outheight);
-void IMG_MipMap(byte *out, byte *in, int width, int height);
-
-// these are implemented in src/refresh/[gl,sw]/images.c
 void IMG_Unload(image_t *image);
 void IMG_Load(image_t *image, byte *pic);
 byte *IMG_ReadPixels(int *width, int *height, int *rowbytes);

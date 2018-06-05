@@ -88,9 +88,7 @@ typedef struct entity_s {
 
 typedef struct dlight_s {
     vec3_t  origin;
-#if USE_REF == REF_GL
     vec3_t  transformed;
-#endif
     vec3_t  color;
     float   intensity;
 } dlight_t;
@@ -226,6 +224,6 @@ void    R_DrawFill32(int x, int y, int w, int h, uint32_t color);
 // video mode and refresh state management entry points
 void    R_BeginFrame(void);
 void    R_EndFrame(void);
-void    R_ModeChanged(int width, int height, int flags, int rowbytes, void *pixels);
+void    R_ModeChanged(int width, int height, int flags);
 
 #endif // REFRESH_H

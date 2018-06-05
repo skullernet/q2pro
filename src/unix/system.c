@@ -43,7 +43,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #endif
 
 #if USE_SDL
-#include <SDL_main.h>
+#include <SDL.h>
 #endif
 
 cvar_t  *sys_basedir;
@@ -193,6 +193,9 @@ void Sys_Quit(void)
 {
     shutdown_work();
     tty_shutdown_input();
+#if USE_SDL
+    SDL_Quit();
+#endif
     exit(EXIT_SUCCESS);
 }
 

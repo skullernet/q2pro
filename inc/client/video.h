@@ -38,7 +38,6 @@ void        VID_FatalShutdown(void);
 
 void    VID_UpdateGamma(const byte *table);
 
-void    *VID_GetCoreAddr(const char *sym);
 void    *VID_GetProcAddr(const char *sym);
 
 qboolean VID_VideoSync(void);

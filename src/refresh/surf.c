@@ -33,14 +33,14 @@ LIGHTMAP COLOR ADJUSTING
 */
 
 static inline void
-adjust_color_f(vec_t *out, const vec_t *in, float modulate)
+adjust_color_f(vec_t *out, const vec_t *in, float add, float modulate)
 {
     float r, g, b, y, max;
 
     // add & modulate
-    r = (in[0] + lm.add) * modulate;
-    g = (in[1] + lm.add) * modulate;
-    b = (in[2] + lm.add) * modulate;
+    r = (in[0] + add) * modulate;
+    g = (in[1] + add) * modulate;
+    b = (in[2] + add) * modulate;
 
     // catch negative lights
     if (r < 0) r = 0;
@@ -84,7 +84,10 @@ adjust_color_ub(byte *out, const vec_t *in)
 {
     vec3_t tmp;
 
-    adjust_color_f(tmp, in, lm.modulate);
+    if (gl_static.use_shaders)
+        adjust_color_f(tmp, in, 0, 1);
+    else
+        adjust_color_f(tmp, in, lm.add, lm.modulate);
     out[0] = (byte)tmp[0];
     out[1] = (byte)tmp[1];
     out[2] = (byte)tmp[2];
@@ -93,7 +96,7 @@ adjust_color_ub(byte *out, const vec_t *in)
 
 void GL_AdjustColor(vec3_t color)
 {
-    adjust_color_f(color, color, gl_static.entity_modulate);
+    adjust_color_f(color, color, lm.add, gl_static.entity_modulate);
     VectorScale(color, (1.0f / 255), color);
 }
 
@@ -338,17 +341,12 @@ static void LM_UploadBlock(void)
 
 static void build_style_map(int dynamic)
 {
-    static lightstyle_t fake;
+    static lightstyle_t fake = { 1, { 1, 1, 1 } };
     int i;
 
     if (!dynamic) {
         // make all styles fullbright
-        fake.rgb[0] = 1;
-        fake.rgb[1] = 1;
-        fake.rgb[2] = 1;
-        fake.white = 1;
         glr.fd.lightstyles = &fake;
-
         memset(gl_static.lightstylemap, 0, sizeof(gl_static.lightstylemap));
         return;
     }
@@ -544,8 +542,17 @@ static void build_surface_poly(mface_t *surf, vec_t *vbo)
 
     // convert surface flags to state bits
     surf->statebits = GLS_DEFAULT;
-    if (!(surf->drawflags & SURF_COLOR_MASK)) {
-        surf->statebits |= GLS_TEXTURE_REPLACE;
+    if (gl_static.use_shaders) {
+        if (!(surf->drawflags & SURF_TRANS_MASK)) {
+            surf->statebits |= GLS_TEXTURE_REPLACE;
+        }
+        if (!(surf->drawflags & SURF_COLOR_MASK)) {
+            surf->statebits |= GLS_INTENSITY_ENABLE;
+        }
+    } else {
+        if (!(surf->drawflags & SURF_COLOR_MASK)) {
+            surf->statebits |= GLS_TEXTURE_REPLACE;
+        }
     }
 
     if (surf->drawflags & SURF_WARP) {
@@ -639,8 +646,7 @@ static void sample_surface_verts(mface_t *surf, vec_t *vbo)
 // validates and processes surface lightmap
 static void build_surface_light(mface_t *surf, vec_t *vbo)
 {
-    int smax, tmax, size;
-    byte *src, *ptr;
+    int smax, tmax, size, ofs;
     bsp_t *bsp;
 
     if (gl_fullbright->integer)
@@ -672,9 +678,8 @@ static void build_surface_light(mface_t *surf, vec_t *vbo)
 
     // validate lightmap bounds
     bsp = gl_static.world.cache;
-    src = surf->lightmap + surf->numstyles * size * 3;
-    ptr = bsp->lightmap + bsp->numlightmapbytes;
-    if (src > ptr) {
+    ofs = surf->lightmap - bsp->lightmap;
+    if (surf->numstyles * size * 3 > bsp->numlightmapbytes - ofs) {
         Com_EPrintf("%s: bad surface lightmap\n", __func__);
         surf->lightmap = NULL;  // don't use this lightmap
         return;
@@ -723,21 +728,19 @@ static qboolean create_surface_vbo(size_t size)
 {
     GLuint buf = 0;
 
-    if (!qglGenBuffersARB || !qglBindBufferARB ||
-        !qglBufferDataARB || !qglBufferSubDataARB ||
-        !qglDeleteBuffersARB) {
+    if (!qglGenBuffers) {
         return qfalse;
     }
 
     GL_ClearErrors();
 
-    qglGenBuffersARB(1, &buf);
-    qglBindBufferARB(GL_ARRAY_BUFFER_ARB, buf);
-    qglBufferDataARB(GL_ARRAY_BUFFER_ARB, size, NULL, GL_STATIC_DRAW_ARB);
+    qglGenBuffers(1, &buf);
+    qglBindBuffer(GL_ARRAY_BUFFER, buf);
+    qglBufferData(GL_ARRAY_BUFFER, size, NULL, GL_STATIC_DRAW);
 
     if (GL_ShowErrors("Failed to create world model VBO")) {
-        qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-        qglDeleteBuffersARB(1, &buf);
+        qglBindBuffer(GL_ARRAY_BUFFER, 0);
+        qglDeleteBuffers(1, &buf);
         return qfalse;
     }
 
@@ -748,12 +751,12 @@ static qboolean create_surface_vbo(size_t size)
 
 static void upload_surface_vbo(int lastvert)
 {
-    GLintptrARB offset = lastvert * VERTEX_SIZE * sizeof(vec_t);
-    GLsizeiptrARB size = tess.numverts * VERTEX_SIZE * sizeof(vec_t);
+    GLintptr offset = lastvert * VERTEX_SIZE * sizeof(vec_t);
+    GLsizeiptr size = tess.numverts * VERTEX_SIZE * sizeof(vec_t);
 
     Com_DDPrintf("%s: %"PRIz" bytes at %"PRIz"\n", __func__, size, offset);
 
-    qglBufferSubDataARB(GL_ARRAY_BUFFER_ARB, offset, size, tess.vertices);
+    qglBufferSubData(GL_ARRAY_BUFFER, offset, size, tess.vertices);
     tess.numverts = 0;
 }
 
@@ -765,11 +768,11 @@ static void upload_world_surfaces(void)
     int i, currvert, lastvert;
 
     // force vertex lighting if multitexture is not supported
-    if (!qglActiveTextureARB || !qglClientActiveTextureARB)
+    if (!qglActiveTexture || (!qglClientActiveTexture && !gl_static.use_shaders))
         Cvar_Set("gl_vertexlight", "1");
 
     if (!gl_static.world.vertices)
-        qglBindBufferARB(GL_ARRAY_BUFFER_ARB, gl_static.world.bufnum);
+        qglBindBuffer(GL_ARRAY_BUFFER, gl_static.world.bufnum);
 
     currvert = 0;
     lastvert = 0;
@@ -805,7 +808,7 @@ static void upload_world_surfaces(void)
     // upload the last VBO chunk
     if (!gl_static.world.vertices) {
         upload_surface_vbo(lastvert);
-        qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+        qglBindBuffer(GL_ARRAY_BUFFER, 0);
     }
 
     gl_fullbright->modified = qfalse;
@@ -866,8 +869,8 @@ void GL_FreeWorld(void)
 
     if (gl_static.world.vertices) {
         Hunk_Free(&gl_static.world.hunk);
-    } else if (qglDeleteBuffersARB) {
-        qglDeleteBuffersARB(1, &gl_static.world.bufnum);
+    } else if (qglDeleteBuffers) {
+        qglDeleteBuffers(1, &gl_static.world.bufnum);
     }
 
     memset(&gl_static.world, 0, sizeof(gl_static.world));

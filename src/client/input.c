@@ -18,7 +18,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // cl.input.c  -- builds an intended movement command to send to the server
 
 #include "client.h"
-#include "system/lirc.h"
 
 static cvar_t    *cl_nodelta;
 static cvar_t    *cl_maxpackets;
@@ -70,9 +69,6 @@ typedef struct {
 static in_state_t   input;
 
 static cvar_t    *in_enable;
-#if USE_DINPUT
-static cvar_t    *in_direct;
-#endif
 static cvar_t    *in_grab;
 
 static qboolean IN_GetCurrentGrab(void)
@@ -144,10 +140,6 @@ void IN_Frame(void)
     if (input.api.GetEvents) {
         input.api.GetEvents();
     }
-
-#if USE_LIRC
-    Lirc_GetEvents();
-#endif
 }
 
 /*
@@ -169,11 +161,6 @@ IN_Shutdown
 */
 void IN_Shutdown(void)
 {
-#if USE_DINPUT
-    if (in_direct) {
-        in_direct->changed = NULL;
-    }
-#endif
     if (in_grab) {
         in_grab->changed = NULL;
     }
@@ -181,10 +168,6 @@ void IN_Shutdown(void)
     if (input.api.Shutdown) {
         input.api.Shutdown();
     }
-
-#if USE_LIRC
-    Lirc_Shutdown();
-#endif
 
     memset(&input, 0, sizeof(input));
 }
@@ -206,12 +189,6 @@ IN_Init
 */
 void IN_Init(void)
 {
-    qboolean ret = qfalse;
-
-#if USE_LIRC
-    Lirc_Init();
-#endif
-
     in_enable = Cvar_Get("in_enable", "1", 0);
     in_enable->changed = in_changed_hard;
     if (!in_enable->integer) {
@@ -219,29 +196,11 @@ void IN_Init(void)
         return;
     }
 
-#if USE_DINPUT
-    in_direct = Cvar_Get("in_direct", "1", 0);
-    if (in_direct->integer) {
-        DI_FillAPI(&input.api);
-        ret = input.api.Init();
-        if (!ret) {
-            Cvar_Set("in_direct", "0");
-        }
+    VID_FillInputAPI(&input.api);
+    if (!input.api.Init()) {
+        Cvar_Set("in_enable", "0");
+        return;
     }
-#endif
-
-    if (!ret) {
-        VID_FillInputAPI(&input.api);
-        ret = input.api.Init();
-        if (!ret) {
-            Cvar_Set("in_enable", "0");
-            return;
-        }
-    }
-
-#if USE_DINPUT
-    in_direct->changed = in_changed_hard;
-#endif
 
     in_grab = Cvar_Get("in_grab", "1", 0);
     in_grab->changed = in_changed_soft;
