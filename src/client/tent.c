@@ -59,7 +59,7 @@ static qhandle_t cl_spr_explo2;
 static int numexpframes;
 static int numexpframes2;
 // for getting number of frames from a model handle
-#include "refresh/models.h"
+#include "../refresh/gl.h"
 // override blood palette color
 cvar_t* cl_blood_color;
 
