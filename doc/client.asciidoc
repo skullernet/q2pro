@@ -1360,9 +1360,6 @@ it used to be you know where to look. The following list may be incomplete.
   renderers.  Thus, ‘vid_ref’ cvar has been made read-only and exists only for
   informational purpose.
 
-- Default value of ‘intensity’ variable has been changed from 2 to 1. This means
-  textures will appear darker by default.
-
 - Default value of ‘gl_dynamic’ variable has been changed from 1 to 2. This means
   dynamic lights will be disabled by default.
 
