@@ -672,12 +672,6 @@ gl_dlight_falloff::
     Makes dynamic lights look a bit smoother, opposed to original jagged Quake
     2 style.  Default value is 1 (enabled).
 
-gl_fragment_program::
-    Enables ‘GL_ARB_fragment_program’ extension, if supported by your OpenGL
-    implementation. This extension is used for warping effect on liquid
-    surfaces when using legacy OpenGL backend. Default value is 1 (enabled).
-    Ignored if ‘gl_shaders’ is enabled.
-
 gl_shaders::
     Enables experimental GLSL rendering backend. This requires at least OpenGL
     3.1 and changes how ‘gl_modulate’, ‘gl_brightness’ and ‘intensity’
