@@ -673,9 +673,10 @@ gl_dlight_falloff::
     2 style.  Default value is 1 (enabled).
 
 gl_shaders::
-    Enables experimental GLSL rendering backend. This requires at least OpenGL
-    3.1 and changes how ‘gl_modulate’, ‘gl_brightness’ and ‘intensity’
-    parameters work. Default value is 0 (disabled).
+    Enables GLSL rendering backend. This requires at least OpenGL 3.0 and
+    changes how ‘gl_modulate’, ‘gl_brightness’ and ‘intensity’ parameters work
+    to prevent ‘washed out’ colors. Default value is 1 (enabled) on systems
+    that support shaders, 0 otherwise.
 
 gl_colorbits::
     Specifies desired size of color buffer, in bits, requested from OpenGL
