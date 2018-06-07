@@ -50,7 +50,6 @@ cvar_t *gl_dlight_falloff;
 #endif
 cvar_t *gl_modulate_entities;
 cvar_t *gl_doublelight_entities;
-cvar_t *gl_fragment_program;
 cvar_t *gl_fontshadow;
 cvar_t *gl_shaders;
 
@@ -167,21 +166,6 @@ glCullResult_t GL_CullSphere(const vec3_t origin, float radius)
     return cull;
 }
 
-static inline void make_box_points(const vec3_t    origin,
-                                   vec3_t    bounds[2],
-                                   vec3_t    points[8])
-{
-    int i;
-
-    for (i = 0; i < 8; i++) {
-        VectorCopy(origin, points[i]);
-        VectorMA(points[i], bounds[(i >> 0) & 1][0], glr.entaxis[0], points[i]);
-        VectorMA(points[i], bounds[(i >> 1) & 1][1], glr.entaxis[1], points[i]);
-        VectorMA(points[i], bounds[(i >> 2) & 1][2], glr.entaxis[2], points[i]);
-    }
-
-}
-
 glCullResult_t GL_CullLocalBox(const vec3_t origin, vec3_t bounds[2])
 {
     vec3_t points[8];
@@ -195,7 +179,12 @@ glCullResult_t GL_CullLocalBox(const vec3_t origin, vec3_t bounds[2])
         return CULL_IN;
     }
 
-    make_box_points(origin, bounds, points);
+    for (i = 0; i < 8; i++) {
+        VectorCopy(origin, points[i]);
+        VectorMA(points[i], bounds[(i >> 0) & 1][0], glr.entaxis[0], points[i]);
+        VectorMA(points[i], bounds[(i >> 1) & 1][1], glr.entaxis[1], points[i]);
+        VectorMA(points[i], bounds[(i >> 2) & 1][2], glr.entaxis[2], points[i]);
+    }
 
     cull = CULL_IN;
     for (i = 0, p = glr.frustumPlanes; i < 4; i++, p++) {
@@ -642,7 +631,7 @@ static void GL_Strings_f(void)
         Com_Printf("GL_MAX_TEXTURE_UNITS: %d\n", integer);
     }
 
-    if (gl_config.caps & QGL_CAP_ANISOTROPY) {
+    if (gl_config.caps & QGL_CAP_TEXTURE_ANISOTROPY) {
         qglGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &value);
         Com_Printf("GL_MAX_TEXTURE_MAX_ANISOTROPY: %.f\n", value);
     }
@@ -659,12 +648,11 @@ static size_t GL_ViewCluster_m(char *buffer, size_t size)
 static void gl_lightmap_changed(cvar_t *self)
 {
     lm.scale = Cvar_ClampValue(gl_coloredlightmaps, 0, 1);
-    // ES doesn't support internal format != external
-    lm.comp = gl_config.ver_es ? GL_RGBA : lm.scale ? GL_RGB : GL_LUMINANCE;
+    lm.comp = !(gl_config.caps & QGL_CAP_LEGACY) ? GL_RGBA : lm.scale ? GL_RGB : GL_LUMINANCE;
     lm.add = 255 * Cvar_ClampValue(gl_brightness, -1, 1);
     lm.modulate = Cvar_ClampValue(gl_modulate, 0, 1e6);
     lm.modulate *= Cvar_ClampValue(gl_modulate_world, 0, 1e6);
-    if (gl_static.use_shaders && (self == gl_brightness || self == gl_modulate || self == gl_modulate_world))
+    if (gl_static.use_shaders && (self == gl_brightness || self == gl_modulate || self == gl_modulate_world) && !gl_vertexlight->integer)
         return;
     lm.dirty = qtrue; // rebuild all lightmaps next frame
 }
@@ -717,9 +705,8 @@ static void GL_Register(void)
     gl_modulate_entities = Cvar_Get("gl_modulate_entities", "1", 0);
     gl_modulate_entities->changed = gl_modulate_entities_changed;
     gl_doublelight_entities = Cvar_Get("gl_doublelight_entities", "1", 0);
-    gl_fragment_program = Cvar_Get("gl_fragment_program", "1", CVAR_REFRESH);
     gl_fontshadow = Cvar_Get("gl_fontshadow", "0", 0);
-    gl_shaders = Cvar_Get("gl_shaders", "0", CVAR_REFRESH);
+    gl_shaders = Cvar_Get("gl_shaders", (gl_config.caps & QGL_CAP_SHADER) ? "1" : "0", CVAR_REFRESH);
 
     // development variables
     gl_znear = Cvar_Get("gl_znear", "2", CVAR_CHEAT);
