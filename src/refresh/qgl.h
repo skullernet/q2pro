@@ -19,11 +19,20 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef QGL_H
 #define QGL_H
 
+#if USE_SDL
+#include <SDL_opengl.h>
+#else
 #include <GL/gl.h>
 #include <GL/glext.h>
+#endif
 
 #ifndef QGLAPI
 #define QGLAPI extern
+#endif
+
+#ifndef GL_VERSION_4_6
+#define GL_TEXTURE_MAX_ANISOTROPY 0x84FE
+#define GL_MAX_TEXTURE_MAX_ANISOTROPY 0x84FF
 #endif
 
 // GL 1.1
