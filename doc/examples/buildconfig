@@ -30,9 +30,6 @@
 # Enable when building for systems that support OpenGL ES 1.1 only (e.g. Raspberry Pi)
 #CONFIG_GLES=y
 
-# Build software renderer instead of OpenGL renderer.
-#CONFIG_SOFTWARE_RENDERER=y
-
 # Specify default list of fullscreen modes. Note: modes are automatically
 # detected on Windows. Default list is only used when autodetection fails.
 #CONFIG_DEFAULT_MODELIST=640x480 800x600 1024x768
@@ -43,11 +40,6 @@
 # Disable default Quake 2 software sound engine. Only makes sense when
 # CONFIG_OPENAL is set.
 #CONFIG_NO_SOFTWARE_SOUND=y
-
-# Disable automatic discovery of evdev device nodes by not linking
-# against libudev. This option has no effect on platforms other than Linux.
-# This option has no effect unless CONFIG_DIRECT_INPUT is set.
-#CONFIG_NO_UDEV=y
 
 # Disable menu-based user interface. This disables scriptable menus, as well as
 # demo and server browsers.
