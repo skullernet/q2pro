@@ -733,6 +733,12 @@ static qboolean create_surface_vbo(size_t size)
         return qfalse;
     }
 
+#if USE_GLES
+    if (size > 65536 * VERTEX_SIZE * sizeof(vec_t)) {
+        return qfalse;
+    }
+#endif
+
     GL_ClearErrors();
 
     qglGenBuffers(1, &buf);

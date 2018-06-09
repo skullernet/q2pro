@@ -311,6 +311,9 @@ endif
 
 ifndef CONFIG_NO_REFRESH
     CFLAGS_c += -DUSE_REF=1 -DVID_REF='"gl"'
+    ifdef CONFIG_GLES
+        CFLAGS_c += -DUSE_GLES=1
+    endif
     OBJS_c += src/refresh/draw.o
     OBJS_c += src/refresh/hq2x.o
     OBJS_c += src/refresh/images.o
