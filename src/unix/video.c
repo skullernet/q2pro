@@ -54,48 +54,6 @@ static void gl_swapinterval_changed(cvar_t *self)
     }
 }
 
-static qboolean VID_SDL_GL_LoadLibrary(void)
-{
-#if USE_FIXED_LIBGL
-    Cvar_Get("gl_driver", LIBGL, CVAR_ROM);
-    return qtrue;
-#else
-    cvar_t *gl_driver = Cvar_Get("gl_driver", LIBGL, CVAR_REFRESH);
-
-    // don't allow absolute or relative paths
-    FS_SanitizeFilenameVariable(gl_driver);
-
-    while (1) {
-        char *s;
-
-        // ugly hack to work around brain-dead servers that actively
-        // check and enforce `gl_driver' cvar to `opengl32', unaware
-        // of other systems than Windows
-        s = gl_driver->string;
-        if (!Q_stricmp(s, "opengl32") || !Q_stricmp(s, "opengl32.dll")) {
-            Com_Printf("...attempting to load %s instead of %s\n",
-                       gl_driver->default_string, s);
-            s = gl_driver->default_string;
-        }
-
-        if (SDL_GL_LoadLibrary(s) == 0) {
-            break;
-        }
-
-        Com_EPrintf("Couldn't load OpenGL library: %s\n", SDL_GetError());
-        if (!strcmp(s, gl_driver->default_string)) {
-            return qfalse;
-        }
-
-        // attempt to recover
-        Com_Printf("...falling back to %s\n", gl_driver->default_string);
-        Cvar_Reset(gl_driver);
-    }
-
-    return qtrue;
-#endif
-}
-
 static void VID_SDL_GL_SetAttributes(void)
 {
     int colorbits = Cvar_ClampInteger(
@@ -134,6 +92,12 @@ static void VID_SDL_GL_SetAttributes(void)
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, multisamples);
     }
+
+#if USE_GLES
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 1);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+#endif
 }
 
 void *VID_GetProcAddr(const char *sym)
@@ -320,9 +284,7 @@ qboolean VID_Init(void)
 
     VID_SDL_GL_SetAttributes();
 
-    if (!VID_SDL_GL_LoadLibrary()) {
-        goto fail;
-    }
+    Cvar_Get("gl_driver", LIBGL, CVAR_ROM);
 
     SDL_SetEventFilter(VID_SDL_EventFilter, NULL);
 

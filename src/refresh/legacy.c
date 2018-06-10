@@ -63,8 +63,6 @@ static void legacy_state_bits(GLbitfield bits)
         } else {
             qglLoadIdentity();
         }
-
-        qglMatrixMode(GL_MODELVIEW);
     }
 
     if (diff & GLS_LIGHTMAP_ENABLE) {
@@ -192,14 +190,12 @@ static void legacy_reflect(void)
 {
     qglMatrixMode(GL_PROJECTION);
     qglScalef(-1, 1, 1);
-    qglMatrixMode(GL_MODELVIEW);
 }
 
 static void legacy_clear(void)
 {
     qglDisable(GL_ALPHA_TEST);
     qglAlphaFunc(GL_GREATER, 0.666f);
-    qglPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     qglShadeModel(GL_FLAT);
 
     if (qglActiveTexture && qglClientActiveTexture) {
@@ -222,7 +218,6 @@ static void legacy_clear(void)
 
     qglMatrixMode(GL_TEXTURE);
     qglLoadIdentity();
-    qglMatrixMode(GL_MODELVIEW);
 
     qglDisableClientState(GL_VERTEX_ARRAY);
     qglDisableClientState(GL_COLOR_ARRAY);

@@ -648,7 +648,7 @@ static size_t GL_ViewCluster_m(char *buffer, size_t size)
 static void gl_lightmap_changed(cvar_t *self)
 {
     lm.scale = Cvar_ClampValue(gl_coloredlightmaps, 0, 1);
-    lm.comp = !(gl_config.caps & QGL_CAP_LEGACY) ? GL_RGBA : lm.scale ? GL_RGB : GL_LUMINANCE;
+    lm.comp = !(gl_config.caps & QGL_CAP_TEXTURE_BITS) ? GL_RGBA : lm.scale ? GL_RGB : GL_LUMINANCE;
     lm.add = 255 * Cvar_ClampValue(gl_brightness, -1, 1);
     lm.modulate = Cvar_ClampValue(gl_modulate, 0, 1e6);
     lm.modulate *= Cvar_ClampValue(gl_modulate_world, 0, 1e6);
@@ -716,7 +716,7 @@ static void GL_Register(void)
     gl_drawsky->changed = gl_drawsky_changed;
     gl_showtris = Cvar_Get("gl_showtris", "0", CVAR_CHEAT);
     gl_showorigins = Cvar_Get("gl_showorigins", "0", CVAR_CHEAT);
-    gl_showtearing = Cvar_Get("gl_showtearing", "0", 0);
+    gl_showtearing = Cvar_Get("gl_showtearing", "0", CVAR_CHEAT);
 #ifdef _DEBUG
     gl_showstats = Cvar_Get("gl_showstats", "0", 0);
     gl_showscrap = Cvar_Get("gl_showscrap", "0", 0);
@@ -751,7 +751,7 @@ static void GL_Unregister(void)
     Cmd_RemoveCommand("strings");
 }
 
-static qboolean GL_SetupConfig(void)
+static void GL_SetupConfig(void)
 {
     GLint integer;
 
@@ -768,9 +768,6 @@ static qboolean GL_SetupConfig(void)
 
     qglGetIntegerv(GL_STENCIL_BITS, &integer);
     gl_config.stencilbits = integer;
-
-    GL_ShowErrors(__func__);
-    return qtrue;
 }
 
 static void GL_InitTables(void)
@@ -831,10 +828,8 @@ qboolean R_Init(qboolean total)
         goto fail;
     }
 
-    // initialize extensions and get various limits from OpenGL
-    if (!GL_SetupConfig()) {
-        goto fail;
-    }
+    // get various limits from OpenGL
+    GL_SetupConfig();
 
     // register our variables
     GL_Register();

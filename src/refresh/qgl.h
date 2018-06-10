@@ -19,11 +19,20 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef QGL_H
 #define QGL_H
 
+#if USE_SDL
+#include <SDL_opengl.h>
+#else
 #include <GL/gl.h>
 #include <GL/glext.h>
+#endif
 
 #ifndef QGLAPI
 #define QGLAPI extern
+#endif
+
+#ifndef GL_VERSION_4_6
+#define GL_TEXTURE_MAX_ANISOTROPY 0x84FE
+#define GL_MAX_TEXTURE_MAX_ANISOTROPY 0x84FF
 #endif
 
 // GL 1.1
@@ -67,7 +76,6 @@ QGLAPI void (APIENTRYP qglEnableClientState)(GLenum cap);
 QGLAPI void (APIENTRYP qglLoadIdentity)(void);
 QGLAPI void (APIENTRYP qglLoadMatrixf)(const GLfloat *m);
 QGLAPI void (APIENTRYP qglMatrixMode)(GLenum mode);
-QGLAPI void (APIENTRYP qglPolygonMode)(GLenum face, GLenum mode);
 QGLAPI void (APIENTRYP qglScalef)(GLfloat x, GLfloat y, GLfloat z);
 QGLAPI void (APIENTRYP qglShadeModel)(GLenum mode);
 QGLAPI void (APIENTRYP qglTexCoordPointer)(GLint size, GLenum type, GLsizei stride, const GLvoid *ptr);
@@ -78,6 +86,9 @@ QGLAPI void (APIENTRYP qglVertexPointer)(GLint size, GLenum type, GLsizei stride
 // GL 1.1, not ES
 QGLAPI void (APIENTRYP qglClearDepth)(GLdouble depth);
 QGLAPI void (APIENTRYP qglDepthRange)(GLdouble near, GLdouble far);
+
+// GL 1.1, not ES, compat
+QGLAPI void (APIENTRYP qglPolygonMode)(GLenum face, GLenum mode);
 
 // GL 1.3
 QGLAPI void (APIENTRYP qglActiveTexture)(GLenum texture);
