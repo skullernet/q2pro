@@ -581,6 +581,12 @@ gl_partstyle::
       - 0 — blend colors
       - 1 — saturate colors
 
+gl_partshape::
+    Specifies shape of particles. Default value is 0.
+      - 0 — faded circle
+      - 1 — square
+      - 2 — fuller, less faded circle
+
 gl_celshading::
     Enables drawing black contour lines around 3D models (aka ‘celshading’).
     Value of this variable specifies thickness of the lines drawn. Default
