@@ -46,6 +46,8 @@ static cvar_t *gl_anisotropy;
 static cvar_t *gl_saturation;
 static cvar_t *gl_gamma;
 static cvar_t *gl_invert;
+// [sq2] particle shape
+static cvar_t *gl_partshape;
 
 cvar_t *gl_intensity;
 
@@ -871,25 +873,58 @@ static void GL_InitParticleTexture(void)
     byte *dst;
     float x, y, f;
     int i, j;
+    int shape;
 
+    // [sq2] particle shape
+    shape = gl_partshape->integer;
+
+    memset(pixels, 0, sizeof(pixels));
     dst = pixels;
+
+    if (shape == 1) // square
+        for (j = 0; j < 16; ++j) {
+            for (i = 0; i < 16; ++i) {
+                // 0 - 13
+                if (j >= 3 && j <= 12 && i >= 3 && i <= 12) {
+                    dst[0] = 255;
+                    dst[1] = 255;
+                    dst[2] = 255;
+                    dst[3] = 255 * 0.6f;
+                }
+                dst += 4;
+            }
+        }
+    else // circle
+
     for (i = 0; i < 16; i++) {
         for (j = 0; j < 16; j++) {
             x = j - 16 / 2 + 0.5f;
             y = i - 16 / 2 + 0.5f;
             f = sqrt(x * x + y * y);
-            f = 1.0f - f / (16 / 2 - 0.5f);
+            // [sq2] shape 2 is a smaller, fuller circle
+            f = 1.0f - f / (((shape == 2) ? 14 : 16) / 2 - 0.5f);
+            if (shape == 2) f *= 4;
             dst[0] = 255;
             dst[1] = 255;
             dst[2] = 255;
-            dst[3] = 255 * clamp(f, 0, 1);
+            dst[3] = 255 * clamp(f, 0, (shape == 2) ? 0.6f : 1);
             dst += 4;
         }
     }
 
     GL_ForceTexture(0, TEXNUM_PARTICLE);
-    GL_Upload32(pixels, 16, 16, 0, IT_SPRITE, IF_NONE);
-    GL_SetFilterAndRepeat(IT_SPRITE, IF_NONE);
+    // [sq2] disable linear filtering if shape is square
+    GL_Upload32(pixels, 16, 16, 0, IT_SPRITE, (shape == 1) ? IF_NEAREST : IF_NONE);
+    GL_SetFilterAndRepeat(IT_SPRITE, (shape == 1) ? IF_NEAREST : IF_NONE);
+}
+
+// [sq2] particle shape changed
+static void gl_partshape_changed(cvar_t *self)
+{
+    // delete, regen, and init new particle texture
+    qglDeleteTextures(1, &TEXNUM_PARTICLE);
+    qglGenTextures(1, &TEXNUM_PARTICLE);
+    GL_InitParticleTexture();
 }
 
 static void GL_InitWhiteImage(void)
@@ -962,6 +997,9 @@ void GL_InitImages(void)
     gl_intensity = Cvar_Get("intensity", "2", 0);
     gl_invert = Cvar_Get("gl_invert", "0", CVAR_FILES);
     gl_gamma = Cvar_Get("vid_gamma", "1", CVAR_ARCHIVE);
+    // [sq2] particle shape. 0 = default circle. 1 = square. 2 = fuller circle
+    gl_partshape = Cvar_Get("gl_partshape", "0", 0);
+    gl_partshape->changed = gl_partshape_changed;
 
     if (r_config.flags & QVF_GAMMARAMP) {
         gl_gamma->changed = gl_gamma_changed;
@@ -1038,6 +1076,7 @@ void GL_ShutdownImages(void)
     gl_texturemode->generator = NULL;
     gl_anisotropy->changed = NULL;
     gl_gamma->changed = NULL;
+    gl_partshape->changed = NULL;
 
     // delete auto textures
     qglDeleteTextures(NUM_TEXNUMS, gl_static.texnums);
