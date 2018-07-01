@@ -172,7 +172,7 @@ glCullResult_t GL_CullLocalBox(const vec3_t origin, vec3_t bounds[2])
     cplane_t *p;
     int i, j;
     vec_t dot;
-    qboolean infront;
+    bool infront;
     glCullResult_t cull;
 
     if (!gl_cull_models->integer) {
@@ -188,11 +188,11 @@ glCullResult_t GL_CullLocalBox(const vec3_t origin, vec3_t bounds[2])
 
     cull = CULL_IN;
     for (i = 0, p = glr.frustumPlanes; i < 4; i++, p++) {
-        infront = qfalse;
+        infront = false;
         for (j = 0; j < 8; j++) {
             dot = DotProduct(points[j], p->normal);
             if (dot >= p->dist) {
-                infront = qtrue;
+                infront = true;
                 if (cull == CULL_CLIP) {
                     break;
                 }
@@ -212,8 +212,8 @@ glCullResult_t GL_CullLocalBox(const vec3_t origin, vec3_t bounds[2])
 }
 
 // shared between lightmap and scrap allocators
-qboolean GL_AllocBlock(int width, int height, int *inuse,
-                       int w, int h, int *s, int *t)
+bool GL_AllocBlock(int width, int height, int *inuse,
+                   int w, int h, int *s, int *t)
 {
     int i, j, k, x, y, max_inuse, min_inuse;
 
@@ -237,7 +237,7 @@ qboolean GL_AllocBlock(int width, int height, int *inuse,
     }
 
     if (y + h > height) {
-        return qfalse;
+        return false;
     }
 
     for (i = 0; i < w; i++) {
@@ -246,7 +246,7 @@ qboolean GL_AllocBlock(int width, int height, int *inuse,
 
     *s = x;
     *t = y;
-    return qtrue;
+    return true;
 }
 
 // P = A * B
@@ -388,12 +388,12 @@ static void GL_DrawEntities(int mask)
 
         // convert angles to axis
         if (VectorEmpty(ent->angles)) {
-            glr.entrotated = qfalse;
+            glr.entrotated = false;
             VectorSet(glr.entaxis[0], 1, 0, 0);
             VectorSet(glr.entaxis[1], 0, 1, 0);
             VectorSet(glr.entaxis[2], 0, 0, 1);
         } else {
-            glr.entrotated = qtrue;
+            glr.entrotated = true;
             AnglesToAxis(ent->angles, glr.entaxis);
         }
 
@@ -485,12 +485,12 @@ void GL_ClearErrors(void)
         ;
 }
 
-qboolean GL_ShowErrors(const char *func)
+bool GL_ShowErrors(const char *func)
 {
     GLenum err = qglGetError();
 
     if (err == GL_NO_ERROR) {
-        return qfalse;
+        return false;
     }
 
     do {
@@ -499,7 +499,7 @@ qboolean GL_ShowErrors(const char *func)
         }
     } while ((err = qglGetError()) != GL_NO_ERROR);
 
-    return qtrue;
+    return true;
 }
 
 void R_RenderFrame(refdef_t *fd)
@@ -523,7 +523,7 @@ void R_RenderFrame(refdef_t *fd)
 
     if (lm.dirty) {
         GL_RebuildLighting();
-        lm.dirty = qfalse;
+        lm.dirty = false;
     }
 
     GL_Setup3D();
@@ -667,7 +667,7 @@ static void gl_lightmap_changed(cvar_t *self)
     lm.modulate *= Cvar_ClampValue(gl_modulate_world, 0, 1e6);
     if (gl_static.use_shaders && (self == gl_brightness || self == gl_modulate || self == gl_modulate_world) && !gl_vertexlight->integer)
         return;
-    lm.dirty = qtrue; // rebuild all lightmaps next frame
+    lm.dirty = true; // rebuild all lightmaps next frame
 }
 
 static void gl_modulate_entities_changed(cvar_t *self)
@@ -818,13 +818,13 @@ static void GL_PostInit(void)
 R_Init
 ===============
 */
-qboolean R_Init(qboolean total)
+bool R_Init(bool total)
 {
     Com_DPrintf("GL_Init( %i )\n", total);
 
     if (!total) {
         GL_PostInit();
-        return qtrue;
+        return true;
     }
 
     Com_Printf("------- R_Init -------\n");
@@ -833,7 +833,7 @@ qboolean R_Init(qboolean total)
     // initialize OS-specific parts of OpenGL
     // create the window and set up the context
     if (!VID_Init()) {
-        return qfalse;
+        return false;
     }
 
     // initialize our QGL dynamic bindings
@@ -855,14 +855,14 @@ qboolean R_Init(qboolean total)
 
     Com_Printf("----------------------\n");
 
-    return qtrue;
+    return true;
 
 fail:
     memset(&gl_static, 0, sizeof(gl_static));
     memset(&gl_config, 0, sizeof(gl_config));
     QGL_Shutdown();
     VID_Shutdown();
-    return qfalse;
+    return false;
 }
 
 /*
@@ -870,7 +870,7 @@ fail:
 R_Shutdown
 ===============
 */
-void R_Shutdown(qboolean total)
+void R_Shutdown(bool total)
 {
     Com_DPrintf("GL_Shutdown( %i )\n", total);
 
@@ -905,7 +905,7 @@ void R_BeginRegistration(const char *name)
 {
     char fullname[MAX_QPATH];
 
-    gl_static.registering = qtrue;
+    gl_static.registering = true;
     registration_sequence++;
 
     memset(&glr, 0, sizeof(glr));
@@ -925,7 +925,7 @@ void R_EndRegistration(void)
     IMG_FreeUnused();
     MOD_FreeUnused();
     Scrap_Upload();
-    gl_static.registering = qfalse;
+    gl_static.registering = false;
 }
 
 /*

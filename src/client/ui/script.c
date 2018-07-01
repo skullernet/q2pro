@@ -394,7 +394,7 @@ static void Parse_Toggle(menuFrameWork_t *menu)
 {
     static const char *yes_no_names[] = { "no", "yes", NULL };
     menuSpinControl_t *s;
-    qboolean negate = qfalse;
+    bool negate = false;
     menuType_t type = MTYPE_TOGGLE;
     int c, bit = 0;
     char *b, *status = NULL;
@@ -416,7 +416,7 @@ static void Parse_Toggle(menuFrameWork_t *menu)
 
     b = Cmd_Argv(cmd_optind + 2);
     if (*b == '~') {
-        negate = qtrue;
+        negate = true;
         b++;
     }
     if (*b) {
@@ -452,7 +452,7 @@ static void Parse_Field(menuFrameWork_t *menu)
         { NULL }
     };
     menuField_t *f;
-    qboolean center = qfalse;
+    bool center = false;
     int flags = 0;
     char *status = NULL;
     int width = 16;
@@ -461,7 +461,7 @@ static void Parse_Field(menuFrameWork_t *menu)
     while ((c = Cmd_ParseOptions(o_field)) != -1) {
         switch (c) {
         case 'c':
-            center = qtrue;
+            center = true;
             break;
         case 'i':
         case 'n':
@@ -530,16 +530,16 @@ static void Parse_Style(menuFrameWork_t *menu)
     while ((c = Cmd_ParseOptions(o_style)) != -1) {
         switch (c) {
         case 'c':
-            menu->compact = qtrue;
+            menu->compact = true;
             break;
         case 'C':
-            menu->compact = qfalse;
+            menu->compact = false;
             break;
         case 't':
-            menu->transparent = qtrue;
+            menu->transparent = true;
             break;
         case 'T':
-            menu->transparent = qfalse;
+            menu->transparent = false;
             break;
         default:
             return;
@@ -608,7 +608,7 @@ static void Parse_Banner(menuFrameWork_t *menu)
     }
 }
 
-static qboolean Parse_File(const char *path, int depth)
+static bool Parse_File(const char *path, int depth)
 {
     char *raw, *data, *p, *cmd;
     int argc;
@@ -621,7 +621,7 @@ static qboolean Parse_File(const char *path, int depth)
             Com_WPrintf("Couldn't %s %s: %s\n", depth ? "include" : "load",
                         path, Q_ErrorString(ret));
         }
-        return qfalse;
+        return false;
     }
 
     data = raw;
@@ -633,7 +633,7 @@ static qboolean Parse_File(const char *path, int depth)
             *p = 0;
         }
 
-        Cmd_TokenizeString(data, qtrue);
+        Cmd_TokenizeString(data, true);
 
         argc = Cmd_Argc();
         if (argc) {
@@ -761,7 +761,7 @@ static qboolean Parse_File(const char *path, int depth)
         menu->free(menu);
     }
 
-    return qtrue;
+    return true;
 }
 
 void UI_LoadScript(void)

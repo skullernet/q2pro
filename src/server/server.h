@@ -269,14 +269,14 @@ typedef struct client_s {
     int             number;     // client slot number
 
     // client flags
-    qboolean        reconnected: 1;
-    qboolean        nodata: 1;
-    qboolean        has_zlib: 1;
-    qboolean        drop_hack: 1;
+    unsigned        reconnected: 1;
+    unsigned        nodata: 1;
+    unsigned        has_zlib: 1;
+    unsigned        drop_hack: 1;
 #if USE_ICMP
-    qboolean        unreachable: 1;
+    unsigned        unreachable: 1;
 #endif
-    qboolean        http_download: 1;
+    unsigned        http_download: 1;
 
     // userinfo
     char            userinfo[MAX_INFO_STRING];  // name, etc
@@ -324,7 +324,7 @@ typedef struct client_s {
     int             downloadcount;  // bytes sent
     char            *downloadname;  // name of the file
     int             downloadcmd;    // svc_(z)download
-    qboolean        downloadpending;
+    bool            downloadpending;
 
     // protocol stuff
     int             challenge;  // challenge of this user, randomly generated
@@ -356,7 +356,7 @@ typedef struct client_s {
     int             maxclients;
 
     // netchan type dependent methods
-    void            (*AddMessage)(struct client_s *, byte *, size_t, qboolean);
+    void            (*AddMessage)(struct client_s *, byte *, size_t, bool);
     void            (*WriteFrame)(struct client_s *);
     void            (*WriteDatagram)(struct client_s *);
 
@@ -368,7 +368,7 @@ typedef struct client_s {
     time_t          connect_time; // time of initial connect
 
 #if USE_AC_SERVER
-    qboolean        ac_valid;
+    bool            ac_valid;
     ac_query_t      ac_query_sent;
     ac_required_t   ac_required;
     int             ac_file_failures;
@@ -446,7 +446,7 @@ typedef struct {
     char            *spawnpoint;
     server_state_t  state;
     int             loadgame;
-    qboolean        endofunit;
+    bool            endofunit;
     cm_t            cm;
 } mapcmd_t;
 
@@ -456,7 +456,7 @@ typedef struct {
     LIST_FOR_EACH_SAFE(master_t, m, n, &sv_masterlist, entry)
 
 typedef struct server_static_s {
-    qboolean    initialized;        // sv_init has completed
+    bool        initialized;        // sv_init has completed
     unsigned    realtime;           // always increasing, no clamping, etc
 
     client_t    *client_pool;   // [maxclients]
@@ -558,7 +558,7 @@ void SV_InitOperatorCommands(void);
 
 void SV_UserinfoChanged(client_t *cl);
 
-qboolean SV_RateLimited(ratelimit_t *r);
+bool SV_RateLimited(ratelimit_t *r);
 void SV_RateRecharge(ratelimit_t *r);
 void SV_RateInit(ratelimit_t *r, const char *s);
 
@@ -579,7 +579,7 @@ void sv_min_timeout_changed(cvar_t *self);
 //
 void SV_ClientReset(client_t *client);
 void SV_SpawnServer(mapcmd_t *cmd);
-qboolean SV_ParseMapCmd(mapcmd_t *cmd);
+bool SV_ParseMapCmd(mapcmd_t *cmd);
 void SV_InitGame(unsigned mvd_spawn);
 
 //
@@ -624,7 +624,7 @@ void SV_MvdStatus_f(void);
 void SV_MvdMapChanged(void);
 void SV_MvdClientDropped(client_t *client);
 
-void SV_MvdUnicast(edict_t *ent, int clientNum, qboolean reliable);
+void SV_MvdUnicast(edict_t *ent, int clientNum, bool reliable);
 void SV_MvdMulticast(int leafnum, multicast_t to);
 void SV_MvdConfigstring(int index, const char *string, size_t len);
 void SV_MvdBroadcastPrint(int level, const char *string);
@@ -663,7 +663,7 @@ void SV_MvdStop_f(void);
 #if USE_AC_SERVER
 char *AC_ClientConnect(client_t *cl);
 void AC_ClientDisconnect(client_t *cl);
-qboolean AC_ClientBegin(client_t *cl);
+bool AC_ClientBegin(client_t *cl);
 void AC_ClientAnnounce(client_t *cl);
 void AC_ClientToken(client_t *cl, const char *token);
 
@@ -677,7 +677,7 @@ void AC_Info_f(void);
 #else
 #define AC_ClientConnect(cl)        ""
 #define AC_ClientDisconnect(cl)     (void)0
-#define AC_ClientBegin(cl)          qtrue
+#define AC_ClientBegin(cl)          true
 #define AC_ClientAnnounce(cl)       (void)0
 #define AC_ClientToken(cl, token)   (void)0
 
@@ -715,7 +715,7 @@ extern const cmd_option_t o_record[];
 void SV_AddMatch_f(list_t *list);
 void SV_DelMatch_f(list_t *list);
 void SV_ListMatches_f(list_t *list);
-client_t *SV_GetPlayer(const char *s, qboolean partial);
+client_t *SV_GetPlayer(const char *s, bool partial);
 void SV_PrintMiscInfo(void);
 
 //
@@ -785,7 +785,7 @@ int SV_AreaEdicts(vec3_t mins, vec3_t maxs, edict_t **list, int maxcount, int ar
 // returns the number of pointers filled in
 // ??? does this always return the world?
 
-qboolean SV_EdictIsVisible(cm_t *cm, edict_t *ent, byte *mask);
+bool SV_EdictIsVisible(cm_t *cm, edict_t *ent, byte *mask);
 
 //===================================================================
 

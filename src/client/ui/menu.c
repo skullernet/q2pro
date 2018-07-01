@@ -306,7 +306,7 @@ static void Keybind_Remove(const char *cmd)
     }
 }
 
-static qboolean keybind_cb(void *arg, int key)
+static bool keybind_cb(void *arg, int key)
 {
     menuKeybind_t *k = arg;
     menuFrameWork_t *menu = k->generic.parent;
@@ -314,7 +314,7 @@ static qboolean keybind_cb(void *arg, int key)
     // console key is hardcoded
     if (key == '`') {
         UI_StartSound(QMS_BEEP);
-        return qfalse;
+        return false;
     }
 
     // menu key is hardcoded
@@ -327,19 +327,19 @@ static qboolean keybind_cb(void *arg, int key)
 
     Keybind_Update(menu);
 
-    menu->keywait = qfalse;
+    menu->keywait = false;
     menu->status = k->generic.status;
     Key_WaitKey(NULL, NULL);
 
     UI_StartSound(QMS_OUT);
-    return qfalse;
+    return false;
 }
 
 static menuSound_t Keybind_DoEnter(menuKeybind_t *k)
 {
     menuFrameWork_t *menu = k->generic.parent;
 
-    menu->keywait = qtrue;
+    menu->keywait = true;
     menu->status = k->altstatus;
     Key_WaitKey(keybind_cb, k);
     return QMS_IN;
@@ -448,7 +448,7 @@ static void Field_Draw(menuField_t *f)
     }
 }
 
-static qboolean Field_TestKey(menuField_t *f, int key)
+static bool Field_TestKey(menuField_t *f, int key)
 {
     if (f->generic.flags & QMF_NUMBERSONLY) {
         return Q_isdigit(key) || key == '+' || key == '-' || key == '.';
@@ -482,7 +482,7 @@ Field_Char
 */
 static int Field_Char(menuField_t *f, int key)
 {
-    qboolean ret;
+    bool ret;
 
     if (!Field_TestKey(f, key)) {
         return QMS_BEEP;
@@ -1505,7 +1505,7 @@ static menuSound_t Slider_DoSlide(menuSlider_t *s, int dir);
 
 static void Slider_Push(menuSlider_t *s)
 {
-    s->modified = qfalse;
+    s->modified = false;
     s->curvalue = s->cvar->value;
     cclamp(s->curvalue, s->minvalue, s->maxvalue);
 }
@@ -1591,7 +1591,7 @@ static menuSound_t Slider_MouseMove(menuSlider_t *s)
     value = pos * (s->maxvalue - s->minvalue);
     steps = Q_rint(value / s->step);
 
-    s->modified = qtrue;
+    s->modified = true;
     s->curvalue = s->minvalue + steps * s->step;
     return QMS_SILENT;
 }
@@ -1600,11 +1600,11 @@ static menuSound_t Slider_Key(menuSlider_t *s, int key)
 {
     switch (key) {
     case K_END:
-        s->modified = qtrue;
+        s->modified = true;
         s->curvalue = s->maxvalue;
         return QMS_MOVE;
     case K_HOME:
-        s->modified = qtrue;
+        s->modified = true;
         s->curvalue = s->minvalue;
         return QMS_MOVE;
     case K_MOUSE1:
@@ -1622,7 +1622,7 @@ Slider_DoSlide
 */
 static menuSound_t Slider_DoSlide(menuSlider_t *s, int dir)
 {
-    s->modified = qtrue;
+    s->modified = true;
     s->curvalue += dir * s->step;
 
     cclamp(s->curvalue, s->minvalue, s->maxvalue);
@@ -2020,14 +2020,14 @@ void Menu_SetFocus(menuCommon_t *focus)
         if (item == focus) {
             item->flags |= QMF_HASFOCUS;
             if (item->focus) {
-                item->focus(item, qtrue);
+                item->focus(item, true);
             } else if (item->status) {
                 menu->status = item->status;
             }
         } else if (item->flags & QMF_HASFOCUS) {
             item->flags &= ~QMF_HASFOCUS;
             if (item->focus) {
-                item->focus(item, qfalse);
+                item->focus(item, false);
             } else if (menu->status == item->status
                        && menu->status != focus->status) {
                 menu->status = NULL;
@@ -2451,7 +2451,7 @@ menuCommon_t *Menu_HitTest(menuFrameWork_t *menu)
     return NULL;
 }
 
-qboolean Menu_Push(menuFrameWork_t *menu)
+bool Menu_Push(menuFrameWork_t *menu)
 {
     void *item;
     int i;
@@ -2492,7 +2492,7 @@ qboolean Menu_Push(menuFrameWork_t *menu)
             break;
         }
     }
-    return qtrue;
+    return true;
 }
 
 void Menu_Pop(menuFrameWork_t *menu)

@@ -172,10 +172,10 @@ typedef enum {
 } imagetype_t;
 
 // called when the library is loaded
-qboolean    R_Init(qboolean total);
+bool    R_Init(bool total);
 
 // called before the library is unloaded
-void        R_Shutdown(qboolean total);
+void    R_Shutdown(bool total);
 
 // All data that will be used in a level should be
 // registered before rendering any frames to prevent disk hits,
@@ -214,7 +214,7 @@ void    R_SetScale(float scale);
 void    R_DrawChar(int x, int y, int flags, int ch, qhandle_t font);
 int     R_DrawString(int x, int y, int flags, size_t maxChars,
                      const char *string, qhandle_t font);  // returns advanced x coord
-qboolean R_GetPicSize(int *w, int *h, qhandle_t pic);   // returns transparency bit
+bool    R_GetPicSize(int *w, int *h, qhandle_t pic);   // returns transparency bit
 void    R_DrawPic(int x, int y, qhandle_t pic);
 void    R_DrawStretchPic(int x, int y, int w, int h, qhandle_t pic);
 void    R_TileClear(int x, int y, int w, int h, qhandle_t pic);

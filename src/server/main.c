@@ -95,7 +95,7 @@ cvar_t  *g_features;
 
 cvar_t  *map_override_path;
 
-qboolean sv_registered;
+bool sv_registered;
 
 //============================================================================
 
@@ -257,7 +257,7 @@ Implements simple token bucket filter. Inspired by xt_limit.c from the Linux
 kernel. Returns true if limit is exceeded.
 ===============
 */
-qboolean SV_RateLimited(ratelimit_t *r)
+bool SV_RateLimited(ratelimit_t *r)
 {
     r->credit += (svs.realtime - r->time) * CREDITS_PER_MSEC;
     r->time = svs.realtime;
@@ -266,10 +266,10 @@ qboolean SV_RateLimited(ratelimit_t *r)
 
     if (r->credit >= r->cost) {
         r->credit -= r->cost;
-        return qfalse;
+        return false;
     }
 
-    return qtrue;
+    return true;
 }
 
 /*
@@ -619,7 +619,7 @@ typedef struct {
 
     int         maxlength;
     int         nctype;
-    qboolean    has_zlib;
+    bool        has_zlib;
 
     int         reserved;   // hidden client slots
     char        reconnect_var[16];
@@ -630,10 +630,10 @@ typedef struct {
     Netchan_OutOfBand(NS_SERVER, &net_from, "print\n" __VA_ARGS__)
 
 // small hack to permit one-line return statement :)
-#define reject(...) __reject(__VA_ARGS__), qfalse
+#define reject(...) __reject(__VA_ARGS__), false
 #define reject2(...) __reject(__VA_ARGS__), NULL
 
-static qboolean parse_basic_params(conn_params_t *p)
+static bool parse_basic_params(conn_params_t *p)
 {
     p->protocol = atoi(Cmd_Argv(1));
     p->qport = atoi(Cmd_Argv(2)) ;
@@ -648,10 +648,10 @@ static qboolean parse_basic_params(conn_params_t *p)
     if (p->protocol < PROTOCOL_VERSION_DEFAULT)
         return reject("You need Quake 2 version 3.19 or higher.\n");
 
-    return qtrue;
+    return true;
 }
 
-static qboolean permit_connection(conn_params_t *p)
+static bool permit_connection(conn_params_t *p)
 {
     addrmatch_t *match;
     int i, count;
@@ -660,7 +660,7 @@ static qboolean permit_connection(conn_params_t *p)
 
     // loopback clients are permitted without any checks
     if (NET_IsLocalAddress(&net_from))
-        return qtrue;
+        return true;
 
     // see if the challenge is valid
     for (i = 0; i < MAX_CHALLENGES; i++) {
@@ -695,7 +695,7 @@ static qboolean permit_connection(conn_params_t *p)
 
     // link-local IPv6 addresses are permitted without sv_iplimit check
     if (net_from.type == NA_IP6 && NET_IsLanAddress(&net_from))
-        return qtrue;
+        return true;
 
     // limit number of connections from single IPv4 address or /48 IPv6 network
     if (sv_iplimit->integer > 0) {
@@ -723,10 +723,10 @@ static qboolean permit_connection(conn_params_t *p)
         }
     }
 
-    return qtrue;
+    return true;
 }
 
-static qboolean parse_packet_length(conn_params_t *p)
+static bool parse_packet_length(conn_params_t *p)
 {
     char *s;
 
@@ -755,10 +755,10 @@ static qboolean parse_packet_length(conn_params_t *p)
     if (p->maxlength < MIN_PACKETLEN)
         p->maxlength = MIN_PACKETLEN;
 
-    return qtrue;
+    return true;
 }
 
-static qboolean parse_enhanced_params(conn_params_t *p)
+static bool parse_enhanced_params(conn_params_t *p)
 {
     char *s;
 
@@ -774,7 +774,7 @@ static qboolean parse_enhanced_params(conn_params_t *p)
             p->version = PROTOCOL_VERSION_R1Q2_MINIMUM;
         }
         p->nctype = NETCHAN_OLD;
-        p->has_zlib = qtrue;
+        p->has_zlib = true;
     } else if (p->protocol == PROTOCOL_VERSION_Q2PRO) {
         // set netchan type
         s = Cmd_Argv(6);
@@ -791,7 +791,7 @@ static qboolean parse_enhanced_params(conn_params_t *p)
         if (*s) {
             p->has_zlib = !!atoi(s);
         } else {
-            p->has_zlib = qtrue;
+            p->has_zlib = true;
         }
 
         // set minor protocol version
@@ -809,7 +809,7 @@ static qboolean parse_enhanced_params(conn_params_t *p)
         }
     }
 
-    return qtrue;
+    return true;
 }
 
 static char *userinfo_ip_string(void)
@@ -832,7 +832,7 @@ static char *userinfo_ip_string(void)
     return NET_AdrToString(&net_from);
 }
 
-static qboolean parse_userinfo(conn_params_t *params, char *userinfo)
+static bool parse_userinfo(conn_params_t *params, char *userinfo)
 {
     char *info, *s;
 
@@ -890,7 +890,7 @@ static qboolean parse_userinfo(conn_params_t *params, char *userinfo)
             return reject("Oversize userinfo string.\n");
     }
 
-    return qtrue;
+    return true;
 }
 
 static client_t *redirect(const char *addr)
@@ -962,7 +962,7 @@ static void init_pmove_and_es_flags(client_t *newcl)
 
     // copy default pmove parameters
     newcl->pmp = sv_pmp;
-    newcl->pmp.airaccelerate = sv_airaccelerate->integer ? qtrue : qfalse;
+    newcl->pmp.airaccelerate = sv_airaccelerate->integer ? true : false;
 
     // common extensions
     force = 2;
@@ -970,7 +970,7 @@ static void init_pmove_and_es_flags(client_t *newcl)
         newcl->pmp.speedmult = 2;
         force = 1;
     }
-    newcl->pmp.strafehack = sv_strafejump_hack->integer >= force ? qtrue : qfalse;
+    newcl->pmp.strafehack = sv_strafejump_hack->integer >= force ? true : false;
 
     // r1q2 extensions
     if (newcl->protocol == PROTOCOL_VERSION_R1Q2) {
@@ -986,7 +986,7 @@ static void init_pmove_and_es_flags(client_t *newcl)
         if (sv_qwmod->integer) {
             PmoveEnableQW(&newcl->pmp);
         }
-        newcl->pmp.flyhack = qtrue;
+        newcl->pmp.flyhack = true;
         newcl->pmp.flyfriction = 4;
         newcl->esFlags |= MSG_ES_UMASK;
         if (newcl->version >= PROTOCOL_VERSION_Q2PRO_LONG_SOLID) {
@@ -999,7 +999,7 @@ static void init_pmove_and_es_flags(client_t *newcl)
             force = 1;
         }
     }
-    newcl->pmp.waterhack = sv_waterjump_hack->integer >= force ? qtrue : qfalse;
+    newcl->pmp.waterhack = sv_waterjump_hack->integer >= force ? true : false;
 }
 
 static void send_connect_packet(client_t *newcl, int nctype)
@@ -1053,7 +1053,7 @@ static void SVC_DirectConnect(void)
     conn_params_t   params;
     client_t        *newcl;
     int             number;
-    qboolean        allow;
+    int             allow;
     char            *reason;
 
     memset(&params, 0, sizeof(params));
@@ -1147,7 +1147,7 @@ static void SVC_DirectConnect(void)
 
     // loopback client doesn't need to reconnect
     if (NET_IsLocalAddress(&net_from)) {
-        newcl->reconnected = qtrue;
+        newcl->reconnected = true;
     }
 
     // add them to the linked list of connected clients
@@ -1162,15 +1162,15 @@ static void SVC_DirectConnect(void)
     newcl->min_ping = 9999;
 }
 
-static qboolean rcon_valid(void)
+static bool rcon_valid(void)
 {
     if (!rcon_password->string[0])
-        return qfalse;
+        return false;
 
     if (strcmp(Cmd_Argv(1), rcon_password->string))
-        return qfalse;
+        return false;
 
-    return qtrue;
+    return true;
 }
 
 /*
@@ -1252,7 +1252,7 @@ static void SV_ConnectionlessPacket(void)
         return;
     }
 
-    Cmd_TokenizeString(string, qfalse);
+    Cmd_TokenizeString(string, false);
 
     c = Cmd_Argv(0);
     Com_DPrintf("ServerPacket[%s]: %s\n", NET_AdrToString(&net_from), c);
@@ -1472,7 +1472,7 @@ static void SV_PacketEvent(void)
         // this is a valid, sequenced packet, so process it
         client->lastmessage = svs.realtime;    // don't timeout
 #if USE_ICMP
-        client->unreachable = qfalse; // don't drop
+        client->unreachable = false; // don't drop
 #endif
         if (netchan->dropped > 0)
             client->frameflags |= FF_CLIENTDROP;
@@ -1549,7 +1549,7 @@ void SV_ErrorEvent(netadr_t *from, int ee_errno, int ee_info)
             continue;
         }
 #endif
-        client->unreachable = qtrue; // drop them soon
+        client->unreachable = true; // drop them soon
         break;
     }
 }
@@ -1650,7 +1650,7 @@ static void SV_PrepWorldFrame(void)
 }
 
 // pause if there is only local client on the server
-static inline qboolean check_paused(void)
+static inline bool check_paused(void)
 {
 #if USE_CLIENT
     if (dedicated->integer)
@@ -1675,7 +1675,7 @@ static inline qboolean check_paused(void)
         IN_Activate();
     }
 
-    return qtrue; // don't run if paused
+    return true; // don't run if paused
 
 resume:
     if (sv_paused->integer) {
@@ -1684,7 +1684,7 @@ resume:
     }
 #endif
 
-    return qfalse;
+    return false;
 }
 
 /*
@@ -2176,7 +2176,7 @@ void SV_Init(void)
     SV_SetConsoleTitle();
 #endif
 
-    sv_registered = qtrue;
+    sv_registered = true;
 }
 
 /*

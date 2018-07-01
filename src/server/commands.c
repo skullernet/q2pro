@@ -124,7 +124,7 @@ static void SV_ListMasters_f(void)
     }
 }
 
-client_t *SV_GetPlayer(const char *s, qboolean partial)
+client_t *SV_GetPlayer(const char *s, bool partial)
 {
     client_t    *other, *match;
     int         i, count;
@@ -225,18 +225,18 @@ SV_SetPlayer
 Sets sv_client and sv_player to the player with idnum Cmd_Argv(1)
 ==================
 */
-static qboolean SV_SetPlayer(void)
+static bool SV_SetPlayer(void)
 {
     client_t    *cl;
 
     cl = SV_GetPlayer(Cmd_Argv(1), !!sv_enhanced_setplayer->integer);
     if (!cl) {
-        return qfalse;
+        return false;
     }
 
     sv_client = cl;
     sv_player = sv_client->edict;
-    return qtrue;
+    return true;
 }
 
 //=========================================================
@@ -263,7 +263,7 @@ static void abort_func(void *arg)
     CM_FreeMap(arg);
 }
 
-static void SV_Map(qboolean restart)
+static void SV_Map(bool restart)
 {
     mapcmd_t    cmd;
     size_t      len;
@@ -349,17 +349,17 @@ static void SV_GameMap_f(void)
         if (sv_recycle->integer > 1) {
             Com_Quit(NULL, ERR_RECONNECT);
         }
-        SV_Map(qtrue);
+        SV_Map(true);
         return;
     }
 #endif
 
-    SV_Map(qfalse);
+    SV_Map(false);
 }
 
 static int should_really_restart(void)
 {
-    static qboolean warned;
+    static bool warned;
 
     if (sv.state != ss_game && sv.state != ss_pic)
         return 1;   // the game is just starting
@@ -390,7 +390,7 @@ static int should_really_restart(void)
             "(You can set 'sv_allow_map' to 1 if you wish to permanently "
             "disable this warning. To force restart for a single invocation "
             "of this command, use 'map <mapname> force')\n");
-        warned = qtrue;
+        warned = true;
     }
 
     return -1;  // ignore this command
@@ -998,7 +998,7 @@ static void make_mask(netadr_t *mask, netadrtype_t type, int bits)
     }
 }
 
-static qboolean parse_mask(char *s, netadr_t *addr, netadr_t *mask)
+static bool parse_mask(char *s, netadr_t *addr, netadr_t *mask)
 {
     int bits, size;
     char *p;
@@ -1008,7 +1008,7 @@ static qboolean parse_mask(char *s, netadr_t *addr, netadr_t *mask)
         *p++ = 0;
         if (*p == 0) {
             Com_Printf("Please specify a mask after '/'.\n");
-            return qfalse;
+            return false;
         }
         bits = atoi(p);
     } else {
@@ -1017,7 +1017,7 @@ static qboolean parse_mask(char *s, netadr_t *addr, netadr_t *mask)
 
     if (!NET_StringToBaseAdr(s, addr)) {
         Com_Printf("Bad address: %s\n", s);
-        return qfalse;
+        return false;
     }
 
     size = (addr->type == NA_IP6) ? 128 : 32;
@@ -1028,11 +1028,11 @@ static qboolean parse_mask(char *s, netadr_t *addr, netadr_t *mask)
 
     if (bits < 1 || bits > size) {
         Com_Printf("Bad mask: %d bits\n", bits);
-        return qfalse;
+        return false;
     }
 
     make_mask(mask, addr->type, bits);
-    return qtrue;
+    return true;
 }
 
 static size_t format_mask(addrmatch_t *match, char *buf, size_t buf_size)
@@ -1455,7 +1455,7 @@ static void SV_DelFilterCmd_c(genctx_t *ctx, int argnum)
         if (LIST_EMPTY(&sv_filterlist)) {
             return;
         }
-        ctx->ignorecase = qtrue;
+        ctx->ignorecase = true;
         Prompt_AddMatch(ctx, "all");
         LIST_FOR_EACH(filtercmd_t, filter, &sv_filterlist, entry) {
             if (!Prompt_AddMatch(ctx, filter->string)) {

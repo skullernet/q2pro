@@ -1081,7 +1081,7 @@ HELPER FUNCTIONS
 
 static lightpoint_t *light_point;
 
-static qboolean BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, vec3_t p1, vec3_t p2)
+static bool BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, vec3_t p1, vec3_t p2)
 {
     vec_t d1, d2, frac, midf;
     vec3_t mid;
@@ -1108,7 +1108,7 @@ static qboolean BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, vec
 
         // check near side
         if (BSP_RecursiveLightPoint(node->children[side], p1f, midf, p1, mid))
-            return qtrue;
+            return true;
 
         for (i = 0, surf = node->firstface; i < node->numfaces; i++, surf++) {
             if (!surf->lightmap)
@@ -1133,14 +1133,14 @@ static qboolean BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, vec
             light_point->s = s;
             light_point->t = t;
             light_point->fraction = midf;
-            return qtrue;
+            return true;
         }
 
         // check far side
         return BSP_RecursiveLightPoint(node->children[side ^ 1], midf, p2f, mid, p2);
     }
 
-    return qfalse;
+    return false;
 }
 
 void BSP_LightPoint(lightpoint_t *point, vec3_t start, vec3_t end, mnode_t *headnode)

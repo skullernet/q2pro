@@ -62,7 +62,7 @@ void    Sys_ListFiles_r(listfiles_t *list, const char *path, int depth);
 void    Sys_DebugBreak(void);
 
 #if USE_AC_CLIENT
-qboolean Sys_GetAntiCheatAPI(void);
+bool Sys_GetAntiCheatAPI(void);
 #endif
 
 #if USE_CLIENT
