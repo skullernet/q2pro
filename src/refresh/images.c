@@ -1464,7 +1464,7 @@ static image_t *lookup_image(const char *name,
 static int _try_image_format(imageformat_t fmt, image_t *image, byte **pic)
 {
     byte        *data;
-    ssize_t     len;
+    int         len;
     qerror_t    ret;
 
     // load the file
@@ -1523,7 +1523,7 @@ static int try_other_formats(imageformat_t orig, image_t *image, byte **pic)
 static void get_image_dimensions(imageformat_t fmt, image_t *image)
 {
     char        buffer[MAX_QPATH];
-    ssize_t     len;
+    int         len;
     miptex_t    mt;
     dpcx_t      pcx;
     qhandle_t   f;
@@ -1902,7 +1902,7 @@ void IMG_GetPalette(void)
 {
     byte        pal[768], *src, *data;
     qerror_t    ret;
-    ssize_t     len;
+    int         len;
     int         i;
 
     // get the palette

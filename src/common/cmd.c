@@ -1575,7 +1575,7 @@ void Cmd_ExecuteString(cmdbuf_t *buf, const char *text)
 qerror_t Cmd_ExecuteFile(const char *path, unsigned flags)
 {
     char    *f;
-    ssize_t len;
+    int len;
     qerror_t ret;
     cmdbuf_t *buf;
 
