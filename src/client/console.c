@@ -629,7 +629,7 @@ Con_RegisterMedia
 */
 void Con_RegisterMedia(void)
 {
-    qerror_t err;
+    int err;
 
     con.charsetImage = R_RegisterImage(con_font->string, IT_FONT, IF_PERMANENT, &err);
     if (!con.charsetImage) {

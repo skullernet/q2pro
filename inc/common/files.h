@@ -107,10 +107,10 @@ void    FS_Shutdown(void);
 void    FS_Restart(bool total);
 
 #if USE_CLIENT
-qerror_t FS_RenameFile(const char *from, const char *to);
+int FS_RenameFile(const char *from, const char *to);
 #endif
 
-qerror_t FS_CreatePath(char *path);
+int FS_CreatePath(char *path);
 
 char    *FS_CopyExtraInfo(const char *name, const file_info_t *info);
 
@@ -126,7 +126,7 @@ qhandle_t FS_EasyOpenFile(char *buf, size_t size, unsigned mode,
 #define CHECK_GZIP_HEADER(magic) \
     ((LittleLong(magic) & 0xe0ffffff) == 0x00088b1f)
 
-qerror_t FS_FilterFile(qhandle_t f);
+int FS_FilterFile(qhandle_t f);
 
 #define FS_FileExistsEx(path, flags) \
     (FS_LoadFileEx(path, NULL, flags, TAG_FREE) != Q_ERR_NOENT)
@@ -137,7 +137,7 @@ int FS_LoadFileEx(const char *path, void **buffer, unsigned flags, memtag_t tag)
 // a NULL buffer will just return the file length without loading
 // length < 0 indicates error
 
-qerror_t FS_WriteFile(const char *path, const void *data, size_t len);
+int FS_WriteFile(const char *path, const void *data, size_t len);
 
 bool FS_EasyWriteFile(char *buf, size_t size, unsigned mode,
                       const char *dir, const char *name, const char *ext,
@@ -153,7 +153,7 @@ int FS_ReadLine(qhandle_t f, char *buffer, size_t size);
 void    FS_Flush(qhandle_t f);
 
 int64_t FS_Tell(qhandle_t f);
-qerror_t FS_Seek(qhandle_t f, off_t offset);
+int FS_Seek(qhandle_t f, off_t offset);
 
 int64_t FS_Length(qhandle_t f);
 

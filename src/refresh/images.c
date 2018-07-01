@@ -42,7 +42,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define R_COLORMAP_PCX    "pics/colormap.pcx"
 
 #define IMG_LOAD(x) \
-    static qerror_t IMG_Load##x(byte *rawdata, size_t rawlen, \
+    static int IMG_Load##x(byte *rawdata, size_t rawlen, \
         image_t *image, byte **pic)
 
 typedef struct screenshot_s {
@@ -129,8 +129,8 @@ PCX LOADING
 =================================================================
 */
 
-static qerror_t _IMG_LoadPCX(byte *rawdata, size_t rawlen, byte *pixels,
-                             byte *palette, int *width, int *height)
+static int _IMG_LoadPCX(byte *rawdata, size_t rawlen, byte *pixels,
+                        byte *palette, int *width, int *height)
 {
     byte    *raw, *end;
     dpcx_t  *pcx;
@@ -272,9 +272,8 @@ static int IMG_Unpack8(uint32_t *out, const uint8_t *in, int width, int height)
 
 IMG_LOAD(PCX)
 {
-    byte        buffer[640 * 480];
-    int         w, h;
-    qerror_t    ret;
+    byte    buffer[640 * 480];
+    int     w, h, ret;
 
     ret = _IMG_LoadPCX(rawdata, rawlen, buffer, NULL, &w, &h);
     if (ret < 0)
@@ -348,9 +347,9 @@ TARGA IMAGES
 #define TARGA_HEADER_SIZE  18
 
 #define TGA_DECODE(x) \
-    static qerror_t tga_decode_##x(byte *in, byte **row_pointers, int cols, int rows, byte *max_in)
+    static int tga_decode_##x(byte *in, byte **row_pointers, int cols, int rows, byte *max_in)
 
-typedef qerror_t (*tga_decode_t)(byte *, byte **, int, int, byte *);
+typedef int (*tga_decode_t)(byte *, byte **, int, int, byte *);
 
 TGA_DECODE(bgr)
 {
@@ -519,7 +518,7 @@ IMG_LOAD(TGA)
     byte *row_pointers[MAX_TEXTURE_SIZE];
     unsigned i, bpp, id_length, colormap_type, image_type, w, h, pixel_size, attributes;
     tga_decode_t decode;
-    qerror_t ret;
+    int ret;
 
     if (rawlen < TARGA_HEADER_SIZE) {
         return Q_ERR_FILE_TOO_SMALL;
@@ -1358,8 +1357,8 @@ int         r_numImages;
 uint32_t    d_8to24table[256];
 
 static const struct {
-    char        ext[4];
-    qerror_t    (*load)(byte *, size_t, image_t *, byte **);
+    char    ext[4];
+    int     (*load)(byte *, size_t, image_t *, byte **);
 } img_loaders[IM_MAX] = {
     { "pcx", IMG_LoadPCX },
     { "wal", IMG_LoadWAL },
@@ -1463,9 +1462,8 @@ static image_t *lookup_image(const char *name,
 
 static int _try_image_format(imageformat_t fmt, image_t *image, byte **pic)
 {
-    byte        *data;
-    int         len;
-    qerror_t    ret;
+    byte    *data;
+    int     len, ret;
 
     // load the file
     len = FS_LoadFile(image->name, (void **)&data);
@@ -1495,8 +1493,7 @@ static int try_image_format(imageformat_t fmt, image_t *image, byte **pic)
 static int try_other_formats(imageformat_t orig, image_t *image, byte **pic)
 {
     imageformat_t   fmt;
-    qerror_t        ret;
-    int             i;
+    int             i, ret;
 
     // search through all the 32-bit formats
     for (i = 0; i < img_total; i++) {
@@ -1604,15 +1601,15 @@ static void r_texture_formats_changed(cvar_t *self)
 #endif // USE_PNG || USE_JPG || USE_TGA
 
 // finds or loads the given image, adding it to the hash table.
-static qerror_t find_or_load_image(const char *name, size_t len,
-                                   imagetype_t type, imageflags_t flags,
-                                   image_t **image_p)
+static int find_or_load_image(const char *name, size_t len,
+                              imagetype_t type, imageflags_t flags,
+                              image_t **image_p)
 {
     image_t         *image;
     byte            *pic;
     unsigned        hash;
     imageformat_t   fmt;
-    qerror_t        ret;
+    int             ret;
 
     *image_p = NULL;
 
@@ -1708,7 +1705,7 @@ image_t *IMG_Find(const char *name, imagetype_t type, imageflags_t flags)
 {
     image_t *image;
     size_t len;
-    qerror_t ret;
+    int ret;
 
     if (!name) {
         Com_Error(ERR_FATAL, "%s: NULL", __func__);
@@ -1753,12 +1750,12 @@ R_RegisterImage
 ===============
 */
 qhandle_t R_RegisterImage(const char *name, imagetype_t type,
-                          imageflags_t flags, qerror_t *err_p)
+                          imageflags_t flags, int *err_p)
 {
     image_t     *image;
     char        fullname[MAX_QPATH];
     size_t      len;
-    qerror_t    err;
+    int         err;
 
     // empty names are legal, silently ignore them
     if (!*name) {
@@ -1901,9 +1898,7 @@ R_GetPalette
 void IMG_GetPalette(void)
 {
     byte        pal[768], *src, *data;
-    qerror_t    ret;
-    int         len;
-    int         i;
+    int         i, ret, len;
 
     // get the palette
     len = FS_LoadFile(R_COLORMAP_PCX, (void **)&data);
