@@ -3048,10 +3048,12 @@ void CL_UpdateFrameTimes(void)
         return; // not yet fully initialized
     }
 
+#if 0
     // check if video driver supports syncing to vertical retrace
     if (cl_async->integer > 1 && !(r_config.flags & QVF_VIDEOSYNC)) {
         Cvar_Reset(cl_async);
     }
+#endif
 
     if (com_timedemo->integer) {
         // timedemo just runs at full speed
