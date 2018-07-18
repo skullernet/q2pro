@@ -783,7 +783,7 @@ void Sys_Init(void)
     HMODULE module;
     BOOL (WINAPI * pSetProcessDEPPolicy)(DWORD);
 #endif
-    cvar_t *var = NULL;
+    cvar_t *var q_unused = NULL;
 
     // check windows version
     vinfo.dwOSVersionInfoSize = sizeof(vinfo);
