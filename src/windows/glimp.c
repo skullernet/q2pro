@@ -494,15 +494,6 @@ qboolean VID_Init(void)
     return qtrue;
 }
 
-void VID_VideoWait(void)
-{
-}
-
-qboolean VID_VideoSync(void)
-{
-    return qtrue;
-}
-
 void VID_BeginFrame(void)
 {
 }

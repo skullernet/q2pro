@@ -3143,8 +3143,6 @@ unsigned CL_Frame(unsigned msec)
         }
         break;
     case SYNC_SLEEP_VIDEO:
-        // wait for vertical retrace if not active
-        VID_VideoWait();
         break;
     case ASYNC_VIDEO:
     case ASYNC_MAXFPS:
@@ -3157,10 +3155,7 @@ unsigned CL_Frame(unsigned msec)
             phys_extra = phys_msec;
         }
 
-        if (sync_mode == ASYNC_VIDEO) {
-            // sync refresh to vertical retrace
-            ref_frame = VID_VideoSync();
-        } else {
+        if (sync_mode != ASYNC_VIDEO) {
             ref_extra += main_extra;
             if (ref_extra < ref_msec) {
                 ref_frame = qfalse;
