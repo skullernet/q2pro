@@ -3003,9 +3003,8 @@ typedef enum {
     SYNC_MAXFPS,
     SYNC_SLEEP_10,
     SYNC_SLEEP_60,
-    ASYNC_VIDEO,
     ASYNC_MAXFPS,
-    ASYNC_FULL
+    ASYNC_VIDEO
 } sync_mode_t;
 
 #ifdef _DEBUG
@@ -3014,9 +3013,8 @@ static const char *const sync_names[] = {
     "SYNC_MAXFPS",
     "SYNC_SLEEP_10",
     "SYNC_SLEEP_60",
-    "ASYNC_VIDEO",
     "ASYNC_MAXFPS",
-    "ASYNC_FULL"
+    "ASYNC_VIDEO"
 };
 #endif
 
@@ -3046,13 +3044,6 @@ void CL_UpdateFrameTimes(void)
         return; // not yet fully initialized
     }
 
-#if 0
-    // check if video driver supports syncing to vertical retrace
-    if (cl_async->integer > 1 && !(r_config.flags & QVF_VIDEOSYNC)) {
-        Cvar_Reset(cl_async);
-    }
-#endif
-
     if (com_timedemo->integer) {
         // timedemo just runs at full speed
         ref_msec = phys_msec = main_msec = 0;
@@ -3069,15 +3060,12 @@ void CL_UpdateFrameTimes(void)
     } else if (cl_async->integer > 0) {
         // run physics and refresh separately
         phys_msec = fps_to_msec(Cvar_ClampInteger(cl_maxfps, 10, 120));
-        if (cl_async->integer > 1) {
-            ref_msec = 0;
-            sync_mode = ASYNC_VIDEO;
-        } else if (r_maxfps->integer) {
+        if (r_maxfps->integer) {
             ref_msec = fps_to_msec(Cvar_ClampInteger(r_maxfps, 10, 1000));
             sync_mode = ASYNC_MAXFPS;
         } else {
-            ref_msec = 1;
-            sync_mode = ASYNC_FULL;
+            ref_msec = 0;
+            sync_mode = ASYNC_VIDEO;
         }
         main_msec = 0;
     } else {
@@ -3135,12 +3123,10 @@ unsigned CL_Frame(unsigned msec)
     //   (check gl_swapinterval and driver-specific options)
     // - runs logic every `phys_msec' (from cl_maxfps)
     // - runs render every `ref_msec' (from r_maxfps)
-    case ASYNC_VIDEO:
-        // ref_msec: 0
     case ASYNC_MAXFPS:
         // ref_msec: derived from r_maxfps
-    case ASYNC_FULL:
-        // ref_msec: 1
+    case ASYNC_VIDEO:
+        // ref_msec: 0
 
         phys_extra += main_extra;
         if (phys_extra < phys_msec) {
@@ -3149,13 +3135,11 @@ unsigned CL_Frame(unsigned msec)
             phys_extra = phys_msec;
         }
 
-        if (sync_mode != ASYNC_VIDEO) {
-            ref_extra += main_extra;
-            if (ref_extra < ref_msec) {
-                ref_frame = qfalse;
-            } else if (ref_extra > ref_msec * 4) {
-                ref_extra = ref_msec;
-            }
+        ref_extra += main_extra;
+        if (ref_extra < ref_msec) {
+            ref_frame = qfalse;
+        } else if (ref_extra > ref_msec * 4) {
+            ref_extra = ref_msec;
         }
         break;
     case SYNC_MAXFPS:
