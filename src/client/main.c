@@ -3003,7 +3003,6 @@ typedef enum {
     SYNC_MAXFPS,
     SYNC_SLEEP_10,
     SYNC_SLEEP_60,
-    SYNC_SLEEP_VIDEO,
     ASYNC_VIDEO,
     ASYNC_MAXFPS,
     ASYNC_FULL
@@ -3015,7 +3014,6 @@ static const char *const sync_names[] = {
     "SYNC_MAXFPS",
     "SYNC_SLEEP_10",
     "SYNC_SLEEP_60",
-    "SYNC_SLEEP_VIDEO",
     "ASYNC_VIDEO",
     "ASYNC_MAXFPS",
     "ASYNC_FULL"
@@ -3066,14 +3064,8 @@ void CL_UpdateFrameTimes(void)
         sync_mode = SYNC_SLEEP_10;
     } else if (cls.active == ACT_RESTORED || cls.state != ca_active) {
         // run at 60 fps if not active
-        ref_msec = phys_msec = 0;
-        if (cl_async->integer > 1) {
-            main_msec = 0;
-            sync_mode = SYNC_SLEEP_VIDEO;
-        } else {
-            main_msec = fps_to_msec(60);
-            sync_mode = SYNC_SLEEP_60;
-        }
+        main_msec = fps_to_msec(60);
+        sync_mode = SYNC_SLEEP_60;
     } else if (cl_async->integer > 0) {
         // run physics and refresh separately
         phys_msec = fps_to_msec(Cvar_ClampInteger(cl_maxfps, 10, 120));
@@ -3089,15 +3081,10 @@ void CL_UpdateFrameTimes(void)
         }
         main_msec = 0;
     } else {
-        // everything ticks in sync with refresh
+        // physics and gfx run each refresh frame
         phys_msec = ref_msec = 0;
-        if (cl_maxfps->integer) {
-            main_msec = fps_to_msec(Cvar_ClampInteger(cl_maxfps, 10, 1000));
-            sync_mode = SYNC_MAXFPS;
-        } else {
-            main_msec = 1;
-            sync_mode = SYNC_FULL;
-        }
+        main_msec = fps_to_msec(Cvar_ClampInteger(cl_maxfps, 10, 1000));
+        sync_mode = SYNC_MAXFPS;
     }
 
     Com_DDDPrintf("%s: mode=%s main_msec=%d ref_msec=%d, phys_msec=%d\n",
@@ -3141,8 +3128,6 @@ unsigned CL_Frame(unsigned msec)
         if (main_extra < main_msec) {
             return main_msec - main_extra;
         }
-        break;
-    case SYNC_SLEEP_VIDEO:
         break;
 
     // async mode
