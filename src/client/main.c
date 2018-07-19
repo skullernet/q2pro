@@ -2999,7 +2999,7 @@ void CL_CheckForPause(void)
 }
 
 typedef enum {
-    SYNC_FULL,
+    SYNC_NODELAY,
     SYNC_MAXFPS,
     SYNC_SLEEP_10,
     SYNC_SLEEP_60,
@@ -3010,7 +3010,7 @@ typedef enum {
 
 #ifdef _DEBUG
 static const char *const sync_names[] = {
-    "SYNC_FULL",
+    "SYNC_NODELAY",
     "SYNC_MAXFPS",
     "SYNC_SLEEP_10",
     "SYNC_SLEEP_60",
@@ -3056,7 +3056,7 @@ void CL_UpdateFrameTimes(void)
     if (com_timedemo->integer) {
         // timedemo just runs at full speed
         ref_msec = phys_msec = main_msec = 0;
-        sync_mode = SYNC_FULL;
+        sync_mode = SYNC_NODELAY;
     } else if (cls.active == ACT_MINIMIZED) {
         // run at 10 fps if minimized
         ref_msec = phys_msec = 0;
@@ -3116,7 +3116,7 @@ unsigned CL_Frame(unsigned msec)
 
     ref_frame = phys_frame = qtrue;
     switch (sync_mode) {
-    case SYNC_FULL:
+    case SYNC_NODELAY:
         // timedemo just runs at full speed
         break;
     case SYNC_SLEEP_10:
