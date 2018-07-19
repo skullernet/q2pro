@@ -3144,10 +3144,19 @@ unsigned CL_Frame(unsigned msec)
         break;
     case SYNC_SLEEP_VIDEO:
         break;
+
+    // async mode
+    // - only useful without vsync or with triple buffering)
+    //   (check gl_swapinterval and driver-specific options)
+    // - runs logic every `phys_msec' (from cl_maxfps)
+    // - runs render every `ref_msec' (from r_maxfps)
     case ASYNC_VIDEO:
+        // ref_msec: 0
     case ASYNC_MAXFPS:
+        // ref_msec: derived from r_maxfps
     case ASYNC_FULL:
-        // run physics and refresh separately
+        // ref_msec: 1
+
         phys_extra += main_extra;
         if (phys_extra < phys_msec) {
             phys_frame = qfalse;
