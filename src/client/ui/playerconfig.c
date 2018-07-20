@@ -89,7 +89,7 @@ static void RunFrame(void)
     int frame;
     int i;
 
-    if (m_player.time < uis.realtime) {
+    if ((unsigned)m_player.time < (unsigned)uis.realtime) {
         m_player.oldTime = m_player.time;
 
         m_player.time += 120;
