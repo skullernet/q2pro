@@ -1,4 +1,4 @@
-Q2PRO
+Q2PRO [![Build Status](https://travis-ci.org/carlossless/q2pro.svg?branch=master)](https://travis-ci.org/carlossless/q2pro)
 =====
 
 Q2PRO is an enhanced, multiplayer oriented Quake 2 client and server.

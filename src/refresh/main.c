@@ -622,7 +622,8 @@ static void GL_Strings_f(void)
         Com_Printf("GL_EXTENSIONS: ");
         if (qglGetStringi) {
             qglGetIntegerv(GL_NUM_EXTENSIONS, &integer);
-            for (int i = 0; i < integer; i++)
+            int i = 0;
+            for (i = 0; i < integer; i++)
                 Com_Printf("%s ", qglGetStringi(GL_EXTENSIONS, i));
         } else {
             const char *s = (const char *)qglGetString(GL_EXTENSIONS);

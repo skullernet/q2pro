@@ -382,7 +382,8 @@ static void shader_init(void)
 static void shader_shutdown(void)
 {
     qglUseProgram(0);
-    for (int i = 0; i < MAX_PROGRAMS; i++) {
+    int i;
+    for (i = 0; i < MAX_PROGRAMS; i++) {
         if (gl_static.programs[i]) {
             qglDeleteProgram(gl_static.programs[i]);
             gl_static.programs[i] = 0;

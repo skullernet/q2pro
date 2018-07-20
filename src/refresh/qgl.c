@@ -384,7 +384,8 @@ static qboolean extension_present(const char *search)
         GLint count = 0;
         qglGetIntegerv(GL_NUM_EXTENSIONS, &count);
 
-        for (int i = 0; i < count; i++) {
+        int i;
+        for (i = 0; i < count; i++) {
             s = (const char *)qglGetStringi(GL_EXTENSIONS, i);
             if (s && !strcmp(s, search))
                 return qtrue;
@@ -412,7 +413,8 @@ static qboolean extension_present(const char *search)
 
 void QGL_Shutdown(void)
 {
-    for (int i = 0; i < q_countof(sections); i++) {
+    int i;
+    for (i = 0; i < q_countof(sections); i++) {
         const glsection_t *sec = &sections[i];
         const glfunction_t *func;
 
@@ -454,7 +456,8 @@ qboolean QGL_Init(void)
     else
         Com_Printf("Detected OpenGL %d.%d\n", VER(gl_config.ver_gl));
 
-    for (int i = 0; i < q_countof(sections); i++) {
+    int i;
+    for (i = 0; i < q_countof(sections); i++) {
         const glsection_t *sec = &sections[i];
         const glfunction_t *func;
         qboolean core;

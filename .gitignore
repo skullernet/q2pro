@@ -1,3 +1,5 @@
+.DS_STORE
+/dist
 /.config*
 /.q2pro/
 /.q2proded/

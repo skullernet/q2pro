@@ -1,0 +1,50 @@
+language: c
+compiler: clang
+
+matrix:
+  include:
+    - os: linux
+      addons:
+        apt:
+          packages:
+          - libsdl2-dev
+          - mesa-utils
+      script:
+        - CONFIG_SDL2=y CONFIG_HTTP=y CONFIG_PNG=y CONFIG_JPEG=y make -j 4
+        - ./scripts/linux-package.sh
+
+    - os: linux
+      addons:
+        apt:
+          packages:
+          - libsdl2-dev
+          - mesa-utils
+          - mingw-w64
+      before_install:
+        - wget https://github.com/skullernet/q2pro-mgw-sdk/releases/download/2018-03-15/q2pro-mgw-sdk-20180315.tar.gz -O q2pro-mgw-sdk.tar.gz
+        - tar zxf q2pro-mgw-sdk.tar.gz -C ../
+        - cp ../q2pro-mgw-sdk/config64 .config
+      script:
+        - CONFIG_SDL2=y make strip -j 4
+        - ./scripts/win-package.sh
+
+    - os: osx
+      before_install:
+        - brew update
+        - brew install sdl2
+        - brew install dylibbundler
+      script:
+        - CONFIG_SDL2=y CONFIG_HTTP=y CONFIG_PNG=y CONFIG_JPEG=y make -j 4
+        - ./scripts/mac-package.sh
+
+deploy:
+  provider: releases
+  api_key:
+    secure: H96nsdk5HqnlKbKKnzlpDfAvHoYJpQXDfda8jHf6KTPg/dw+1UIwhJuZUpHpalOrc46gpRtq/184Fk1KgGYi8tZeCbspuhmL5vMDu8ETrKLTv7PqJQWPyCGRX/SMSumzTnXFLSBXuHgmasO55LaA88OPPt96zuCn//0FCSGrQBkvXEc/1lPyGemIO+Zk4aTv4QjH0icafL59tK3RiTUO9m6XAIzbK+zStdHU6cACE1C1nOpQ9CYbrhraEbzQjt5Epinl/cOwOWqRaNIRlAl3CuN2A4fArNhy1vooggNnB2DMaH3CpGFfg+LNX4R3UGyP0MjT6Zb+5umqt/vH7m4KIhfIN/xBNkYDVuwNQmVpbTFZhfllTsyUsH2d07mvVjteSZgJ5CSReK5CMfaq7cY95p3Fj7krcP38EE2gDcskRyS4JapizGYX9dbK2HZJ5dndfUjQwRNvCSigaUcheMLqrpeZfYurjuhR5b4MIz3yU3leLkv/NIBjK3Vu2xz1yVDD8eHfYN8vrpqDjw10xkuoRyEv6rEWamWp96YvXEtSwdaWB2391t8G3/BqpMsNTpAspwTGUq+eSibtLGf/q1uWMqfU01AGfaTpW9AbizfKqR1lyRbvh7ZreOovei24s6eIas0+kTBvrLxRUw1rN2Qimj2m6C6KjpL44Y4eUDNI6Vg=
+  file:
+    - dist/mac/q2pro-mac.dmg
+    - dist/linux/q2pro-linux.tar.gz
+    - dist/win/q2pro-win.zip
+  skip_cleanup: true
+  on:
+    tags: true
