@@ -3030,7 +3030,24 @@ static inline float fps_to_msec(float fps)
 #endif
 }
 
-#ifdef _DEBUG
+static inline float clamped_phys()
+{
+#ifdef EVIL_PROTO_ABUSE
+    return Cvar_ClampValue(cl_maxfps, 10, 1000);
+#else
+    return Cvar_ClampValue(cl_maxfps, 10, 120);
+#endif
+}
+
+static inline float clamped_refresh(cvar_t* var)
+{
+#ifdef EVIL_PROTO_ABUSE
+    return Cvar_ClampValue(var, 10, 10000);
+#else
+    return Cvar_ClampValue(var, 10, 1000);
+#endif
+}
+
 static struct timing_s
 {
     double stddev, absdev;
@@ -3051,26 +3068,6 @@ static void add_timing_sample(double x)
         timing.stddev /= 2;
         timing.absdev /= 2;
     }
-}
-
-static inline float clamped_phys()
-{
-#ifdef EVIL_PROTO_ABUSE
-    return Cvar_ClampValue(cl_maxfps, 10, 1000);
-#else
-    return Cvar_ClampValue(cl_maxfps, 10, 120);
-#endif
-}
-
-static inline float clamped_refresh()
-{
-    if (r_maxfps->value == 0)
-        return 0;
-#ifdef EVIL_PROTO_ABUSE
-    return Cvar_ClampValue(r_maxfps, 10, 10000);
-#else
-    return Cvar_ClampValue(r_maxfps, 10, 1000);
-#endif
 }
 
 #define DEFINE_TIMING_MACRO1(name, fmt, ...)                                \
@@ -3107,7 +3104,6 @@ static void reset_frame_timing(void)
 
     maybe_init_timing_macro();
 }
-#endif
 
 /*
 ==================
@@ -3123,7 +3119,7 @@ void CL_UpdateFrameTimes(void)
     }
 
     ref_budget = phys_budget = frame_dt_ = 0;
-    ref_interval = phys_interval = 0;
+    ref_interval = phys_interval = 1;
 
     if (com_timedemo->integer) {
         // timedemo just runs at full speed
@@ -3138,12 +3134,14 @@ void CL_UpdateFrameTimes(void)
         sync_mode = SYNC_RATELIMIT;
     } else if (cl_async->integer > 0) {
         // run physics and refresh separately
-        ref_interval = fps_to_msec(clamped_refresh());
+        if (r_maxfps->integer)
+            ref_interval = fps_to_msec(clamped_refresh(r_maxfps));
         phys_interval = fps_to_msec(clamped_phys());
         sync_mode = SYNC_ASYNC;
     } else {
         // physics and gfx run each refresh frame
-        ref_interval = fps_to_msec(clamped_refresh());
+        ref_interval = fps_to_msec(clamped_refresh(cl_maxfps));
+        phys_interval = ref_interval; // for cl_mps_*
         sync_mode = SYNC_MAXFPS;
     }
 
@@ -3151,10 +3149,6 @@ void CL_UpdateFrameTimes(void)
                 __func__, sync_names[sync_mode],
                 (int)roundf(ref_interval),
                 (int)roundf(phys_interval));
-
-    // for cl_mps_*
-    if (phys_interval == 0)
-        phys_interval = ref_interval;
 
     reset_frame_timing();
 }
@@ -3278,9 +3272,7 @@ unsigned CL_Frame(unsigned msec_)
     // finalize pending cmd
     phys_frame |= cl.sendPacketNow;
     if (phys_frame) {
-#ifdef _DEBUG
         add_timing_sample(phys_budget - (double)phys_interval);
-#endif
 
         CL_FinalizeCmd();
         phys_budget -= phys_interval;
