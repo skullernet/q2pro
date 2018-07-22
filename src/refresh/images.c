@@ -39,6 +39,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <jpeglib.h>
 #endif
 
+#include <setjmp.h>
+
 #define R_COLORMAP_PCX    "pics/colormap.pcx"
 
 #define IMG_LOAD(x) \
