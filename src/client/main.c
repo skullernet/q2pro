@@ -3030,6 +3030,81 @@ static inline float fps_to_msec(int fps)
 #endif
 }
 
+#ifdef _DEBUG
+static struct timing_s
+{
+    double stddev, absdev;
+    int cnt;
+} timing;
+
+static void add_timing_sample(double x)
+{
+    timing.cnt++;
+    double d = x - phys_interval;
+    timing.stddev += d * d;
+    timing.absdev += fabs(d);
+
+    // not clamping "cnt" makes results barely change after a while
+    if (timing.cnt > phys_interval * 15.f)
+    {
+        timing.cnt /= 2;
+        timing.stddev /= 2;
+        timing.absdev /= 2;
+    }
+}
+
+static inline float clamped_phys()
+{
+#ifdef EVIL_PROTO_ABUSE
+    return Cvar_ClampValue(cl_maxfps, 10, 1000);
+#else
+    return Cvar_ClampValue(cl_maxfps, 10, 120);
+#endif
+}
+
+static inline float clamped_refresh()
+{
+    if (r_maxfps->value == 0)
+        return 0;
+    return Cvar_ClampValue(r_maxfps, 10, 1e4);
+}
+
+#define DEFINE_TIMING_MACRO1(name, fmt, ...)                                \
+    static size_t name (char* buf__, size_t sz__)                           \
+    {                                                                       \
+        return Q_scnprintf(buf__, sz__, (fmt), __VA_ARGS__);                \
+    }
+
+#define DEFINE_TIMING_MACRO2(name, str, x)                                  \
+    DEFINE_TIMING_MACRO1(name, "%s%6.3f ms, %6.3f of cl_maxfps", (str), (x), (x)/phys_interval)
+
+DEFINE_TIMING_MACRO2(expand_timing_stddev_M,   "stddev:  ", sqrt(timing.stddev / (timing.cnt-1)))
+DEFINE_TIMING_MACRO2(expand_timing_absdiff_M,  "absdev:  ", timing.absdev / (timing.cnt-1))
+DEFINE_TIMING_MACRO1(expand_timing_interval_M, "interval: %-.3f ms, cl_maxfps %g", phys_interval, clamped_phys())
+
+static void maybe_init_timing_macro(void)
+{
+    static int init_done = 0;
+
+    if (!init_done)
+    {
+        init_done = 1;
+        Cmd_AddMacro("cl_mps_stddev", expand_timing_stddev_M);
+        Cmd_AddMacro("cl_mps_absdev", expand_timing_absdiff_M);
+        Cmd_AddMacro("cl_mps_interval", expand_timing_interval_M);
+    }
+}
+
+static void reset_frame_timing(void)
+{
+    timing.stddev = 0;
+    timing.absdev = 0;
+    timing.cnt = 2;
+
+    maybe_init_timing_macro();
+}
+#endif
+
 /*
 ==================
 CL_UpdateFrameTimes
@@ -3194,6 +3269,10 @@ unsigned CL_Frame(unsigned msec_)
     // finalize pending cmd
     phys_frame |= cl.sendPacketNow;
     if (phys_frame) {
+#ifdef _DEBUG
+        add_timing_sample(phys_budget - (double)phys_interval);
+#endif
+
         CL_FinalizeCmd();
         phys_budget -= phys_interval;
         M_FRAMES++;
