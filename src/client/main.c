@@ -3021,7 +3021,7 @@ static float phys_interval, phys_budget;
 static unsigned frame_dt_;
 static sync_mode_t sync_mode;
 
-static inline float fps_to_msec(int fps)
+static inline float fps_to_msec(float fps)
 {
 #if 0
     return (1000 + fps / 2) / fps;
@@ -3135,12 +3135,12 @@ void CL_UpdateFrameTimes(void)
     } else if (cl_async->integer > 0) {
         // run physics and refresh separately
         if (r_maxfps->integer)
-            ref_interval = fps_to_msec(Cvar_ClampInteger(r_maxfps, 10, 1000));
-        phys_interval = fps_to_msec(Cvar_ClampInteger(cl_maxfps, 10, 120));
+            ref_interval = fps_to_msec(Cvar_ClampValue(r_maxfps, 10, 1000));
+        phys_interval = fps_to_msec(Cvar_ClampValue(cl_maxfps, 10, 120));
         sync_mode = SYNC_ASYNC;
     } else {
         // physics and gfx run each refresh frame
-        ref_interval = fps_to_msec(Cvar_ClampInteger(cl_maxfps, 10, 1000));
+        ref_interval = fps_to_msec(Cvar_ClampValue(cl_maxfps, 10, 1000));
         sync_mode = SYNC_MAXFPS;
     }
 
