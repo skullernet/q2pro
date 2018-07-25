@@ -182,7 +182,7 @@ unsigned Sys_Milliseconds(void)
     return tp.tv_sec * 1000UL + tp.tv_usec / 1000UL;
 }
 
-float Sys_Milliseconds_f(void)
+double Sys_Milliseconds_f(void)
 {
     struct timespec ts;
     (void)clock_gettime(CLOCK_MONOTONIC, &ts);

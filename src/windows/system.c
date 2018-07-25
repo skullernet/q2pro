@@ -764,11 +764,13 @@ unsigned Sys_Milliseconds(void)
      return tm.QuadPart * 1000LL / timer_freq.QuadPart;
 }
 
-float Sys_Milliseconds_f(void)
+double Sys_Milliseconds_f(void)
 {
     LARGE_INTEGER tm;
     (void)QueryPerformanceCounter(&tm);
-    return tm.QuadPart * 1000.L / timer_freq.QuadPart;
+    long double denom = timer_freq.QuadPart;
+    denom /= 1000;
+    return tm.QuadPart / denom;
 }
 
 void Sys_AddDefaultConfig(void)

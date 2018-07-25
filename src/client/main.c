@@ -3002,7 +3002,7 @@ typedef enum {
     SYNC_NODELAY,
     SYNC_MAXFPS,
     SYNC_NO_REF,
-    SYNC_RATELIMIT,
+    SYNC_SLEEPYTIME,
     SYNC_ASYNC
 } sync_mode_t;
 
@@ -3016,9 +3016,7 @@ static const char *const sync_names[] = {
 };
 #endif
 
-static float ref_interval, ref_budget;
-static float phys_interval, phys_budget;
-static unsigned frame_dt_;
+static float ref_interval, phys_interval;
 static sync_mode_t sync_mode;
 
 static inline float fps_to_msec(float fps)
@@ -3030,27 +3028,19 @@ static inline float fps_to_msec(float fps)
 #endif
 }
 
-static inline float clamped_phys()
+static inline float clamped_phys(void)
 {
-#ifdef EVIL_PROTO_ABUSE
-    return Cvar_ClampValue(cl_maxfps, 10, 1000);
-#else
     return Cvar_ClampValue(cl_maxfps, 10, 120);
-#endif
 }
 
-static inline float clamped_refresh(cvar_t* var)
+static inline float clamped_refresh(void)
 {
-#ifdef EVIL_PROTO_ABUSE
-    return Cvar_ClampValue(var, 10, 10000);
-#else
-    return Cvar_ClampValue(var, 10, 1000);
-#endif
+    return fmaxf(r_maxfps->value, 10);
 }
 
 static struct timing_s
 {
-    double stddev, absdev;
+    double var, absdev, realtime;
     int cnt;
 } timing;
 
@@ -3058,30 +3048,37 @@ static void add_timing_sample(double x)
 {
     timing.cnt++;
     double d = x - phys_interval;
-    timing.stddev += d * d;
+    timing.var += d * d;
     timing.absdev += fabs(d);
+    timing.realtime += fmin(250, fmax(-50, x));
 
-    // not clamping "cnt" makes results barely change after a while
-    if (timing.cnt > phys_interval * 15.f)
+    if (timing.cnt > (int)(1e3f/phys_interval))
     {
-        timing.cnt /= 2;
-        timing.stddev /= 2;
-        timing.absdev /= 2;
+        timing.cnt *= .75;
+        timing.var *= .75;
+        timing.absdev *= .75;
+        timing.realtime *= .75;
     }
 }
 
-#define DEFINE_TIMING_MACRO1(name, fmt, ...)                                \
+#define DEFINE_TIMING_MACRO(name, fmt, ...)                                \
     static size_t name (char* buf__, size_t sz__)                           \
     {                                                                       \
         return Q_scnprintf(buf__, sz__, (fmt), __VA_ARGS__);                \
     }
 
-#define DEFINE_TIMING_MACRO2(name, str, x)                                  \
-    DEFINE_TIMING_MACRO1(name, "%s%6.3f ms, %6.3f of cl_maxfps", (str), (x), (x)/phys_interval)
-
-DEFINE_TIMING_MACRO2(expand_timing_stddev_M,   "stddev:  ", sqrt(timing.stddev / (timing.cnt-1)))
-DEFINE_TIMING_MACRO2(expand_timing_absdiff_M,  "absdev:  ", timing.absdev / (timing.cnt-1))
-DEFINE_TIMING_MACRO1(expand_timing_interval_M, "interval: %-.3f ms, cl_maxfps %g", phys_interval, clamped_phys())
+DEFINE_TIMING_MACRO(expand_timing_stddev_M,
+                     "stddev:  % 7.3f",
+                    sqrt(timing.var/timing.cnt))
+DEFINE_TIMING_MACRO(expand_timing_absdev_M,
+                     "absdev:  % 7.3f ms",
+                    timing.absdev/timing.cnt)
+DEFINE_TIMING_MACRO(expand_timing_interval_M,
+                     "interval % 7.3f ms  %g Hz",
+                    phys_interval, clamped_phys())
+DEFINE_TIMING_MACRO(expand_timing_mean_M,
+                     "actual   % 7.3f ms",
+                     timing.realtime/timing.cnt);
 
 static void maybe_init_timing_macro(void)
 {
@@ -3091,16 +3088,18 @@ static void maybe_init_timing_macro(void)
     {
         init_done = 1;
         Cmd_AddMacro("cl_mps_stddev", expand_timing_stddev_M);
-        Cmd_AddMacro("cl_mps_absdev", expand_timing_absdiff_M);
+        Cmd_AddMacro("cl_mps_absdev", expand_timing_absdev_M);
         Cmd_AddMacro("cl_mps_interval", expand_timing_interval_M);
+        Cmd_AddMacro("cl_mps_mean", expand_timing_mean_M);
     }
 }
 
 static void reset_frame_timing(void)
 {
-    timing.stddev = 0;
+    timing.var = 0;
     timing.absdev = 0;
-    timing.cnt = 2;
+    timing.cnt = 1;
+    timing.realtime = clamped_phys();
 
     maybe_init_timing_macro();
 }
@@ -3118,8 +3117,8 @@ void CL_UpdateFrameTimes(void)
         return; // not yet fully initialized
     }
 
-    ref_budget = phys_budget = frame_dt_ = 0;
-    ref_interval = phys_interval = 1;
+    phys_interval = 1;
+    ref_interval = 1;
 
     if (com_timedemo->integer) {
         // timedemo just runs at full speed
@@ -3131,17 +3130,19 @@ void CL_UpdateFrameTimes(void)
     } else if (cls.active == ACT_RESTORED || cls.state != ca_active) {
         // run at 60 fps if not active
         ref_interval = fps_to_msec(60);
-        sync_mode = SYNC_RATELIMIT;
+        sync_mode = SYNC_SLEEPYTIME;
     } else if (cl_async->integer > 0) {
         // run physics and refresh separately
-        if (r_maxfps->integer)
-            ref_interval = fps_to_msec(clamped_refresh(r_maxfps));
+        if (r_maxfps->value > 0)
+            ref_interval = fps_to_msec(clamped_refresh());
+        else
+            ref_interval = 1;
         phys_interval = fps_to_msec(clamped_phys());
         sync_mode = SYNC_ASYNC;
     } else {
-        // physics and gfx run each refresh frame
-        ref_interval = fps_to_msec(clamped_refresh(cl_maxfps));
-        phys_interval = ref_interval; // for cl_mps_*
+        // physics and gfx run in lockstep
+        ref_interval = fps_to_msec(clamped_phys());
+        phys_interval = ref_interval; // for cl_mps_* only
         sync_mode = SYNC_MAXFPS;
     }
 
@@ -3159,29 +3160,35 @@ CL_Frame
 
 ==================
 */
+
 unsigned CL_Frame(unsigned msec_)
 {
-    qboolean phys_frame = qtrue, ref_frame = qtrue;
+    static float phys_budget, ref_budget, frame_budget;
+    float msec;
 
-    static float last_frame_start_time;
-    float frame_start_time = Sys_Milliseconds_f();
-    float msec = fminf(2500, frame_start_time - last_frame_start_time);
-    unsigned frame_dt;
+    time_after_ref = time_before_ref = 0; // host_speeds
 
-    last_frame_start_time = frame_start_time;
+    {
+        typedef double time_f;
 
-    time_after_ref = time_before_ref = 0;
-
-    if (!cl_running->integer) {
-        return UINT_MAX;
+        static time_f last_frame_time = -1;
+        time_f now = Sys_Milliseconds_f();
+        msec = fmaxf(1, fminf(250, now - last_frame_time));
+        last_frame_time = now;
     }
 
-    ref_budget += msec;
-    phys_budget += msec;
-    frame_dt_ += msec;
-    cls.realtime += msec_;
+    ref_budget = fminf(ref_budget + msec, 2500);
+    phys_budget = fminf(phys_budget + msec, 2500);
+    frame_budget = fminf(frame_budget + msec, 2500);
+
+    if (!cl_running->integer)
+        return 100;
+
+    cls.realtime += (unsigned)msec_;
 
     CL_ProcessEvents();
+
+    qboolean phys_frame = qtrue, ref_frame = qtrue;
 
     switch (sync_mode) {
     // ad-hoc modes, not during interactive gameplay
@@ -3192,10 +3199,10 @@ unsigned CL_Frame(unsigned msec_)
         // don't run refresh when minimized
         ref_frame = qfalse;
         // fall through
-    case SYNC_RATELIMIT:
+    case SYNC_SLEEPYTIME:
         // run at limited fps if not active
         if (ref_budget < ref_interval) {
-            return ref_budget - ref_interval;
+            return fmaxf(1, ref_budget - ref_interval);
         }
         break;
 
@@ -3208,13 +3215,13 @@ unsigned CL_Frame(unsigned msec_)
         if (phys_budget < phys_interval) {
             phys_frame = qfalse;
         } else if (phys_budget > phys_interval * 4) {
-            phys_budget = phys_interval;
+            phys_budget = phys_interval/2;
         }
 
         if (ref_budget < ref_interval) {
             ref_frame = qfalse;
         } else if (ref_budget > ref_interval * 4) {
-            ref_budget = ref_interval;
+            ref_budget = phys_interval/2;
         }
         break;
 
@@ -3232,27 +3239,27 @@ unsigned CL_Frame(unsigned msec_)
         break;
     }
 
-    frame_dt = (unsigned)frame_dt_;
+    const unsigned frame_time = frame_budget;
+    frame_budget = 0;
 
     Com_DDDDPrintf("ref=%d:%-4.1f phys=%d:%-4.1f sync=%d\n",
-                   ref_frame, ref_budget, phys_frame, phys_budget, frame_dt);
+                   ref_frame, ref_budget,
+                   phys_frame, phys_budget,
+                   frame_time);
 
     // decide the simulation time
-    cls.frametime = frame_dt * 0.001f;
-
-    if (cls.frametime > 1.0 / 5)
-        cls.frametime = 1.0 / 5;
+    cls.frametime = fminf(200, frame_time) * 1e-3f;
 
     if (!sv_paused->integer) {
-        cl.time += frame_dt;
+        cl.time += frame_time;
 #if USE_FPS
-        cl.keytime += frame_dt;
+        cl.keytime += frame_time;
 #endif
     }
 
     // read next demo frame
     if (cls.demo.playback)
-        CL_DemoFrame(frame_dt);
+        CL_DemoFrame(frame_time);
 
     // calculate local time
     if (cls.state == ca_active && !sv_paused->integer)
@@ -3267,22 +3274,22 @@ unsigned CL_Frame(unsigned msec_)
     CL_CheckForResend();
 
     // read user intentions
-    CL_UpdateCmd(frame_dt);
+    CL_UpdateCmd(frame_time);
 
     // finalize pending cmd
     phys_frame |= cl.sendPacketNow;
     if (phys_frame) {
-        add_timing_sample(phys_budget - (double)phys_interval);
+        add_timing_sample(phys_budget);
 
         CL_FinalizeCmd();
-        phys_budget -= phys_interval;
         M_FRAMES++;
+
+        phys_budget -= phys_interval;
+        if (phys_budget < -phys_interval*4)
+            phys_budget = 0;
 
         // don't let the time go too far off
         // this can happen due to cl.sendPacketNow
-        if (phys_budget < -phys_interval * 4) {
-            phys_budget = 0;
-        }
     }
 
     // send pending cmds
@@ -3293,7 +3300,7 @@ unsigned CL_Frame(unsigned msec_)
 
     Con_RunConsole();
 
-    UI_Frame(frame_dt);
+    UI_Frame(frame_time);
 
     if (ref_frame) {
         // update the screen
@@ -3306,6 +3313,7 @@ unsigned CL_Frame(unsigned msec_)
             time_after_ref = Sys_Milliseconds();
 
         ref_budget -= ref_interval;
+
         R_FRAMES++;
 
 run_fx:
@@ -3330,10 +3338,6 @@ run_fx:
     C_FRAMES++;
     CL_MeasureStats();
     cls.framecount++;
-
-    frame_dt_ = 0;
-    ref_budget = fminf(250, ref_budget);
-    phys_budget = fminf(250, phys_budget);
 
     return 0;
 }
