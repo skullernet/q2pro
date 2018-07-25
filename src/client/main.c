@@ -2999,40 +2999,109 @@ void CL_CheckForPause(void)
 }
 
 typedef enum {
-    SYNC_FULL,
+    SYNC_NODELAY,
     SYNC_MAXFPS,
-    SYNC_SLEEP_10,
-    SYNC_SLEEP_60,
-    SYNC_SLEEP_VIDEO,
-    ASYNC_VIDEO,
-    ASYNC_MAXFPS,
-    ASYNC_FULL
+    SYNC_NO_REF,
+    SYNC_SLEEPYTIME,
+    SYNC_ASYNC
 } sync_mode_t;
 
 #ifdef _DEBUG
 static const char *const sync_names[] = {
-    "SYNC_FULL",
+    "SYNC_NODELAY",
     "SYNC_MAXFPS",
-    "SYNC_SLEEP_10",
-    "SYNC_SLEEP_60",
-    "SYNC_SLEEP_VIDEO",
-    "ASYNC_VIDEO",
-    "ASYNC_MAXFPS",
-    "ASYNC_FULL"
+    "SYNC_NO_REF",
+    "SYNC_RATELIMIT",
+    "ASYNC"
 };
 #endif
 
-static int ref_msec, phys_msec, main_msec;
-static int ref_extra, phys_extra, main_extra;
+static float ref_interval, phys_interval;
 static sync_mode_t sync_mode;
 
-static inline int fps_to_msec(int fps)
+static inline float fps_to_msec(float fps)
 {
 #if 0
     return (1000 + fps / 2) / fps;
 #else
-    return 1000 / fps;
+    return 1000.f / fps;
 #endif
+}
+
+static inline float clamped_phys(void)
+{
+    return Cvar_ClampValue(cl_maxfps, 10, 120);
+}
+
+static inline float clamped_refresh(void)
+{
+    return fmaxf(r_maxfps->value, 10);
+}
+
+static struct timing_s
+{
+    double var, absdev, realtime;
+    int cnt;
+} timing;
+
+static void add_timing_sample(double x)
+{
+    timing.cnt++;
+    double d = x - phys_interval;
+    timing.var += d * d;
+    timing.absdev += fabs(d);
+    timing.realtime += fmin(250, fmax(-50, x));
+
+    if (timing.cnt > (int)(1e3f/phys_interval))
+    {
+        timing.cnt *= .75;
+        timing.var *= .75;
+        timing.absdev *= .75;
+        timing.realtime *= .75;
+    }
+}
+
+#define DEFINE_TIMING_MACRO(name, fmt, ...)                                \
+    static size_t name (char* buf__, size_t sz__)                           \
+    {                                                                       \
+        return Q_scnprintf(buf__, sz__, (fmt), __VA_ARGS__);                \
+    }
+
+DEFINE_TIMING_MACRO(expand_timing_stddev_M,
+                     "stddev:  % 7.3f",
+                    sqrt(timing.var/timing.cnt))
+DEFINE_TIMING_MACRO(expand_timing_absdev_M,
+                     "absdev:  % 7.3f ms",
+                    timing.absdev/timing.cnt)
+DEFINE_TIMING_MACRO(expand_timing_interval_M,
+                     "interval % 7.3f ms  %g Hz",
+                    phys_interval, clamped_phys())
+DEFINE_TIMING_MACRO(expand_timing_mean_M,
+                     "actual   % 7.3f ms",
+                     timing.realtime/timing.cnt);
+
+static void maybe_init_timing_macro(void)
+{
+    static int init_done = 0;
+
+    if (!init_done)
+    {
+        init_done = 1;
+        Cmd_AddMacro("cl_mps_stddev", expand_timing_stddev_M);
+        Cmd_AddMacro("cl_mps_absdev", expand_timing_absdev_M);
+        Cmd_AddMacro("cl_mps_interval", expand_timing_interval_M);
+        Cmd_AddMacro("cl_mps_mean", expand_timing_mean_M);
+    }
+}
+
+static void reset_frame_timing(void)
+{
+    timing.var = 0;
+    timing.absdev = 0;
+    timing.cnt = 1;
+    timing.realtime = clamped_phys();
+
+    maybe_init_timing_macro();
 }
 
 /*
@@ -3048,60 +3117,41 @@ void CL_UpdateFrameTimes(void)
         return; // not yet fully initialized
     }
 
-    // check if video driver supports syncing to vertical retrace
-    if (cl_async->integer > 1 && !(r_config.flags & QVF_VIDEOSYNC)) {
-        Cvar_Reset(cl_async);
-    }
+    phys_interval = 1;
+    ref_interval = 1;
 
     if (com_timedemo->integer) {
         // timedemo just runs at full speed
-        ref_msec = phys_msec = main_msec = 0;
-        sync_mode = SYNC_FULL;
+        sync_mode = SYNC_NODELAY;
     } else if (cls.active == ACT_MINIMIZED) {
         // run at 10 fps if minimized
-        ref_msec = phys_msec = 0;
-        main_msec = fps_to_msec(10);
-        sync_mode = SYNC_SLEEP_10;
+        ref_interval = fps_to_msec(10);
+        sync_mode = SYNC_NO_REF;
     } else if (cls.active == ACT_RESTORED || cls.state != ca_active) {
         // run at 60 fps if not active
-        ref_msec = phys_msec = 0;
-        if (cl_async->integer > 1) {
-            main_msec = 0;
-            sync_mode = SYNC_SLEEP_VIDEO;
-        } else {
-            main_msec = fps_to_msec(60);
-            sync_mode = SYNC_SLEEP_60;
-        }
+        ref_interval = fps_to_msec(60);
+        sync_mode = SYNC_SLEEPYTIME;
     } else if (cl_async->integer > 0) {
         // run physics and refresh separately
-        phys_msec = fps_to_msec(Cvar_ClampInteger(cl_maxfps, 10, 120));
-        if (cl_async->integer > 1) {
-            ref_msec = 0;
-            sync_mode = ASYNC_VIDEO;
-        } else if (r_maxfps->integer) {
-            ref_msec = fps_to_msec(Cvar_ClampInteger(r_maxfps, 10, 1000));
-            sync_mode = ASYNC_MAXFPS;
-        } else {
-            ref_msec = 1;
-            sync_mode = ASYNC_FULL;
-        }
-        main_msec = 0;
+        if (r_maxfps->value > 0)
+            ref_interval = fps_to_msec(clamped_refresh());
+        else
+            ref_interval = 1;
+        phys_interval = fps_to_msec(clamped_phys());
+        sync_mode = SYNC_ASYNC;
     } else {
-        // everything ticks in sync with refresh
-        phys_msec = ref_msec = 0;
-        if (cl_maxfps->integer) {
-            main_msec = fps_to_msec(Cvar_ClampInteger(cl_maxfps, 10, 1000));
-            sync_mode = SYNC_MAXFPS;
-        } else {
-            main_msec = 1;
-            sync_mode = SYNC_FULL;
-        }
+        // physics and gfx run in lockstep
+        ref_interval = fps_to_msec(clamped_phys());
+        phys_interval = ref_interval; // for cl_mps_* only
+        sync_mode = SYNC_MAXFPS;
     }
 
-    Com_DDDPrintf("%s: mode=%s main_msec=%d ref_msec=%d, phys_msec=%d\n",
-                  __func__, sync_names[sync_mode], main_msec, ref_msec, phys_msec);
+    Com_DPrintf("%s: mode=%s ref=%-3d, phys=%-3d\n",
+                __func__, sync_names[sync_mode],
+                (int)roundf(ref_interval),
+                (int)roundf(phys_interval));
 
-    ref_extra = phys_extra = main_extra = 0;
+    reset_frame_timing();
 }
 
 /*
@@ -3110,66 +3160,77 @@ CL_Frame
 
 ==================
 */
-unsigned CL_Frame(unsigned msec)
+
+unsigned CL_Frame(unsigned msec_)
 {
-    qboolean phys_frame, ref_frame;
+    static float phys_budget, ref_budget, frame_budget;
+    float msec;
 
-    time_after_ref = time_before_ref = 0;
+    time_after_ref = time_before_ref = 0; // host_speeds
 
-    if (!cl_running->integer) {
-        return UINT_MAX;
+    {
+        typedef double time_f;
+
+        static time_f last_frame_time = -1;
+        time_f now = Sys_Milliseconds_f();
+        msec = fmaxf(1, fminf(250, now - last_frame_time));
+        last_frame_time = now;
     }
 
-    main_extra += msec;
-    cls.realtime += msec;
+    ref_budget = fminf(ref_budget + msec, 2500);
+    phys_budget = fminf(phys_budget + msec, 2500);
+    frame_budget = fminf(frame_budget + msec, 2500);
+
+    if (!cl_running->integer)
+        return 100;
+
+    cls.realtime += (unsigned)msec_;
 
     CL_ProcessEvents();
 
-    ref_frame = phys_frame = qtrue;
+    qboolean phys_frame = qtrue, ref_frame = qtrue;
+
     switch (sync_mode) {
-    case SYNC_FULL:
+    // ad-hoc modes, not during interactive gameplay
+    case SYNC_NODELAY:
         // timedemo just runs at full speed
         break;
-    case SYNC_SLEEP_10:
-        // don't run refresh at all
+    case SYNC_NO_REF:
+        // don't run refresh when minimized
         ref_frame = qfalse;
         // fall through
-    case SYNC_SLEEP_60:
+    case SYNC_SLEEPYTIME:
         // run at limited fps if not active
-        if (main_extra < main_msec) {
-            return main_msec - main_extra;
+        if (ref_budget < ref_interval) {
+            return fmaxf(1, ref_budget - ref_interval);
         }
         break;
-    case SYNC_SLEEP_VIDEO:
-        // wait for vertical retrace if not active
-        VID_VideoWait();
-        break;
-    case ASYNC_VIDEO:
-    case ASYNC_MAXFPS:
-    case ASYNC_FULL:
-        // run physics and refresh separately
-        phys_extra += main_extra;
-        if (phys_extra < phys_msec) {
+
+    // async mode
+    // - only useful without vsync or with triple buffering)
+    //   (check gl_swapinterval and driver-specific options)
+    // - runs logic every `phys_interval' (from cl_maxfps)
+    // - runs render every `ref_interval' (from r_maxfps)
+    case SYNC_ASYNC:
+        if (phys_budget < phys_interval) {
             phys_frame = qfalse;
-        } else if (phys_extra > phys_msec * 4) {
-            phys_extra = phys_msec;
+        } else if (phys_budget > phys_interval * 4) {
+            phys_budget = phys_interval/2;
         }
 
-        if (sync_mode == ASYNC_VIDEO) {
-            // sync refresh to vertical retrace
-            ref_frame = VID_VideoSync();
-        } else {
-            ref_extra += main_extra;
-            if (ref_extra < ref_msec) {
-                ref_frame = qfalse;
-            } else if (ref_extra > ref_msec * 4) {
-                ref_extra = ref_msec;
-            }
+        if (ref_budget < ref_interval) {
+            ref_frame = qfalse;
+        } else if (ref_budget > ref_interval * 4) {
+            ref_budget = phys_interval/2;
         }
         break;
+
+    // sync mode
+    // - runs logic and refresh in lockstep
+    // - uses `phys_budget` derived from `cl_maxfps`
+    // - ignores `phys_{interval,budget}' and `r_maxfps'
     case SYNC_MAXFPS:
-        // everything ticks in sync with refresh
-        if (main_extra < main_msec) {
+        if (ref_budget < ref_interval) {
             if (!cl.sendPacketNow) {
                 return 0;
             }
@@ -3178,27 +3239,27 @@ unsigned CL_Frame(unsigned msec)
         break;
     }
 
-    Com_DDDDPrintf("main_extra=%d ref_frame=%d ref_extra=%d "
-                   "phys_frame=%d phys_extra=%d\n",
-                   main_extra, ref_frame, ref_extra,
-                   phys_frame, phys_extra);
+    const unsigned frame_time = frame_budget;
+    frame_budget = 0;
+
+    Com_DDDDPrintf("ref=%d:%-4.1f phys=%d:%-4.1f sync=%d\n",
+                   ref_frame, ref_budget,
+                   phys_frame, phys_budget,
+                   frame_time);
 
     // decide the simulation time
-    cls.frametime = main_extra * 0.001f;
-
-    if (cls.frametime > 1.0 / 5)
-        cls.frametime = 1.0 / 5;
+    cls.frametime = fminf(200, frame_time) * 1e-3f;
 
     if (!sv_paused->integer) {
-        cl.time += main_extra;
+        cl.time += frame_time;
 #if USE_FPS
-        cl.keytime += main_extra;
+        cl.keytime += frame_time;
 #endif
     }
 
     // read next demo frame
     if (cls.demo.playback)
-        CL_DemoFrame(main_extra);
+        CL_DemoFrame(frame_time);
 
     // calculate local time
     if (cls.state == ca_active && !sv_paused->integer)
@@ -3213,20 +3274,22 @@ unsigned CL_Frame(unsigned msec)
     CL_CheckForResend();
 
     // read user intentions
-    CL_UpdateCmd(main_extra);
+    CL_UpdateCmd(frame_time);
 
     // finalize pending cmd
     phys_frame |= cl.sendPacketNow;
     if (phys_frame) {
+        add_timing_sample(phys_budget);
+
         CL_FinalizeCmd();
-        phys_extra -= phys_msec;
         M_FRAMES++;
+
+        phys_budget -= phys_interval;
+        if (phys_budget < -phys_interval*4)
+            phys_budget = 0;
 
         // don't let the time go too far off
         // this can happen due to cl.sendPacketNow
-        if (phys_extra < -phys_msec * 4) {
-            phys_extra = 0;
-        }
     }
 
     // send pending cmds
@@ -3237,7 +3300,7 @@ unsigned CL_Frame(unsigned msec)
 
     Con_RunConsole();
 
-    UI_Frame(main_extra);
+    UI_Frame(frame_time);
 
     if (ref_frame) {
         // update the screen
@@ -3249,7 +3312,8 @@ unsigned CL_Frame(unsigned msec)
         if (host_speeds->integer)
             time_after_ref = Sys_Milliseconds();
 
-        ref_extra -= ref_msec;
+        ref_budget -= ref_interval;
+
         R_FRAMES++;
 
 run_fx:
@@ -3261,7 +3325,7 @@ run_fx:
         CL_RunDLights();
 #endif
         CL_RunLightStyles();
-    } else if (sync_mode == SYNC_SLEEP_10) {
+    } else if (sync_mode == SYNC_NO_REF) {
         // force audio and effects update if not rendering
         CL_CalcViewValues();
         goto run_fx;
@@ -3272,12 +3336,9 @@ run_fx:
         CL_CheckTimeout();
 
     C_FRAMES++;
-
     CL_MeasureStats();
-
     cls.framecount++;
 
-    main_extra = 0;
     return 0;
 }
 

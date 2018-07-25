@@ -24,6 +24,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <winsvc.h>
 #endif
 
+#include <mmsystem.h>
+
 HINSTANCE                       hGlobalInstance;
 
 #if USE_DBGHELP
@@ -757,9 +759,18 @@ void Sys_DebugBreak(void)
 
 unsigned Sys_Milliseconds(void)
 {
+     LARGE_INTEGER tm;
+     QueryPerformanceCounter(&tm);
+     return tm.QuadPart * 1000LL / timer_freq.QuadPart;
+}
+
+double Sys_Milliseconds_f(void)
+{
     LARGE_INTEGER tm;
-    QueryPerformanceCounter(&tm);
-    return tm.QuadPart * 1000ULL / timer_freq.QuadPart;
+    (void)QueryPerformanceCounter(&tm);
+    long double denom = timer_freq.QuadPart;
+    denom /= 1000;
+    return tm.QuadPart / denom;
 }
 
 void Sys_AddDefaultConfig(void)
@@ -1117,6 +1128,8 @@ static int Sys_Main(int argc, char **argv)
 #endif
 
     Qcommon_Init(argc, argv);
+
+    //(void)timeBeginPeriod(1);
 
     // main program loop
     while (1) {

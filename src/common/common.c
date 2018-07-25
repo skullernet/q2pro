@@ -1086,7 +1086,8 @@ void Qcommon_Frame(void)
 #if USE_CLIENT
     // spin until msec is non-zero if running a client
     if (!dedicated->integer && !com_timedemo->integer) {
-        while (msec < 1) {
+        while (msec < 1)
+        {
             qboolean break_now = CL_ProcessEvents();
             com_eventTime = Sys_Milliseconds();
             msec = com_eventTime - oldtime;
