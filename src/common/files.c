@@ -2109,12 +2109,10 @@ static pack_t *load_pak_file(const char *packfile)
     }
 
     header.dirofs = LittleLong(header.dirofs);
-#ifndef _LP64
-    if (header.dirofs > LONG_MAX - header.dirlen) {
+    if (header.dirofs > INT_MAX) {
         Com_Printf("%s has bad directory offset\n", packfile);
         goto fail;
     }
-#endif
     if (fseek(fp, (long)header.dirofs, SEEK_SET)) {
         Com_Printf("Seeking to directory failed on %s\n", packfile);
         goto fail;
@@ -2128,12 +2126,10 @@ static pack_t *load_pak_file(const char *packfile)
     for (i = 0, dfile = info; i < num_files; i++, dfile++) {
         dfile->filepos = LittleLong(dfile->filepos);
         dfile->filelen = LittleLong(dfile->filelen);
-#ifndef _LP64
-        if (dfile->filelen > LONG_MAX || dfile->filepos > LONG_MAX - dfile->filelen) {
+        if (dfile->filelen > INT_MAX || dfile->filepos > INT_MAX) {
             Com_Printf("%s has bad directory structure\n", packfile);
             goto fail;
         }
-#endif
         dfile->name[sizeof(dfile->name) - 1] = 0;
         names_len += strlen(dfile->name) + 1;
     }
@@ -2184,7 +2180,7 @@ static size_t search_central_header(FILE *fp)
         return 0;
 
     ret = ftell(fp);
-    if (ret == -1)
+    if (ret == -1 || ret > INT_MAX)
         return 0;
     file_size = (size_t)ret;
     if (max_back > file_size)
@@ -2231,7 +2227,7 @@ static size_t get_file_info(FILE *fp, size_t pos, packfile_t *file, size_t *len,
 
     *len = 0;
 
-    if (pos > LONG_MAX)
+    if (pos > INT_MAX)
         return 0;
     if (fseek(fp, (long)pos, SEEK_SET) == -1)
         return 0;
@@ -2250,9 +2246,7 @@ static size_t get_file_info(FILE *fp, size_t pos, packfile_t *file, size_t *len,
     comm_size = LittleShortMem(&header[32]);
     file_pos = LittleLongMem(&header[42]);
 
-    if (file_len > LONG_MAX)
-        return 0;
-    if (comp_len > LONG_MAX || file_pos > LONG_MAX - comp_len)
+    if (file_len > INT_MAX || comp_len > INT_MAX || file_pos > INT_MAX)
         return 0;
 
     if (!file_len || !comp_len) {
