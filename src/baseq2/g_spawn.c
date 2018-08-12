@@ -587,8 +587,8 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
     memset(&level, 0, sizeof(level));
     memset(g_edicts, 0, game.maxentities * sizeof(g_edicts[0]));
 
-    strncpy(level.mapname, mapname, sizeof(level.mapname) - 1);
-    strncpy(game.spawnpoint, spawnpoint, sizeof(game.spawnpoint) - 1);
+    Q_strlcpy(level.mapname, mapname, sizeof(level.mapname));
+    Q_strlcpy(game.spawnpoint, spawnpoint, sizeof(game.spawnpoint));
 
     // set client fields on player ents
     for (i = 0 ; i < game.maxclients ; i++)
@@ -849,7 +849,7 @@ void SP_worldspawn(edict_t *ent)
     SetItemNames();
 
     if (st.nextmap)
-        strcpy(level.nextmap, st.nextmap);
+        Q_strlcpy(level.nextmap, st.nextmap, sizeof(level.nextmap));
 
     // make some data visible to the server
 
