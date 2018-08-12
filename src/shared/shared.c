@@ -706,6 +706,9 @@ Q_vsnprintf
 Returns number of characters that would be written into the buffer,
 excluding trailing '\0'. If the returned value is equal to or greater than
 buffer size, resulting string is truncated.
+
+Unless the passed buffer size is zero, the buffer is zero-terminated
+regardless of truncation status.
 ===============
 */
 size_t Q_vsnprintf(char *dest, size_t size, const char *fmt, va_list argptr)
@@ -718,14 +721,15 @@ size_t Q_vsnprintf(char *dest, size_t size, const char *fmt, va_list argptr)
 #ifdef _WIN32
     if (size) {
         ret = _vsnprintf(dest, size - 1, fmt, argptr);
-        if (ret < 0 || ret >= size - 1)
-            dest[size - 1] = 0;
     } else {
         ret = _vscprintf(fmt, argptr);
     }
 #else
     ret = vsnprintf(dest, size, fmt, argptr);
 #endif
+
+    if (size)
+        dest[size - 1] = 0;
 
     return ret;
 }
@@ -758,6 +762,9 @@ Q_snprintf
 Returns number of characters that would be written into the buffer,
 excluding trailing '\0'. If the returned value is equal to or greater than
 buffer size, resulting string is truncated.
+
+Unless the passed buffer size is zero, the buffer is zero-terminated
+regardless of truncation status.
 ===============
 */
 size_t Q_snprintf(char *dest, size_t size, const char *fmt, ...)
