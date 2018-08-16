@@ -41,7 +41,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/protocol.h"
 #include "common/tests.h"
 #include "common/utils.h"
-#include "common/x86/fpu.h"
 #include "common/zone.h"
 
 #include "client/client.h"
@@ -520,8 +519,6 @@ void Com_Error(error_type_t code, const char *fmt, ...)
     // reset Com_Printf recursion level
     com_printEntered = 0;
 
-    X86_POP_FPCW;
-
     if (code == ERR_DISCONNECT || code == ERR_RECONNECT) {
         Com_WPrintf("%s\n", com_errorMsg);
         SV_Shutdown(va("Server was killed: %s\n", com_errorMsg), code);
@@ -884,8 +881,6 @@ void Qcommon_Init(int argc, char **argv)
     com_argv = argv;
 
     Com_SetLastError(NULL);
-
-    X86_SetFPCW();
 
     srand(time(NULL));
 
