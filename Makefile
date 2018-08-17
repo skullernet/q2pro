@@ -494,16 +494,6 @@ ifdef CONFIG_DEBUG
     CFLAGS_s += -D_DEBUG
 endif
 
-ifeq ($(CPU),x86)
-    OBJS_c += src/common/x86/fpu.o
-    OBJS_s += src/common/x86/fpu.o
-endif
-
-ifeq ($(CPU),i386)
-    OBJS_c += src/common/x86/fpu.o
-    OBJS_s += src/common/x86/fpu.o
-endif
-
 ### Targets ###
 
 ifdef CONFIG_WINDOWS
