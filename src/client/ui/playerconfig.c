@@ -52,7 +52,7 @@ static const char *handedness[] = {
     "right",
     "left",
     "center",
-    0
+    NULL
 };
 
 static void ReloadMedia(void)
