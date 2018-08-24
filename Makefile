@@ -485,8 +485,8 @@ else
     LIBS_g += -lm
 
     ifeq ($(SYS),Linux)
-        LIBS_s += -ldl
-        LIBS_c += -ldl -lpthread
+        LIBS_s += -ldl -lrt
+        LIBS_c += -ldl -lrt -lpthread
     endif
 endif
 
