@@ -25,7 +25,7 @@ typedef struct {
 
 typedef struct {
     char    *name;
-    size_t  ofs;
+    unsigned ofs;
     fieldtype_t type;
 } spawn_field_t;
 
