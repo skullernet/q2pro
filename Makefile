@@ -55,6 +55,7 @@ ifdef CONFIG_WINDOWS
         CONFIG_X86_GAME_ABI_HACK := y
     else
         CONFIG_X86_GAME_ABI_HACK :=
+        CONFIG_X86_NO_SSE_MATH := y
     endif
 
     LDFLAGS_s += -mconsole
@@ -77,6 +78,7 @@ else
     # Disable x86 features on other arches
     ifneq ($(CPU),i386)
         CONFIG_X86_GAME_ABI_HACK :=
+        CONFIG_X86_NO_SSE_MATH := y
     endif
 
     # Disable Linux features on other systems
@@ -99,6 +101,12 @@ else
     CFLAGS_s += -D_FILE_OFFSET_BITS=64
     CFLAGS_c += -D_FILE_OFFSET_BITS=64
     CFLAGS_g += -fPIC
+endif
+
+ifndef CONFIG_X86_NO_SSE_MATH
+    CFLAGS_s += -msse -mfpmath=sse
+    CFLAGS_c += -msse -mfpmath=sse
+    CFLAGS_g += -msse -mfpmath=sse
 endif
 
 BUILD_DEFS := -DCPUSTRING='"$(CPU)"'
