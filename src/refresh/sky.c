@@ -101,7 +101,7 @@ static void DrawSkyPolygon(int nump, vec3_t vecs)
             dv = vecs[j - 1];
         else
             dv = -vecs[-j - 1];
-        if (dv < 0.001)
+        if (dv < 0.001f)
             continue;    // don't divide by zero
         j = vec_to_st[axis][0];
         if (j < 0)
@@ -125,7 +125,7 @@ static void DrawSkyPolygon(int nump, vec3_t vecs)
     }
 }
 
-#define ON_EPSILON      0.1     // point on plane side epsilon
+#define ON_EPSILON      0.1f    // point on plane side epsilon
 #define MAX_CLIP_VERTS  64
 
 #define SIDE_FRONT      0
@@ -309,8 +309,8 @@ static void MakeSkyVec(float s, float t, int axis, vec_t *out)
     }
 
     // avoid bilerp seam
-    s = (s + 1) * 0.5;
-    t = (t + 1) * 0.5;
+    s = (s + 1) * 0.5f;
+    t = (t + 1) * 0.5f;
 
     if (s < sky_min)
         s = sky_min;
@@ -322,7 +322,7 @@ static void MakeSkyVec(float s, float t, int axis, vec_t *out)
         t = sky_max;
 
     out[3] = s;
-    out[4] = 1.0 - t;
+    out[4] = 1.0f - t;
 }
 
 #define SKY_VISIBLE(side) \

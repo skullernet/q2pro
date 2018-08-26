@@ -534,7 +534,7 @@ static void CL_AddPacketEntities(void)
             renderfx &= ~RF_GLOW;
 
         ent.oldframe = cent->prev.frame;
-        ent.backlerp = 1.0 - cl.lerpfrac;
+        ent.backlerp = 1.0f - cl.lerpfrac;
 
         if (renderfx & RF_FRAMELERP) {
             // step origin discretely, because the frames
@@ -582,7 +582,7 @@ static void CL_AddPacketEntities(void)
                 }
 
                 ent.oldframe = cent->prev_frame;
-                ent.backlerp = 1.0 - frac;
+                ent.backlerp = 1.0f - frac;
             }
 #endif
         }
@@ -596,7 +596,7 @@ static void CL_AddPacketEntities(void)
         // tweak the color of beams
         if (renderfx & RF_BEAM) {
             // the four beam colors are encoded in 32 bits of skinnum (hack)
-            ent.alpha = 0.30;
+            ent.alpha = 0.30f;
             ent.skinnum = (s1->skinnum >> ((rand() % 4) * 8)) & 0xff;
             ent.model = 0;
         } else {
@@ -629,7 +629,7 @@ static void CL_AddPacketEntities(void)
 
         // only used for black hole model right now, FIXME: do better
         if ((renderfx & RF_TRANSLUCENT) && !(renderfx & RF_BEAM))
-            ent.alpha = 0.70;
+            ent.alpha = 0.70f;
 
         // render effects (fullbright, translucent, etc)
         if ((effects & EF_COLOR_SHELL))
@@ -667,13 +667,13 @@ static void CL_AddPacketEntities(void)
 
         if (s1->number == cl.frame.clientNum + 1) {
             if (effects & EF_FLAG1)
-                V_AddLight(ent.origin, 225, 1.0, 0.1, 0.1);
+                V_AddLight(ent.origin, 225, 1.0f, 0.1f, 0.1f);
             else if (effects & EF_FLAG2)
-                V_AddLight(ent.origin, 225, 0.1, 0.1, 1.0);
+                V_AddLight(ent.origin, 225, 0.1f, 0.1f, 1.0f);
             else if (effects & EF_TAGTRAIL)
-                V_AddLight(ent.origin, 225, 1.0, 1.0, 0.0);
+                V_AddLight(ent.origin, 225, 1.0f, 1.0f, 0.0f);
             else if (effects & EF_TRACKERTRAIL)
-                V_AddLight(ent.origin, 225, -1.0, -1.0, -1.0);
+                V_AddLight(ent.origin, 225, -1.0f, -1.0f, -1.0f);
 
             if (!cl.thirdPersonView) {
 #if 0
@@ -691,20 +691,20 @@ static void CL_AddPacketEntities(void)
 
         if (effects & EF_BFG) {
             ent.flags |= RF_TRANSLUCENT;
-            ent.alpha = 0.30;
+            ent.alpha = 0.30f;
         }
 
         if (effects & EF_PLASMA) {
             ent.flags |= RF_TRANSLUCENT;
-            ent.alpha = 0.6;
+            ent.alpha = 0.6f;
         }
 
         if (effects & EF_SPHERETRANS) {
             ent.flags |= RF_TRANSLUCENT;
             if (effects & EF_TRACKERTRAIL)
-                ent.alpha = 0.6;
+                ent.alpha = 0.6f;
             else
-                ent.alpha = 0.3;
+                ent.alpha = 0.3f;
         }
 
         // add to refresh list
@@ -742,7 +742,7 @@ static void CL_AddPacketEntities(void)
                 }
             }
             ent.flags = renderfx | RF_TRANSLUCENT;
-            ent.alpha = 0.30;
+            ent.alpha = 0.30f;
             V_AddEntity(&ent);
         }
 
@@ -771,7 +771,7 @@ static void CL_AddPacketEntities(void)
 
             // PMM - check for the defender sphere shell .. make it translucent
             if (!Q_strcasecmp(cl.configstrings[CS_MODELS + (s1->modelindex2)], "models/items/shell/tris.md2")) {
-                ent.alpha = 0.32;
+                ent.alpha = 0.32f;
                 ent.flags = RF_TRANSLUCENT;
             }
 
@@ -797,7 +797,7 @@ static void CL_AddPacketEntities(void)
             ent.oldframe = 0;
             ent.frame = 0;
             ent.flags |= (RF_TRANSLUCENT | RF_SHELL_GREEN);
-            ent.alpha = 0.30;
+            ent.alpha = 0.30f;
             V_AddEntity(&ent);
         }
 
@@ -847,28 +847,28 @@ static void CL_AddPacketEntities(void)
                 CL_TrapParticles(&ent);
 #if USE_DLIGHTS
                 i = (rand() % 100) + 100;
-                V_AddLight(ent.origin, i, 1, 0.8, 0.1);
+                V_AddLight(ent.origin, i, 1, 0.8f, 0.1f);
 #endif
             } else if (effects & EF_FLAG1) {
                 CL_FlagTrail(cent->lerp_origin, ent.origin, 242);
-                V_AddLight(ent.origin, 225, 1, 0.1, 0.1);
+                V_AddLight(ent.origin, 225, 1, 0.1f, 0.1f);
             } else if (effects & EF_FLAG2) {
                 CL_FlagTrail(cent->lerp_origin, ent.origin, 115);
-                V_AddLight(ent.origin, 225, 0.1, 0.1, 1);
+                V_AddLight(ent.origin, 225, 0.1f, 0.1f, 1);
             } else if (effects & EF_TAGTRAIL) {
                 CL_TagTrail(cent->lerp_origin, ent.origin, 220);
-                V_AddLight(ent.origin, 225, 1.0, 1.0, 0.0);
+                V_AddLight(ent.origin, 225, 1.0f, 1.0f, 0.0f);
             } else if (effects & EF_TRACKERTRAIL) {
                 if (effects & EF_TRACKER) {
 #if USE_DLIGHTS
                     float intensity;
 
-                    intensity = 50 + (500 * (sin(cl.time / 500.0) + 1.0));
-                    V_AddLight(ent.origin, intensity, -1.0, -1.0, -1.0);
+                    intensity = 50 + (500 * (sin(cl.time / 500.0f) + 1.0f));
+                    V_AddLight(ent.origin, intensity, -1.0f, -1.0f, -1.0f);
 #endif
                 } else {
                     CL_Tracker_Shell(cent->lerp_origin);
-                    V_AddLight(ent.origin, 155, -1.0, -1.0, -1.0);
+                    V_AddLight(ent.origin, 155, -1.0f, -1.0f, -1.0f);
                 }
             } else if (effects & EF_TRACKER) {
                 CL_TrackerTrail(cent->lerp_origin, ent.origin, 0);
@@ -877,14 +877,14 @@ static void CL_AddPacketEntities(void)
                 CL_DiminishingTrail(cent->lerp_origin, ent.origin, cent, effects);
             } else if (effects & EF_IONRIPPER) {
                 CL_IonripperTrail(cent->lerp_origin, ent.origin);
-                V_AddLight(ent.origin, 100, 1, 0.5, 0.5);
+                V_AddLight(ent.origin, 100, 1, 0.5f, 0.5f);
             } else if (effects & EF_BLUEHYPERBLASTER) {
                 V_AddLight(ent.origin, 200, 0, 0, 1);
             } else if (effects & EF_PLASMA) {
                 if (effects & EF_ANIM_ALLFAST) {
                     CL_BlasterTrail(cent->lerp_origin, ent.origin);
                 }
-                V_AddLight(ent.origin, 130, 1, 0.5, 0.5);
+                V_AddLight(ent.origin, 130, 1, 0.5f, 0.5f);
             }
         }
 
@@ -1164,7 +1164,7 @@ void CL_CalcViewValues(void)
     if (!cls.demo.playback && cl_predict->integer && !(ps->pmove.pm_flags & PMF_NO_PREDICTION)) {
         // use predicted values
         unsigned delta = cls.realtime - cl.predicted_step_time;
-        float backlerp = lerp - 1.0;
+        float backlerp = lerp - 1.0f;
 
         VectorMA(cl.predicted_origin, backlerp, cl.prediction_error, cl.refdef.vieworg);
 
