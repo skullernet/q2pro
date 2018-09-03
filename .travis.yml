@@ -4,16 +4,24 @@ compiler: clang
 matrix:
   include:
     - os: linux
+      env:
+        - CONFIG_SDL2=y
+        - CONFIG_HTTP=y
+        - CONFIG_PNG=y
+        - CONFIG_JPEG=y
+        - CURL_CFLAGS=-DCURL_STATICLIB
       addons:
         apt:
           packages:
           - libsdl2-dev
           - mesa-utils
       script:
-        - CONFIG_SDL2=y CONFIG_HTTP=y CONFIG_PNG=y CONFIG_JPEG=y make -j 4
+        - make -j 4
         - ./scripts/linux-package.sh
 
     - os: linux
+      env:
+        - CONFIG_SDL2=y
       addons:
         apt:
           packages:
@@ -25,16 +33,22 @@ matrix:
         - tar zxf q2pro-mgw-sdk.tar.gz -C ../
         - cp ../q2pro-mgw-sdk/config64 .config
       script:
-        - CONFIG_SDL2=y make strip -j 4
+        - make strip -j 4
         - ./scripts/win-package.sh
 
     - os: osx
+      env:
+        - CONFIG_SDL2=y
+        - CONFIG_HTTP=y
+        - CONFIG_PNG=y
+        - CONFIG_JPEG=y
+        - CURL_CFLAGS=-DCURL_STATICLIB
       before_install:
         - brew update
         - brew install sdl2
         - brew install dylibbundler
       script:
-        - CONFIG_SDL2=y CONFIG_HTTP=y CONFIG_PNG=y CONFIG_JPEG=y make -j 4
+        - make -j 4
         - ./scripts/mac-package.sh
 
 deploy:
