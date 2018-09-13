@@ -46,6 +46,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <SDL.h>
 #endif
 
+#if USE_SERVER && defined DROP_PRIVS_UID
+#   include <grp.h>
+#endif
+
 cvar_t  *sys_basedir;
 cvar_t  *sys_libdir;
 cvar_t  *sys_homedir;
@@ -562,10 +566,21 @@ int main(int argc, char **argv)
         }
     }
 
-    if (!getuid() || !geteuid()) {
-        fprintf(stderr, "You can not run " PRODUCT " as superuser "
-                "for security reasons!\n");
-        return EXIT_FAILURE;
+    if (!getuid() || !geteuid())
+    {
+#if USE_SERVER && defined DROP_PRIVS_UID
+        if (setgroups(0, NULL) ||
+            setgid(DROP_PRIVS_GID) ||
+            setuid(DROP_PRIVS_UID) ||
+            seteuid(0) == 0 ||
+            setegid(0) == 0)
+#endif
+        {
+            fprintf(stderr,
+                    "You can not run " PRODUCT " as superuser "
+                    "for security reasons!\n");
+            return EXIT_FAILURE;
+        }
     }
 
     Qcommon_Init(argc, argv);

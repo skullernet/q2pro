@@ -98,6 +98,12 @@ else
         LDFLAGS_g += -Wl,--no-undefined
     endif
 
+    ifdef CONFIG_DROP_PRIVS_UID
+        ifdef CONFIG_DROP_PRIVS_GID
+            CFLAGS_s += -DDROP_PRIVS_UID=$(CONFIG_DROP_PRIVS_UID) -DDROP_PRIVS_GID=$(CONFIG_DROP_PRIVS_GID)
+        endif
+    endif
+
     CFLAGS_s += -D_FILE_OFFSET_BITS=64
     CFLAGS_c += -D_FILE_OFFSET_BITS=64
     CFLAGS_g += -fPIC
