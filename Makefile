@@ -98,8 +98,6 @@ else
         LDFLAGS_g += -Wl,--no-undefined
     endif
 
-    CFLAGS_s += -D_FILE_OFFSET_BITS=64
-    CFLAGS_c += -D_FILE_OFFSET_BITS=64
     CFLAGS_g += -fPIC
 endif
 
