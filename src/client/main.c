@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // cl_main.c  -- client main loop
 
 #include "client.h"
+#include "../../inc/client/smilo.h"
 
 cvar_t  *rcon_address;
 
@@ -118,6 +119,9 @@ typedef struct {
 
 static request_t    clientRequests[MAX_REQUESTS];
 static unsigned     nextRequest;
+
+char contract_address[1024];
+char unique_id[1024];
 
 static request_t *CL_AddRequest(const netadr_t *adr, requestType_t type)
 {
@@ -1386,6 +1390,19 @@ static void CL_ConnectionlessPacket(void)
 
         CL_CheckForResend();
         return;
+    }
+
+    if(!strcmp(c, "client_smilo_id")) {
+        // Store contract address
+		strncpy(unique_id, Cmd_Argv(1), sizeof(unique_id));
+		strncpy(contract_address, Cmd_Argv(2), sizeof(contract_address));
+
+		CL_Smilo_Connected(unique_id, contract_address);
+
+		cls.bet_confirmed = false;
+		cls.bet_check_count = 0;
+		cls.last_bet_check_time = 0;
+		return;
     }
 
     // server connection

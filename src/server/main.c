@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "server.h"
 #include "client/input.h"
+#include "../../inc/server/smilo.h"
 
 pmoveParams_t   sv_pmp;
 
@@ -1004,6 +1005,18 @@ static void init_pmove_and_es_flags(client_t *newcl)
 
 static void send_connect_packet(client_t *newcl, int nctype)
 {
+    /* Retrieve the Smart Contract address from the Server Game Agent */
+	char contractAddress[65];
+	SV_Smilo_GetContractAddress(contractAddress, sizeof(contractAddress) - 1);
+
+	// Ensure contract address is zero terminated.
+	contractAddress[sizeof(contractAddress) - 1] = 0;
+
+	/* send the special Smilo packet notifying the client of his/her special id and the contract address */
+	int randomId = rand();
+	newcl->uniqueId = randomId;
+	Netchan_OutOfBand(NS_SERVER, &net_from, "client_smilo_id %i %s", randomId, contractAddress);
+
     const char *ncstring    = "";
     const char *acstring    = "";
     const char *dlstring1   = "";
@@ -1687,6 +1700,56 @@ resume:
     return false;
 }
 
+void
+SV_Process_EndGame(void) {
+	int player_count = ge->G_ClientCount();
+	struct game_winner* winners = ge->G_GetWinners();
+
+	Com_Printf("DeathMatch end detected by server! %i players participated.\n", player_count);
+
+	// For each winner map the edict back to a client so we can retrieve the unique id
+	char query_param[8096];
+	int query_param_index = 0;
+	for(int i = 0; i < player_count; i++) {
+		struct game_winner* winner = &winners[i];
+
+		// Find edict
+		client_t* found_client = NULL;
+		for(int j = 0; j < sv_maxclients->value; j++) {
+			client_t* client = &svs.client_pool[j];
+
+			if(client->state != cs_connected && client->state != cs_spawned)
+				continue;
+
+			if(client->edict == winner->edict) {
+				found_client = client;
+				break;
+			}
+		}
+
+		if(found_client) {
+			// Create query parameter part
+			char query_param_part[1024];
+			sprintf(query_param_part, "%i%%3A%i%%3A%s%%5Cn", found_client->uniqueId, winner->kills, found_client->name);
+			
+			// Merge with total
+			for(int j = 0; j < 1024; j++) {
+				if(query_param_part[j] == 0)
+					break;
+				query_param[query_param_index++] = query_param_part[j];
+			}
+		}
+		else {
+			Com_Printf("No client found...\n");
+		}
+	}
+
+	// Zero terminate string
+	query_param[query_param_index] = 0;
+
+	SV_Smilo_EndMatch(query_param);
+}
+
 /*
 =================
 SV_RunGameFrame
@@ -1702,7 +1765,10 @@ static void SV_RunGameFrame(void)
         time_before_game = Sys_Milliseconds();
 #endif
 
-    ge->RunFrame();
+    int levelEnded = ge->RunFrame();
+    if(ge->IsDeathMatch() && levelEnded) {
+        SV_Process_EndGame();
+    }
 
 #if USE_CLIENT
     if (host_speeds->integer)

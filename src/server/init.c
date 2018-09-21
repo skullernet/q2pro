@@ -17,6 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "server.h"
+#include "../../inc/server/smilo.h"
 
 server_static_t svs;                // persistant server info
 server_t        sv;                 // local server
@@ -127,6 +128,31 @@ fail1:
                 buffer, Q_ErrorString(len));
 }
 
+/*
+	Notifies already connected clients it is time to place their bet.
+*/
+void
+SV_NotifyExistingClients(void) {
+	/* Retrieve the Smart Contract address from the Server Game Agent */
+	char contractAddress[65];
+	SV_Smilo_GetContractAddress(contractAddress, sizeof(contractAddress) - 1);
+
+	// Ensure contract address is zero terminated.
+	contractAddress[sizeof(contractAddress) - 1] = 0;
+
+	for(int j = 0; j < sv_maxclients->value; j++) {
+		client_t* client = &svs.client_pool[j];
+
+		if(client->state != cs_connected && client->state != cs_spawned)
+			continue;
+
+		Netchan_OutOfBand(NS_SERVER, &client->netchan->remote_address, "client_smilo_id %i %s", client->uniqueId, contractAddress);
+
+		client->betConfirmed = 0;
+		client->joinTime = svs.realtime;
+	}
+}
+
 
 /*
 ================
@@ -144,8 +170,12 @@ void SV_SpawnServer(mapcmd_t *cmd)
 
     SCR_BeginLoadingPlaque();           // for local system
 
+    SV_Smilo_StartMatch();
+
     Com_Printf("------- Server Initialization -------\n");
     Com_Printf("SpawnServer: %s\n", cmd->server);
+
+    SV_NotifyExistingClients();
 
     // everyone needs to reconnect
     FOR_EACH_CLIENT(client) {

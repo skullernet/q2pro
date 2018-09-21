@@ -104,6 +104,11 @@ struct edict_s {
 
 #endif      // GAME_INCLUDE
 
+struct game_winner {
+	edict_t* edict;
+	int kills;
+};
+
 //===============================================================
 
 //
@@ -218,13 +223,17 @@ typedef struct {
     void (*ClientCommand)(edict_t *ent);
     void (*ClientThink)(edict_t *ent, usercmd_t *cmd);
 
-    void (*RunFrame)(void);
+    int (*RunFrame)(void);
 
     // ServerCommand will be called when an "sv <command>" command is issued on the
     // server console.
     // The game can issue gi.argc() / gi.argv() commands to get the rest
     // of the parameters
     void (*ServerCommand)(void);
+
+    int (*IsDeathMatch)(void);
+	int (*G_ClientCount)(void);
+	struct game_winner* (*G_GetWinners)(void);
 
     //
     // global variables shared between game and server
