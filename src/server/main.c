@@ -98,6 +98,12 @@ cvar_t  *map_override_path;
 
 bool sv_registered;
 
+/*
+	Timestamp marking when the last check was made against the client
+	to detect non-betting players.
+*/
+int last_client_bet_check_time = 0;
+
 //============================================================================
 
 void SV_RemoveClient(client_t *client)
@@ -1861,6 +1867,48 @@ static void SV_MasterShutdown(void)
 }
 
 /*
+	This function is responsible for kicking players which are playing but have not betted any amount.
+	- Iterate connected clients
+	- For each non-confirmed client request confirmation state
+	- If not confirmed and already joined for more than 2 minutes: kick
+	- If confirmed set confirmed flag so no further checks are performed
+*/
+void 
+SV_KickNonBetting() {
+	// Throttle the amount of times we check (and the amount of http calls we make).
+	int checkTimeElapsed = svs.realtime - last_client_bet_check_time;
+	if(checkTimeElapsed < 5000 && checkTimeElapsed >= 0)
+		return;
+
+	last_client_bet_check_time = svs.realtime;
+
+	for(int i = 0; i < sv_maxclients->value; i++) {
+		client_t* client = &svs.client_pool[i];
+
+		if(client->state != cs_connected && client->state != cs_spawned)
+			continue;
+
+		if(!client->betConfirmed) {
+			// Bet was not yet confirmed
+			if(SV_Smilo_BetConfirmed(client->uniqueId)) {
+				// Client was confirmed!
+				client->betConfirmed = 1;
+			}
+			else {
+				// Client not yet confirmed. Time to kick?
+				int timeElapsed = svs.realtime - client->joinTime;
+				if(timeElapsed >= 60 * 1000) {
+					// Kick player...
+					SV_BroadcastPrintf(PRINT_HIGH, "%s was kicked because he/she did not bet\n", client->name);
+					SV_ClientPrintf(client, PRINT_HIGH, "You were kicked from the game because you did not bet\n");
+					SV_DropClient(client, "Non betting");
+				}
+			}
+		}
+	}
+}
+
+/*
 ==================
 SV_Frame
 
@@ -1910,6 +1958,8 @@ unsigned SV_Frame(unsigned msec)
     }
 
     if (svs.initialized && !check_paused()) {
+        SV_KickNonBetting();
+
         // check timeouts
         SV_CheckTimeouts();
 

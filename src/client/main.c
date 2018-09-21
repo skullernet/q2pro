@@ -3122,6 +3122,31 @@ void CL_UpdateFrameTimes(void)
 }
 
 /*
+	Checks if the bet placed by the computer was confirmed.
+	This is just to inform the player. No actions are taken here.
+	At first every 10 seconds a message is posted. The last 10 seconds
+	every second a message (count down) is posted.
+*/
+void
+CL_CheckBetConfirmed() {
+	if(cls.bet_confirmed)
+		return;
+
+	int elapsed = cls.realtime - cls.last_bet_check_time;
+	if(elapsed >= 2000) {
+		cls.last_bet_check_time = cls.realtime;
+		cls.bet_check_count++;
+		if(CL_Smilo_BetConfirmed()) {
+			Com_Printf("Your bet has been confirmed by the Smilo Blockchain!\n");
+			cls.bet_confirmed = true;
+		}
+		else {
+			Com_Printf("Your bet has NOT yet been confirmed...\n");
+		}
+	}
+}
+
+/*
 ==================
 CL_Frame
 
@@ -3295,6 +3320,10 @@ run_fx:
     cls.framecount++;
 
     main_extra = 0;
+
+    if(cls.state == ca_connected)
+		CL_CheckBetConfirmed();
+
     return 0;
 }
 
