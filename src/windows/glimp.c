@@ -494,15 +494,6 @@ bool VID_Init(void)
     return true;
 }
 
-void VID_VideoWait(void)
-{
-}
-
-bool VID_VideoSync(void)
-{
-    return true;
-}
-
 void VID_BeginFrame(void)
 {
 }

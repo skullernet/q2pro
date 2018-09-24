@@ -165,15 +165,6 @@ void VID_SetMode(void)
     VID_SDL_ModeChanged();
 }
 
-void VID_VideoWait(void)
-{
-}
-
-bool VID_VideoSync(void)
-{
-    return true;
-}
-
 void VID_BeginFrame(void)
 {
 }
