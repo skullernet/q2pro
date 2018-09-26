@@ -1406,6 +1406,7 @@ static void CL_ConnectionlessPacket(void)
                 game_info.payout_amounts[1], 
                 game_info.payout_amounts[2]
             );
+            Com_Printf("Used smart contract is valid: %i\n", game_info.valid_smart_contract);
 		    CL_Smilo_Connected(unique_id, contract_address);
         }
         else {

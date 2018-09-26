@@ -58,7 +58,7 @@ int CL_Smilo_GameInfo(smilo_game_info* output) {
                     output->input_amount = strtol(p, (char **)NULL, 10);
                     break;
                 case(1):
-                    output->valid_smart_contract = strcmp(p, "true") ? 1 : 0;
+                    output->valid_smart_contract = strcmp(p, "true") ? 0 : 1;
                     break;
                 case(2):
                     output->payout_amounts[0] = strtol(p, (char **)NULL, 10);
