@@ -51,7 +51,7 @@ int CL_Smilo_GameInfo(smilo_game_info* output) {
         // line 2: validated contract ('true' or 'false')
         // line 3, 4 and 5: first, second and third place rewards
         int index = 0;
-        for(char* p = strtok(response, "\n"); p != NULL; p = strtok(NULL, "\n")) {
+        for(char* p = strtok(response, ","); p != NULL; p = strtok(NULL, ",")) {
             printf("Read line: %s\n", p);
             switch(index) {
                 case(0):
@@ -73,6 +73,8 @@ int CL_Smilo_GameInfo(smilo_game_info* output) {
 
             if(index == 5)
                 break;
+
+            index++;
         }
 
         // Incomplete response
