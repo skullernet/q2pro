@@ -1397,7 +1397,22 @@ static void CL_ConnectionlessPacket(void)
 		strncpy(unique_id, Cmd_Argv(1), sizeof(unique_id));
 		strncpy(contract_address, Cmd_Argv(2), sizeof(contract_address));
 
-		CL_Smilo_Connected(unique_id, contract_address);
+        smilo_game_info game_info;
+        if(CL_Smilo_GameInfo(&game_info)) {
+            Com_Printf("Betting amount is %i\n", game_info.input_amount);
+            Com_Printf(
+                "1st place: %i Smilo\n2nd place: %i Smilo\n3th place: %i Smilo\n", 
+                game_info.payout_amounts[0], 
+                game_info.payout_amounts[1], 
+                game_info.payout_amounts[2]
+            );
+            Com_Printf("Used smart contract is valid: %i\n", game_info.valid_smart_contract);
+		    CL_Smilo_Connected(unique_id, contract_address);
+        }
+        else {
+            Com_Printf("Could not retrieve game info...\n");
+            CL_Disconnect(ERR_DROP);
+        }
 
 		cls.bet_confirmed = false;
 		cls.bet_check_count = 0;
