@@ -587,7 +587,7 @@ static void SVC_GetChallenge(void)
         }
     }
 
-    challenge = (((unsigned)rand() << 16) | rand()) & 0x7fffffff;
+    challenge = Q_rand() & 0x7fffffff;
     if (i == MAX_CHALLENGES) {
         // overwrite the oldest
         svs.challenges[oldest].challenge = challenge;
