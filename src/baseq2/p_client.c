@@ -726,7 +726,7 @@ edict_t *SelectRandomDeathmatchSpawnPoint(void)
     } else
         count -= 2;
 
-    selection = Q_rand() % count;
+    selection = Q_rand_uniform(count);
 
     spot = NULL;
     do {
