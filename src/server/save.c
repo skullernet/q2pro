@@ -172,9 +172,9 @@ static int copy_file(const char *src, const char *dst, const char *name)
 
     ret = 0;
 fail2:
-    fclose(ofp);
+    ret |= fclose(ofp);
 fail1:
-    fclose(ifp);
+    ret |= fclose(ifp);
 fail0:
     return ret;
 }

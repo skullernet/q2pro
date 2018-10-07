@@ -2183,9 +2183,10 @@ static void CL_WriteConfig_f(void)
         Cvar_WriteVariables(f, mask, modified);
     }
 
-    FS_FCloseFile(f);
-
-    Com_Printf("Wrote %s.\n", buffer);
+    if (FS_FCloseFile(f))
+        Com_EPrintf("Error writing %s\n", buffer);
+    else
+        Com_Printf("Wrote %s.\n", buffer);
 }
 
 static void CL_Say_c(genctx_t *ctx, int argnum)
@@ -2334,7 +2335,8 @@ static void CL_WriteConfig(void)
     Key_WriteBindings(f);
     Cvar_WriteVariables(f, CVAR_ARCHIVE, false);
 
-    FS_FCloseFile(f);
+    if (FS_FCloseFile(f))
+        Com_EPrintf("Error writing %s\n", COM_CONFIG_CFG);
 }
 
 /*
