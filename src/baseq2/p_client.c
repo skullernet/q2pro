@@ -1192,8 +1192,10 @@ void PutClientInServer(edict_t *ent)
         ent->client->ps.gunindex = 0;
         gi.linkentity(ent);
         return;
-    } else
+    } else {
         client->resp.spectator = false;
+        // client->resp.spectator = true;
+    }
 
     if (!KillBox(ent)) {
         // could't spawn in?

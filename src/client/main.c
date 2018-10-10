@@ -3179,7 +3179,8 @@ CL_CheckBetConfirmed(char* uid) {
 }
 
 void CL_Smilo_ConfirmedParticipate(void)
-{
+{   
+    // Put out of spectator mode
     confirmedParticipate = true;
     CL_Smilo_Connected(current_player_uid, contract_address);
     UI_PopMenu();
