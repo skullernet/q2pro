@@ -2256,13 +2256,12 @@ void Menu_Draw(menuFrameWork_t *menu)
         UI_DrawString(uis.width / 2, menu->y1 + 40,
                     UI_CENTER | menu->color.u32, draw);
     }
+    char * result = NULL;
+    float remainingtime = cl.frame.ps.stats[STAT_LEVEL_TIMER];
+    int second = (int) remainingtime % HOUR;
     // Timer
     if (menu->title5) {
-         char * result = NULL;
-        float remainingtime = cl.frame.ps.stats[STAT_LEVEL_TIMER];
-
         if (remainingtime > 0) {
-            int second = (int) remainingtime % HOUR;
             int minute = second / MIN;
             second %= MIN;
             char timeRemainingText[128];
@@ -2277,6 +2276,18 @@ void Menu_Draw(menuFrameWork_t *menu)
         UI_DrawString(uis.width / 2, menu->y1 + 60,
                       UI_CENTER | menu->color.u32, menu->title5);
     }
+    if (menu->title8) {
+        char* draw = menu->title8;
+        if (strcmp(menu->title8, "bettimeremaining") == 0) {
+            char * result = NULL;
+            char betTimeString[1024];
+            sprintf(betTimeString, "00:%d", second);
+            asprintf(&result, "Bet time left: %s", betTimeString);
+            draw = result;
+        } 
+        UI_DrawString(uis.width / 2, menu->y1 + 70,
+                    UI_CENTER | menu->color.u32, draw);
+    }
     if (menu->title6) {
         char* draw = menu->title6;
         if (strcmp(menu->title6, "amountofplayers") == 0) {
@@ -2284,7 +2295,7 @@ void Menu_Draw(menuFrameWork_t *menu)
             asprintf(&result, "Players (including you): %d", amountOfPlayers);
             draw = result;
         } 
-        UI_DrawString(uis.width / 2, menu->y1 + 80,
+        UI_DrawString(uis.width / 2, menu->y1 + 90,
                     UI_CENTER | menu->color.u32, draw);
     }
     if (menu->title7) {
@@ -2294,7 +2305,7 @@ void Menu_Draw(menuFrameWork_t *menu)
             asprintf(&result, "Transaction (to play): %d Smilo", playAmount);
             draw = result;
         } 
-        UI_DrawString(uis.width / 2, menu->y1 + 90,
+        UI_DrawString(uis.width / 2, menu->y1 + 100,
                     UI_CENTER | menu->color.u32, draw);
     }
 
@@ -2720,6 +2731,7 @@ void Menu_Free(menuFrameWork_t *menu)
     Z_Free(menu->title5);
     Z_Free(menu->title6);
     Z_Free(menu->title7);
+    Z_Free(menu->title8);
     Z_Free(menu->name);
     Z_Free(menu);
 }

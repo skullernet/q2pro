@@ -1403,18 +1403,6 @@ static void CL_ConnectionlessPacket(void)
 		strncpy(contract_address, Cmd_Argv(2), sizeof(contract_address));
 
 
-
-        menuFrameWork_t *menu;
-        char *s;
-
-        s = "smilo";
-        menu = UI_FindMenu(s);
-        if (menu) {
-            UI_PushMenu(menu);
-        } else {
-            Com_Printf("Could not find smilo menu!");
-        }
-
 		cls.bet_confirmed = false;
 		cls.bet_check_count = 0;
         confirmedParticipate = false;
@@ -1798,7 +1786,6 @@ void CL_Begin(void)
 #if USE_FPS
     CL_UpdateRateSetting();
 #endif
-
     CL_ClientCommand(va("begin %i\n", precache_spawncount));
 
     CL_UpdateGunSetting();
@@ -1807,6 +1794,17 @@ void CL_Begin(void)
     CL_UpdateFootstepsSetting();
     CL_UpdatePredictSetting();
     CL_UpdateRecordingSetting();
+
+    menuFrameWork_t *menu;
+    char *s;
+
+    s = "smilo";
+    menu = UI_FindMenu(s);
+    if (menu) {
+        UI_PushMenu(menu);
+    } else {
+        Com_Printf("Could not find smilo menu!");
+    }
 }
 
 /*
@@ -2781,7 +2779,7 @@ static void CL_InitLocal(void)
     // userinfo
     //
     info_password = Cvar_Get("password", "", CVAR_USERINFO);
-    info_spectator = Cvar_Get("spectator", "0", CVAR_USERINFO);
+    info_spectator = Cvar_Get("spectator", "1", CVAR_USERINFO);
     info_name = Cvar_Get("name", "unnamed", CVAR_USERINFO | CVAR_ARCHIVE);
     info_skin = Cvar_Get("skin", "male/grunt", CVAR_USERINFO | CVAR_ARCHIVE);
     info_rate = Cvar_Get("rate", "5000", CVAR_USERINFO | CVAR_ARCHIVE);
@@ -3181,6 +3179,7 @@ CL_CheckBetConfirmed(char* uid) {
 void CL_Smilo_ConfirmedParticipate(void)
 {   
     // Put out of spectator mode
+    Cvar_Set("spectator", "0");
     confirmedParticipate = true;
     CL_Smilo_Connected(current_player_uid, contract_address);
     UI_PopMenu();

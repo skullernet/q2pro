@@ -682,6 +682,11 @@ static bool Parse_File(const char *path, int depth)
                         Z_Free(menu->title7);
                     }
                     menu->title7 = UI_CopyString(Cmd_Argv(1));
+                } else if (!strcmp(cmd, "title8")) {
+                    if (menu->title8) {
+                        Z_Free(menu->title8);
+                    }
+                    menu->title8 = UI_CopyString(Cmd_Argv(1));
                 } else if (!strcmp(cmd, "plaque")) {
                     Parse_Plaque(menu);
                 } else if (!strcmp(cmd, "banner")) {
