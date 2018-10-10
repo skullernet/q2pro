@@ -274,9 +274,9 @@ static bool Push(menuFrameWork_t *self)
     if (m_player.menu.banner) {
         R_GetPicSize(&m_player.menu.banner_rc.width,
                      &m_player.menu.banner_rc.height, m_player.menu.banner);
-        m_player.menu.title = NULL;
+        m_player.menu.title1 = NULL;
     } else {
-        m_player.menu.title = "Player Setup";
+        m_player.menu.title1 = "Player Setup";
     }
 
     ReloadMedia();

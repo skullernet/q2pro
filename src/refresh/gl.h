@@ -230,7 +230,7 @@ bool GL_ShowErrors(const char *func);
  */
 
 #define MAX_ALIAS_SKINS     32
-#define MAX_ALIAS_VERTS     4096
+#define MAX_ALIAS_VERTS     65536
 
 typedef struct maliastc_s {
     float   st[2];
@@ -532,7 +532,7 @@ extern cvar_t *gl_intensity;
  * gl_tess.c
  *
  */
-#define TESS_MAX_VERTICES   4096
+#define TESS_MAX_VERTICES   65536
 #define TESS_MAX_INDICES    (3 * TESS_MAX_VERTICES)
 
 typedef struct {

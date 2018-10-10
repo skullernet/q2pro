@@ -752,6 +752,14 @@ static const char dm_statusbar[] =
 "xv 50 "
 "pic 0 "
 
+// smilopay 
+"xv	-160 "
+"yb -24 "
+"picn icon.png "
+"xv	-135 "
+"yb -24 "
+"spay "
+
 // ammo
 "if 2 "
 "   xv  100 "
@@ -804,6 +812,11 @@ static const char dm_statusbar[] =
 "xr -50 "
 "yt 2 "
 "num 3 14 "
+
+// time counter
+"xr -85 "
+"yb -24 "
+"leveltime "
 
 // spectator
 "if 17 "

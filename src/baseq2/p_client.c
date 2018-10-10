@@ -1445,8 +1445,6 @@ Will not be called between levels.
 */
 void ClientDisconnect(edict_t *ent)
 {
-    //int     playernum;
-
     if (!ent->client)
         return;
 

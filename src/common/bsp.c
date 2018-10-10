@@ -73,6 +73,7 @@ LOAD(Visibility)
     numclusters = LittleLong(bsp->vis->numclusters);
     if (numclusters > MAX_MAP_LEAFS) {
         DEBUG("bad numclusters");
+        Com_Printf("1. Q_ERR_TOO_MANY \n");
         return Q_ERR_TOO_MANY;
     }
 
@@ -390,6 +391,7 @@ LOAD(Faces)
         }
         if (numedges > 4096) {
             DEBUG("bad surfedges");
+            Com_Printf("2. Q_ERR_TOO_MANY \n");
             return Q_ERR_TOO_MANY;
         }
         if (lastedge < firstedge || lastedge > bsp->numsurfedges) {
@@ -912,6 +914,7 @@ static int BSP_ValidateAreaPortals(bsp_t *bsp)
     for (i = 0, p = bsp->areaportals; i < bsp->numareaportals; i++, p++) {
         if (p->portalnum >= MAX_MAP_AREAPORTALS) {
             DEBUG("bad portalnum");
+            Com_Printf("3. Q_ERR_TOO_MANY \n");
             return Q_ERR_TOO_MANY;
         }
         if (p->portalnum > bsp->lastareaportal) {
@@ -1011,6 +1014,7 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
         }
         count = len / info->disksize;
         if (count > info->maxcount) {
+            Com_Printf("4. Q_ERR_TOO_MANY \n");
             ret = Q_ERR_TOO_MANY;
             goto fail2;
         }

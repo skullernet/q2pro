@@ -587,6 +587,7 @@ static void check_skins(const char *name)
     len = FS_LoadFile(name, (void **)&model);
     if (!model) {
         // couldn't load it
+        Com_EPrintf("ERROR: Couldn't load skin: %s \n", name);
         return;
     }
 

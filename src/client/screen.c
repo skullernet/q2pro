@@ -18,9 +18,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // cl_scrn.c -- master for refresh, status bar, console, chat, notify, etc
 
 #include "client.h"
+#include "./ui/ui.h"
+#include "../../inc/client/smilo.h"
 
-#define STAT_PICS       11
-#define STAT_MINUS      (STAT_PICS - 1)  // num frame for '-' stats digit
+#define STAT_PICS       12
+#define STAT_MINUS      (STAT_PICS - 2)  // num frame for '-' stats digit
+#define STAT_COLON      (STAT_PICS - 1)  // num frame for ':' stats digit 
 
 static struct {
     bool        initialized;        // ready to draw
@@ -36,7 +39,7 @@ static struct {
     int         loading_width, loading_height;
     bool        draw_loading;
 
-    qhandle_t   sb_pics[2][STAT_PICS];
+    qhandle_t   sb_pics[3][STAT_PICS];
     qhandle_t   inven_pic;
     qhandle_t   field_pic;
 
@@ -88,16 +91,24 @@ static cvar_t   *ch_scale;
 static cvar_t   *ch_x;
 static cvar_t   *ch_y;
 
+extern int balance;
+int loading_gif_frames_counter = 0;
+int loading_gif_index = 0;
+
+#define HOUR 3600
+#define MIN 60
+
+
 vrect_t     scr_vrect;      // position of render window on screen
 
 static const char *const sb_nums[2][STAT_PICS] = {
     {
         "num_0", "num_1", "num_2", "num_3", "num_4", "num_5",
-        "num_6", "num_7", "num_8", "num_9", "num_minus"
+        "num_6", "num_7", "num_8", "num_9", "num_minus", "num_colon"
     },
     {
         "anum_0", "anum_1", "anum_2", "anum_3", "anum_4", "anum_5",
-        "anum_6", "anum_7", "anum_8", "anum_9", "anum_minus"
+        "anum_6", "anum_7", "anum_8", "anum_9", "anum_minus", "anum_colon"
     }
 };
 
@@ -1434,10 +1445,48 @@ static void HUD_DrawNumber(int x, int y, int color, int width, int value)
 
     ptr = num;
     while (*ptr && l) {
-        if (*ptr == '-')
+        if (*ptr == '-') {
             frame = STAT_MINUS;
+        }
         else
             frame = *ptr - '0';
+
+        R_DrawPic(x, y, scr.sb_pics[color][frame]);
+        x += DIGIT_WIDTH;
+        ptr++;
+        l--;
+    }
+}
+
+static void HUD_DrawChar(int x, int y, int color, int width, char *value)
+{
+    char    num[16], *ptr;
+    int     l;
+    int     frame;
+
+    if (width < 1)
+        return;
+
+    // draw number string
+    if (width > 5)
+        width = 5;
+
+    color &= 1;
+
+    l = Q_scnprintf(num, sizeof(num), "%s", value);
+    if (l > width)
+        l = width;
+    x += 2 + DIGIT_WIDTH * (width - l);
+
+    ptr = num;
+    while (*ptr && l) {
+        if (*ptr == '-') {
+            frame = STAT_MINUS;
+        } else if (*ptr == ':') {
+            frame = STAT_COLON;
+        } else {
+            frame = *ptr - '0';
+        }
 
         R_DrawPic(x, y, scr.sb_pics[color][frame]);
         x += DIGIT_WIDTH;
@@ -1450,7 +1499,7 @@ static void HUD_DrawNumber(int x, int y, int color, int width, int value)
 
 static void SCR_DrawInventory(void)
 {
-    int     i;
+ int     i;
     int     num, selected_num, item;
     int     index[MAX_ITEMS];
     char    string[MAX_STRING_CHARS];
@@ -1488,7 +1537,7 @@ static void SCR_DrawInventory(void)
     y = (scr.hud_height - 240) / 2;
 
     R_DrawPic(x, y + 8, scr.inven_pic);
-    y += 24;
+    y += 42;
     x += 24;
 
     HUD_DrawString(x, y, "hotkey ### item");
@@ -1518,6 +1567,16 @@ static void SCR_DrawInventory(void)
 
         y += CHAR_HEIGHT;
     }
+}
+
+int amountOfSpaces(int maximumCharacters, int currentCharacters) {
+    return maximumCharacters - currentCharacters;
+}
+
+void appendSpaces(char *dest, int num_of_spaces) {
+    int len = strlen(dest);
+    memset(dest + len, ' ', num_of_spaces);   
+    dest[len + num_of_spaces] = '\0';
 }
 
 static void SCR_ExecuteLayoutString(const char *s)
@@ -1598,9 +1657,65 @@ static void SCR_ExecuteLayoutString(const char *s)
             continue;
         }
 
+        if (!strcmp(token, "leveltime")) {
+            float remainingtime = cl.frame.ps.stats[STAT_LEVEL_TIMER];
+            if (remainingtime < 0) {
+                continue;
+            }
+            value = remainingtime;
+            int second = (int) remainingtime % HOUR;
+            int minute = second / MIN;
+            second %= MIN;
+            char timeRemainingText[128];
+            
+            sprintf(timeRemainingText, "%.2d:%.2d", minute, second);
+            width = strlen(timeRemainingText);
+
+            HUD_DrawChar(x, y, 0, width, timeRemainingText);
+            continue;
+		}
+
+        if (!strcmp(token, "spay")) {
+            if (balance == -1) {
+                continue;
+            }
+            value = balance;
+            int valueForDigits = value;
+            int digitCount = 0;
+            while(valueForDigits != 0)
+            {
+                valueForDigits /= 10;
+                ++digitCount;
+            }
+            width = digitCount;
+
+            HUD_DrawNumber(x, y, 0, width, value);
+            continue;
+		}
+
+        if (!strcmp(token, "playername")) {
+            Com_Printf("PLAYERNAME! \n");
+            continue;
+        }
+
+        if (!strcmp(token, "topscore")) {
+
+            x = (scr.hud_width - 256) / 2;
+            y = (scr.hud_height - 240) / 2;
+            R_DrawPic(x, y + 8, scr.inven_pic);
+            y += 42;
+            x += 24;
+            HUD_DrawString(x, y, "#  Win    Playername Frags");
+            y += CHAR_HEIGHT;
+
+            HUD_DrawString(x, y, "-  ------ ---------- -----");
+            y += CHAR_HEIGHT;
+            continue;
+        }
+
         if (!strcmp(token, "client")) {
             // draw a deathmatch client block
-            int     score, ping, time;
+            int score, ping, time, totalPlayers;
 
             token = COM_Parse(&s);
             x = scr.hud_width / 2 - 160 + atoi(token);
@@ -1623,19 +1738,72 @@ static void SCR_ExecuteLayoutString(const char *s)
             token = COM_Parse(&s);
             time = atoi(token);
 
-            HUD_DrawAltString(x + 32, y, ci->name);
-            HUD_DrawString(x + 32, y + CHAR_HEIGHT, "Score: ");
-            Q_snprintf(buffer, sizeof(buffer), "%i", score);
-            HUD_DrawAltString(x + 32 + 7 * CHAR_WIDTH, y + CHAR_HEIGHT, buffer);
-            Q_snprintf(buffer, sizeof(buffer), "Ping:  %i", ping);
-            HUD_DrawString(x + 32, y + 2 * CHAR_HEIGHT, buffer);
-            Q_snprintf(buffer, sizeof(buffer), "Time:  %i", time);
-            HUD_DrawString(x + 32, y + 3 * CHAR_HEIGHT, buffer);
-
-            if (!ci->icon) {
-                ci = &cl.baseclientinfo;
+            char *place = COM_Parse(&s);
+            if (atoi(place) > 3) {
+                // Just print the first 3 places
+                continue;
             }
-            R_DrawPic(x, y, ci->icon);
+            int maxLength = 2;
+            int placesSpaces = amountOfSpaces(maxLength, strlen(place));
+            if (placesSpaces < 0) {
+                place[maxLength] = 0;
+            } else {
+                appendSpaces(place, placesSpaces);
+            }
+
+            token = COM_Parse(&s);
+            totalPlayers = atoi(token);
+
+            token = COM_Parse(&s);
+            int endmessage = atoi(token);
+
+            // Com_Printf("Endmessage: %d \n", endmessage);
+
+            float winAmount = calculatePlayerWonAmount(atoi(place), totalPlayers, totalPlayers * 10);
+            char winAmountString[1024];
+            maxLength = 6;
+            gcvt(winAmount, maxLength, winAmountString);
+            int winSpaces = amountOfSpaces(maxLength, strlen(winAmountString));
+            if (winSpaces < 0) {
+                winAmountString[maxLength] = 0;
+            } else {
+                appendSpaces(winAmountString, winSpaces);
+            }
+            
+            char name[1024];
+            sprintf(name, "%s", ci->name);
+            maxLength = 10;
+            int nameSpaces = amountOfSpaces(maxLength, strlen(name));
+            if (nameSpaces < 0) {
+                name[maxLength] = 0;
+            } else {
+                appendSpaces(name, nameSpaces);
+            }
+
+            char scoreRow[1024];
+            sprintf(scoreRow, "%s %s %s %d", place, winAmountString, name, score);
+            // Com_Printf("current_player_uid: %s \n", current_player_uid);
+
+            // if current player UID then draw alt string
+            HUD_DrawString(x, y, scoreRow); // otherwhise just normal string
+
+            if (endmessage == 0) {
+
+            }
+
+            // HUD_DrawAltString(x + 32, y, ci->name);
+            // HUD_DrawString(x + 32, y + CHAR_HEIGHT, "Score: ");
+            // Q_snprintf(buffer, sizeof(buffer), "%i", score);
+            // HUD_DrawAltString(x + 32 + 7 * CHAR_WIDTH, y + CHAR_HEIGHT, buffer);
+            // Q_snprintf(buffer, sizeof(buffer), "Ping:  %i", ping);
+            // HUD_DrawString(x + 32, y + 2 * CHAR_HEIGHT, buffer);
+            // Q_snprintf(buffer, sizeof(buffer), "Time:  %i", time);
+            // HUD_DrawString(x + 32, y + 3 * CHAR_HEIGHT, buffer);
+
+            // if (!ci->icon) {
+            //     ci = &cl.baseclientinfo;
+            // }
+            // R_DrawPic(x, y, ci->icon);
             continue;
         }
 
@@ -1676,6 +1844,18 @@ static void SCR_ExecuteLayoutString(const char *s)
         if (!strcmp(token, "picn")) {
             // draw a pic from a name
             token = COM_Parse(&s);
+            if (strcmp(token, "icon.png") == 0 && balance == -1) {
+                char loadingPngName[128];
+                if (loading_gif_frames_counter == 240) {
+                    loading_gif_frames_counter = 0;
+                    loading_gif_index = 0;
+                }
+                sprintf(loadingPngName, "loading_spay_%d.png", loading_gif_index);
+                R_DrawPic(x, y, R_RegisterPic2(loadingPngName));
+                loading_gif_frames_counter++;
+                if (loading_gif_frames_counter % 60 == 0) loading_gif_index++;
+                continue;
+            }
             R_DrawPic(x, y, R_RegisterPic2(token));
             continue;
         }

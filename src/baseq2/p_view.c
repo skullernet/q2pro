@@ -960,7 +960,7 @@ void ClientEndServerFrame(edict_t *ent)
         bobtime *= 4;
 
     bobcycle = (int)bobtime;
-    bobfracsin = fabsf(sin(bobtime * M_PI));
+    bobfracsin = fabs(sin(bobtime * M_PI));
 
     // detect hitting the floor
     P_FallingDamage(ent);
@@ -1005,7 +1005,7 @@ void ClientEndServerFrame(edict_t *ent)
 
     // if the scoreboard is up, update it
     if (ent->client->showscores && !(level.framenum & 31)) {
-        DeathmatchScoreboardMessage(ent, ent->enemy);
+        DeathmatchScoreboardMessage(ent, ent->enemy, 0);
         gi.unicast(ent, false);
     }
 }

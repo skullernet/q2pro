@@ -313,6 +313,8 @@ int IsDeathMatch() {
 	return deathmatch->value;
 }
 
+float LEVEL_TIME;
+
 int
 ShouldEndLevel(void) {
 	int i;
@@ -327,6 +329,7 @@ ShouldEndLevel(void) {
 	{
 		return 0;
 	}
+
 
 	if (timelimit->value)
 	{

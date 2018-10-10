@@ -1877,27 +1877,32 @@ void
 SV_KickNonBetting() {
 	// Throttle the amount of times we check (and the amount of http calls we make).
 	int checkTimeElapsed = svs.realtime - last_client_bet_check_time;
-	if(checkTimeElapsed < 5000 && checkTimeElapsed >= 0)
+	if (checkTimeElapsed < 5000 && checkTimeElapsed >= 0)
 		return;
 
 	last_client_bet_check_time = svs.realtime;
 
-	for(int i = 0; i < sv_maxclients->value; i++) {
+	for (int i = 0; i < sv_maxclients->value; i++) {
 		client_t* client = &svs.client_pool[i];
 
-		if(client->state != cs_connected && client->state != cs_spawned)
+        if (client->joinTime == 0) {
+            client->joinTime = svs.realtime;
+        }
+
+		if (client->state != cs_connected && client->state != cs_spawned)
 			continue;
 
-		if(!client->betConfirmed) {
+		if (!client->betConfirmed) {
 			// Bet was not yet confirmed
-			if(SV_Smilo_BetConfirmed(client->uniqueId)) {
+			if (SV_Smilo_BetConfirmed(client->uniqueId)) {
 				// Client was confirmed!
 				client->betConfirmed = 1;
-			}
-			else {
+			} else {
 				// Client not yet confirmed. Time to kick?
-				int timeElapsed = svs.realtime - client->joinTime;
-				if(timeElapsed >= 60 * 1000) {
+                int timeElapsed = svs.realtime - client->joinTime;
+                Com_Printf("Time elapsed for client %d \n", timeElapsed);
+                int kickTime = 90 * 1000; // In MS, 90000 = 90 sec
+				if (timeElapsed >= kickTime) { 
 					// Kick player...
 					SV_BroadcastPrintf(PRINT_HIGH, "%s was kicked because he/she did not bet\n", client->name);
 					SV_ClientPrintf(client, PRINT_HIGH, "You were kicked from the game because you did not bet\n");

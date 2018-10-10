@@ -641,7 +641,7 @@ void M_Menu_Demos(void)
     ui_listalldemos = Cvar_Get("ui_listalldemos", "0", 0);
 
     m_demos.menu.name = "demos";
-    m_demos.menu.title = "Demo Browser";
+    m_demos.menu.title1 = "Demo Browser";
 
     strcpy(m_demos.browse, "/demos");
 

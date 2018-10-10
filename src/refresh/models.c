@@ -166,8 +166,10 @@ static int MOD_LoadSP2(model_t *model, const void *rawdata, size_t length)
         model->type = MOD_EMPTY;
         return Q_ERR_SUCCESS;
     }
-    if (header.numframes > SP2_MAX_FRAMES)
+    if (header.numframes > SP2_MAX_FRAMES) {
+        Com_Printf("5. Q_ERR_TOO_MANY \n");
         return Q_ERR_TOO_MANY;
+    }
     if (sizeof(dsp2header_t) + sizeof(dsp2frame_t) * header.numframes > length)
         return Q_ERR_BAD_EXTENT;
 
@@ -216,8 +218,10 @@ static int MOD_ValidateMD2(dmd2header_t *header, size_t length)
     // check triangles
     if (header->num_tris < 1)
         return Q_ERR_TOO_FEW;
-    if (header->num_tris > MD2_MAX_TRIANGLES)
+    if (header->num_tris > MD2_MAX_TRIANGLES) {
+        Com_Printf("6. Q_ERR_TOO_MANY \n");
         return Q_ERR_TOO_MANY;
+    }
 
     end = header->ofs_tris + sizeof(dmd2triangle_t) * header->num_tris;
     if (header->ofs_tris < sizeof(header) || end < header->ofs_tris || end > length)
@@ -226,8 +230,10 @@ static int MOD_ValidateMD2(dmd2header_t *header, size_t length)
     // check st
     if (header->num_st < 3)
         return Q_ERR_TOO_FEW;
-    if (header->num_st > MAX_ALIAS_VERTS)
+    if (header->num_st > MAX_ALIAS_VERTS) {
+        Com_Printf("7. Q_ERR_TOO_MANY \n");
         return Q_ERR_TOO_MANY;
+    }
 
     end = header->ofs_st + sizeof(dmd2stvert_t) * header->num_st;
     if (header->ofs_st < sizeof(header) || end < header->ofs_st || end > length)
@@ -236,12 +242,16 @@ static int MOD_ValidateMD2(dmd2header_t *header, size_t length)
     // check xyz and frames
     if (header->num_xyz < 3)
         return Q_ERR_TOO_FEW;
-    if (header->num_xyz > MAX_ALIAS_VERTS)
+    if (header->num_xyz > MAX_ALIAS_VERTS) {
+        Com_Printf("8. Q_ERR_TOO_MANY \n");
         return Q_ERR_TOO_MANY;
+    }
     if (header->num_frames < 1)
         return Q_ERR_TOO_FEW;
-    if (header->num_frames > MD2_MAX_FRAMES)
+    if (header->num_frames > MD2_MAX_FRAMES) {
+        Com_Printf("9. Q_ERR_TOO_MANY \n");
         return Q_ERR_TOO_MANY;
+    }
 
     end = sizeof(dmd2frame_t) + (header->num_xyz - 1) * sizeof(dmd2trivertx_t);
     if (header->framesize < end || header->framesize > MD2_MAX_FRAMESIZE)
@@ -253,8 +263,10 @@ static int MOD_ValidateMD2(dmd2header_t *header, size_t length)
 
     // check skins
     if (header->num_skins) {
-        if (header->num_skins > MAX_ALIAS_SKINS)
+        if (header->num_skins > MAX_ALIAS_SKINS) {
+            Com_Printf("10. Q_ERR_TOO_MANY \n");
             return Q_ERR_TOO_MANY;
+        }
 
         end = header->ofs_skins + (size_t)MD2_MAX_SKINNAME * header->num_skins;
         if (header->ofs_skins < sizeof(header) || end < header->ofs_skins || end > length)
@@ -367,6 +379,7 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
     }
 
     if (numverts > TESS_MAX_VERTICES) {
+        Com_Printf("11. Q_ERR_TOO_MANY \n");
         return Q_ERR_TOO_MANY;
     }
 
@@ -509,14 +522,20 @@ static int MOD_LoadMD3Mesh(model_t *model, maliasmesh_t *mesh,
         return Q_ERR_BAD_EXTENT;
     if (header.num_verts < 3)
         return Q_ERR_TOO_FEW;
-    if (header.num_verts > TESS_MAX_VERTICES)
+    if (header.num_verts > TESS_MAX_VERTICES) {
+        Com_Printf("13. Q_ERR_TOO_MANY\n");
         return Q_ERR_TOO_MANY;
+    }
     if (header.num_tris < 1)
         return Q_ERR_TOO_FEW;
-    if (header.num_tris > TESS_MAX_INDICES / 3)
+    if (header.num_tris > TESS_MAX_INDICES / 3) {
+        Com_Printf("14. Q_ERR_TOO_MANY\n");
         return Q_ERR_TOO_MANY;
-    if (header.num_skins > MAX_ALIAS_SKINS)
+    }
+    if (header.num_skins > MAX_ALIAS_SKINS) {
+        Com_Printf("15. Q_ERR_TOO_MANY\n");
         return Q_ERR_TOO_MANY;
+    }
     end = header.ofs_skins + header.num_skins * sizeof(dmd3skin_t);
     if (end < header.ofs_skins || end > length)
         return Q_ERR_BAD_EXTENT;
@@ -607,15 +626,19 @@ static int MOD_LoadMD3(model_t *model, const void *rawdata, size_t length)
         return Q_ERR_UNKNOWN_FORMAT;
     if (header.num_frames < 1)
         return Q_ERR_TOO_FEW;
-    if (header.num_frames > MD3_MAX_FRAMES)
+    if (header.num_frames > MD3_MAX_FRAMES) {
+        Com_Printf("16. Q_ERR_TOO_MANY\n");
         return Q_ERR_TOO_MANY;
+    }
     end = header.ofs_frames + sizeof(dmd3frame_t) * header.num_frames;
     if (end < header.ofs_frames || end > length)
         return Q_ERR_BAD_EXTENT;
     if (header.num_meshes < 1)
         return Q_ERR_TOO_FEW;
-    if (header.num_meshes > MD3_MAX_MESHES)
+    if (header.num_meshes > MD3_MAX_MESHES) {
+        Com_Printf("17. Q_ERR_TOO_MANY\n");
         return Q_ERR_TOO_MANY;
+    }
     if (header.ofs_meshes > length)
         return Q_ERR_BAD_EXTENT;
 
@@ -788,9 +811,10 @@ done:
     return index;
 
 fail2:
+    Com_EPrintf("ERROR: Couldn't load %s: %s\n", normalized, Q_ErrorString(ret));
     FS_FreeFile(rawdata);
 fail1:
-    Com_EPrintf("Couldn't load %s: %s\n", normalized, Q_ErrorString(ret));
+    Com_EPrintf("ERROR: Couldn't load %s: %s\n", normalized, Q_ErrorString(ret));
     return 0;
 }
 

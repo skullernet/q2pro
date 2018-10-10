@@ -647,11 +647,41 @@ static bool Parse_File(const char *path, int depth)
                         menu->free(menu);
                     }
                     menu = NULL;
-                } else if (!strcmp(cmd, "title")) {
-                    if (menu->title) {
-                        Z_Free(menu->title);
+                } else if (!strcmp(cmd, "title1")) {
+                    if (menu->title1) {
+                        Z_Free(menu->title1);
+                    } 
+                    menu->title1 = UI_CopyString(Cmd_Argv(1));
+                } else if (!strcmp(cmd, "title2")) {
+                    if (menu->title2) {
+                        Z_Free(menu->title2);
                     }
-                    menu->title = UI_CopyString(Cmd_Argv(1));
+                    menu->title2 = UI_CopyString(Cmd_Argv(1));
+                } else if (!strcmp(cmd, "title3")) {
+                    if (menu->title3) {
+                        Z_Free(menu->title3);
+                    }
+                    menu->title3 = UI_CopyString(Cmd_Argv(1));
+                } else if (!strcmp(cmd, "title4")) {
+                    if (menu->title4) {
+                        Z_Free(menu->title4);
+                    }
+                    menu->title4 = UI_CopyString(Cmd_Argv(1));
+                } else if (!strcmp(cmd, "title5")) {
+                    if (menu->title5) {
+                        Z_Free(menu->title5);
+                    }
+                    menu->title5 = UI_CopyString(Cmd_Argv(1));
+                } else if (!strcmp(cmd, "title6")) {
+                    if (menu->title6) {
+                        Z_Free(menu->title6);
+                    }
+                    menu->title6 = UI_CopyString(Cmd_Argv(1));
+                } else if (!strcmp(cmd, "title7")) {
+                    if (menu->title7) {
+                        Z_Free(menu->title7);
+                    }
+                    menu->title7 = UI_CopyString(Cmd_Argv(1));
                 } else if (!strcmp(cmd, "plaque")) {
                     Parse_Plaque(menu);
                 } else if (!strcmp(cmd, "banner")) {

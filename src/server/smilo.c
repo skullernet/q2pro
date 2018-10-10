@@ -3,6 +3,9 @@
 #include "../../inc/common/http.h"
 #include "../../inc/server/smilo.h"
 
+char confirmedPlayerUids[128];
+int playeruidsIndex;
+
 void
 SV_Smilo_StartMatch() {
     printf("Match start! Notifying Smilo Server Agent...\n");
@@ -48,10 +51,15 @@ int SV_Smilo_BetConfirmed(int uniqueId) {
     char response[4096];
     if(HTTP_Get("127.0.0.1", url, 8080, response, sizeof(response))) {
         printf("  Agent response: %s\n", response);
-        if(!strcmp(response, "true"))
+        if (!strcmp(response, "true")) {
+            printf("  (SV) BET CONFIRMED: 1! \n");
+            confirmedPlayerUids[playeruidsIndex] = uniqueId;
+            playeruidsIndex++;
             return 1;
-        else
+        } else {
+            printf("  (SV) BET CONFIRMED: 0! \n");
             return 0;
+        }
     }
     else {
         printf("Failed to do HTTP call...\n");

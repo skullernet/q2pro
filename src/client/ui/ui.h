@@ -92,7 +92,7 @@ typedef void (*confirmAction_t)(bool);
 typedef struct menuFrameWork_s {
     list_t  entry;
 
-    char    *name, *title, *status;
+    char    *name, *title1, *title2, *title3, *title4, *title5, *title6, *title7, *status;
 
     void    **items;
     int     nitems;
@@ -328,6 +328,7 @@ void        UI_LoadScript(void);
 menuFrameWork_t *UI_FindMenu(const char *name);
 
 void        Menu_Init(menuFrameWork_t *menu);
+int calculatePlayerWonAmount(int playerPlace, int amountOfPlayers, int totalDepositPool);
 void        Menu_Size(menuFrameWork_t *menu);
 void        Menu_Draw(menuFrameWork_t *menu);
 void        Menu_AddItem(menuFrameWork_t *menu, void *item);

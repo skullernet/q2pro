@@ -768,7 +768,7 @@ void G_SetStats(edict_t *ent);
 void G_SetSpectatorStats(edict_t *ent);
 void G_CheckChaseStats(edict_t *ent);
 void ValidateSelectedItem(edict_t *ent);
-void DeathmatchScoreboardMessage(edict_t *client, edict_t *killer);
+void DeathmatchScoreboardMessage(edict_t *client, edict_t *killer, int endmessage);
 
 //
 // g_pweapon.c
@@ -875,7 +875,7 @@ struct gclient_s {
 
     bool        showscores;         // set layout stat
     bool        showinventory;      // set layout stat
-    bool        showhelp;
+    bool        showhelp;           // really why should you name the scoreboard help... cmon. This is the scoreboard
     bool        showhelpicon;
 
     int         ammo_index;
