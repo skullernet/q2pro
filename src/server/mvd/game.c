@@ -2226,7 +2226,7 @@ fail:
 static void MVD_GameRunFrame(void)
 {
     mvd_t *mvd, *next;
-    int numplayers = 0;
+    int volatile numplayers = 0;
 
     LIST_FOR_EACH_SAFE(mvd_t, mvd, next, &mvd_channel_list, entry) {
         if (setjmp(mvd_jmpbuf)) {

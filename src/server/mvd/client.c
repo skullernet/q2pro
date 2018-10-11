@@ -404,7 +404,7 @@ Called from main server loop.
 int MVD_Frame(void)
 {
     gtv_t *gtv, *next;
-    int connections = 0;
+    int volatile connections = 0;
 
     if (sv.state == ss_broadcast) {
         set_mvd_active();
@@ -2396,7 +2396,7 @@ static void MVD_Play_f(void)
     int loop = -1, chan_id = -1;
     qhandle_t f;
     size_t len;
-    gtv_t *gtv = NULL;
+    gtv_t * volatile gtv = NULL;
     int c, argc;
     string_entry_t *entry, *head;
     int i;

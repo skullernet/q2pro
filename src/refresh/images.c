@@ -723,6 +723,11 @@ static int my_jpeg_start_decompress(j_decompress_ptr cinfo, byte *rawdata, size_
     return 0;
 }
 
+#ifdef __GNUC__
+#   pragma GCC diagnostic push
+#   pragma GCC diagnostic ignored "-Wclobbered"
+#endif
+
 static int my_jpeg_finish_decompress(j_decompress_ptr cinfo, JSAMPROW row_pointer, byte *out)
 {
     my_error_ptr jerr = (my_error_ptr)cinfo->err;
@@ -758,6 +763,10 @@ static int my_jpeg_finish_decompress(j_decompress_ptr cinfo, JSAMPROW row_pointe
     jpeg_finish_decompress(cinfo);
     return 0;
 }
+
+#ifdef __GNUC__
+#   pragma GCC diagnostic pop
+#endif
 
 IMG_LOAD(JPG)
 {
