@@ -184,7 +184,8 @@ Colors can be specified in one of the following formats:
 - #RRGGBBAA, where R, G, B and A are hex digits
 - #RRGGBB, which implies alpha value of FF
 - #RGB, which is expanded to #RRGGBB by duplicating digits
-- one of the predefined color names (black, red, etc)
+- one of the predefined color names (black, red, green, yellow,
+blue, cyan, magenta, white)
 ********************
 
 cl_railtrail_type::
@@ -295,9 +296,8 @@ con_alpha::
     Default value is 1.
 
 con_scale::
-    Scaling factor of the console text. Takes effect in OpenGL mode only.
-    Default value is 0 (automatically scale depending on current display
-    resolution). Set to 1 to disable scaling.
+    Scaling factor of the console text. Default value is 0 (automatically scale
+    depending on current display resolution). Set to 1 to disable scaling.
 
 con_font::
     Font used for drawing console text. Default value is "conchars".
@@ -368,9 +368,8 @@ scr_showpause::
       - 2 — draw text in demo bar (visible only during demo playback)
 
 scr_scale::
-    Scaling factor of the HUD elements. Takes effect in OpenGL mode only.
-    Default value is 0 (automatically scale depending on current display
-    resolution). Set to 1 to disable scaling.
+    Scaling factor of the HUD elements. Default value is 0 (automatically scale
+    depending on current display resolution). Set to 1 to disable scaling.
 
 scr_alpha::
     Opacity of the HUD elements. 0 is fully transparent, 1 is opaque. Default
@@ -837,16 +836,6 @@ loc_draw::
 Mouse Input
 ~~~~~~~~~~~
 
-in_direct::
-    On Linux, enables Evdev interface for direct mouse input. Otherwise,
-    standard input facilities provided by the window system are used. Default
-    value is 1 (use direct input).
-
-in_device::
-    On Linux, specifies device file to use for direct mouse input. Normally, it
-    should be one of ‘/dev/input/eventX’ files (reading permissions are
-    required).  Default value is empty and needs to be filled by user.
-
 in_grab::
     Specifies mouse grabbing policy in windowed mode. Normally, mouse is always
     grabbed in-game and released when console or menu is up. In addition to
@@ -869,16 +858,6 @@ m_accel::
 m_filter::
     When enabled, mouse movement is averaged between current and previous
     samples.  Default value is 0 (filtering disabled).
-
-lirc_enable::
-    On Linux, enables input from the LIRC daemon, which allows menu navigation
-    and command execution from your infrared remote control device. Default
-    value is 0 (disabled).
-
-lirc_config::
-    On Linux, specifies LIRC configuration file to use. Default value is empty,
-    which means to use the default ‘~/.lircrc’ file. This variable may only be
-    set from command line.  See README.lirc file for command syntax description.
 
 
 Miscellaneous
@@ -952,9 +931,8 @@ ui_background::
     just fills the screen with solid black color.
 
 ui_scale::
-    Scaling factor of the UI widgets. Takes effect in OpenGL mode only. Default
-    value is 0 (automatically scale depending on current display resolution).
-    Set to 1 to disable scaling.
+    Scaling factor of the UI widgets. Default value is 0 (automatically scale
+    depending on current display resolution). Set to 1 to disable scaling.
 
 ui_sortdemos::
     Specifies default sorting order of entries in demo browser. Default value
