@@ -59,8 +59,6 @@ HTTP_Get(char* host, char* url, int portno, char* responseBuffer, unsigned int r
 
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
 
-        curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
-
         res = curl_easy_perform(curl);
 
         curl_easy_cleanup(curl);
