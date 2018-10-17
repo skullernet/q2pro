@@ -38,10 +38,10 @@ size_t writefunc(void *ptr, size_t size, size_t nmemb, struct string *s) {
 
 int
 HTTP_Get(char* host, char* url, int portno, char* responseBuffer, unsigned int responseBufferSize) {
-    char *messageTemplate = "GET http://%s/%s HTTP/1.0\r\n\r\n";
+    char *messageTemplate = "http://%s:%i/%s";
     char message[1024];
 
-    sprintf(message, messageTemplate, host, url);
+    sprintf(message, messageTemplate, host, portno, url);
 
     CURL* curl;
     CURLcode res;
