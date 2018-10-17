@@ -270,8 +270,15 @@ OBJS_g := \
 ifdef CONFIG_HTTP
     CURL_CFLAGS ?= $(shell pkg-config libcurl --cflags)
     CURL_LIBS ?= $(shell pkg-config libcurl --libs)
+
+    # Add to client
     CFLAGS_c += -DUSE_CURL=1 $(CURL_CFLAGS)
     LIBS_c += $(CURL_LIBS)
+
+    # Add to server
+    CFLAGS_s += -DUSE_CURL=1 $(CURL_CFLAGS)
+    LIBS_s += $(CURL_LIBS)
+
     OBJS_c += src/client/http.o
 endif
 
