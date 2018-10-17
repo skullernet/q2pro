@@ -59,8 +59,9 @@ GetItemByIndex
 */
 gitem_t *GetItemByIndex(int index)
 {
-    if (index == 0 || index >= game.num_items)
+    if (index == 0 || index >= game.num_items) {
         return NULL;
+    }
 
     return &itemlist[index];
 }
@@ -79,8 +80,10 @@ gitem_t *FindItemByClassname(char *classname)
 
     it = itemlist;
     for (i = 0 ; i < game.num_items ; i++, it++) {
-        if (!it->classname)
+        if (!it->classname) {
+            Com_Printf("FindItemByClassname \n");
             continue;
+        }
         if (!Q_stricmp(it->classname, classname))
             return it;
     }
@@ -101,10 +104,12 @@ gitem_t *FindItem(char *pickup_name)
 
     it = itemlist;
     for (i = 0 ; i < game.num_items ; i++, it++) {
-        if (!it->pickup_name)
+        if (!it->pickup_name) {
             continue;
-        if (!Q_stricmp(it->pickup_name, pickup_name))
+        }
+        if (!Q_stricmp(it->pickup_name, pickup_name)) {
             return it;
+        }
     }
 
     return NULL;

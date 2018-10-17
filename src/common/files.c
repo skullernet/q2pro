@@ -1370,7 +1370,7 @@ static int64_t open_file_read(file_t *file, const char *normalized, size_t namel
         }
     }
 
-    // return error if path was checked and found to be invalid
+    // return error if path was checked and found to be invalid 
     ret = valid ? Q_ERR_NOENT : Q_ERR_INVALID_PATH;
 
 fail:

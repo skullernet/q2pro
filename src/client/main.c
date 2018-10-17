@@ -17,6 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 // cl_main.c  -- client main loop
 
+#include "./ui/ui.h"
 #include "client.h"
 #include "../../inc/client/smilo.h"
 
@@ -116,12 +117,16 @@ typedef struct {
 
 #define MAX_REQUESTS    64
 #define REQUEST_MASK    (MAX_REQUESTS - 1)
+#define LEVEL_TIME      0
 
 static request_t    clientRequests[MAX_REQUESTS];
 static unsigned     nextRequest;
 
 char contract_address[1024];
-char unique_id[1024];
+char current_player_uid[1024];
+int balance = -1;
+bool participateCommandDefined = false;
+bool confirmedParticipate = false;
 
 static request_t *CL_AddRequest(const netadr_t *adr, requestType_t type)
 {
@@ -1059,7 +1064,8 @@ drop to full console
 =================
 */
 static void CL_Changing_f(void)
-{
+{   
+    Cvar_Set("spectator", "1");
     int i, j;
     char *s;
 
@@ -1394,7 +1400,7 @@ static void CL_ConnectionlessPacket(void)
 
     if(!strcmp(c, "client_smilo_id")) {
         // Store contract address
-		strncpy(unique_id, Cmd_Argv(1), sizeof(unique_id));
+		strncpy(current_player_uid, Cmd_Argv(1), sizeof(current_player_uid));
 		strncpy(contract_address, Cmd_Argv(2), sizeof(contract_address));
 
         smilo_game_info game_info;
@@ -1407,7 +1413,7 @@ static void CL_ConnectionlessPacket(void)
                 game_info.payout_amounts[2]
             );
             Com_Printf("Used smart contract is valid: %i\n", game_info.valid_smart_contract);
-		    CL_Smilo_Connected(unique_id, contract_address);
+		    CL_Smilo_Connected(current_player_uid, contract_address);
         }
         else {
             Com_Printf("Could not retrieve game info...\n");
@@ -1416,7 +1422,10 @@ static void CL_ConnectionlessPacket(void)
 
 		cls.bet_confirmed = false;
 		cls.bet_check_count = 0;
+        confirmedParticipate = false;
+        balance = -1;
 		cls.last_bet_check_time = 0;
+        cls.balance_refreshed = false;
 		return;
     }
 
@@ -1794,7 +1803,6 @@ void CL_Begin(void)
 #if USE_FPS
     CL_UpdateRateSetting();
 #endif
-
     CL_ClientCommand(va("begin %i\n", precache_spawncount));
 
     CL_UpdateGunSetting();
@@ -1803,6 +1811,17 @@ void CL_Begin(void)
     CL_UpdateFootstepsSetting();
     CL_UpdatePredictSetting();
     CL_UpdateRecordingSetting();
+
+    menuFrameWork_t *menu;
+    char *s;
+
+    s = "smilo";
+    menu = UI_FindMenu(s);
+    if (menu) {
+        UI_PushMenu(menu);
+    } else {
+        Com_Printf("Could not find smilo menu!");
+    }
 }
 
 /*
@@ -2777,7 +2796,7 @@ static void CL_InitLocal(void)
     // userinfo
     //
     info_password = Cvar_Get("password", "", CVAR_USERINFO);
-    info_spectator = Cvar_Get("spectator", "0", CVAR_USERINFO);
+    info_spectator = Cvar_Get("spectator", "1", CVAR_USERINFO);
     info_name = Cvar_Get("name", "unnamed", CVAR_USERINFO | CVAR_ARCHIVE);
     info_skin = Cvar_Get("skin", "male/grunt", CVAR_USERINFO | CVAR_ARCHIVE);
     info_rate = Cvar_Get("rate", "5000", CVAR_USERINFO | CVAR_ARCHIVE);
@@ -3136,6 +3155,17 @@ void CL_UpdateFrameTimes(void)
     ref_extra = phys_extra = main_extra = 0;
 }
 
+void
+CL_GetBalance(char* uid) {
+	if(cls.balance_refreshed) {
+		return;
+    }
+
+    balance = CL_Smilo_GetBalance(uid);
+    Com_Printf("Balance refreshed!\n");
+    cls.balance_refreshed = true;
+}
+
 /*
 	Checks if the bet placed by the computer was confirmed.
 	This is just to inform the player. No actions are taken here.
@@ -3143,7 +3173,7 @@ void CL_UpdateFrameTimes(void)
 	every second a message (count down) is posted.
 */
 void
-CL_CheckBetConfirmed() {
+CL_CheckBetConfirmed(char* uid) {
 	if(cls.bet_confirmed)
 		return;
 
@@ -3151,15 +3181,32 @@ CL_CheckBetConfirmed() {
 	if(elapsed >= 2000) {
 		cls.last_bet_check_time = cls.realtime;
 		cls.bet_check_count++;
-		if(CL_Smilo_BetConfirmed()) {
+        int betConfirmed = CL_Smilo_BetConfirmed(uid);
+		if(betConfirmed) {
 			Com_Printf("Your bet has been confirmed by the Smilo Blockchain!\n");
 			cls.bet_confirmed = true;
+            CL_GetBalance(uid);
 		}
 		else {
 			Com_Printf("Your bet has NOT yet been confirmed...\n");
 		}
 	}
 }
+
+void CL_Smilo_ConfirmedParticipate(void)
+{   
+    // Put out of spectator mode
+    Cvar_Set("spectator", "0");
+    confirmedParticipate = true;
+    CL_Smilo_Connected(current_player_uid, contract_address);
+    UI_PopMenu();
+}
+
+static const cmdreg_t cl_smilo_commands[] = {
+    { "confirmparticipate", CL_Smilo_ConfirmedParticipate },
+
+    { NULL }
+};
 
 /*
 ==================
@@ -3336,8 +3383,14 @@ run_fx:
 
     main_extra = 0;
 
-    if(cls.state == ca_connected)
-		CL_CheckBetConfirmed();
+    if (confirmedParticipate) {
+		CL_CheckBetConfirmed(current_player_uid);
+    }
+
+    if (!participateCommandDefined) {
+        Cmd_Register(cl_smilo_commands);
+        participateCommandDefined = true;
+    }
 
     return 0;
 }

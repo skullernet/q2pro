@@ -1488,7 +1488,6 @@ static int try_image_format(imageformat_t fmt, image_t *image, byte **pic)
     return _try_image_format(fmt, image, pic);
 }
 
-
 #if USE_PNG || USE_JPG || USE_TGA
 
 // tries to load the image with a different extension
@@ -1710,12 +1709,14 @@ image_t *IMG_Find(const char *name, imagetype_t type, imageflags_t flags)
     int ret;
 
     if (!name) {
+        Com_EPrintf("ERROR: Couldn't load image: %s \n", name);
         Com_Error(ERR_FATAL, "%s: NULL", __func__);
     }
 
     // this should never happen
     len = strlen(name);
     if (len >= MAX_QPATH) {
+        Com_EPrintf("ERROR: Couldn't load image: %s \n", name);
         Com_Error(ERR_FATAL, "%s: oversize name", __func__);
     }
 
@@ -1725,9 +1726,10 @@ image_t *IMG_Find(const char *name, imagetype_t type, imageflags_t flags)
     }
 
     // don't spam about missing images
-    if (ret != Q_ERR_NOENT) {
-        Com_EPrintf("Couldn't load %s: %s\n", name, Q_ErrorString(ret));
-    }
+    // if (ret != Q_ERR_NOENT) {
+        // Com_Printf("HERE!!!");
+        Com_EPrintf("ERROR: Couldn't load %s: %s\n", name, Q_ErrorString(ret));
+    // }
 
     return R_NOTEXTURE;
 }
@@ -1763,6 +1765,8 @@ qhandle_t R_RegisterImage(const char *name, imagetype_t type,
     if (!*name) {
         if (err_p)
             *err_p = Q_ERR_NAMETOOSHORT;
+
+        Com_EPrintf("ERROR: Couldn't load image (name too short): %s \n", name);
         return 0;
     }
 
@@ -1770,6 +1774,8 @@ qhandle_t R_RegisterImage(const char *name, imagetype_t type,
     if (!r_numImages) {
         if (err_p)
             *err_p = Q_ERR_AGAIN;
+
+        Com_EPrintf("ERROR: Couldn't load image (not initialized): %s \n", name);    
         return 0;
     }
 
@@ -1791,20 +1797,22 @@ qhandle_t R_RegisterImage(const char *name, imagetype_t type,
         err = Q_ERR_NAMETOOLONG;
         goto fail;
     }
-
     err = find_or_load_image(fullname, len, type, flags, &image);
     if (image) {
         if (err_p)
             *err_p = Q_ERR_SUCCESS;
+
         return image - r_images;
     }
 
 fail:
     // don't spam about missing images
-    if (err_p)
+    if (err_p) {
         *err_p = err;
-    else if (err != Q_ERR_NOENT)
-        Com_EPrintf("Couldn't load %s: %s\n", fullname, Q_ErrorString(err));
+    }
+    else if (err != Q_ERR_NOENT) {
+        Com_EPrintf("ERROR: Couldn't load %s: %s\n", fullname, Q_ErrorString(err));
+    }
 
     return 0;
 }

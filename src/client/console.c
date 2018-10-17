@@ -428,6 +428,7 @@ static const cmdreg_t c_console[] = {
     { NULL }
 };
 
+
 /*
 ================
 Con_Init
@@ -642,7 +643,6 @@ void Con_RegisterMedia(void)
             Com_Error(ERR_FATAL, "Couldn't load pics/conchars.pcx: %s", Q_ErrorString(err));
         }
     }
-
     con.backImage = R_RegisterImage(con_background->string, IT_PIC, IF_PERMANENT, &err);
     if (!con.backImage) {
         if (strcmp(con_background->string, "conback")) {
@@ -974,6 +974,9 @@ static void Con_DrawSolidConsole(void)
 
 //=============================================================================
 
+#include "./ui/ui.h"
+int mainDrawn = 0;
+
 /*
 ==================
 Con_RunConsole
@@ -983,6 +986,20 @@ Scroll it up or down
 */
 void Con_RunConsole(void)
 {
+    if (mainDrawn == 0) {
+        mainDrawn = 1;
+        menuFrameWork_t *menu;
+        char *s;
+
+        s = "main";
+        menu = UI_FindMenu(s);
+        if (menu) {
+            UI_PushMenu(menu);
+        } else {
+            Com_Printf("Could not find main menu!");
+        }
+    }
+    
     if (cls.disable_screen) {
         con.destHeight = con.currentHeight = 0;
         return;

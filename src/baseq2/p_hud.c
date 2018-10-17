@@ -61,7 +61,7 @@ void MoveClientToIntermission(edict_t *ent)
     // add the layout
 
     if (deathmatch->value || coop->value) {
-        DeathmatchScoreboardMessage(ent, NULL);
+        DeathmatchScoreboardMessage(ent, NULL, 1);
         gi.unicast(ent, true);
     }
 
@@ -140,14 +140,13 @@ void BeginIntermission(edict_t *targ)
     }
 }
 
-
 /*
 ==================
 DeathmatchScoreboardMessage
 
 ==================
 */
-void DeathmatchScoreboardMessage(edict_t *ent, edict_t *killer)
+void DeathmatchScoreboardMessage(edict_t *ent, edict_t *killer, int endmessage)
 {
     char    entry[1024];
     char    string[1400];
@@ -187,15 +186,35 @@ void DeathmatchScoreboardMessage(edict_t *ent, edict_t *killer)
     stringlength = strlen(string);
 
     // add the clients in sorted order
-    if (total > 12)
-        total = 12;
+    // if (total > 12) {
+    //     total = 12;
+    // }
 
-    for (i = 0 ; i < total ; i++) {
+    cl = &game.clients[sorted[0]];
+
+    Q_snprintf(entry, sizeof(entry),
+                "topscore %i %i %i %i %i %i ",
+                0, 0, sorted[i], cl->resp.score, cl->ping, (level.framenum - cl->resp.enterframe) / 600);
+
+    j = strlen(entry);
+    strcpy(string + stringlength, entry);
+    stringlength += j;
+
+    int amountToCheck = total;
+
+    if (amountToCheck > 3) {
+        amountToCheck = 3;
+    }
+
+    for (i = 0 ; i < amountToCheck ; i++) {
         cl = &game.clients[sorted[i]];
         cl_ent = g_edicts + 1 + sorted[i];
 
-        x = (i >= 6) ? 160 : 0;
-        y = 32 + 32 * (i % 6);
+        // x = (i >= 6) ? 160 : 0;
+        // y = 32 + 32 * (i % 6);
+
+        x = 56;
+        y = 60 + (i * 10);
 
         // add a dogtag
         if (cl_ent == ent)
@@ -204,20 +223,22 @@ void DeathmatchScoreboardMessage(edict_t *ent, edict_t *killer)
             tag = "tag2";
         else
             tag = NULL;
-        if (tag) {
-            Q_snprintf(entry, sizeof(entry),
-                       "xv %i yv %i picn %s ", x + 32, y, tag);
-            j = strlen(entry);
-            if (stringlength + j > 1024)
-                break;
-            strcpy(string + stringlength, entry);
-            stringlength += j;
+        if (tag) { // So yeah this is about the background of each player in the scoreboard
+            // Q_snprintf(entry, sizeof(entry),
+            //            "xv %i yv %i picn %s ", x + 32, y, tag);
+            // j = strlen(entry);
+            // if (stringlength + j > 1024)
+            //     break;
+            // strcpy(string + stringlength, entry);
+            // stringlength += j;
         }
-
+        char place[1024];
+        sprintf(place, "%d", (i + 1));
         // send the layout
+        
         Q_snprintf(entry, sizeof(entry),
-                   "client %i %i %i %i %i %i ",
-                   x, y, sorted[i], cl->resp.score, cl->ping, (level.framenum - cl->resp.enterframe) / 600);
+                   "client %i %i %i %i %i %i %s %d %d ",
+                   x, y, sorted[i], cl->resp.score, cl->ping, (level.framenum - cl->resp.enterframe) / 600, place, total, endmessage);
         j = strlen(entry);
         if (stringlength + j > 1024)
             break;
@@ -240,7 +261,7 @@ Note that it isn't that hard to overflow the 1400 byte message limit!
 */
 void DeathmatchScoreboard(edict_t *ent)
 {
-    DeathmatchScoreboardMessage(ent, ent->enemy);
+    DeathmatchScoreboardMessage(ent, ent->enemy, 0);
     gi.unicast(ent, true);
 }
 
@@ -318,7 +339,7 @@ void HelpComputer(edict_t *ent)
 ==================
 Cmd_Help_f
 
-Display the current help message
+Display the current help message - SCOREBOARD MESSAGE NOT HELP
 ==================
 */
 void Cmd_Help_f(edict_t *ent)
@@ -360,6 +381,7 @@ void G_SetStats(edict_t *ent)
     // health
     //
     ent->client->ps.stats[STAT_HEALTH_ICON] = level.pic_health;
+    ent->client->ps.stats[STAT_SMILO_ICON] = level.pic_smilo_icon;
     ent->client->ps.stats[STAT_HEALTH] = ent->health;
 
     //
@@ -429,6 +451,14 @@ void G_SetStats(edict_t *ent)
         ent->client->ps.stats[STAT_TIMER_ICON] = 0;
         ent->client->ps.stats[STAT_TIMER] = 0;
     }
+    float timelimit = gi.cvar("timelimit", "0", CVAR_SERVERINFO)->value * 60;
+    ent->client->ps.stats[STAT_TIME_LIMIT] = timelimit;
+    ent->client->ps.stats[STAT_FRAG_LIMIT] = fraglimit->value;
+    
+    float leveltime = level.time;
+    float remainingtime = timelimit - leveltime;
+    ent->client->ps.stats[STAT_LEVEL_TIMER] = remainingtime;
+
 
     //
     // selected item

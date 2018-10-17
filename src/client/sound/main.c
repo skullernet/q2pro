@@ -819,30 +819,39 @@ void S_StartSound(const vec3_t origin, int entnum, int entchannel, qhandle_t hSf
     playsound_t *ps, *sort;
     sfx_t       *sfx;
 
-    if (!s_started)
+    if (!s_started) {
         return;
-    if (!s_active)
+    }
+    if (!s_active) {
         return;
+    }
 
     if (!(sfx = S_SfxForHandle(hSfx))) {
+        Com_EPrintf("ERROR: Couldn't load sound: %s \n", sfx->name);
         return;
     }
 
     if (sfx->name[0] == '*') {
         sfx = S_RegisterSexedSound(entnum, sfx->name);
-        if (!sfx)
+        if (!sfx) {
+            Com_EPrintf("ERROR: Couldn't load sound: %s \n", sfx->name);
             return;
+        }
     }
 
     // make sure the sound is loaded
     sc = S_LoadSound(sfx);
-    if (!sc)
+    if (!sc) {
+        Com_EPrintf("ERROR: Couldn't load sound: %s \n", sfx->name);
         return;     // couldn't load the sound's data
+    }
 
     // make the playsound_t
     ps = S_AllocPlaysound();
-    if (!ps)
+    if (!ps) {
+        Com_EPrintf("ERROR: Couldn't load sound: %s \n", sfx->name);
         return;
+    }
 
     if (origin) {
         VectorCopy(origin, ps->origin);

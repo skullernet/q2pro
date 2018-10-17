@@ -752,6 +752,14 @@ static const char dm_statusbar[] =
 "xv 50 "
 "pic 0 "
 
+// smilopay 
+"xv	-160 "
+"yb -24 "
+"picn icon.png "
+"xv	-135 "
+"yb -24 "
+"spay "
+
 // ammo
 "if 2 "
 "   xv  100 "
@@ -803,7 +811,12 @@ static const char dm_statusbar[] =
 //  frags
 "xr -50 "
 "yt 2 "
-"num 3 14 "
+"frags 3 14 "
+
+// time counter
+"xr -85 "
+"yb -24 "
+"leveltime "
 
 // spectator
 "if 17 "
@@ -885,6 +898,11 @@ void SP_worldspawn(edict_t *ent)
     // help icon for statusbar
     gi.imageindex("i_help");
     level.pic_health = gi.imageindex("i_health");
+    level.pic_smilo_icon = gi.imageindex("icon");
+    level.loading_spay_0 = gi.imageindex("loading_spay_0");
+    level.loading_spay_1 = gi.imageindex("loading_spay_1");
+    level.loading_spay_2 = gi.imageindex("loading_spay_2");
+    level.loading_spay_3 = gi.imageindex("loading_spay_3");
     gi.imageindex("help");
     gi.imageindex("field_3");
 
