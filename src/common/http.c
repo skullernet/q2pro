@@ -2,9 +2,18 @@
 #include <stdlib.h> /* exit, atoi, malloc, free */
 #include <unistd.h> /* read, write, close */
 #include <string.h> /* memcpy, memset */
-#include <sys/socket.h> /* socket, connect */
-#include <netinet/in.h> /* struct sockaddr_in, struct sockaddr */
-#include <netdb.h> /* struct hostent, gethostbyname */
+
+#ifdef _WIN64
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
+    #include <windows.h>
+    #pragma comment(lib,"ws2_32.lib") //Winsock Library
+#else
+    #include <sys/socket.h> /* socket, connect */
+    #include <netinet/in.h> /* struct sockaddr_in, struct sockaddr */
+    #include <netdb.h> /* struct hostent, gethostbyname */
+#endif
+
 #include "../../inc/common/http.h"
 
 int str_index_of(char search, char* str, int strSize) {
