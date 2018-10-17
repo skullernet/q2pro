@@ -1,9 +1,12 @@
-/.config*
+/.config
 /.q2pro/
 /.q2proded/
 /.baseq2/
-/q2pro*
-/q2proded*
+/q2pro
+/q2pro.exe
+/q2proded
+/q2proded.exe
+/*.dll
 /baseq2/
 /game*.so
 /game*.dll
