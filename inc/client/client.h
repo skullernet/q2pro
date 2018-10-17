@@ -95,7 +95,7 @@ void SCR_UpdateScreen(void);
 #define U32_RED     MakeColor(255,   0,   0, 255)
 #define U32_GREEN   MakeColor(  0, 255,   0, 255)
 #define U32_YELLOW  MakeColor(255, 255,   0, 255)
-#define U32_BLUE    MakeColor(  0,   0, 255, 255)
+#define U32_BLUE    MakeColor(  0,   0, 255, 200)
 #define U32_CYAN    MakeColor(  0, 255, 255, 255)
 #define U32_MAGENTA MakeColor(255,   0, 255, 255)
 #define U32_WHITE   MakeColor(255, 255, 255, 255)

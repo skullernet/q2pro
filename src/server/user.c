@@ -480,6 +480,11 @@ void SV_New_f(void)
     SV_ClientCommand(sv_client, "precache %i\n", sv_client->spawncount);
 }
 
+void SV_Spectator(void) {
+    Com_Printf("SV_Spectator \n");
+}
+
+
 /*
 ==================
 SV_Begin_f

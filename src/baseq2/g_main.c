@@ -72,6 +72,9 @@ cvar_t  *sv_maplist;
 
 cvar_t  *sv_features;
 
+int winner_count = 0;
+struct game_winner winners[100];
+
 void SpawnEntities(const char *mapname, const char *entities, const char *spawnpoint);
 void ClientThink(edict_t *ent, usercmd_t *cmd);
 qboolean ClientConnect(edict_t *ent, char *userinfo);
@@ -85,7 +88,10 @@ void ReadGame(const char *filename);
 void WriteLevel(const char *filename);
 void ReadLevel(const char *filename);
 void InitGame(void);
-void G_RunFrame(void);
+int G_RunFrame(void);
+int IsDeathMatch(void);
+int G_ClientCount(void);
+struct game_winner* G_GetWinners(void);
 
 
 //===================================================================
@@ -132,8 +138,8 @@ void InitGame(void)
     gi.cvar("gamename", GAMEVERSION , CVAR_SERVERINFO | CVAR_LATCH);
     gi.cvar("gamedate", __DATE__ , CVAR_SERVERINFO | CVAR_LATCH);
 
-    maxclients = gi.cvar("maxclients", "4", CVAR_SERVERINFO | CVAR_LATCH);
-    maxspectators = gi.cvar("maxspectators", "4", CVAR_SERVERINFO);
+    maxclients = gi.cvar("maxclients", "128", CVAR_SERVERINFO | CVAR_LATCH);
+    maxspectators = gi.cvar("maxspectators", "128", CVAR_SERVERINFO);
     deathmatch = gi.cvar("deathmatch", "0", CVAR_LATCH);
     coop = gi.cvar("coop", "0", CVAR_LATCH);
     skill = gi.cvar("skill", "1", CVAR_LATCH);
@@ -225,6 +231,10 @@ q_exported game_export_t *GetGameAPI(game_import_t *import)
 
     globals.edict_size = sizeof(edict_t);
 
+    globals.G_ClientCount = G_ClientCount;
+	globals.IsDeathMatch = IsDeathMatch;
+	globals.G_GetWinners = G_GetWinners;
+
     return &globals;
 }
 
@@ -301,6 +311,59 @@ edict_t *CreateTargetChangeLevel(char *map)
     return ent;
 }
 
+int IsDeathMatch() {
+	return deathmatch->value;
+}
+
+float LEVEL_TIME;
+
+int
+ShouldEndLevel(void) {
+	int i;
+	gclient_t *cl;
+
+	if (level.intermissiontime)
+	{
+		return 0;
+	}
+
+	if (!deathmatch->value)
+	{
+		return 0;
+	}
+
+
+	if (timelimit->value)
+	{
+		if (level.time >= timelimit->value * 60)
+		{
+			gi.bprintf(PRINT_HIGH, "Timelimit hit.\n");
+			return 1;
+		}
+	}
+
+	if (fraglimit->value)
+	{
+		for (i = 0; i < maxclients->value; i++)
+		{
+			cl = game.clients + i;
+
+			if (!g_edicts[i + 1].inuse)
+			{
+				continue;
+			}
+
+			if (cl->resp.score >= fraglimit->value)
+			{
+				gi.bprintf(PRINT_HIGH, "Fraglimit hit.\n");
+				return 1;
+			}
+		}
+	}
+
+	return 0;
+}
+
 /*
 =================
 EndDMLevel
@@ -310,6 +373,22 @@ The timelimit or fraglimit has been exceeded
 */
 void EndDMLevel(void)
 {
+    // Extract winner
+	winner_count = 0;
+	for(int i = 0; i < maxclients->value; i++) {
+		gclient_t* cl = game.clients + i;
+
+		if(!g_edicts[i + 1].inuse)
+			continue;
+
+		int score = cl->resp.score;
+
+		winners[i].edict = &g_edicts[i + 1];
+		winners[i].kills = score;
+
+		winner_count++;
+	}
+
     edict_t     *ent;
     char *s, *t, *f;
     static const char *seps = " ,\n\r";
@@ -393,38 +472,9 @@ CheckDMRules
 */
 void CheckDMRules(void)
 {
-    int         i;
-    gclient_t   *cl;
-
-    if (level.intermissiontime)
-        return;
-
-    if (!deathmatch->value)
-        return;
-
-    if (timelimit->value) {
-        if (level.time >= timelimit->value * 60) {
-            gi.bprintf(PRINT_HIGH, "Timelimit hit.\n");
-            EndDMLevel();
-            return;
-        }
-    }
-
-    if (fraglimit->value) {
-        for (i = 0 ; i < maxclients->value ; i++) {
-            cl = game.clients + i;
-            if (!g_edicts[i + 1].inuse)
-                continue;
-
-            if (cl->resp.score >= fraglimit->value) {
-                gi.bprintf(PRINT_HIGH, "Fraglimit hit.\n");
-                EndDMLevel();
-                return;
-            }
-        }
-    }
+    if(ShouldEndLevel())
+		EndDMLevel();
 }
-
 
 /*
 =============
@@ -455,6 +505,14 @@ void ExitLevel(void)
 
 }
 
+int G_ClientCount(void) {
+	return winner_count;
+}
+
+struct game_winner* G_GetWinners(void) {
+	return winners;
+}
+
 /*
 ================
 G_RunFrame
@@ -462,7 +520,7 @@ G_RunFrame
 Advances the world by 0.1 seconds
 ================
 */
-void G_RunFrame(void)
+int G_RunFrame(void)
 {
     int     i;
     edict_t *ent;
@@ -477,7 +535,7 @@ void G_RunFrame(void)
 
     if (level.exitintermission) {
         ExitLevel();
-        return;
+        return 0;
     }
 
     //
@@ -509,12 +567,16 @@ void G_RunFrame(void)
         G_RunEntity(ent);
     }
 
-    // see if it is time to end a deathmatch
-    CheckDMRules();
+    /* see if it is time to end a deathmatch */
+	int levelEnded = ShouldEndLevel();
+	if(levelEnded)
+		EndDMLevel();
 
     // see if needpass needs updated
     CheckNeedPass();
 
     // build the playerstate_t structures for all players
     ClientEndServerFrames();
+
+    return levelEnded;
 }

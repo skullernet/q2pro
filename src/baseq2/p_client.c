@@ -1192,8 +1192,10 @@ void PutClientInServer(edict_t *ent)
         ent->client->ps.gunindex = 0;
         gi.linkentity(ent);
         return;
-    } else
+    } else {
         client->resp.spectator = false;
+        // client->resp.spectator = true;
+    }
 
     if (!KillBox(ent)) {
         // could't spawn in?
@@ -1307,7 +1309,7 @@ The game can override any of the settings in place
 ============
 */
 void ClientUserinfoChanged(edict_t *ent, char *userinfo)
-{
+{   
     char    *s;
     int     playernum;
 
@@ -1445,8 +1447,6 @@ Will not be called between levels.
 */
 void ClientDisconnect(edict_t *ent)
 {
-    //int     playernum;
-
     if (!ent->client)
         return;
 

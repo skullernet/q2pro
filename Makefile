@@ -159,11 +159,13 @@ COMMON_OBJS := \
     src/common/sizebuf.o    \
     src/common/utils.o      \
     src/common/zone.o       \
-    src/shared/shared.o
+    src/common/http.o      \
+    src/shared/shared.o 
 
 OBJS_c := \
     $(COMMON_OBJS)          \
     src/shared/m_flash.o    \
+    src/client/smilo.o      \
     src/client/ascii.o      \
     src/client/console.o    \
     src/client/crc.o        \
@@ -186,6 +188,7 @@ OBJS_c := \
     src/client/sound/main.o \
     src/client/sound/mem.o  \
     src/server/commands.o   \
+    src/server/smilo.o      \
     src/server/entities.o   \
     src/server/game.o       \
     src/server/init.o       \
@@ -198,6 +201,7 @@ OBJS_c := \
 OBJS_s := \
     $(COMMON_OBJS)  \
     src/client/null.o       \
+    src/server/smilo.o      \
     src/server/commands.o   \
     src/server/entities.o   \
     src/server/game.o       \
@@ -264,8 +268,15 @@ OBJS_g := \
 ifdef CONFIG_HTTP
     CURL_CFLAGS ?= $(shell pkg-config libcurl --cflags)
     CURL_LIBS ?= $(shell pkg-config libcurl --libs)
+
+    # Add to client
     CFLAGS_c += -DUSE_CURL=1 $(CURL_CFLAGS)
     LIBS_c += $(CURL_LIBS)
+
+    # Add to server
+    CFLAGS_s += -DUSE_CURL=1 $(CURL_CFLAGS)
+    LIBS_s += $(CURL_LIBS)
+
     OBJS_c += src/client/http.o
 endif
 

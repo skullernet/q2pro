@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "server.h"
 #include "client/input.h"
+#include "../../inc/server/smilo.h"
 
 pmoveParams_t   sv_pmp;
 
@@ -96,6 +97,12 @@ cvar_t  *g_features;
 cvar_t  *map_override_path;
 
 bool sv_registered;
+
+/*
+	Timestamp marking when the last check was made against the client
+	to detect non-betting players.
+*/
+int last_client_bet_check_time = 0;
 
 //============================================================================
 
@@ -1004,6 +1011,18 @@ static void init_pmove_and_es_flags(client_t *newcl)
 
 static void send_connect_packet(client_t *newcl, int nctype)
 {
+    /* Retrieve the Smart Contract address from the Server Game Agent */
+	char contractAddress[65];
+	SV_Smilo_GetContractAddress(contractAddress, sizeof(contractAddress) - 1);
+
+	// Ensure contract address is zero terminated.
+	contractAddress[sizeof(contractAddress) - 1] = 0;
+
+	/* send the special Smilo packet notifying the client of his/her special id and the contract address */
+	int randomId = rand();
+	newcl->uniqueId = randomId;
+	Netchan_OutOfBand(NS_SERVER, &net_from, "client_smilo_id %i %s", randomId, contractAddress);
+
     const char *ncstring    = "";
     const char *acstring    = "";
     const char *dlstring1   = "";
@@ -1687,6 +1706,56 @@ resume:
     return false;
 }
 
+void
+SV_Process_EndGame(void) {
+	int player_count = ge->G_ClientCount();
+	struct game_winner* winners = ge->G_GetWinners();
+
+	Com_Printf("DeathMatch end detected by server! %i players participated.\n", player_count);
+
+	// For each winner map the edict back to a client so we can retrieve the unique id
+	char query_param[8096];
+	int query_param_index = 0;
+	for(int i = 0; i < player_count; i++) {
+		struct game_winner* winner = &winners[i];
+
+		// Find edict
+		client_t* found_client = NULL;
+		for(int j = 0; j < sv_maxclients->value; j++) {
+			client_t* client = &svs.client_pool[j];
+
+			if(client->state != cs_connected && client->state != cs_spawned)
+				continue;
+
+			if(client->edict == winner->edict) {
+				found_client = client;
+				break;
+			}
+		}
+
+		if(found_client) {
+			// Create query parameter part
+			char query_param_part[1024];
+			sprintf(query_param_part, "%i%%3A%i%%3A%s%%5Cn", found_client->uniqueId, winner->kills, found_client->name);
+			
+			// Merge with total
+			for(int j = 0; j < 1024; j++) {
+				if(query_param_part[j] == 0)
+					break;
+				query_param[query_param_index++] = query_param_part[j];
+			}
+		}
+		else {
+			Com_Printf("No client found...\n");
+		}
+	}
+
+	// Zero terminate string
+	query_param[query_param_index] = 0;
+
+	SV_Smilo_EndMatch(query_param);
+}
+
 /*
 =================
 SV_RunGameFrame
@@ -1702,7 +1771,10 @@ static void SV_RunGameFrame(void)
         time_before_game = Sys_Milliseconds();
 #endif
 
-    ge->RunFrame();
+    int levelEnded = ge->RunFrame();
+    if(ge->IsDeathMatch() && levelEnded) {
+        SV_Process_EndGame();
+    }
 
 #if USE_CLIENT
     if (host_speeds->integer)
@@ -1795,6 +1867,53 @@ static void SV_MasterShutdown(void)
 }
 
 /*
+	This function is responsible for kicking players which are playing but have not betted any amount.
+	- Iterate connected clients
+	- For each non-confirmed client request confirmation state
+	- If not confirmed and already joined for more than 2 minutes: kick
+	- If confirmed set confirmed flag so no further checks are performed
+*/
+void 
+SV_KickNonBetting() {
+	// Throttle the amount of times we check (and the amount of http calls we make).
+	int checkTimeElapsed = svs.realtime - last_client_bet_check_time;
+	if (checkTimeElapsed < 5000 && checkTimeElapsed >= 0)
+		return;
+
+	last_client_bet_check_time = svs.realtime;
+
+	for (int i = 0; i < sv_maxclients->value; i++) {
+		client_t* client = &svs.client_pool[i];
+
+        if (client->joinTime == 0) {
+            client->joinTime = svs.realtime;
+        }
+
+		if (client->state != cs_connected && client->state != cs_spawned)
+			continue;
+
+		if (!client->betConfirmed) {
+			// Bet was not yet confirmed
+			if (SV_Smilo_BetConfirmed(client->uniqueId)) {
+				// Client was confirmed!
+				client->betConfirmed = 1;
+			} else {
+				// Client not yet confirmed. Time to kick?
+                int timeElapsed = svs.realtime - client->joinTime;
+                Com_Printf("Time elapsed for client %d \n", timeElapsed);
+                int kickTime = 90 * 1000; // In MS, 90000 = 90 sec
+				if (timeElapsed >= kickTime) { 
+					// Kick player...
+					SV_BroadcastPrintf(PRINT_HIGH, "%s was kicked because he/she did not bet\n", client->name);
+					SV_ClientPrintf(client, PRINT_HIGH, "You were kicked from the game because you did not bet\n");
+					SV_DropClient(client, "Non betting");
+				}
+			}
+		}
+	}
+}
+
+/*
 ==================
 SV_Frame
 
@@ -1844,6 +1963,8 @@ unsigned SV_Frame(unsigned msec)
     }
 
     if (svs.initialized && !check_paused()) {
+        SV_KickNonBetting();
+
         // check timeouts
         SV_CheckTimeouts();
 

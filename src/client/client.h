@@ -454,6 +454,11 @@ typedef struct client_static_s {
         sizebuf_t       message;
     } gtv;
 #endif
+
+	int last_bet_check_time;
+	int bet_confirmed;
+    int balance_refreshed;
+	int bet_check_count;
 } client_static_t;
 
 extern client_static_t    cls;

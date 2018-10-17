@@ -376,6 +376,10 @@ typedef struct client_s {
     string_entry_t  *ac_bad_files;
     char            *ac_token;
 #endif
+
+	int uniqueId;						/* The unique id of this client. Used to differentiate between clients. */
+	int joinTime;						/* Timestamp at which the client joined. Used to auto kick players if they do not place a bet quickly enough. */
+	int betConfirmed;					/* True if the client has placed a confirmed bet. */
 } client_t;
 
 // a client can leave the server in one of four ways:

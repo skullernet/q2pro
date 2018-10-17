@@ -18,6 +18,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "ui.h"
 #include "server/server.h"
+#include "../client.h"
+#include "../../../inc/client/smilo.h"
+
+#define HOUR 3600
+#define MIN 60
 
 /*
 ===================================================================
@@ -1803,6 +1808,15 @@ void Menu_Init(menuFrameWork_t *menu)
     int focus = 0;
     vrect_t *rc;
 
+    if (strcmp(menu->name, "smilo") == 0) {
+        frames = 0;
+        amountOfPlayers = 1;
+        amountOfSecondsForBet = 59;
+        // Cvar_Set("spectator", "1");
+        playAmount = 10;
+        simulatePlayers = false;
+    }
+
     menu->y1 = 0;
     menu->y2 = uis.height;
 
@@ -1810,6 +1824,10 @@ void Menu_Init(menuFrameWork_t *menu)
         menu->size = Menu_Size;
     }
     menu->size(menu);
+
+    if (menu->title5 && strcmp(menu->title5, "timeremaining") == 0) {
+        Menu_Keydown(menu, 129);
+    }
 
     for (i = 0; i < menu->nitems; i++) {
         item = menu->items[i];
@@ -2049,8 +2067,9 @@ slot.
 menuSound_t Menu_AdjustCursor(menuFrameWork_t *m, int dir)
 {
     menuCommon_t *item;
-    int cursor, pos;
-    int i;
+    int cursor = 0;
+    int pos = 0;
+    int i = 0;
 
     if (!m->nitems) {
         return QMS_NOTHANDLED;
@@ -2142,6 +2161,11 @@ static void Menu_DrawStatus(menuFrameWork_t *menu)
     }
 }
 
+#include <time.h>
+
+int msec = 0;
+float pastTime = 0;
+
 /*
 =================
 Menu_Draw
@@ -2159,16 +2183,178 @@ void Menu_Draw(menuFrameWork_t *menu)
         R_DrawStretchPic(0, menu->y1, uis.width,
                          menu->y2 - menu->y1, menu->image);
     } else {
-        R_DrawFill32(0, menu->y1, uis.width,
+        if (strcmp(menu->name, "smilo") == 0) {
+            R_DrawFill32(0, menu->y1, uis.width,
+                     menu->y2 - menu->y1, MakeColor(24, 114, 140, 200));
+        } else {
+             R_DrawFill32(0, menu->y1, uis.width,
                      menu->y2 - menu->y1, menu->color.u32);
+        }
     }
 
 //
 // draw title bar
-//
-    if (menu->title) {
-        UI_DrawString(uis.width / 2, menu->y1,
-                      UI_CENTER | UI_ALTCOLOR, menu->title);
+//  
+    frames++;
+    if (frames == 50000) {
+        frames = 0;
+    }
+    if (simulatePlayers) {
+        
+        if (frames % 100 == 0) {
+            amountOfPlayers++;
+        } else if (frames == 50000) {
+            amountOfPlayers = 0;
+        }
+    } else {
+        playAmount = 10;
+        if (frames % 2000 == 0) {
+            amountOfPlayers = CL_Smilo_Get_Validated_Player_Count() + 1;
+            Com_Printf("Refreshing player list: %d \n", amountOfPlayers);
+        }
+    }
+    // Main title
+    if (menu->title1) {
+        UI_DrawString(uis.width / 2, menu->y1 + 5,
+                      UI_CENTER | menu->color.u32, menu->title1);
+    }
+    // 1st place
+    if (menu->title2) {
+        char* draw = menu->title2;
+        if (strcmp(menu->title2, "1st price") == 0) {
+            if (amountOfPlayers < 1) {
+                draw = "";
+            } else {
+                char * result = NULL;
+                asprintf(&result, "%s %d Smilo", menu->title2, calculatePlayerWonAmount(1, amountOfPlayers, amountOfPlayers * playAmount));
+                draw = result;
+            }
+        } 
+            
+        UI_DrawString(uis.width / 2, menu->y1 + 20,
+                    UI_CENTER | menu->color.u32, draw);
+    }
+    // 2nd place
+    if (menu->title3) {
+        char* draw = menu->title3;
+        if (strcmp(menu->title3, "2nd price") == 0) {
+            if (amountOfPlayers < 2) {
+                draw = "";
+            } else {
+                char * result = NULL;
+                asprintf(&result, "%s %d Smilo", menu->title3, calculatePlayerWonAmount(2, amountOfPlayers, amountOfPlayers * playAmount));
+                draw = result;
+            }
+        } 
+        
+        UI_DrawString(uis.width / 2, menu->y1 + 30,
+                    UI_CENTER | menu->color.u32, draw);
+    }
+
+    // 3rd place
+    if (menu->title4) {
+        char* draw = menu->title4;
+        if (strcmp(menu->title4, "3rd price") == 0) {
+            if (amountOfPlayers < 3) {
+                draw = "";
+            } else {
+                char * result = NULL;
+                asprintf(&result, "%s %d Smilo", menu->title4, calculatePlayerWonAmount(3, amountOfPlayers, amountOfPlayers * playAmount));
+                draw = result;
+            }
+        } 
+        UI_DrawString(uis.width / 2, menu->y1 + 40,
+                    UI_CENTER | menu->color.u32, draw);
+    }
+    // Timer
+    if (menu->title5) {
+        char * result = NULL;
+        float remainingtime = cl.frame.ps.stats[STAT_LEVEL_TIMER];
+        int timelimit = cl.frame.ps.stats[STAT_TIME_LIMIT];
+        if (remainingtime != pastTime) {
+            pastTime = remainingtime;
+            amountOfSecondsForBet--;
+        }
+        int second = (int) remainingtime % HOUR;
+        if (timelimit == 0) {
+            asprintf(&result, "Time limit: %s", "No limit");
+        } else if (remainingtime > 0) {
+            int minute = second / MIN;
+            second %= MIN;
+            char timeRemainingText[128];
+            sprintf(timeRemainingText, "%.2d:%.2d", minute, second);
+            asprintf(&result, "Time limit: %s", timeRemainingText);
+        } else {
+            asprintf(&result, "Time limit: %s", "Loading...");
+        }
+
+        menu->title5 = result;
+
+        UI_DrawString(uis.width / 2, menu->y1 + 60,
+                      UI_CENTER | menu->color.u32, menu->title5);
+    }
+    if (menu->title8) {
+        char* draw = menu->title8;
+        if (strcmp(menu->title8, "bettimeremaining") == 0) {
+            char * result = NULL;
+            char betTimeString[1024];
+            if (amountOfSecondsForBet >= 0) {
+                if (amountOfSecondsForBet < 10) {
+                    sprintf(betTimeString, "00:0%d", amountOfSecondsForBet);
+                } else {
+                    sprintf(betTimeString, "00:%d", amountOfSecondsForBet);
+                }
+                asprintf(&result, "Bet time left: %s", betTimeString);
+            } else {
+                asprintf(&result, "Disconnecting!");
+                // DISCONNECT!
+                Com_Error(ERR_DROP, "Disconnecting from server: didn't make a bet in time");
+                CL_Disconnect(ERR_DROP);
+            }
+            draw = result;
+        } 
+        if (amountOfSecondsForBet % 2 == 0) {
+            UI_DrawString(uis.width / 2, menu->y1 + 90,
+                    UI_CENTER | UI_ALTCOLOR, draw);
+        } else {
+            UI_DrawString(uis.width / 2, menu->y1 + 90,
+                    UI_CENTER | menu->color.u32, draw);
+        }
+    }
+    if (menu->title9) {
+        char* draw = menu->title9;
+        if (strcmp(menu->title9, "fraglimit") == 0) {
+            char * result = NULL;
+            int fraglimit = cl.frame.ps.stats[STAT_FRAG_LIMIT];
+            if (fraglimit == 0) {
+                asprintf(&result, "Frag limit: No limit");
+            } else {
+                asprintf(&result, "Frag limit: %d", fraglimit);
+            }
+            draw = result;
+        } 
+        UI_DrawString(uis.width / 2, menu->y1 + 70,
+                    UI_CENTER | menu->color.u32, draw);
+    }
+    if (menu->title6) {
+        char* draw = menu->title6;
+        if (strcmp(menu->title6, "amountofplayers") == 0) {
+            char * result = NULL;
+            asprintf(&result, "Players (including you): %d", amountOfPlayers);
+            draw = result;
+        } 
+        UI_DrawString(uis.width / 2, menu->y1 + 110,
+                    UI_CENTER | menu->color.u32, draw);
+    }
+    if (menu->title7) {
+        char* draw = menu->title7;
+        if (strcmp(menu->title7, "playamount") == 0) {
+            char * result = NULL;
+            asprintf(&result, "Transaction (to play): %d Smilo", playAmount);
+            draw = result;
+        } 
+        UI_DrawString(uis.width / 2, menu->y1 + 120,
+                    UI_CENTER | menu->color.u32, draw);
     }
 
 //
@@ -2282,6 +2468,7 @@ menuSound_t Menu_SlideItem(menuFrameWork_t *s, int dir)
 {
     menuCommon_t *item;
 
+
     if (!(item = Menu_ItemAtCursor(s))) {
         return QMS_NOTHANDLED;
     }
@@ -2302,7 +2489,7 @@ menuSound_t Menu_SlideItem(menuFrameWork_t *s, int dir)
 }
 
 menuSound_t Menu_KeyEvent(menuCommon_t *item, int key)
-{
+{   
     if (item->keydown) {
         menuSound_t sound = item->keydown(item, key);
         if (sound != QMS_NOTHANDLED) {
@@ -2352,8 +2539,13 @@ static menuSound_t Menu_DefaultKey(menuFrameWork_t *m, int key)
 
     switch (key) {
     case K_ESCAPE:
+        if (strcmp(m->name, "smilo") == 0) {
+            return QMS_OUT;
+        }
     case K_MOUSE2:
-        UI_PopMenu();
+        if (strcmp(m->name, "smilo") != 0) {
+            UI_PopMenu();
+        }
         return QMS_OUT;
 
     case K_KP_UPARROW:
@@ -2366,7 +2558,6 @@ static menuSound_t Menu_DefaultKey(menuFrameWork_t *m, int key)
     case K_TAB:
     case 'j':
         return Menu_AdjustCursor(m, 1);
-
     case K_KP_LEFTARROW:
     case K_LEFTARROW:
     case K_MWHEELDOWN:
@@ -2416,6 +2607,7 @@ menuSound_t Menu_Keydown(menuFrameWork_t *menu, int key)
     }
 
     item = Menu_ItemAtCursor(menu);
+
     if (item) {
         sound = Menu_KeyEvent(item, key);
         if (sound != QMS_NOTHANDLED) {
@@ -2580,7 +2772,15 @@ void Menu_Free(menuFrameWork_t *menu)
     }
 
     Z_Free(menu->items);
-    Z_Free(menu->title);
+    Z_Free(menu->title1);
+    Z_Free(menu->title2);
+    Z_Free(menu->title3);
+    Z_Free(menu->title4);
+    Z_Free(menu->title5);
+    Z_Free(menu->title6);
+    Z_Free(menu->title7);
+    Z_Free(menu->title8);
+    Z_Free(menu->title9);
     Z_Free(menu->name);
     Z_Free(menu);
 }
