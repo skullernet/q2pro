@@ -1064,7 +1064,8 @@ drop to full console
 =================
 */
 static void CL_Changing_f(void)
-{
+{   
+    Cvar_Set("spectator", "1");
     int i, j;
     char *s;
 

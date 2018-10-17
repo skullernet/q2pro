@@ -1808,6 +1808,15 @@ void Menu_Init(menuFrameWork_t *menu)
     int focus = 0;
     vrect_t *rc;
 
+    if (strcmp(menu->name, "smilo") == 0) {
+        frames = 0;
+        amountOfPlayers = 1;
+        amountOfSecondsForBet = 59;
+        // Cvar_Set("spectator", "1");
+        playAmount = 10;
+        simulatePlayers = false;
+    }
+
     menu->y1 = 0;
     menu->y2 = uis.height;
 
@@ -2152,10 +2161,11 @@ static void Menu_DrawStatus(menuFrameWork_t *menu)
     }
 }
 
-int frames = 0;
-int amountOfPlayers = 1;
-int playAmount = 10;
-bool simulatePlayers = false;
+#include <time.h>
+
+int msec = 0;
+float pastTime = 0;
+
 /*
 =================
 Menu_Draw
@@ -2205,7 +2215,7 @@ void Menu_Draw(menuFrameWork_t *menu)
     }
     // Main title
     if (menu->title1) {
-        UI_DrawString(uis.width / 2, menu->y1,
+        UI_DrawString(uis.width / 2, menu->y1 + 5,
                       UI_CENTER | menu->color.u32, menu->title1);
     }
     // 1st place
@@ -2256,19 +2266,26 @@ void Menu_Draw(menuFrameWork_t *menu)
         UI_DrawString(uis.width / 2, menu->y1 + 40,
                     UI_CENTER | menu->color.u32, draw);
     }
-    char * result = NULL;
-    float remainingtime = cl.frame.ps.stats[STAT_LEVEL_TIMER];
-    int second = (int) remainingtime % HOUR;
     // Timer
     if (menu->title5) {
-        if (remainingtime > 0) {
+        char * result = NULL;
+        float remainingtime = cl.frame.ps.stats[STAT_LEVEL_TIMER];
+        int timelimit = cl.frame.ps.stats[STAT_TIME_LIMIT];
+        if (remainingtime != pastTime) {
+            pastTime = remainingtime;
+            amountOfSecondsForBet--;
+        }
+        int second = (int) remainingtime % HOUR;
+        if (timelimit == 0) {
+            asprintf(&result, "Time limit: %s", "No limit");
+        } else if (remainingtime > 0) {
             int minute = second / MIN;
             second %= MIN;
             char timeRemainingText[128];
             sprintf(timeRemainingText, "%.2d:%.2d", minute, second);
-            asprintf(&result, "Round time left: %s", timeRemainingText);
+            asprintf(&result, "Time limit: %s", timeRemainingText);
         } else {
-            asprintf(&result, "Round time left: %s", "Loading...");
+            asprintf(&result, "Time limit: %s", "Loading...");
         }
 
         menu->title5 = result;
@@ -2281,8 +2298,39 @@ void Menu_Draw(menuFrameWork_t *menu)
         if (strcmp(menu->title8, "bettimeremaining") == 0) {
             char * result = NULL;
             char betTimeString[1024];
-            sprintf(betTimeString, "00:%d", second);
-            asprintf(&result, "Bet time left: %s", betTimeString);
+            if (amountOfSecondsForBet >= 0) {
+                if (amountOfSecondsForBet < 10) {
+                    sprintf(betTimeString, "00:0%d", amountOfSecondsForBet);
+                } else {
+                    sprintf(betTimeString, "00:%d", amountOfSecondsForBet);
+                }
+                asprintf(&result, "Bet time left: %s", betTimeString);
+            } else {
+                asprintf(&result, "Disconnecting!");
+                // DISCONNECT!
+                Com_Error(ERR_DROP, "Disconnecting from server: didn't make a bet in time");
+                CL_Disconnect(ERR_DROP);
+            }
+            draw = result;
+        } 
+        if (amountOfSecondsForBet % 2 == 0) {
+            UI_DrawString(uis.width / 2, menu->y1 + 90,
+                    UI_CENTER | UI_ALTCOLOR, draw);
+        } else {
+            UI_DrawString(uis.width / 2, menu->y1 + 90,
+                    UI_CENTER | menu->color.u32, draw);
+        }
+    }
+    if (menu->title9) {
+        char* draw = menu->title9;
+        if (strcmp(menu->title9, "fraglimit") == 0) {
+            char * result = NULL;
+            int fraglimit = cl.frame.ps.stats[STAT_FRAG_LIMIT];
+            if (fraglimit == 0) {
+                asprintf(&result, "Frag limit: No limit");
+            } else {
+                asprintf(&result, "Frag limit: %d", fraglimit);
+            }
             draw = result;
         } 
         UI_DrawString(uis.width / 2, menu->y1 + 70,
@@ -2295,7 +2343,7 @@ void Menu_Draw(menuFrameWork_t *menu)
             asprintf(&result, "Players (including you): %d", amountOfPlayers);
             draw = result;
         } 
-        UI_DrawString(uis.width / 2, menu->y1 + 90,
+        UI_DrawString(uis.width / 2, menu->y1 + 110,
                     UI_CENTER | menu->color.u32, draw);
     }
     if (menu->title7) {
@@ -2305,7 +2353,7 @@ void Menu_Draw(menuFrameWork_t *menu)
             asprintf(&result, "Transaction (to play): %d Smilo", playAmount);
             draw = result;
         } 
-        UI_DrawString(uis.width / 2, menu->y1 + 100,
+        UI_DrawString(uis.width / 2, menu->y1 + 120,
                     UI_CENTER | menu->color.u32, draw);
     }
 
@@ -2732,6 +2780,7 @@ void Menu_Free(menuFrameWork_t *menu)
     Z_Free(menu->title6);
     Z_Free(menu->title7);
     Z_Free(menu->title8);
+    Z_Free(menu->title9);
     Z_Free(menu->name);
     Z_Free(menu);
 }

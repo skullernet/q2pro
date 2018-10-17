@@ -318,6 +318,11 @@ typedef struct {
     int         sound2_entity_framenum;
 
     int         pic_health;
+    int         pic_smilo_icon;
+    int         loading_spay_0;
+    int         loading_spay_1;
+    int         loading_spay_2;
+    int         loading_spay_3;
 
     int         total_secrets;
     int         found_secrets;

@@ -147,6 +147,16 @@ void UI_PopMenu(void)
         Com_Error(ERR_FATAL, "UI_PopMenu: depth < 1");
 
     menu = uis.layers[--uis.menuDepth];
+
+    if (strcmp(menu->name, "smilo") == 0) {
+        Com_Printf("RESET ALL! \n");
+        frames = 0;
+        amountOfPlayers = 1;
+        amountOfSecondsForBet = 59;
+        playAmount = 10;
+        simulatePlayers = false;
+    } 
+
     if (menu->pop) {
         menu->pop(menu);
     }

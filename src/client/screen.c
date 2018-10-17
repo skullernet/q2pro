@@ -1860,6 +1860,28 @@ static void SCR_ExecuteLayoutString(const char *s)
             continue;
         }
 
+        if (!strcmp(token, "frags")) {
+            // draw a number
+            token = COM_Parse(&s);
+            width = atoi(token);
+            token = COM_Parse(&s);
+            value = atoi(token);
+            int fraglimit = cl.frame.ps.stats[STAT_FRAG_LIMIT];
+            if (value < 0 || value >= MAX_STATS) {
+                Com_Error(ERR_DROP, "%s: invalid stat index", __func__);
+            }
+            value = cl.frame.ps.stats[value];
+            char fragRow[1024];
+            if (fraglimit == 0) {
+                sprintf(fragRow, "%s %d", "Frags:", value);
+                HUD_DrawString(x - 30, y, fragRow);
+            } else {
+                sprintf(fragRow, "%s %d / %d", "Frags: ", value, fraglimit);
+                HUD_DrawString(x - 85, y, fragRow);
+            }
+            continue;
+        }
+
         if (!strcmp(token, "num")) {
             // draw a number
             token = COM_Parse(&s);

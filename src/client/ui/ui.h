@@ -36,6 +36,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MIN_MENU_ITEMS  64
 #define MAX_MENU_ITEMS  250000000
 
+int frames;
+int amountOfPlayers;
+int amountOfSecondsForBet;
+int playAmount;
+bool simulatePlayers;
+
 typedef enum {
     MTYPE_BAD,
     MTYPE_SLIDER,
@@ -92,7 +98,7 @@ typedef void (*confirmAction_t)(bool);
 typedef struct menuFrameWork_s {
     list_t  entry;
 
-    char    *name, *title1, *title2, *title3, *title4, *title5, *title6, *title7, *title8, *status;
+    char    *name, *title1, *title2, *title3, *title4, *title5, *title6, *title7, *title8, *title9, *status;
 
     void    **items;
     int     nitems;

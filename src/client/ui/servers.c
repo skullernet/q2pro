@@ -1080,7 +1080,7 @@ void M_Menu_Servers(void)
     ui_pingrate = Cvar_Get("ui_pingrate", "0", 0);
 
     m_servers.menu.name     = "servers";
-    m_servers.menu.title1    = "Server Browser";
+    m_servers.menu.title1    = "";
 
     m_servers.menu.draw         = Draw;
     m_servers.menu.expose       = Expose;

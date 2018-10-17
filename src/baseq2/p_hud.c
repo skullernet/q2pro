@@ -381,6 +381,7 @@ void G_SetStats(edict_t *ent)
     // health
     //
     ent->client->ps.stats[STAT_HEALTH_ICON] = level.pic_health;
+    ent->client->ps.stats[STAT_SMILO_ICON] = level.pic_smilo_icon;
     ent->client->ps.stats[STAT_HEALTH] = ent->health;
 
     //
@@ -451,6 +452,9 @@ void G_SetStats(edict_t *ent)
         ent->client->ps.stats[STAT_TIMER] = 0;
     }
     float timelimit = gi.cvar("timelimit", "0", CVAR_SERVERINFO)->value * 60;
+    ent->client->ps.stats[STAT_TIME_LIMIT] = timelimit;
+    ent->client->ps.stats[STAT_FRAG_LIMIT] = fraglimit->value;
+    
     float leveltime = level.time;
     float remainingtime = timelimit - leveltime;
     ent->client->ps.stats[STAT_LEVEL_TIMER] = remainingtime;

@@ -1292,6 +1292,9 @@ typedef enum {
 #define STAT_CHASE              16
 #define STAT_SPECTATOR          17 
 #define STAT_LEVEL_TIMER        18
+#define STAT_TIME_LIMIT         19
+#define STAT_FRAG_LIMIT         20
+#define STAT_SMILO_ICON         21
 
 #define MAX_STATS               32
 
