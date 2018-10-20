@@ -561,11 +561,12 @@ Generic
 status [mode]::
     Show information about connected clients. Optional _mode_ argument may be
     provided to show different kind of information.
-       t(ime)::: show connection times
-       d(ownload)::: show current downloads
+       d(ownloads)::: show current downloads
        l(ag)::: show connection quality statistics
-       p(rotocol)::: show network protocol information
-       v(ersion)::: show client executable versions
+       p(rotocols)::: show network protocol information
+       s(ettings)::: show client settings
+       t(ime)::: show connection times
+       v(ersions)::: show client executable versions
 
 stuff <userid> <text ...>::
     Stuff the given raw _text_ into command buffer of the client identified by
