@@ -84,13 +84,11 @@ typedef struct mface_s {
     int             texturemins[2];
     int             extents[2];
 
-#if USE_REF
     int             texnum[2];
     int             statebits;
     int             firstvert;
     int             light_s, light_t;
     float           stylecache[MAX_LIGHTMAPS];
-#endif
 
     int             drawframe;
 
