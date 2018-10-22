@@ -320,6 +320,16 @@ con_scroll::
       - 1 — when new command is entered
       - 2 — when new lines are printed
 
+con_timestamps::
+    Specifies if console lines are prefixed with a timestamp. Default value is 0.
+
+con_timestampsformat::
+    Format string for console timestamps. Default value is "%H:%M:%S ". See
+    strftime(3) for syntax description.
+
+con_timestampscolor::
+    Text color used for console timestamps. Default value is "#aaa".
+
 
 Game Screen
 ~~~~~~~~~~~
