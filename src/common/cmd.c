@@ -264,11 +264,8 @@ void Cmd_Alias_g(genctx_t *ctx)
 {
     cmdalias_t *a;
 
-    FOR_EACH_ALIAS(a) {
-        if (!Prompt_AddMatch(ctx, a->name)) {
-            break;
-        }
-    }
+    FOR_EACH_ALIAS(a)
+        Prompt_AddMatch(ctx, a->name);
 }
 
 
@@ -697,11 +694,8 @@ void Cmd_Macro_g(genctx_t *ctx)
 {
     cmd_macro_t *m;
 
-    for (m = cmd_macros; m; m = m->next) {
-        if (!Prompt_AddMatch(ctx, m->name)) {
-            break;
-        }
-    }
+    for (m = cmd_macros; m; m = m->next)
+        Prompt_AddMatch(ctx, m->name);
 }
 
 /*
@@ -1502,11 +1496,8 @@ void Cmd_Command_g(genctx_t *ctx)
 {
     cmd_function_t *cmd;
 
-    FOR_EACH_CMD(cmd) {
-        if (!Prompt_AddMatch(ctx, cmd->name)) {
-            break;
-        }
-    }
+    FOR_EACH_CMD(cmd)
+        Prompt_AddMatch(ctx, cmd->name);
 }
 
 void Cmd_ExecuteCommand(cmdbuf_t *buf)
