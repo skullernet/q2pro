@@ -788,11 +788,7 @@ static bool parse_enhanced_params(conn_params_t *p)
 
         // set zlib
         s = Cmd_Argv(7);
-        if (*s) {
-            p->has_zlib = !!atoi(s);
-        } else {
-            p->has_zlib = true;
-        }
+        p->has_zlib = !*s || atoi(s);
 
         // set minor protocol version
         s = Cmd_Argv(8);
@@ -962,7 +958,7 @@ static void init_pmove_and_es_flags(client_t *newcl)
 
     // copy default pmove parameters
     newcl->pmp = sv_pmp;
-    newcl->pmp.airaccelerate = sv_airaccelerate->integer ? true : false;
+    newcl->pmp.airaccelerate = sv_airaccelerate->integer;
 
     // common extensions
     force = 2;
@@ -970,7 +966,7 @@ static void init_pmove_and_es_flags(client_t *newcl)
         newcl->pmp.speedmult = 2;
         force = 1;
     }
-    newcl->pmp.strafehack = sv_strafejump_hack->integer >= force ? true : false;
+    newcl->pmp.strafehack = sv_strafejump_hack->integer >= force;
 
     // r1q2 extensions
     if (newcl->protocol == PROTOCOL_VERSION_R1Q2) {
@@ -999,7 +995,7 @@ static void init_pmove_and_es_flags(client_t *newcl)
             force = 1;
         }
     }
-    newcl->pmp.waterhack = sv_waterjump_hack->integer >= force ? true : false;
+    newcl->pmp.waterhack = sv_waterjump_hack->integer >= force;
 }
 
 static void send_connect_packet(client_t *newcl, int nctype)
