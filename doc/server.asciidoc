@@ -638,10 +638,11 @@ liststuffcmds <connect|begin>::
 
 addfiltercmd <command> [ignore|print|stuff|kick] [comment ...]::
     Prevents client _command_ otherwise unknown to the server from being
-    interpreted by the game mod, and takes the specified action instead.
-    For _print_ and _stuff_ actions _comment_ argument is mandatory, and should
-    contain data to print and stuff, respectively. Default action is _ignore_.
-    Commands are matched in a case-insensitive way.
+    interpreted by the game mod, and takes the specified action instead. For
+    _print_ and _stuff_ actions _comment_ argument is mandatory, and should
+    contain data to print and stuff to the client. For _kick_ action _comment_
+    specifies optional disconnect reason printed to the client. Default action
+    is _ignore_. Commands are matched in a case-insensitive way.
 
 delfiltercmd <id|name|all>::
     Deletes command identified by numeric _id_ or by _name_ from the list of

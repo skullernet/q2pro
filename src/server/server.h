@@ -408,7 +408,6 @@ typedef struct {
 
 typedef struct {
     list_t  entry;
-    int     len;
     char    string[1];
 } stuffcmd_t;
 
