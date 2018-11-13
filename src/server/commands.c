@@ -1336,7 +1336,7 @@ static void SV_AddFilterCmd_f(void)
 
     if (Cmd_Argc() < 2) {
 usage:
-        Com_Printf("Usage: %s <command> [ignore|print|stuff|kick] [comment]\n", Cmd_Argv(0));
+        Com_Printf("Usage: %s <command> [ignore|log|print|stuff|kick] [comment]\n", Cmd_Argv(0));
         return;
     }
 
@@ -1344,6 +1344,8 @@ usage:
         s = Cmd_Argv(2);
         if (!Q_stricmp(s, "ignore"))
             action = FA_IGNORE;
+        else if (!Q_stricmp(s, "log"))
+            action = FA_LOG;
         else if (!Q_stricmp(s, "print") || !Q_stricmp(s, "message"))
             action = FA_PRINT;
         else if (!Q_stricmp(s, "stuff"))
@@ -1362,7 +1364,7 @@ usage:
         }
     }
 
-    if (action != FA_IGNORE && Cmd_Argc() > 3)
+    if (action >= FA_PRINT && Cmd_Argc() > 3)
         comment = Z_CopyString(Cmd_ArgsFrom(3));
 
     len = strlen(s);
@@ -1467,7 +1469,7 @@ usage:
             goto usage;
     }
 
-    if (action != FA_LOG && Cmd_Argc() > 4)
+    if (action >= FA_PRINT && Cmd_Argc() > 4)
         comment = Z_CopyString(Cmd_ArgsFrom(4));
 
     ban = Z_Malloc(sizeof(*ban));
