@@ -16,7 +16,7 @@ Ubuntu use the following command:
 
     apt-get install build-essential libsdl2-dev libopenal-dev \
                     libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
-                    liblircclient-dev libcurl4-gnutls-dev
+                    libcurl4-gnutls-dev
 
 Users of other distributions should look for equivalent development packages
 and install them.

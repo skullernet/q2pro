@@ -560,7 +560,8 @@ Generic
 
 status [mode]::
     Show information about connected clients. Optional _mode_ argument may be
-    provided to show different kind of information.
+    provided to show different kind of information. Only the first character of
+    _mode_ is significant.
        d(ownloads)::: show current downloads
        l(ag)::: show connection quality statistics
        p(rotocols)::: show network protocol information
@@ -636,7 +637,7 @@ delstuffcmd <connect|begin> <id|all>::
 liststuffcmds <connect|begin>::
     Enumerates all registered commands in the specified stuffcmd list.
 
-addfiltercmd <command> [ignore|print|stuff|kick] [comment ...]::
+addfiltercmd <command> [ignore|log|print|stuff|kick] [comment ...]::
     Prevents client _command_ otherwise unknown to the server from being
     interpreted by the game mod, and takes the specified action instead. For
     _print_ and _stuff_ actions _comment_ argument is mandatory, and should
@@ -652,6 +653,63 @@ delfiltercmd <id|name|all>::
 listfiltercmds::
     Enumerates all filtered commands along with appropriate actions and comments.
 
+addcvarban <cvar> <match> [log|print|stuff|kick] [comment]::
+    Adds an automatic check for specified _cvar_. Cvar value on the client is
+    compared with _match_ and specified action is taken if value matches. For
+    _print_ and _stuff_ actions _comment_ argument is mandatory, and should
+    contain data to print and stuff to the client. For _kick_ action _comment_
+    specifies optional disconnect reason printed to the client. Default action
+    is _log_. See below for description of _match_ string syntax. Multiple
+    entries with the same _cvar_ are permitted and are matched sequentially
+    (stopping at the first entry with _kick_ action that matched).
+
+delcvarban <id|cvar|all>::
+    Deletes single cvarban identified by numeric _id_, or deletes all cvarbans
+    matching _cvar_. You can also specify _all_ to delete all cvarbans.
+
+listcvarbans::
+    Enumerates all cvarbans along with appropriate actions and comments.
+
+checkcvarbans::
+    Use this command to manually send cvarban checks to all connected clients.
+    By default, cvarbans are automatically checked on each map change.
+
+adduserinfoban <key> <match> [log|print|stuff|kick] [comment]::
+    Adds an automatic check for specified userinfo _key_. Specified key is
+    compared with _match_ and specified action is taken if value matches. For
+    _print_ and _stuff_ actions _comment_ argument is mandatory, and should
+    contain data to print and stuff to the client. For _kick_ action _comment_
+    specifies optional disconnect reason printed to the client. Default action
+    is _log_. See below for description of _match_ string syntax. Multiple
+    entries with the same _key_ are permitted and are matched sequentially
+    (stopping at the first entry with _kick_ action that matched). Matched
+    userinfo bans with _kick_ action also prevent new clients from connecting.
+
+deluserinfoban <id|key|all>::
+    Deletes single userinfo ban identified by numeric _id_, or deletes all
+    userinfo bans matching _key_. You can also specify _all_ to delete all
+    userinfo bans.
+
+listuserinfobans::
+    Enumerates all userinfobans along with appropriate actions and comments.
+
+.Cvarban and userinfo ban match string syntax
+***********************
+Full syntax for match string is: '[!][*|=|<|>|~|#][num|str]'. The
+following special characters are recognized at the beginning of the string:
+
+* ! — negates the check
+* * — matches if value is not empty
+* = — matches if numerical value is equal to _num_
+* < — matches if numerical value is less than _num_
+* > — matches if numerical value is greater than _num_
+* ~ — matches if value substring matches _str_ literally
+* # — escape character (_str_ is matched literally)
+
+If match string begins with any other character, it is matched literally. All
+string comparsions are case-insensitive.
+***********************
+
 listmasters::
     List master server hostnames, resolved IP addresses and last acknowledge times.
 
@@ -663,8 +721,7 @@ recycle [reason ...]::
     This command is equivalent to ‘quit’, with an exception that ‘reconnect’
     message is sent to clients instead of ‘disconnect’. Useful for quickly
     upgrading the server binary without losing clients, assuming the server
-    process will be automatically restarted by an external shell script right
-    after it exits.
+    process is automatically restarted after it exits.
 
 
 MVD/GTV server
