@@ -289,6 +289,9 @@ allow_download_others::
     Enables downloading of files from any subdirectory other than those listed
     above. Default value is 0.
 
+TIP: Q2PRO clients can stream compressed downloads directly from .pkz archives
+on the server. Thus it is advisable to keep all data in .pkz for optimal
+download speeds.
 
 MVD/GTV server
 ~~~~~~~~~~~~~~
