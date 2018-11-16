@@ -633,9 +633,10 @@ addstuffcmd <connect|begin> <command> [...]::
     Adds _command_ to be automatically stuffed to every client as they initially
     _connect_ or each time they _begin_ on a new map.
 
-delstuffcmd <connect|begin> <id|all>::
-    Deletes command identified by the numeric _id_ from the specified list.
-    You can also specify _all_ to clear the whole stuffcmd list.
+delstuffcmd <connect|begin> <id|cmd|all>::
+    Deletes command identified by the numeric _id_ or by literal _cmd_ string
+    from the specified list. You can also specify _all_ to clear the whole
+    stuffcmd list.
 
 liststuffcmds <connect|begin>::
     Enumerates all registered commands in the specified stuffcmd list.

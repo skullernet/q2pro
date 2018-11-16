@@ -1240,7 +1240,14 @@ static void SV_AddStuffCmd_f(void)
         return;
     }
 
-    s = Cmd_ArgsFrom(2);
+    s = COM_StripQuotes(Cmd_RawArgsFrom(2));
+    LIST_FOR_EACH(stuffcmd_t, stuff, list, entry) {
+        if (!strcmp(stuff->string, s)) {
+            Com_Printf("Stuffcmd already exists: %s\n", s);
+            return;
+        }
+    }
+
     len = strlen(s);
     stuff = Z_Malloc(sizeof(*stuff) + len);
     memcpy(stuff->string, s, len + 1);
@@ -1268,7 +1275,7 @@ static void SV_DelStuffCmd_f(void)
         return;
     }
 
-    s = Cmd_Argv(2);
+    s = COM_StripQuotes(Cmd_RawArgsFrom(2));
     if (!strcmp(s, "all")) {
         LIST_FOR_EACH_SAFE(stuffcmd_t, stuff, next, list, entry) {
             Z_Free(stuff);
@@ -1277,13 +1284,24 @@ static void SV_DelStuffCmd_f(void)
         return;
     }
 
-    i = atoi(s);
-    stuff = LIST_INDEX(stuffcmd_t, i - 1, list, entry);
-    if (!stuff) {
-        Com_Printf("No such stuffcmd index: %d\n", i);
+    if (COM_IsUint(s)) {
+        i = atoi(s);
+        stuff = LIST_INDEX(stuffcmd_t, i - 1, list, entry);
+        if (!stuff) {
+            Com_Printf("No such stuffcmd index: %d\n", i);
+            return;
+        }
+    } else {
+        LIST_FOR_EACH(stuffcmd_t, stuff, list, entry) {
+            if (!strcmp(stuff->string, s)) {
+                goto remove;
+            }
+        }
+        Com_Printf("No such stuffcmd string: %s\n", s);
         return;
     }
 
+remove:
     List_Remove(&stuff->entry);
     Z_Free(stuff);
 }
@@ -1469,6 +1487,15 @@ usage:
             goto usage;
     }
 
+    LIST_FOR_EACH(cvarban_t, ban, list, entry) {
+        if (!Q_stricmp(ban->var, Cmd_Argv(1)) &&
+            !Q_stricmp(ban->match, Cmd_Argv(2)) &&
+            ban->action == action) {
+            Com_Printf("%sban already exists: %s\n", what, Cmd_ArgsRange(1, 3));
+            return;
+        }
+    }
+
     if (action >= FA_PRINT && Cmd_Argc() > 4)
         comment = Z_CopyString(Cmd_ArgsFrom(4));
 
@@ -1585,7 +1612,7 @@ static void SV_CheckCvarBans_f(void)
 
 static void SV_AddCvarBan_f(void)
 {
-    SV_AddCvarBan(&sv_cvarbanlist, "cvar");
+    SV_AddCvarBan(&sv_cvarbanlist, "Cvar");
 }
 static void SV_DelCvarBan_f(void)
 {
@@ -1598,7 +1625,7 @@ static void SV_ListCvarBans_f(void)
 
 static void SV_AddInfoBan_f(void)
 {
-    SV_AddCvarBan(&sv_infobanlist, "userinfo");
+    SV_AddCvarBan(&sv_infobanlist, "Userinfo");
 }
 static void SV_DelInfoBan_f(void)
 {
