@@ -24,9 +24,11 @@ static menuSound_t Activate(menuCommon_t *self)
     switch (self->type) {
     case MTYPE_ACTION:
         Cbuf_AddText(&cmd_buffer, ((menuAction_t *)self)->cmd);
+        Cbuf_AddText(&cmd_buffer, "\n");
         break;
     case MTYPE_BITMAP:
         Cbuf_AddText(&cmd_buffer, ((menuBitmap_t *)self)->cmd);
+        Cbuf_AddText(&cmd_buffer, "\n");
         break;
     case MTYPE_SAVEGAME:
         Cbuf_AddText(&cmd_buffer, va("save \"%s\"; forcemenuoff\n", ((menuAction_t *)self)->cmd));
