@@ -248,6 +248,11 @@ sv_fps::
     Other clients will receive updates at default rate of 10 packets per
     second.
 
+lrcon_password::
+    If not empty, enables users of this password to execute limited set of rcon
+    commands on the server. By default no commands are permitted. Permitted
+    command prefixes can be added using ‘addlrconcmd’.
+
 Downloads
 ~~~~~~~~~
 
@@ -713,6 +718,17 @@ following special characters are recognized at the beginning of the string:
 If match string begins with any other character, it is matched literally. All
 string comparsions are case-insensitive.
 ***********************
+
+addlrconcmd <command>::
+    Adds a command prefix to the list of permitted limited rcon commands (see
+    ‘lrcon_password’ variable description).
+
+dellrconcmd <id|cmd|all>::
+    Deletes lrcon command prefix identified by numeric _id_ or by literal _cmd_
+    string. You can also specify _all_ to delete all lrcon commands.
+
+listlrconcmds::
+    Enumerates all lrcon commands.
 
 listmasters::
     List master server hostnames, resolved IP addresses and last acknowledge times.

@@ -1210,40 +1210,20 @@ static void SV_ListBlackHoles_f(void)
     SV_ListMatches_f(&sv_blacklist);
 }
 
-static list_t *SV_FindStuffList(void)
-{
-    char *s = Cmd_Argv(1);
-
-    if (!strcmp(s, "connect")) {
-        return &sv_cmdlist_connect;
-    }
-    if (!strcmp(s, "begin")) {
-        return &sv_cmdlist_begin;
-    }
-    Com_Printf("Unknown stuffcmd list: %s\n", s);
-    return NULL;
-}
-
-static void SV_AddStuffCmd_f(void)
+static void SV_AddStuffCmd(list_t *list, int arg, const char *what)
 {
     char *s;
-    list_t *list;
     stuffcmd_t *stuff;
-    int len;
+    size_t len;
 
-    if (Cmd_Argc() < 3) {
-        Com_Printf("Usage: %s <list> <command>\n", Cmd_Argv(0));
+    if (!list) {
         return;
     }
 
-    if ((list = SV_FindStuffList()) == NULL) {
-        return;
-    }
-
-    s = COM_StripQuotes(Cmd_RawArgsFrom(2));
+    s = COM_StripQuotes(Cmd_RawArgsFrom(arg));
     LIST_FOR_EACH(stuffcmd_t, stuff, list, entry) {
         if (!strcmp(stuff->string, s)) {
-            Com_Printf("Stuffcmd already exists: %s\n", s);
+            Com_Printf("%scmd already exists: %s\n", what, s);
             return;
         }
     }
@@ -1254,28 +1234,21 @@ static void SV_AddStuffCmd_f(void)
     List_Append(list, &stuff->entry);
 }
 
-static void SV_DelStuffCmd_f(void)
+static void SV_DelStuffCmd(list_t *list, int arg, const char *what)
 {
-    list_t *list;
-    stuffcmd_t *stuff, *next;
     char *s;
+    stuffcmd_t *stuff, *next;
     int i;
 
-    if (Cmd_Argc() < 3) {
-        Com_Printf("Usage: %s <list> <id|all>\n", Cmd_Argv(0));
+    if (!list) {
         return;
     }
-
-    if ((list = SV_FindStuffList()) == NULL) {
-        return;
-    }
-
     if (LIST_EMPTY(list)) {
-        Com_Printf("No stuffcmds registered.\n");
+        Com_Printf("No %scmds registered.\n", what);
         return;
     }
 
-    s = COM_StripQuotes(Cmd_RawArgsFrom(2));
+    s = COM_StripQuotes(Cmd_RawArgsFrom(arg));
     if (!strcmp(s, "all")) {
         LIST_FOR_EACH_SAFE(stuffcmd_t, stuff, next, list, entry) {
             Z_Free(stuff);
@@ -1288,7 +1261,7 @@ static void SV_DelStuffCmd_f(void)
         i = atoi(s);
         stuff = LIST_INDEX(stuffcmd_t, i - 1, list, entry);
         if (!stuff) {
-            Com_Printf("No such stuffcmd index: %d\n", i);
+            Com_Printf("No such %scmd index: %d\n", what, i);
             return;
         }
     } else {
@@ -1297,7 +1270,7 @@ static void SV_DelStuffCmd_f(void)
                 goto remove;
             }
         }
-        Com_Printf("No such stuffcmd string: %s\n", s);
+        Com_Printf("No such %scmd string: %s\n", what, s);
         return;
     }
 
@@ -1306,23 +1279,16 @@ remove:
     Z_Free(stuff);
 }
 
-static void SV_ListStuffCmds_f(void)
+static void SV_ListStuffCmds(list_t *list, const char *what)
 {
-    list_t *list;
     stuffcmd_t *stuff;
     int id = 0;
 
-    if (Cmd_Argc() != 2) {
-        Com_Printf("Usage: %s <list>\n", Cmd_Argv(0));
+    if (!list) {
         return;
     }
-
-    if ((list = SV_FindStuffList()) == NULL) {
-        return;
-    }
-
     if (LIST_EMPTY(list)) {
-        Com_Printf("No stuffcmds registered.\n");
+        Com_Printf("No %scmds registered.\n", what);
         return;
     }
 
@@ -1333,12 +1299,82 @@ static void SV_ListStuffCmds_f(void)
     }
 }
 
+static list_t *SV_FindStuffList(void)
+{
+    char *s = Cmd_Argv(1);
+
+    if (!strcmp(s, "connect")) {
+        return &sv_cmdlist_connect;
+    }
+    if (!strcmp(s, "begin")) {
+        return &sv_cmdlist_begin;
+    }
+
+    Com_Printf("Unknown stuffcmd list: %s\n", s);
+    return NULL;
+}
+
+static void SV_AddStuffCmd_f(void)
+{
+    if (Cmd_Argc() < 3) {
+        Com_Printf("Usage: %s <list> <command>\n", Cmd_Argv(0));
+        return;
+    }
+
+    SV_AddStuffCmd(SV_FindStuffList(), 2, "Stuff");
+}
+
+static void SV_DelStuffCmd_f(void)
+{
+    if (Cmd_Argc() < 3) {
+        Com_Printf("Usage: %s <list> <id|cmd|all>\n", Cmd_Argv(0));
+        return;
+    }
+
+    SV_DelStuffCmd(SV_FindStuffList(), 2, "stuff");
+}
+
+static void SV_ListStuffCmds_f(void)
+{
+    if (Cmd_Argc() != 2) {
+        Com_Printf("Usage: %s <list>\n", Cmd_Argv(0));
+        return;
+    }
+
+    SV_ListStuffCmds(SV_FindStuffList(), "stuff");
+}
+
 static void SV_StuffCmd_c(genctx_t *ctx, int argnum)
 {
     if (argnum == 1) {
         Prompt_AddMatch(ctx, "connect");
         Prompt_AddMatch(ctx, "begin");
     }
+}
+
+static void SV_AddLrconCmd_f(void)
+{
+    if (Cmd_Argc() < 2) {
+        Com_Printf("Usage: %s <command>\n", Cmd_Argv(0));
+        return;
+    }
+
+    SV_AddStuffCmd(&sv_lrconlist, 1, "Lrcon");
+}
+
+static void SV_DelLrconCmd_f(void)
+{
+    if (Cmd_Argc() < 2) {
+        Com_Printf("Usage: %s <id|cmd|all>\n", Cmd_Argv(0));
+        return;
+    }
+
+    SV_DelStuffCmd(&sv_lrconlist, 1, "lrcon");
+}
+
+static void SV_ListLrconCmds_f(void)
+{
+    SV_ListStuffCmds(&sv_lrconlist, "lrcon");
 }
 
 static const char *const filteractions[FA_MAX] = {
@@ -1710,6 +1746,9 @@ static const cmdreg_t c_server[] = {
     { "addstuffcmd", SV_AddStuffCmd_f, SV_StuffCmd_c },
     { "delstuffcmd", SV_DelStuffCmd_f, SV_StuffCmd_c },
     { "liststuffcmds", SV_ListStuffCmds_f, SV_StuffCmd_c },
+    { "addlrconcmd", SV_AddLrconCmd_f },
+    { "dellrconcmd", SV_DelLrconCmd_f },
+    { "listlrconcmds", SV_ListLrconCmds_f },
     { "addfiltercmd", SV_AddFilterCmd_f },
     { "delfiltercmd", SV_DelFilterCmd_f },
     { "listfiltercmds", SV_ListFilterCmds_f },
