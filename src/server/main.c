@@ -100,7 +100,7 @@ cvar_t  *g_features;
 
 cvar_t  *map_override_path;
 
-bool sv_registered;
+static bool     sv_registered;
 
 //============================================================================
 
