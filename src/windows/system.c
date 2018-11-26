@@ -969,6 +969,7 @@ void Sys_Error(const char *error, ...)
     {
 #if USE_SYSCON
         if (gotConsole) {
+            hide_console_input();
             Sleep(INFINITE);
         }
 #endif
