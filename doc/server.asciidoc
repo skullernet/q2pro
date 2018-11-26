@@ -483,6 +483,38 @@ sys_console::
       - 2 — enable ‘smart’ system console mode: handle it as a terminal, enable
         command completion and colored text output, don't handle SIGHUP
 
+.System console key bindings
+****************************
+The following key bindings are available in Windows console and in TTY console
+when ‘smart’ mode is enabled:
+
+* HOME, Ctrl+A — move cursor to start of line
+* END, Ctrl+E — move cursor to end of line
+* Left arrow, Ctrl+B — move cursor one character left
+* Right arrow, Ctrl+F — move cursor one character right
+* Alt+B — move cursor one word left
+* Alt+F — move cursor one word right
+* DEL, Ctrl+D — delete character under cursor
+* Backspace, Ctrl+H — delete character left of cursor
+* Ctrl+W — delete word left of cursor
+* Ctrl+U — delete all characters left of cursor
+* Ctrl+K — delete all characters right of cursor
+* Ctrl+L — erase screen
+* Ctrl+C — quit
+* Down arrow, Ctrl+N — next line in command history
+* Up arrow, Ctrl+P — previous line in command history
+* Ctrl+R — reverse search in command history
+* Ctrl+S — forward search in command history
+* Tab — complete command
+
+In Windows console additional key bindings are supported:
+
+* PGUP — scroll console buffer up
+* PGDN — scroll console buffer down
+* Ctrl+PGUP — scroll to console top
+* Ctrl+PGDN — scroll to console bottom
+****************************
+
 sys_parachute::
     On UNIX-like systems, specifies if a fatal termination handler is
     installed. Default value is 1, which means Q2PRO will do some cleanup when
