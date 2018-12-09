@@ -810,7 +810,6 @@ PARTICLE MANAGEMENT
 static cparticle_t  *active_particles, *free_particles;
 
 static cparticle_t  particles[MAX_PARTICLES];
-static const int    cl_numparticles = MAX_PARTICLES;
 
 static void CL_ClearParticles(void)
 {
@@ -819,9 +818,9 @@ static void CL_ClearParticles(void)
     free_particles = &particles[0];
     active_particles = NULL;
 
-    for (i = 0; i < cl_numparticles; i++)
+    for (i = 0; i < MAX_PARTICLES - 1; i++)
         particles[i].next = &particles[i + 1];
-    particles[cl_numparticles - 1].next = NULL;
+    particles[i].next = NULL;
 }
 
 cparticle_t *CL_AllocParticle(void)
