@@ -1530,7 +1530,7 @@ static void CL_FlyParticles(vec3_t origin, int count)
         p->color = 0;
 
         p->alpha = 1;
-        p->alphavel = -100;
+        p->alphavel = INSTANT_PARTICLE;
     }
 }
 
@@ -1610,7 +1610,7 @@ void CL_BfgParticles(entity_t *ent)
         p->color = floor(0xd0 + dist * 7);
 
         p->alpha = 1.0f - dist;
-        p->alphavel = -100;
+        p->alphavel = INSTANT_PARTICLE;
     }
 }
 
