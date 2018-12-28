@@ -36,6 +36,7 @@ client_t    *sv_client;         // current client
 edict_t     *sv_player;         // current client edict
 
 cvar_t  *sv_enforcetime;
+cvar_t  *sv_timescale_time;
 cvar_t  *sv_timescale_warn;
 cvar_t  *sv_timescale_kick;
 cvar_t  *sv_allow_nodelta;
@@ -1458,7 +1459,7 @@ static void SV_GiveMsec(void)
         }
     }
 
-    if (svs.realtime - svs.last_timescale_check < 16000)
+    if (svs.realtime - svs.last_timescale_check < sv_timescale_time->integer)
         return;
 
     float d = svs.realtime - svs.last_timescale_check;
@@ -2162,6 +2163,9 @@ void SV_Init(void)
     sv_idlekick->changed = sv_sec_timeout_changed;
     sv_idlekick->changed(sv_idlekick);
     sv_enforcetime = Cvar_Get("sv_enforcetime", "1", 0);
+    sv_timescale_time = Cvar_Get("sv_timescale_time", "16", 0);
+    sv_timescale_time->changed = sv_sec_timeout_changed;
+    sv_timescale_time->changed(sv_timescale_time);
     sv_timescale_warn = Cvar_Get("sv_timescale_warn", "0", 0);
     sv_timescale_kick = Cvar_Get("sv_timescale_kick", "0", 0);
     sv_allow_nodelta = Cvar_Get("sv_allow_nodelta", "1", 0);
