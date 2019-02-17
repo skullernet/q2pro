@@ -418,6 +418,11 @@ ifdef CONFIG_VARIABLE_SERVER_FPS
     CFLAGS_s += -DUSE_FPS=1
 endif
 
+ifdef CONFIG_PACKETDUP
+    CFLAGS_c += -DUSE_PACKETDUP=1
+    CFLAGS_s += -DUSE_PACKETDUP=1
+endif
+
 ifdef CONFIG_WINDOWS
     OBJS_c += src/windows/client.o
 
