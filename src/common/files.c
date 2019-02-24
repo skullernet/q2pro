@@ -16,6 +16,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+#define _GNU_SOURCE
 #include "shared/shared.h"
 #include "shared/list.h"
 #include "common/common.h"
@@ -71,6 +72,9 @@ QUAKE FILESYSTEM
 #define FS_DPrintf(...)
 #endif
 
+#define FS_ERR_READ(fp) \
+    (ferror(fp) ? Q_ERR_FAILURE : Q_ERR_UNEXPECTED_EOF)
+
 #define PATH_NOT_CHECKED    -1
 
 #define FOR_EACH_SYMLINK(link, list) \
@@ -97,22 +101,21 @@ typedef enum {
 #if USE_ZLIB
 typedef struct {
     z_stream    stream;
-    size_t      rest_in;
+    unsigned    rest_in;
     byte        buffer[ZIP_BUFSIZE];
 } zipstream_t;
 #endif
 
 typedef struct packfile_s {
     char        *name;
-    size_t      namelen;
-    size_t      filepos;
-    size_t      filelen;
+    unsigned    namelen;
+    unsigned    filepos;
+    unsigned    filelen;
 #if USE_ZLIB
-    size_t      complen;
-    unsigned    compmtd;    // compression method, 0 (stored) or Z_DEFLATED
-    qboolean    coherent;   // true if local file header has been checked
+    unsigned    complen;
+    byte        compmtd;    // compression method, 0 (stored) or Z_DEFLATED
+    bool        coherent;   // true if local file header has been checked
 #endif
-
     struct packfile_s *hash_next;
 } packfile_t;
 
@@ -121,9 +124,9 @@ typedef struct {
     unsigned    refcount;   // for tracking pack users
     FILE        *fp;
     unsigned    num_files;
+    unsigned    hash_size;
     packfile_t  *files;
     packfile_t  **file_hash;
-    unsigned    hash_size;
     char        *names;
     char        *filename;
 } pack_t;
@@ -144,18 +147,18 @@ typedef struct {
 #endif
     packfile_t  *entry;     // pack entry this handle is tied to
     pack_t      *pack;      // points to the pack entry is from
-    qboolean    unique;     // if true, then pack must be freed on close
-    qerror_t    error;      // stream error indicator from read/write operation
-    size_t      rest_out;   // remaining unread length for FS_PAK/FS_ZIP
-    size_t      length;     // total cached file length
+    bool        unique;     // if true, then pack must be freed on close
+    int         error;      // stream error indicator from read/write operation
+    unsigned    rest_out;   // remaining unread length for FS_PAK/FS_ZIP
+    int64_t     length;     // total cached file length
 } file_t;
 
 typedef struct {
-    list_t  entry;
-    size_t  targlen;
-    size_t  namelen;
-    char    *target;
-    char    name[1];
+    list_t      entry;
+    unsigned    targlen;
+    unsigned    namelen;
+    char        *target;
+    char        name[1];
 } symlink_t;
 
 // these point to user home directory
@@ -198,8 +201,8 @@ static zipstream_t  fs_zipstream;
 
 static void open_zip_file(file_t *file);
 static void close_zip_file(file_t *file);
-static ssize_t tell_zip_file(file_t *file);
-static ssize_t read_zip_file(file_t *file, void *buf, size_t len);
+static int tell_zip_file(file_t *file);
+static int read_zip_file(file_t *file, void *buf, size_t len);
 #endif
 
 // for tracking users of pack_t instance
@@ -237,17 +240,17 @@ char *FS_ReplaceSeparators(char *s, int separator)
 }
 #endif
 
-static inline qboolean validate_char(int c)
+static inline bool validate_char(int c)
 {
     if (!Q_isprint(c))
-        return qfalse;
+        return false;
 
 #ifdef _WIN32
     if (strchr("<>:\"|?*", c))
-        return qfalse;
+        return false;
 #endif
 
-    return qtrue;
+    return true;
 }
 
 /*
@@ -473,7 +476,7 @@ static symlink_t *expand_links(list_t *list, char *buffer, size_t *len_p)
 FS_Length
 ================
 */
-ssize_t FS_Length(qhandle_t f)
+int64_t FS_Length(qhandle_t f)
 {
     file_t *file = file_for_handle(f);
 
@@ -491,19 +494,19 @@ ssize_t FS_Length(qhandle_t f)
 FS_Tell
 ============
 */
-ssize_t FS_Tell(qhandle_t f)
+int64_t FS_Tell(qhandle_t f)
 {
     file_t *file = file_for_handle(f);
-    long ret;
+    int64_t ret;
 
     if (!file)
         return Q_ERR_BADF;
 
     switch (file->type) {
     case FS_REAL:
-        ret = ftell(file->fp);
+        ret = os_ftell(file->fp);
         if (ret == -1) {
-            return Q_Errno();
+            return Q_ERRNO;
         }
         return ret;
     case FS_PAK:
@@ -523,20 +526,15 @@ ssize_t FS_Tell(qhandle_t f)
     }
 }
 
-static qerror_t seek_pak_file(file_t *file, off_t offset)
+static int seek_pak_file(file_t *file, int64_t offset)
 {
     packfile_t *entry = file->entry;
-    long filepos;
 
     if (offset > entry->filelen)
         offset = entry->filelen;
 
-    if (entry->filepos > LONG_MAX - offset)
-        return Q_ERR_INVAL;
-
-    filepos = entry->filepos + offset;
-    if (fseek(file->fp, filepos, SEEK_SET) == -1)
-        return Q_Errno();
+    if (os_fseek(file->fp, entry->filepos + offset, SEEK_SET) == -1)
+        return Q_ERRNO;
 
     file->rest_out = entry->filelen - offset;
 
@@ -550,31 +548,28 @@ FS_Seek
 Seeks to an absolute position within the file.
 ============
 */
-qerror_t FS_Seek(qhandle_t f, off_t offset)
+int FS_Seek(qhandle_t f, int64_t offset)
 {
     file_t *file = file_for_handle(f);
 
     if (!file)
         return Q_ERR_BADF;
 
-    if (offset > LONG_MAX)
-        return Q_ERR_INVAL;
-
     if (offset < 0)
         offset = 0;
 
     switch (file->type) {
     case FS_REAL:
-        if (fseek(file->fp, (long)offset, SEEK_SET) == -1) {
-            return Q_Errno();
+        if (os_fseek(file->fp, offset, SEEK_SET) == -1) {
+            return Q_ERRNO;
         }
         return Q_ERR_SUCCESS;
     case FS_PAK:
         return seek_pak_file(file, offset);
 #if USE_ZLIB
     case FS_GZ:
-        if (gzseek(file->zfp, (z_off_t)offset, SEEK_SET) == -1) {
-            return Q_Errno();
+        if (gzseek(file->zfp, offset, SEEK_SET) == -1) {
+            return Q_ERR_LIBRARY_ERROR;
         }
         return Q_ERR_SUCCESS;
 #endif
@@ -591,7 +586,7 @@ Creates any directories needed to store the given filename.
 Expects a fully qualified, normalized system path (i.e. with / separators).
 ============
 */
-qerror_t FS_CreatePath(char *path)
+int FS_CreatePath(char *path)
 {
     char *ofs;
     int ret;
@@ -624,7 +619,7 @@ qerror_t FS_CreatePath(char *path)
             ret = os_mkdir(path);
             *ofs = '/';
             if (ret == -1) {
-                qerror_t err = Q_Errno();
+                int err = Q_ERRNO;
                 if (err != Q_ERR_EXIST)
                     return err;
             }
@@ -634,127 +629,24 @@ qerror_t FS_CreatePath(char *path)
     return Q_ERR_SUCCESS;
 }
 
-#define FS_ERR_READ(fp) \
-    (ferror(fp) ? Q_Errno() : Q_ERR_UNEXPECTED_EOF)
-#define FS_ERR_WRITE(fp) \
-    (ferror(fp) ? Q_Errno() : Q_ERR_FAILURE)
-
-/*
-============
-FS_FilterFile
-
-Turns FS_REAL file into FS_GZIP by reopening it through GZIP.
-File position is reset to the beginning of file.
-============
-*/
-qerror_t FS_FilterFile(qhandle_t f)
-{
-#if USE_ZLIB
-    file_t *file = file_for_handle(f);
-    unsigned mode;
-    char *modeStr;
-    void *zfp;
-    uint32_t magic;
-    size_t length;
-    int fd;
-
-    if (!file)
-        return Q_ERR_BADF;
-
-    switch (file->type) {
-    case FS_GZ:
-        return Q_ERR_SUCCESS;
-    case FS_REAL:
-        break;
-    default:
-        return Q_ERR_NOSYS;
-    }
-
-    mode = file->mode & FS_MODE_MASK;
-    switch (mode) {
-    case FS_MODE_READ:
-        // should have at least 10 bytes of header and 8 bytes of trailer
-        if (file->length < 18) {
-            return Q_ERR_FILE_TOO_SMALL;
-        }
-
-        // seek to the header
-        if (fseek(file->fp, 0, SEEK_SET) == -1) {
-            return Q_Errno();
-        }
-
-        // read magic
-        if (fread(&magic, 1, 4, file->fp) != 4) {
-            return FS_ERR_READ(file->fp);
-        }
-
-        // check for gzip header
-        if (!CHECK_GZIP_HEADER(magic)) {
-            return Q_ERR_INVALID_FORMAT;
-        }
-
-        // seek to the trailer
-        if (fseek(file->fp, file->length - 4, SEEK_SET) == -1) {
-            return Q_Errno();
-        }
-
-        // read uncompressed length
-        if (fread(&magic, 1, 4, file->fp) != 4) {
-            return FS_ERR_READ(file->fp);
-        }
-
-        length = LittleLong(magic);
-        modeStr = "rb";
-        break;
-
-    case FS_MODE_WRITE:
-        length = 0;
-        modeStr = "wb";
-        break;
-
-    default:
-        return Q_ERR_NOSYS;
-    }
-
-    // rewind back to beginning
-    if (fseek(file->fp, 0, SEEK_SET) == -1) {
-        return Q_Errno();
-    }
-
-    fd = os_fileno(file->fp);
-    if (fd == -1)
-        return Q_Errno();
-
-    zfp = gzdopen(fd, modeStr);
-    if (!zfp) {
-        return Q_ERR_FAILURE;
-    }
-
-    file->length = length;
-    file->zfp = zfp;
-    file->type = FS_GZ;
-    return Q_ERR_SUCCESS;
-#else
-    return Q_ERR_NOSYS;
-#endif
-}
-
-
 /*
 ==============
 FS_FCloseFile
 ==============
 */
-void FS_FCloseFile(qhandle_t f)
+int FS_FCloseFile(qhandle_t f)
 {
     file_t *file = file_for_handle(f);
+    int ret;
 
     if (!file)
-        return;
+        return Q_ERR_BADF;
 
+    ret = file->error;
     switch (file->type) {
     case FS_REAL:
-        fclose(file->fp);
+        if (fclose(file->fp))
+            ret = Q_ERRNO;
         break;
     case FS_PAK:
         if (file->unique) {
@@ -764,8 +656,8 @@ void FS_FCloseFile(qhandle_t f)
         break;
 #if USE_ZLIB
     case FS_GZ:
-        gzclose(file->zfp);
-        fclose(file->fp);
+        if (gzclose(file->zfp))
+            ret = Q_ERR_LIBRARY_ERROR;
         break;
     case FS_ZIP:
         if (file->unique) {
@@ -775,18 +667,20 @@ void FS_FCloseFile(qhandle_t f)
         break;
 #endif
     default:
+        ret = Q_ERR_NOSYS;
         break;
     }
 
     memset(file, 0, sizeof(*file));
+    return ret;
 }
 
-static qerror_t get_path_info(const char *path, file_info_t *info)
+static int get_path_info(const char *path, file_info_t *info)
 {
     Q_STATBUF st;
 
     if (os_stat(path, &st) == -1)
-        return Q_Errno();
+        return Q_ERRNO;
 
     if (Q_ISDIR(st.st_mode))
         return Q_ERR_ISDIR;
@@ -803,17 +697,17 @@ static qerror_t get_path_info(const char *path, file_info_t *info)
     return Q_ERR_SUCCESS;
 }
 
-static qerror_t get_fp_info(FILE *fp, file_info_t *info)
+static int get_fp_info(FILE *fp, file_info_t *info)
 {
     Q_STATBUF st;
     int fd;
 
     fd = os_fileno(fp);
     if (fd == -1)
-        return Q_Errno();
+        return Q_ERRNO;
 
     if (os_fstat(fd, &st) == -1)
-        return Q_Errno();
+        return Q_ERRNO;
 
     if (Q_ISDIR(st.st_mode))
         return Q_ERR_ISDIR;
@@ -832,9 +726,8 @@ static qerror_t get_fp_info(FILE *fp, file_info_t *info)
 
 FILE *Q_fopen(const char *path, const char *mode)
 {
-#ifndef _GNU_SOURCE
-    if (mode[0] == 'w' && mode[1] == 'x') {
 #ifdef _WIN32
+    if (mode[0] == 'w' && mode[1] == 'x') {
         int flags = _O_WRONLY | _O_CREAT | _O_EXCL | _S_IREAD | _S_IWRITE;
         int fd;
         FILE *fp;
@@ -851,114 +744,27 @@ FILE *Q_fopen(const char *path, const char *mode)
             _close(fd);
 
         return fp;
-#else
-        int flags = O_WRONLY | O_CREAT | O_EXCL;
-        int perm = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
-        int fd;
-        FILE *fp;
-
-        fd = open(path, flags, perm);
-        if (fd == -1)
-            return NULL;
-
-        fp = fdopen(fd, "wb");
-        if (fp == NULL)
-            close(fd);
-
-        return fp;
-#endif
     }
-#endif // _GNU_SOURCE
+#endif
 
     return fopen(path, mode);
 }
 
-static ssize_t open_file_write(file_t *file, const char *name)
+static int64_t open_file_write_real(file_t *file, const char *fullpath, const char *mode_str)
 {
-    char normalized[MAX_OSPATH], fullpath[MAX_OSPATH];
     FILE *fp;
-    char mode_str[8];
-    unsigned mode;
-    size_t len;
-    long pos;
-    qerror_t ret;
-
-    // normalize the path
-    len = FS_NormalizePathBuffer(normalized, name, sizeof(normalized));
-    if (len >= sizeof(normalized)) {
-        return Q_ERR_NAMETOOLONG;
-    }
-
-    // reject empty paths
-    if (len == 0) {
-        return Q_ERR_NAMETOOSHORT;
-    }
-
-    // check for bad characters
-    if (!FS_ValidatePath(normalized)) {
-        ret = Q_ERR_INVALID_PATH;
-        goto fail1;
-    }
-
-    // expand the path
-    if ((file->mode & FS_PATH_MASK) == FS_PATH_BASE) {
-        if (sys_homedir->string[0]) {
-            len = Q_concat(fullpath, sizeof(fullpath),
-                           sys_homedir->string, "/" BASEGAME "/", normalized, NULL);
-        } else {
-            len = Q_concat(fullpath, sizeof(fullpath),
-                           sys_basedir->string, "/" BASEGAME "/", normalized, NULL);
-        }
-    } else {
-        len = Q_concat(fullpath, sizeof(fullpath),
-                       fs_gamedir, "/", normalized, NULL);
-    }
-    if (len >= sizeof(fullpath)) {
-        ret = Q_ERR_NAMETOOLONG;
-        goto fail1;
-    }
-
-    mode = file->mode & FS_MODE_MASK;
-    switch (mode) {
-    case FS_MODE_APPEND:
-        strcpy(mode_str, "a");
-        break;
-    case FS_MODE_WRITE:
-        strcpy(mode_str, "w");
-        if (file->mode & FS_FLAG_EXCL)
-            strcat(mode_str, "x");
-        break;
-    case FS_MODE_RDWR:
-        // this mode is only used by client downloading code
-        // similar to FS_MODE_APPEND, but does not create
-        // the file if it does not exist
-        strcpy(mode_str, "r+");
-        break;
-    default:
-        ret = Q_ERR_INVAL;
-        goto fail1;
-    }
-
-    // open in binary mode by default
-    if (!(file->mode & FS_FLAG_TEXT))
-        strcat(mode_str, "b");
-
-    ret = FS_CreatePath(fullpath);
-    if (ret) {
-        goto fail1;
-    }
+    int64_t pos = 0;
+    int ret;
 
     fp = Q_fopen(fullpath, mode_str);
-    if (!fp) {
-        ret = Q_Errno();
-        goto fail1;
-    }
+    if (!fp)
+        return Q_ERRNO;
 
 #ifndef _WIN32
     // check if this is a regular file
     ret = get_fp_info(fp, NULL);
     if (ret) {
-        goto fail2;
+        goto fail;
     }
 #endif
 
@@ -980,50 +786,149 @@ static ssize_t open_file_write(file_t *file, const char *name)
         break;
     }
 
-    if (mode == FS_MODE_RDWR) {
+    switch (file->mode & FS_MODE_MASK) {
+    case FS_MODE_RDWR:
         // seek to the end of file for appending
-        if (fseek(fp, 0, SEEK_END) == -1) {
-            ret = Q_Errno();
-            goto fail2;
+        if (os_fseek(fp, 0, SEEK_END) == -1) {
+            ret = Q_ERRNO;
+            goto fail;
+        }
+        // fall through
+    case FS_MODE_APPEND:
+        // get current position
+        pos = os_ftell(fp);
+        if (pos == -1) {
+            ret = Q_ERRNO;
+            goto fail;
         }
     }
 
-    // return current position (non-zero for appending modes)
-    pos = ftell(fp);
-    if (pos == -1) {
-        ret = Q_Errno();
-        goto fail2;
-    }
-
-    FS_DPrintf("%s: %s: %lu bytes\n", __func__, fullpath, pos);
-
     file->type = FS_REAL;
     file->fp = fp;
-    file->unique = qtrue;
+    file->unique = true;
     file->error = Q_ERR_SUCCESS;
-    file->length = 0;
-
     return pos;
 
-fail2:
+fail:
     fclose(fp);
-fail1:
+    return ret;
+}
+
+static int64_t open_file_write_gzip(file_t *file, const char *fullpath, const char *mode_str)
+{
+#if USE_ZLIB
+    void *zfp = gzopen(fullpath, mode_str);
+    if (!zfp)
+        return Q_ERR_LIBRARY_ERROR;
+
+    file->type = FS_GZ;
+    file->zfp = zfp;
+    file->unique = true;
+    file->error = Q_ERR_SUCCESS;
+    return 0;
+#else
+    return Q_ERR_NOSYS;
+#endif
+}
+
+static int64_t open_file_write(file_t *file, const char *name)
+{
+    char normalized[MAX_OSPATH], fullpath[MAX_OSPATH];
+    char mode_str[8];
+    size_t len;
+    int64_t pos;
+    int ret;
+
+    // normalize the path
+    len = FS_NormalizePathBuffer(normalized, name, sizeof(normalized));
+    if (len >= sizeof(normalized)) {
+        return Q_ERR_NAMETOOLONG;
+    }
+
+    // reject empty paths
+    if (len == 0) {
+        return Q_ERR_NAMETOOSHORT;
+    }
+
+    // check for bad characters
+    if (!FS_ValidatePath(normalized)) {
+        ret = Q_ERR_INVALID_PATH;
+        goto fail;
+    }
+
+    // expand the path
+    if ((file->mode & FS_PATH_MASK) == FS_PATH_BASE) {
+        if (sys_homedir->string[0]) {
+            len = Q_concat(fullpath, sizeof(fullpath),
+                           sys_homedir->string, "/" BASEGAME "/", normalized, NULL);
+        } else {
+            len = Q_concat(fullpath, sizeof(fullpath),
+                           sys_basedir->string, "/" BASEGAME "/", normalized, NULL);
+        }
+    } else {
+        len = Q_concat(fullpath, sizeof(fullpath),
+                       fs_gamedir, "/", normalized, NULL);
+    }
+    if (len >= sizeof(fullpath)) {
+        ret = Q_ERR_NAMETOOLONG;
+        goto fail;
+    }
+
+    ret = FS_CreatePath(fullpath);
+    if (ret) {
+        goto fail;
+    }
+
+    switch (file->mode & FS_MODE_MASK) {
+    case FS_MODE_APPEND:
+        strcpy(mode_str, "a");
+        break;
+    case FS_MODE_WRITE:
+        strcpy(mode_str, "w");
+        if (file->mode & FS_FLAG_EXCL)
+            strcat(mode_str, "x");
+        break;
+    case FS_MODE_RDWR:
+        // this mode is only used by client downloading code
+        // similar to FS_MODE_APPEND, but does not create
+        // the file if it does not exist
+        strcpy(mode_str, "r+");
+        break;
+    default:
+        Com_Error(ERR_FATAL, "%s: bad mode", __func__);
+    }
+
+    // open in binary mode by default
+    if (!(file->mode & FS_FLAG_TEXT))
+        strcat(mode_str, "b");
+
+    if (file->mode & FS_FLAG_GZIP)
+        pos = open_file_write_gzip(file, fullpath, mode_str);
+    else
+        pos = open_file_write_real(file, fullpath, mode_str);
+
+    if (pos < 0) {
+        ret = pos;
+        goto fail;
+    }
+
+    FS_DPrintf("%s: %s: %"PRId64" bytes\n", __func__, fullpath, pos);
+    return pos;
+
+fail:
     FS_DPrintf("%s: %s: %s\n", __func__, normalized, Q_ErrorString(ret));
     return ret;
 }
 
 #if USE_ZLIB
 
-static qerror_t check_header_coherency(FILE *fp, packfile_t *entry)
+static int check_header_coherency(FILE *fp, packfile_t *entry)
 {
-    unsigned flags, comp_mtd;
-    size_t comp_len, file_len;
-    size_t name_size, xtra_size;
+    unsigned ofs, flags, comp_mtd, comp_len, file_len, name_size, xtra_size;
     byte header[ZIP_SIZELOCALHEADER];
-    size_t ofs;
 
-    if (fseek(fp, (long)entry->filepos, SEEK_SET) == -1)
-        return Q_Errno();
+    if (os_fseek(fp, entry->filepos, SEEK_SET) == -1)
+        return Q_ERRNO;
     if (fread(header, 1, sizeof(header), fp) != sizeof(header))
         return FS_ERR_READ(fp);
 
@@ -1051,12 +956,11 @@ static qerror_t check_header_coherency(FILE *fp, packfile_t *entry)
     }
 
     ofs = ZIP_SIZELOCALHEADER + name_size + xtra_size;
-    if (entry->filepos > LONG_MAX - ofs) {
-        return Q_ERR_SPIPE;
-    }
+    if (entry->filepos + entry->complen > INT_MAX - ofs)
+        return Q_ERR_NOT_COHERENT;
 
     entry->filepos += ofs;
-    entry->coherent = qtrue;
+    entry->coherent = true;
     return Q_ERR_SUCCESS;
 }
 
@@ -1113,14 +1017,14 @@ static void close_zip_file(file_t *file)
     fclose(file->fp);
 }
 
-static ssize_t tell_zip_file(file_t *file)
+static int tell_zip_file(file_t *file)
 {
     zipstream_t *s = file->zfp;
 
     return s->stream.total_out;
 }
 
-static ssize_t read_zip_file(file_t *file, void *buf, size_t len)
+static int read_zip_file(file_t *file, void *buf, size_t len)
 {
     zipstream_t *s = file->zfp;
     z_streamp z = &s->stream;
@@ -1188,15 +1092,15 @@ static ssize_t read_zip_file(file_t *file, void *buf, size_t len)
 #endif
 
 // open a new file on the pakfile
-static ssize_t open_from_pak(file_t *file, pack_t *pack, packfile_t *entry, qboolean unique)
+static int64_t open_from_pak(file_t *file, pack_t *pack, packfile_t *entry, bool unique)
 {
     FILE *fp;
-    qerror_t ret;
+    int ret;
 
     if (unique) {
         fp = fopen(pack->filename, "rb");
         if (!fp) {
-            ret = Q_Errno();
+            ret = Q_ERRNO;
             goto fail1;
         }
     } else {
@@ -1213,8 +1117,8 @@ static ssize_t open_from_pak(file_t *file, pack_t *pack, packfile_t *entry, qboo
     }
 #endif
 
-    if (fseek(fp, (long)entry->filepos, SEEK_SET) == -1) {
-        ret = Q_Errno();
+    if (os_fseek(fp, entry->filepos, SEEK_SET) == -1) {
+        ret = Q_ERRNO;
         goto fail2;
     }
 
@@ -1248,7 +1152,7 @@ static ssize_t open_from_pak(file_t *file, pack_t *pack, packfile_t *entry, qboo
         pack_get(pack);
     }
 
-    FS_DPrintf("%s: %s/%s: %"PRIz" bytes\n",
+    FS_DPrintf("%s: %s/%s: %"PRId64" bytes\n",
                __func__, pack->filename, entry->name, file->length);
 
     return file->length;
@@ -1262,17 +1166,65 @@ fail1:
     return ret;
 }
 
-static ssize_t open_from_disk(file_t *file, const char *fullpath)
+#if USE_ZLIB
+static int check_for_gzip(file_t *file, const char *fullpath)
+{
+    uint32_t magic, length;
+    void *zfp;
+
+    // should have at least 10 bytes of header and 8 bytes of trailer
+    if (file->length < 18) {
+        return 0;
+    }
+
+    // read magic
+    if (fread(&magic, 1, 4, file->fp) != 4) {
+        return FS_ERR_READ(file->fp);
+    }
+
+    // check for gzip header
+    if ((LittleLong(magic) & 0xe0ffffff) != 0x00088b1f) {
+        // rewind back to beginning
+        if (os_fseek(file->fp, 0, SEEK_SET) == -1) {
+            return Q_ERRNO;
+        }
+        return 0;
+    }
+
+    // seek to the trailer
+    if (os_fseek(file->fp, file->length - 4, SEEK_SET) == -1) {
+        return Q_ERRNO;
+    }
+
+    // read uncompressed length
+    if (fread(&length, 1, 4, file->fp) != 4) {
+        return FS_ERR_READ(file->fp);
+    }
+
+    zfp = gzopen(fullpath, "rb");
+    if (!zfp) {
+        return Q_ERR_LIBRARY_ERROR;
+    }
+
+    file->type = FS_GZ;
+    file->fp = NULL;
+    file->zfp = zfp;
+    file->length = LittleLong(length);
+    return 1;
+}
+#endif
+
+static int64_t open_from_disk(file_t *file, const char *fullpath)
 {
     FILE *fp;
     file_info_t info;
-    qerror_t ret;
+    int ret;
 
     FS_COUNT_OPEN;
 
     fp = fopen(fullpath, "rb");
     if (!fp) {
-        ret = Q_Errno();
+        ret = Q_ERRNO;
         goto fail;
     }
 
@@ -1284,12 +1236,25 @@ static ssize_t open_from_disk(file_t *file, const char *fullpath)
 
     file->type = FS_REAL;
     file->fp = fp;
-    file->unique = qtrue;
+    file->unique = true;
     file->error = Q_ERR_SUCCESS;
     file->length = info.size;
 
-    FS_DPrintf("%s: %s: %"PRIz" bytes\n", __func__, fullpath, info.size);
-    return info.size;
+#if USE_ZLIB
+    if (file->mode & FS_FLAG_GZIP) {
+        ret = check_for_gzip(file, fullpath);
+        if (ret) {
+            fclose(fp);
+            if (ret < 0) {
+                memset(file, 0, sizeof(*file));
+                goto fail;
+            }
+        }
+    }
+#endif
+
+    FS_DPrintf("%s: %s: %"PRId64" bytes\n", __func__, fullpath, file->length);
+    return file->length;
 
 fail:
     FS_DPrintf("%s: %s: %s\n", __func__, fullpath, Q_ErrorString(ret));
@@ -1299,14 +1264,14 @@ fail:
 // Finds the file in the search path.
 // Fills file_t and returns file length.
 // Used for streaming data out of either a pak file or a seperate file.
-static ssize_t open_file_read(file_t *file, const char *normalized, size_t namelen, qboolean unique)
+static int64_t open_file_read(file_t *file, const char *normalized, size_t namelen, bool unique)
 {
     char            fullpath[MAX_OSPATH];
     searchpath_t    *search;
     pack_t          *pak;
     unsigned        hash;
     packfile_t      *entry;
-    ssize_t         ret;
+    int64_t         ret;
     int             valid;
     size_t          len;
 
@@ -1408,10 +1373,10 @@ fail:
 }
 
 // Normalizes quake path, expands symlinks
-static ssize_t expand_open_file_read(file_t *file, const char *name, qboolean unique)
+static int64_t expand_open_file_read(file_t *file, const char *name, bool unique)
 {
     char        normalized[MAX_OSPATH];
-    ssize_t     ret;
+    int64_t     ret;
     size_t      namelen;
 
 // normalize path
@@ -1444,7 +1409,7 @@ static ssize_t expand_open_file_read(file_t *file, const char *name, qboolean un
     return ret;
 }
 
-static ssize_t read_pak_file(file_t *file, void *buf, size_t len)
+static int read_pak_file(file_t *file, void *buf, size_t len)
 {
     size_t result;
 
@@ -1467,13 +1432,13 @@ static ssize_t read_pak_file(file_t *file, void *buf, size_t len)
     return result;
 }
 
-static ssize_t read_phys_file(file_t *file, void *buf, size_t len)
+static int read_phys_file(file_t *file, void *buf, size_t len)
 {
     size_t result;
 
     result = fread(buf, 1, len, file->fp);
     if (result != len && ferror(file->fp)) {
-        file->error = Q_Errno();
+        file->error = Q_ERR_FAILURE;
         if (!result) {
             return file->error;
         }
@@ -1487,7 +1452,7 @@ static ssize_t read_phys_file(file_t *file, void *buf, size_t len)
 FS_Read
 =================
 */
-ssize_t FS_Read(void *buf, size_t len, qhandle_t f)
+int FS_Read(void *buf, size_t len, qhandle_t f)
 {
     file_t *file = file_for_handle(f);
 #if USE_ZLIB
@@ -1504,7 +1469,7 @@ ssize_t FS_Read(void *buf, size_t len, qhandle_t f)
     if (file->error)
         return file->error;
 
-    if (len > SSIZE_MAX)
+    if (len > INT_MAX)
         return Q_ERR_INVAL;
 
     if (len == 0)
@@ -1530,7 +1495,7 @@ ssize_t FS_Read(void *buf, size_t len, qhandle_t f)
     }
 }
 
-ssize_t FS_ReadLine(qhandle_t f, char *buffer, size_t size)
+int FS_ReadLine(qhandle_t f, char *buffer, size_t size)
 {
     file_t *file = file_for_handle(f);
     char *s;
@@ -1548,7 +1513,7 @@ ssize_t FS_ReadLine(qhandle_t f, char *buffer, size_t size)
     do {
         s = fgets(buffer, size, file->fp);
         if (!s) {
-            return ferror(file->fp) ? Q_Errno() : 0;
+            return ferror(file->fp) ? Q_ERR_FAILURE : 0;
         }
         len = strlen(s);
     } while (len < 2);
@@ -1583,10 +1548,9 @@ void FS_Flush(qhandle_t f)
 FS_Write
 =================
 */
-ssize_t FS_Write(const void *buf, size_t len, qhandle_t f)
+int FS_Write(const void *buf, size_t len, qhandle_t f)
 {
     file_t  *file = file_for_handle(f);
-    size_t  result;
 
     if (!file)
         return Q_ERR_BADF;
@@ -1598,7 +1562,7 @@ ssize_t FS_Write(const void *buf, size_t len, qhandle_t f)
     if (file->error)
         return file->error;
 
-    if (len > SSIZE_MAX)
+    if (len > INT_MAX)
         return Q_ERR_INVAL;
 
     if (len == 0)
@@ -1606,15 +1570,14 @@ ssize_t FS_Write(const void *buf, size_t len, qhandle_t f)
 
     switch (file->type) {
     case FS_REAL:
-        result = fwrite(buf, 1, len, file->fp);
-        if (result != len) {
-            file->error = FS_ERR_WRITE(file->fp);
+        if (fwrite(buf, 1, len, file->fp) != len) {
+            file->error = Q_ERR_FAILURE;
             return file->error;
         }
         break;
 #if USE_ZLIB
     case FS_GZ:
-        if (gzwrite(file->zfp, buf, len) == 0) {
+        if (gzwrite(file->zfp, buf, len) != len) {
             file->error = Q_ERR_LIBRARY_ERROR;
             return file->error;
         }
@@ -1632,11 +1595,11 @@ ssize_t FS_Write(const void *buf, size_t len, qhandle_t f)
 FS_FOpenFile
 ============
 */
-ssize_t FS_FOpenFile(const char *name, qhandle_t *f, unsigned mode)
+int64_t FS_FOpenFile(const char *name, qhandle_t *f, unsigned mode)
 {
     file_t *file;
     qhandle_t handle;
-    ssize_t ret;
+    int64_t ret;
 
     if (!name || !f) {
         Com_Error(ERR_FATAL, "%s: NULL", __func__);
@@ -1657,7 +1620,7 @@ ssize_t FS_FOpenFile(const char *name, qhandle_t *f, unsigned mode)
     file->mode = mode;
 
     if ((mode & FS_MODE_MASK) == FS_MODE_READ) {
-        ret = expand_open_file_read(file, name, qtrue);
+        ret = expand_open_file_read(file, name, true);
     } else {
         ret = open_file_write(file, name);
     }
@@ -1673,7 +1636,8 @@ ssize_t FS_FOpenFile(const char *name, qhandle_t *f, unsigned mode)
 static qhandle_t easy_open_read(char *buf, size_t size, unsigned mode,
                                 const char *dir, const char *name, const char *ext)
 {
-    ssize_t len;
+    size_t len;
+    int64_t ret;
     qhandle_t f;
 
     if (*name == '/') {
@@ -1683,18 +1647,18 @@ static qhandle_t easy_open_read(char *buf, size_t size, unsigned mode,
         // first try without extension
         len = Q_concat(buf, size, dir, name, NULL);
         if (len >= size) {
-            Q_PrintError("open", Q_ERR_NAMETOOLONG);
-            return 0;
+            ret = Q_ERR_NAMETOOLONG;
+            goto fail;
         }
 
         // print normalized path in case of error
         FS_NormalizePath(buf, buf);
 
-        len = FS_FOpenFile(buf, &f, mode);
+        ret = FS_FOpenFile(buf, &f, mode);
         if (f) {
             return f; // succeeded
         }
-        if (len != Q_ERR_NOENT) {
+        if (ret != Q_ERR_NOENT) {
             goto fail; // fatal error
         }
         if (!COM_CompareExtension(buf, ext)) {
@@ -1706,17 +1670,17 @@ static qhandle_t easy_open_read(char *buf, size_t size, unsigned mode,
     }
 
     if (len >= size) {
-        Q_PrintError("open", Q_ERR_NAMETOOLONG);
-        return 0;
+        ret = Q_ERR_NAMETOOLONG;
+        goto fail;
     }
 
-    len = FS_FOpenFile(buf, &f, mode);
+    ret = FS_FOpenFile(buf, &f, mode);
     if (f) {
         return f;
     }
 
 fail:
-    Com_Printf("Couldn't open %s: %s\n", buf, Q_ErrorString(len));
+    Com_Printf("Couldn't open %s: %s\n", buf, Q_ErrorString(ret));
     return 0;
 }
 
@@ -1725,20 +1689,23 @@ static qhandle_t easy_open_write(char *buf, size_t size, unsigned mode,
                                  const char *dir, const char *name, const char *ext)
 {
     char normalized[MAX_OSPATH];
-    ssize_t len;
+    size_t len;
+    int64_t ret;
     qhandle_t f;
 
     // make it impossible to escape the destination directory when writing files
     len = FS_NormalizePathBuffer(normalized, name, sizeof(normalized));
     if (len >= sizeof(normalized)) {
-        Q_PrintError("open", Q_ERR_NAMETOOLONG);
-        return 0;
+        ret = Q_ERR_NAMETOOLONG;
+        buf = normalized;
+        goto fail;
     }
 
     // reject empty filenames
     if (len == 0) {
-        Q_PrintError("open", Q_ERR_NAMETOOSHORT);
-        return 0;
+        ret = Q_ERR_NAMETOOSHORT;
+        buf = normalized;
+        goto fail;
     }
 
     // replace any bad characters with underscores to make automatic commands happy
@@ -1752,28 +1719,17 @@ static qhandle_t easy_open_write(char *buf, size_t size, unsigned mode,
     len = Q_concat(buf, size, dir, normalized, ext,
                    (mode & FS_FLAG_GZIP) ? ".gz" : NULL, NULL);
     if (len >= size) {
-        Q_PrintError("open", Q_ERR_NAMETOOLONG);
-        return 0;
+        ret = Q_ERR_NAMETOOLONG;
+        goto fail;
     }
 
-    len = FS_FOpenFile(buf, &f, mode);
-    if (!f) {
-        goto fail1;
+    ret = FS_FOpenFile(buf, &f, mode);
+    if (f) {
+        return f;
     }
 
-    if (mode & FS_FLAG_GZIP) {
-        len = FS_FilterFile(f);
-        if (len) {
-            goto fail2;
-        }
-    }
-
-    return f;
-
-fail2:
-    FS_FCloseFile(f);
-fail1:
-    Com_EPrintf("Couldn't open %s: %s\n", buf, Q_ErrorString(len));
+fail:
+    Com_EPrintf("Couldn't open %s: %s\n", buf, Q_ErrorString(ret));
     return 0;
 }
 
@@ -1804,12 +1760,13 @@ opens non-unique file handle as an optimization
 a NULL buffer will just return the file length without loading
 ============
 */
-ssize_t FS_LoadFileEx(const char *path, void **buffer, unsigned flags, memtag_t tag)
+int FS_LoadFileEx(const char *path, void **buffer, unsigned flags, memtag_t tag)
 {
     file_t *file;
     qhandle_t f;
     byte *buf;
-    ssize_t len, read;
+    int64_t len;
+    int read;
 
     if (!path) {
         Com_Error(ERR_FATAL, "%s: NULL", __func__);
@@ -1832,19 +1789,19 @@ ssize_t FS_LoadFileEx(const char *path, void **buffer, unsigned flags, memtag_t 
     file->mode = (flags & ~FS_MODE_MASK) | FS_MODE_READ;
 
     // look for it in the filesystem or pack files
-    len = expand_open_file_read(file, path, qfalse);
+    len = expand_open_file_read(file, path, false);
     if (len < 0) {
         return len;
-    }
-
-    // NULL buffer just checks for file existence
-    if (!buffer) {
-        goto done;
     }
 
     // sanity check file size
     if (len > MAX_LOADFILE) {
         len = Q_ERR_FBIG;
+        goto done;
+    }
+
+    // NULL buffer just checks for file existence
+    if (!buffer) {
         goto done;
     }
 
@@ -1867,27 +1824,28 @@ done:
     return len;
 }
 
+static int write_and_close(const void *data, size_t len, qhandle_t f)
+{
+    int ret1 = FS_Write(data, len, f);
+    int ret2 = FS_FCloseFile(f);
+    return ret1 < 0 ? ret1 : ret2;
+}
+
 /*
 ================
 FS_WriteFile
 ================
 */
-qerror_t FS_WriteFile(const char *path, const void *data, size_t len)
+int FS_WriteFile(const char *path, const void *data, size_t len)
 {
     qhandle_t f;
-    ssize_t write;
-    qerror_t ret;
+    int ret;
 
     // TODO: write to temp file perhaps?
-    write = FS_FOpenFile(path, &f, FS_MODE_WRITE);
-    if (!f) {
-        return write;
+    ret = FS_FOpenFile(path, &f, FS_MODE_WRITE);
+    if (f) {
+        ret = write_and_close(data, len, f);
     }
-
-    write = FS_Write(data, len, f);
-    ret = write == len ? Q_ERR_SUCCESS : write < 0 ? write : Q_ERR_FAILURE;
-
-    FS_FCloseFile(f);
     return ret;
 }
 
@@ -1900,31 +1858,26 @@ the arguments, checks for path buffer overflow, and attempts
 to write the file, printing an error message in case of failure.
 ============
 */
-qboolean FS_EasyWriteFile(char *buf, size_t size, unsigned mode,
-                          const char *dir, const char *name, const char *ext,
-                          const void *data, size_t len)
+bool FS_EasyWriteFile(char *buf, size_t size, unsigned mode,
+                      const char *dir, const char *name, const char *ext,
+                      const void *data, size_t len)
 {
     qhandle_t f;
-    ssize_t write;
-    qerror_t ret;
+    int ret;
 
     // TODO: write to temp file perhaps?
     f = easy_open_write(buf, size, mode, dir, name, ext);
     if (!f) {
-        return qfalse;
+        return false;
     }
 
-    write = FS_Write(data, len, f);
-    ret = write == len ? Q_ERR_SUCCESS : write < 0 ? write : Q_ERR_FAILURE;
-
-    FS_FCloseFile(f);
-
-    if (ret) {
+    ret = write_and_close(data, len, f);
+    if (ret < 0) {
         Com_EPrintf("Couldn't write %s: %s\n", buf, Q_ErrorString(ret));
-        return qfalse;
+        return false;
     }
 
-    return qtrue;
+    return true;
 }
 
 #if USE_CLIENT
@@ -1934,7 +1887,7 @@ qboolean FS_EasyWriteFile(char *buf, size_t size, unsigned mode,
 FS_RenameFile
 ================
 */
-qerror_t FS_RenameFile(const char *from, const char *to)
+int FS_RenameFile(const char *from, const char *to)
 {
     char normalized[MAX_OSPATH];
     char frompath[MAX_OSPATH];
@@ -1967,7 +1920,7 @@ qerror_t FS_RenameFile(const char *from, const char *to)
 
     // rename it
     if (rename(frompath, topath))
-        return Q_Errno();
+        return Q_ERRNO;
 
     return Q_ERR_SUCCESS;
 }
@@ -1979,7 +1932,7 @@ qerror_t FS_RenameFile(const char *from, const char *to)
 FS_FPrintf
 ================
 */
-ssize_t FS_FPrintf(qhandle_t f, const char *format, ...)
+int FS_FPrintf(qhandle_t f, const char *format, ...)
 {
     va_list argptr;
     char string[MAXPRINTMSG];
@@ -2108,13 +2061,11 @@ static pack_t *load_pak_file(const char *packfile)
     }
 
     header.dirofs = LittleLong(header.dirofs);
-#ifndef _LP64
-    if (header.dirofs > LONG_MAX - header.dirlen) {
+    if (header.dirofs > INT_MAX) {
         Com_Printf("%s has bad directory offset\n", packfile);
         goto fail;
     }
-#endif
-    if (fseek(fp, (long)header.dirofs, SEEK_SET)) {
+    if (os_fseek(fp, header.dirofs, SEEK_SET)) {
         Com_Printf("Seeking to directory failed on %s\n", packfile);
         goto fail;
     }
@@ -2127,12 +2078,10 @@ static pack_t *load_pak_file(const char *packfile)
     for (i = 0, dfile = info; i < num_files; i++, dfile++) {
         dfile->filepos = LittleLong(dfile->filepos);
         dfile->filelen = LittleLong(dfile->filelen);
-#ifndef _LP64
-        if (dfile->filelen > LONG_MAX || dfile->filepos > LONG_MAX - dfile->filelen) {
+        if (dfile->filelen > INT_MAX || dfile->filepos > INT_MAX - dfile->filelen) {
             Com_Printf("%s has bad directory structure\n", packfile);
             goto fail;
         }
-#endif
         dfile->name[sizeof(dfile->name) - 1] = 0;
         names_len += strlen(dfile->name) + 1;
     }
@@ -2152,7 +2101,7 @@ static pack_t *load_pak_file(const char *packfile)
         file->filepos = dfile->filepos;
         file->filelen = dfile->filelen;
 #if USE_ZLIB
-        file->coherent = qtrue;
+        file->coherent = true;
 #endif
 
         pack_hash_file(pack, file);
@@ -2172,26 +2121,27 @@ fail:
 #if USE_ZLIB
 
 // Locate the central directory of a zipfile (at the end, just before the global comment)
-static size_t search_central_header(FILE *fp)
+static unsigned search_central_header(FILE *fp)
 {
-    size_t file_size, back_read;
-    size_t max_back = 0xffff; // maximum size of global comment
+    unsigned file_size, back_read;
+    unsigned max_back = 0xffff; // maximum size of global comment
     byte buf[ZIP_BUFREADCOMMENT + 4];
-    long ret;
+    int64_t ret;
 
-    if (fseek(fp, 0, SEEK_END) == -1)
+    if (os_fseek(fp, 0, SEEK_END) == -1)
         return 0;
 
-    ret = ftell(fp);
-    if (ret == -1)
+    ret = os_ftell(fp);
+    if (ret == -1 || ret > INT_MAX)
         return 0;
-    file_size = (size_t)ret;
+
+    file_size = ret;
     if (max_back > file_size)
         max_back = file_size;
 
     back_read = 4;
     while (back_read < max_back) {
-        size_t i, read_size, read_pos;
+        unsigned i, read_size, read_pos;
 
         if (back_read + ZIP_BUFREADCOMMENT > max_back)
             back_read = max_back;
@@ -2204,7 +2154,7 @@ static size_t search_central_header(FILE *fp)
         if (read_size > ZIP_BUFREADCOMMENT + 4)
             read_size = ZIP_BUFREADCOMMENT + 4;
 
-        if (fseek(fp, (long)read_pos, SEEK_SET) == -1)
+        if (os_fseek(fp, read_pos, SEEK_SET) == -1)
             break;
         if (fread(buf, 1, read_size, fp) != read_size)
             break;
@@ -2221,18 +2171,16 @@ static size_t search_central_header(FILE *fp)
 }
 
 // Get Info about the current file in the zipfile, with internal only info
-static size_t get_file_info(FILE *fp, size_t pos, packfile_t *file, size_t *len, size_t remaining)
+static unsigned get_file_info(FILE *fp, unsigned pos, packfile_t *file, size_t *len, size_t remaining)
 {
-    size_t name_size, xtra_size, comm_size;
-    size_t comp_len, file_len, file_pos;
-    unsigned comp_mtd;
+    unsigned comp_mtd, comp_len, file_len, name_size, xtra_size, comm_size, file_pos;
     byte header[ZIP_SIZECENTRALDIRITEM]; // we can't use a struct here because of packing
 
     *len = 0;
 
-    if (pos > LONG_MAX)
+    if (pos > INT_MAX)
         return 0;
-    if (fseek(fp, (long)pos, SEEK_SET) == -1)
+    if (os_fseek(fp, pos, SEEK_SET) == -1)
         return 0;
     if (fread(header, 1, sizeof(header), fp) != sizeof(header))
         return 0;
@@ -2249,9 +2197,7 @@ static size_t get_file_info(FILE *fp, size_t pos, packfile_t *file, size_t *len,
     comm_size = LittleShortMem(&header[32]);
     file_pos = LittleLongMem(&header[42]);
 
-    if (file_len > LONG_MAX)
-        return 0;
-    if (comp_len > LONG_MAX || file_pos > LONG_MAX - comp_len)
+    if (file_len > INT_MAX || comp_len > INT_MAX || file_pos > INT_MAX - comp_len)
         return 0;
 
     if (!file_len || !comp_len) {
@@ -2300,8 +2246,8 @@ static pack_t *load_zip_file(const char *packfile)
     char            *name;
     size_t          len, names_len;
     unsigned        i, num_disk, num_disk_cd, num_files, num_files_cd;
-    size_t          header_pos, central_ofs, central_size, central_end;
-    size_t          extra_bytes, ofs;
+    unsigned        header_pos, central_ofs, central_size, central_end;
+    unsigned        extra_bytes, ofs;
     pack_t          *pack;
     FILE            *fp;
     byte            header[ZIP_SIZECENTRALHEADER];
@@ -2317,7 +2263,7 @@ static pack_t *load_zip_file(const char *packfile)
         Com_Printf("No central header found in %s\n", packfile);
         goto fail2;
     }
-    if (fseek(fp, (long)header_pos, SEEK_SET) == -1) {
+    if (os_fseek(fp, header_pos, SEEK_SET) == -1) {
         Com_Printf("Couldn't seek to central header in %s\n", packfile);
         goto fail2;
     }
@@ -2354,7 +2300,7 @@ static pack_t *load_zip_file(const char *packfile)
 // non-zero for sfx?
     extra_bytes = header_pos - central_end;
     if (extra_bytes) {
-        Com_Printf("%s has %"PRIz" extra bytes at the beginning, funny sfx archive?\n",
+        Com_Printf("%s has %d extra bytes at the beginning, funny sfx archive?\n",
                    packfile, extra_bytes);
     }
 
@@ -2402,7 +2348,7 @@ static pack_t *load_zip_file(const char *packfile)
         if (len) {
             // fix absolute position
             file->filepos += extra_bytes;
-            file->coherent = qfalse;
+            file->coherent = false;
 
             pack_hash_file(pack, file);
 
@@ -2539,7 +2485,7 @@ static void q_printf(2, 3) add_game_dir(unsigned mode, const char *fmt, ...)
 FS_CopyInfo
 =================
 */
-file_info_t *FS_CopyInfo(const char *name, size_t size, time_t ctime, time_t mtime)
+file_info_t *FS_CopyInfo(const char *name, int64_t size, time_t ctime, time_t mtime)
 {
     file_info_t *out;
     size_t len;
@@ -2576,26 +2522,26 @@ void **FS_CopyList(void **list, int count)
     return out;
 }
 
-qboolean FS_WildCmp(const char *filter, const char *string)
+bool FS_WildCmp(const char *filter, const char *string)
 {
     do {
-        if (Com_WildCmpEx(filter, string, ';', qtrue)) {
-            return qtrue;
+        if (Com_WildCmpEx(filter, string, ';', true)) {
+            return true;
         }
         filter = strchr(filter, ';');
         if (filter) filter++;
     } while (filter);
 
-    return qfalse;
+    return false;
 }
 
-qboolean FS_ExtCmp(const char *ext, const char *name)
+bool FS_ExtCmp(const char *ext, const char *name)
 {
     int        c1, c2;
     const char *e, *n, *l;
 
     if (!name[0] || !ext[0]) {
-        return qfalse;
+        return false;
     }
 
     for (l = name; l[1]; l++)
@@ -2624,15 +2570,15 @@ rescan:
                         goto rescan;
                     }
                 }
-                return qfalse;
+                return false;
             }
         }
         if (n < name) {
-            return qfalse;
+            return false;
         }
     } while (e >= ext);
 
-    return qtrue;
+    return true;
 }
 
 static int infocmp(const void *p1, const void *p2)
@@ -2656,10 +2602,7 @@ static int alphacmp(const void *p1, const void *p2)
 FS_ListFiles
 =================
 */
-void **FS_ListFiles(const char *path,
-                    const char *filter,
-                    unsigned   flags,
-                    int        *count_p)
+void **FS_ListFiles(const char *path, const char *filter, unsigned flags, int *count_p)
 {
     searchpath_t    *search;
     packfile_t      *file;
@@ -2991,10 +2934,9 @@ static void FS_WhereIs_f(void)
     symlink_t       *link;
     unsigned        hash;
     file_info_t     info;
-    qerror_t        ret;
-    int             total, valid;
+    int             ret, total, valid;
     size_t          len, namelen;
-    qboolean        report_all;
+    bool            report_all;
 
     if (Cmd_Argc() < 2) {
         Com_Printf("Usage: %s <path> [all]\n", Cmd_Argv(0));
@@ -3061,7 +3003,7 @@ recheck:
                 }
                 if (!FS_pathcmp(entry->name, normalized)) {
                     // found it!
-                    Com_Printf("%s/%s (%"PRIz" bytes)\n", pak->filename,
+                    Com_Printf("%s/%s (%d bytes)\n", pak->filename,
                                normalized, entry->filelen);
                     if (!report_all) {
                         return;
@@ -3107,7 +3049,7 @@ recheck:
 #endif
 
             if (ret == Q_ERR_SUCCESS) {
-                Com_Printf("%s (%"PRIz" bytes)\n", fullpath, info.size);
+                Com_Printf("%s (%"PRId64" bytes)\n", fullpath, info.size);
                 if (!report_all) {
                     return;
                 }
@@ -3252,11 +3194,8 @@ static void FS_Link_g(genctx_t *ctx)
     else
         list = &fs_hard_links;
 
-    FOR_EACH_SYMLINK(link, list) {
-        if (!Prompt_AddMatch(ctx, link->name)) {
-            break;
-        }
-    }
+    FOR_EACH_SYMLINK(link, list)
+        Prompt_AddMatch(ctx, link->name);
 }
 
 static void FS_Link_c(genctx_t *ctx, int argnum)
@@ -3483,7 +3422,7 @@ FS_Restart
 Unless total is true, reloads paks only up to base dir
 ================
 */
-void FS_Restart(qboolean total)
+void FS_Restart(bool total)
 {
     Com_Printf("----- FS_Restart -----\n");
 
@@ -3516,7 +3455,7 @@ Console command to fully re-start the file system.
 */
 static void FS_Restart_f(void)
 {
-    CL_RestartFilesystem(qtrue);
+    CL_RestartFilesystem(true);
 }
 
 static const cmdreg_t c_fs[] = {
@@ -3604,7 +3543,7 @@ static void fs_game_changed(cvar_t *self)
     }
 
     // otherwise, restart the filesystem
-    CL_RestartFilesystem(qfalse);
+    CL_RestartFilesystem(false);
 
     // FIXME: if baseq2/autoexec.cfg exists DO NOT exec default.cfg and config.cfg.
     // this assumes user prefers to do configuration via autoexec.cfg and doesn't

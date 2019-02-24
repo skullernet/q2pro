@@ -165,15 +165,6 @@ void VID_SetMode(void)
     VID_SDL_ModeChanged();
 }
 
-void VID_VideoWait(void)
-{
-}
-
-qboolean VID_VideoSync(void)
-{
-    return qtrue;
-}
-
 void VID_BeginFrame(void)
 {
 }
@@ -274,12 +265,12 @@ char *VID_GetDefaultModeList(void)
     return buf;
 }
 
-qboolean VID_Init(void)
+bool VID_Init(void)
 {
     vrect_t rc;
 
     if (VID_SDL_InitSubSystem()) {
-        return qfalse;
+        return false;
     }
 
     VID_SDL_GL_SetAttributes();
@@ -341,11 +332,11 @@ qboolean VID_Init(void)
     }
 
     VID_SDL_ModeChanged();
-    return qtrue;
+    return true;
 
 fail:
     VID_Shutdown();
-    return qfalse;
+    return false;
 }
 
 void VID_Shutdown(void)
@@ -492,19 +483,19 @@ static void mouse_button_event(SDL_MouseButtonEvent *event)
 static void mouse_wheel_event(SDL_MouseWheelEvent *event)
 {
     if (event->x > 0) {
-        Key_Event(K_MWHEELRIGHT, qtrue, event->timestamp);
-        Key_Event(K_MWHEELRIGHT, qfalse, event->timestamp);
+        Key_Event(K_MWHEELRIGHT, true, event->timestamp);
+        Key_Event(K_MWHEELRIGHT, false, event->timestamp);
     } else if (event->x < 0) {
-        Key_Event(K_MWHEELLEFT, qtrue, event->timestamp);
-        Key_Event(K_MWHEELLEFT, qfalse, event->timestamp);
+        Key_Event(K_MWHEELLEFT, true, event->timestamp);
+        Key_Event(K_MWHEELLEFT, false, event->timestamp);
     }
 
     if (event->y > 0) {
-        Key_Event(K_MWHEELUP, qtrue, event->timestamp);
-        Key_Event(K_MWHEELUP, qfalse, event->timestamp);
+        Key_Event(K_MWHEELUP, true, event->timestamp);
+        Key_Event(K_MWHEELUP, false, event->timestamp);
     } else if (event->y < 0) {
-        Key_Event(K_MWHEELDOWN, qtrue, event->timestamp);
-        Key_Event(K_MWHEELDOWN, qfalse, event->timestamp);
+        Key_Event(K_MWHEELDOWN, true, event->timestamp);
+        Key_Event(K_MWHEELDOWN, false, event->timestamp);
     }
 }
 
@@ -551,13 +542,13 @@ MOUSE
 ===============================================================================
 */
 
-static qboolean GetMouseMotion(int *dx, int *dy)
+static bool GetMouseMotion(int *dx, int *dy)
 {
     if (!SDL_GetRelativeMouseMode()) {
-        return qfalse;
+        return false;
     }
     SDL_GetRelativeMouseState(dx, dy);
-    return qtrue;
+    return true;
 }
 
 static void WarpMouse(int x, int y)
@@ -573,17 +564,17 @@ static void ShutdownMouse(void)
     SDL_ShowCursor(SDL_ENABLE);
 }
 
-static qboolean InitMouse(void)
+static bool InitMouse(void)
 {
     if (!SDL_WasInit(SDL_INIT_VIDEO)) {
-        return qfalse;
+        return false;
     }
 
     Com_Printf("SDL mouse initialized.\n");
-    return qtrue;
+    return true;
 }
 
-static void GrabMouse(qboolean grab)
+static void GrabMouse(bool grab)
 {
     SDL_SetWindowGrab(sdl_window, grab);
     SDL_SetRelativeMouseMode(grab && !(Key_GetDest() & KEY_MENU));

@@ -123,7 +123,7 @@ void parasite_do_fidget(edict_t *self)
 
 void parasite_refidget(edict_t *self)
 {
-    if (random() <= 0.8)
+    if (random() <= 0.8f)
         self->monsterinfo.currentmove = &parasite_move_fidget;
     else
         self->monsterinfo.currentmove = &parasite_move_end_fidget;
@@ -272,7 +272,7 @@ void parasite_pain(edict_t *self, edict_t *other, float kick, int damage)
     if (skill->value == 3)
         return;     // no pain anims in nightmare
 
-    if (random() < 0.5)
+    if (random() < 0.5f)
         gi.sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
     else
         gi.sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
@@ -281,23 +281,23 @@ void parasite_pain(edict_t *self, edict_t *other, float kick, int damage)
 }
 
 
-static qboolean parasite_drain_attack_ok(vec3_t start, vec3_t end)
+static bool parasite_drain_attack_ok(vec3_t start, vec3_t end)
 {
     vec3_t  dir, angles;
 
     // check for max distance
     VectorSubtract(start, end, dir);
     if (VectorLength(dir) > 256)
-        return qfalse;
+        return false;
 
     // check for min/max pitch
     vectoangles(dir, angles);
     if (angles[0] < -180)
         angles[0] += 360;
-    if (fabs(angles[0]) > 30)
-        return qfalse;
+    if (fabsf(angles[0]) > 30)
+        return false;
 
-    return qtrue;
+    return true;
 }
 
 void parasite_drain_attack(edict_t *self)

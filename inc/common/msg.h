@@ -22,6 +22,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/protocol.h"
 #include "common/sizebuf.h"
 
+// entity and player states are pre-quantized before sending to make delta
+// comparsion easier
 typedef struct {
     uint16_t    number;
     int16_t     origin[3];
@@ -103,7 +105,7 @@ int     MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *cmd, int v
 int     MSG_WriteDeltaUsercmd_Enhanced(const usercmd_t *from, const usercmd_t *cmd, int version);
 #endif
 void    MSG_WriteDir(const vec3_t vector);
-void    MSG_PackEntity(entity_packed_t *out, const entity_state_t *in, qboolean short_angles);
+void    MSG_PackEntity(entity_packed_t *out, const entity_state_t *in, bool short_angles);
 void    MSG_WriteDeltaEntity(const entity_packed_t *from, const entity_packed_t *to, msgEsFlags_t flags);
 void    MSG_PackPlayer(player_packed_t *out, const player_state_t *in);
 void    MSG_WriteDeltaPlayerstate_Default(const player_packed_t *from, const player_packed_t *to);

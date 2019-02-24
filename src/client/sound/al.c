@@ -43,7 +43,7 @@ void AL_SoundInfo(void)
     Com_Printf("Number of sources: %d\n", s_numchannels);
 }
 
-qboolean AL_Init(void)
+bool AL_Init(void)
 {
     int i;
 
@@ -78,13 +78,13 @@ qboolean AL_Init(void)
     s_numchannels = i;
 
     Com_Printf("OpenAL initialized.\n");
-    return qtrue;
+    return true;
 
 fail1:
     QAL_Shutdown();
 fail0:
     Com_EPrintf("Failed to initialize OpenAL: %s\n", Com_GetLastError());
-    return qfalse;
+    return false;
 }
 
 void AL_Shutdown(void)
@@ -308,7 +308,7 @@ static void AL_AddLoopSounds(void)
 
         ch2 = AL_FindLoopingSound(0, sfx);
 
-        ch->autosound = qtrue;  // remove next frame
+        ch->autosound = true;   // remove next frame
         ch->autoframe = s_framecount;
         ch->sfx = sfx;
         ch->entnum = ent->number;

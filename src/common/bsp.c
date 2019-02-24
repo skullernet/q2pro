@@ -47,7 +47,7 @@ static cvar_t *map_visibility_patch;
     Hunk_Alloc(&bsp->hunk, size)
 
 #define LOAD(func) \
-    static qerror_t BSP_Load##func(bsp_t *bsp, void *base, size_t count)
+    static int BSP_Load##func(bsp_t *bsp, void *base, size_t count)
 
 #define DEBUG(msg) \
     Com_DPrintf("%s: %s\n", __func__, msg)
@@ -752,11 +752,11 @@ LOAD(EntString)
 */
 
 typedef struct {
-    qerror_t (*load)(bsp_t *, void *, size_t);
-    unsigned lump;
-    size_t disksize;
-    size_t memsize;
-    size_t maxcount;
+    int (*load)(bsp_t *, void *, size_t);
+    uint8_t lump;
+    uint8_t disksize;
+    uint16_t memsize;
+    uint32_t maxcount;
 } lump_info_t;
 
 #define L(func, lump, disk_t, mem_t) \
@@ -824,7 +824,7 @@ static bsp_t *BSP_Find(const char *name)
     return NULL;
 }
 
-static qerror_t BSP_SetParent(mnode_t *node, int key)
+static int BSP_SetParent(mnode_t *node, int key)
 {
     mnode_t *child;
 #if USE_REF
@@ -866,11 +866,10 @@ static qerror_t BSP_SetParent(mnode_t *node, int key)
     return Q_ERR_SUCCESS;
 }
 
-static qerror_t BSP_ValidateTree(bsp_t *bsp)
+static int BSP_ValidateTree(bsp_t *bsp)
 {
     mmodel_t *mod;
-    qerror_t ret;
-    int i;
+    int i, ret;
 #if USE_REF
     mface_t *face;
     int j;
@@ -904,7 +903,7 @@ static qerror_t BSP_ValidateTree(bsp_t *bsp)
 
 // also calculates the last portal number used
 // by CM code to allocate portalopen[] array
-static qerror_t BSP_ValidateAreaPortals(bsp_t *bsp)
+static int BSP_ValidateAreaPortals(bsp_t *bsp)
 {
     mareaportal_t   *p;
     int             i;
@@ -950,14 +949,14 @@ BSP_Load
 Loads in the map and all submodels
 ==================
 */
-qerror_t BSP_Load(const char *name, bsp_t **bsp_p)
+int BSP_Load(const char *name, bsp_t **bsp_p)
 {
     bsp_t           *bsp;
     byte            *buf;
     dheader_t       *header;
     const lump_info_t *info;
     size_t          filelen, ofs, len, end, count;
-    qerror_t        ret;
+    int             ret;
     byte            *lumpdata[HEADER_LUMPS];
     size_t          lumpcount[HEADER_LUMPS];
     size_t          memsize;
@@ -1032,7 +1031,7 @@ qerror_t BSP_Load(const char *name, bsp_t **bsp_p)
     Hunk_Begin(&bsp->hunk, memsize + 4096);
 
     // calculate the checksum
-    bsp->checksum = LittleLong(Com_BlockChecksum(buf, filelen));
+    bsp->checksum = Com_BlockChecksum(buf, filelen);
 
     // load all lumps
     for (info = bsp_lumps; info->load; info++) {
@@ -1081,7 +1080,7 @@ HELPER FUNCTIONS
 
 static lightpoint_t *light_point;
 
-static qboolean BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, vec3_t p1, vec3_t p2)
+static bool BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, vec3_t p1, vec3_t p2)
 {
     vec_t d1, d2, frac, midf;
     vec3_t mid;
@@ -1108,7 +1107,7 @@ static qboolean BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, vec
 
         // check near side
         if (BSP_RecursiveLightPoint(node->children[side], p1f, midf, p1, mid))
-            return qtrue;
+            return true;
 
         for (i = 0, surf = node->firstface; i < node->numfaces; i++, surf++) {
             if (!surf->lightmap)
@@ -1133,14 +1132,14 @@ static qboolean BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, vec
             light_point->s = s;
             light_point->t = t;
             light_point->fraction = midf;
-            return qtrue;
+            return true;
         }
 
         // check far side
         return BSP_RecursiveLightPoint(node->children[side ^ 1], midf, p2f, mid, p2);
     }
 
-    return qfalse;
+    return false;
 }
 
 void BSP_LightPoint(lightpoint_t *point, vec3_t start, vec3_t end, mnode_t *headnode)
@@ -1223,7 +1222,7 @@ byte *BSP_ClusterVis(bsp_t *bsp, byte *mask, int cluster, int vis)
         }
         c = in[1];
         in += 2;
-        if (out + c > out_end) {
+        if (c > out_end - out) {
 overrun:
             c = out_end - out;
         }

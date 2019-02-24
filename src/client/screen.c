@@ -23,7 +23,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define STAT_MINUS      (STAT_PICS - 1)  // num frame for '-' stats digit
 
 static struct {
-    qboolean    initialized;        // ready to draw
+    bool        initialized;        // ready to draw
 
     qhandle_t   crosshair_pic;
     int         crosshair_width, crosshair_height;
@@ -34,7 +34,7 @@ static struct {
 
     qhandle_t   loading_pic;
     int         loading_width, loading_height;
-    qboolean    draw_loading;
+    bool        draw_loading;
 
     qhandle_t   sb_pics[2][STAT_PICS];
     qhandle_t   inven_pic;
@@ -198,7 +198,7 @@ float SCR_FadeAlpha(unsigned startTime, unsigned visTime, unsigned fadeTime)
     return alpha;
 }
 
-qboolean SCR_ParseColor(const char *s, color_t *color)
+bool SCR_ParseColor(const char *s, color_t *color)
 {
     int i;
     int c[8];
@@ -208,11 +208,11 @@ qboolean SCR_ParseColor(const char *s, color_t *color)
         s++;
         for (i = 0; s[i]; i++) {
             if (i == 8) {
-                return qfalse;
+                return false;
             }
             c[i] = Q_charhex(s[i]);
             if (c[i] == -1) {
-                return qfalse;
+                return false;
             }
         }
 
@@ -236,20 +236,20 @@ qboolean SCR_ParseColor(const char *s, color_t *color)
             color->u8[3] = c[7] | (c[6] << 4);
             break;
         default:
-            return qfalse;
+            return false;
         }
 
-        return qtrue;
+        return true;
     }
 
     // parse name or index
     i = Com_ParseColor(s, COLOR_WHITE);
     if (i == COLOR_NONE) {
-        return qfalse;
+        return false;
     }
 
     color->u32 = colorTable[i];
-    return qtrue;
+    return true;
 }
 
 /*
@@ -260,7 +260,7 @@ BAR GRAPHS
 ===============================================================================
 */
 
-static void draw_percent_bar(int percent, qboolean paused, int framenum)
+static void draw_percent_bar(int percent, bool paused, int framenum)
 {
     char buffer[16];
     int x, w;
@@ -294,7 +294,7 @@ static void SCR_DrawDemo(void)
 {
 #if USE_MVD_CLIENT
     int percent;
-    qboolean paused;
+    bool paused;
     int framenum;
 #endif
 
@@ -324,7 +324,7 @@ static void SCR_DrawDemo(void)
     }
 
     if (sv_paused->integer && cl_paused->integer && scr_showpause->integer == 2) {
-        paused |= qtrue;
+        paused = true;
     }
 
     draw_percent_bar(percent, paused, framenum);
@@ -542,11 +542,8 @@ static void SCR_Color_g(genctx_t *ctx)
 {
     int color;
 
-    for (color = 0; color < 10; color++) {
-        if (!Prompt_AddMatch(ctx, colorNames[color])) {
-            break;
-        }
-    }
+    for (color = 0; color < 10; color++)
+        Prompt_AddMatch(ctx, colorNames[color]);
 }
 
 static void SCR_Draw_c(genctx_t *ctx, int argnum)
@@ -654,9 +651,7 @@ static void SCR_Draw_g(genctx_t *ctx)
 
     FOR_EACH_DRAWOBJ(obj) {
         s = obj->macro ? obj->macro->name : obj->cvar->name;
-        if (!Prompt_AddMatch(ctx, s)) {
-            break;
-        }
+        Prompt_AddMatch(ctx, s);
     }
 }
 
@@ -953,7 +948,7 @@ static void SCR_CalcVrect(void)
 
     // bound viewsize
     size = Cvar_ClampInteger(scr_viewsize, 40, 100);
-    scr_viewsize->modified = qfalse;
+    scr_viewsize->modified = false;
 
     scr_vrect.width = scr.hud_width * size / 100;
     scr_vrect.width &= ~7;
@@ -1270,13 +1265,13 @@ void SCR_Init(void)
 
     scr_scale_changed(scr_scale);
 
-    scr.initialized = qtrue;
+    scr.initialized = true;
 }
 
 void SCR_Shutdown(void)
 {
     Cmd_Deregister(scr_cmds);
-    scr.initialized = qfalse;
+    scr.initialized = false;
 }
 
 //=============================================================================
@@ -1307,7 +1302,7 @@ void SCR_PlayCinematic(const char *name)
     cls.state = ca_cinematic;
 
     SCR_EndLoadingPlaque();     // get rid of loading plaque
-    Con_Close(qfalse);          // get rid of connection screen
+    Con_Close(false);           // get rid of connection screen
 }
 
 /*
@@ -1336,7 +1331,7 @@ void SCR_BeginLoadingPlaque(void)
         return;
     }
 
-    scr.draw_loading = qtrue;
+    scr.draw_loading = true;
     SCR_UpdateScreen();
 
     cls.disable_screen = Sys_Milliseconds();
@@ -1850,7 +1845,7 @@ static void SCR_DrawLoading(void)
     if (!scr.draw_loading)
         return;
 
-    scr.draw_loading = qfalse;
+    scr.draw_loading = false;
 
     R_SetScale(scr.hud_scale);
 

@@ -48,7 +48,7 @@ DEMOS MENU
 
 typedef struct {
     unsigned    type;
-    size_t      size;
+    int64_t     size;
     time_t      mtime;
     char        name[1];
 } demoEntry_t;
@@ -58,12 +58,12 @@ typedef struct m_demos_s {
     menuList_t      list;
     int             numDirs;
     uint8_t         hash[16];
-    char    browse[MAX_OSPATH];
-    int     selection;
-    int     year;
-    int     widest_map, widest_pov;
-    size_t  total_bytes;
-    char    status[32];
+    char            browse[MAX_OSPATH];
+    int             selection;
+    int             year;
+    int             widest_map, widest_pov;
+    uint64_t        total_bytes;
+    char            status[32];
 } m_demos_t;
 
 static m_demos_t    m_demos;
@@ -122,13 +122,15 @@ static void BuildName(const file_info_t *info, char **cache)
     }
 
     // format date
+    len = 0;
     if ((tm = localtime(&info->mtime)) != NULL) {
         if (tm->tm_year == m_demos.year) {
-            strftime(date, sizeof(date), "%b %d %H:%M", tm);
+            len = strftime(date, sizeof(date), "%b %d %H:%M", tm);
         } else {
-            strftime(date, sizeof(date), "%b %d  %Y", tm);
+            len = strftime(date, sizeof(date), "%b %d  %Y", tm);
         }
-    } else {
+    }
+    if (!len) {
         strcpy(date, "???");
     }
 

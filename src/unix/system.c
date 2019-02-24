@@ -16,6 +16,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+#define _GNU_SOURCE
 #include "shared/shared.h"
 #include "common/cmd.h"
 #include "common/common.h"
@@ -55,8 +56,8 @@ cvar_t  *sys_libdir;
 cvar_t  *sys_homedir;
 cvar_t  *sys_forcegamelib;
 
-static qboolean terminate;
-static qboolean flush_logs;
+static bool terminate;
+static bool flush_logs;
 
 /*
 ===============================================================================
@@ -68,8 +69,8 @@ ASYNC WORK QUEUE
 
 #if USE_CLIENT
 
-static qboolean work_initialized;
-static qboolean work_terminate;
+static bool work_initialized;
+static bool work_terminate;
 static pthread_mutex_t work_lock;
 static pthread_cond_t work_cond;
 static pthread_t work_thread;
@@ -133,7 +134,7 @@ static void shutdown_work(void)
         return;
 
     pthread_mutex_lock(&work_lock);
-    work_terminate = qtrue;
+    work_terminate = true;
     pthread_cond_signal(&work_cond);
     pthread_mutex_unlock(&work_lock);
 
@@ -142,7 +143,7 @@ static void shutdown_work(void)
 
     pthread_mutex_destroy(&work_lock);
     pthread_cond_destroy(&work_cond);
-    work_initialized = qfalse;
+    work_initialized = false;
 }
 
 void Sys_QueueAsyncWork(asyncwork_t *work)
@@ -152,7 +153,7 @@ void Sys_QueueAsyncWork(asyncwork_t *work)
         pthread_cond_init(&work_cond, NULL);
         if (pthread_create(&work_thread, NULL, thread_func, NULL))
             Sys_Error("Couldn't create async work thread");
-        work_initialized = qtrue;
+        work_initialized = true;
     }
 
     pthread_mutex_lock(&work_lock);
@@ -181,9 +182,9 @@ void Sys_DebugBreak(void)
 
 unsigned Sys_Milliseconds(void)
 {
-    struct timeval tp;
-    gettimeofday(&tp, NULL);
-    return tp.tv_sec * 1000UL + tp.tv_usec / 1000UL;
+    struct timespec ts;
+    (void)clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ts.tv_sec * 1000UL + ts.tv_nsec / 1000000UL;
 }
 
 /*
@@ -236,27 +237,23 @@ void Sys_Sleep(int msec)
 }
 
 #if USE_AC_CLIENT
-qboolean Sys_GetAntiCheatAPI(void)
+bool Sys_GetAntiCheatAPI(void)
 {
     Sys_Sleep(1500);
-    return qfalse;
+    return false;
 }
 #endif
 
 static void hup_handler(int signum)
 {
-    flush_logs = qtrue;
+    flush_logs = true;
 }
 
 static void term_handler(int signum)
 {
-#ifdef _GNU_SOURCE
     Com_Printf("%s\n", strsignal(signum));
-#else
-    Com_Printf("Received signal %d, exiting\n", signum);
-#endif
 
-    terminate = qtrue;
+    terminate = true;
 }
 
 static void kill_handler(int signum)
@@ -267,11 +264,7 @@ static void kill_handler(int signum)
     VID_FatalShutdown();
 #endif
 
-#ifdef _GNU_SOURCE
     fprintf(stderr, "%s\n", strsignal(signum));
-#else
-    fprintf(stderr, "Received signal %d, aborting\n", signum);
-#endif
 
     exit(EXIT_FAILURE);
 }
@@ -593,7 +586,7 @@ int main(int argc, char **argv)
         complete_work();
         if (flush_logs) {
             Com_FlushLogs();
-            flush_logs = qfalse;
+            flush_logs = false;
         }
         Qcommon_Frame();
     }

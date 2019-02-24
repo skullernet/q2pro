@@ -91,7 +91,7 @@ static void override_entity_string(const char *server)
 {
     char *path = map_override_path->string;
     char buffer[MAX_QPATH], *str;
-    ssize_t len;
+    int len;
 
     if (!*path) {
         return;
@@ -162,8 +162,7 @@ void SV_SpawnServer(mapcmd_t *cmd)
 
     // wipe the entire per-level structure
     memset(&sv, 0, sizeof(sv));
-    sv.spawncount = (rand() | ((unsigned)rand() << 16)) ^ Sys_Milliseconds();
-    sv.spawncount &= 0x7FFFFFFF;
+    sv.spawncount = Q_rand() & 0x7fffffff;
 
     // set legacy spawncounts
     FOR_EACH_CLIENT(client) {
@@ -221,17 +220,12 @@ void SV_SpawnServer(mapcmd_t *cmd)
     // map initialization
     sv.state = ss_loading;
 
-    X86_PUSH_FPCW;
-    X86_SINGLE_FPCW;
-
     // load and spawn all other entities
     ge->SpawnEntities(sv.name, entitystring, cmd->spawnpoint);
 
     // run two frames to allow everything to settle
     ge->RunFrame(); sv.framenum++;
     ge->RunFrame(); sv.framenum++;
-
-    X86_POP_FPCW;
 
     // make sure maxclients string is correct
     sprintf(sv.configstrings[CS_MAXCLIENTS], "%d", sv_maxclients->integer);
@@ -272,11 +266,11 @@ Parses mapcmd into more C friendly form.
 Loads and fully validates the map to make sure server doesn't get killed.
 ==============
 */
-qboolean SV_ParseMapCmd(mapcmd_t *cmd)
+bool SV_ParseMapCmd(mapcmd_t *cmd)
 {
     char        expanded[MAX_QPATH];
     char        *s, *ch;
-    qerror_t    ret;
+    int         ret;
     size_t      len;
 
     s = cmd->buffer;
@@ -284,7 +278,7 @@ qboolean SV_ParseMapCmd(mapcmd_t *cmd)
     // skip the end-of-unit flag if necessary
     if (*s == '*') {
         s++;
-        cmd->endofunit = qtrue;
+        cmd->endofunit = true;
     }
 
     // if there is a + in the map, set nextserver to the remainder.
@@ -296,7 +290,7 @@ qboolean SV_ParseMapCmd(mapcmd_t *cmd)
         // skip the end-of-unit flag if necessary
         if (*s == '*') {
             s++;
-            cmd->endofunit = qtrue;
+            cmd->endofunit = true;
         }
     }
 
@@ -332,10 +326,10 @@ qboolean SV_ParseMapCmd(mapcmd_t *cmd)
 
     if (ret < 0) {
         Com_Printf("Couldn't load %s: %s\n", expanded, Q_ErrorString(ret));
-        return qfalse;
+        return false;
     }
 
-    return qtrue;
+    return true;
 }
 
 /*
@@ -461,5 +455,5 @@ void SV_InitGame(unsigned mvd_spawn)
 
     AC_Connect(mvd_spawn);
 
-    svs.initialized = qtrue;
+    svs.initialized = true;
 }

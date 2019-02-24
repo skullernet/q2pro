@@ -313,17 +313,17 @@ things like godmode, noclip, etc, are commands directed to the server,
 so when they are typed in at the console, they will need to be forwarded.
 ===================
 */
-qboolean CL_ForwardToServer(void)
+bool CL_ForwardToServer(void)
 {
     char    *cmd;
 
     cmd = Cmd_Argv(0);
     if (cls.state != ca_active || *cmd == '-' || *cmd == '+') {
-        return qfalse;
+        return false;
     }
 
     CL_ClientCommand(Cmd_RawArgsFrom(0));
-    return qtrue;
+    return true;
 }
 
 /*
@@ -405,9 +405,9 @@ void CL_CheckForResend(void)
         cls.connect_time -= CONNECT_FAST;
         cls.connect_count = 0;
 
-        cls.passive = qfalse;
+        cls.passive = false;
 
-        Con_Popup(qtrue);
+        Con_Popup(true);
         UI_OpenMenu(UIMENU_NONE);
     }
 
@@ -558,12 +558,12 @@ usage:
     cls.serverAddress = address;
     cls.serverProtocol = protocol;
     cls.protocolVersion = 0;
-    cls.passive = qfalse;
+    cls.passive = false;
     cls.state = ca_challenging;
     cls.connect_time -= CONNECT_FAST;
     cls.connect_count = 0;
 
-    Con_Popup(qtrue);
+    Con_Popup(true);
 
     CL_CheckForResend();
 
@@ -602,7 +602,7 @@ static void CL_PassiveConnect_f(void)
     netadr_t address;
 
     if (cls.passive) {
-        cls.passive = qfalse;
+        cls.passive = false;
         Com_Printf("No longer listening for passive connections.\n");
         return;
     }
@@ -618,7 +618,7 @@ static void CL_PassiveConnect_f(void)
         return;
     }
 
-    cls.passive = qtrue;
+    cls.passive = true;
     Com_Printf("Listening for passive connections at %s.\n",
                NET_AdrToString(&address));
 }
@@ -671,7 +671,7 @@ static void CL_Rcon_f(void)
         address = cls.netchan->remote_address;
     }
 
-    CL_SendRcon(&address, rcon_password->string, Cmd_RawArgs());
+    CL_SendRcon(&address, rcon_password->string, COM_StripQuotes(Cmd_RawArgs()));
 }
 
 static void CL_Rcon_c(genctx_t *ctx, int argnum)
@@ -746,9 +746,9 @@ void CL_Disconnect(error_type_t type)
 
     //cls.connect_time = 0;
     //cls.connect_count = 0;
-    cls.passive = qfalse;
+    cls.passive = false;
 #if USE_ICMP
-    cls.errorReceived = qfalse;
+    cls.errorReceived = false;
 #endif
 
     if (cls.netchan) {
@@ -1272,7 +1272,6 @@ static void cl_vwep_changed(cvar_t *self)
 static void CL_Name_g(genctx_t *ctx)
 {
     int i;
-    clientinfo_t *ci;
     char buffer[MAX_CLIENT_NAME];
 
     if (cls.state < ca_loading) {
@@ -1280,14 +1279,9 @@ static void CL_Name_g(genctx_t *ctx)
     }
 
     for (i = 0; i < MAX_CLIENTS; i++) {
-        ci = &cl.clientinfo[i];
-        if (!ci->name[0]) {
-            continue;
-        }
-        Q_strlcpy(buffer, ci->name, sizeof(buffer));
-        if (COM_strclr(buffer) && !Prompt_AddMatch(ctx, buffer)) {
-            break;
-        }
+        Q_strlcpy(buffer, cl.clientinfo[i].name, sizeof(buffer));
+        if (COM_strclr(buffer))
+            Prompt_AddMatch(ctx, buffer);
     }
 }
 
@@ -1315,7 +1309,7 @@ static void CL_ConnectionlessPacket(void)
         return;
     }
 
-    Cmd_TokenizeString(string, qfalse);
+    Cmd_TokenizeString(string, false);
 
     c = Cmd_Argv(0);
 
@@ -1393,7 +1387,7 @@ static void CL_ConnectionlessPacket(void)
         netchan_type_t type;
         int anticheat = 0;
         char mapname[MAX_QPATH];
-        qboolean got_server = qfalse;
+        bool got_server = false;
 
         if (cls.state < ca_connecting) {
             Com_DPrintf("Connect received while not connecting.  Ignored.\n");
@@ -1439,7 +1433,7 @@ static void CL_ConnectionlessPacket(void)
             } else if (!strncmp(s, "dlserver=", 9)) {
                 if (!got_server) {
                     HTTP_SetServer(s + 9);
-                    got_server = qtrue;
+                    got_server = true;
                 }
             }
         }
@@ -1497,7 +1491,7 @@ static void CL_ConnectionlessPacket(void)
         cls.serverAddress = net_from;
         cls.serverProtocol = cl_protocol->integer;
         Q_strlcpy(cls.servername, s, sizeof(cls.servername));
-        cls.passive = qfalse;
+        cls.passive = false;
 
         cls.state = ca_challenging;
         cls.connect_time -= CONNECT_FAST;
@@ -1563,7 +1557,7 @@ static void CL_PacketEvent(void)
         return;     // wasn't accepted for some reason
 
 #if USE_ICMP
-    cls.errorReceived = qfalse; // don't drop
+    cls.errorReceived = false; // don't drop
 #endif
 
     CL_ParseServerMessage();
@@ -1603,7 +1597,7 @@ void CL_ErrorEvent(netadr_t *from)
         return;
     }
 
-    cls.errorReceived = qtrue; // drop connection soon
+    cls.errorReceived = true; // drop connection soon
 }
 #endif
 
@@ -1629,7 +1623,7 @@ static void CL_FixUpGender(void)
         Cvar_Set("gender", "female");
     else
         Cvar_Set("gender", "none");
-    info_gender->modified = qfalse;
+    info_gender->modified = false;
 }
 
 void CL_UpdateUserinfo(cvar_t *var, from_t from)
@@ -1641,6 +1635,10 @@ void CL_UpdateUserinfo(cvar_t *var, from_t from)
     }
 
     if (!cls.netchan) {
+        return;
+    }
+
+    if (var->flags & CVAR_PRIVATE) {
         return;
     }
 
@@ -1821,13 +1819,14 @@ typedef struct {
     char match[1];
 } ignore_t;
 
-static list_t cl_ignores;
+static list_t   cl_ignore_text;
+static list_t   cl_ignore_nick;
 
-static ignore_t *find_ignore(const char *match)
+static ignore_t *find_ignore(list_t *list, const char *match)
 {
     ignore_t *ignore;
 
-    LIST_FOR_EACH(ignore_t, ignore, &cl_ignores, entry) {
+    LIST_FOR_EACH(ignore_t, ignore, list, entry) {
         if (!strcmp(ignore->match, match)) {
             return ignore;
         }
@@ -1836,34 +1835,34 @@ static ignore_t *find_ignore(const char *match)
     return NULL;
 }
 
-static void list_ignores(void)
+static void list_ignores(list_t *list)
 {
     ignore_t *ignore;
 
-    if (LIST_EMPTY(&cl_ignores)) {
+    if (LIST_EMPTY(list)) {
         Com_Printf("No ignore filters.\n");
         return;
     }
 
     Com_Printf("Current ignore filters:\n");
-    LIST_FOR_EACH(ignore_t, ignore, &cl_ignores, entry) {
+    LIST_FOR_EACH(ignore_t, ignore, list, entry) {
         Com_Printf("\"%s\" (%u hit%s)\n", ignore->match,
                    ignore->hits, ignore->hits == 1 ? "" : "s");
     }
 }
 
-static void add_ignore(const char *match)
+static void add_ignore(list_t *list, const char *match, size_t minlen)
 {
     ignore_t *ignore;
     size_t matchlen;
 
     // don't create the same ignore twice
-    if (find_ignore(match)) {
+    if (find_ignore(list, match)) {
         return;
     }
 
     matchlen = strlen(match);
-    if (matchlen < 3) {
+    if (matchlen < minlen) {
         Com_Printf("Match string \"%s\" is too short.\n", match);
         return;
     }
@@ -1871,14 +1870,14 @@ static void add_ignore(const char *match)
     ignore = Z_Malloc(sizeof(*ignore) + matchlen);
     ignore->hits = 0;
     memcpy(ignore->match, match, matchlen + 1);
-    List_Append(&cl_ignores, &ignore->entry);
+    List_Append(list, &ignore->entry);
 }
 
-static void remove_ignore(const char *match)
+static void remove_ignore(list_t *list, const char *match)
 {
     ignore_t *ignore;
 
-    ignore = find_ignore(match);
+    ignore = find_ignore(list, match);
     if (!ignore) {
         Com_Printf("Can't find ignore filter \"%s\"\n", match);
         return;
@@ -1888,48 +1887,43 @@ static void remove_ignore(const char *match)
     Z_Free(ignore);
 }
 
-static void remove_all_ignores(void)
+static void remove_all_ignores(list_t *list)
 {
     ignore_t *ignore, *next;
     int count = 0;
 
-    LIST_FOR_EACH_SAFE(ignore_t, ignore, next, &cl_ignores, entry) {
+    LIST_FOR_EACH_SAFE(ignore_t, ignore, next, list, entry) {
         Z_Free(ignore);
         count++;
     }
 
     Com_Printf("Removed %d ignore filter%s.\n", count, count == 1 ? "" : "s");
-    List_Init(&cl_ignores);
+    List_Init(list);
 }
 
 static void CL_IgnoreText_f(void)
 {
     if (Cmd_Argc() == 1) {
-        list_ignores();
+        list_ignores(&cl_ignore_text);
         return;
     }
 
-    add_ignore(Cmd_ArgsFrom(1));
+    add_ignore(&cl_ignore_text, Cmd_ArgsFrom(1), 3);
 }
 
 static void CL_UnIgnoreText_f(void)
 {
     if (Cmd_Argc() == 1) {
-        list_ignores();
+        list_ignores(&cl_ignore_text);
         return;
     }
 
-    if (LIST_EMPTY(&cl_ignores)) {
-        Com_Printf("No ignore filters.\n");
+    if (Cmd_Argc() == 2 && !strcmp(Cmd_Argv(1), "all")) {
+        remove_all_ignores(&cl_ignore_text);
         return;
     }
 
-    if (!strcmp(Cmd_Argv(1), "all")) {
-        remove_all_ignores();
-        return;
-    }
-
-    remove_ignore(Cmd_ArgsFrom(1));
+    remove_ignore(&cl_ignore_text, Cmd_ArgsFrom(1));
 }
 
 static void CL_IgnoreNick_c(genctx_t *ctx, int argnum)
@@ -1939,85 +1933,69 @@ static void CL_IgnoreNick_c(genctx_t *ctx, int argnum)
     }
 }
 
-// properly escapes any special characters in nickname
-static size_t parse_ignore_nick(int argnum, char *buffer)
+static void CL_UnIgnoreNick_c(genctx_t *ctx, int argnum)
 {
-    char temp[MAX_CLIENT_NAME];
-    char *p, *s;
-    int c;
-    size_t len;
+    ignore_t *ignore;
 
-    Cmd_ArgvBuffer(argnum, temp, sizeof(temp));
-
-    s = temp;
-    p = buffer;
-    len = 0;
-    while (*s) {
-        c = *s++;
-        c &= 127;
-        if (c == '?') {
-            *p++ = '\\';
-            *p++ = '?';
-            len += 2;
-        } else if (c == '*') {
-            *p++ = '\\';
-            *p++ = '*';
-            len += 2;
-        } else if (c == '\\') {
-            *p++ = '\\';
-            *p++ = '\\';
-            len += 2;
-        } else if (Q_isprint(c)) {
-            *p++ = c;
-            len++;
+    if (argnum == 1) {
+        LIST_FOR_EACH(ignore_t, ignore, &cl_ignore_nick, entry) {
+            Prompt_AddMatch(ctx, ignore->match);
         }
     }
-
-    *p = 0;
-
-    return len;
 }
 
 static void CL_IgnoreNick_f(void)
 {
-    char nick[MAX_CLIENT_NAME * 2];
-    char match[MAX_CLIENT_NAME * 3];
-
     if (Cmd_Argc() == 1) {
-        list_ignores();
+        list_ignores(&cl_ignore_nick);
         return;
     }
 
-    if (!parse_ignore_nick(1, nick)) {
-        return;
-    }
-
-    Q_snprintf(match, sizeof(match), "%s: *", nick);
-    add_ignore(match);
-
-    Q_snprintf(match, sizeof(match), "(%s): *", nick);
-    add_ignore(match);
+    add_ignore(&cl_ignore_nick, Cmd_Argv(1), 1);
 }
 
 static void CL_UnIgnoreNick_f(void)
 {
-    char nick[MAX_CLIENT_NAME * 2];
-    char match[MAX_CLIENT_NAME * 3];
-
     if (Cmd_Argc() == 1) {
-        list_ignores();
+        list_ignores(&cl_ignore_nick);
         return;
     }
 
-    if (!parse_ignore_nick(1, nick)) {
+    if (Cmd_Argc() == 2 && !strcmp(Cmd_Argv(1), "all")) {
+        remove_all_ignores(&cl_ignore_nick);
         return;
     }
 
-    Q_snprintf(match, sizeof(match), "%s: *", nick);
-    remove_ignore(match);
+    remove_ignore(&cl_ignore_nick, Cmd_Argv(1));
+}
 
-    Q_snprintf(match, sizeof(match), "(%s): *", nick);
-    remove_ignore(match);
+static bool match_ignore_nick_2(const char *nick, const char *s)
+{
+    size_t len = strlen(nick);
+
+    if (!strncmp(s, nick, len) && !strncmp(s + len, ": ", 2))
+        return true;
+
+    if (*s == '(') {
+        s++;
+        return !strncmp(s, nick, len) && !strncmp(s + len, "): ", 3);
+    }
+
+    return false;
+}
+
+static bool match_ignore_nick(const char *nick, const char *s)
+{
+    if (match_ignore_nick_2(nick, s))
+        return true;
+
+    if (*s == '[') {
+        char *p = strstr(s + 1, "] ");
+        if (p)
+            return match_ignore_nick_2(nick, p + 2);
+    }
+
+    return false;
 }
 
 /*
@@ -2025,26 +2003,33 @@ static void CL_UnIgnoreNick_f(void)
 CL_CheckForIgnore
 =================
 */
-qboolean CL_CheckForIgnore(const char *s)
+bool CL_CheckForIgnore(const char *s)
 {
     char buffer[MAX_STRING_CHARS];
     ignore_t *ignore;
 
-    if (LIST_EMPTY(&cl_ignores)) {
-        return qfalse;
+    if (LIST_EMPTY(&cl_ignore_text) && LIST_EMPTY(&cl_ignore_nick)) {
+        return false;
     }
 
     Q_strlcpy(buffer, s, sizeof(buffer));
     COM_strclr(buffer);
 
-    LIST_FOR_EACH(ignore_t, ignore, &cl_ignores, entry) {
+    LIST_FOR_EACH(ignore_t, ignore, &cl_ignore_text, entry) {
         if (Com_WildCmp(ignore->match, buffer)) {
             ignore->hits++;
-            return qtrue;
+            return true;
         }
     }
 
-    return qfalse;
+    LIST_FOR_EACH(ignore_t, ignore, &cl_ignore_nick, entry) {
+        if (match_ignore_nick(ignore->match, buffer)) {
+            ignore->hits++;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 static void CL_DumpClients_f(void)
@@ -2122,17 +2107,17 @@ CL_WriteConfig_f
 static void CL_WriteConfig_f(void)
 {
     char buffer[MAX_OSPATH];
-    qboolean aliases = qfalse, bindings = qfalse, modified = qfalse;
+    bool aliases = false, bindings = false, modified = false;
     int c, mask = 0;
     qhandle_t f;
 
     while ((c = Cmd_ParseOptions(o_writeconfig)) != -1) {
         switch (c) {
         case 'a':
-            aliases = qtrue;
+            aliases = true;
             break;
         case 'b':
-            bindings = qtrue;
+            bindings = true;
             break;
         case 'c':
             mask |= CVAR_ARCHIVE;
@@ -2143,7 +2128,7 @@ static void CL_WriteConfig_f(void)
             Cmd_PrintHelp(o_writeconfig);
             return;
         case 'm':
-            modified = qtrue;
+            modified = true;
             mask = ~0;
             break;
         default:
@@ -2158,7 +2143,7 @@ static void CL_WriteConfig_f(void)
     }
 
     if (!aliases && !bindings && !mask) {
-        bindings = qtrue;
+        bindings = true;
         mask = CVAR_ARCHIVE;
     }
 
@@ -2183,9 +2168,10 @@ static void CL_WriteConfig_f(void)
         Cvar_WriteVariables(f, mask, modified);
     }
 
-    FS_FCloseFile(f);
-
-    Com_Printf("Wrote %s.\n", buffer);
+    if (FS_FCloseFile(f))
+        Com_EPrintf("Error writing %s\n", buffer);
+    else
+        Com_Printf("Wrote %s.\n", buffer);
 }
 
 static void CL_Say_c(genctx_t *ctx, int argnum)
@@ -2253,7 +2239,7 @@ static size_t CL_DemoPos_m(char *buffer, size_t size)
     sec = framenum / 10; framenum %= 10;
     min = sec / 60; sec %= 60;
 
-    return Q_scnprintf(buffer, sizeof(buffer),
+    return Q_scnprintf(buffer, size,
                        "%d:%02d.%d", min, sec, framenum);
 }
 
@@ -2320,7 +2306,7 @@ Writes key bindings and archived cvars to config.cfg
 static void CL_WriteConfig(void)
 {
     qhandle_t f;
-    qerror_t ret;
+    int ret;
 
     ret = FS_FOpenFile(COM_CONFIG_CFG, &f, FS_MODE_WRITE | FS_FLAG_TEXT);
     if (!f) {
@@ -2332,9 +2318,10 @@ static void CL_WriteConfig(void)
     FS_FPrintf(f, "// generated by " APPLICATION ", do not modify\n");
 
     Key_WriteBindings(f);
-    Cvar_WriteVariables(f, CVAR_ARCHIVE, qfalse);
+    Cvar_WriteVariables(f, CVAR_ARCHIVE, false);
 
-    FS_FCloseFile(f);
+    if (FS_FCloseFile(f))
+        Com_EPrintf("Error writing %s\n", COM_CONFIG_CFG);
 }
 
 /*
@@ -2344,7 +2331,7 @@ CL_RestartFilesystem
 Flush caches and restart the VFS.
 ====================
 */
-void CL_RestartFilesystem(qboolean total)
+void CL_RestartFilesystem(bool total)
 {
     int cls_state;
 
@@ -2361,7 +2348,7 @@ void CL_RestartFilesystem(qboolean total)
         cls.state = ca_loading;
     }
 
-    Con_Popup(qfalse);
+    Con_Popup(false);
 
     UI_Shutdown();
 
@@ -2372,11 +2359,11 @@ void CL_RestartFilesystem(qboolean total)
     CL_WriteConfig();
 
     if (cls.ref_initialized) {
-        R_Shutdown(qfalse);
+        R_Shutdown(false);
 
         FS_Restart(total);
 
-        R_Init(qfalse);
+        R_Init(false);
 
         SCR_RegisterMedia();
         Con_RegisterMedia();
@@ -2402,14 +2389,14 @@ void CL_RestartFilesystem(qboolean total)
     // switch back to original state
     cls.state = cls_state;
 
-    Con_Close(qfalse);
+    Con_Close(false);
 
     CL_UpdateFrameTimes();
 
     cvar_modified &= ~CVAR_FILES;
 }
 
-void CL_RestartRefresh(qboolean total)
+void CL_RestartRefresh(bool total)
 {
     int cls_state;
 
@@ -2423,7 +2410,7 @@ void CL_RestartRefresh(qboolean total)
         cls.state = ca_loading;
     }
 
-    Con_Popup(qfalse);
+    Con_Popup(false);
 
     S_StopAllSounds();
 
@@ -2434,8 +2421,8 @@ void CL_RestartRefresh(qboolean total)
         IN_Init();
     } else {
         UI_Shutdown();
-        R_Shutdown(qfalse);
-        R_Init(qfalse);
+        R_Shutdown(false);
+        R_Init(false);
         SCR_RegisterMedia();
         Con_RegisterMedia();
         UI_Init();
@@ -2454,7 +2441,7 @@ void CL_RestartRefresh(qboolean total)
     // switch back to original state
     cls.state = cls_state;
 
-    Con_Close(qfalse);
+    Con_Close(false);
 
     CL_UpdateFrameTimes();
 
@@ -2470,7 +2457,7 @@ Flush caches and reload all models and textures.
 */
 static void CL_ReloadRefresh_f(void)
 {
-    CL_RestartRefresh(qfalse);
+    CL_RestartRefresh(false);
 }
 
 /*
@@ -2482,7 +2469,7 @@ Perform complete restart of the renderer subsystem.
 */
 static void CL_RestartRefresh_f(void)
 {
-    CL_RestartRefresh(qtrue);
+    CL_RestartRefresh(true);
 }
 
 // execute string in server command buffer
@@ -2490,7 +2477,7 @@ static void exec_server_string(cmdbuf_t *buf, const char *text)
 {
     char *s;
 
-    Cmd_TokenizeString(text, qtrue);
+    Cmd_TokenizeString(text, true);
 
     // execute the command line
     if (!Cmd_Argc()) {
@@ -2554,9 +2541,37 @@ static void cl_updaterate_changed(cvar_t *self)
 }
 #endif
 
+static inline int fps_to_msec(int fps)
+{
+#if 0
+    return (1000 + fps / 2) / fps;
+#else
+    return 1000 / fps;
+#endif
+}
+
+static void warn_on_fps_rounding(cvar_t* cvar)
+{
+    if (cvar->integer != 0) {
+        int msec = fps_to_msec(cvar->integer);
+        if (msec != 0) {
+            int real_maxfps = 1000 / msec;
+            if (cvar->integer != real_maxfps)
+                Com_WPrintf("%s value `%d' is inexact, use `%d' instead.\n",
+                            cvar->name, cvar->integer, real_maxfps);
+        }
+    }
+}
+
 static void cl_sync_changed(cvar_t *self)
 {
     CL_UpdateFrameTimes();
+}
+
+static void cl_maxfps_changed(cvar_t* self)
+{
+    CL_UpdateFrameTimes();
+    warn_on_fps_rounding(self);
 }
 
 // allow downloads to be permanently disabled as a
@@ -2607,7 +2622,7 @@ static const cmdreg_t c_client[] = {
     { "ignoretext", CL_IgnoreText_f },
     { "unignoretext", CL_UnIgnoreText_f },
     { "ignorenick", CL_IgnoreNick_f, CL_IgnoreNick_c },
-    { "unignorenick", CL_UnIgnoreNick_f, CL_IgnoreNick_c },
+    { "unignorenick", CL_UnIgnoreNick_f, CL_UnIgnoreNick_c },
     { "dumpclients", CL_DumpClients_f },
     { "dumpstatusbar", CL_DumpStatusbar_f },
     { "dumplayout", CL_DumpLayout_f },
@@ -2656,7 +2671,8 @@ static void CL_InitLocal(void)
     CL_InitDownloads();
     CL_GTV_Init();
 
-    List_Init(&cl_ignores);
+    List_Init(&cl_ignore_text);
+    List_Init(&cl_ignore_nick);
 
     Cmd_Register(c_client);
 
@@ -2679,11 +2695,11 @@ static void CL_InitLocal(void)
     cl_predict->changed = cl_predict_changed;
     cl_kickangles = Cvar_Get("cl_kickangles", "1", CVAR_CHEAT);
     cl_maxfps = Cvar_Get("cl_maxfps", "60", 0);
-    cl_maxfps->changed = cl_sync_changed;
+    cl_maxfps->changed = cl_maxfps_changed;
     cl_async = Cvar_Get("cl_async", "1", 0);
     cl_async->changed = cl_sync_changed;
     r_maxfps = Cvar_Get("r_maxfps", "0", 0);
-    r_maxfps->changed = cl_sync_changed;
+    r_maxfps->changed = cl_maxfps_changed;
     cl_autopause = Cvar_Get("cl_autopause", "1", 0);
     cl_rollhack = Cvar_Get("cl_rollhack", "1", 0);
     cl_noglow = Cvar_Get("cl_noglow", "0", 0);
@@ -2693,6 +2709,8 @@ static void CL_InitLocal(void)
     com_timedemo->changed = cl_sync_changed;
 
     CL_UpdateFrameTimes();
+    warn_on_fps_rounding(cl_maxfps);
+    warn_on_fps_rounding(r_maxfps);
 
 #ifdef _DEBUG
     cl_shownet = Cvar_Get("cl_shownet", "0", 0);
@@ -2754,7 +2772,7 @@ static void CL_InitLocal(void)
     info_hand->changed = info_hand_changed;
     info_fov = Cvar_Get("fov", "90", CVAR_USERINFO | CVAR_ARCHIVE);
     info_gender = Cvar_Get("gender", "male", CVAR_USERINFO | CVAR_ARCHIVE);
-    info_gender->modified = qfalse; // clear this so we know when user sets it manually
+    info_gender->modified = false; // clear this so we know when user sets it manually
     info_uf = Cvar_Get("uf", "", CVAR_USERINFO);
 
 
@@ -2783,31 +2801,31 @@ static void CL_InitLocal(void)
 CL_CheatsOK
 ==================
 */
-qboolean CL_CheatsOK(void)
+bool CL_CheatsOK(void)
 {
     // can cheat when disconnected or playing a demo
     if (cls.state < ca_connected || cls.demo.playback)
-        return qtrue;
+        return true;
 
     // can't cheat on remote servers
     if (!sv_running->integer)
-        return qfalse;
+        return false;
 
     // developer option
     if (Cvar_VariableInteger("cheats"))
-        return qtrue;
+        return true;
 
     // single player can cheat
     if (cls.state > ca_connected && cl.maxclients == 1)
-        return qtrue;
+        return true;
 
 #if USE_MVD_CLIENT
     // can cheat when playing MVD
     if (MVD_GetDemoPercent(NULL, NULL) != -1)
-        return qtrue;
+        return true;
 #endif
 
-    return qfalse;
+    return false;
 }
 
 //============================================================================
@@ -2999,25 +3017,19 @@ void CL_CheckForPause(void)
 }
 
 typedef enum {
-    SYNC_FULL,
+    SYNC_TIMEDEMO,
     SYNC_MAXFPS,
     SYNC_SLEEP_10,
     SYNC_SLEEP_60,
-    SYNC_SLEEP_VIDEO,
-    ASYNC_VIDEO,
-    ASYNC_MAXFPS,
     ASYNC_FULL
 } sync_mode_t;
 
 #ifdef _DEBUG
 static const char *const sync_names[] = {
-    "SYNC_FULL",
+    "SYNC_TIMEDEMO",
     "SYNC_MAXFPS",
     "SYNC_SLEEP_10",
     "SYNC_SLEEP_60",
-    "SYNC_SLEEP_VIDEO",
-    "ASYNC_VIDEO",
-    "ASYNC_MAXFPS",
     "ASYNC_FULL"
 };
 #endif
@@ -3026,13 +3038,17 @@ static int ref_msec, phys_msec, main_msec;
 static int ref_extra, phys_extra, main_extra;
 static sync_mode_t sync_mode;
 
-static inline int fps_to_msec(int fps)
+#define MIN_PHYS_HZ 10
+#define MAX_PHYS_HZ 125
+#define MIN_REF_HZ MIN_PHYS_HZ
+#define MAX_REF_HZ 1000
+
+static int fps_to_clamped_msec(cvar_t* cvar, int min, int max)
 {
-#if 0
-    return (1000 + fps / 2) / fps;
-#else
-    return 1000 / fps;
-#endif
+    if (cvar->integer == 0)
+        return fps_to_msec(max);
+    else
+        return fps_to_msec(Cvar_ClampInteger(cvar, min, max));
 }
 
 /*
@@ -3048,60 +3064,33 @@ void CL_UpdateFrameTimes(void)
         return; // not yet fully initialized
     }
 
-    // check if video driver supports syncing to vertical retrace
-    if (cl_async->integer > 1 && !(r_config.flags & QVF_VIDEOSYNC)) {
-        Cvar_Reset(cl_async);
-    }
+    phys_msec = ref_msec = main_msec = 0;
+    ref_extra = phys_extra = main_extra = 0;
 
     if (com_timedemo->integer) {
         // timedemo just runs at full speed
-        ref_msec = phys_msec = main_msec = 0;
-        sync_mode = SYNC_FULL;
+        sync_mode = SYNC_TIMEDEMO;
     } else if (cls.active == ACT_MINIMIZED) {
         // run at 10 fps if minimized
-        ref_msec = phys_msec = 0;
         main_msec = fps_to_msec(10);
         sync_mode = SYNC_SLEEP_10;
     } else if (cls.active == ACT_RESTORED || cls.state != ca_active) {
         // run at 60 fps if not active
-        ref_msec = phys_msec = 0;
-        if (cl_async->integer > 1) {
-            main_msec = 0;
-            sync_mode = SYNC_SLEEP_VIDEO;
-        } else {
-            main_msec = fps_to_msec(60);
-            sync_mode = SYNC_SLEEP_60;
-        }
+        main_msec = fps_to_msec(60);
+        sync_mode = SYNC_SLEEP_60;
     } else if (cl_async->integer > 0) {
         // run physics and refresh separately
-        phys_msec = fps_to_msec(Cvar_ClampInteger(cl_maxfps, 10, 120));
-        if (cl_async->integer > 1) {
-            ref_msec = 0;
-            sync_mode = ASYNC_VIDEO;
-        } else if (r_maxfps->integer) {
-            ref_msec = fps_to_msec(Cvar_ClampInteger(r_maxfps, 10, 1000));
-            sync_mode = ASYNC_MAXFPS;
-        } else {
-            ref_msec = 1;
-            sync_mode = ASYNC_FULL;
-        }
-        main_msec = 0;
+        phys_msec = fps_to_clamped_msec(cl_maxfps, MIN_PHYS_HZ, MAX_PHYS_HZ);
+        ref_msec = fps_to_clamped_msec(r_maxfps, MIN_REF_HZ, MAX_REF_HZ);
+        sync_mode = ASYNC_FULL;
     } else {
         // everything ticks in sync with refresh
-        phys_msec = ref_msec = 0;
-        if (cl_maxfps->integer) {
-            main_msec = fps_to_msec(Cvar_ClampInteger(cl_maxfps, 10, 1000));
-            sync_mode = SYNC_MAXFPS;
-        } else {
-            main_msec = 1;
-            sync_mode = SYNC_FULL;
-        }
+        main_msec = fps_to_clamped_msec(cl_maxfps, MIN_PHYS_HZ, MAX_PHYS_HZ);
+        sync_mode = SYNC_MAXFPS;
     }
 
-    Com_DDDPrintf("%s: mode=%s main_msec=%d ref_msec=%d, phys_msec=%d\n",
-                  __func__, sync_names[sync_mode], main_msec, ref_msec, phys_msec);
-
-    ref_extra = phys_extra = main_extra = 0;
+    Com_DDPrintf("%s: mode=%s main_msec=%d ref_msec=%d, phys_msec=%d\n",
+                 __func__, sync_names[sync_mode], main_msec, ref_msec, phys_msec);
 }
 
 /*
@@ -3112,7 +3101,7 @@ CL_Frame
 */
 unsigned CL_Frame(unsigned msec)
 {
-    qboolean phys_frame, ref_frame;
+    bool phys_frame = true, ref_frame = true;
 
     time_after_ref = time_before_ref = 0;
 
@@ -3125,14 +3114,13 @@ unsigned CL_Frame(unsigned msec)
 
     CL_ProcessEvents();
 
-    ref_frame = phys_frame = qtrue;
     switch (sync_mode) {
-    case SYNC_FULL:
+    case SYNC_TIMEDEMO:
         // timedemo just runs at full speed
         break;
     case SYNC_SLEEP_10:
         // don't run refresh at all
-        ref_frame = qfalse;
+        ref_frame = false;
         // fall through
     case SYNC_SLEEP_60:
         // run at limited fps if not active
@@ -3140,31 +3128,21 @@ unsigned CL_Frame(unsigned msec)
             return main_msec - main_extra;
         }
         break;
-    case SYNC_SLEEP_VIDEO:
-        // wait for vertical retrace if not active
-        VID_VideoWait();
-        break;
-    case ASYNC_VIDEO:
-    case ASYNC_MAXFPS:
     case ASYNC_FULL:
         // run physics and refresh separately
         phys_extra += main_extra;
+        ref_extra += main_extra;
+
         if (phys_extra < phys_msec) {
-            phys_frame = qfalse;
+            phys_frame = false;
         } else if (phys_extra > phys_msec * 4) {
             phys_extra = phys_msec;
         }
 
-        if (sync_mode == ASYNC_VIDEO) {
-            // sync refresh to vertical retrace
-            ref_frame = VID_VideoSync();
-        } else {
-            ref_extra += main_extra;
-            if (ref_extra < ref_msec) {
-                ref_frame = qfalse;
-            } else if (ref_extra > ref_msec * 4) {
-                ref_extra = ref_msec;
-            }
+        if (ref_extra < ref_msec) {
+            ref_frame = false;
+        } else if (ref_extra > ref_msec * 4) {
+            ref_extra = ref_msec;
         }
         break;
     case SYNC_MAXFPS:
@@ -3173,7 +3151,7 @@ unsigned CL_Frame(unsigned msec)
             if (!cl.sendPacketNow) {
                 return 0;
             }
-            ref_frame = qfalse;
+            ref_frame = false;
         }
         break;
     }
@@ -3186,8 +3164,8 @@ unsigned CL_Frame(unsigned msec)
     // decide the simulation time
     cls.frametime = main_extra * 0.001f;
 
-    if (cls.frametime > 1.0 / 5)
-        cls.frametime = 1.0 / 5;
+    if (cls.frametime > 1.0f / 5)
+        cls.frametime = 1.0f / 5;
 
     if (!sv_paused->integer) {
         cl.time += main_extra;
@@ -3286,10 +3264,10 @@ run_fx:
 CL_ProcessEvents
 ============
 */
-qboolean CL_ProcessEvents(void)
+bool CL_ProcessEvents(void)
 {
     if (!cl_running->integer) {
-        return qfalse;
+        return false;
     }
 
     CL_RunRefresh();
@@ -3375,13 +3353,13 @@ to run quit through here before the final handoff to the sys code.
 */
 void CL_Shutdown(void)
 {
-    static qboolean isdown = qfalse;
+    static bool isdown = false;
 
     if (isdown) {
         Com_Printf("CL_Shutdown: recursive shutdown\n");
         return;
     }
-    isdown = qtrue;
+    isdown = true;
 
     if (!cl_running || !cl_running->integer) {
         return;
@@ -3406,5 +3384,5 @@ void CL_Shutdown(void)
 
     Cvar_Set("cl_running", "0");
 
-    isdown = qfalse;
+    isdown = false;
 }

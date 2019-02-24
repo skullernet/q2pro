@@ -25,12 +25,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SAVE_CURRENT    ".current"
 #define SAVE_AUTO       "save0"
 
-static int write_server_file(qboolean autosave)
+static int write_server_file(bool autosave)
 {
     char        name[MAX_OSPATH];
     cvar_t      *var;
     size_t      len;
-    qerror_t    ret;
+    int         ret;
     uint64_t    timestamp;
 
     // write magic
@@ -82,11 +82,10 @@ static int write_server_file(qboolean autosave)
 static int write_level_file(void)
 {
     char        name[MAX_OSPATH];
-    int         i;
+    int         i, ret;
     char        *s;
     size_t      len;
     byte        portalbits[MAX_MAP_PORTAL_BYTES];
-    qerror_t    ret;
 
     // write magic
     MSG_WriteLong(SAVE_MAGIC2);
@@ -173,9 +172,9 @@ static int copy_file(const char *src, const char *dst, const char *name)
 
     ret = 0;
 fail2:
-    fclose(ofp);
+    ret |= fclose(ofp);
 fail1:
-    fclose(ifp);
+    ret |= fclose(ifp);
 fail0:
     return ret;
 }
@@ -231,7 +230,7 @@ static int copy_save_dir(const char *src, const char *dst)
 static int read_binary_file(const char *name)
 {
     qhandle_t f;
-    size_t len;
+    int64_t len;
 
     len = FS_FOpenFile(name, &f, FS_MODE_READ | FS_TYPE_REAL | FS_PATH_GAME);
     if (!f)
@@ -292,14 +291,15 @@ char *SV_GetSaveInfo(const char *dir)
 
     // format savegame date
     t = (time_t)timestamp;
+    len = 0;
     if ((tm = localtime(&t)) != NULL) {
         if (tm->tm_year == year)
-            strftime(date, sizeof(date), "%b %d %H:%M", tm);
+            len = strftime(date, sizeof(date), "%b %d %H:%M", tm);
         else
-            strftime(date, sizeof(date), "%b %d  %Y", tm);
-    } else {
-        strcpy(date, "???");
+            len = strftime(date, sizeof(date), "%b %d  %Y", tm);
     }
+    if (!len)
+        strcpy(date, "???");
 
     return Z_CopyString(va("%s %s", date, name));
 }
@@ -353,7 +353,7 @@ static int read_server_file(void)
     SV_Shutdown("Server restarted\n", ERR_RECONNECT);
 
     // the rest can't underflow
-    msg_read.allowunderflow = qfalse;
+    msg_read.allowunderflow = false;
 
     // read all CVAR_LATCH cvars
     // these will be things like coop, skill, deathmatch, etc
@@ -416,7 +416,7 @@ static int read_level_file(void)
     // any error will drop from this point
 
     // the rest can't underflow
-    msg_read.allowunderflow = qfalse;
+    msg_read.allowunderflow = false;
 
     // read all configstrings
     while (1) {
@@ -492,7 +492,7 @@ void SV_AutoSaveBegin(mapcmd_t *cmd)
         ent = EDICT_NUM(i + 1);
         if (ent->inuse) {
             Q_SetBit(bitmap, i);
-            ent->inuse = qfalse;
+            ent->inuse = false;
         }
     }
 
@@ -516,7 +516,7 @@ void SV_AutoSaveEnd(void)
         return;
 
     // save server state
-    if (write_server_file(qtrue)) {
+    if (write_server_file(true)) {
         Com_EPrintf("Couldn't write server file.\n");
         return;
     }
@@ -664,7 +664,7 @@ static void SV_Savegame_f(void)
     }
 
     // save server state
-    if (write_server_file(qfalse)) {
+    if (write_server_file(false)) {
         Com_Printf("Couldn't write server file.\n");
         return;
     }

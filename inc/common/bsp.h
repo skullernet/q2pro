@@ -25,10 +25,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "system/hunk.h"
 #include "format/bsp.h"
 
-#ifndef MIPLEVELS
-#define MIPLEVELS 4
-#endif
-
 // maximum size of a PVS row, in bytes
 #define VIS_MAX_BYTES   (MAX_MAP_LEAFS >> 3)
 
@@ -88,13 +84,11 @@ typedef struct mface_s {
     int             texturemins[2];
     int             extents[2];
 
-#if USE_REF
     int             texnum[2];
     int             statebits;
     int             firstvert;
     int             light_s, light_t;
     float           stylecache[MAX_LIGHTMAPS];
-#endif
 
     int             drawframe;
 
@@ -110,13 +104,8 @@ typedef struct mnode_s {
     /* ======> */
     cplane_t            *plane;     // never NULL to differentiate from leafs
 #if USE_REF
-    union {
-        vec_t           minmaxs[6];
-        struct {
-            vec3_t      mins;
-            vec3_t      maxs;
-        };
-    };
+    vec3_t              mins;
+    vec3_t              maxs;
 
     int                 visframe;
 #endif
@@ -266,7 +255,7 @@ typedef struct bsp_s {
     char            name[1];
 } bsp_t;
 
-qerror_t BSP_Load(const char *name, bsp_t **bsp_p);
+int BSP_Load(const char *name, bsp_t **bsp_p);
 void BSP_Free(bsp_t *bsp);
 const char *BSP_GetError(void);
 

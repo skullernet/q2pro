@@ -87,8 +87,6 @@ typedef enum {
      (item)->type != MTYPE_STATIC && \
      !((item)->flags & (QMF_GRAYED | QMF_HIDDEN | QMF_DISABLED)))
 
-typedef void (*confirmAction_t)(qboolean);
-
 typedef struct menuFrameWork_s {
     list_t  entry;
 
@@ -97,9 +95,9 @@ typedef struct menuFrameWork_s {
     void    **items;
     int     nitems;
 
-    qboolean compact;
-    qboolean transparent;
-    qboolean keywait;
+    bool compact;
+    bool transparent;
+    bool keywait;
 
     qhandle_t image;
     color_t color;
@@ -117,7 +115,7 @@ typedef struct menuFrameWork_s {
     qhandle_t logo;
     vrect_t logo_rc;
 
-    qboolean (*push)(struct menuFrameWork_s *);
+    bool (*push)(struct menuFrameWork_s *);
     void (*pop)(struct menuFrameWork_s *);
     void (*expose)(struct menuFrameWork_s *);
     void (*draw)(struct menuFrameWork_s *);
@@ -144,7 +142,7 @@ typedef struct menuCommon_s {
     menuSound_t (*activate)(struct menuCommon_s *);
     menuSound_t (*change)(struct menuCommon_s *);
     menuSound_t (*keydown)(struct menuCommon_s *, int key);
-    menuSound_t (*focus)(struct menuCommon_s *, qboolean gain);
+    menuSound_t (*focus)(struct menuCommon_s *, bool gain);
 } menuCommon_t;
 
 typedef struct menuField_s {
@@ -159,7 +157,7 @@ typedef struct menuField_s {
 typedef struct menuSlider_s {
     menuCommon_t generic;
     cvar_t *cvar;
-    qboolean modified;
+    bool modified;
 
     float minvalue;
     float maxvalue;
@@ -221,7 +219,7 @@ typedef struct menuSpinControl_s {
     int     curvalue;
 
     int         mask;
-    qboolean    negate;
+    bool        negate;
 } menuSpinControl_t;
 
 typedef struct menuAction_s {
@@ -272,7 +270,7 @@ void PlayerModel_Free(void);
 #define NUM_CURSOR_FRAMES 15
 
 typedef struct uiStatic_s {
-    qboolean initialized;
+    bool initialized;
     int realtime;
     int width, height; // scaled
     float scale;
@@ -281,9 +279,9 @@ typedef struct uiStatic_s {
     menuFrameWork_t *activeMenu;
     menuCommon_t *mouseTracker;
     int mouseCoords[2];
-    qboolean entersound;        // play after drawing a frame, so caching
-                                // won't disrupt the sound
-    qboolean transparent;
+    bool entersound;        // play after drawing a frame, so caching
+                            // won't disrupt the sound
+    bool transparent;
     int numPlayerModels;
     playerModelInfo_t pmi[MAX_PLAYERMODELS];
     char weaponModel[32];
@@ -314,8 +312,8 @@ void        UI_PushMenu(menuFrameWork_t *menu);
 void        UI_ForceMenuOff(void);
 void        UI_PopMenu(void);
 void        UI_StartSound(menuSound_t sound);
-qboolean    UI_DoHitTest(void);
-qboolean    UI_CursorInRect(vrect_t *rect);
+bool        UI_DoHitTest(void);
+bool        UI_CursorInRect(vrect_t *rect);
 void        *UI_FormatColumns(int extrasize, ...) q_sentinel;
 char        *UI_GetColumn(char *s, int n);
 void        UI_DrawString(int x, int y, int flags, const char *string);
@@ -346,7 +344,7 @@ void        MenuList_SetValue(menuList_t *l, int value);
 void        MenuList_Sort(menuList_t *l, int offset,
                           int (*cmpfunc)(const void *, const void *));
 void SpinControl_Init(menuSpinControl_t *s);
-qboolean    Menu_Push(menuFrameWork_t *menu);
+bool        Menu_Push(menuFrameWork_t *menu);
 void        Menu_Pop(menuFrameWork_t *menu);
 void        Menu_Free(menuFrameWork_t *menu);
 

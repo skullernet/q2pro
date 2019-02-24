@@ -184,7 +184,8 @@ Colors can be specified in one of the following formats:
 - #RRGGBBAA, where R, G, B and A are hex digits
 - #RRGGBB, which implies alpha value of FF
 - #RGB, which is expanded to #RRGGBB by duplicating digits
-- one of the predefined color names (black, red, etc)
+- one of the predefined color names (black, red, green, yellow,
+blue, cyan, magenta, white)
 ********************
 
 cl_railtrail_type::
@@ -295,9 +296,8 @@ con_alpha::
     Default value is 1.
 
 con_scale::
-    Scaling factor of the console text. Takes effect in OpenGL mode only.
-    Default value is 0 (automatically scale depending on current display
-    resolution). Set to 1 to disable scaling.
+    Scaling factor of the console text. Default value is 0 (automatically scale
+    depending on current display resolution). Set to 1 to disable scaling.
 
 con_font::
     Font used for drawing console text. Default value is "conchars".
@@ -319,6 +319,16 @@ con_scroll::
     variable is a bitmask. Default value is 0.
       - 1 — when new command is entered
       - 2 — when new lines are printed
+
+con_timestamps::
+    Specifies if console lines are prefixed with a timestamp. Default value is 0.
+
+con_timestampsformat::
+    Format string for console timestamps. Default value is "%H:%M:%S ". See
+    strftime(3) for syntax description.
+
+con_timestampscolor::
+    Text color used for console timestamps. Default value is "#aaa".
 
 
 Game Screen
@@ -368,9 +378,8 @@ scr_showpause::
       - 2 — draw text in demo bar (visible only during demo playback)
 
 scr_scale::
-    Scaling factor of the HUD elements. Takes effect in OpenGL mode only.
-    Default value is 0 (automatically scale depending on current display
-    resolution). Set to 1 to disable scaling.
+    Scaling factor of the HUD elements. Default value is 0 (automatically scale
+    depending on current display resolution). Set to 1 to disable scaling.
 
 scr_alpha::
     Opacity of the HUD elements. 0 is fully transparent, 1 is opaque. Default
@@ -837,16 +846,6 @@ loc_draw::
 Mouse Input
 ~~~~~~~~~~~
 
-in_direct::
-    On Linux, enables Evdev interface for direct mouse input. Otherwise,
-    standard input facilities provided by the window system are used. Default
-    value is 1 (use direct input).
-
-in_device::
-    On Linux, specifies device file to use for direct mouse input. Normally, it
-    should be one of ‘/dev/input/eventX’ files (reading permissions are
-    required).  Default value is empty and needs to be filled by user.
-
 in_grab::
     Specifies mouse grabbing policy in windowed mode. Normally, mouse is always
     grabbed in-game and released when console or menu is up. In addition to
@@ -869,16 +868,6 @@ m_accel::
 m_filter::
     When enabled, mouse movement is averaged between current and previous
     samples.  Default value is 0 (filtering disabled).
-
-lirc_enable::
-    On Linux, enables input from the LIRC daemon, which allows menu navigation
-    and command execution from your infrared remote control device. Default
-    value is 0 (disabled).
-
-lirc_config::
-    On Linux, specifies LIRC configuration file to use. Default value is empty,
-    which means to use the default ‘~/.lircrc’ file. This variable may only be
-    set from command line.  See README.lirc file for command syntax description.
 
 
 Miscellaneous
@@ -952,9 +941,8 @@ ui_background::
     just fills the screen with solid black color.
 
 ui_scale::
-    Scaling factor of the UI widgets. Takes effect in OpenGL mode only. Default
-    value is 0 (automatically scale depending on current display resolution).
-    Set to 1 to disable scaling.
+    Scaling factor of the UI widgets. Default value is 0 (automatically scale
+    depending on current display resolution). Set to 1 to disable scaling.
 
 ui_sortdemos::
     Specifies default sorting order of entries in demo browser. Default value
@@ -983,8 +971,8 @@ ui_sortservers::
 
 ui_colorservers::
     Enables highlighting of entries in server browser with different colors.
-    Currently, this option grays out password protected and anticheat enforced
-    servers. Default value is 0 (disabled).
+    This option draws entries with low RTT in green and grays out password
+    protected and anticheat enforced servers. Default value is 0 (disabled).
 
 ui_pingrate::
     Specifies the server pinging rate used by server browser, in packets per
@@ -1216,23 +1204,31 @@ server, a list of chat filters is examined.  For each filter, _match_ is
 wildcard compared with the message, ignoring any unprintable characters.  If
 the message matches, it is silently dropped.
 
+There is also simpler form of chat filters: nickname filters that ignore chat
+strings from specific _nickname_. They can be replicated with generic filters
+and are supported for convenience. Unlike generic chat filters that support
+wildcards, nicknames are matched as plain strings, ignoring any unprintable
+characters.
+
 ignoretext [match ...]::
-    Adds new chat filter. When called without arguments, prints a list of
-    registered filters.
+    Adds new generic chat filter. When called without arguments, prints a list
+    of registered generic filters.
 
 unignoretext [all] | [match ...]::
-    Removes the specified chat filter. Specify _all_ to remove all filters.
-    When called without arguments, prints a list of registered filters.
+    Removes the specified generic chat filter. Specify _all_ to remove all
+    filters. When called without arguments, prints a list of registered
+    generic filters.
 
 ignorenick [nickname]::
-    Automatically composes and adds two chat filters: ‘_nickname_: *’ and
-    ‘(_nickname_): *’. This command supports nickname completion.  When called
-    without arguments, prints a list of registered filters.
+    Adds new filter to ignore specific _nickname_. This command supports
+    nickname completion. When called without arguments, prints a list of
+    registered nickname filters.
 
-unignorenick [nickname]::
-    Automatically composes and removes two chat filters: ‘_nickname_: *’ and
-    ‘(_nickname_): *’. This command supports nickname completion. When called
-    without arguments, prints a list of registered filters.
+unignorenick [all] | [nickname]::
+    Removes filter to ignore specific _nickname_. This command supports
+    nickname completion. Specify _all_ to remove all filters. To remove literal
+    nickname ‘all’, pass a second argument (can be any string). When called
+    without arguments, prints a list of registered nickname filters.
 
 
 Draw Objects

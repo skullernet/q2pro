@@ -131,8 +131,7 @@ typedef struct refdef_s {
 typedef enum {
     QVF_ACCELERATED     = (1 << 0),
     QVF_GAMMARAMP       = (1 << 1),
-    QVF_FULLSCREEN      = (1 << 2),
-    QVF_VIDEOSYNC       = (1 << 3)
+    QVF_FULLSCREEN      = (1 << 2)
 } vidFlags_t;
 
 typedef struct {
@@ -172,10 +171,10 @@ typedef enum {
 } imagetype_t;
 
 // called when the library is loaded
-qboolean    R_Init(qboolean total);
+bool    R_Init(bool total);
 
 // called before the library is unloaded
-void        R_Shutdown(qboolean total);
+void    R_Shutdown(bool total);
 
 // All data that will be used in a level should be
 // registered before rendering any frames to prevent disk hits,
@@ -193,7 +192,7 @@ void        R_Shutdown(qboolean total);
 void    R_BeginRegistration(const char *map);
 qhandle_t R_RegisterModel(const char *name);
 qhandle_t R_RegisterImage(const char *name, imagetype_t type,
-                          imageflags_t flags, qerror_t *err_p);
+                          imageflags_t flags, int *err_p);
 void    R_SetSky(const char *name, float rotate, vec3_t axis);
 void    R_EndRegistration(void);
 
@@ -214,7 +213,7 @@ void    R_SetScale(float scale);
 void    R_DrawChar(int x, int y, int flags, int ch, qhandle_t font);
 int     R_DrawString(int x, int y, int flags, size_t maxChars,
                      const char *string, qhandle_t font);  // returns advanced x coord
-qboolean R_GetPicSize(int *w, int *h, qhandle_t pic);   // returns transparency bit
+bool    R_GetPicSize(int *w, int *h, qhandle_t pic);   // returns transparency bit
 void    R_DrawPic(int x, int y, qhandle_t pic);
 void    R_DrawStretchPic(int x, int y, int w, int h, qhandle_t pic);
 void    R_TileClear(int x, int y, int w, int h, qhandle_t pic);

@@ -85,8 +85,8 @@ void actor_stand(edict_t *self)
     self->monsterinfo.currentmove = &actor_move_stand;
 
     // randomize on startup
-    if (level.time < 1.0)
-        self->s.frame = self->monsterinfo.currentmove->firstframe + (rand() % (self->monsterinfo.currentmove->lastframe - self->monsterinfo.currentmove->firstframe + 1));
+    if (level.time < 1.0f)
+        self->s.frame = self->monsterinfo.currentmove->firstframe + (Q_rand() % (self->monsterinfo.currentmove->lastframe - self->monsterinfo.currentmove->firstframe + 1));
 }
 
 
@@ -226,22 +226,22 @@ void actor_pain(edict_t *self, edict_t *other, float kick, int damage)
     self->pain_debounce_time = level.time + 3;
 //  gi.sound (self, CHAN_VOICE, actor.sound_pain, 1, ATTN_NORM, 0);
 
-    if ((other->client) && (random() < 0.4)) {
+    if ((other->client) && (random() < 0.4f)) {
         vec3_t  v;
         char    *name;
 
         VectorSubtract(other->s.origin, self->s.origin, v);
         self->ideal_yaw = vectoyaw(v);
-        if (random() < 0.5)
+        if (random() < 0.5f)
             self->monsterinfo.currentmove = &actor_move_flipoff;
         else
             self->monsterinfo.currentmove = &actor_move_taunt;
         name = actor_names[(self - g_edicts) % MAX_ACTOR_NAMES];
-        gi.cprintf(other, PRINT_CHAT, "%s: %s!\n", name, messages[rand() % 3]);
+        gi.cprintf(other, PRINT_CHAT, "%s: %s!\n", name, messages[Q_rand() % 3]);
         return;
     }
 
-    n = rand() % 3;
+    n = Q_rand() % 3;
     if (n == 0)
         self->monsterinfo.currentmove = &actor_move_pain1;
     else if (n == 1)
@@ -260,7 +260,7 @@ void actorMachineGun(edict_t *self)
     G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_ACTOR_MACHINEGUN_1], forward, right, start);
     if (self->enemy) {
         if (self->enemy->health > 0) {
-            VectorMA(self->enemy->s.origin, -0.2, self->enemy->velocity, target);
+            VectorMA(self->enemy->s.origin, -0.2f, self->enemy->velocity, target);
             target[2] += self->enemy->viewheight;
         } else {
             VectorCopy(self->enemy->absmin, target);
@@ -337,7 +337,7 @@ void actor_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage,
     self->deadflag = DEAD_DEAD;
     self->takedamage = DAMAGE_YES;
 
-    n = rand() % 2;
+    n = Q_rand() % 2;
     if (n == 0)
         self->monsterinfo.currentmove = &actor_move_death1;
     else
@@ -368,7 +368,7 @@ void actor_attack(edict_t *self)
     int     n;
 
     self->monsterinfo.currentmove = &actor_move_attack;
-    n = (rand() & 15) + 3 + 7;
+    n = (Q_rand() & 15) + 3 + 7;
     self->monsterinfo.pausetime = level.time + n * FRAMETIME;
 }
 

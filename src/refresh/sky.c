@@ -74,9 +74,9 @@ static void DrawSkyPolygon(int nump, vec3_t vecs)
     for (i = 0, vp = vecs; i < nump; i++, vp += 3) {
         VectorAdd(vp, v, v);
     }
-    av[0] = fabs(v[0]);
-    av[1] = fabs(v[1]);
-    av[2] = fabs(v[2]);
+    av[0] = fabsf(v[0]);
+    av[1] = fabsf(v[1]);
+    av[2] = fabsf(v[2]);
     if (av[0] > av[1] && av[0] > av[2]) {
         if (v[0] < 0)
             axis = 1;
@@ -101,7 +101,7 @@ static void DrawSkyPolygon(int nump, vec3_t vecs)
             dv = vecs[j - 1];
         else
             dv = -vecs[-j - 1];
-        if (dv < 0.001)
+        if (dv < 0.001f)
             continue;    // don't divide by zero
         j = vec_to_st[axis][0];
         if (j < 0)
@@ -125,7 +125,7 @@ static void DrawSkyPolygon(int nump, vec3_t vecs)
     }
 }
 
-#define ON_EPSILON      0.1     // point on plane side epsilon
+#define ON_EPSILON      0.1f    // point on plane side epsilon
 #define MAX_CLIP_VERTS  64
 
 #define SIDE_FRONT      0
@@ -136,7 +136,7 @@ static void ClipSkyPolygon(int nump, vec3_t vecs, int stage)
 {
     const float     *norm;
     float   *v;
-    qboolean        front, back;
+    bool    front, back;
     float   d, e;
     float   dists[MAX_CLIP_VERTS];
     int     sides[MAX_CLIP_VERTS];
@@ -155,15 +155,15 @@ static void ClipSkyPolygon(int nump, vec3_t vecs, int stage)
         return;
     }
 
-    front = back = qfalse;
+    front = back = false;
     norm = skyclip[stage];
     for (i = 0, v = vecs; i < nump; i++, v += 3) {
         d = DotProduct(v, norm);
         if (d > ON_EPSILON) {
-            front = qtrue;
+            front = true;
             sides[i] = SIDE_FRONT;
         } else if (d < -ON_EPSILON) {
-            back = qtrue;
+            back = true;
             sides[i] = SIDE_BACK;
         } else {
             sides[i] = SIDE_ON;
@@ -309,8 +309,8 @@ static void MakeSkyVec(float s, float t, int axis, vec_t *out)
     }
 
     // avoid bilerp seam
-    s = (s + 1) * 0.5;
-    t = (t + 1) * 0.5;
+    s = (s + 1) * 0.5f;
+    t = (t + 1) * 0.5f;
 
     if (s < sky_min)
         s = sky_min;
@@ -322,7 +322,7 @@ static void MakeSkyVec(float s, float t, int axis, vec_t *out)
         t = sky_max;
 
     out[3] = s;
-    out[4] = 1.0 - t;
+    out[4] = 1.0f - t;
 }
 
 #define SKY_VISIBLE(side) \

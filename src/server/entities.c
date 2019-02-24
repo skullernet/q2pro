@@ -44,8 +44,7 @@ static void SV_EmitPacketEntities(client_t         *client,
 {
     entity_packed_t *newent;
     const entity_packed_t *oldent;
-    unsigned i, oldindex, newindex, from_num_entities;
-    int oldnum, newnum;
+    int i, oldnum, newnum, oldindex, newindex, from_num_entities;
     msgEsFlags_t flags;
 
     if (!from)
@@ -380,14 +379,13 @@ copies off the playerstat and areabits.
 */
 void SV_BuildClientFrame(client_t *client)
 {
-    int         e;
+    int         e, i;
     vec3_t      org;
     edict_t     *ent;
     edict_t     *clent;
     client_frame_t  *frame;
     entity_packed_t *state;
     player_state_t  *ps;
-    int         l;
     int         clientarea, clientcluster;
     mleaf_t     *leaf;
     byte        clientphs[VIS_MAX_BYTES];
@@ -410,8 +408,8 @@ void SV_BuildClientFrame(client_t *client)
     VectorMA(ps->viewoffset, 0.125f, ps->pmove.origin, org);
 
     leaf = CM_PointLeaf(client->cm, org);
-    clientarea = CM_LeafArea(leaf);
-    clientcluster = CM_LeafCluster(leaf);
+    clientarea = leaf->area;
+    clientcluster = leaf->cluster;
 
     // calculate the visible areas
     frame->areabytes = CM_WriteAreaBits(client->cm, frame->areabits, clientarea);
@@ -476,12 +474,20 @@ void SV_BuildClientFrame(client_t *client)
 
             // beams just check one point for PHS
             if (ent->s.renderfx & RF_BEAM) {
-                l = ent->clusternums[0];
-                if (!Q_IsBitSet(clientphs, l))
+                if (!Q_IsBitSet(clientphs, ent->clusternums[0]))
                     continue;
             } else {
-                if (!SV_EdictIsVisible(client->cm, ent, clientpvs)) {
-                    continue;
+                if (ent->num_clusters == -1) {
+                    // too many leafs for individual check, go by headnode
+                    if (!CM_HeadnodeVisible(CM_NodeNum(client->cm, ent->headnode), clientpvs))
+                        continue;
+                } else {
+                    // check individual leafs
+                    for (i = 0; i < ent->num_clusters; i++)
+                        if (Q_IsBitSet(clientpvs, ent->clusternums[i]))
+                            break;
+                    if (i == ent->num_clusters)
+                        continue;       // not visible
                 }
 
                 if (!ent->s.modelindex) {

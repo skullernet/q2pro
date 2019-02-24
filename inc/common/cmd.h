@@ -91,8 +91,8 @@ typedef struct genctx_s {
     char **matches;
     int count, size;
     void *data;
-    qboolean ignorecase;
-    qboolean ignoredups;
+    bool ignorecase;
+    bool ignoredups;
 } genctx_t;
 
 typedef void (*xcommand_t)(void);
@@ -118,7 +118,7 @@ typedef struct cmdreg_s {
 
 void Cmd_Init(void);
 
-qboolean Cmd_Exists(const char *cmd_name);
+bool Cmd_Exists(const char *cmd_name);
 // used by the cvar code to check for cvar / command name overlap
 
 void Cmd_ExecTrigger(const char *string);
@@ -138,7 +138,7 @@ void Cmd_Option_c(const cmd_option_t *opt, xgenerator_t g, genctx_t *ctx, int ar
 // attempts to match a partial command for automatic command line completion
 // returns NULL if nothing fits
 
-void Cmd_TokenizeString(const char *text, qboolean macroExpand);
+void Cmd_TokenizeString(const char *text, bool macroExpand);
 // Takes a null terminated string.  Does not need to be /n terminated.
 // breaks the string up into arg tokens.
 
@@ -149,10 +149,10 @@ void Cmd_ExecuteString(cmdbuf_t *buf, const char *text);
 // Parses a single line of text into arguments and tries to execute it
 // as if it was typed at the console
 
-qerror_t Cmd_ExecuteFile(const char *path, unsigned flags);
+int Cmd_ExecuteFile(const char *path, unsigned flags);
 // execute a config file
 
-char *Cmd_MacroExpandString(const char *text, qboolean aliasHack);
+char *Cmd_MacroExpandString(const char *text, bool aliasHack);
 
 void Cmd_Register(const cmdreg_t *reg);
 void Cmd_AddCommand(const char *cmd_name, xcommand_t function);
@@ -173,6 +173,7 @@ char    *Cmd_Args(void);
 char    *Cmd_RawArgs(void);
 char    *Cmd_ArgsFrom(int from);
 char    *Cmd_RawArgsFrom(int from);
+char    *Cmd_ArgsRange(int from, int to);
 size_t  Cmd_ArgsBuffer(char *buffer, size_t size);
 size_t  Cmd_ArgvBuffer(int arg, char *buffer, size_t size);
 int     Cmd_ArgOffset(int arg);
@@ -202,8 +203,5 @@ int Cmd_ParseOptions(const cmd_option_t *opt);
 void Cmd_PrintHelp(const cmd_option_t *opt);
 void Cmd_PrintUsage(const cmd_option_t *opt, const char *suffix);
 void Cmd_PrintHint(void);
-
-const char *Cmd_Completer(const cmd_option_t *opt, const char *partial,
-                          int argnum, int state, xgenerator_t generator);
 
 #endif // CMD_H

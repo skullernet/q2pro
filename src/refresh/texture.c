@@ -28,7 +28,7 @@ static int gl_tex_solid_format;
 
 static int upload_width;
 static int upload_height;
-static qboolean upload_alpha;
+static bool upload_alpha;
 
 static int max_texture_size;
 
@@ -105,12 +105,9 @@ static void gl_texturemode_g(genctx_t *ctx)
 {
     int i;
 
-    ctx->ignorecase = qtrue;
-    for (i = 0; i < numFilterModes; i++) {
-        if (!Prompt_AddMatch(ctx, filterModes[i].name)) {
-            break;
-        }
-    }
+    ctx->ignorecase = true;
+    for (i = 0; i < numFilterModes; i++)
+        Prompt_AddMatch(ctx, filterModes[i].name);
 }
 
 static void gl_anisotropy_changed(cvar_t *self)
@@ -268,7 +265,7 @@ static void IMG_MipMap(byte *out, byte *in, int width, int height)
 
 static int scrap_inuse[SCRAP_BLOCK_WIDTH];
 static byte scrap_data[SCRAP_BLOCK_WIDTH * SCRAP_BLOCK_HEIGHT * 4];
-static qboolean scrap_dirty;
+static bool scrap_dirty;
 
 #define Scrap_AllocBlock(w, h, s, t) \
     GL_AllocBlock(SCRAP_BLOCK_WIDTH, SCRAP_BLOCK_HEIGHT, scrap_inuse, w, h, s, t)
@@ -287,7 +284,7 @@ static void Scrap_Shutdown(void)
         scrap_inuse[i] = 0;
     }
 
-    scrap_dirty = qfalse;
+    scrap_dirty = false;
 }
 
 void Scrap_Upload(void)
@@ -309,7 +306,7 @@ void Scrap_Upload(void)
         GL_SetFilterAndRepeat(IT_PIC, IF_SCRAP);
     }
 
-    scrap_dirty = qfalse;
+    scrap_dirty = false;
 }
 
 //=======================================================
@@ -415,7 +412,7 @@ static void GL_ColorInvertTexture(byte *in, int inwidth, int inheight, imagetype
     }
 }
 
-static qboolean GL_TextureHasAlpha(byte *data, int width, int height)
+static bool GL_TextureHasAlpha(byte *data, int width, int height)
 {
     int         i, c;
     byte        *scan;
@@ -424,24 +421,24 @@ static qboolean GL_TextureHasAlpha(byte *data, int width, int height)
     scan = data + 3;
     for (i = 0; i < c; i++, scan += 4) {
         if (*scan != 255) {
-            return qtrue;
+            return true;
         }
     }
 
-    return qfalse;
+    return false;
 }
 
-static qboolean GL_MakePowerOfTwo(int *width, int *height)
+static bool GL_MakePowerOfTwo(int *width, int *height)
 {
     if (!(*width & (*width - 1)) && !(*height & (*height - 1)))
-        return qtrue;   // already power of two
+        return true;    // already power of two
 
     if (gl_config.caps & QGL_CAP_TEXTURE_NON_POWER_OF_TWO)
-        return qfalse;  // assume full NPOT texture support
+        return false;   // assume full NPOT texture support
 
     *width = npot32(*width);
     *height = npot32(*height);
-    return qfalse;
+    return false;
 }
 
 /*
@@ -453,7 +450,7 @@ static void GL_Upload32(byte *data, int width, int height, int baselevel, imaget
 {
     byte        *scaled;
     int         scaled_width, scaled_height, comp;
-    qboolean    power_of_two;
+    bool        power_of_two;
 
     scaled_width = width;
     scaled_height = height;
@@ -469,8 +466,9 @@ static void GL_Upload32(byte *data, int width, int height, int baselevel, imaget
         }
 
         // let people sample down the world textures for speed
-        scaled_width >>= gl_picmip->integer;
-        scaled_height >>= gl_picmip->integer;
+        int shift = Cvar_ClampInteger(gl_picmip, 0, 31);
+        scaled_width >>= shift;
+        scaled_height >>= shift;
     }
 
     // don't ever bother with >256 textures
@@ -510,9 +508,9 @@ static void GL_Upload32(byte *data, int width, int height, int baselevel, imaget
     }
 
     if (flags & IF_TRANSPARENT) {
-        upload_alpha = qtrue;
+        upload_alpha = true;
     } else if (flags & IF_OPAQUE) {
-        upload_alpha = qfalse;
+        upload_alpha = false;
     } else {
         // scan the texture for any non-255 alpha
         upload_alpha = GL_TextureHasAlpha(scaled, scaled_width, scaled_height);
@@ -621,10 +619,10 @@ static void GL_SetFilterAndRepeat(imagetype_t type, imageflags_t flags)
         qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
         qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
     } else {
-        qboolean    nearest;
+        bool    nearest;
 
         if (flags & IF_NEAREST) {
-            nearest = qtrue;
+            nearest = true;
         } else if (type == IT_FONT) {
             nearest = (gl_bilerp_chars->integer == 0);
         } else if (type == IT_PIC) {
@@ -633,7 +631,7 @@ static void GL_SetFilterAndRepeat(imagetype_t type, imageflags_t flags)
             else
                 nearest = (gl_bilerp_pics->integer == 0);
         } else {
-            nearest = qfalse;
+            nearest = false;
         }
 
         if ((flags & IF_UPSCALED) && (gl_config.caps & QGL_CAP_TEXTURE_MAX_LEVEL)) {
@@ -710,7 +708,7 @@ void IMG_Load(image_t *image, byte *pic)
         if (maxlevel)
             image->flags |= IF_UPSCALED;
 
-        scrap_dirty = qtrue;
+        scrap_dirty = true;
     } else {
         qglGenTextures(1, &image->texnum);
         GL_ForceTexture(0, image->texnum);
@@ -882,7 +880,7 @@ static void GL_InitParticleTexture(void)
             for (j = 0; j < 16; j++) {
                 x = j - 16 / 2 + 0.5f;
                 y = i - 16 / 2 + 0.5f;
-                f = sqrt(x * x + y * y);
+                f = sqrtf(x * x + y * y);
                 f = 1.0f - f / ((16 - shape) / 2 - 0.5f);
                 f *= 1 << shape;
                 dst[0] = 255;

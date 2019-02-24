@@ -140,7 +140,7 @@ void MOD_FreeAll(void)
     r_numModels = 0;
 }
 
-static qerror_t MOD_LoadSP2(model_t *model, const void *rawdata, size_t length)
+static int MOD_LoadSP2(model_t *model, const void *rawdata, size_t length)
 {
     dsp2header_t header;
     dsp2frame_t *src_frame;
@@ -203,7 +203,7 @@ static qerror_t MOD_LoadSP2(model_t *model, const void *rawdata, size_t length)
     return Q_ERR_SUCCESS;
 }
 
-static qerror_t MOD_ValidateMD2(dmd2header_t *header, size_t length)
+static int MOD_ValidateMD2(dmd2header_t *header, size_t length)
 {
     size_t end;
 
@@ -269,7 +269,7 @@ static qerror_t MOD_ValidateMD2(dmd2header_t *header, size_t length)
     return Q_ERR_SUCCESS;
 }
 
-static qerror_t MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
+static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
 {
     dmd2header_t    header;
     dmd2frame_t     *src_frame;
@@ -281,7 +281,7 @@ static qerror_t MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
     maliasvert_t    *dst_vert;
     maliasmesh_t    *dst_mesh;
     maliastc_t      *dst_tc;
-    int             i, j, k, val;
+    int             i, j, k, val, ret;
     uint16_t        remap[TESS_MAX_INDICES];
     uint16_t        vertIndices[TESS_MAX_INDICES];
     uint16_t        tcIndices[TESS_MAX_INDICES];
@@ -290,7 +290,6 @@ static qerror_t MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
     char            skinname[MAX_QPATH];
     vec_t           scale_s, scale_t;
     vec3_t          mins, maxs;
-    qerror_t        ret;
 
     if (length < sizeof(header)) {
         return Q_ERR_FILE_TOO_SMALL;
@@ -482,8 +481,8 @@ fail:
 }
 
 #if USE_MD3
-static qerror_t MOD_LoadMD3Mesh(model_t *model, maliasmesh_t *mesh,
-                                const byte *rawdata, size_t length, size_t *offset_p)
+static int MOD_LoadMD3Mesh(model_t *model, maliasmesh_t *mesh,
+                           const byte *rawdata, size_t length, size_t *offset_p)
 {
     dmd3mesh_t      header;
     size_t          end;
@@ -585,15 +584,14 @@ static qerror_t MOD_LoadMD3Mesh(model_t *model, maliasmesh_t *mesh,
     return Q_ERR_SUCCESS;
 }
 
-static qerror_t MOD_LoadMD3(model_t *model, const void *rawdata, size_t length)
+static int MOD_LoadMD3(model_t *model, const void *rawdata, size_t length)
 {
     dmd3header_t    header;
     size_t          end, offset, remaining;
     dmd3frame_t     *src_frame;
     maliasframe_t   *dst_frame;
     const byte      *src_mesh;
-    int             i;
-    qerror_t        ret;
+    int             i, ret;
 
     if (length < sizeof(header))
         return Q_ERR_FILE_TOO_SMALL;
@@ -695,12 +693,12 @@ qhandle_t R_RegisterModel(const char *name)
     char normalized[MAX_QPATH];
     qhandle_t index;
     size_t namelen;
-    ssize_t filelen;
+    int filelen;
     model_t *model;
     byte *rawdata;
     uint32_t ident;
-    qerror_t (*load)(model_t *, const void *, size_t);
-    qerror_t ret;
+    int (*load)(model_t *, const void *, size_t);
+    int ret;
 
     // empty names are legal, silently ignore them
     if (!*name)

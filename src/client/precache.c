@@ -223,7 +223,7 @@ Registers main BSP file and inline models
 */
 void CL_RegisterBspModels(void)
 {
-    qerror_t ret;
+    int ret;
     char *name;
     int i;
 
@@ -400,10 +400,7 @@ void CL_UpdateConfigstring(int index)
     }
 
     if (index == CS_AIRACCEL) {
-        if (cl.pmp.qwmode)
-            cl.pmp.airaccelerate = qtrue;
-        else
-            cl.pmp.airaccelerate = atoi(s) ? qtrue : qfalse;
+        cl.pmp.airaccelerate = cl.pmp.qwmode || atoi(s);
         return;
     }
 

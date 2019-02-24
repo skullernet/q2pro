@@ -32,16 +32,13 @@ void VID_PumpEvents(void);
 void VID_SetMode(void);
 char *VID_GetDefaultModeList(void);
 
-qboolean    VID_Init(void);
-void        VID_Shutdown(void);
-void        VID_FatalShutdown(void);
+bool    VID_Init(void);
+void    VID_Shutdown(void);
+void    VID_FatalShutdown(void);
 
 void    VID_UpdateGamma(const byte *table);
 
 void    *VID_GetProcAddr(const char *sym);
-
-qboolean VID_VideoSync(void);
-void    VID_VideoWait(void);
 
 void    VID_BeginFrame(void);
 void    VID_EndFrame(void);
@@ -52,8 +49,8 @@ void    VID_SetClipboardData(const char *data);
 //
 // cl_ref.c
 //
-qboolean VID_GetFullscreen(vrect_t *rc, int *freq_p, int *depth_p);
-qboolean VID_GetGeometry(vrect_t *rc);
+bool VID_GetFullscreen(vrect_t *rc, int *freq_p, int *depth_p);
+bool VID_GetGeometry(vrect_t *rc);
 void VID_SetGeometry(vrect_t *rc);
 void VID_ToggleFullscreen(void);
 

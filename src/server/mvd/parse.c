@@ -23,7 +23,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client.h"
 #include "server/mvd/protocol.h"
 
-static qboolean match_ended_hack;
+static bool match_ended_hack;
 
 #ifdef _DEBUG
 #define SHOWNET(level, ...) \
@@ -156,8 +156,7 @@ static void MVD_ParseMulticast(mvd_t *mvd, mvd_ops_t op, int extrabits)
     byte        mask[VIS_MAX_BYTES];
     mleaf_t     *leaf1, *leaf2;
     vec3_t      org;
-    qboolean    reliable = qfalse;
-    player_state_t    *ps;
+    bool        reliable = false;
     byte        *data;
     int         length, leafnum;
 
@@ -166,13 +165,13 @@ static void MVD_ParseMulticast(mvd_t *mvd, mvd_ops_t op, int extrabits)
 
     switch (op) {
     case mvd_multicast_all_r:
-        reliable = qtrue;
+        reliable = true;
         // intentional fallthrough
     case mvd_multicast_all:
         leaf1 = NULL;
         break;
     case mvd_multicast_phs_r:
-        reliable = qtrue;
+        reliable = true;
         // intentional fallthrough
     case mvd_multicast_phs:
         leafnum = MSG_ReadWord();
@@ -184,7 +183,7 @@ static void MVD_ParseMulticast(mvd_t *mvd, mvd_ops_t op, int extrabits)
         BSP_ClusterVis(mvd->cm.cache, mask, leaf1->cluster, DVIS_PHS);
         break;
     case mvd_multicast_pvs_r:
-        reliable = qtrue;
+        reliable = true;
         // intentional fallthrough
     case mvd_multicast_pvs:
         leafnum = MSG_ReadWord();
@@ -217,20 +216,12 @@ static void MVD_ParseMulticast(mvd_t *mvd, mvd_ops_t op, int extrabits)
         }
 
         // do not send unreliables to connecting clients
-        if (!reliable && (cl->state != cs_spawned || cl->download || cl->nodata)) {
+        if (!reliable && !CLIENT_ACTIVE(cl)) {
             continue;
         }
 
         if (leaf1) {
-            // find the client's PVS
-            ps = &client->ps;
-#if 0
-            VectorMA(ps->viewoffset, 0.125f, ps->pmove.origin, org);
-#else
-            // FIXME: for some strange reason, game code assumes the server
-            // uses entity origin for PVS/PHS culling, not the view origin
-            VectorScale(ps->pmove.origin, 0.125f, org);
-#endif
+            VectorScale(client->ps.pmove.origin, 0.125f, org);
             leaf2 = CM_PointLeaf(&mvd->cm, org);
             if (!CM_AreasConnected(&mvd->cm, leaf1->area, leaf2->area))
                 continue;
@@ -244,7 +235,7 @@ static void MVD_ParseMulticast(mvd_t *mvd, mvd_ops_t op, int extrabits)
     }
 }
 
-static void MVD_UnicastSend(mvd_t *mvd, qboolean reliable, byte *data, size_t length, mvd_player_t *player)
+static void MVD_UnicastSend(mvd_t *mvd, bool reliable, byte *data, size_t length, mvd_player_t *player)
 {
     mvd_player_t *target;
     mvd_client_t *client;
@@ -293,7 +284,7 @@ static void MVD_UnicastLayout(mvd_t *mvd, mvd_player_t *player)
     }
 }
 
-static void MVD_UnicastString(mvd_t *mvd, qboolean reliable, mvd_player_t *player)
+static void MVD_UnicastString(mvd_t *mvd, bool reliable, mvd_player_t *player)
 {
     int index;
     char string[MAX_QPATH];
@@ -340,7 +331,7 @@ static void MVD_UnicastString(mvd_t *mvd, qboolean reliable, mvd_player_t *playe
     MVD_UnicastSend(mvd, reliable, data, length, player);
 }
 
-static void MVD_UnicastPrint(mvd_t *mvd, qboolean reliable, mvd_player_t *player)
+static void MVD_UnicastPrint(mvd_t *mvd, bool reliable, mvd_player_t *player)
 {
     int level;
     byte *data;
@@ -381,7 +372,7 @@ static void MVD_UnicastPrint(mvd_t *mvd, qboolean reliable, mvd_player_t *player
     }
 }
 
-static void MVD_UnicastStuff(mvd_t *mvd, qboolean reliable, mvd_player_t *player)
+static void MVD_UnicastStuff(mvd_t *mvd, bool reliable, mvd_player_t *player)
 {
     char string[8];
     byte *data;
@@ -416,7 +407,7 @@ static void MVD_ParseUnicast(mvd_t *mvd, mvd_ops_t op, int extrabits)
     size_t length, last;
     mvd_player_t *player;
     byte *data;
-    qboolean reliable;
+    bool reliable;
     int cmd;
 
     length = MSG_ReadByte();
@@ -434,7 +425,7 @@ static void MVD_ParseUnicast(mvd_t *mvd, mvd_ops_t op, int extrabits)
 
     player = &mvd->players[clientNum];
 
-    reliable = op == mvd_unicast_r ? qtrue : qfalse;
+    reliable = op == mvd_unicast_r;
 
     while (msg_read.readcount < last) {
         cmd = MSG_ReadByte();
@@ -489,13 +480,11 @@ static void MVD_ParseSound(mvd_t *mvd, int extrabits)
     int         flags, index;
     int         volume, attenuation, offset, sendchan;
     int         entnum;
-    vec3_t      origin;
+    vec3_t      origin, org;
     mvd_client_t        *client;
     client_t    *cl;
     byte        mask[VIS_MAX_BYTES];
-    mleaf_t     *leaf;
-    int         area;
-    player_state_t      *ps;
+    mleaf_t     *leaf1, *leaf2;
     message_packet_t    *msg;
     edict_t     *entity;
     int         i;
@@ -527,60 +516,65 @@ static void MVD_ParseSound(mvd_t *mvd, int extrabits)
     if (mvd->demoseeking)
         return;
 
+    // use the entity origin unless it is a bmodel
+    if (entity->solid == SOLID_BSP) {
+        VectorAvg(entity->mins, entity->maxs, origin);
+        VectorAdd(entity->s.origin, origin, origin);
+    } else {
+        VectorCopy(entity->s.origin, origin);
+    }
+
+    // prepare multicast message
+    MSG_WriteByte(svc_sound);
+    MSG_WriteByte(flags | SND_POS);
+    MSG_WriteByte(index);
+
+    if (flags & SND_VOLUME)
+        MSG_WriteByte(volume);
+    if (flags & SND_ATTENUATION)
+        MSG_WriteByte(attenuation);
+    if (flags & SND_OFFSET)
+        MSG_WriteByte(offset);
+
+    MSG_WriteShort(sendchan);
+    MSG_WritePos(origin);
+
+    leaf1 = NULL;
+    if (!(extrabits & 1)) {
+        leaf1 = CM_PointLeaf(&mvd->cm, origin);
+        BSP_ClusterVis(mvd->cm.cache, mask, leaf1->cluster, DVIS_PHS);
+    }
+
     FOR_EACH_MVDCL(client, mvd) {
         cl = client->cl;
 
-        // do not send unreliables to connecting clients
-        if (cl->state != cs_spawned || cl->download || cl->nodata) {
+        // do not send sounds to connecting clients
+        if (!CLIENT_ACTIVE(cl)) {
             continue;
         }
 
         // PHS cull this sound
         if (!(extrabits & 1)) {
-            // get client viewpos
-            ps = &client->ps;
-            VectorMA(ps->viewoffset, 0.125f, ps->pmove.origin, origin);
-            leaf = CM_PointLeaf(&mvd->cm, origin);
-            area = CM_LeafArea(leaf);
-            if (!CM_AreasConnected(&mvd->cm, area, entity->areanum)) {
-                // doors can legally straddle two areas, so
-                // we may need to check another one
-                if (!entity->areanum2 || !CM_AreasConnected(&mvd->cm, area, entity->areanum2)) {
-                    continue;        // blocked by a door
-                }
-            }
-            BSP_ClusterVis(mvd->cm.cache, mask, leaf->cluster, DVIS_PHS);
-            if (!SV_EdictIsVisible(&mvd->cm, entity, mask)) {
-                continue; // not in PHS
-            }
-        }
-
-        // use the entity origin unless it is a bmodel
-        if (entity->solid == SOLID_BSP) {
-            VectorAvg(entity->mins, entity->maxs, origin);
-            VectorAdd(entity->s.origin, origin, origin);
-        } else {
-            VectorCopy(entity->s.origin, origin);
+            VectorScale(client->ps.pmove.origin, 0.125f, org);
+            leaf2 = CM_PointLeaf(&mvd->cm, org);
+            if (!CM_AreasConnected(&mvd->cm, leaf1->area, leaf2->area))
+                continue;
+            if (leaf2->cluster == -1)
+                continue;
+            if (!Q_IsBitSet(mask, leaf2->cluster))
+                continue;
         }
 
         // reliable sounds will always have position explicitly set,
-        // as no one gurantees reliables to be delivered in time
+        // as no one guarantees reliables to be delivered in time
         if (extrabits & 2) {
-            MSG_WriteByte(svc_sound);
-            MSG_WriteByte(flags | SND_POS);
-            MSG_WriteByte(index);
+            SV_ClientAddMessage(cl, MSG_RELIABLE);
+            continue;
+        }
 
-            if (flags & SND_VOLUME)
-                MSG_WriteByte(volume);
-            if (flags & SND_ATTENUATION)
-                MSG_WriteByte(attenuation);
-            if (flags & SND_OFFSET)
-                MSG_WriteByte(offset);
-
-            MSG_WriteShort(sendchan);
-            MSG_WritePos(origin);
-
-            SV_ClientAddMessage(cl, MSG_RELIABLE | MSG_CLEAR);
+        // default client doesn't know that bmodels have weird origins
+        if (entity->solid == SOLID_BSP && cl->protocol == PROTOCOL_VERSION_DEFAULT) {
+            SV_ClientAddMessage(cl, 0);
             continue;
         }
 
@@ -588,11 +582,6 @@ static void MVD_ParseSound(mvd_t *mvd, int extrabits)
             Com_WPrintf("%s: %s: out of message slots\n",
                         __func__, cl->name);
             continue;
-        }
-
-        // default client doesn't know that bmodels have weird origins
-        if (entity->solid == SOLID_BSP && cl->protocol == PROTOCOL_VERSION_DEFAULT) {
-            flags |= SND_POS;
         }
 
         msg = LIST_FIRST(message_packet_t, &cl->msg_free_list, entry);
@@ -611,9 +600,10 @@ static void MVD_ParseSound(mvd_t *mvd, int extrabits)
         List_Remove(&msg->entry);
         List_Append(&cl->msg_unreliable_list, &msg->entry);
         cl->msg_unreliable_bytes += MAX_SOUND_PACKET;
-
-        flags &= ~SND_POS;
     }
+
+    // clear multicast buffer
+    SZ_Clear(&msg_write);
 }
 
 static void MVD_ParseConfigstring(mvd_t *mvd)
@@ -651,7 +641,7 @@ static void MVD_ParsePrint(mvd_t *mvd)
     MSG_ReadString(string, sizeof(string));
 
     if (level == PRINT_HIGH && strstr(string, "Match ended.")) {
-        match_ended_hack = qtrue;
+        match_ended_hack = true;
     }
 
     if (mvd->demoseeking)
@@ -748,11 +738,11 @@ static void MVD_ParsePacketEntities(mvd_t *mvd)
             if (!(ent->s.renderfx & RF_BEAM)) {
                 VectorCopy(ent->s.origin, ent->s.old_origin);
             }
-            ent->inuse = qfalse;
+            ent->inuse = false;
             continue;
         }
 
-        ent->inuse = qtrue;
+        ent->inuse = true;
         if (number >= mvd->pool.num_edicts) {
             mvd->pool.num_edicts = number + 1;
         }
@@ -786,7 +776,7 @@ static void MVD_ParsePacketPlayers(mvd_t *mvd)
 
         player = &mvd->players[number];
 
-        bits = MSG_ReadShort();
+        bits = MSG_ReadWord();
 
 #ifdef _DEBUG
         if (mvd_shownet->integer > 2) {
@@ -801,11 +791,11 @@ static void MVD_ParsePacketPlayers(mvd_t *mvd)
 
         if (bits & PPS_REMOVE) {
             SHOWNET(2, "   remove: %d\n", number);
-            player->inuse = qfalse;
+            player->inuse = false;
             continue;
         }
 
-        player->inuse = qtrue;
+        player->inuse = true;
     }
 }
 
@@ -853,7 +843,7 @@ static void MVD_ParseFrame(mvd_t *mvd)
     mvd->framenum++;
 }
 
-void MVD_ClearState(mvd_t *mvd, qboolean full)
+void MVD_ClearState(mvd_t *mvd, bool full)
 {
     mvd_player_t *player;
     mvd_snap_t *snap, *next;
@@ -926,9 +916,9 @@ static void MVD_ChangeLevel(mvd_t *mvd)
 
     SZ_Clear(&msg_write);
 
-    mvd->intermission = qfalse;
+    mvd->intermission = false;
 
-    mvd_dirty = qtrue;
+    mvd_dirty = true;
 
     SV_SendAsyncPackets();
 }
@@ -939,11 +929,11 @@ static void MVD_ParseServerData(mvd_t *mvd, int extrabits)
     size_t len, maxlen;
     char *string;
     int index;
-    qerror_t ret;
+    int ret;
     edict_t *ent;
 
     // clear the leftover from previous level
-    MVD_ClearState(mvd, qtrue);
+    MVD_ClearState(mvd, true);
 
     // parse major protocol version
     protocol = MSG_ReadLong();
@@ -1016,8 +1006,8 @@ static void MVD_ParseServerData(mvd_t *mvd, int extrabits)
             client->target = NULL;
             client->oldtarget = NULL;
             client->chase_mask = 0;
-            client->chase_auto = qfalse;
-            client->chase_wait = qfalse;
+            client->chase_auto = false;
+            client->chase_wait = false;
             memset(client->chase_bitmap, 0, sizeof(client->chase_bitmap));
         }
     }
@@ -1061,7 +1051,7 @@ static void MVD_ParseServerData(mvd_t *mvd, int extrabits)
     // init world entity
     ent = &mvd->edicts[0];
     ent->solid = SOLID_BSP;
-    ent->inuse = qtrue;
+    ent->inuse = true;
 
     if (mvd->cm.cache) {
         // get the spawn point for spectators
@@ -1095,10 +1085,10 @@ static void MVD_ParseServerData(mvd_t *mvd, int extrabits)
     MVD_ChangeLevel(mvd);
 }
 
-qboolean MVD_ParseMessage(mvd_t *mvd)
+bool MVD_ParseMessage(mvd_t *mvd)
 {
     int     cmd, extrabits;
-    qboolean ret = qfalse;
+    bool    ret = false;
 
 #ifdef _DEBUG
     if (mvd_shownet->integer == 1) {
@@ -1111,7 +1101,7 @@ qboolean MVD_ParseMessage(mvd_t *mvd)
 //
 // parse the message
 //
-    match_ended_hack = qfalse;
+    match_ended_hack = false;
     while (1) {
         if (msg_read.readcount > msg_read.cursize) {
             MVD_Destroyf(mvd, "Read past end of message");
@@ -1134,7 +1124,7 @@ qboolean MVD_ParseMessage(mvd_t *mvd)
         switch (cmd) {
         case mvd_serverdata:
             MVD_ParseServerData(mvd, extrabits);
-            ret |= qtrue;
+            ret = true;
             break;
         case mvd_multicast_all:
         case mvd_multicast_pvs:

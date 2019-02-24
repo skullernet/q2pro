@@ -248,6 +248,11 @@ sv_fps::
     Other clients will receive updates at default rate of 10 packets per
     second.
 
+lrcon_password::
+    If not empty, enables users of this password to execute limited set of rcon
+    commands on the server. By default no commands are permitted. Permitted
+    command prefixes can be added using ‘addlrconcmd’.
+
 Downloads
 ~~~~~~~~~
 
@@ -289,6 +294,9 @@ allow_download_others::
     Enables downloading of files from any subdirectory other than those listed
     above. Default value is 0.
 
+TIP: Q2PRO clients can stream compressed downloads directly from .pkz archives
+on the server. Thus it is advisable to keep all data in .pkz for optimal
+download speeds.
 
 MVD/GTV server
 ~~~~~~~~~~~~~~
@@ -475,6 +483,38 @@ sys_console::
       - 2 — enable ‘smart’ system console mode: handle it as a terminal, enable
         command completion and colored text output, don't handle SIGHUP
 
+.System console key bindings
+****************************
+The following key bindings are available in Windows console and in TTY console
+when ‘smart’ mode is enabled:
+
+* HOME, Ctrl+A — move cursor to start of line
+* END, Ctrl+E — move cursor to end of line
+* Left arrow, Ctrl+B — move cursor one character left
+* Right arrow, Ctrl+F — move cursor one character right
+* Alt+B — move cursor one word left
+* Alt+F — move cursor one word right
+* DEL, Ctrl+D — delete character under cursor
+* Backspace, Ctrl+H — delete character left of cursor
+* Ctrl+W — delete word left of cursor
+* Ctrl+U — delete all characters left of cursor
+* Ctrl+K — delete all characters right of cursor
+* Ctrl+L — erase screen
+* Ctrl+C — quit
+* Down arrow, Ctrl+N — next line in command history
+* Up arrow, Ctrl+P — previous line in command history
+* Ctrl+R — reverse search in command history
+* Ctrl+S — forward search in command history
+* Tab — complete command
+
+In Windows console additional key bindings are supported:
+
+* PGUP — scroll console buffer up
+* PGDN — scroll console buffer down
+* Ctrl+PGUP — scroll to console top
+* Ctrl+PGDN — scroll to console bottom
+****************************
+
 sys_parachute::
     On UNIX-like systems, specifies if a fatal termination handler is
     installed. Default value is 1, which means Q2PRO will do some cleanup when
@@ -560,12 +600,14 @@ Generic
 
 status [mode]::
     Show information about connected clients. Optional _mode_ argument may be
-    provided to show different kind of information.
-       t(ime)::: show connection times
-       d(ownload)::: show current downloads
+    provided to show different kind of information. Only the first character of
+    _mode_ is significant.
+       d(ownloads)::: show current downloads
        l(ag)::: show connection quality statistics
-       p(rotocol)::: show network protocol information
-       v(ersion)::: show client executable versions
+       p(rotocols)::: show network protocol information
+       s(ettings)::: show client settings
+       t(ime)::: show connection times
+       v(ersions)::: show client executable versions
 
 stuff <userid> <text ...>::
     Stuff the given raw _text_ into command buffer of the client identified by
@@ -628,19 +670,21 @@ addstuffcmd <connect|begin> <command> [...]::
     Adds _command_ to be automatically stuffed to every client as they initially
     _connect_ or each time they _begin_ on a new map.
 
-delstuffcmd <connect|begin> <id|all>::
-    Deletes command identified by the numeric _id_ from the specified list.
-    You can also specify _all_ to clear the whole stuffcmd list.
+delstuffcmd <connect|begin> <id|cmd|all>::
+    Deletes command identified by the numeric _id_ or by literal _cmd_ string
+    from the specified list. You can also specify _all_ to clear the whole
+    stuffcmd list.
 
 liststuffcmds <connect|begin>::
     Enumerates all registered commands in the specified stuffcmd list.
 
-addfiltercmd <command> [ignore|print|stuff|kick] [comment ...]::
+addfiltercmd <command> [ignore|log|print|stuff|kick] [comment ...]::
     Prevents client _command_ otherwise unknown to the server from being
-    interpreted by the game mod, and takes the specified action instead.
-    For _print_ and _stuff_ actions _comment_ argument is mandatory, and should
-    contain data to print and stuff, respectively. Default action is _ignore_.
-    Commands are matched in a case-insensitive way.
+    interpreted by the game mod, and takes the specified action instead. For
+    _print_ and _stuff_ actions _comment_ argument is mandatory, and should
+    contain data to print and stuff to the client. For _kick_ action _comment_
+    specifies optional disconnect reason printed to the client. Default action
+    is _ignore_. Commands are matched in a case-insensitive way.
 
 delfiltercmd <id|name|all>::
     Deletes command identified by numeric _id_ or by _name_ from the list of
@@ -649,6 +693,74 @@ delfiltercmd <id|name|all>::
 
 listfiltercmds::
     Enumerates all filtered commands along with appropriate actions and comments.
+
+addcvarban <cvar> <match> [log|print|stuff|kick] [comment]::
+    Adds an automatic check for specified _cvar_. Cvar value on the client is
+    compared with _match_ and specified action is taken if value matches. For
+    _print_ and _stuff_ actions _comment_ argument is mandatory, and should
+    contain data to print and stuff to the client. For _kick_ action _comment_
+    specifies optional disconnect reason printed to the client. Default action
+    is _log_. See below for description of _match_ string syntax. Multiple
+    entries with the same _cvar_ are permitted and are matched sequentially
+    (stopping at the first entry with _kick_ action that matched).
+
+delcvarban <id|cvar|all>::
+    Deletes single cvarban identified by numeric _id_, or deletes all cvarbans
+    matching _cvar_. You can also specify _all_ to delete all cvarbans.
+
+listcvarbans::
+    Enumerates all cvarbans along with appropriate actions and comments.
+
+checkcvarbans::
+    Use this command to manually send cvarban checks to all connected clients.
+    By default, cvarbans are automatically checked on each map change.
+
+adduserinfoban <key> <match> [log|print|stuff|kick] [comment]::
+    Adds an automatic check for specified userinfo _key_. Specified key is
+    compared with _match_ and specified action is taken if value matches. For
+    _print_ and _stuff_ actions _comment_ argument is mandatory, and should
+    contain data to print and stuff to the client. For _kick_ action _comment_
+    specifies optional disconnect reason printed to the client. Default action
+    is _log_. See below for description of _match_ string syntax. Multiple
+    entries with the same _key_ are permitted and are matched sequentially
+    (stopping at the first entry with _kick_ action that matched). Matched
+    userinfo bans with _kick_ action also prevent new clients from connecting.
+
+deluserinfoban <id|key|all>::
+    Deletes single userinfo ban identified by numeric _id_, or deletes all
+    userinfo bans matching _key_. You can also specify _all_ to delete all
+    userinfo bans.
+
+listuserinfobans::
+    Enumerates all userinfobans along with appropriate actions and comments.
+
+.Cvarban and userinfo ban match string syntax
+***********************
+Full syntax for match string is: '[!][*|=|<|>|~|#][num|str]'. The
+following special characters are recognized at the beginning of the string:
+
+* ! — negates the check
+* * — matches if value is not empty
+* = — matches if numerical value is equal to _num_
+* < — matches if numerical value is less than _num_
+* > — matches if numerical value is greater than _num_
+* ~ — matches if value substring matches _str_ literally
+* # — escape character (_str_ is matched literally)
+
+If match string begins with any other character, it is matched literally. All
+string comparsions are case-insensitive.
+***********************
+
+addlrconcmd <command>::
+    Adds a command prefix to the list of permitted limited rcon commands (see
+    ‘lrcon_password’ variable description).
+
+dellrconcmd <id|cmd|all>::
+    Deletes lrcon command prefix identified by numeric _id_ or by literal _cmd_
+    string. You can also specify _all_ to delete all lrcon commands.
+
+listlrconcmds::
+    Enumerates all lrcon commands.
 
 listmasters::
     List master server hostnames, resolved IP addresses and last acknowledge times.
@@ -661,8 +773,7 @@ recycle [reason ...]::
     This command is equivalent to ‘quit’, with an exception that ‘reconnect’
     message is sent to clients instead of ‘disconnect’. Useful for quickly
     upgrading the server binary without losing clients, assuming the server
-    process will be automatically restarted by an external shell script right
-    after it exits.
+    process is automatically restarted after it exits.
 
 
 MVD/GTV server
