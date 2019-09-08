@@ -111,6 +111,9 @@ cl_updaterate::
     server frame rate.  Default value is 0, which means to use the highest
     update rate available (that is, native server frame rate).
 
+cl_warn_on_fps_rounding::
+    Print a warning if value specified for ‘cl_maxfps’ or ‘r_maxfps’ is inexact
+    due to rounding. Default value is 1 (enabled).
 
 Network
 ~~~~~~~

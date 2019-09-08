@@ -148,6 +148,14 @@ sv_lan_force_rate::
     private address space (127.x.x.x, 10.x.x.x, 192.168.x.x, 172.16.x.x).
     Default value is 0 (disabled).
 
+sv_min_rate::
+    Specifies minimum value of ‘rate’ userinfo parameter clients are allowed
+    to use. Default value is 100 bytes/sec.
+
+sv_max_rate::
+    Specifies maximum value of ‘rate’ userinfo parameter clients are allowed
+    use. Default value is 15000 bytes/sec.
+
 sv_calcpings_method::
     Specifies the way client pings are calculated. Default ping calculation
     algorithm depends on client frame and packet rates, and may give inaccurate
@@ -184,8 +192,8 @@ sv_redirect_address::
 
 sv_downloadserver::
     Specifies the URL clients should use for HTTP downloading. URL must begin
-    with a ‘http://’ prefix and end with a trailing slash. Default value is
-    empty (no download URL).
+    with a ‘http://’ or ‘https://’ prefix and must end with a slash. Default
+    value is empty (no download URL).
 
 sv_show_name_changes::
     Broadcast player name changes to everyone. Enable this unless game mod
