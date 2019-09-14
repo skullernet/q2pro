@@ -41,7 +41,7 @@ BEGIN
             VALUE "OriginalFilename", VER_ORIGINALFILENAME_STR
             VALUE "FileVersion", VERSION
             VALUE "InternalName", "q2proded"
-            VALUE "LegalCopyright", "Copyright © 2018 skuller.net"
+            VALUE "LegalCopyright", "Copyright © 2019 skuller.net"
             VALUE "ProductName", "Q2PRO"
             VALUE "ProductVersion", VERSION
         END
