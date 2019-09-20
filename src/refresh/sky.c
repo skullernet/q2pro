@@ -397,7 +397,7 @@ void R_SetSky(const char *name, float rotate, vec3_t axis)
 
     for (i = 0; i < 6; i++) {
         if (Q_concat(pathname, sizeof(pathname), "env/", name,
-                     suf[i], ".tga", NULL) >= sizeof(pathname)) {
+                     suf[i], ".tga") >= sizeof(pathname)) {
             R_UnsetSky();
             return;
         }

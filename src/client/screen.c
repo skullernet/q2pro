@@ -1495,8 +1495,7 @@ static void SCR_DrawInventory(void)
     for (i = top; i < num && i < top + DISPLAY_ITEMS; i++) {
         item = index[i];
         // search for a binding
-        Q_concat(string, sizeof(string),
-                 "use ", cl.configstrings[CS_ITEMS + item], NULL);
+        Q_concat(string, sizeof(string), "use ", cl.configstrings[CS_ITEMS + item]);
         bind = Key_GetBinding(string);
 
         Q_snprintf(string, sizeof(string), "%6s %3i %s",
