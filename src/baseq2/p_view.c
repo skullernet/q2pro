@@ -552,7 +552,7 @@ void P_WorldEffects(void)
     int         waterlevel, old_waterlevel;
 
     if (current_player->movetype == MOVETYPE_NOCLIP) {
-        current_player->air_finished = level.time + 12; // don't need air
+        current_player->air_finished_framenum = level.framenum + 12 * BASE_FRAMERATE; // don't need air
         return;
     }
 
@@ -600,11 +600,11 @@ void P_WorldEffects(void)
     // check for head just coming out of water
     //
     if (old_waterlevel == 3 && waterlevel != 3) {
-        if (current_player->air_finished < level.time) {
+        if (current_player->air_finished_framenum < level.framenum) {
             // gasp for air
             gi.sound(current_player, CHAN_VOICE, gi.soundindex("player/gasp1.wav"), 1, ATTN_NORM, 0);
             PlayerNoise(current_player, current_player->s.origin, PNOISE_SELF);
-        } else  if (current_player->air_finished < level.time + 11) {
+        } else  if (current_player->air_finished_framenum < level.framenum + 11 * BASE_FRAMERATE) {
             // just break surface
             gi.sound(current_player, CHAN_VOICE, gi.soundindex("player/gasp2.wav"), 1, ATTN_NORM, 0);
         }
@@ -616,7 +616,7 @@ void P_WorldEffects(void)
     if (waterlevel == 3) {
         // breather or envirosuit give air
         if (breather || envirosuit) {
-            current_player->air_finished = level.time + 10;
+            current_player->air_finished_framenum = level.framenum + 10 * BASE_FRAMERATE;
 
             if (((int)(current_client->breather_framenum - level.framenum) % 25) == 0) {
                 if (!current_client->breather_sound)
@@ -630,11 +630,11 @@ void P_WorldEffects(void)
         }
 
         // if out of air, start drowning
-        if (current_player->air_finished < level.time) {
+        if (current_player->air_finished_framenum < level.framenum) {
             // drown!
-            if (current_player->client->next_drown_time < level.time
+            if (current_player->client->next_drown_framenum < level.framenum
                 && current_player->health > 0) {
-                current_player->client->next_drown_time = level.time + 1;
+                current_player->client->next_drown_framenum = level.framenum + 1 * BASE_FRAMERATE;
 
                 // take more damage the longer underwater
                 current_player->dmg += 2;
@@ -655,7 +655,7 @@ void P_WorldEffects(void)
             }
         }
     } else {
-        current_player->air_finished = level.time + 12;
+        current_player->air_finished_framenum = level.framenum + 12 * BASE_FRAMERATE;
         current_player->dmg = 2;
     }
 
@@ -706,7 +706,7 @@ void G_SetClientEffects(edict_t *ent)
     if (ent->health <= 0 || level.intermissiontime)
         return;
 
-    if (ent->powerarmor_time > level.time) {
+    if (ent->powerarmor_framenum > level.framenum) {
         pa_type = PowerArmorType(ent);
         if (pa_type == POWER_ARMOR_SCREEN) {
             ent->s.effects |= EF_POWERSCREEN;
