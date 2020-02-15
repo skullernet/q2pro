@@ -102,9 +102,9 @@ else
 endif
 
 ifndef CONFIG_X86_NO_SSE_MATH
-    CFLAGS_s += -msse -mfpmath=sse
-    CFLAGS_c += -msse -mfpmath=sse
-    CFLAGS_g += -msse -mfpmath=sse
+    CFLAGS_s += -msse2 -mfpmath=sse
+    CFLAGS_c += -msse2 -mfpmath=sse
+    CFLAGS_g += -msse2 -mfpmath=sse
 endif
 
 BUILD_DEFS := -DCPUSTRING='"$(CPU)"'

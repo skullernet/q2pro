@@ -79,7 +79,7 @@
 # built using ancient GCC versions.
 #CONFIG_X86_GAME_ABI_HACK=y
 
-# Enable this option to build for x86 CPUs without SSE support. Enabling this
+# Enable this option to build for x86 CPUs without SSE2 support. Enabling this
 # makes player movement code incompatible with original quake2.exe. Prediction
 # errors will occur on the client unless both client and server use this
 # option.
