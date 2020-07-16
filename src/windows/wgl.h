@@ -26,7 +26,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define QWGL_EXT_swap_control       (1 << 3)
 #define QWGL_EXT_swap_control_tear  (1 << 4)
 
-qboolean    WGL_Init(const char *dllname);
+bool        WGL_Init(const char *dllname);
 void        WGL_Shutdown(void);
 void        WGL_InitExtensions(unsigned mask);
 void        WGL_ShutdownExtensions(unsigned mask);
@@ -50,4 +50,3 @@ extern const char * (WINAPI * qwglGetExtensionsStringARB)(HDC hdc);
 extern BOOL (WINAPI * qwglChoosePixelFormatARB)(HDC, const int *, const FLOAT *, UINT, int *, UINT *);
 
 extern BOOL (WINAPI * qwglSwapIntervalEXT)(int interval);
-

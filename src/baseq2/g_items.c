@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "g_local.h"
 
 
-qboolean    Pickup_Weapon(edict_t *ent, edict_t *other);
+bool        Pickup_Weapon(edict_t *ent, edict_t *other);
 void        Use_Weapon(edict_t *ent, gitem_t *inv);
 void        Drop_Weapon(edict_t *ent, gitem_t *inv);
 
@@ -124,7 +124,7 @@ void DoRespawn(edict_t *ent)
         for (count = 0, ent = master; ent; ent = ent->chain, count++)
             ;
 
-        choice = rand() % count;
+        choice = Q_rand_uniform(count);
 
         for (count = 0, ent = master; count < choice; ent = ent->chain, count++)
             ;
@@ -143,7 +143,7 @@ void SetRespawn(edict_t *ent, float delay)
     ent->flags |= FL_RESPAWN;
     ent->svflags |= SVF_NOCLIENT;
     ent->solid = SOLID_NOT;
-    ent->nextthink = level.time + delay;
+    ent->nextthink = level.framenum + delay * BASE_FRAMERATE;
     ent->think = DoRespawn;
     gi.linkentity(ent);
 }
@@ -151,16 +151,16 @@ void SetRespawn(edict_t *ent, float delay)
 
 //======================================================================
 
-qboolean Pickup_Powerup(edict_t *ent, edict_t *other)
+bool Pickup_Powerup(edict_t *ent, edict_t *other)
 {
     int     quantity;
 
     quantity = other->client->pers.inventory[ITEM_INDEX(ent->item)];
     if ((skill->value == 1 && quantity >= 2) || (skill->value >= 2 && quantity >= 1))
-        return qfalse;
+        return false;
 
     if ((coop->value) && (ent->item->flags & IT_STAY_COOP) && (quantity > 0))
-        return qfalse;
+        return false;
 
     other->client->pers.inventory[ITEM_INDEX(ent->item)]++;
 
@@ -169,12 +169,12 @@ qboolean Pickup_Powerup(edict_t *ent, edict_t *other)
             SetRespawn(ent, ent->item->quantity);
         if (((int)dmflags->value & DF_INSTANT_ITEMS) || ((ent->item->use == Use_Quad) && (ent->spawnflags & DROPPED_PLAYER_ITEM))) {
             if ((ent->item->use == Use_Quad) && (ent->spawnflags & DROPPED_PLAYER_ITEM))
-                quad_drop_timeout_hack = (ent->nextthink - level.time) / FRAMETIME;
+                quad_drop_timeout_hack = ent->nextthink - level.framenum;
             ent->item->use(other, ent->item);
         }
     }
 
-    return qtrue;
+    return true;
 }
 
 void Drop_General(edict_t *ent, gitem_t *item)
@@ -187,7 +187,7 @@ void Drop_General(edict_t *ent, gitem_t *item)
 
 //======================================================================
 
-qboolean Pickup_Adrenaline(edict_t *ent, edict_t *other)
+bool Pickup_Adrenaline(edict_t *ent, edict_t *other)
 {
     if (!deathmatch->value)
         other->max_health += 1;
@@ -198,20 +198,20 @@ qboolean Pickup_Adrenaline(edict_t *ent, edict_t *other)
     if (!(ent->spawnflags & DROPPED_ITEM) && (deathmatch->value))
         SetRespawn(ent, ent->item->quantity);
 
-    return qtrue;
+    return true;
 }
 
-qboolean Pickup_AncientHead(edict_t *ent, edict_t *other)
+bool Pickup_AncientHead(edict_t *ent, edict_t *other)
 {
     other->max_health += 2;
 
     if (!(ent->spawnflags & DROPPED_ITEM) && (deathmatch->value))
         SetRespawn(ent, ent->item->quantity);
 
-    return qtrue;
+    return true;
 }
 
-qboolean Pickup_Bandolier(edict_t *ent, edict_t *other)
+bool Pickup_Bandolier(edict_t *ent, edict_t *other)
 {
     gitem_t *item;
     int     index;
@@ -244,10 +244,10 @@ qboolean Pickup_Bandolier(edict_t *ent, edict_t *other)
     if (!(ent->spawnflags & DROPPED_ITEM) && (deathmatch->value))
         SetRespawn(ent, ent->item->quantity);
 
-    return qtrue;
+    return true;
 }
 
-qboolean Pickup_Pack(edict_t *ent, edict_t *other)
+bool Pickup_Pack(edict_t *ent, edict_t *other)
 {
     gitem_t *item;
     int     index;
@@ -316,7 +316,7 @@ qboolean Pickup_Pack(edict_t *ent, edict_t *other)
     if (!(ent->spawnflags & DROPPED_ITEM) && (deathmatch->value))
         SetRespawn(ent, ent->item->quantity);
 
-    return qtrue;
+    return true;
 }
 
 //======================================================================
@@ -401,34 +401,34 @@ void    Use_Silencer(edict_t *ent, gitem_t *item)
 
 //======================================================================
 
-qboolean Pickup_Key(edict_t *ent, edict_t *other)
+bool Pickup_Key(edict_t *ent, edict_t *other)
 {
     if (coop->value) {
         if (strcmp(ent->classname, "key_power_cube") == 0) {
             if (other->client->pers.power_cubes & ((ent->spawnflags & 0x0000ff00) >> 8))
-                return qfalse;
+                return false;
             other->client->pers.inventory[ITEM_INDEX(ent->item)]++;
             other->client->pers.power_cubes |= ((ent->spawnflags & 0x0000ff00) >> 8);
         } else {
             if (other->client->pers.inventory[ITEM_INDEX(ent->item)])
-                return qfalse;
+                return false;
             other->client->pers.inventory[ITEM_INDEX(ent->item)] = 1;
         }
-        return qtrue;
+        return true;
     }
     other->client->pers.inventory[ITEM_INDEX(ent->item)]++;
-    return qtrue;
+    return true;
 }
 
 //======================================================================
 
-qboolean Add_Ammo(edict_t *ent, gitem_t *item, int count)
+bool Add_Ammo(edict_t *ent, gitem_t *item, int count)
 {
     int         index;
     int         max;
 
     if (!ent->client)
-        return qfalse;
+        return false;
 
     if (item->tag == AMMO_BULLETS)
         max = ent->client->pers.max_bullets;
@@ -443,26 +443,26 @@ qboolean Add_Ammo(edict_t *ent, gitem_t *item, int count)
     else if (item->tag == AMMO_SLUGS)
         max = ent->client->pers.max_slugs;
     else
-        return qfalse;
+        return false;
 
     index = ITEM_INDEX(item);
 
     if (ent->client->pers.inventory[index] == max)
-        return qfalse;
+        return false;
 
     ent->client->pers.inventory[index] += count;
 
     if (ent->client->pers.inventory[index] > max)
         ent->client->pers.inventory[index] = max;
 
-    return qtrue;
+    return true;
 }
 
-qboolean Pickup_Ammo(edict_t *ent, edict_t *other)
+bool Pickup_Ammo(edict_t *ent, edict_t *other)
 {
     int         oldcount;
     int         count;
-    qboolean    weapon;
+    bool        weapon;
 
     weapon = (ent->item->flags & IT_WEAPON);
     if ((weapon) && ((int)dmflags->value & DF_INFINITE_AMMO))
@@ -475,7 +475,7 @@ qboolean Pickup_Ammo(edict_t *ent, edict_t *other)
     oldcount = other->client->pers.inventory[ITEM_INDEX(ent->item)];
 
     if (!Add_Ammo(other, ent->item, count))
-        return qfalse;
+        return false;
 
     if (weapon && !oldcount) {
         if (other->client->pers.weapon != ent->item && (!deathmatch->value || other->client->pers.weapon == FindItem("blaster")))
@@ -484,7 +484,7 @@ qboolean Pickup_Ammo(edict_t *ent, edict_t *other)
 
     if (!(ent->spawnflags & (DROPPED_ITEM | DROPPED_PLAYER_ITEM)) && (deathmatch->value))
         SetRespawn(ent, 30);
-    return qtrue;
+    return true;
 }
 
 void Drop_Ammo(edict_t *ent, gitem_t *item)
@@ -518,7 +518,7 @@ void Drop_Ammo(edict_t *ent, gitem_t *item)
 void MegaHealth_think(edict_t *self)
 {
     if (self->owner->health > self->owner->max_health) {
-        self->nextthink = level.time + 1;
+        self->nextthink = level.framenum + 1 * BASE_FRAMERATE;
         self->owner->health -= 1;
         return;
     }
@@ -529,11 +529,11 @@ void MegaHealth_think(edict_t *self)
         G_FreeEdict(self);
 }
 
-qboolean Pickup_Health(edict_t *ent, edict_t *other)
+bool Pickup_Health(edict_t *ent, edict_t *other)
 {
     if (!(ent->style & HEALTH_IGNORE_MAX))
         if (other->health >= other->max_health)
-            return qfalse;
+            return false;
 
     other->health += ent->count;
 
@@ -544,7 +544,7 @@ qboolean Pickup_Health(edict_t *ent, edict_t *other)
 
     if (ent->style & HEALTH_TIMED) {
         ent->think = MegaHealth_think;
-        ent->nextthink = level.time + 5;
+        ent->nextthink = level.framenum + 5 * BASE_FRAMERATE;
         ent->owner = other;
         ent->flags |= FL_RESPAWN;
         ent->svflags |= SVF_NOCLIENT;
@@ -554,7 +554,7 @@ qboolean Pickup_Health(edict_t *ent, edict_t *other)
             SetRespawn(ent, 30);
     }
 
-    return qtrue;
+    return true;
 }
 
 //======================================================================
@@ -576,7 +576,7 @@ int ArmorIndex(edict_t *ent)
     return 0;
 }
 
-qboolean Pickup_Armor(edict_t *ent, edict_t *other)
+bool Pickup_Armor(edict_t *ent, edict_t *other)
 {
     int             old_armor_index;
     gitem_armor_t   *oldinfo;
@@ -636,7 +636,7 @@ qboolean Pickup_Armor(edict_t *ent, edict_t *other)
 
             // if we're already maxed out then we don't need the new armor
             if (other->client->pers.inventory[old_armor_index] >= newcount)
-                return qfalse;
+                return false;
 
             // update current armor value
             other->client->pers.inventory[old_armor_index] = newcount;
@@ -646,7 +646,7 @@ qboolean Pickup_Armor(edict_t *ent, edict_t *other)
     if (!(ent->spawnflags & DROPPED_ITEM) && (deathmatch->value))
         SetRespawn(ent, 20);
 
-    return qtrue;
+    return true;
 }
 
 //======================================================================
@@ -686,7 +686,7 @@ void Use_PowerArmor(edict_t *ent, gitem_t *item)
     }
 }
 
-qboolean Pickup_PowerArmor(edict_t *ent, edict_t *other)
+bool Pickup_PowerArmor(edict_t *ent, edict_t *other)
 {
     int     quantity;
 
@@ -702,7 +702,7 @@ qboolean Pickup_PowerArmor(edict_t *ent, edict_t *other)
             ent->item->use(other, ent->item);
     }
 
-    return qtrue;
+    return true;
 }
 
 void Drop_PowerArmor(edict_t *ent, gitem_t *item)
@@ -721,7 +721,7 @@ Touch_Item
 */
 void Touch_Item(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
 {
-    qboolean    taken;
+    bool    taken;
 
     if (!other->client)
         return;
@@ -734,12 +734,12 @@ void Touch_Item(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
 
     if (taken) {
         // flash the screen
-        other->client->bonus_alpha = 0.25;
+        other->client->bonus_alpha = 0.25f;
 
         // show icon and name on status bar
         other->client->ps.stats[STAT_PICKUP_ICON] = gi.imageindex(ent->item->icon);
         other->client->ps.stats[STAT_PICKUP_STRING] = CS_ITEMS + ITEM_INDEX(ent->item);
-        other->client->pickup_msg_time = level.time + 3.0;
+        other->client->pickup_msg_framenum = level.framenum + 3.0f * BASE_FRAMERATE;
 
         // change selected item
         if (ent->item->use)
@@ -789,7 +789,7 @@ void drop_make_touchable(edict_t *ent)
 {
     ent->touch = Touch_Item;
     if (deathmatch->value) {
-        ent->nextthink = level.time + 29;
+        ent->nextthink = level.framenum + 29 * BASE_FRAMERATE;
         ent->think = G_FreeEdict;
     }
 }
@@ -833,7 +833,7 @@ edict_t *Drop_Item(edict_t *ent, gitem_t *item)
     dropped->velocity[2] = 300;
 
     dropped->think = drop_make_touchable;
-    dropped->nextthink = level.time + 1;
+    dropped->nextthink = level.framenum + 1 * BASE_FRAMERATE;
 
     gi.linkentity(dropped);
 
@@ -902,7 +902,7 @@ void droptofloor(edict_t *ent)
         ent->svflags |= SVF_NOCLIENT;
         ent->solid = SOLID_NOT;
         if (ent == ent->teammaster) {
-            ent->nextthink = level.time + FRAMETIME;
+            ent->nextthink = level.framenum + 1;
             ent->think = DoRespawn;
         }
     }
@@ -1049,7 +1049,7 @@ void SpawnItem(edict_t *ent, gitem_t *item)
     }
 
     ent->item = item;
-    ent->nextthink = level.time + 2 * FRAMETIME;    // items start after other solids
+    ent->nextthink = level.framenum + 2;    // items start after other solids
     ent->think = droptofloor;
     ent->s.effects = item->world_model_flags;
     ent->s.renderfx = RF_GLOW;

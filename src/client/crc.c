@@ -178,4 +178,3 @@ byte COM_BlockSequenceCRCByte(byte *base, size_t length, int sequence)
 
     return crc;
 }
-

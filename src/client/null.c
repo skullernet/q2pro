@@ -33,4 +33,3 @@ void Key_Init(void)
     Cmd_AddCommand("unbind", Key_Bind_Null_f);
     Cmd_AddCommand("unbindall", Key_Bind_Null_f);
 }
-

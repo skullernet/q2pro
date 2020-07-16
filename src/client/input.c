@@ -18,7 +18,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // cl.input.c  -- builds an intended movement command to send to the server
 
 #include "client.h"
-#include "system/lirc.h"
 
 static cvar_t    *cl_nodelta;
 static cvar_t    *cl_maxpackets;
@@ -61,7 +60,7 @@ INPUT SUBSYSTEM
 */
 
 typedef struct {
-    qboolean    modified;
+    bool        modified;
     inputAPI_t  api;
     int         old_dx;
     int         old_dy;
@@ -70,40 +69,37 @@ typedef struct {
 static in_state_t   input;
 
 static cvar_t    *in_enable;
-#if USE_DINPUT
-static cvar_t    *in_direct;
-#endif
 static cvar_t    *in_grab;
 
-static qboolean IN_GetCurrentGrab(void)
+static bool IN_GetCurrentGrab(void)
 {
     if (cls.active != ACT_ACTIVATED)
-        return qfalse;  // main window doesn't have focus
+        return false;   // main window doesn't have focus
 
     if (r_config.flags & QVF_FULLSCREEN)
-        return qtrue;   // full screen
+        return true;    // full screen
 
     if (cls.key_dest & (KEY_MENU | KEY_CONSOLE))
-        return qfalse;  // menu or console is up
+        return false;   // menu or console is up
 
     if (sv_paused->integer)
-        return qfalse;  // game paused
+        return false;   // game paused
 
     if (cls.state != ca_active)
-        return qfalse;  // not connected
+        return false;   // not connected
 
     if (in_grab->integer >= 2) {
         if (cls.demo.playback && !Key_IsDown(K_SHIFT))
-            return qfalse;  // playing a demo (and not using freelook)
+            return false;   // playing a demo (and not using freelook)
 
         if (cl.frame.ps.pmove.pm_type == PM_FREEZE)
-            return qfalse;  // spectator mode
+            return false;   // spectator mode
     }
 
     if (in_grab->integer >= 1)
-        return qtrue;   // regular playing mode
+        return true;    // regular playing mode
 
-    return qfalse;
+    return false;
 }
 
 /*
@@ -144,10 +140,6 @@ void IN_Frame(void)
     if (input.api.GetEvents) {
         input.api.GetEvents();
     }
-
-#if USE_LIRC
-    Lirc_GetEvents();
-#endif
 }
 
 /*
@@ -169,11 +161,6 @@ IN_Shutdown
 */
 void IN_Shutdown(void)
 {
-#if USE_DINPUT
-    if (in_direct) {
-        in_direct->changed = NULL;
-    }
-#endif
     if (in_grab) {
         in_grab->changed = NULL;
     }
@@ -182,16 +169,12 @@ void IN_Shutdown(void)
         input.api.Shutdown();
     }
 
-#if USE_LIRC
-    Lirc_Shutdown();
-#endif
-
     memset(&input, 0, sizeof(input));
 }
 
 static void in_changed_hard(cvar_t *self)
 {
-    input.modified = qtrue;
+    input.modified = true;
 }
 
 static void in_changed_soft(cvar_t *self)
@@ -206,12 +189,6 @@ IN_Init
 */
 void IN_Init(void)
 {
-    qboolean ret = qfalse;
-
-#if USE_LIRC
-    Lirc_Init();
-#endif
-
     in_enable = Cvar_Get("in_enable", "1", 0);
     in_enable->changed = in_changed_hard;
     if (!in_enable->integer) {
@@ -219,29 +196,11 @@ void IN_Init(void)
         return;
     }
 
-#if USE_DINPUT
-    in_direct = Cvar_Get("in_direct", "1", 0);
-    if (in_direct->integer) {
-        DI_FillAPI(&input.api);
-        ret = input.api.Init();
-        if (!ret) {
-            Cvar_Set("in_direct", "0");
-        }
+    VID_FillInputAPI(&input.api);
+    if (!input.api.Init()) {
+        Cvar_Set("in_enable", "0");
+        return;
     }
-#endif
-
-    if (!ret) {
-        VID_FillInputAPI(&input.api);
-        ret = input.api.Init();
-        if (!ret) {
-            Cvar_Set("in_enable", "0");
-            return;
-        }
-    }
-
-#if USE_DINPUT
-    in_direct->changed = in_changed_hard;
-#endif
 
     in_grab = Cvar_Get("in_grab", "1", 0);
     in_grab->changed = in_changed_soft;
@@ -269,7 +228,7 @@ state bit 1 is edge triggered on the up to down transition
 state bit 2 is edge triggered on the down to up transition
 
 
-Key_Event (int key, qboolean down, unsigned time);
+Key_Event (int key, bool down, unsigned time);
 
   +mlook src time
 
@@ -290,7 +249,7 @@ static kbutton_t    in_strafe, in_speed, in_use, in_attack;
 static kbutton_t    in_up, in_down;
 
 static int          in_impulse;
-static qboolean     in_mlooking;
+static bool         in_mlooking;
 
 static void KeyDown(kbutton_t *b)
 {
@@ -409,7 +368,7 @@ static void IN_AttackDown(void)
     KeyDown(&in_attack);
 
     if (cl_instantpacket->integer && cls.state == ca_active && cls.netchan) {
-        cl.sendPacketNow = qtrue;
+        cl.sendPacketNow = true;
     }
 }
 
@@ -423,7 +382,7 @@ static void IN_UseDown(void)
     KeyDown(&in_use);
 
     if (cl_instantpacket->integer && cls.state == ca_active && cls.netchan) {
-        cl.sendPacketNow = qtrue;
+        cl.sendPacketNow = true;
     }
 }
 
@@ -444,12 +403,12 @@ static void IN_CenterView(void)
 
 static void IN_MLookDown(void)
 {
-    in_mlooking = qtrue;
+    in_mlooking = true;
 }
 
 static void IN_MLookUp(void)
 {
-    in_mlooking = qfalse;
+    in_mlooking = false;
 
     if (!freelook->integer && lookspring->integer)
         IN_CenterView();
@@ -527,7 +486,7 @@ static void CL_MouseMove(void)
 
     Cvar_ClampValue(m_accel, 0, 1);
 
-    speed = sqrt(mx * mx + my * my);
+    speed = sqrtf(mx * mx + my * my);
     speed = sensitivity->value + speed * m_accel->value;
 
     mx *= speed;
@@ -615,7 +574,7 @@ static void CL_BaseMove(vec3_t move)
 
 static void CL_ClampSpeed(vec3_t move)
 {
-    float speed = cl.pmp.maxspeed;
+    float speed = 400;  // default (maximum) running speed
 
     clamp(move[0], -speed, speed);
     clamp(move[1], -speed, speed);
@@ -624,21 +583,18 @@ static void CL_ClampSpeed(vec3_t move)
 
 static void CL_ClampPitch(void)
 {
-    float pitch;
+    float pitch, angle;
 
     pitch = SHORT2ANGLE(cl.frame.ps.pmove.delta_angles[PITCH]);
-    if (pitch > 180)
-        pitch -= 360;
+    angle = cl.viewangles[PITCH] + pitch;
 
-    if (cl.viewangles[PITCH] + pitch < -360)
-        cl.viewangles[PITCH] += 360; // wrapped
-    if (cl.viewangles[PITCH] + pitch > 360)
-        cl.viewangles[PITCH] -= 360; // wrapped
+    if (angle < -180)
+        angle += 360; // wrapped
+    if (angle > 180)
+        angle -= 360; // wrapped
 
-    if (cl.viewangles[PITCH] + pitch > 89)
-        cl.viewangles[PITCH] = 89 - pitch;
-    if (cl.viewangles[PITCH] + pitch < -89)
-        cl.viewangles[PITCH] = -89 - pitch;
+    clamp(angle, -89, 89);
+    cl.viewangles[PITCH] = angle - pitch;
 }
 
 /*
@@ -870,18 +826,18 @@ void CL_FinalizeCmd(void)
     memset(&cl.cmd, 0, sizeof(cl.cmd));
 }
 
-static inline qboolean ready_to_send(void)
+static inline bool ready_to_send(void)
 {
     unsigned msec;
 
     if (cl.sendPacketNow) {
-        return qtrue;
+        return true;
     }
     if (cls.netchan->message.cursize || cls.netchan->reliable_ack_pending) {
-        return qtrue;
+        return true;
     }
     if (!cl_maxpackets->integer) {
-        return qtrue;
+        return true;
     }
 
     if (cl_maxpackets->integer < 10) {
@@ -893,20 +849,20 @@ static inline qboolean ready_to_send(void)
         msec = 100 / (100 / msec);
     }
     if (cls.realtime - cl.lastTransmitTime < msec) {
-        return qfalse;
+        return false;
     }
 
-    return qtrue;
+    return true;
 }
 
-static inline qboolean ready_to_send_hacked(void)
+static inline bool ready_to_send_hacked(void)
 {
     if (!cl_fuzzhack->integer) {
-        return qtrue; // packet drop hack disabled
+        return true; // packet drop hack disabled
     }
 
     if (cl.cmdNumber - cl.lastTransmitCmdNumberReal > 2) {
-        return qtrue; // can't drop more than 2 cmds
+        return true; // can't drop more than 2 cmds
     }
 
     return ready_to_send();
@@ -1112,7 +1068,7 @@ static void CL_SendKeepAlive(void)
     cl.lastTransmitCmdNumber = cl.cmdNumber;
     cl.lastTransmitCmdNumberReal = cl.cmdNumber;
 
-    cursize = cls.netchan->Transmit(cls.netchan, 0, NULL, 1);
+    cursize = cls.netchan->Transmit(cls.netchan, 0, "", 1);
 #ifdef _DEBUG
     if (cl_showpackets->integer) {
         Com_Printf("%"PRIz" ", cursize);
@@ -1125,10 +1081,6 @@ static void CL_SendUserinfo(void)
     char userinfo[MAX_INFO_STRING];
     cvar_t *var;
     int i;
-
-    if (!cls.userinfo_modified) {
-        return;
-    }
 
     if (cls.userinfo_modified == MAX_PACKET_USERINFOS) {
         size_t len = Cvar_BitInfo(userinfo, CVAR_USERINFO);
@@ -1155,8 +1107,19 @@ static void CL_SendUserinfo(void)
         Com_WPrintf("%s: update count is %d, should never happen.\n",
                     __func__, cls.userinfo_modified);
     }
+}
 
-    cls.userinfo_modified = 0;
+static void CL_SendReliable(void)
+{
+    if (cls.userinfo_modified) {
+        CL_SendUserinfo();
+        cls.userinfo_modified = 0;
+    }
+
+    if (cls.netchan->message.overflowed) {
+        SZ_Clear(&cls.netchan->message);
+        Com_Error(ERR_DROP, "Reliable message overflowed");
+    }
 }
 
 void CL_SendCmd(void)
@@ -1173,14 +1136,14 @@ void CL_SendCmd(void)
 
     if (cls.state != ca_active || sv_paused->integer) {
         // send a userinfo update if needed
-        CL_SendUserinfo();
+        CL_SendReliable();
 
         // just keepalive or update reliable
         if (cls.netchan->ShouldUpdate(cls.netchan)) {
             CL_SendKeepAlive();
         }
 
-        cl.sendPacketNow = qfalse;
+        cl.sendPacketNow = false;
         return;
     }
 
@@ -1190,7 +1153,7 @@ void CL_SendCmd(void)
     }
 
     // send a userinfo update if needed
-    CL_SendUserinfo();
+    CL_SendReliable();
 
     if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO && cl_batchcmds->integer) {
         CL_SendBatchedCmd();
@@ -1198,6 +1161,5 @@ void CL_SendCmd(void)
         CL_SendDefaultCmd();
     }
 
-    cl.sendPacketNow = qfalse;
+    cl.sendPacketNow = false;
 }
-

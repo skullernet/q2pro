@@ -35,13 +35,13 @@ BEGIN
     BEGIN
         BLOCK "040904B0"
         BEGIN
-            VALUE "Comments", "http://skuller.net/q2pro/"
+            VALUE "Comments", "https://github.com/skullernet/q2pro"
             VALUE "CompanyName", "skuller.net"
             VALUE "FileDescription", VER_FILEDESCRIPTION_STR
             VALUE "OriginalFilename", VER_ORIGINALFILENAME_STR
             VALUE "FileVersion", VERSION
             VALUE "InternalName", "q2proded"
-            VALUE "LegalCopyright", "Copyright © 2014 skuller.net"
+            VALUE "LegalCopyright", "Copyright © 2020 skuller.net"
             VALUE "ProductName", "Q2PRO"
             VALUE "ProductVersion", VERSION
         END
@@ -55,4 +55,3 @@ END
 LANGUAGE LANG_NEUTRAL, SUBLANG_DEFAULT
 
 100 ICON "q2proded.ico"
-

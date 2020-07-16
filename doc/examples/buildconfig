@@ -27,21 +27,8 @@
 # option has no effect if CONFIG_NO_SOFTWARE_SOUND is set.
 #CONFIG_DIRECT_SOUND=y
 
-# Enable direct mouse driver (DirectInput on Windows, evdev kernel interface on
-# Linux). Note: DirectInput is deprecated on Windows (raw input is preferred).
-#CONFIG_DIRECT_INPUT=y
-
-# Enable reading input events from LIRC by linking against liblirc_client.
-# This option has no effect on Windows.
-#CONFIG_LIRC=y
-
-# Enable X11 support in SDL video driver by linking against libX11. Currently,
-# this enables GLX_SGI_video_sync extension and allows pasting text into client
-# console from the X selection buffer. This option has no effect on Windows.
-#CONFIG_X11=y
-
-# Build software renderer instead of OpenGL renderer.
-#CONFIG_SOFTWARE_RENDERER=y
+# Enable when building for systems that support OpenGL ES 1.1 only (e.g. Raspberry Pi)
+#CONFIG_GLES=y
 
 # Specify default list of fullscreen modes. Note: modes are automatically
 # detected on Windows. Default list is only used when autodetection fails.
@@ -53,11 +40,6 @@
 # Disable default Quake 2 software sound engine. Only makes sense when
 # CONFIG_OPENAL is set.
 #CONFIG_NO_SOFTWARE_SOUND=y
-
-# Disable automatic discovery of evdev device nodes by not linking
-# against libudev. This option has no effect on platforms other than Linux.
-# This option has no effect unless CONFIG_DIRECT_INPUT is set.
-#CONFIG_NO_UDEV=y
 
 # Disable menu-based user interface. This disables scriptable menus, as well as
 # demo and server browsers.
@@ -96,6 +78,12 @@
 # Enable this option on Linux to build a server capable of loading game mods
 # built using ancient GCC versions.
 #CONFIG_X86_GAME_ABI_HACK=y
+
+# Enable this option to build for x86 CPUs without SSE2 support. Enabling this
+# makes player movement code incompatible with original quake2.exe. Prediction
+# errors will occur on the client unless both client and server use this
+# option.
+#CONFIG_X86_NO_SSE_MATH=y
 
 
 ### Common configuration ###

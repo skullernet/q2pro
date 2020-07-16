@@ -24,9 +24,11 @@ static menuSound_t Activate(menuCommon_t *self)
     switch (self->type) {
     case MTYPE_ACTION:
         Cbuf_AddText(&cmd_buffer, ((menuAction_t *)self)->cmd);
+        Cbuf_AddText(&cmd_buffer, "\n");
         break;
     case MTYPE_BITMAP:
         Cbuf_AddText(&cmd_buffer, ((menuBitmap_t *)self)->cmd);
+        Cbuf_AddText(&cmd_buffer, "\n");
         break;
     case MTYPE_SAVEGAME:
         Cbuf_AddText(&cmd_buffer, va("save \"%s\"; forcemenuoff\n", ((menuAction_t *)self)->cmd));
@@ -41,16 +43,75 @@ static menuSound_t Activate(menuCommon_t *self)
     return QMS_NOTHANDLED;
 }
 
-#define CHECK_NITEMS \
-    if (menu->nitems >= MAXMENUITEMS) { \
-        Com_Printf("Too many items\n"); \
-        return; \
-    }
-
 static const cmd_option_t o_common[] = {
     { "s:", "status" },
     { NULL }
 };
+
+static void add_string(menuSpinControl_t *s, const char *tok)
+{
+    if (s->numItems < MAX_MENU_ITEMS) {
+        s->itemnames = Z_Realloc(s->itemnames, ALIGN(s->numItems + 2, MIN_MENU_ITEMS) * sizeof(char *));
+        s->itemnames[s->numItems++] = UI_CopyString(tok);
+    }
+}
+
+static void add_expand(menuSpinControl_t *s, const char *tok)
+{
+    char buf[MAX_STRING_CHARS], *temp = NULL;
+    const char *data;
+
+    cmd_macro_t *macro = Cmd_FindMacro(tok);
+    if (macro) {
+        size_t len = macro->function(buf, sizeof(buf));
+        if (len < sizeof(buf)) {
+            data = buf;
+        } else if (len < INT_MAX) {
+            data = temp = UI_Malloc(len + 1);
+            macro->function(temp, len + 1);
+        } else {
+            Com_Printf("Expanded line exceeded %i chars, discarded.\n", INT_MAX);
+            return;
+        }
+    } else {
+        cvar_t *var = Cvar_FindVar(tok);
+        if (var && !(var->flags & CVAR_PRIVATE))
+            data = var->string;
+        else
+            return;
+    }
+
+    while (1) {
+        tok = COM_Parse(&data);
+        if (!data)
+            break;
+        add_string(s, tok);
+    }
+
+    Z_Free(temp);
+}
+
+static void long_args_hack(menuSpinControl_t *s, int argc)
+{
+    int i;
+
+    s->itemnames = UI_Malloc(MIN_MENU_ITEMS * sizeof(char *));
+
+    for (i = 0; i < argc; i++) {
+        char *tok = Cmd_Argv(cmd_optind + i);
+        if (*tok == '$') {
+            tok++;
+            if (*tok == '$')
+                add_string(s, tok);
+            else
+                add_expand(s, tok);
+        } else {
+            add_string(s, tok);
+        }
+    }
+
+    s->itemnames[s->numItems] = NULL;
+}
 
 static void Parse_Spin(menuFrameWork_t *menu, menuType_t type)
 {
@@ -74,18 +135,22 @@ static void Parse_Spin(menuFrameWork_t *menu, menuType_t type)
         return;
     }
 
-    CHECK_NITEMS
-
     s = UI_Mallocz(sizeof(*s));
     s->generic.type = type;
     s->generic.name = UI_CopyString(Cmd_Argv(cmd_optind));
     s->generic.status = UI_CopyString(status);
     s->cvar = Cvar_WeakGet(Cmd_Argv(cmd_optind + 1));
-    s->itemnames = UI_Mallocz(sizeof(char *) * (numItems + 1));
-    for (i = 0; i < numItems; i++) {
-        s->itemnames[i] = UI_CopyString(Cmd_Argv(cmd_optind + 2 + i));
+
+    cmd_optind += 2;
+    if (strchr(Cmd_ArgsFrom(cmd_optind), '$')) {
+        long_args_hack(s, numItems);
+    } else {
+        s->itemnames = UI_Mallocz(sizeof(char *) * (numItems + 1));
+        for (i = 0; i < numItems; i++) {
+            s->itemnames[i] = UI_CopyString(Cmd_Argv(cmd_optind + i));
+        }
+        s->numItems = numItems;
     }
-    s->numItems = numItems;
 
     Menu_AddItem(menu, s);
 }
@@ -111,8 +176,6 @@ static void Parse_Pairs(menuFrameWork_t *menu)
         Com_Printf("Usage: %s <name> <cvar> <desc1> <value1> [...]\n", Cmd_Argv(0));
         return;
     }
-
-    CHECK_NITEMS
 
     s = UI_Mallocz(sizeof(*s));
     s->generic.type = MTYPE_PAIRS;
@@ -151,8 +214,6 @@ static void Parse_Range(menuFrameWork_t *menu)
         Com_Printf("Usage: %s <name> <cvar> <min> <max> [step]\n", Cmd_Argv(0));
         return;
     }
-
-    CHECK_NITEMS
 
     s = UI_Mallocz(sizeof(*s));
     s->generic.type = MTYPE_SLIDER;
@@ -200,8 +261,6 @@ static void Parse_Action(menuFrameWork_t *menu)
         return;
     }
 
-    CHECK_NITEMS
-
     a = UI_Mallocz(sizeof(*a));
     a->generic.type = MTYPE_ACTION;
     a->generic.name = UI_CopyString(Cmd_Argv(cmd_optind));
@@ -241,8 +300,6 @@ static void Parse_Bitmap(menuFrameWork_t *menu)
         Com_Printf("Usage: %s <name> <command>\n", Cmd_Argv(0));
         return;
     }
-
-    CHECK_NITEMS
 
     if (!altname)
         altname = va("%s_sel", Cmd_Argv(cmd_optind));
@@ -289,8 +346,6 @@ static void Parse_Bind(menuFrameWork_t *menu)
         return;
     }
 
-    CHECK_NITEMS
-
     k = UI_Mallocz(sizeof(*k));
     k->generic.type = MTYPE_KEYBIND;
     k->generic.name = UI_CopyString(Cmd_Argv(cmd_optind));
@@ -323,8 +378,6 @@ static void Parse_Savegame(menuFrameWork_t *menu, menuType_t type)
         return;
     }
 
-    CHECK_NITEMS
-
     a = UI_Mallocz(sizeof(*a));
     a->generic.type = type;
     a->generic.name = UI_CopyString("<EMPTY>");
@@ -343,7 +396,7 @@ static void Parse_Toggle(menuFrameWork_t *menu)
 {
     static const char *yes_no_names[] = { "no", "yes", NULL };
     menuSpinControl_t *s;
-    qboolean negate = qfalse;
+    bool negate = false;
     menuType_t type = MTYPE_TOGGLE;
     int c, bit = 0;
     char *b, *status = NULL;
@@ -365,7 +418,7 @@ static void Parse_Toggle(menuFrameWork_t *menu)
 
     b = Cmd_Argv(cmd_optind + 2);
     if (*b == '~') {
-        negate = qtrue;
+        negate = true;
         b++;
     }
     if (*b) {
@@ -377,8 +430,6 @@ static void Parse_Toggle(menuFrameWork_t *menu)
         type = MTYPE_BITFIELD;
     }
 
-    CHECK_NITEMS
-
     s = UI_Mallocz(sizeof(*s));
     s->generic.type = type;
     s->generic.name = UI_CopyString(Cmd_Argv(cmd_optind));
@@ -387,7 +438,7 @@ static void Parse_Toggle(menuFrameWork_t *menu)
     s->itemnames = (char **)yes_no_names;
     s->numItems = 2;
     s->negate = negate;
-    s->mask = 1 << bit;
+    s->mask = 1U << bit;
 
     Menu_AddItem(menu, s);
 }
@@ -403,7 +454,7 @@ static void Parse_Field(menuFrameWork_t *menu)
         { NULL }
     };
     menuField_t *f;
-    qboolean center = qfalse;
+    bool center = false;
     int flags = 0;
     char *status = NULL;
     int width = 16;
@@ -412,7 +463,7 @@ static void Parse_Field(menuFrameWork_t *menu)
     while ((c = Cmd_ParseOptions(o_field)) != -1) {
         switch (c) {
         case 'c':
-            center = qtrue;
+            center = true;
             break;
         case 'i':
         case 'n':
@@ -433,8 +484,6 @@ static void Parse_Field(menuFrameWork_t *menu)
         }
     }
 
-    CHECK_NITEMS
-
     f = UI_Mallocz(sizeof(*f));
     f->generic.type = MTYPE_FIELD;
     f->generic.name = center ? NULL : UI_CopyString(Cmd_Argv(cmd_optind));
@@ -449,8 +498,6 @@ static void Parse_Field(menuFrameWork_t *menu)
 static void Parse_Blank(menuFrameWork_t *menu)
 {
     menuSeparator_t *s;
-
-    CHECK_NITEMS
 
     s = UI_Mallocz(sizeof(*s));
     s->generic.type = MTYPE_SEPARATOR;
@@ -485,16 +532,16 @@ static void Parse_Style(menuFrameWork_t *menu)
     while ((c = Cmd_ParseOptions(o_style)) != -1) {
         switch (c) {
         case 'c':
-            menu->compact = qtrue;
+            menu->compact = true;
             break;
         case 'C':
-            menu->compact = qfalse;
+            menu->compact = false;
             break;
         case 't':
-            menu->transparent = qtrue;
+            menu->transparent = true;
             break;
         case 'T':
-            menu->transparent = qfalse;
+            menu->transparent = false;
             break;
         default:
             return;
@@ -563,12 +610,12 @@ static void Parse_Banner(menuFrameWork_t *menu)
     }
 }
 
-static qboolean Parse_File(const char *path, int depth)
+static bool Parse_File(const char *path, int depth)
 {
     char *raw, *data, *p, *cmd;
     int argc;
     menuFrameWork_t *menu = NULL;
-    qerror_t ret;
+    int ret;
 
     ret = FS_LoadFile(path, (void **)&raw);
     if (!raw) {
@@ -576,7 +623,7 @@ static qboolean Parse_File(const char *path, int depth)
             Com_WPrintf("Couldn't %s %s: %s\n", depth ? "include" : "load",
                         path, Q_ErrorString(ret));
         }
-        return qfalse;
+        return false;
     }
 
     data = raw;
@@ -588,7 +635,7 @@ static qboolean Parse_File(const char *path, int depth)
             *p = 0;
         }
 
-        Cmd_TokenizeString(data, qtrue);
+        Cmd_TokenizeString(data, true);
 
         argc = Cmd_Argc();
         if (argc) {
@@ -651,10 +698,10 @@ static qboolean Parse_File(const char *path, int depth)
                     }
                     menu = UI_FindMenu(s);
                     if (menu) {
+                        List_Remove(&menu->entry);
                         if (menu->free) {
                             menu->free(menu);
                         }
-                        List_Remove(&menu->entry);
                     }
                     menu = UI_Mallocz(sizeof(*menu));
                     menu->name = UI_CopyString(s);
@@ -716,11 +763,10 @@ static qboolean Parse_File(const char *path, int depth)
         menu->free(menu);
     }
 
-    return qtrue;
+    return true;
 }
 
 void UI_LoadScript(void)
 {
     Parse_File("q2pro.menu", 0);
 }
-

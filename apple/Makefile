@@ -31,9 +31,9 @@ install-lib: install-bin
 	mv $(TARGET)/lib $(BINDIR)/lib
 
 install-share:
-	install -m 0644 ../INSTALL $(DATADIR)
+	install -m 0644 ../INSTALL.md $(DATADIR)
 	install -m 0644 ../LICENSE $(DATADIR)
-	install -m 0644 ../README $(DATADIR)
+	install -m 0644 ../README.md $(DATADIR)
 	install -m 0644 ../src/client/ui/q2pro.menu $(DATADIR)/baseq2
 
 install: pre-install install-bin install-lib install-share

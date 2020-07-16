@@ -18,10 +18,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #ifdef __APPLE__
 #include <OpenAL/al.h>
-#include <OpenAL/alc.h>
 #else
 #include <AL/al.h>
-#include <AL/alc.h>
 #endif
 
 #ifndef AL_SOFT_loop_points
@@ -103,6 +101,5 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define qalSpeedOfSound alSpeedOfSound
 #define qalDistanceModel alDistanceModel
 
-qboolean QAL_Init(void);
+bool QAL_Init(void);
 void QAL_Shutdown(void);
-

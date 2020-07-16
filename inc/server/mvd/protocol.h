@@ -45,4 +45,3 @@ typedef enum {
     GTC_STREAM_STOP,
     GTC_STRINGCMD
 } gtv_clientop_t;
-

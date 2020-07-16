@@ -295,8 +295,7 @@ static void SCR_ScoreShot_f(void)
     char buffer[(TH_WIDTH + 1) * TH_HEIGHT];
     char path[MAX_OSPATH];
     qhandle_t f;
-    int i;
-    qerror_t ret;
+    int i, ret;
 
     if (cls.state != ca_active) {
         Com_Printf("Must be in a level.\n");
@@ -340,9 +339,10 @@ static void SCR_ScoreShot_f(void)
 
     FS_Write(buffer, sizeof(buffer), f);
 
-    FS_FCloseFile(f);
-
-    Com_Printf("Wrote %s.\n", path);
+    if (FS_FCloseFile(f))
+        Com_EPrintf("Error writing %s\n", path);
+    else
+        Com_Printf("Wrote %s.\n", path);
 }
 
 static void SCR_ScoreDump_f(void)
@@ -372,4 +372,3 @@ void CL_InitAscii(void)
     Cmd_AddCommand("aashot", SCR_ScoreShot_f);
     Cmd_AddCommand("aadump", SCR_ScoreDump_f);
 }
-

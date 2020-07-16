@@ -34,6 +34,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <inttypes.h>
 #include <limits.h>
 #include <time.h>
@@ -47,9 +48,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define q_countof(a)        (sizeof(a) / sizeof(a[0]))
 
 typedef unsigned char byte;
-typedef enum { qfalse, qtrue } qboolean;
+typedef enum { qfalse, qtrue } qboolean;    // ABI compat only, don't use
 typedef int qhandle_t;
-typedef int qerror_t;
 
 #ifndef NULL
 #define NULL ((void *)0)
@@ -160,26 +160,10 @@ typedef struct vrect_s {
     int             x, y, width, height;
 } vrect_t;
 
-#define nanmask (255<<23)
+#define DEG2RAD(a)      ((a) * (M_PI / 180))
+#define RAD2DEG(a)      ((a) * (180 / M_PI))
 
-#define IS_NAN(x) (((*(int *)&x)&nanmask)==nanmask)
-
-// microsoft's fabs seems to be ungodly slow...
-static inline float Q_fabs(float f)
-{
-    union {
-        uint32_t l;
-        float f;
-    } tmp;
-
-    tmp.f = f;
-    tmp.l &= 0x7FFFFFFF;
-    return tmp.f;
-}
-
-#define Q_ftol(f) ((long)(f))
-
-#define DEG2RAD(a) (a * M_PI) / 180.0F
+#define ALIGN(x, a)     (((x) + (a) - 1) & ~((a) - 1))
 
 #define DotProduct(x,y)         ((x)[0]*(y)[0]+(x)[1]*(y)[1]+(x)[2]*(y)[2])
 #define CrossProduct(v1,v2,cross) \
@@ -217,7 +201,7 @@ static inline float Q_fabs(float f)
          (d)[2]=(a)[2]+(b)[2]*(c)[2])
 #define VectorEmpty(v) ((v)[0]==0&&(v)[1]==0&&(v)[2]==0)
 #define VectorCompare(v1,v2)    ((v1)[0]==(v2)[0]&&(v1)[1]==(v2)[1]&&(v1)[2]==(v2)[2])
-#define VectorLength(v)     (sqrt(DotProduct((v),(v))))
+#define VectorLength(v)     (sqrtf(DotProduct((v),(v))))
 #define VectorLengthSquared(v)      (DotProduct((v),(v)))
 #define VectorScale(in,scale,out) \
         ((out)[0]=(in)[0]*(scale), \
@@ -231,7 +215,7 @@ static inline float Q_fabs(float f)
         (((v1)[0]-(v2)[0])*((v1)[0]-(v2)[0])+ \
         ((v1)[1]-(v2)[1])*((v1)[1]-(v2)[1])+ \
         ((v1)[2]-(v2)[2])*((v1)[2]-(v2)[2]))
-#define Distance(v1,v2) (sqrt(DistanceSquared(v1,v2)))
+#define Distance(v1,v2) (sqrtf(DistanceSquared(v1,v2)))
 #define LerpAngles(a,b,c,d) \
         ((d)[0]=LerpAngle((a)[0],(b)[0],c), \
          (d)[1]=LerpAngle((a)[1],(b)[1],c), \
@@ -252,6 +236,7 @@ static inline float Q_fabs(float f)
 #define Vector4Clear(a)         ((a)[0]=(a)[1]=(a)[2]=(a)[3]=0)
 #define Vector4Negate(a,b)      ((b)[0]=-(a)[0],(b)[1]=-(a)[1],(b)[2]=-(a)[2],(b)[3]=-(a)[3])
 #define Vector4Set(v, a, b, c, d)   ((v)[0]=(a),(v)[1]=(b),(v)[2]=(c),(v)[3]=(d))
+#define Vector4Compare(v1,v2)    ((v1)[0]==(v2)[0]&&(v1)[1]==(v2)[1]&&(v1)[2]==(v2)[2]&&(v1)[3]==(v2)[3])
 
 void AngleVectors(vec3_t angles, vec3_t forward, vec3_t right, vec3_t up);
 vec_t VectorNormalize(vec3_t v);        // returns vector length
@@ -324,18 +309,6 @@ static inline float anglemod(float a)
     return a;
 }
 
-static inline int rand_byte(void)
-{
-    int r = rand();
-
-    int b1 = (r >> 24) & 255;
-    int b2 = (r >> 16) & 255;
-    int b3 = (r >>  8) & 255;
-    int b4 = (r) & 255;
-
-    return b1 ^ b2 ^ b3 ^ b4;
-}
-
 static inline int Q_align(int value, int align)
 {
     int mod = value % align;
@@ -352,6 +325,10 @@ static inline int Q_gcd(int a, int b)
     return a;
 }
 
+void Q_srand(uint32_t seed);
+uint32_t Q_rand(void);
+uint32_t Q_rand_uniform(uint32_t n);
+
 #define clamp(a,b,c)    ((a)<(b)?(a)=(b):(a)>(c)?(a)=(c):(a))
 #define cclamp(a,b,c)   ((b)>(c)?clamp(a,c,b):clamp(a,b,c))
 
@@ -363,8 +340,8 @@ static inline int Q_gcd(int a, int b)
 #define min(a,b) ((a)<(b)?(a):(b))
 #endif
 
-#define frand()     ((rand() & 32767) * (1.0 / 32767))
-#define crand()     ((rand() & 32767) * (2.0 / 32767) - 1)
+#define frand()     ((int32_t)Q_rand() * 0x1p-32f + 0.5f)
+#define crand()     ((int32_t)Q_rand() * 0x1p-31f)
 
 #define Q_rint(x)   ((x) < 0 ? ((int)((x) - 0.5f)) : ((int)((x) + 0.5f)))
 
@@ -478,19 +455,17 @@ void *Q_memccpy(void *dst, const void *src, int c, size_t size);
 void Q_setenv(const char *name, const char *value);
 
 char *COM_SkipPath(const char *pathname);
-void COM_StripExtension(const char *in, char *out, size_t size);
-void COM_FileBase(char *in, char *out);
-void COM_FilePath(const char *in, char *out, size_t size);
+size_t COM_StripExtension(char *out, const char *in, size_t size);
 size_t COM_DefaultExtension(char *path, const char *ext, size_t size);
 char *COM_FileExtension(const char *in);
 
 #define COM_CompareExtension(in, ext) \
     Q_strcasecmp(COM_FileExtension(in), ext)
 
-qboolean COM_IsFloat(const char *s);
-qboolean COM_IsUint(const char *s);
-qboolean COM_IsPath(const char *s);
-qboolean COM_IsWhite(const char *s);
+bool COM_IsFloat(const char *s);
+bool COM_IsUint(const char *s);
+bool COM_IsPath(const char *s);
+bool COM_IsWhite(const char *s);
 
 char *COM_Parse(const char **data_p);
 // data is an in/out parm, returns a parsed out token
@@ -500,12 +475,15 @@ int SortStrcmp(const void *p1, const void *p2);
 int SortStricmp(const void *p1, const void *p2);
 
 size_t COM_strclr(char *s);
+char *COM_StripQuotes(char *s);
 
 // buffer safe operations
 size_t Q_strlcpy(char *dst, const char *src, size_t size);
 size_t Q_strlcat(char *dst, const char *src, size_t size);
 
-size_t Q_concat(char *dest, size_t size, ...) q_sentinel;
+#define Q_concat(dest, size, ...) \
+    Q_concat_array(dest, size, (const char *[]){__VA_ARGS__, NULL})
+size_t Q_concat_array(char *dest, size_t size, const char **arr);
 
 size_t Q_vsnprintf(char *dest, size_t size, const char *fmt, va_list argptr);
 size_t Q_vscnprintf(char *dest, size_t size, const char *fmt, va_list argptr);
@@ -548,7 +526,7 @@ static inline float FloatSwap(float f)
 #define LittleShort(x)    ((uint16_t)(x))
 #define LittleLong(x)     ((uint32_t)(x))
 #define LittleFloat(x)    ((float)(x))
-#define MakeRawLong(b1,b2,b3,b4) (((b4)<<24)|((b3)<<16)|((b2)<<8)|(b1))
+#define MakeRawLong(b1,b2,b3,b4) (((unsigned)(b4)<<24)|((b3)<<16)|((b2)<<8)|(b1))
 #define MakeRawShort(b1,b2) (((b2)<<8)|(b1))
 #elif __BYTE_ORDER == __BIG_ENDIAN
 #define BigShort(x)     ((uint16_t)(x))
@@ -557,13 +535,13 @@ static inline float FloatSwap(float f)
 #define LittleShort ShortSwap
 #define LittleLong  LongSwap
 #define LittleFloat FloatSwap
-#define MakeRawLong(b1,b2,b3,b4) (((b1)<<24)|((b2)<<16)|((b3)<<8)|(b4))
+#define MakeRawLong(b1,b2,b3,b4) (((unsigned)(b1)<<24)|((b2)<<16)|((b3)<<8)|(b4))
 #define MakeRawShort(b1,b2) (((b1)<<8)|(b2))
 #else
 #error Unknown byte order
 #endif
 
-#define LittleLongMem(p) (((p)[3]<<24)|((p)[2]<<16)|((p)[1]<<8)|(p)[0])
+#define LittleLongMem(p) (((unsigned)(p)[3]<<24)|((p)[2]<<16)|((p)[1]<<8)|(p)[0])
 #define LittleShortMem(p) (((p)[1]<<8)|(p)[0])
 
 #define RawLongMem(p) MakeRawLong((p)[0],(p)[1],(p)[2],(p)[3])
@@ -591,8 +569,8 @@ static inline float FloatSwap(float f)
 
 char    *Info_ValueForKey(const char *s, const char *key);
 void    Info_RemoveKey(char *s, const char *key);
-qboolean    Info_SetValueForKey(char *s, const char *key, const char *value);
-qboolean    Info_Validate(const char *s);
+bool    Info_SetValueForKey(char *s, const char *key, const char *value);
+bool    Info_Validate(const char *s);
 size_t  Info_SubValidate(const char *s);
 void    Info_NextPair(const char **string, char *key, char *value);
 void    Info_Print(const char *infostring);
@@ -612,7 +590,7 @@ CVARS (console variables)
 #define CVAR_USERINFO   2   // added to userinfo  when changed
 #define CVAR_SERVERINFO 4   // added to serverinfo when changed
 #define CVAR_NOSET      8   // don't allow change from console at all,
-// but can be set from the command line
+                            // but can be set from the command line
 #define CVAR_LATCH      16  // save changes until server restart
 
 struct cvar_s;
@@ -718,7 +696,6 @@ COLLISION DETECTION
 
 
 // plane_t structure
-// !!! if this is changed, it must be changed in asm code too !!!
 typedef struct cplane_s {
     vec3_t  normal;
     float   dist;
@@ -741,16 +718,6 @@ typedef struct cplane_s {
 
 #define PLANE_NON_AXIAL 6
 
-// structure offset for asm code
-#define CPLANE_NORMAL_X         0
-#define CPLANE_NORMAL_Y         4
-#define CPLANE_NORMAL_Z         8
-#define CPLANE_DIST             12
-#define CPLANE_TYPE             16
-#define CPLANE_SIGNBITS         17
-#define CPLANE_PAD0             18
-#define CPLANE_PAD1             19
-
 typedef struct csurface_s {
     char        name[16];
     int         flags;
@@ -759,8 +726,8 @@ typedef struct csurface_s {
 
 // a trace is returned when a box is swept through the world
 typedef struct {
-    qboolean    allsolid;   // if qtrue, plane is not valid
-    qboolean    startsolid; // if qtrue, the initial point was in a solid area
+    qboolean    allsolid;   // if true, plane is not valid
+    qboolean    startsolid; // if true, the initial point was in a solid area
     float       fraction;   // time completed, 1.0 = didn't hit anything
     vec3_t      endpos;     // final position
     cplane_t    plane;      // surface normal at impact
@@ -805,7 +772,7 @@ typedef struct {
     byte        pm_time;        // each unit = 8 ms
     short       gravity;
     short       delta_angles[3];    // add to command angles to get view direction
-    // changed by spawns, rotating objects, and teleporters
+                                    // changed by spawns, rotating objects, and teleporters
 } pmove_state_t;
 
 
@@ -1411,7 +1378,10 @@ ROGUE - VERSIONS
 #define MAX_FRAMEDIV    6
 
 #define ANGLE2SHORT(x)  ((int)((x)*65536/360) & 65535)
-#define SHORT2ANGLE(x)  ((x)*(360.0/65536))
+#define SHORT2ANGLE(x)  ((x)*(360.0f/65536))
+
+#define COORD2SHORT(x)  ((int)((x)*8.0f))
+#define SHORT2COORD(x)  ((x)*(1.0f/8))
 
 
 //

@@ -512,4 +512,3 @@ LONG WINAPI Sys_ExceptionFilter(LPEXCEPTION_POINTERS exceptionInfo)
 
     return EXCEPTION_EXECUTE_HANDLER;
 }
-
