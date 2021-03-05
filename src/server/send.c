@@ -256,7 +256,7 @@ void SV_Multicast(vec3_t origin, multicast_t to)
 {
     client_t    *client;
     byte        mask[VIS_MAX_BYTES];
-    mleaf_t     *leaf1, *leaf2;
+    mleaf_t     *leaf1 = NULL, *leaf2;
     int         leafnum q_unused;
     int         flags;
 
@@ -271,7 +271,6 @@ void SV_Multicast(vec3_t origin, multicast_t to)
         flags |= MSG_RELIABLE;
         // intentional fallthrough
     case MULTICAST_ALL:
-        leaf1 = NULL;
         leafnum = 0;
         break;
     case MULTICAST_PHS_R:

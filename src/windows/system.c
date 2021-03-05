@@ -1061,6 +1061,10 @@ void Sys_Sleep(int msec)
     Sleep(msec);
 }
 
+#if (_WIN32_WINNT >= _WIN32_WINNT_WIN8)
+#include <VersionHelpers.h>
+#endif
+
 /*
 ================
 Sys_Init
@@ -1068,7 +1072,6 @@ Sys_Init
 */
 void Sys_Init(void)
 {
-    OSVERSIONINFO vinfo;
 #ifndef _WIN64
     HMODULE module;
     BOOL (WINAPI * pSetProcessDEPPolicy)(DWORD);
@@ -1076,6 +1079,13 @@ void Sys_Init(void)
     cvar_t *var q_unused;
 
     // check windows version
+#if (_WIN32_WINNT >= _WIN32_WINNT_WIN8)
+    if (!IsWindowsXPOrGreater()) {
+        Sys_Error(PRODUCT " requires Windows XP or greater");
+    }
+#else
+    OSVERSIONINFO vinfo;
+
     vinfo.dwOSVersionInfoSize = sizeof(vinfo);
     if (!GetVersionEx(&vinfo)) {
         Sys_Error("Couldn't get OS info");
@@ -1086,6 +1096,7 @@ void Sys_Init(void)
     if (vinfo.dwMajorVersion < 5) {
         Sys_Error(PRODUCT " requires Windows 2000 or greater");
     }
+#endif
 
     if (!QueryPerformanceFrequency(&timer_freq))
         Sys_Error("QueryPerformanceFrequency failed");

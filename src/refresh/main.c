@@ -697,28 +697,28 @@ static void gl_novis_changed(cvar_t *self)
 static void GL_Register(void)
 {
     // regular variables
-    gl_partscale = Cvar_Get("gl_partscale", "2", 0);
-    gl_partstyle = Cvar_Get("gl_partstyle", "0", 0);
-    gl_celshading = Cvar_Get("gl_celshading", "0", 0);
-    gl_dotshading = Cvar_Get("gl_dotshading", "1", 0);
+    gl_partscale = Cvar_Get("gl_partscale", "2", CVAR_ARCHIVE);
+    gl_partstyle = Cvar_Get("gl_partstyle", "0", CVAR_ARCHIVE);
+    gl_celshading = Cvar_Get("gl_celshading", "0", CVAR_ARCHIVE);
+    gl_dotshading = Cvar_Get("gl_dotshading", "1", CVAR_ARCHIVE);
     gl_shadows = Cvar_Get("gl_shadows", "0", CVAR_ARCHIVE);
     gl_modulate = Cvar_Get("gl_modulate", "1", CVAR_ARCHIVE);
     gl_modulate->changed = gl_modulate_changed;
-    gl_modulate_world = Cvar_Get("gl_modulate_world", "1", 0);
+    gl_modulate_world = Cvar_Get("gl_modulate_world", "1", CVAR_ARCHIVE);
     gl_modulate_world->changed = gl_lightmap_changed;
-    gl_coloredlightmaps = Cvar_Get("gl_coloredlightmaps", "1", 0);
+    gl_coloredlightmaps = Cvar_Get("gl_coloredlightmaps", "1", CVAR_ARCHIVE);
     gl_coloredlightmaps->changed = gl_lightmap_changed;
-    gl_brightness = Cvar_Get("gl_brightness", "0", 0);
+    gl_brightness = Cvar_Get("gl_brightness", "0", CVAR_ARCHIVE);
     gl_brightness->changed = gl_lightmap_changed;
-    gl_dynamic = Cvar_Get("gl_dynamic", "2", 0);
+    gl_dynamic = Cvar_Get("gl_dynamic", "2", CVAR_ARCHIVE);
     gl_dynamic->changed = gl_lightmap_changed;
 #if USE_DLIGHTS
-    gl_dlight_falloff = Cvar_Get("gl_dlight_falloff", "1", 0);
+    gl_dlight_falloff = Cvar_Get("gl_dlight_falloff", "1", CVAR_ARCHIVE);
 #endif
-    gl_modulate_entities = Cvar_Get("gl_modulate_entities", "1", 0);
+    gl_modulate_entities = Cvar_Get("gl_modulate_entities", "1", CVAR_ARCHIVE);
     gl_modulate_entities->changed = gl_modulate_entities_changed;
-    gl_doublelight_entities = Cvar_Get("gl_doublelight_entities", "1", 0);
-    gl_fontshadow = Cvar_Get("gl_fontshadow", "0", 0);
+    gl_doublelight_entities = Cvar_Get("gl_doublelight_entities", "1", CVAR_ARCHIVE);
+    gl_fontshadow = Cvar_Get("gl_fontshadow", "0", CVAR_ARCHIVE);
     gl_shaders = Cvar_Get("gl_shaders", (gl_config.caps & QGL_CAP_SHADER) ? "1" : "0", CVAR_REFRESH);
 
     // development variables
@@ -747,9 +747,9 @@ static void GL_Register(void)
     gl_lightmap = Cvar_Get("gl_lightmap", "0", CVAR_CHEAT);
     gl_fullbright = Cvar_Get("r_fullbright", "0", CVAR_CHEAT);
     gl_fullbright->changed = gl_lightmap_changed;
-    gl_vertexlight = Cvar_Get("gl_vertexlight", "0", 0);
+    gl_vertexlight = Cvar_Get("gl_vertexlight", "0", CVAR_ARCHIVE);
     gl_vertexlight->changed = gl_lightmap_changed;
-    gl_polyblend = Cvar_Get("gl_polyblend", "1", 0);
+    gl_polyblend = Cvar_Get("gl_polyblend", "1", CVAR_ARCHIVE);
     gl_showerrors = Cvar_Get("gl_showerrors", "1", 0);
 
     gl_lightmap_changed(NULL);

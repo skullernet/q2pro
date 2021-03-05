@@ -73,7 +73,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define Q_ERR_PERM              Q_ERR(EPERM)
 
 // This macro converts system errno into quake error value.
+#ifdef _MSC_VER
+int Q_ErrorNumber(void);
+#define Q_ERRNO					Q_ErrorNumber()
+#else
 #define Q_ERRNO                 ({int e = errno; Q_ERR(e);})
+#endif
 
 const char *Q_ErrorString(int error);
 

@@ -154,7 +154,7 @@ static void MVD_ParseMulticast(mvd_t *mvd, mvd_ops_t op, int extrabits)
     mvd_client_t    *client;
     client_t    *cl;
     byte        mask[VIS_MAX_BYTES];
-    mleaf_t     *leaf1, *leaf2;
+    mleaf_t     *leaf1 = NULL, *leaf2;
     vec3_t      org;
     bool        reliable = false;
     byte        *data;
@@ -168,7 +168,6 @@ static void MVD_ParseMulticast(mvd_t *mvd, mvd_ops_t op, int extrabits)
         reliable = true;
         // intentional fallthrough
     case mvd_multicast_all:
-        leaf1 = NULL;
         break;
     case mvd_multicast_phs_r:
         reliable = true;
@@ -176,7 +175,6 @@ static void MVD_ParseMulticast(mvd_t *mvd, mvd_ops_t op, int extrabits)
     case mvd_multicast_phs:
         leafnum = MSG_ReadWord();
         if (mvd->demoseeking) {
-            leaf1 = NULL;
             break;
         }
         leaf1 = CM_LeafNum(&mvd->cm, leafnum);
@@ -188,7 +186,6 @@ static void MVD_ParseMulticast(mvd_t *mvd, mvd_ops_t op, int extrabits)
     case mvd_multicast_pvs:
         leafnum = MSG_ReadWord();
         if (mvd->demoseeking) {
-            leaf1 = NULL;
             break;
         }
         leaf1 = CM_LeafNum(&mvd->cm, leafnum);

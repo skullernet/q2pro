@@ -69,3 +69,11 @@ const char *Q_ErrorString(int error)
 
     return error_table[e >= num_errors ? 0 : e];
 }
+
+#ifdef _MSC_VER
+int Q_ErrorNumber(void)
+{
+    int e = errno;
+    return Q_ERR(e);
+}
+#endif
