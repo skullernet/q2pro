@@ -575,6 +575,17 @@ size_t  Info_SubValidate(const char *s);
 void    Info_NextPair(const char **string, char *key, char *value);
 void    Info_Print(const char *infostring);
 
+#if USE_WASM
+/*
+==========================================================
+
+WASM Game Modules
+
+==========================================================
+*/
+typedef uint32_t wasm_address_t;
+#endif
+
 /*
 ==========================================================
 
@@ -615,6 +626,11 @@ typedef struct cvar_s {
     xchanged_t      changed;
     xgenerator_t    generator;
     struct cvar_s   *hashNext;
+#if USE_WASM
+    wasm_address_t wasm;
+    uint32_t wasm_string_size; // size *in bytes*
+    uint32_t wasm_latched_string_size; // size *in bytes*
+#endif
 } cvar_t;
 
 #endif      // CVAR

@@ -48,4 +48,17 @@ int MVD_GetDemoPercent(bool *paused, int *framenum);
 char *SV_GetSaveInfo(const char *dir);
 #endif
 
+#if USE_SERVER && USE_WASM
+bool SV_IsWASMRunning(void);
+bool SV_ValidateWASMAddress(wasm_address_t address, uint32_t size);
+// Be wary of the three functions below: when memory grows on the WASM side,
+// native pointers may not be pointing to the same place they were before.
+// Its lifetime should only be considered to be valid *up until* the next WASM
+// function call.
+wasm_address_t SV_AllocateWASMMemory(uint32_t size);
+void SV_FreeWASMMemory(wasm_address_t addr);
+void *SV_ResolveWASMAddress(wasm_address_t address);
+wasm_address_t SV_UnresolveWASMAddress(void *pointer);
+#endif
+
 #endif // SERVER_H

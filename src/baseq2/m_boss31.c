@@ -55,11 +55,11 @@ void jorg_search(edict_t *self)
     r = random();
 
     if (r <= 0.3f)
-        gi.sound(self, CHAN_VOICE, sound_search1, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_search1, 1, ATTN_NORM, 0);
     else if (r <= 0.6f)
-        gi.sound(self, CHAN_VOICE, sound_search2, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_search2, 1, ATTN_NORM, 0);
     else
-        gi.sound(self, CHAN_VOICE, sound_search3, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_search3, 1, ATTN_NORM, 0);
 }
 
 
@@ -135,23 +135,23 @@ mmove_t jorg_move_stand = {FRAME_stand01, FRAME_stand51, jorg_frames_stand, NULL
 
 void jorg_idle(edict_t *self)
 {
-    gi.sound(self, CHAN_VOICE, sound_idle, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_VOICE, sound_idle, 1, ATTN_NORM, 0);
 }
 
 void jorg_death_hit(edict_t *self)
 {
-    gi.sound(self, CHAN_BODY, sound_death_hit, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_BODY, sound_death_hit, 1, ATTN_NORM, 0);
 }
 
 
 void jorg_step_left(edict_t *self)
 {
-    gi.sound(self, CHAN_BODY, sound_step_left, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_BODY, sound_step_left, 1, ATTN_NORM, 0);
 }
 
 void jorg_step_right(edict_t *self)
 {
-    gi.sound(self, CHAN_BODY, sound_step_right, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_BODY, sound_step_right, 1, ATTN_NORM, 0);
 }
 
 
@@ -436,14 +436,14 @@ void jorg_pain(edict_t *self, edict_t *other, float kick, int damage)
         return;     // no pain anims in nightmare
 
     if (damage <= 50) {
-        gi.sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
         self->monsterinfo.currentmove = &jorg_move_pain1;
     } else if (damage <= 100) {
-        gi.sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
         self->monsterinfo.currentmove = &jorg_move_pain2;
     } else {
         if (random() <= 0.3f) {
-            gi.sound(self, CHAN_VOICE, sound_pain3, 1, ATTN_NORM, 0);
+            gi_sound(self, CHAN_VOICE, sound_pain3, 1, ATTN_NORM, 0);
             self->monsterinfo.currentmove = &jorg_move_pain3;
         }
     }
@@ -463,7 +463,7 @@ void jorgBFG(edict_t *self)
     vec[2] += self->enemy->viewheight;
     VectorSubtract(vec, start, dir);
     VectorNormalize(dir);
-    gi.sound(self, CHAN_VOICE, sound_attack2, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_VOICE, sound_attack2, 1, ATTN_NORM, 0);
     /*void monster_fire_bfg (edict_t *self,
                              vec3_t start,
                              vec3_t aimdir,
@@ -516,11 +516,11 @@ void jorg_firebullet(edict_t *self)
 void jorg_attack(edict_t *self)
 {
     if (random() <= 0.75f) {
-        gi.sound(self, CHAN_VOICE, sound_attack1, 1, ATTN_NORM, 0);
-        self->s.sound = gi.soundindex("boss3/w_loop.wav");
+        gi_sound(self, CHAN_VOICE, sound_attack1, 1, ATTN_NORM, 0);
+        self->s.sound = gi_soundindex("boss3/w_loop.wav");
         self->monsterinfo.currentmove = &jorg_move_start_attack1;
     } else {
-        gi.sound(self, CHAN_VOICE, sound_attack2, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_attack2, 1, ATTN_NORM, 0);
         self->monsterinfo.currentmove = &jorg_move_attack2;
     }
 }
@@ -539,7 +539,7 @@ void jorg_dead(edict_t *self)
     VectorSet(self->maxs, 60, 60, 72);
     self->movetype = MOVETYPE_TOSS;
     self->nextthink = 0;
-    gi.linkentity(self);
+    gi_linkentity(self);
 
     tempent = G_Spawn();
     VectorCopy(self->s.origin, tempent->s.origin);
@@ -556,7 +556,7 @@ void jorg_dead(edict_t *self)
 
 void jorg_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
-    gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
     self->deadflag = DEAD_DEAD;
     self->takedamage = DAMAGE_NO;
     self->s.sound = 0;
@@ -580,7 +580,7 @@ bool Jorg_CheckAttack(edict_t *self)
         VectorCopy(self->enemy->s.origin, spot2);
         spot2[2] += self->enemy->viewheight;
 
-        tr = gi.trace(spot1, NULL, NULL, spot2, self, CONTENTS_SOLID | CONTENTS_MONSTER | CONTENTS_SLIME | CONTENTS_LAVA);
+        tr = gi_trace(spot1, NULL, NULL, spot2, self, CONTENTS_SOLID | CONTENTS_MONSTER | CONTENTS_SLIME | CONTENTS_LAVA);
 
         // do we have a clear shot?
         if (tr.ent != self->enemy)
@@ -653,27 +653,27 @@ void SP_monster_jorg(edict_t *self)
         return;
     }
 
-    sound_pain1 = gi.soundindex("boss3/bs3pain1.wav");
-    sound_pain2 = gi.soundindex("boss3/bs3pain2.wav");
-    sound_pain3 = gi.soundindex("boss3/bs3pain3.wav");
-    sound_death = gi.soundindex("boss3/bs3deth1.wav");
-    sound_attack1 = gi.soundindex("boss3/bs3atck1.wav");
-    sound_attack2 = gi.soundindex("boss3/bs3atck2.wav");
-    sound_search1 = gi.soundindex("boss3/bs3srch1.wav");
-    sound_search2 = gi.soundindex("boss3/bs3srch2.wav");
-    sound_search3 = gi.soundindex("boss3/bs3srch3.wav");
-    sound_idle = gi.soundindex("boss3/bs3idle1.wav");
-    sound_step_left = gi.soundindex("boss3/step1.wav");
-    sound_step_right = gi.soundindex("boss3/step2.wav");
-    sound_firegun = gi.soundindex("boss3/xfire.wav");
-    sound_death_hit = gi.soundindex("boss3/d_hit.wav");
+    sound_pain1 = gi_soundindex("boss3/bs3pain1.wav");
+    sound_pain2 = gi_soundindex("boss3/bs3pain2.wav");
+    sound_pain3 = gi_soundindex("boss3/bs3pain3.wav");
+    sound_death = gi_soundindex("boss3/bs3deth1.wav");
+    sound_attack1 = gi_soundindex("boss3/bs3atck1.wav");
+    sound_attack2 = gi_soundindex("boss3/bs3atck2.wav");
+    sound_search1 = gi_soundindex("boss3/bs3srch1.wav");
+    sound_search2 = gi_soundindex("boss3/bs3srch2.wav");
+    sound_search3 = gi_soundindex("boss3/bs3srch3.wav");
+    sound_idle = gi_soundindex("boss3/bs3idle1.wav");
+    sound_step_left = gi_soundindex("boss3/step1.wav");
+    sound_step_right = gi_soundindex("boss3/step2.wav");
+    sound_firegun = gi_soundindex("boss3/xfire.wav");
+    sound_death_hit = gi_soundindex("boss3/d_hit.wav");
 
     MakronPrecache();
 
     self->movetype = MOVETYPE_STEP;
     self->solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/boss3/rider/tris.md2");
-    self->s.modelindex2 = gi.modelindex("models/monsters/boss3/jorg/tris.md2");
+    self->s.modelindex = gi_modelindex("models/monsters/boss3/rider/tris.md2");
+    self->s.modelindex2 = gi_modelindex("models/monsters/boss3/jorg/tris.md2");
     VectorSet(self->mins, -80, -80, 0);
     VectorSet(self->maxs, 80, 80, 140);
 
@@ -692,7 +692,7 @@ void SP_monster_jorg(edict_t *self)
     self->monsterinfo.melee = NULL;
     self->monsterinfo.sight = NULL;
     self->monsterinfo.checkattack = Jorg_CheckAttack;
-    gi.linkentity(self);
+    gi_linkentity(self);
 
     self->monsterinfo.currentmove = &jorg_move_stand;
     self->monsterinfo.scale = MODEL_SCALE;

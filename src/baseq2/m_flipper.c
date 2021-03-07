@@ -178,7 +178,7 @@ void flipper_bite(edict_t *self)
 
 void flipper_preattack(edict_t *self)
 {
-    gi.sound(self, CHAN_WEAPON, sound_chomp, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_WEAPON, sound_chomp, 1, ATTN_NORM, 0);
 }
 
 mframe_t flipper_frames_attack [] = {
@@ -227,10 +227,10 @@ void flipper_pain(edict_t *self, edict_t *other, float kick, int damage)
 
     n = (Q_rand() + 1) % 2;
     if (n == 0) {
-        gi.sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
         self->monsterinfo.currentmove = &flipper_move_pain1;
     } else {
-        gi.sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
         self->monsterinfo.currentmove = &flipper_move_pain2;
     }
 }
@@ -242,7 +242,7 @@ void flipper_dead(edict_t *self)
     self->movetype = MOVETYPE_TOSS;
     self->svflags |= SVF_DEADMONSTER;
     self->nextthink = 0;
-    gi.linkentity(self);
+    gi_linkentity(self);
 }
 
 mframe_t flipper_frames_death [] = {
@@ -312,7 +312,7 @@ mmove_t flipper_move_death = {FRAME_flpdth01, FRAME_flpdth56, flipper_frames_dea
 
 void flipper_sight(edict_t *self, edict_t *other)
 {
-    gi.sound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
 }
 
 void flipper_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
@@ -321,7 +321,7 @@ void flipper_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 
 // check for gib
     if (self->health <= self->gib_health) {
-        gi.sound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, gi_soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
         for (n = 0; n < 2; n++)
             ThrowGib(self, "models/objects/gibs/bone/tris.md2", damage, GIB_ORGANIC);
         for (n = 0; n < 2; n++)
@@ -335,7 +335,7 @@ void flipper_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
         return;
 
 // regular death
-    gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
     self->deadflag = DEAD_DEAD;
     self->takedamage = DAMAGE_YES;
     self->monsterinfo.currentmove = &flipper_move_death;
@@ -350,18 +350,18 @@ void SP_monster_flipper(edict_t *self)
         return;
     }
 
-    sound_pain1     = gi.soundindex("flipper/flppain1.wav");
-    sound_pain2     = gi.soundindex("flipper/flppain2.wav");
-    sound_death     = gi.soundindex("flipper/flpdeth1.wav");
-    sound_chomp     = gi.soundindex("flipper/flpatck1.wav");
-    sound_attack    = gi.soundindex("flipper/flpatck2.wav");
-    sound_idle      = gi.soundindex("flipper/flpidle1.wav");
-    sound_search    = gi.soundindex("flipper/flpsrch1.wav");
-    sound_sight     = gi.soundindex("flipper/flpsght1.wav");
+    sound_pain1     = gi_soundindex("flipper/flppain1.wav");
+    sound_pain2     = gi_soundindex("flipper/flppain2.wav");
+    sound_death     = gi_soundindex("flipper/flpdeth1.wav");
+    sound_chomp     = gi_soundindex("flipper/flpatck1.wav");
+    sound_attack    = gi_soundindex("flipper/flpatck2.wav");
+    sound_idle      = gi_soundindex("flipper/flpidle1.wav");
+    sound_search    = gi_soundindex("flipper/flpsrch1.wav");
+    sound_sight     = gi_soundindex("flipper/flpsght1.wav");
 
     self->movetype = MOVETYPE_STEP;
     self->solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/flipper/tris.md2");
+    self->s.modelindex = gi_modelindex("models/monsters/flipper/tris.md2");
     VectorSet(self->mins, -16, -16, 0);
     VectorSet(self->maxs, 16, 16, 32);
 
@@ -378,7 +378,7 @@ void SP_monster_flipper(edict_t *self)
     self->monsterinfo.melee = flipper_melee;
     self->monsterinfo.sight = flipper_sight;
 
-    gi.linkentity(self);
+    gi_linkentity(self);
 
     self->monsterinfo.currentmove = &flipper_move_stand;
     self->monsterinfo.scale = MODEL_SCALE;

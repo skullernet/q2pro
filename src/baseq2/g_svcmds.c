@@ -21,7 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 void    Svcmd_Test_f(void)
 {
-    gi.cprintf(NULL, PRINT_HIGH, "Svcmd_Test_f()\n");
+    gi_cprintf(NULL, PRINT_HIGH, "Svcmd_Test_f()\n");
 }
 
 /*
@@ -86,7 +86,7 @@ static bool StringToFilter(char *s, ipfilter_t *f)
 
     for (i = 0 ; i < 4 ; i++) {
         if (*s < '0' || *s > '9') {
-            gi.cprintf(NULL, PRINT_HIGH, "Bad filter address: %s\n", s);
+            gi_cprintf(NULL, PRINT_HIGH, "Bad filter address: %s\n", s);
             return false;
         }
 
@@ -157,8 +157,8 @@ void SVCmd_AddIP_f(void)
 {
     int     i;
 
-    if (gi.argc() < 3) {
-        gi.cprintf(NULL, PRINT_HIGH, "Usage:  addip <ip-mask>\n");
+    if (gi_argc() < 3) {
+        gi_cprintf(NULL, PRINT_HIGH, "Usage:  addip <ip-mask>\n");
         return;
     }
 
@@ -167,13 +167,13 @@ void SVCmd_AddIP_f(void)
             break;      // free spot
     if (i == numipfilters) {
         if (numipfilters == MAX_IPFILTERS) {
-            gi.cprintf(NULL, PRINT_HIGH, "IP filter list is full\n");
+            gi_cprintf(NULL, PRINT_HIGH, "IP filter list is full\n");
             return;
         }
         numipfilters++;
     }
 
-    if (!StringToFilter(gi.argv(2), &ipfilters[i]))
+    if (!StringToFilter(gi_argv(2), &ipfilters[i]))
         ipfilters[i].compare = 0xffffffff;
 }
 
@@ -187,12 +187,12 @@ void SVCmd_RemoveIP_f(void)
     ipfilter_t  f;
     int         i, j;
 
-    if (gi.argc() < 3) {
-        gi.cprintf(NULL, PRINT_HIGH, "Usage:  sv removeip <ip-mask>\n");
+    if (gi_argc() < 3) {
+        gi_cprintf(NULL, PRINT_HIGH, "Usage:  sv removeip <ip-mask>\n");
         return;
     }
 
-    if (!StringToFilter(gi.argv(2), &f))
+    if (!StringToFilter(gi_argv(2), &f))
         return;
 
     for (i = 0 ; i < numipfilters ; i++)
@@ -201,10 +201,10 @@ void SVCmd_RemoveIP_f(void)
             for (j = i + 1 ; j < numipfilters ; j++)
                 ipfilters[j - 1] = ipfilters[j];
             numipfilters--;
-            gi.cprintf(NULL, PRINT_HIGH, "Removed.\n");
+            gi_cprintf(NULL, PRINT_HIGH, "Removed.\n");
             return;
         }
-    gi.cprintf(NULL, PRINT_HIGH, "Didn't find %s.\n", gi.argv(2));
+    gi_cprintf(NULL, PRINT_HIGH, "Didn't find %s.\n", gi_argv(2));
 }
 
 /*
@@ -220,10 +220,10 @@ void SVCmd_ListIP_f(void)
         unsigned u32;
     } b;
 
-    gi.cprintf(NULL, PRINT_HIGH, "Filter list:\n");
+    gi_cprintf(NULL, PRINT_HIGH, "Filter list:\n");
     for (i = 0 ; i < numipfilters ; i++) {
         b.u32 = ipfilters[i].compare;
-        gi.cprintf(NULL, PRINT_HIGH, "%3i.%3i.%3i.%3i\n", b.b[0], b.b[1], b.b[2], b.b[3]);
+        gi_cprintf(NULL, PRINT_HIGH, "%3i.%3i.%3i.%3i\n", b.b[0], b.b[1], b.b[2], b.b[3]);
     }
 }
 
@@ -244,7 +244,7 @@ void SVCmd_WriteIP_f(void)
     int     i;
     cvar_t  *game;
 
-    game = gi.cvar("game", "", 0);
+    game = gi_cvar("game", "", 0);
 
     if (!*game->string)
         len = Q_snprintf(name, sizeof(name), "%s/listip.cfg", GAMEVERSION);
@@ -252,15 +252,15 @@ void SVCmd_WriteIP_f(void)
         len = Q_snprintf(name, sizeof(name), "%s/listip.cfg", game->string);
 
     if (len >= sizeof(name)) {
-        gi.cprintf(NULL, PRINT_HIGH, "File name too long\n");
+        gi_cprintf(NULL, PRINT_HIGH, "File name too long\n");
         return;
     }
 
-    gi.cprintf(NULL, PRINT_HIGH, "Writing %s.\n", name);
+    gi_cprintf(NULL, PRINT_HIGH, "Writing %s.\n", name);
 
     f = fopen(name, "wb");
     if (!f) {
-        gi.cprintf(NULL, PRINT_HIGH, "Couldn't open %s\n", name);
+        gi_cprintf(NULL, PRINT_HIGH, "Couldn't open %s\n", name);
         return;
     }
 
@@ -279,7 +279,7 @@ void SVCmd_WriteIP_f(void)
 ServerCommand
 
 ServerCommand will be called when an "sv" command is issued.
-The game can issue gi.argc() / gi.argv() commands to get the rest
+The game can issue gi_argc() / gi_argv() commands to get the rest
 of the parameters
 =================
 */
@@ -287,7 +287,7 @@ void    ServerCommand(void)
 {
     char    *cmd;
 
-    cmd = gi.argv(1);
+    cmd = gi_argv(1);
     if (Q_stricmp(cmd, "test") == 0)
         Svcmd_Test_f();
     else if (Q_stricmp(cmd, "addip") == 0)
@@ -299,5 +299,5 @@ void    ServerCommand(void)
     else if (Q_stricmp(cmd, "writeip") == 0)
         SVCmd_WriteIP_f();
     else
-        gi.cprintf(NULL, PRINT_HIGH, "Unknown server command \"%s\"\n", cmd);
+        gi_cprintf(NULL, PRINT_HIGH, "Unknown server command \"%s\"\n", cmd);
 }

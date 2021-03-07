@@ -63,6 +63,9 @@ static const char   z_tagnames[TAG_MAX][8] = {
     "mvd",
     "sound",
     "cmodel"
+#if USE_WASM
+    , "wasm"
+#endif
 };
 
 static inline void Z_CountFree(zhead_t *z)

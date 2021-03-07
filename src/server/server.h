@@ -170,8 +170,8 @@ typedef struct {
 
 #define EDICT_POOL(c, n) ((edict_t *)((byte *)(c)->pool->edicts + (c)->pool->edict_size*(n)))
 
-#define EDICT_NUM(n) ((edict_t *)((byte *)ge->edicts + ge->edict_size*(n)))
-#define NUM_FOR_EDICT(e) ((int)(((byte *)(e) - (byte *)ge->edicts) / ge->edict_size))
+#define EDICT_NUM(n) ((edict_t *)((byte *)ge->pool.edicts + ge->pool.edict_size*(n)))
+#define NUM_FOR_EDICT(e) ((int)(((byte *)(e) - (byte *)ge->pool.edicts) / ge->pool.edict_size))
 
 #define MAX_TOTAL_ENT_LEAFS        128
 
@@ -258,13 +258,6 @@ typedef struct {
     unsigned    credit_cap;
     unsigned    cost;
 } ratelimit_t;
-
-typedef struct {
-    struct edict_s  *edicts;
-    int         edict_size;
-    int         num_edicts;     // current number, <= max_edicts
-    int         max_edicts;
-} edict_pool_t;
 
 typedef struct client_s {
     list_t          entry;
@@ -822,3 +815,7 @@ trace_t q_gameabi SV_Trace(vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end,
 // to an open area
 
 // passedict is explicitly excluded from clipping checks (normally NULL)
+
+#ifdef USE_WASM
+bool SV_InitGameWasmProgs(void);
+#endif

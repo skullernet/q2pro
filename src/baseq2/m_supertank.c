@@ -41,15 +41,15 @@ void BossExplode(edict_t *self);
 
 void TreadSound(edict_t *self)
 {
-    gi.sound(self, CHAN_VOICE, tread_sound, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_VOICE, tread_sound, 1, ATTN_NORM, 0);
 }
 
 void supertank_search(edict_t *self)
 {
     if (random() < 0.5f)
-        gi.sound(self, CHAN_VOICE, sound_search1, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_search1, 1, ATTN_NORM, 0);
     else
-        gi.sound(self, CHAN_VOICE, sound_search2, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_search2, 1, ATTN_NORM, 0);
 }
 
 
@@ -457,13 +457,13 @@ void supertank_pain(edict_t *self, edict_t *other, float kick, int damage)
         return;     // no pain anims in nightmare
 
     if (damage <= 10) {
-        gi.sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
         self->monsterinfo.currentmove = &supertank_move_pain1;
     } else if (damage <= 25) {
-        gi.sound(self, CHAN_VOICE, sound_pain3, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_pain3, 1, ATTN_NORM, 0);
         self->monsterinfo.currentmove = &supertank_move_pain2;
     } else {
-        gi.sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
         self->monsterinfo.currentmove = &supertank_move_pain3;
     }
 }
@@ -562,7 +562,7 @@ void supertank_dead(edict_t *self)
     self->movetype = MOVETYPE_TOSS;
     self->svflags |= SVF_DEADMONSTER;
     self->nextthink = 0;
-    gi.linkentity(self);
+    gi_linkentity(self);
 }
 
 
@@ -619,10 +619,10 @@ void BossExplode(edict_t *self)
         return;
     }
 
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_EXPLOSION1);
-    gi.WritePosition(org);
-    gi.multicast(self->s.origin, MULTICAST_PVS);
+    gi_WriteByte(svc_temp_entity);
+    gi_WriteByte(TE_EXPLOSION1);
+    gi_WritePosition(org);
+    gi_multicast(self->s.origin, MULTICAST_PVS);
 
     self->nextthink = level.framenum + 1;
 }
@@ -630,7 +630,7 @@ void BossExplode(edict_t *self)
 
 void supertank_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
-    gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
     self->deadflag = DEAD_DEAD;
     self->takedamage = DAMAGE_NO;
     self->count = 0;
@@ -650,19 +650,19 @@ void SP_monster_supertank(edict_t *self)
         return;
     }
 
-    sound_pain1 = gi.soundindex("bosstank/btkpain1.wav");
-    sound_pain2 = gi.soundindex("bosstank/btkpain2.wav");
-    sound_pain3 = gi.soundindex("bosstank/btkpain3.wav");
-    sound_death = gi.soundindex("bosstank/btkdeth1.wav");
-    sound_search1 = gi.soundindex("bosstank/btkunqv1.wav");
-    sound_search2 = gi.soundindex("bosstank/btkunqv2.wav");
+    sound_pain1 = gi_soundindex("bosstank/btkpain1.wav");
+    sound_pain2 = gi_soundindex("bosstank/btkpain2.wav");
+    sound_pain3 = gi_soundindex("bosstank/btkpain3.wav");
+    sound_death = gi_soundindex("bosstank/btkdeth1.wav");
+    sound_search1 = gi_soundindex("bosstank/btkunqv1.wav");
+    sound_search2 = gi_soundindex("bosstank/btkunqv2.wav");
 
-//  self->s.sound = gi.soundindex ("bosstank/btkengn1.wav");
-    tread_sound = gi.soundindex("bosstank/btkengn1.wav");
+//  self->s.sound = gi_soundindex ("bosstank/btkengn1.wav");
+    tread_sound = gi_soundindex("bosstank/btkengn1.wav");
 
     self->movetype = MOVETYPE_STEP;
     self->solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/boss1/tris.md2");
+    self->s.modelindex = gi_modelindex("models/monsters/boss1/tris.md2");
     VectorSet(self->mins, -64, -64, 0);
     VectorSet(self->maxs, 64, 64, 112);
 
@@ -681,7 +681,7 @@ void SP_monster_supertank(edict_t *self)
     self->monsterinfo.melee = NULL;
     self->monsterinfo.sight = NULL;
 
-    gi.linkentity(self);
+    gi_linkentity(self);
 
     self->monsterinfo.currentmove = &supertank_move_stand;
     self->monsterinfo.scale = MODEL_SCALE;

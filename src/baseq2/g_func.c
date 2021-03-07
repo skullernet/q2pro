@@ -336,7 +336,7 @@ void plat_hit_top(edict_t *ent)
 {
     if (!(ent->flags & FL_TEAMSLAVE)) {
         if (ent->moveinfo.sound_end)
-            gi.sound(ent, CHAN_NO_PHS_ADD + CHAN_VOICE, ent->moveinfo.sound_end, 1, ATTN_STATIC, 0);
+            gi_sound(ent, CHAN_NO_PHS_ADD + CHAN_VOICE, ent->moveinfo.sound_end, 1, ATTN_STATIC, 0);
         ent->s.sound = 0;
     }
     ent->moveinfo.state = STATE_TOP;
@@ -349,7 +349,7 @@ void plat_hit_bottom(edict_t *ent)
 {
     if (!(ent->flags & FL_TEAMSLAVE)) {
         if (ent->moveinfo.sound_end)
-            gi.sound(ent, CHAN_NO_PHS_ADD + CHAN_VOICE, ent->moveinfo.sound_end, 1, ATTN_STATIC, 0);
+            gi_sound(ent, CHAN_NO_PHS_ADD + CHAN_VOICE, ent->moveinfo.sound_end, 1, ATTN_STATIC, 0);
         ent->s.sound = 0;
     }
     ent->moveinfo.state = STATE_BOTTOM;
@@ -359,7 +359,7 @@ void plat_go_down(edict_t *ent)
 {
     if (!(ent->flags & FL_TEAMSLAVE)) {
         if (ent->moveinfo.sound_start)
-            gi.sound(ent, CHAN_NO_PHS_ADD + CHAN_VOICE, ent->moveinfo.sound_start, 1, ATTN_STATIC, 0);
+            gi_sound(ent, CHAN_NO_PHS_ADD + CHAN_VOICE, ent->moveinfo.sound_start, 1, ATTN_STATIC, 0);
         ent->s.sound = ent->moveinfo.sound_middle;
     }
     ent->moveinfo.state = STATE_DOWN;
@@ -370,7 +370,7 @@ void plat_go_up(edict_t *ent)
 {
     if (!(ent->flags & FL_TEAMSLAVE)) {
         if (ent->moveinfo.sound_start)
-            gi.sound(ent, CHAN_NO_PHS_ADD + CHAN_VOICE, ent->moveinfo.sound_start, 1, ATTN_STATIC, 0);
+            gi_sound(ent, CHAN_NO_PHS_ADD + CHAN_VOICE, ent->moveinfo.sound_start, 1, ATTN_STATIC, 0);
         ent->s.sound = ent->moveinfo.sound_middle;
     }
     ent->moveinfo.state = STATE_UP;
@@ -459,7 +459,7 @@ void plat_spawn_inside_trigger(edict_t *ent)
     VectorCopy(tmin, trigger->mins);
     VectorCopy(tmax, trigger->maxs);
 
-    gi.linkentity(trigger);
+    gi_linkentity(trigger);
 }
 
 
@@ -486,7 +486,7 @@ void SP_func_plat(edict_t *ent)
     ent->solid = SOLID_BSP;
     ent->movetype = MOVETYPE_PUSH;
 
-    gi.setmodel(ent, ent->model);
+    gi_setmodel(ent, ent->model);
 
     ent->blocked = plat_blocked;
 
@@ -527,7 +527,7 @@ void SP_func_plat(edict_t *ent)
         ent->moveinfo.state = STATE_UP;
     } else {
         VectorCopy(ent->pos2, ent->s.origin);
-        gi.linkentity(ent);
+        gi_linkentity(ent);
         ent->moveinfo.state = STATE_BOTTOM;
     }
 
@@ -540,9 +540,9 @@ void SP_func_plat(edict_t *ent)
     VectorCopy(ent->pos2, ent->moveinfo.end_origin);
     VectorCopy(ent->s.angles, ent->moveinfo.end_angles);
 
-    ent->moveinfo.sound_start = gi.soundindex("plats/pt1_strt.wav");
-    ent->moveinfo.sound_middle = gi.soundindex("plats/pt1_mid.wav");
-    ent->moveinfo.sound_end = gi.soundindex("plats/pt1_end.wav");
+    ent->moveinfo.sound_start = gi_soundindex("plats/pt1_strt.wav");
+    ent->moveinfo.sound_middle = gi_soundindex("plats/pt1_mid.wav");
+    ent->moveinfo.sound_end = gi_soundindex("plats/pt1_end.wav");
 }
 
 //====================================================================
@@ -624,8 +624,8 @@ void SP_func_rotating(edict_t *ent)
     if (ent->spawnflags & 128)
         ent->s.effects |= EF_ANIM_ALLFAST;
 
-    gi.setmodel(ent, ent->model);
-    gi.linkentity(ent);
+    gi_setmodel(ent, ent->model);
+    gi_linkentity(ent);
 }
 
 /*
@@ -693,7 +693,7 @@ void button_fire(edict_t *self)
 
     self->moveinfo.state = STATE_UP;
     if (self->moveinfo.sound_start && !(self->flags & FL_TEAMSLAVE))
-        gi.sound(self, CHAN_NO_PHS_ADD + CHAN_VOICE, self->moveinfo.sound_start, 1, ATTN_STATIC, 0);
+        gi_sound(self, CHAN_NO_PHS_ADD + CHAN_VOICE, self->moveinfo.sound_start, 1, ATTN_STATIC, 0);
     Move_Calc(self, self->moveinfo.end_origin, button_wait);
 }
 
@@ -731,10 +731,10 @@ void SP_func_button(edict_t *ent)
     G_SetMovedir(ent->s.angles, ent->movedir);
     ent->movetype = MOVETYPE_STOP;
     ent->solid = SOLID_BSP;
-    gi.setmodel(ent, ent->model);
+    gi_setmodel(ent, ent->model);
 
     if (ent->sounds != 1)
-        ent->moveinfo.sound_start = gi.soundindex("switches/butn2.wav");
+        ent->moveinfo.sound_start = gi_soundindex("switches/butn2.wav");
 
     if (!ent->speed)
         ent->speed = 40;
@@ -776,7 +776,7 @@ void SP_func_button(edict_t *ent)
     VectorCopy(ent->pos2, ent->moveinfo.end_origin);
     VectorCopy(ent->s.angles, ent->moveinfo.end_angles);
 
-    gi.linkentity(ent);
+    gi_linkentity(ent);
 }
 
 /*
@@ -819,7 +819,7 @@ void door_use_areaportals(edict_t *self, bool open)
 
     while ((t = G_Find(t, FOFS(targetname), self->target))) {
         if (Q_stricmp(t->classname, "func_areaportal") == 0) {
-            gi.SetAreaPortalState(t->style, open);
+            gi_SetAreaPortalState(t->style, open);
         }
     }
 }
@@ -830,7 +830,7 @@ void door_hit_top(edict_t *self)
 {
     if (!(self->flags & FL_TEAMSLAVE)) {
         if (self->moveinfo.sound_end)
-            gi.sound(self, CHAN_NO_PHS_ADD + CHAN_VOICE, self->moveinfo.sound_end, 1, ATTN_STATIC, 0);
+            gi_sound(self, CHAN_NO_PHS_ADD + CHAN_VOICE, self->moveinfo.sound_end, 1, ATTN_STATIC, 0);
         self->s.sound = 0;
     }
     self->moveinfo.state = STATE_TOP;
@@ -846,7 +846,7 @@ void door_hit_bottom(edict_t *self)
 {
     if (!(self->flags & FL_TEAMSLAVE)) {
         if (self->moveinfo.sound_end)
-            gi.sound(self, CHAN_NO_PHS_ADD + CHAN_VOICE, self->moveinfo.sound_end, 1, ATTN_STATIC, 0);
+            gi_sound(self, CHAN_NO_PHS_ADD + CHAN_VOICE, self->moveinfo.sound_end, 1, ATTN_STATIC, 0);
         self->s.sound = 0;
     }
     self->moveinfo.state = STATE_BOTTOM;
@@ -857,7 +857,7 @@ void door_go_down(edict_t *self)
 {
     if (!(self->flags & FL_TEAMSLAVE)) {
         if (self->moveinfo.sound_start)
-            gi.sound(self, CHAN_NO_PHS_ADD + CHAN_VOICE, self->moveinfo.sound_start, 1, ATTN_STATIC, 0);
+            gi_sound(self, CHAN_NO_PHS_ADD + CHAN_VOICE, self->moveinfo.sound_start, 1, ATTN_STATIC, 0);
         self->s.sound = self->moveinfo.sound_middle;
     }
     if (self->max_health) {
@@ -886,7 +886,7 @@ void door_go_up(edict_t *self, edict_t *activator)
 
     if (!(self->flags & FL_TEAMSLAVE)) {
         if (self->moveinfo.sound_start)
-            gi.sound(self, CHAN_NO_PHS_ADD + CHAN_VOICE, self->moveinfo.sound_start, 1, ATTN_STATIC, 0);
+            gi_sound(self, CHAN_NO_PHS_ADD + CHAN_VOICE, self->moveinfo.sound_start, 1, ATTN_STATIC, 0);
         self->s.sound = self->moveinfo.sound_middle;
     }
     self->moveinfo.state = STATE_UP;
@@ -1011,7 +1011,7 @@ void Think_SpawnDoorTrigger(edict_t *ent)
     other->solid = SOLID_TRIGGER;
     other->movetype = MOVETYPE_NONE;
     other->touch = Touch_DoorTrigger;
-    gi.linkentity(other);
+    gi_linkentity(other);
 
     if (ent->spawnflags & DOOR_START_OPEN)
         door_use_areaportals(ent, true);
@@ -1071,8 +1071,8 @@ void door_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf
         return;
     self->touch_debounce_framenum = level.framenum + 5.0f * BASE_FRAMERATE;
 
-    gi.centerprintf(other, "%s", self->message);
-    gi.sound(other, CHAN_AUTO, gi.soundindex("misc/talk1.wav"), 1, ATTN_NORM, 0);
+    gi_centerprintf(other, "%s", self->message);
+    gi_sound(other, CHAN_AUTO, gi_soundindex("misc/talk1.wav"), 1, ATTN_NORM, 0);
 }
 
 void SP_func_door(edict_t *ent)
@@ -1080,15 +1080,15 @@ void SP_func_door(edict_t *ent)
     vec3_t  abs_movedir;
 
     if (ent->sounds != 1) {
-        ent->moveinfo.sound_start = gi.soundindex("doors/dr1_strt.wav");
-        ent->moveinfo.sound_middle = gi.soundindex("doors/dr1_mid.wav");
-        ent->moveinfo.sound_end = gi.soundindex("doors/dr1_end.wav");
+        ent->moveinfo.sound_start = gi_soundindex("doors/dr1_strt.wav");
+        ent->moveinfo.sound_middle = gi_soundindex("doors/dr1_mid.wav");
+        ent->moveinfo.sound_end = gi_soundindex("doors/dr1_end.wav");
     }
 
     G_SetMovedir(ent->s.angles, ent->movedir);
     ent->movetype = MOVETYPE_PUSH;
     ent->solid = SOLID_BSP;
-    gi.setmodel(ent, ent->model);
+    gi_setmodel(ent, ent->model);
 
     ent->blocked = door_blocked;
     ent->use = door_use;
@@ -1132,7 +1132,7 @@ void SP_func_door(edict_t *ent)
         ent->die = door_killed;
         ent->max_health = ent->health;
     } else if (ent->targetname && ent->message) {
-        gi.soundindex("misc/talk.wav");
+        gi_soundindex("misc/talk.wav");
         ent->touch = door_touch;
     }
 
@@ -1154,7 +1154,7 @@ void SP_func_door(edict_t *ent)
     if (!ent->team)
         ent->teammaster = ent;
 
-    gi.linkentity(ent);
+    gi_linkentity(ent);
 
     ent->nextthink = level.framenum + 1;
     if (ent->health || ent->targetname)
@@ -1211,7 +1211,7 @@ void SP_func_door_rotating(edict_t *ent)
         VectorNegate(ent->movedir, ent->movedir);
 
     if (!st.distance) {
-        gi.dprintf("%s at %s with no distance set\n", ent->classname, vtos(ent->s.origin));
+        gi_dprintf("%s at %s with no distance set\n", ent->classname, vtos(ent->s.origin));
         st.distance = 90;
     }
 
@@ -1221,7 +1221,7 @@ void SP_func_door_rotating(edict_t *ent)
 
     ent->movetype = MOVETYPE_PUSH;
     ent->solid = SOLID_BSP;
-    gi.setmodel(ent, ent->model);
+    gi_setmodel(ent, ent->model);
 
     ent->blocked = door_blocked;
     ent->use = door_use;
@@ -1239,9 +1239,9 @@ void SP_func_door_rotating(edict_t *ent)
         ent->dmg = 2;
 
     if (ent->sounds != 1) {
-        ent->moveinfo.sound_start = gi.soundindex("doors/dr1_strt.wav");
-        ent->moveinfo.sound_middle = gi.soundindex("doors/dr1_mid.wav");
-        ent->moveinfo.sound_end = gi.soundindex("doors/dr1_end.wav");
+        ent->moveinfo.sound_start = gi_soundindex("doors/dr1_strt.wav");
+        ent->moveinfo.sound_middle = gi_soundindex("doors/dr1_mid.wav");
+        ent->moveinfo.sound_end = gi_soundindex("doors/dr1_end.wav");
     }
 
     // if it starts open, switch the positions
@@ -1259,7 +1259,7 @@ void SP_func_door_rotating(edict_t *ent)
     }
 
     if (ent->targetname && ent->message) {
-        gi.soundindex("misc/talk.wav");
+        gi_soundindex("misc/talk.wav");
         ent->touch = door_touch;
     }
 
@@ -1280,7 +1280,7 @@ void SP_func_door_rotating(edict_t *ent)
     if (!ent->team)
         ent->teammaster = ent;
 
-    gi.linkentity(ent);
+    gi_linkentity(ent);
 
     ent->nextthink = level.framenum + 1;
     if (ent->health || ent->targetname)
@@ -1312,20 +1312,20 @@ void SP_func_water(edict_t *self)
     G_SetMovedir(self->s.angles, self->movedir);
     self->movetype = MOVETYPE_PUSH;
     self->solid = SOLID_BSP;
-    gi.setmodel(self, self->model);
+    gi_setmodel(self, self->model);
 
     switch (self->sounds) {
     default:
         break;
 
     case 1: // water
-        self->moveinfo.sound_start = gi.soundindex("world/mov_watr.wav");
-        self->moveinfo.sound_end = gi.soundindex("world/stp_watr.wav");
+        self->moveinfo.sound_start = gi_soundindex("world/mov_watr.wav");
+        self->moveinfo.sound_end = gi_soundindex("world/stp_watr.wav");
         break;
 
     case 2: // lava
-        self->moveinfo.sound_start = gi.soundindex("world/mov_watr.wav");
-        self->moveinfo.sound_end = gi.soundindex("world/stp_watr.wav");
+        self->moveinfo.sound_start = gi_soundindex("world/mov_watr.wav");
+        self->moveinfo.sound_end = gi_soundindex("world/stp_watr.wav");
         break;
     }
 
@@ -1366,7 +1366,7 @@ void SP_func_water(edict_t *self)
 
     self->classname = "func_door";
 
-    gi.linkentity(self);
+    gi_linkentity(self);
 }
 
 
@@ -1436,7 +1436,7 @@ void train_wait(edict_t *self)
 
         if (!(self->flags & FL_TEAMSLAVE)) {
             if (self->moveinfo.sound_end)
-                gi.sound(self, CHAN_NO_PHS_ADD + CHAN_VOICE, self->moveinfo.sound_end, 1, ATTN_STATIC, 0);
+                gi_sound(self, CHAN_NO_PHS_ADD + CHAN_VOICE, self->moveinfo.sound_end, 1, ATTN_STATIC, 0);
             self->s.sound = 0;
         }
     } else {
@@ -1454,13 +1454,13 @@ void train_next(edict_t *self)
     first = true;
 again:
     if (!self->target) {
-//      gi.dprintf ("train_next: no next target\n");
+//      gi_dprintf ("train_next: no next target\n");
         return;
     }
 
     ent = G_PickTarget(self->target);
     if (!ent) {
-        gi.dprintf("train_next: bad target %s\n", self->target);
+        gi_dprintf("train_next: bad target %s\n", self->target);
         return;
     }
 
@@ -1469,14 +1469,14 @@ again:
     // check for a teleport path_corner
     if (ent->spawnflags & 1) {
         if (!first) {
-            gi.dprintf("connected teleport path_corners, see %s at %s\n", ent->classname, vtos(ent->s.origin));
+            gi_dprintf("connected teleport path_corners, see %s at %s\n", ent->classname, vtos(ent->s.origin));
             return;
         }
         first = false;
         VectorSubtract(ent->s.origin, self->mins, self->s.origin);
         VectorCopy(self->s.origin, self->s.old_origin);
         self->s.event = EV_OTHER_TELEPORT;
-        gi.linkentity(self);
+        gi_linkentity(self);
         goto again;
     }
 
@@ -1485,7 +1485,7 @@ again:
 
     if (!(self->flags & FL_TEAMSLAVE)) {
         if (self->moveinfo.sound_start)
-            gi.sound(self, CHAN_NO_PHS_ADD + CHAN_VOICE, self->moveinfo.sound_start, 1, ATTN_STATIC, 0);
+            gi_sound(self, CHAN_NO_PHS_ADD + CHAN_VOICE, self->moveinfo.sound_start, 1, ATTN_STATIC, 0);
         self->s.sound = self->moveinfo.sound_middle;
     }
 
@@ -1517,18 +1517,18 @@ void func_train_find(edict_t *self)
     edict_t *ent;
 
     if (!self->target) {
-        gi.dprintf("train_find: no target\n");
+        gi_dprintf("train_find: no target\n");
         return;
     }
     ent = G_PickTarget(self->target);
     if (!ent) {
-        gi.dprintf("train_find: target %s not found\n", self->target);
+        gi_dprintf("train_find: target %s not found\n", self->target);
         return;
     }
     self->target = ent->target;
 
     VectorSubtract(ent->s.origin, self->mins, self->s.origin);
-    gi.linkentity(self);
+    gi_linkentity(self);
 
     // if not triggered, start immediately
     if (!self->targetname)
@@ -1572,10 +1572,10 @@ void SP_func_train(edict_t *self)
             self->dmg = 100;
     }
     self->solid = SOLID_BSP;
-    gi.setmodel(self, self->model);
+    gi_setmodel(self, self->model);
 
     if (st.noise)
-        self->moveinfo.sound_middle = gi.soundindex(st.noise);
+        self->moveinfo.sound_middle = gi_soundindex(st.noise);
 
     if (!self->speed)
         self->speed = 100;
@@ -1585,7 +1585,7 @@ void SP_func_train(edict_t *self)
 
     self->use = train_use;
 
-    gi.linkentity(self);
+    gi_linkentity(self);
 
     if (self->target) {
         // start trains on the second frame, to make sure their targets have had
@@ -1593,7 +1593,7 @@ void SP_func_train(edict_t *self)
         self->nextthink = level.framenum + 1;
         self->think = func_train_find;
     } else {
-        gi.dprintf("func_train without a target at %s\n", vtos(self->absmin));
+        gi_dprintf("func_train without a target at %s\n", vtos(self->absmin));
     }
 }
 
@@ -1605,18 +1605,18 @@ void trigger_elevator_use(edict_t *self, edict_t *other, edict_t *activator)
     edict_t *target;
 
     if (self->movetarget->nextthink) {
-//      gi.dprintf("elevator busy\n");
+//      gi_dprintf("elevator busy\n");
         return;
     }
 
     if (!other->pathtarget) {
-        gi.dprintf("elevator used with no pathtarget\n");
+        gi_dprintf("elevator used with no pathtarget\n");
         return;
     }
 
     target = G_PickTarget(other->pathtarget);
     if (!target) {
-        gi.dprintf("elevator used with bad pathtarget: %s\n", other->pathtarget);
+        gi_dprintf("elevator used with bad pathtarget: %s\n", other->pathtarget);
         return;
     }
 
@@ -1627,16 +1627,16 @@ void trigger_elevator_use(edict_t *self, edict_t *other, edict_t *activator)
 void trigger_elevator_init(edict_t *self)
 {
     if (!self->target) {
-        gi.dprintf("trigger_elevator has no target\n");
+        gi_dprintf("trigger_elevator has no target\n");
         return;
     }
     self->movetarget = G_PickTarget(self->target);
     if (!self->movetarget) {
-        gi.dprintf("trigger_elevator unable to find target %s\n", self->target);
+        gi_dprintf("trigger_elevator unable to find target %s\n", self->target);
         return;
     }
     if (strcmp(self->movetarget->classname, "func_train") != 0) {
-        gi.dprintf("trigger_elevator target %s is not a train\n", self->target);
+        gi_dprintf("trigger_elevator target %s is not a train\n", self->target);
         return;
     }
 
@@ -1699,7 +1699,7 @@ void SP_func_timer(edict_t *self)
 
     if (self->random >= self->wait) {
         self->random = self->wait - FRAMETIME;
-        gi.dprintf("func_timer at %s has random >= wait\n", vtos(self->s.origin));
+        gi_dprintf("func_timer at %s has random >= wait\n", vtos(self->s.origin));
     }
 
     if (self->spawnflags & 1) {
@@ -1743,9 +1743,9 @@ void SP_func_conveyor(edict_t *self)
 
     self->use = func_conveyor_use;
 
-    gi.setmodel(self, self->model);
+    gi_setmodel(self, self->model);
     self->solid = SOLID_BSP;
-    gi.linkentity(self);
+    gi_linkentity(self);
 }
 
 
@@ -1859,13 +1859,13 @@ void SP_func_door_secret(edict_t *ent)
     float   width;
     float   length;
 
-    ent->moveinfo.sound_start = gi.soundindex("doors/dr1_strt.wav");
-    ent->moveinfo.sound_middle = gi.soundindex("doors/dr1_mid.wav");
-    ent->moveinfo.sound_end = gi.soundindex("doors/dr1_end.wav");
+    ent->moveinfo.sound_start = gi_soundindex("doors/dr1_strt.wav");
+    ent->moveinfo.sound_middle = gi_soundindex("doors/dr1_mid.wav");
+    ent->moveinfo.sound_end = gi_soundindex("doors/dr1_end.wav");
 
     ent->movetype = MOVETYPE_PUSH;
     ent->solid = SOLID_BSP;
-    gi.setmodel(ent, ent->model);
+    gi_setmodel(ent, ent->model);
 
     ent->blocked = door_secret_blocked;
     ent->use = door_secret_use;
@@ -1906,13 +1906,13 @@ void SP_func_door_secret(edict_t *ent)
         ent->die = door_killed;
         ent->max_health = ent->health;
     } else if (ent->targetname && ent->message) {
-        gi.soundindex("misc/talk.wav");
+        gi_soundindex("misc/talk.wav");
         ent->touch = door_touch;
     }
 
     ent->classname = "func_door";
 
-    gi.linkentity(ent);
+    gi_linkentity(ent);
 }
 
 
@@ -1926,7 +1926,7 @@ void use_killbox(edict_t *self, edict_t *other, edict_t *activator)
 
 void SP_func_killbox(edict_t *ent)
 {
-    gi.setmodel(ent, ent->model);
+    gi_setmodel(ent, ent->model);
     ent->use = use_killbox;
     ent->svflags = SVF_NOCLIENT;
 }

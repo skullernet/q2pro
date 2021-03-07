@@ -81,4 +81,9 @@ extern cvar_t   *sys_libdir;
 extern cvar_t   *sys_homedir;
 extern cvar_t   *sys_forcegamelib;
 
+#if USE_WASM
+extern cvar_t   *sys_wasmstacksize;
+extern cvar_t   *sys_wasmheapsize;
+#endif
+
 #endif // SYSTEM_H

@@ -53,7 +53,7 @@ edict_t *SV_TestEntityPosition(edict_t *ent)
         mask = ent->clipmask;
     else
         mask = MASK_SOLID;
-    trace = gi.trace(ent->s.origin, ent->mins, ent->maxs, ent->s.origin, ent, mask);
+    trace = gi_trace(ent->s.origin, ent->mins, ent->maxs, ent->s.origin, ent, mask);
 
     if (trace.startsolid)
         return g_edicts;
@@ -101,7 +101,7 @@ bool SV_RunThink(edict_t *ent)
 
     ent->nextthink = 0;
     if (!ent->think)
-        gi.error("NULL ent->think");
+        gi_error("NULL ent->think");
     ent->think(ent);
 
     return false;
@@ -205,7 +205,7 @@ int SV_FlyMove(edict_t *ent, float time, int mask)
         for (i = 0 ; i < 3 ; i++)
             end[i] = ent->s.origin[i] + time_left * ent->velocity[i];
 
-        trace = gi.trace(ent->s.origin, ent->mins, ent->maxs, end, ent, mask);
+        trace = gi_trace(ent->s.origin, ent->mins, ent->maxs, end, ent, mask);
 
         if (trace.allsolid) {
             // entity is trapped in another solid
@@ -277,7 +277,7 @@ int SV_FlyMove(edict_t *ent, float time, int mask)
         } else {
             // go along the crease
             if (numplanes != 2) {
-//              gi.dprintf ("clip velocity, numplanes == %i\n",numplanes);
+//              gi_dprintf ("clip velocity, numplanes == %i\n",numplanes);
                 VectorClear(ent->velocity);
                 return 7;
             }
@@ -342,10 +342,10 @@ retry:
     else
         mask = MASK_SOLID;
 
-    trace = gi.trace(start, ent->mins, ent->maxs, end, ent, mask);
+    trace = gi_trace(start, ent->mins, ent->maxs, end, ent, mask);
 
     VectorCopy(trace.endpos, ent->s.origin);
-    gi.linkentity(ent);
+    gi_linkentity(ent);
 
     if (trace.fraction != 1.0f) {
         SV_Impact(ent, &trace);
@@ -354,7 +354,7 @@ retry:
         if (!trace.ent->inuse && ent->inuse) {
             // move the pusher back and try again
             VectorCopy(start, ent->s.origin);
-            gi.linkentity(ent);
+            gi_linkentity(ent);
             goto retry;
         }
     }
@@ -429,11 +429,11 @@ bool SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
 // move the pusher to it's final position
     VectorAdd(pusher->s.origin, move, pusher->s.origin);
     VectorAdd(pusher->s.angles, amove, pusher->s.angles);
-    gi.linkentity(pusher);
+    gi_linkentity(pusher);
 
 // see if any solid entities are inside the final position
     check = g_edicts + 1;
-    for (e = 1; e < globals.num_edicts; e++, check++) {
+    for (e = 1; e < pool->num_edicts; e++, check++) {
         if (!check->inuse)
             continue;
         if (check->movetype == MOVETYPE_PUSH
@@ -497,7 +497,7 @@ bool SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
             block = SV_TestEntityPosition(check);
             if (!block) {
                 // pushed ok
-                gi.linkentity(check);
+                gi_linkentity(check);
                 // impact?
                 continue;
             }
@@ -527,7 +527,7 @@ bool SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
                 p->ent->client->ps.pmove.delta_angles[YAW] = p->deltayaw;
             }
 #endif
-            gi.linkentity(p->ent);
+            gi_linkentity(p->ent);
         }
         return false;
     }
@@ -573,7 +573,7 @@ void SV_Physics_Pusher(edict_t *ent)
         }
     }
     if (pushed_p > &pushed[MAX_EDICTS])
-        gi.error("pushed_p > &pushed[MAX_EDICTS], memory corrupted");
+        gi_error("pushed_p > &pushed[MAX_EDICTS], memory corrupted");
 
     if (part) {
         // the move failed, bump all nextthink times and back out moves
@@ -632,7 +632,7 @@ void SV_Physics_Noclip(edict_t *ent)
     VectorMA(ent->s.angles, FRAMETIME, ent->avelocity, ent->s.angles);
     VectorMA(ent->s.origin, FRAMETIME, ent->velocity, ent->s.origin);
 
-    gi.linkentity(ent);
+    gi_linkentity(ent);
 }
 
 /*
@@ -723,7 +723,7 @@ void SV_Physics_Toss(edict_t *ent)
 
 // check for water transition
     wasinwater = (ent->watertype & MASK_WATER);
-    ent->watertype = gi.pointcontents(ent->s.origin);
+    ent->watertype = gi_pointcontents(ent->s.origin);
     isinwater = ent->watertype & MASK_WATER;
 
     if (isinwater)
@@ -732,14 +732,14 @@ void SV_Physics_Toss(edict_t *ent)
         ent->waterlevel = 0;
 
     if (!wasinwater && isinwater)
-        gi.positioned_sound(old_origin, g_edicts, CHAN_AUTO, gi.soundindex("misc/h2ohit1.wav"), 1, 1, 0);
+        gi_positioned_sound(old_origin, g_edicts, CHAN_AUTO, gi_soundindex("misc/h2ohit1.wav"), 1, 1, 0);
     else if (wasinwater && !isinwater)
-        gi.positioned_sound(ent->s.origin, g_edicts, CHAN_AUTO, gi.soundindex("misc/h2ohit1.wav"), 1, 1, 0);
+        gi_positioned_sound(ent->s.origin, g_edicts, CHAN_AUTO, gi_soundindex("misc/h2ohit1.wav"), 1, 1, 0);
 
 // move teamslaves
     for (slave = ent->teamchain; slave; slave = slave->teamchain) {
         VectorCopy(ent->s.origin, slave->s.origin);
-        gi.linkentity(slave);
+        gi_linkentity(slave);
     }
 }
 
@@ -878,7 +878,7 @@ void SV_Physics_Step(edict_t *ent)
             mask = MASK_SOLID;
         SV_FlyMove(ent, FRAMETIME, mask);
 
-        gi.linkentity(ent);
+        gi_linkentity(ent);
         G_TouchTriggers(ent);
         if (!ent->inuse)
             return;
@@ -886,7 +886,7 @@ void SV_Physics_Step(edict_t *ent)
         if (ent->groundentity)
             if (!wasonground)
                 if (hitsound)
-                    gi.sound(ent, 0, gi.soundindex("world/land.wav"), 1, 1, 0);
+                    gi_sound(ent, 0, gi_soundindex("world/land.wav"), 1, 1, 0);
     }
 
 // regular thinking
@@ -926,6 +926,6 @@ void G_RunEntity(edict_t *ent)
         SV_Physics_Toss(ent);
         break;
     default:
-        gi.error("SV_Physics: bad movetype %i", (int)ent->movetype);
+        gi_error("SV_Physics: bad movetype %i", (int)ent->movetype);
     }
 }

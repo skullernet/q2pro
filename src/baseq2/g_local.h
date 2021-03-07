@@ -440,8 +440,7 @@ typedef struct {
 
 extern  game_locals_t   game;
 extern  level_locals_t  level;
-extern  game_import_t   gi;
-extern  game_export_t   globals;
+extern  edict_pool_t    *pool;
 extern  spawn_temp_t    st;
 
 extern  int sm_meat_index;

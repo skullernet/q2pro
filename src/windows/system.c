@@ -53,6 +53,11 @@ cvar_t  *sys_libdir;
 cvar_t  *sys_homedir;
 cvar_t  *sys_forcegamelib;
 
+#if USE_WASM
+cvar_t   *sys_wasmstacksize;
+cvar_t   *sys_wasmheapsize;
+#endif
+
 /*
 ===============================================================================
 
@@ -1111,6 +1116,11 @@ void Sys_Init(void)
     sys_homedir = Cvar_Get("homedir", "", CVAR_NOSET);
 
     sys_forcegamelib = Cvar_Get("sys_forcegamelib", "", CVAR_NOSET);
+
+#if USE_WASM
+    sys_wasmstacksize = Cvar_Get("sys_wasmstacksize", "8388608", CVAR_NOSET);
+    sys_wasmheapsize = Cvar_Get("sys_wasmheapsize", "100663296", CVAR_NOSET);
+#endif
 
 #if USE_WINSVC
     Cmd_AddCommand("installservice", Sys_InstallService_f);

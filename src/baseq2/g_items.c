@@ -132,7 +132,7 @@ void DoRespawn(edict_t *ent)
 
     ent->svflags &= ~SVF_NOCLIENT;
     ent->solid = SOLID_TRIGGER;
-    gi.linkentity(ent);
+    gi_linkentity(ent);
 
     // send an effect
     ent->s.event = EV_ITEM_RESPAWN;
@@ -145,7 +145,7 @@ void SetRespawn(edict_t *ent, float delay)
     ent->solid = SOLID_NOT;
     ent->nextthink = level.framenum + delay * BASE_FRAMERATE;
     ent->think = DoRespawn;
-    gi.linkentity(ent);
+    gi_linkentity(ent);
 }
 
 
@@ -340,7 +340,7 @@ void Use_Quad(edict_t *ent, gitem_t *item)
     else
         ent->client->quad_framenum = level.framenum + timeout;
 
-    gi.sound(ent, CHAN_ITEM, gi.soundindex("items/damage.wav"), 1, ATTN_NORM, 0);
+    gi_sound(ent, CHAN_ITEM, gi_soundindex("items/damage.wav"), 1, ATTN_NORM, 0);
 }
 
 //======================================================================
@@ -355,7 +355,7 @@ void Use_Breather(edict_t *ent, gitem_t *item)
     else
         ent->client->breather_framenum = level.framenum + 300;
 
-//  gi.sound(ent, CHAN_ITEM, gi.soundindex("items/damage.wav"), 1, ATTN_NORM, 0);
+//  gi_sound(ent, CHAN_ITEM, gi_soundindex("items/damage.wav"), 1, ATTN_NORM, 0);
 }
 
 //======================================================================
@@ -370,7 +370,7 @@ void Use_Envirosuit(edict_t *ent, gitem_t *item)
     else
         ent->client->enviro_framenum = level.framenum + 300;
 
-//  gi.sound(ent, CHAN_ITEM, gi.soundindex("items/damage.wav"), 1, ATTN_NORM, 0);
+//  gi_sound(ent, CHAN_ITEM, gi_soundindex("items/damage.wav"), 1, ATTN_NORM, 0);
 }
 
 //======================================================================
@@ -385,7 +385,7 @@ void    Use_Invulnerability(edict_t *ent, gitem_t *item)
     else
         ent->client->invincible_framenum = level.framenum + 300;
 
-    gi.sound(ent, CHAN_ITEM, gi.soundindex("items/protect.wav"), 1, ATTN_NORM, 0);
+    gi_sound(ent, CHAN_ITEM, gi_soundindex("items/protect.wav"), 1, ATTN_NORM, 0);
 }
 
 //======================================================================
@@ -396,7 +396,7 @@ void    Use_Silencer(edict_t *ent, gitem_t *item)
     ValidateSelectedItem(ent);
     ent->client->silencer_shots += 30;
 
-//  gi.sound(ent, CHAN_ITEM, gi.soundindex("items/damage.wav"), 1, ATTN_NORM, 0);
+//  gi_sound(ent, CHAN_ITEM, gi_soundindex("items/damage.wav"), 1, ATTN_NORM, 0);
 }
 
 //======================================================================
@@ -503,7 +503,7 @@ void Drop_Ammo(edict_t *ent, gitem_t *item)
         ent->client->pers.weapon->tag == AMMO_GRENADES &&
         item->tag == AMMO_GRENADES &&
         ent->client->pers.inventory[index] - dropped->count <= 0) {
-        gi.cprintf(ent, PRINT_HIGH, "Can't drop current weapon\n");
+        gi_cprintf(ent, PRINT_HIGH, "Can't drop current weapon\n");
         G_FreeEdict(dropped);
         return;
     }
@@ -674,15 +674,15 @@ void Use_PowerArmor(edict_t *ent, gitem_t *item)
 
     if (ent->flags & FL_POWER_ARMOR) {
         ent->flags &= ~FL_POWER_ARMOR;
-        gi.sound(ent, CHAN_AUTO, gi.soundindex("misc/power2.wav"), 1, ATTN_NORM, 0);
+        gi_sound(ent, CHAN_AUTO, gi_soundindex("misc/power2.wav"), 1, ATTN_NORM, 0);
     } else {
         index = ITEM_INDEX(FindItem("cells"));
         if (!ent->client->pers.inventory[index]) {
-            gi.cprintf(ent, PRINT_HIGH, "No cells for power armor.\n");
+            gi_cprintf(ent, PRINT_HIGH, "No cells for power armor.\n");
             return;
         }
         ent->flags |= FL_POWER_ARMOR;
-        gi.sound(ent, CHAN_AUTO, gi.soundindex("misc/power1.wav"), 1, ATTN_NORM, 0);
+        gi_sound(ent, CHAN_AUTO, gi_soundindex("misc/power1.wav"), 1, ATTN_NORM, 0);
     }
 }
 
@@ -737,7 +737,7 @@ void Touch_Item(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
         other->client->bonus_alpha = 0.25f;
 
         // show icon and name on status bar
-        other->client->ps.stats[STAT_PICKUP_ICON] = gi.imageindex(ent->item->icon);
+        other->client->ps.stats[STAT_PICKUP_ICON] = gi_imageindex(ent->item->icon);
         other->client->ps.stats[STAT_PICKUP_STRING] = CS_ITEMS + ITEM_INDEX(ent->item);
         other->client->pickup_msg_framenum = level.framenum + 3.0f * BASE_FRAMERATE;
 
@@ -747,15 +747,15 @@ void Touch_Item(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
 
         if (ent->item->pickup == Pickup_Health) {
             if (ent->count == 2)
-                gi.sound(other, CHAN_ITEM, gi.soundindex("items/s_health.wav"), 1, ATTN_NORM, 0);
+                gi_sound(other, CHAN_ITEM, gi_soundindex("items/s_health.wav"), 1, ATTN_NORM, 0);
             else if (ent->count == 10)
-                gi.sound(other, CHAN_ITEM, gi.soundindex("items/n_health.wav"), 1, ATTN_NORM, 0);
+                gi_sound(other, CHAN_ITEM, gi_soundindex("items/n_health.wav"), 1, ATTN_NORM, 0);
             else if (ent->count == 25)
-                gi.sound(other, CHAN_ITEM, gi.soundindex("items/l_health.wav"), 1, ATTN_NORM, 0);
+                gi_sound(other, CHAN_ITEM, gi_soundindex("items/l_health.wav"), 1, ATTN_NORM, 0);
             else // (ent->count == 100)
-                gi.sound(other, CHAN_ITEM, gi.soundindex("items/m_health.wav"), 1, ATTN_NORM, 0);
+                gi_sound(other, CHAN_ITEM, gi_soundindex("items/m_health.wav"), 1, ATTN_NORM, 0);
         } else if (ent->item->pickup_sound) {
-            gi.sound(other, CHAN_ITEM, gi.soundindex(ent->item->pickup_sound), 1, ATTN_NORM, 0);
+            gi_sound(other, CHAN_ITEM, gi_soundindex(ent->item->pickup_sound), 1, ATTN_NORM, 0);
         }
     }
 
@@ -809,7 +809,7 @@ edict_t *Drop_Item(edict_t *ent, gitem_t *item)
     dropped->s.renderfx = RF_GLOW;
     VectorSet(dropped->mins, -15, -15, -15);
     VectorSet(dropped->maxs, 15, 15, 15);
-    gi.setmodel(dropped, dropped->item->world_model);
+    gi_setmodel(dropped, dropped->item->world_model);
     dropped->solid = SOLID_TRIGGER;
     dropped->movetype = MOVETYPE_TOSS;
     dropped->touch = drop_temp_touch;
@@ -821,7 +821,7 @@ edict_t *Drop_Item(edict_t *ent, gitem_t *item)
         AngleVectors(ent->client->v_angle, forward, right, NULL);
         VectorSet(offset, 24, 0, -16);
         G_ProjectSource(ent->s.origin, offset, forward, right, dropped->s.origin);
-        trace = gi.trace(ent->s.origin, dropped->mins, dropped->maxs,
+        trace = gi_trace(ent->s.origin, dropped->mins, dropped->maxs,
                          dropped->s.origin, ent, CONTENTS_SOLID);
         VectorCopy(trace.endpos, dropped->s.origin);
     } else {
@@ -835,7 +835,7 @@ edict_t *Drop_Item(edict_t *ent, gitem_t *item)
     dropped->think = drop_make_touchable;
     dropped->nextthink = level.framenum + 1 * BASE_FRAMERATE;
 
-    gi.linkentity(dropped);
+    gi_linkentity(dropped);
 
     return dropped;
 }
@@ -853,7 +853,7 @@ void Use_Item(edict_t *ent, edict_t *other, edict_t *activator)
         ent->touch = Touch_Item;
     }
 
-    gi.linkentity(ent);
+    gi_linkentity(ent);
 }
 
 //======================================================================
@@ -875,9 +875,9 @@ void droptofloor(edict_t *ent)
     VectorCopy(v, ent->maxs);
 
     if (ent->model)
-        gi.setmodel(ent, ent->model);
+        gi_setmodel(ent, ent->model);
     else
-        gi.setmodel(ent, ent->item->world_model);
+        gi_setmodel(ent, ent->item->world_model);
     ent->solid = SOLID_TRIGGER;
     ent->movetype = MOVETYPE_TOSS;
     ent->touch = Touch_Item;
@@ -885,9 +885,9 @@ void droptofloor(edict_t *ent)
     v = tv(0, 0, -128);
     VectorAdd(ent->s.origin, v, dest);
 
-    tr = gi.trace(ent->s.origin, ent->mins, ent->maxs, dest, ent, MASK_SOLID);
+    tr = gi_trace(ent->s.origin, ent->mins, ent->maxs, dest, ent, MASK_SOLID);
     if (tr.startsolid) {
-        gi.dprintf("droptofloor: %s startsolid at %s\n", ent->classname, vtos(ent->s.origin));
+        gi_dprintf("droptofloor: %s startsolid at %s\n", ent->classname, vtos(ent->s.origin));
         G_FreeEdict(ent);
         return;
     }
@@ -920,7 +920,7 @@ void droptofloor(edict_t *ent)
         ent->use = Use_Item;
     }
 
-    gi.linkentity(ent);
+    gi_linkentity(ent);
 }
 
 
@@ -944,13 +944,13 @@ void PrecacheItem(gitem_t *it)
         return;
 
     if (it->pickup_sound)
-        gi.soundindex(it->pickup_sound);
+        gi_soundindex(it->pickup_sound);
     if (it->world_model)
-        gi.modelindex(it->world_model);
+        gi_modelindex(it->world_model);
     if (it->view_model)
-        gi.modelindex(it->view_model);
+        gi_modelindex(it->view_model);
     if (it->icon)
-        gi.imageindex(it->icon);
+        gi_imageindex(it->icon);
 
     // parse everything for its ammo
     if (it->ammo && it->ammo[0]) {
@@ -971,7 +971,7 @@ void PrecacheItem(gitem_t *it)
 
         len = s - start;
         if (len >= MAX_QPATH || len < 5)
-            gi.error("PrecacheItem: %s has bad precache string", it->classname);
+            gi_error("PrecacheItem: %s has bad precache string", it->classname);
         memcpy(data, start, len);
         data[len] = 0;
         if (*s)
@@ -979,13 +979,13 @@ void PrecacheItem(gitem_t *it)
 
         // determine type based on extension
         if (!strcmp(data + len - 3, "md2"))
-            gi.modelindex(data);
+            gi_modelindex(data);
         else if (!strcmp(data + len - 3, "sp2"))
-            gi.modelindex(data);
+            gi_modelindex(data);
         else if (!strcmp(data + len - 3, "wav"))
-            gi.soundindex(data);
+            gi_soundindex(data);
         if (!strcmp(data + len - 3, "pcx"))
-            gi.imageindex(data);
+            gi_imageindex(data);
     }
 }
 
@@ -1006,7 +1006,7 @@ void SpawnItem(edict_t *ent, gitem_t *item)
     if (ent->spawnflags) {
         if (strcmp(ent->classname, "key_power_cube") != 0) {
             ent->spawnflags = 0;
-            gi.dprintf("%s at %s has invalid spawnflags set\n", ent->classname, vtos(ent->s.origin));
+            gi_dprintf("%s at %s has invalid spawnflags set\n", ent->classname, vtos(ent->s.origin));
         }
     }
 
@@ -1054,7 +1054,7 @@ void SpawnItem(edict_t *ent, gitem_t *item)
     ent->s.effects = item->world_model_flags;
     ent->s.renderfx = RF_GLOW;
     if (ent->model)
-        gi.modelindex(ent->model);
+        gi_modelindex(ent->model);
 }
 
 //======================================================================
@@ -2055,7 +2055,7 @@ void SP_item_health(edict_t *self)
     self->model = "models/items/healing/medium/tris.md2";
     self->count = 10;
     SpawnItem(self, FindItem("Health"));
-    gi.soundindex("items/n_health.wav");
+    gi_soundindex("items/n_health.wav");
 }
 
 /*QUAKED item_health_small (.3 .3 1) (-16 -16 -16) (16 16 16)
@@ -2071,7 +2071,7 @@ void SP_item_health_small(edict_t *self)
     self->count = 2;
     SpawnItem(self, FindItem("Health"));
     self->style = HEALTH_IGNORE_MAX;
-    gi.soundindex("items/s_health.wav");
+    gi_soundindex("items/s_health.wav");
 }
 
 /*QUAKED item_health_large (.3 .3 1) (-16 -16 -16) (16 16 16)
@@ -2086,7 +2086,7 @@ void SP_item_health_large(edict_t *self)
     self->model = "models/items/healing/large/tris.md2";
     self->count = 25;
     SpawnItem(self, FindItem("Health"));
-    gi.soundindex("items/l_health.wav");
+    gi_soundindex("items/l_health.wav");
 }
 
 /*QUAKED item_health_mega (.3 .3 1) (-16 -16 -16) (16 16 16)
@@ -2101,7 +2101,7 @@ void SP_item_health_mega(edict_t *self)
     self->model = "models/items/mega_h/tris.md2";
     self->count = 100;
     SpawnItem(self, FindItem("Health"));
-    gi.soundindex("items/m_health.wav");
+    gi_soundindex("items/m_health.wav");
     self->style = HEALTH_IGNORE_MAX | HEALTH_TIMED;
 }
 
@@ -2127,7 +2127,7 @@ void SetItemNames(void)
 
     for (i = 0 ; i < game.num_items ; i++) {
         it = &itemlist[i];
-        gi.configstring(CS_ITEMS + i, it->pickup_name);
+        gi_configstring(CS_ITEMS + i, it->pickup_name);
     }
 
     jacket_armor_index = ITEM_INDEX(FindItem("Jacket Armor"));

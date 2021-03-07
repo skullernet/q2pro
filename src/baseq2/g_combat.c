@@ -36,7 +36,7 @@ bool CanDamage(edict_t *targ, edict_t *inflictor)
     if (targ->movetype == MOVETYPE_PUSH) {
         VectorAdd(targ->absmin, targ->absmax, dest);
         VectorScale(dest, 0.5f, dest);
-        trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
+        trace = gi_trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
         if (trace.fraction == 1.0f)
             return true;
         if (trace.ent == targ)
@@ -44,35 +44,35 @@ bool CanDamage(edict_t *targ, edict_t *inflictor)
         return false;
     }
 
-    trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin, targ->s.origin, inflictor, MASK_SOLID);
+    trace = gi_trace(inflictor->s.origin, vec3_origin, vec3_origin, targ->s.origin, inflictor, MASK_SOLID);
     if (trace.fraction == 1.0f)
         return true;
 
     VectorCopy(targ->s.origin, dest);
     dest[0] += 15.0f;
     dest[1] += 15.0f;
-    trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
+    trace = gi_trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
     if (trace.fraction == 1.0f)
         return true;
 
     VectorCopy(targ->s.origin, dest);
     dest[0] += 15.0f;
     dest[1] -= 15.0f;
-    trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
+    trace = gi_trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
     if (trace.fraction == 1.0f)
         return true;
 
     VectorCopy(targ->s.origin, dest);
     dest[0] -= 15.0f;
     dest[1] += 15.0f;
-    trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
+    trace = gi_trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
     if (trace.fraction == 1.0f)
         return true;
 
     VectorCopy(targ->s.origin, dest);
     dest[0] -= 15.0f;
     dest[1] -= 15.0f;
-    trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
+    trace = gi_trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
     if (trace.fraction == 1.0f)
         return true;
 
@@ -129,12 +129,12 @@ void SpawnDamage(int type, vec3_t origin, vec3_t normal, int damage)
 {
     if (damage > 255)
         damage = 255;
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(type);
-//  gi.WriteByte (damage);
-    gi.WritePosition(origin);
-    gi.WriteDir(normal);
-    gi.multicast(origin, MULTICAST_PVS);
+    gi_WriteByte(svc_temp_entity);
+    gi_WriteByte(type);
+//  gi_WriteByte (damage);
+    gi_WritePosition(origin);
+    gi_WriteDir(normal);
+    gi_multicast(origin, MULTICAST_PVS);
 }
 
 
@@ -436,7 +436,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, 
     // check for invincibility
     if ((client && client->invincible_framenum > level.framenum) && !(dflags & DAMAGE_NO_PROTECTION)) {
         if (targ->pain_debounce_framenum < level.framenum) {
-            gi.sound(targ, CHAN_ITEM, gi.soundindex("items/protect4.wav"), 1, ATTN_NORM, 0);
+            gi_sound(targ, CHAN_ITEM, gi_soundindex("items/protect4.wav"), 1, ATTN_NORM, 0);
             targ->pain_debounce_framenum = level.framenum + 2 * BASE_FRAMERATE;
         }
         take = 0;

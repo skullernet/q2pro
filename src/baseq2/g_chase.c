@@ -58,7 +58,7 @@ void UpdateChaseCam(edict_t *ent)
     if (!targ->groundentity)
         o[2] += 16;
 
-    trace = gi.trace(ownerv, vec3_origin, vec3_origin, o, targ, MASK_SOLID);
+    trace = gi_trace(ownerv, vec3_origin, vec3_origin, o, targ, MASK_SOLID);
 
     VectorCopy(trace.endpos, goal);
 
@@ -67,7 +67,7 @@ void UpdateChaseCam(edict_t *ent)
     // pad for floors and ceilings
     VectorCopy(goal, o);
     o[2] += 6;
-    trace = gi.trace(goal, vec3_origin, vec3_origin, o, targ, MASK_SOLID);
+    trace = gi_trace(goal, vec3_origin, vec3_origin, o, targ, MASK_SOLID);
     if (trace.fraction < 1) {
         VectorCopy(trace.endpos, goal);
         goal[2] -= 6;
@@ -75,7 +75,7 @@ void UpdateChaseCam(edict_t *ent)
 
     VectorCopy(goal, o);
     o[2] -= 6;
-    trace = gi.trace(goal, vec3_origin, vec3_origin, o, targ, MASK_SOLID);
+    trace = gi_trace(goal, vec3_origin, vec3_origin, o, targ, MASK_SOLID);
     if (trace.fraction < 1) {
         VectorCopy(trace.endpos, goal);
         goal[2] += 6;
@@ -101,7 +101,7 @@ void UpdateChaseCam(edict_t *ent)
 
     ent->viewheight = 0;
     ent->client->ps.pmove.pm_flags |= PMF_NO_PREDICTION;
-    gi.linkentity(ent);
+    gi_linkentity(ent);
 }
 
 void ChaseNext(edict_t *ent)
@@ -166,5 +166,5 @@ void GetChaseTarget(edict_t *ent)
             return;
         }
     }
-    gi.centerprintf(ent, "No other players to chase.");
+    gi_centerprintf(ent, "No other players to chase.");
 }

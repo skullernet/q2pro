@@ -50,7 +50,7 @@ bool M_CheckBottom(edict_t *ent)
         for (y = 0 ; y <= 1 ; y++) {
             start[0] = x ? maxs[0] : mins[0];
             start[1] = y ? maxs[1] : mins[1];
-            if (gi.pointcontents(start) != CONTENTS_SOLID)
+            if (gi_pointcontents(start) != CONTENTS_SOLID)
                 goto realcheck;
         }
 
@@ -68,7 +68,7 @@ realcheck:
     start[0] = stop[0] = (mins[0] + maxs[0]) * 0.5f;
     start[1] = stop[1] = (mins[1] + maxs[1]) * 0.5f;
     stop[2] = start[2] - 2 * STEPSIZE;
-    trace = gi.trace(start, vec3_origin, vec3_origin, stop, ent, MASK_MONSTERSOLID);
+    trace = gi_trace(start, vec3_origin, vec3_origin, stop, ent, MASK_MONSTERSOLID);
 
     if (trace.fraction == 1.0f)
         return false;
@@ -80,7 +80,7 @@ realcheck:
             start[0] = stop[0] = x ? maxs[0] : mins[0];
             start[1] = stop[1] = y ? maxs[1] : mins[1];
 
-            trace = gi.trace(start, vec3_origin, vec3_origin, stop, ent, MASK_MONSTERSOLID);
+            trace = gi_trace(start, vec3_origin, vec3_origin, stop, ent, MASK_MONSTERSOLID);
 
             if (trace.fraction != 1.0f && trace.endpos[2] > bottom)
                 bottom = trace.endpos[2];
@@ -145,7 +145,7 @@ bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
                         neworg[2] += dz;
                 }
             }
-            trace = gi.trace(ent->s.origin, ent->mins, ent->maxs, neworg, ent, MASK_MONSTERSOLID);
+            trace = gi_trace(ent->s.origin, ent->mins, ent->maxs, neworg, ent, MASK_MONSTERSOLID);
 
             // fly monsters don't enter water voluntarily
             if (ent->flags & FL_FLY) {
@@ -153,7 +153,7 @@ bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
                     test[0] = trace.endpos[0];
                     test[1] = trace.endpos[1];
                     test[2] = trace.endpos[2] + ent->mins[2] + 1;
-                    contents = gi.pointcontents(test);
+                    contents = gi_pointcontents(test);
                     if (contents & MASK_WATER)
                         return false;
                 }
@@ -165,7 +165,7 @@ bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
                     test[0] = trace.endpos[0];
                     test[1] = trace.endpos[1];
                     test[2] = trace.endpos[2] + ent->mins[2] + 1;
-                    contents = gi.pointcontents(test);
+                    contents = gi_pointcontents(test);
                     if (!(contents & MASK_WATER))
                         return false;
                 }
@@ -174,7 +174,7 @@ bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
             if (trace.fraction == 1) {
                 VectorCopy(trace.endpos, ent->s.origin);
                 if (relink) {
-                    gi.linkentity(ent);
+                    gi_linkentity(ent);
                     G_TouchTriggers(ent);
                 }
                 return true;
@@ -197,14 +197,14 @@ bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
     VectorCopy(neworg, end);
     end[2] -= stepsize * 2;
 
-    trace = gi.trace(neworg, ent->mins, ent->maxs, end, ent, MASK_MONSTERSOLID);
+    trace = gi_trace(neworg, ent->mins, ent->maxs, end, ent, MASK_MONSTERSOLID);
 
     if (trace.allsolid)
         return false;
 
     if (trace.startsolid) {
         neworg[2] -= stepsize;
-        trace = gi.trace(neworg, ent->mins, ent->maxs, end, ent, MASK_MONSTERSOLID);
+        trace = gi_trace(neworg, ent->mins, ent->maxs, end, ent, MASK_MONSTERSOLID);
         if (trace.allsolid || trace.startsolid)
             return false;
     }
@@ -215,7 +215,7 @@ bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
         test[0] = trace.endpos[0];
         test[1] = trace.endpos[1];
         test[2] = trace.endpos[2] + ent->mins[2] + 1;
-        contents = gi.pointcontents(test);
+        contents = gi_pointcontents(test);
 
         if (contents & MASK_WATER)
             return false;
@@ -226,7 +226,7 @@ bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
         if (ent->flags & FL_PARTIALGROUND) {
             VectorAdd(ent->s.origin, move, ent->s.origin);
             if (relink) {
-                gi.linkentity(ent);
+                gi_linkentity(ent);
                 G_TouchTriggers(ent);
             }
             ent->groundentity = NULL;
@@ -244,7 +244,7 @@ bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
             // entity had floor mostly pulled out from underneath it
             // and is trying to correct
             if (relink) {
-                gi.linkentity(ent);
+                gi_linkentity(ent);
                 G_TouchTriggers(ent);
             }
             return true;
@@ -261,7 +261,7 @@ bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
 
 // the move is ok
     if (relink) {
-        gi.linkentity(ent);
+        gi_linkentity(ent);
         G_TouchTriggers(ent);
     }
     return true;
@@ -339,11 +339,11 @@ bool SV_StepDirection(edict_t *ent, float yaw, float dist)
             // not turned far enough, so don't take the step
             VectorCopy(oldorigin, ent->s.origin);
         }
-        gi.linkentity(ent);
+        gi_linkentity(ent);
         G_TouchTriggers(ent);
         return true;
     }
-    gi.linkentity(ent);
+    gi_linkentity(ent);
     G_TouchTriggers(ent);
     return false;
 }

@@ -1739,10 +1739,10 @@ static void MVD_GameInit(void)
         edicts[i + 1].client = (gclient_t *)&mvd_clients[i];
     }
 
-    mvd_ge.edicts = edicts;
-    mvd_ge.edict_size = sizeof(edict_t);
-    mvd_ge.num_edicts = sv_maxclients->integer + 1;
-    mvd_ge.max_edicts = sv_maxclients->integer + 1;
+    mvd_ge.pool.edicts = edicts;
+    mvd_ge.pool.edict_size = sizeof(edict_t);
+    mvd_ge.pool.num_edicts = sv_maxclients->integer + 1;
+    mvd_ge.pool.max_edicts = sv_maxclients->integer + 1;
 
     Q_snprintf(buffer, sizeof(buffer),
                "maps/%s.bsp", mvd_default_map->string);
@@ -1795,10 +1795,10 @@ static void MVD_GameShutdown(void)
 
     MVD_Shutdown();
 
-    mvd_ge.edicts = NULL;
-    mvd_ge.edict_size = 0;
-    mvd_ge.num_edicts = 0;
-    mvd_ge.max_edicts = 0;
+    mvd_ge.pool.edicts = NULL;
+    mvd_ge.pool.edict_size = 0;
+    mvd_ge.pool.num_edicts = 0;
+    mvd_ge.pool.max_edicts = 0;
 
     Cvar_Set("g_features", "0");
 }

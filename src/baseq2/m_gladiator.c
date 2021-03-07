@@ -41,22 +41,22 @@ static int  sound_sight;
 
 void gladiator_idle(edict_t *self)
 {
-    gi.sound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
+    gi_sound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
 }
 
 void gladiator_sight(edict_t *self, edict_t *other)
 {
-    gi.sound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
 }
 
 void gladiator_search(edict_t *self)
 {
-    gi.sound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM, 0);
 }
 
 void gladiator_cleaver_swing(edict_t *self)
 {
-    gi.sound(self, CHAN_WEAPON, sound_cleaver_swing, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_WEAPON, sound_cleaver_swing, 1, ATTN_NORM, 0);
 }
 
 mframe_t gladiator_frames_stand [] = {
@@ -127,9 +127,9 @@ void GaldiatorMelee(edict_t *self)
 
     VectorSet(aim, MELEE_DISTANCE, self->mins[0], -4);
     if (fire_hit(self, aim, (20 + (Q_rand() % 5)), 300))
-        gi.sound(self, CHAN_AUTO, sound_cleaver_hit, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_AUTO, sound_cleaver_hit, 1, ATTN_NORM, 0);
     else
-        gi.sound(self, CHAN_AUTO, sound_cleaver_miss, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_AUTO, sound_cleaver_miss, 1, ATTN_NORM, 0);
 }
 
 mframe_t gladiator_frames_attack_melee [] = {
@@ -200,7 +200,7 @@ void gladiator_attack(edict_t *self)
         return;
 
     // charge up the railgun
-    gi.sound(self, CHAN_WEAPON, sound_gun, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_WEAPON, sound_gun, 1, ATTN_NORM, 0);
     VectorCopy(self->enemy->s.origin, self->pos1);  //save for aiming the shot
     self->pos1[2] += self->enemy->viewheight;
     self->monsterinfo.currentmove = &gladiator_move_attack_gun;
@@ -243,9 +243,9 @@ void gladiator_pain(edict_t *self, edict_t *other, float kick, int damage)
     self->pain_debounce_framenum = level.framenum + 3 * BASE_FRAMERATE;
 
     if (random() < 0.5f)
-        gi.sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
     else
-        gi.sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
 
     if (skill->value == 3)
         return;     // no pain anims in nightmare
@@ -265,7 +265,7 @@ void gladiator_dead(edict_t *self)
     self->movetype = MOVETYPE_TOSS;
     self->svflags |= SVF_DEADMONSTER;
     self->nextthink = 0;
-    gi.linkentity(self);
+    gi_linkentity(self);
 }
 
 mframe_t gladiator_frames_death [] = {
@@ -300,7 +300,7 @@ void gladiator_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int dam
 
 // check for gib
     if (self->health <= self->gib_health) {
-        gi.sound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, gi_soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
         for (n = 0; n < 2; n++)
             ThrowGib(self, "models/objects/gibs/bone/tris.md2", damage, GIB_ORGANIC);
         for (n = 0; n < 4; n++)
@@ -314,7 +314,7 @@ void gladiator_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int dam
         return;
 
 // regular death
-    gi.sound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM, 0);
     self->deadflag = DEAD_DEAD;
     self->takedamage = DAMAGE_YES;
 
@@ -332,20 +332,20 @@ void SP_monster_gladiator(edict_t *self)
     }
 
 
-    sound_pain1 = gi.soundindex("gladiator/pain.wav");
-    sound_pain2 = gi.soundindex("gladiator/gldpain2.wav");
-    sound_die = gi.soundindex("gladiator/glddeth2.wav");
-    sound_gun = gi.soundindex("gladiator/railgun.wav");
-    sound_cleaver_swing = gi.soundindex("gladiator/melee1.wav");
-    sound_cleaver_hit = gi.soundindex("gladiator/melee2.wav");
-    sound_cleaver_miss = gi.soundindex("gladiator/melee3.wav");
-    sound_idle = gi.soundindex("gladiator/gldidle1.wav");
-    sound_search = gi.soundindex("gladiator/gldsrch1.wav");
-    sound_sight = gi.soundindex("gladiator/sight.wav");
+    sound_pain1 = gi_soundindex("gladiator/pain.wav");
+    sound_pain2 = gi_soundindex("gladiator/gldpain2.wav");
+    sound_die = gi_soundindex("gladiator/glddeth2.wav");
+    sound_gun = gi_soundindex("gladiator/railgun.wav");
+    sound_cleaver_swing = gi_soundindex("gladiator/melee1.wav");
+    sound_cleaver_hit = gi_soundindex("gladiator/melee2.wav");
+    sound_cleaver_miss = gi_soundindex("gladiator/melee3.wav");
+    sound_idle = gi_soundindex("gladiator/gldidle1.wav");
+    sound_search = gi_soundindex("gladiator/gldsrch1.wav");
+    sound_sight = gi_soundindex("gladiator/sight.wav");
 
     self->movetype = MOVETYPE_STEP;
     self->solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/gladiatr/tris.md2");
+    self->s.modelindex = gi_modelindex("models/monsters/gladiatr/tris.md2");
     VectorSet(self->mins, -32, -32, -24);
     VectorSet(self->maxs, 32, 32, 64);
 
@@ -366,7 +366,7 @@ void SP_monster_gladiator(edict_t *self)
     self->monsterinfo.idle = gladiator_idle;
     self->monsterinfo.search = gladiator_search;
 
-    gi.linkentity(self);
+    gi_linkentity(self);
     self->monsterinfo.currentmove = &gladiator_move_stand;
     self->monsterinfo.scale = MODEL_SCALE;
 

@@ -124,4 +124,8 @@ char *Cvar_VariableString(const char *var_name);
 
 void Cvar_Set_f(void);
 
+#if USE_SERVER && USE_WASM
+void Cvar_DestroyWASMLinkage(void);
+#endif
+
 #endif // CVAR_H

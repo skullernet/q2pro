@@ -113,7 +113,7 @@ void SV_ClearWorld(void)
     }
 
     // make sure all entities are unlinked
-    for (i = 0; i < ge->max_edicts; i++) {
+    for (i = 0; i < ge->pool.max_edicts; i++) {
         ent = EDICT_NUM(i);
         ent->area.prev = ent->area.next = NULL;
     }
@@ -245,7 +245,7 @@ void PF_LinkEdict(edict_t *ent)
     if (ent->area.prev)
         PF_UnlinkEdict(ent);     // unlink from old position
 
-    if (ent == ge->edicts)
+    if (ent == ge->pool.edicts)
         return;        // don't add the world
 
     if (!ent->inuse) {
@@ -529,7 +529,7 @@ trace_t q_gameabi SV_Trace(vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end,
         Com_EPrintf("%s: runaway loop avoided\n", __func__);
         memset(&trace, 0, sizeof(trace));
         trace.fraction = 1;
-        trace.ent = ge->edicts;
+        trace.ent = ge->pool.edicts;
         VectorCopy(end, trace.endpos);
         sv.tracecount = 0;
         return trace;
@@ -542,7 +542,7 @@ trace_t q_gameabi SV_Trace(vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end,
 
     // clip to world
     CM_BoxTrace(&trace, start, end, mins, maxs, sv.cm.cache->nodes, contentmask);
-    trace.ent = ge->edicts;
+    trace.ent = ge->pool.edicts;
     if (trace.fraction == 0) {
         return trace;   // blocked by the world
     }

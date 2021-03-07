@@ -578,7 +578,7 @@ static void build_gamestate(void)
     }
 
     // set base entity states
-    for (i = 1; i < ge->num_edicts; i++) {
+    for (i = 1; i < ge->pool.num_edicts; i++) {
         ent = EDICT_NUM(i);
 
         if (!entity_is_active(ent)) {
@@ -664,7 +664,7 @@ static void emit_gamestate(void)
     MSG_WriteByte(CLIENTNUM_NONE);
 
     // send entity states
-    for (i = 1, es = mvd.entities + 1; i < ge->num_edicts; i++, es++) {
+    for (i = 1, es = mvd.entities + 1; i < ge->pool.num_edicts; i++, es++) {
         flags = MSG_ES_UMASK;
         if ((j = es->number) != 0) {
             if (i <= sv_maxclients->integer) {
@@ -768,7 +768,7 @@ static void emit_frame(void)
     MSG_WriteByte(CLIENTNUM_NONE);      // end of packetplayers
 
     // send entity states
-    for (i = 1; i < ge->num_edicts; i++) {
+    for (i = 1; i < ge->pool.num_edicts; i++) {
         oldes = &mvd.entities[i];
         ent = EDICT_NUM(i);
 

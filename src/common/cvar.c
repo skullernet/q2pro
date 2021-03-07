@@ -37,6 +37,132 @@ int     cvar_modified;
 
 static cvar_t *cvarHash[CVARHASH_SIZE];
 
+#if USE_SERVER && USE_WASM
+#include "server/server.h"
+
+typedef struct {
+    wasm_address_t  name;
+    wasm_address_t  string;
+    wasm_address_t  latched_string;
+    int         flags;
+    qboolean    modified;
+    float       value;
+} wasm_cvar_t;
+
+/*
+============
+Handles all of the WASM data linkage for cvars.
+============
+*/
+static void Cvar_UpdateWASMLinkage(cvar_t *var)
+{
+    if (!SV_IsWASMRunning())
+        return;
+
+    wasm_cvar_t *wasm_cvar;
+
+    if (!var->wasm) {
+        size_t var_name = strlen(var->name) + 1;
+
+        var->wasm = SV_AllocateWASMMemory(sizeof(wasm_cvar_t) + var_name);
+
+        if (!var->wasm) {
+            Com_Error(ERR_DROP, "Cvar_Get: out of WASM memory");
+        }
+
+        wasm_cvar = SV_ResolveWASMAddress(var->wasm);
+
+        wasm_cvar->name = var->wasm + sizeof(wasm_cvar_t);
+        wasm_cvar->string = wasm_cvar->latched_string = 0;
+
+        Q_strlcpy(SV_ResolveWASMAddress(wasm_cvar->name), var->name, var_name);
+    } else {
+        wasm_cvar = SV_ResolveWASMAddress(var->wasm);
+    }
+
+    wasm_cvar->modified = var->modified;
+    wasm_cvar->value = var->value;
+    wasm_cvar->flags = var->flags;
+
+    // check string modification.
+    // we have a string already...
+    if (wasm_cvar->string) {
+        // ...was set to null, so match that
+        if (!var->string) {
+            SV_FreeWASMMemory(wasm_cvar->string);
+            wasm_cvar->string = 0;
+            var->wasm_string_size = 0;
+        // ...see if the string is different
+        } else if (strcmp(SV_ResolveWASMAddress(wasm_cvar->string), var->string)) {
+            // do we need to reallocate?
+            size_t len = strlen(var->string);
+
+            if (var->wasm_string_size < len + 1) {
+                // reallocation required
+                SV_FreeWASMMemory(wasm_cvar->string);
+                wasm_cvar->string = SV_AllocateWASMMemory(len + 1);
+                var->wasm_string_size = len + 1;
+            }
+
+            Q_strlcpy(SV_ResolveWASMAddress(wasm_cvar->string), var->string, len + 1);
+        }
+    } else {
+        if (var->string) {
+            // allocate'n'copy
+            size_t len = strlen(var->string);
+            wasm_cvar->string = SV_AllocateWASMMemory(len + 1);
+            var->wasm_string_size = len + 1;
+            Q_strlcpy(SV_ResolveWASMAddress(wasm_cvar->string), var->string, len + 1);
+        }
+    }
+
+    // check string modification.
+    // we have a string already...
+    if (wasm_cvar->latched_string) {
+        // ...was set to null, so match that
+        if (!var->latched_string) {
+            SV_FreeWASMMemory(wasm_cvar->latched_string);
+            wasm_cvar->latched_string = 0;
+            var->wasm_latched_string_size = 0;
+        // ...see if the string is different
+        } else if (strcmp(SV_ResolveWASMAddress(wasm_cvar->latched_string), var->latched_string)) {
+            // do we need to reallocate?
+            size_t len = strlen(var->latched_string);
+
+            if (var->wasm_latched_string_size < len + 1) {
+                // reallocation required
+                SV_FreeWASMMemory(wasm_cvar->latched_string);
+                wasm_cvar->latched_string = SV_AllocateWASMMemory(len + 1);
+                var->wasm_latched_string_size = len + 1;
+            }
+
+            Q_strlcpy(SV_ResolveWASMAddress(wasm_cvar->latched_string), var->latched_string, len + 1);
+        }
+    } else {
+        if (var->latched_string) {
+            // allocate'n'copy
+            size_t len = strlen(var->latched_string);
+            wasm_cvar->latched_string = SV_AllocateWASMMemory(len + 1);
+            var->wasm_latched_string_size = len + 1;
+            Q_strlcpy(SV_ResolveWASMAddress(wasm_cvar->latched_string), var->latched_string, len + 1);
+        }
+    }
+}
+
+/*
+============
+Unlinks all WASM data from cvars, since they are only valid
+in a single module.
+============
+*/
+void Cvar_DestroyWASMLinkage(void)
+{
+    for (cvar_t *var = cvar_vars; var; var = var->next) {
+        var->wasm = var->wasm_latched_string_size = var->wasm_string_size = 0;
+    }
+}
+#endif
+
 /*
 ============
 Cvar_FindVar
@@ -243,6 +369,10 @@ static void get_engine_cvar(cvar_t *var, const char *var_value, int flags)
     // some flags are not saved
     var->flags &= ~(CVAR_GAME | CVAR_CUSTOM | CVAR_WEAK);
     var->flags |= flags;
+
+#if USE_SERVER && USE_WASM
+    Cvar_UpdateWASMLinkage(var);
+#endif
 }
 
 /*
@@ -312,6 +442,11 @@ cvar_t *Cvar_Get(const char *var_name, const char *var_value, int flags)
     var->hashNext = cvarHash[hash];
     cvarHash[hash] = var;
 
+#if USE_SERVER && USE_WASM
+    var->wasm = var->wasm_latched_string_size = var->wasm_string_size = 0;
+    Cvar_UpdateWASMLinkage(var);
+#endif
+
     return var;
 }
 
@@ -333,6 +468,10 @@ static void set_back_cvar(cvar_t *var)
             Z_Free(var->latched_string);
             var->latched_string = NULL;
         }
+
+#if USE_SERVER && USE_WASM
+        Cvar_UpdateWASMLinkage(var);
+#endif
     }
 }
 
@@ -386,6 +525,10 @@ void Cvar_SetByVar(cvar_t *var, const char *value, from_t from)
             Com_Printf("%s will be changed for next game.\n", var->name);
             Z_Free(var->latched_string);
             var->latched_string = Z_CvarCopyString(value);
+
+#if USE_SERVER && USE_WASM
+            Cvar_UpdateWASMLinkage(var);
+#endif
             return;
         }
     }
@@ -397,6 +540,10 @@ void Cvar_SetByVar(cvar_t *var, const char *value, from_t from)
     }
 
     change_string_value(var, value, from);
+
+#if USE_SERVER && USE_WASM
+    Cvar_UpdateWASMLinkage(var);
+#endif
 }
 
 /*
@@ -444,6 +591,10 @@ cvar_t *Cvar_FullSet(const char *var_name, const char *value, int flags, from_t 
 
     var->flags &= ~CVAR_INFOMASK;
     var->flags |= flags;
+
+#if USE_SERVER && USE_WASM
+    Cvar_UpdateWASMLinkage(var);
+#endif
 
     return var;
 }
@@ -586,6 +737,9 @@ void Cvar_FixCheats(void)
             Cvar_SetByVar(var, var->default_string, FROM_CODE);
             if (var->changed)
                 var->changed(var);
+#if USE_SERVER && USE_WASM
+            Cvar_UpdateWASMLinkage(var);
+#endif
         }
     }
 }
@@ -617,6 +771,9 @@ void Cvar_GetLatchedVars(void)
         if (var->changed) {
             var->changed(var);
         }
+#if USE_SERVER && USE_WASM
+        Cvar_UpdateWASMLinkage(var);
+#endif
     }
 }
 

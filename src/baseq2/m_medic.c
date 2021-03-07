@@ -77,7 +77,7 @@ void medic_idle(edict_t *self)
 {
     edict_t *ent;
 
-    gi.sound(self, CHAN_VOICE, sound_idle1, 1, ATTN_IDLE, 0);
+    gi_sound(self, CHAN_VOICE, sound_idle1, 1, ATTN_IDLE, 0);
 
     ent = medic_FindDeadMonster(self);
     if (ent) {
@@ -92,7 +92,7 @@ void medic_search(edict_t *self)
 {
     edict_t *ent;
 
-    gi.sound(self, CHAN_VOICE, sound_search, 1, ATTN_IDLE, 0);
+    gi_sound(self, CHAN_VOICE, sound_search, 1, ATTN_IDLE, 0);
 
     if (!self->oldenemy) {
         ent = medic_FindDeadMonster(self);
@@ -108,7 +108,7 @@ void medic_search(edict_t *self)
 
 void medic_sight(edict_t *self, edict_t *other)
 {
-    gi.sound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
 }
 
 
@@ -315,10 +315,10 @@ void medic_pain(edict_t *self, edict_t *other, float kick, int damage)
 
     if (random() < 0.5f) {
         self->monsterinfo.currentmove = &medic_move_pain1;
-        gi.sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
     } else {
         self->monsterinfo.currentmove = &medic_move_pain2;
-        gi.sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
     }
 }
 
@@ -355,7 +355,7 @@ void medic_dead(edict_t *self)
     self->movetype = MOVETYPE_TOSS;
     self->svflags |= SVF_DEADMONSTER;
     self->nextthink = 0;
-    gi.linkentity(self);
+    gi_linkentity(self);
 }
 
 mframe_t medic_frames_death [] = {
@@ -402,7 +402,7 @@ void medic_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage,
 
 // check for gib
     if (self->health <= self->gib_health) {
-        gi.sound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, gi_soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
         for (n = 0; n < 2; n++)
             ThrowGib(self, "models/objects/gibs/bone/tris.md2", damage, GIB_ORGANIC);
         for (n = 0; n < 4; n++)
@@ -416,7 +416,7 @@ void medic_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage,
         return;
 
 // regular death
-    gi.sound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM, 0);
     self->deadflag = DEAD_DEAD;
     self->takedamage = DAMAGE_YES;
 
@@ -432,7 +432,7 @@ void medic_duck_down(edict_t *self)
     self->maxs[2] -= 32;
     self->takedamage = DAMAGE_YES;
     self->monsterinfo.pause_framenum = level.framenum + 1 * BASE_FRAMERATE;
-    gi.linkentity(self);
+    gi_linkentity(self);
 }
 
 void medic_duck_hold(edict_t *self)
@@ -448,7 +448,7 @@ void medic_duck_up(edict_t *self)
     self->monsterinfo.aiflags &= ~AI_DUCKED;
     self->maxs[2] += 32;
     self->takedamage = DAMAGE_AIM;
-    gi.linkentity(self);
+    gi_linkentity(self);
 }
 
 mframe_t medic_frames_duck [] = {
@@ -532,7 +532,7 @@ mmove_t medic_move_attackBlaster = {FRAME_attack1, FRAME_attack14, medic_frames_
 
 void medic_hook_launch(edict_t *self)
 {
-    gi.sound(self, CHAN_WEAPON, sound_hook_launch, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_WEAPON, sound_hook_launch, 1, ATTN_NORM, 0);
 }
 
 void ED_CallSpawn(edict_t *ent);
@@ -577,12 +577,12 @@ void medic_cable_attack(edict_t *self)
     if (fabsf(angles[0]) > 45)
         return;
 
-    tr = gi.trace(start, NULL, NULL, self->enemy->s.origin, self, MASK_SHOT);
+    tr = gi_trace(start, NULL, NULL, self->enemy->s.origin, self, MASK_SHOT);
     if (tr.fraction != 1.0f && tr.ent != self->enemy)
         return;
 
     if (self->s.frame == FRAME_attack43) {
-        gi.sound(self->enemy, CHAN_AUTO, sound_hook_hit, 1, ATTN_NORM, 0);
+        gi_sound(self->enemy, CHAN_AUTO, sound_hook_hit, 1, ATTN_NORM, 0);
         self->enemy->monsterinfo.aiflags |= AI_RESURRECTING;
     } else if (self->s.frame == FRAME_attack50) {
         self->enemy->spawnflags = 0;
@@ -605,7 +605,7 @@ void medic_cable_attack(edict_t *self)
         }
     } else {
         if (self->s.frame == FRAME_attack44)
-            gi.sound(self, CHAN_WEAPON, sound_hook_heal, 1, ATTN_NORM, 0);
+            gi_sound(self, CHAN_WEAPON, sound_hook_heal, 1, ATTN_NORM, 0);
     }
 
     // adjust start for beam origin being in middle of a segment
@@ -615,17 +615,17 @@ void medic_cable_attack(edict_t *self)
     VectorCopy(self->enemy->s.origin, end);
     end[2] = self->enemy->absmin[2] + self->enemy->size[2] / 2;
 
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_MEDIC_CABLE_ATTACK);
-    gi.WriteShort(self - g_edicts);
-    gi.WritePosition(start);
-    gi.WritePosition(end);
-    gi.multicast(self->s.origin, MULTICAST_PVS);
+    gi_WriteByte(svc_temp_entity);
+    gi_WriteByte(TE_MEDIC_CABLE_ATTACK);
+    gi_WriteShort(self - g_edicts);
+    gi_WritePosition(start);
+    gi_WritePosition(end);
+    gi_multicast(self->s.origin, MULTICAST_PVS);
 }
 
 void medic_hook_retract(edict_t *self)
 {
-    gi.sound(self, CHAN_WEAPON, sound_hook_retract, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_WEAPON, sound_hook_retract, 1, ATTN_NORM, 0);
     self->enemy->monsterinfo.aiflags &= ~AI_RESURRECTING;
 }
 
@@ -690,22 +690,22 @@ void SP_monster_medic(edict_t *self)
         return;
     }
 
-    sound_idle1 = gi.soundindex("medic/idle.wav");
-    sound_pain1 = gi.soundindex("medic/medpain1.wav");
-    sound_pain2 = gi.soundindex("medic/medpain2.wav");
-    sound_die = gi.soundindex("medic/meddeth1.wav");
-    sound_sight = gi.soundindex("medic/medsght1.wav");
-    sound_search = gi.soundindex("medic/medsrch1.wav");
-    sound_hook_launch = gi.soundindex("medic/medatck2.wav");
-    sound_hook_hit = gi.soundindex("medic/medatck3.wav");
-    sound_hook_heal = gi.soundindex("medic/medatck4.wav");
-    sound_hook_retract = gi.soundindex("medic/medatck5.wav");
+    sound_idle1 = gi_soundindex("medic/idle.wav");
+    sound_pain1 = gi_soundindex("medic/medpain1.wav");
+    sound_pain2 = gi_soundindex("medic/medpain2.wav");
+    sound_die = gi_soundindex("medic/meddeth1.wav");
+    sound_sight = gi_soundindex("medic/medsght1.wav");
+    sound_search = gi_soundindex("medic/medsrch1.wav");
+    sound_hook_launch = gi_soundindex("medic/medatck2.wav");
+    sound_hook_hit = gi_soundindex("medic/medatck3.wav");
+    sound_hook_heal = gi_soundindex("medic/medatck4.wav");
+    sound_hook_retract = gi_soundindex("medic/medatck5.wav");
 
-    gi.soundindex("medic/medatck1.wav");
+    gi_soundindex("medic/medatck1.wav");
 
     self->movetype = MOVETYPE_STEP;
     self->solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/medic/tris.md2");
+    self->s.modelindex = gi_modelindex("models/monsters/medic/tris.md2");
     VectorSet(self->mins, -24, -24, -24);
     VectorSet(self->maxs, 24, 24, 32);
 
@@ -727,7 +727,7 @@ void SP_monster_medic(edict_t *self)
     self->monsterinfo.search = medic_search;
     self->monsterinfo.checkattack = medic_checkattack;
 
-    gi.linkentity(self);
+    gi_linkentity(self);
 
     self->monsterinfo.currentmove = &medic_move_stand;
     self->monsterinfo.scale = MODEL_SCALE;

@@ -343,7 +343,7 @@ void ED_CallSpawn(edict_t *ent)
     int     i;
 
     if (!ent->classname) {
-        gi.dprintf("ED_CallSpawn: NULL classname\n");
+        gi_dprintf("ED_CallSpawn: NULL classname\n");
         return;
     }
 
@@ -366,7 +366,7 @@ void ED_CallSpawn(edict_t *ent)
             return;
         }
     }
-    gi.dprintf("%s doesn't have a spawn function\n", ent->classname);
+    gi_dprintf("%s doesn't have a spawn function\n", ent->classname);
 }
 
 /*
@@ -381,7 +381,7 @@ static char *ED_NewString(const char *string)
 
     l = strlen(string) + 1;
 
-    newb = gi.TagMalloc(l, TAG_LEVEL);
+    newb = gi_TagMalloc(l, TAG_LEVEL);
 
     new_p = newb;
 
@@ -425,7 +425,7 @@ static bool ED_ParseField(const spawn_field_t *fields, const char *key, const ch
                 break;
             case F_VECTOR:
                 if (sscanf(value, "%f %f %f", &vec[0], &vec[1], &vec[2]) != 3) {
-                    gi.dprintf("%s: couldn't parse '%s'\n", __func__, key);
+                    gi_dprintf("%s: couldn't parse '%s'\n", __func__, key);
                     VectorClear(vec);
                 }
                 ((float *)(b + f->ofs))[0] = vec[0];
@@ -478,15 +478,15 @@ void ED_ParseEdict(const char **data, edict_t *ent)
         if (key[0] == '}')
             break;
         if (!*data)
-            gi.error("%s: EOF without closing brace", __func__);
+            gi_error("%s: EOF without closing brace", __func__);
 
         // parse value
         value = COM_Parse(data);
         if (!*data)
-            gi.error("%s: EOF without closing brace", __func__);
+            gi_error("%s: EOF without closing brace", __func__);
 
         if (value[0] == '}')
-            gi.error("%s: closing brace without data", __func__);
+            gi_error("%s: closing brace without data", __func__);
 
         init = true;
 
@@ -497,7 +497,7 @@ void ED_ParseEdict(const char **data, edict_t *ent)
 
         if (!ED_ParseField(spawn_fields, key, value, (byte *)ent)) {
             if (!ED_ParseField(temp_fields, key, value, (byte *)&st)) {
-                gi.dprintf("%s: %s is not a field\n", __func__, key);
+                gi_dprintf("%s: %s is not a field\n", __func__, key);
             }
         }
     }
@@ -525,7 +525,7 @@ void G_FindTeams(void)
 
     c = 0;
     c2 = 0;
-    for (i = 1, e = g_edicts + i ; i < globals.num_edicts ; i++, e++) {
+    for (i = 1, e = g_edicts + i ; i < pool->num_edicts ; i++, e++) {
         if (!e->inuse)
             continue;
         if (!e->team)
@@ -536,7 +536,7 @@ void G_FindTeams(void)
         e->teammaster = e;
         c++;
         c2++;
-        for (j = i + 1, e2 = e + 1 ; j < globals.num_edicts ; j++, e2++) {
+        for (j = i + 1, e2 = e + 1 ; j < pool->num_edicts ; j++, e2++) {
             if (!e2->inuse)
                 continue;
             if (!e2->team)
@@ -553,7 +553,7 @@ void G_FindTeams(void)
         }
     }
 
-    gi.dprintf("%i teams with %i entities\n", c, c2);
+    gi_dprintf("%i teams with %i entities\n", c, c2);
 }
 
 /*
@@ -578,11 +578,11 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
     if (skill_level > 3)
         skill_level = 3;
     if (skill->value != skill_level)
-        gi.cvar_forceset("skill", va("%f", skill_level));
+        gi_cvar_forceset("skill", va("%f", skill_level));
 
     SaveClientData();
 
-    gi.FreeTags(TAG_LEVEL);
+    gi_FreeTags(TAG_LEVEL);
 
     memset(&level, 0, sizeof(level));
     memset(g_edicts, 0, game.maxentities * sizeof(g_edicts[0]));
@@ -604,7 +604,7 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
         if (!entities)
             break;
         if (com_token[0] != '{')
-            gi.error("ED_LoadFromFile: found %s when expecting {", com_token);
+            gi_error("ED_LoadFromFile: found %s when expecting {", com_token);
 
         if (!ent)
             ent = g_edicts;
@@ -642,7 +642,7 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
         ED_CallSpawn(ent);
     }
 
-    gi.dprintf("%i entities inhibited\n", inhibit);
+    gi_dprintf("%i entities inhibited\n", inhibit);
 
 #ifdef DEBUG
     i = 1;
@@ -854,168 +854,168 @@ void SP_worldspawn(edict_t *ent)
     // make some data visible to the server
 
     if (ent->message && ent->message[0]) {
-        gi.configstring(CS_NAME, ent->message);
+        gi_configstring(CS_NAME, ent->message);
         Q_strlcpy(level.level_name, ent->message, sizeof(level.level_name));
     } else
         Q_strlcpy(level.level_name, level.mapname, sizeof(level.level_name));
 
     if (st.sky && st.sky[0])
-        gi.configstring(CS_SKY, st.sky);
+        gi_configstring(CS_SKY, st.sky);
     else
-        gi.configstring(CS_SKY, "unit1_");
+        gi_configstring(CS_SKY, "unit1_");
 
-    gi.configstring(CS_SKYROTATE, va("%f", st.skyrotate));
+    gi_configstring(CS_SKYROTATE, va("%f", st.skyrotate));
 
-    gi.configstring(CS_SKYAXIS, va("%f %f %f",
+    gi_configstring(CS_SKYAXIS, va("%f %f %f",
                                    st.skyaxis[0], st.skyaxis[1], st.skyaxis[2]));
 
-    gi.configstring(CS_CDTRACK, va("%i", ent->sounds));
+    gi_configstring(CS_CDTRACK, va("%i", ent->sounds));
 
-    gi.configstring(CS_MAXCLIENTS, va("%i", (int)(maxclients->value)));
+    gi_configstring(CS_MAXCLIENTS, va("%i", (int)(maxclients->value)));
 
     // status bar program
     if (deathmatch->value)
-        gi.configstring(CS_STATUSBAR, dm_statusbar);
+        gi_configstring(CS_STATUSBAR, dm_statusbar);
     else
-        gi.configstring(CS_STATUSBAR, single_statusbar);
+        gi_configstring(CS_STATUSBAR, single_statusbar);
 
     //---------------
 
 
     // help icon for statusbar
-    gi.imageindex("i_help");
-    level.pic_health = gi.imageindex("i_health");
-    gi.imageindex("help");
-    gi.imageindex("field_3");
+    gi_imageindex("i_help");
+    level.pic_health = gi_imageindex("i_health");
+    gi_imageindex("help");
+    gi_imageindex("field_3");
 
     if (!st.gravity)
-        gi.cvar_set("sv_gravity", "800");
+        gi_cvar_set("sv_gravity", "800");
     else
-        gi.cvar_set("sv_gravity", st.gravity);
+        gi_cvar_set("sv_gravity", st.gravity);
 
-    snd_fry = gi.soundindex("player/fry.wav");  // standing in lava / slime
+    snd_fry = gi_soundindex("player/fry.wav");  // standing in lava / slime
 
     PrecacheItem(FindItem("Blaster"));
 
-    gi.soundindex("player/lava1.wav");
-    gi.soundindex("player/lava2.wav");
+    gi_soundindex("player/lava1.wav");
+    gi_soundindex("player/lava2.wav");
 
-    gi.soundindex("misc/pc_up.wav");
-    gi.soundindex("misc/talk1.wav");
+    gi_soundindex("misc/pc_up.wav");
+    gi_soundindex("misc/talk1.wav");
 
-    gi.soundindex("misc/udeath.wav");
+    gi_soundindex("misc/udeath.wav");
 
     // gibs
-    gi.soundindex("items/respawn1.wav");
+    gi_soundindex("items/respawn1.wav");
 
     // sexed sounds
-    gi.soundindex("*death1.wav");
-    gi.soundindex("*death2.wav");
-    gi.soundindex("*death3.wav");
-    gi.soundindex("*death4.wav");
-    gi.soundindex("*fall1.wav");
-    gi.soundindex("*fall2.wav");
-    gi.soundindex("*gurp1.wav");        // drowning damage
-    gi.soundindex("*gurp2.wav");
-    gi.soundindex("*jump1.wav");        // player jump
-    gi.soundindex("*pain25_1.wav");
-    gi.soundindex("*pain25_2.wav");
-    gi.soundindex("*pain50_1.wav");
-    gi.soundindex("*pain50_2.wav");
-    gi.soundindex("*pain75_1.wav");
-    gi.soundindex("*pain75_2.wav");
-    gi.soundindex("*pain100_1.wav");
-    gi.soundindex("*pain100_2.wav");
+    gi_soundindex("*death1.wav");
+    gi_soundindex("*death2.wav");
+    gi_soundindex("*death3.wav");
+    gi_soundindex("*death4.wav");
+    gi_soundindex("*fall1.wav");
+    gi_soundindex("*fall2.wav");
+    gi_soundindex("*gurp1.wav");        // drowning damage
+    gi_soundindex("*gurp2.wav");
+    gi_soundindex("*jump1.wav");        // player jump
+    gi_soundindex("*pain25_1.wav");
+    gi_soundindex("*pain25_2.wav");
+    gi_soundindex("*pain50_1.wav");
+    gi_soundindex("*pain50_2.wav");
+    gi_soundindex("*pain75_1.wav");
+    gi_soundindex("*pain75_2.wav");
+    gi_soundindex("*pain100_1.wav");
+    gi_soundindex("*pain100_2.wav");
 
     // sexed models
     // THIS ORDER MUST MATCH THE DEFINES IN g_local.h
     // you can add more, max 15
-    gi.modelindex("#w_blaster.md2");
-    gi.modelindex("#w_shotgun.md2");
-    gi.modelindex("#w_sshotgun.md2");
-    gi.modelindex("#w_machinegun.md2");
-    gi.modelindex("#w_chaingun.md2");
-    gi.modelindex("#a_grenades.md2");
-    gi.modelindex("#w_glauncher.md2");
-    gi.modelindex("#w_rlauncher.md2");
-    gi.modelindex("#w_hyperblaster.md2");
-    gi.modelindex("#w_railgun.md2");
-    gi.modelindex("#w_bfg.md2");
+    gi_modelindex("#w_blaster.md2");
+    gi_modelindex("#w_shotgun.md2");
+    gi_modelindex("#w_sshotgun.md2");
+    gi_modelindex("#w_machinegun.md2");
+    gi_modelindex("#w_chaingun.md2");
+    gi_modelindex("#a_grenades.md2");
+    gi_modelindex("#w_glauncher.md2");
+    gi_modelindex("#w_rlauncher.md2");
+    gi_modelindex("#w_hyperblaster.md2");
+    gi_modelindex("#w_railgun.md2");
+    gi_modelindex("#w_bfg.md2");
 
     //-------------------
 
-    gi.soundindex("player/gasp1.wav");      // gasping for air
-    gi.soundindex("player/gasp2.wav");      // head breaking surface, not gasping
+    gi_soundindex("player/gasp1.wav");      // gasping for air
+    gi_soundindex("player/gasp2.wav");      // head breaking surface, not gasping
 
-    gi.soundindex("player/watr_in.wav");    // feet hitting water
-    gi.soundindex("player/watr_out.wav");   // feet leaving water
+    gi_soundindex("player/watr_in.wav");    // feet hitting water
+    gi_soundindex("player/watr_out.wav");   // feet leaving water
 
-    gi.soundindex("player/watr_un.wav");    // head going underwater
+    gi_soundindex("player/watr_un.wav");    // head going underwater
 
-    gi.soundindex("player/u_breath1.wav");
-    gi.soundindex("player/u_breath2.wav");
+    gi_soundindex("player/u_breath1.wav");
+    gi_soundindex("player/u_breath2.wav");
 
-    gi.soundindex("items/pkup.wav");        // bonus item pickup
-    gi.soundindex("world/land.wav");        // landing thud
-    gi.soundindex("misc/h2ohit1.wav");      // landing splash
+    gi_soundindex("items/pkup.wav");        // bonus item pickup
+    gi_soundindex("world/land.wav");        // landing thud
+    gi_soundindex("misc/h2ohit1.wav");      // landing splash
 
-    gi.soundindex("items/damage.wav");
-    gi.soundindex("items/protect.wav");
-    gi.soundindex("items/protect4.wav");
-    gi.soundindex("weapons/noammo.wav");
+    gi_soundindex("items/damage.wav");
+    gi_soundindex("items/protect.wav");
+    gi_soundindex("items/protect4.wav");
+    gi_soundindex("weapons/noammo.wav");
 
-    gi.soundindex("infantry/inflies1.wav");
+    gi_soundindex("infantry/inflies1.wav");
 
-    sm_meat_index = gi.modelindex("models/objects/gibs/sm_meat/tris.md2");
-    gi.modelindex("models/objects/gibs/arm/tris.md2");
-    gi.modelindex("models/objects/gibs/bone/tris.md2");
-    gi.modelindex("models/objects/gibs/bone2/tris.md2");
-    gi.modelindex("models/objects/gibs/chest/tris.md2");
-    gi.modelindex("models/objects/gibs/skull/tris.md2");
-    gi.modelindex("models/objects/gibs/head2/tris.md2");
+    sm_meat_index = gi_modelindex("models/objects/gibs/sm_meat/tris.md2");
+    gi_modelindex("models/objects/gibs/arm/tris.md2");
+    gi_modelindex("models/objects/gibs/bone/tris.md2");
+    gi_modelindex("models/objects/gibs/bone2/tris.md2");
+    gi_modelindex("models/objects/gibs/chest/tris.md2");
+    gi_modelindex("models/objects/gibs/skull/tris.md2");
+    gi_modelindex("models/objects/gibs/head2/tris.md2");
 
 //
 // Setup light animation tables. 'a' is total darkness, 'z' is doublebright.
 //
 
     // 0 normal
-    gi.configstring(CS_LIGHTS + 0, "m");
+    gi_configstring(CS_LIGHTS + 0, "m");
 
     // 1 FLICKER (first variety)
-    gi.configstring(CS_LIGHTS + 1, "mmnmmommommnonmmonqnmmo");
+    gi_configstring(CS_LIGHTS + 1, "mmnmmommommnonmmonqnmmo");
 
     // 2 SLOW STRONG PULSE
-    gi.configstring(CS_LIGHTS + 2, "abcdefghijklmnopqrstuvwxyzyxwvutsrqponmlkjihgfedcba");
+    gi_configstring(CS_LIGHTS + 2, "abcdefghijklmnopqrstuvwxyzyxwvutsrqponmlkjihgfedcba");
 
     // 3 CANDLE (first variety)
-    gi.configstring(CS_LIGHTS + 3, "mmmmmaaaaammmmmaaaaaabcdefgabcdefg");
+    gi_configstring(CS_LIGHTS + 3, "mmmmmaaaaammmmmaaaaaabcdefgabcdefg");
 
     // 4 FAST STROBE
-    gi.configstring(CS_LIGHTS + 4, "mamamamamama");
+    gi_configstring(CS_LIGHTS + 4, "mamamamamama");
 
     // 5 GENTLE PULSE 1
-    gi.configstring(CS_LIGHTS + 5, "jklmnopqrstuvwxyzyxwvutsrqponmlkj");
+    gi_configstring(CS_LIGHTS + 5, "jklmnopqrstuvwxyzyxwvutsrqponmlkj");
 
     // 6 FLICKER (second variety)
-    gi.configstring(CS_LIGHTS + 6, "nmonqnmomnmomomno");
+    gi_configstring(CS_LIGHTS + 6, "nmonqnmomnmomomno");
 
     // 7 CANDLE (second variety)
-    gi.configstring(CS_LIGHTS + 7, "mmmaaaabcdefgmmmmaaaammmaamm");
+    gi_configstring(CS_LIGHTS + 7, "mmmaaaabcdefgmmmmaaaammmaamm");
 
     // 8 CANDLE (third variety)
-    gi.configstring(CS_LIGHTS + 8, "mmmaaammmaaammmabcdefaaaammmmabcdefmmmaaaa");
+    gi_configstring(CS_LIGHTS + 8, "mmmaaammmaaammmabcdefaaaammmmabcdefmmmaaaa");
 
     // 9 SLOW STROBE (fourth variety)
-    gi.configstring(CS_LIGHTS + 9, "aaaaaaaazzzzzzzz");
+    gi_configstring(CS_LIGHTS + 9, "aaaaaaaazzzzzzzz");
 
     // 10 FLUORESCENT FLICKER
-    gi.configstring(CS_LIGHTS + 10, "mmamammmmammamamaaamammma");
+    gi_configstring(CS_LIGHTS + 10, "mmamammmmammamamaaamammma");
 
     // 11 SLOW PULSE NOT FADE TO BLACK
-    gi.configstring(CS_LIGHTS + 11, "abcdefghijklmnopqrrqponmlkjihgfedcba");
+    gi_configstring(CS_LIGHTS + 11, "abcdefghijklmnopqrrqponmlkjihgfedcba");
 
     // styles 32-62 are assigned by the light program for switchable lights
 
     // 63 testing
-    gi.configstring(CS_LIGHTS + 63, "a");
+    gi_configstring(CS_LIGHTS + 63, "a");
 }

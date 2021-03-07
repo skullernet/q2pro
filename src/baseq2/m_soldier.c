@@ -42,15 +42,15 @@ static int  sound_cock;
 void soldier_idle(edict_t *self)
 {
     if (random() > 0.8f)
-        gi.sound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
+        gi_sound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
 }
 
 void soldier_cock(edict_t *self)
 {
     if (self->s.frame == FRAME_stand322)
-        gi.sound(self, CHAN_WEAPON, sound_cock, 1, ATTN_IDLE, 0);
+        gi_sound(self, CHAN_WEAPON, sound_cock, 1, ATTN_IDLE, 0);
     else
-        gi.sound(self, CHAN_WEAPON, sound_cock, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_WEAPON, sound_cock, 1, ATTN_NORM, 0);
 }
 
 
@@ -407,11 +407,11 @@ void soldier_pain(edict_t *self, edict_t *other, float kick, int damage)
 
     n = self->s.skinnum | 1;
     if (n == 1)
-        gi.sound(self, CHAN_VOICE, sound_pain_light, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_pain_light, 1, ATTN_NORM, 0);
     else if (n == 3)
-        gi.sound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM, 0);
     else
-        gi.sound(self, CHAN_VOICE, sound_pain_ss, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_pain_ss, 1, ATTN_NORM, 0);
 
     if (self->velocity[2] > 100) {
         self->monsterinfo.currentmove = &soldier_move_pain4;
@@ -610,7 +610,7 @@ void soldier_duck_down(edict_t *self)
     self->maxs[2] -= 32;
     self->takedamage = DAMAGE_YES;
     self->monsterinfo.pause_framenum = level.framenum + 1 * BASE_FRAMERATE;
-    gi.linkentity(self);
+    gi_linkentity(self);
 }
 
 void soldier_duck_up(edict_t *self)
@@ -618,7 +618,7 @@ void soldier_duck_up(edict_t *self)
     self->monsterinfo.aiflags &= ~AI_DUCKED;
     self->maxs[2] += 32;
     self->takedamage = DAMAGE_AIM;
-    gi.linkentity(self);
+    gi_linkentity(self);
 }
 
 void soldier_fire3(edict_t *self)
@@ -756,9 +756,9 @@ void soldier_attack(edict_t *self)
 void soldier_sight(edict_t *self, edict_t *other)
 {
     if (random() < 0.5f)
-        gi.sound(self, CHAN_VOICE, sound_sight1, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_sight1, 1, ATTN_NORM, 0);
     else
-        gi.sound(self, CHAN_VOICE, sound_sight2, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_sight2, 1, ATTN_NORM, 0);
 
     if ((skill->value > 0) && (range(self, self->enemy) >= RANGE_MID)) {
         if (random() > 0.5f)
@@ -847,7 +847,7 @@ void soldier_dead(edict_t *self)
     self->movetype = MOVETYPE_TOSS;
     self->svflags |= SVF_DEADMONSTER;
     self->nextthink = 0;
-    gi.linkentity(self);
+    gi_linkentity(self);
 }
 
 mframe_t soldier_frames_death1 [] = {
@@ -1100,7 +1100,7 @@ void soldier_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 
 // check for gib
     if (self->health <= self->gib_health) {
-        gi.sound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, gi_soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
         for (n = 0; n < 3; n++)
             ThrowGib(self, "models/objects/gibs/sm_meat/tris.md2", damage, GIB_ORGANIC);
         ThrowGib(self, "models/objects/gibs/chest/tris.md2", damage, GIB_ORGANIC);
@@ -1118,11 +1118,11 @@ void soldier_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
     self->s.skinnum |= 1;
 
     if (self->s.skinnum == 1)
-        gi.sound(self, CHAN_VOICE, sound_death_light, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_death_light, 1, ATTN_NORM, 0);
     else if (self->s.skinnum == 3)
-        gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
     else // (self->s.skinnum == 5)
-        gi.sound(self, CHAN_VOICE, sound_death_ss, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_death_ss, 1, ATTN_NORM, 0);
 
     if (fabsf((self->s.origin[2] + self->viewheight) - point[2]) <= 4) {
         // head shot
@@ -1151,17 +1151,17 @@ void soldier_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 void SP_monster_soldier_x(edict_t *self)
 {
 
-    self->s.modelindex = gi.modelindex("models/monsters/soldier/tris.md2");
+    self->s.modelindex = gi_modelindex("models/monsters/soldier/tris.md2");
     self->monsterinfo.scale = MODEL_SCALE;
     VectorSet(self->mins, -16, -16, -24);
     VectorSet(self->maxs, 16, 16, 32);
     self->movetype = MOVETYPE_STEP;
     self->solid = SOLID_BBOX;
 
-    sound_idle =    gi.soundindex("soldier/solidle1.wav");
-    sound_sight1 =  gi.soundindex("soldier/solsght1.wav");
-    sound_sight2 =  gi.soundindex("soldier/solsrch1.wav");
-    sound_cock =    gi.soundindex("infantry/infatck3.wav");
+    sound_idle =    gi_soundindex("soldier/solidle1.wav");
+    sound_sight1 =  gi_soundindex("soldier/solsght1.wav");
+    sound_sight2 =  gi_soundindex("soldier/solsrch1.wav");
+    sound_cock =    gi_soundindex("infantry/infatck3.wav");
 
     self->mass = 100;
 
@@ -1176,7 +1176,7 @@ void SP_monster_soldier_x(edict_t *self)
     self->monsterinfo.melee = NULL;
     self->monsterinfo.sight = soldier_sight;
 
-    gi.linkentity(self);
+    gi_linkentity(self);
 
     self->monsterinfo.stand(self);
 
@@ -1195,11 +1195,11 @@ void SP_monster_soldier_light(edict_t *self)
 
     SP_monster_soldier_x(self);
 
-    sound_pain_light = gi.soundindex("soldier/solpain2.wav");
-    sound_death_light = gi.soundindex("soldier/soldeth2.wav");
-    gi.modelindex("models/objects/laser/tris.md2");
-    gi.soundindex("misc/lasfly.wav");
-    gi.soundindex("soldier/solatck2.wav");
+    sound_pain_light = gi_soundindex("soldier/solpain2.wav");
+    sound_death_light = gi_soundindex("soldier/soldeth2.wav");
+    gi_modelindex("models/objects/laser/tris.md2");
+    gi_soundindex("misc/lasfly.wav");
+    gi_soundindex("soldier/solatck2.wav");
 
     self->s.skinnum = 0;
     self->health = 20;
@@ -1217,9 +1217,9 @@ void SP_monster_soldier(edict_t *self)
 
     SP_monster_soldier_x(self);
 
-    sound_pain = gi.soundindex("soldier/solpain1.wav");
-    sound_death = gi.soundindex("soldier/soldeth1.wav");
-    gi.soundindex("soldier/solatck1.wav");
+    sound_pain = gi_soundindex("soldier/solpain1.wav");
+    sound_death = gi_soundindex("soldier/soldeth1.wav");
+    gi_soundindex("soldier/solatck1.wav");
 
     self->s.skinnum = 2;
     self->health = 30;
@@ -1237,9 +1237,9 @@ void SP_monster_soldier_ss(edict_t *self)
 
     SP_monster_soldier_x(self);
 
-    sound_pain_ss = gi.soundindex("soldier/solpain3.wav");
-    sound_death_ss = gi.soundindex("soldier/soldeth3.wav");
-    gi.soundindex("soldier/solatck3.wav");
+    sound_pain_ss = gi_soundindex("soldier/solpain3.wav");
+    sound_death_ss = gi_soundindex("soldier/soldeth3.wav");
+    gi_soundindex("soldier/solatck3.wav");
 
     self->s.skinnum = 4;
     self->health = 40;

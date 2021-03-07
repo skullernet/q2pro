@@ -275,7 +275,7 @@ bool visible(edict_t *self, edict_t *other)
     spot1[2] += self->viewheight;
     VectorCopy(other->s.origin, spot2);
     spot2[2] += other->viewheight;
-    trace = gi.trace(spot1, vec3_origin, vec3_origin, spot2, self, MASK_OPAQUE);
+    trace = gi_trace(spot1, vec3_origin, vec3_origin, spot2, self, MASK_OPAQUE);
 
     if (trace.fraction == 1.0f)
         return true;
@@ -348,7 +348,7 @@ void FoundTarget(edict_t *self)
     if (!self->movetarget) {
         self->goalentity = self->movetarget = self->enemy;
         HuntTarget(self);
-        gi.dprintf("%s at %s, combattarget %s not found\n", self->classname, vtos(self->s.origin), self->combattarget);
+        gi_dprintf("%s at %s, combattarget %s not found\n", self->classname, vtos(self->s.origin), self->combattarget);
         return;
     }
 
@@ -494,7 +494,7 @@ bool FindTarget(edict_t *self)
             if (!visible(self, client))
                 return false;
         } else {
-            if (!gi.inPHS(self->s.origin, client->s.origin))
+            if (!gi_inPHS(self->s.origin, client->s.origin))
                 return false;
         }
 
@@ -506,7 +506,7 @@ bool FindTarget(edict_t *self)
 
         // check area portals - if they are different and not connected then we can't hear it
         if (client->areanum != self->areanum)
-            if (!gi.AreasConnected(self->areanum, client->areanum))
+            if (!gi_AreasConnected(self->areanum, client->areanum))
                 return false;
 
         self->ideal_yaw = vectoyaw(temp);
@@ -563,7 +563,7 @@ bool M_CheckAttack(edict_t *self)
         VectorCopy(self->enemy->s.origin, spot2);
         spot2[2] += self->enemy->viewheight;
 
-        tr = gi.trace(spot1, NULL, NULL, spot2, self, CONTENTS_SOLID | CONTENTS_MONSTER | CONTENTS_SLIME | CONTENTS_LAVA | CONTENTS_WINDOW);
+        tr = gi_trace(spot1, NULL, NULL, spot2, self, CONTENTS_SOLID | CONTENTS_MONSTER | CONTENTS_SLIME | CONTENTS_LAVA | CONTENTS_WINDOW);
 
         // do we have a clear shot?
         if (tr.ent != self->enemy)
@@ -938,9 +938,9 @@ void ai_run(edict_t *self, float dist)
     VectorCopy(self->monsterinfo.last_sighting, self->goalentity->s.origin);
 
     if (new) {
-//      gi.dprintf("checking for course correction\n");
+//      gi_dprintf("checking for course correction\n");
 
-        tr = gi.trace(self->s.origin, self->mins, self->maxs, self->monsterinfo.last_sighting, self, MASK_PLAYERSOLID);
+        tr = gi_trace(self->s.origin, self->mins, self->maxs, self->monsterinfo.last_sighting, self, MASK_PLAYERSOLID);
         if (tr.fraction < 1) {
             VectorSubtract(self->goalentity->s.origin, self->s.origin, v);
             d1 = VectorLength(v);
@@ -951,12 +951,12 @@ void ai_run(edict_t *self, float dist)
 
             VectorSet(v, d2, -16, 0);
             G_ProjectSource(self->s.origin, v, v_forward, v_right, left_target);
-            tr = gi.trace(self->s.origin, self->mins, self->maxs, left_target, self, MASK_PLAYERSOLID);
+            tr = gi_trace(self->s.origin, self->mins, self->maxs, left_target, self, MASK_PLAYERSOLID);
             left = tr.fraction;
 
             VectorSet(v, d2, 16, 0);
             G_ProjectSource(self->s.origin, v, v_forward, v_right, right_target);
-            tr = gi.trace(self->s.origin, self->mins, self->maxs, right_target, self, MASK_PLAYERSOLID);
+            tr = gi_trace(self->s.origin, self->mins, self->maxs, right_target, self, MASK_PLAYERSOLID);
             right = tr.fraction;
 
             center = (d1 * center) / d2;
@@ -964,7 +964,7 @@ void ai_run(edict_t *self, float dist)
                 if (left < 1) {
                     VectorSet(v, d2 * left * 0.5f, -16, 0);
                     G_ProjectSource(self->s.origin, v, v_forward, v_right, left_target);
-//                  gi.dprintf("incomplete path, go part way and adjust again\n");
+//                  gi_dprintf("incomplete path, go part way and adjust again\n");
                 }
                 VectorCopy(self->monsterinfo.last_sighting, self->monsterinfo.saved_goal);
                 self->monsterinfo.aiflags |= AI_PURSUE_TEMP;
@@ -972,13 +972,13 @@ void ai_run(edict_t *self, float dist)
                 VectorCopy(left_target, self->monsterinfo.last_sighting);
                 VectorSubtract(self->goalentity->s.origin, self->s.origin, v);
                 self->s.angles[YAW] = self->ideal_yaw = vectoyaw(v);
-//              gi.dprintf("adjusted left\n");
+//              gi_dprintf("adjusted left\n");
 //              debug_drawline(self.origin, self.last_sighting, 152);
             } else if (right >= center && right > left) {
                 if (right < 1) {
                     VectorSet(v, d2 * right * 0.5f, 16, 0);
                     G_ProjectSource(self->s.origin, v, v_forward, v_right, right_target);
-//                  gi.dprintf("incomplete path, go part way and adjust again\n");
+//                  gi_dprintf("incomplete path, go part way and adjust again\n");
                 }
                 VectorCopy(self->monsterinfo.last_sighting, self->monsterinfo.saved_goal);
                 self->monsterinfo.aiflags |= AI_PURSUE_TEMP;
@@ -986,11 +986,11 @@ void ai_run(edict_t *self, float dist)
                 VectorCopy(right_target, self->monsterinfo.last_sighting);
                 VectorSubtract(self->goalentity->s.origin, self->s.origin, v);
                 self->s.angles[YAW] = self->ideal_yaw = vectoyaw(v);
-//              gi.dprintf("adjusted right\n");
+//              gi_dprintf("adjusted right\n");
 //              debug_drawline(self.origin, self.last_sighting, 152);
             }
         }
-//      else gi.dprintf("course was fine\n");
+//      else gi_dprintf("course was fine\n");
     }
 
     M_MoveToGoal(self, dist);

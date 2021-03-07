@@ -87,7 +87,7 @@ void turret_breach_fire(edict_t *self)
     damage = 100 + random() * 50;
     speed = 550 + 50 * skill->value;
     fire_rocket(self->teammaster->owner, start, f, damage, speed, 150, damage);
-    gi.positioned_sound(start, self, CHAN_WEAPON, gi.soundindex("weapons/rocklf1a.wav"), 1, ATTN_NORM, 0);
+    gi_positioned_sound(start, self, CHAN_WEAPON, gi_soundindex("weapons/rocklf1a.wav"), 1, ATTN_NORM, 0);
 }
 
 void turret_breach_think(edict_t *self)
@@ -196,7 +196,7 @@ void turret_breach_finish_init(edict_t *self)
 {
     // get and save info for muzzle location
     if (!self->target) {
-        gi.dprintf("%s at %s needs a target\n", self->classname, vtos(self->s.origin));
+        gi_dprintf("%s at %s needs a target\n", self->classname, vtos(self->s.origin));
     } else {
         self->target_ent = G_PickTarget(self->target);
         VectorSubtract(self->target_ent->s.origin, self->s.origin, self->move_origin);
@@ -212,7 +212,7 @@ void SP_turret_breach(edict_t *self)
 {
     self->solid = SOLID_BSP;
     self->movetype = MOVETYPE_PUSH;
-    gi.setmodel(self, self->model);
+    gi_setmodel(self, self->model);
 
     if (!self->speed)
         self->speed = 50;
@@ -238,7 +238,7 @@ void SP_turret_breach(edict_t *self)
 
     self->think = turret_breach_finish_init;
     self->nextthink = level.framenum + 1;
-    gi.linkentity(self);
+    gi_linkentity(self);
 }
 
 
@@ -251,9 +251,9 @@ void SP_turret_base(edict_t *self)
 {
     self->solid = SOLID_BSP;
     self->movetype = MOVETYPE_PUSH;
-    gi.setmodel(self, self->model);
+    gi_setmodel(self, self->model);
     self->blocked = turret_blocked;
-    gi.linkentity(self);
+    gi_linkentity(self);
 }
 
 
@@ -262,7 +262,7 @@ Must NOT be on the team with the rest of the turret parts.
 Instead it must target the turret_breach.
 */
 
-void infantry_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage);
+void infantry_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point);
 void infantry_stand(edict_t *self);
 void monster_use(edict_t *self, edict_t *other, edict_t *activator);
 
@@ -283,7 +283,7 @@ void turret_driver_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int
     self->target_ent->owner = NULL;
     self->target_ent->teammaster->owner = NULL;
 
-    infantry_die(self, inflictor, attacker, damage);
+    infantry_die(self, inflictor, attacker, damage, point);
 }
 
 bool FindTarget(edict_t *self);
@@ -377,7 +377,7 @@ void SP_turret_driver(edict_t *self)
 
     self->movetype = MOVETYPE_PUSH;
     self->solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/infantry/tris.md2");
+    self->s.modelindex = gi_modelindex("models/monsters/infantry/tris.md2");
     VectorSet(self->mins, -16, -16, -24);
     VectorSet(self->maxs, 16, 16, 32);
 
@@ -404,11 +404,11 @@ void SP_turret_driver(edict_t *self)
     if (st.item) {
         self->item = FindItemByClassname(st.item);
         if (!self->item)
-            gi.dprintf("%s at %s has bad item: %s\n", self->classname, vtos(self->s.origin), st.item);
+            gi_dprintf("%s at %s has bad item: %s\n", self->classname, vtos(self->s.origin), st.item);
     }
 
     self->think = turret_driver_link;
     self->nextthink = level.framenum + 1;
 
-    gi.linkentity(self);
+    gi_linkentity(self);
 }

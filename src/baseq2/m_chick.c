@@ -54,9 +54,9 @@ static int  sound_search;
 void ChickMoan(edict_t *self)
 {
     if (random() < 0.5f)
-        gi.sound(self, CHAN_VOICE, sound_idle1, 1, ATTN_IDLE, 0);
+        gi_sound(self, CHAN_VOICE, sound_idle1, 1, ATTN_IDLE, 0);
     else
-        gi.sound(self, CHAN_VOICE, sound_idle2, 1, ATTN_IDLE, 0);
+        gi_sound(self, CHAN_VOICE, sound_idle2, 1, ATTN_IDLE, 0);
 }
 
 mframe_t chick_frames_fidget [] = {
@@ -263,11 +263,11 @@ void chick_pain(edict_t *self, edict_t *other, float kick, int damage)
 
     r = random();
     if (r < 0.33f)
-        gi.sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
     else if (r < 0.66f)
-        gi.sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
     else
-        gi.sound(self, CHAN_VOICE, sound_pain3, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_pain3, 1, ATTN_NORM, 0);
 
     if (skill->value == 3)
         return;     // no pain anims in nightmare
@@ -287,7 +287,7 @@ void chick_dead(edict_t *self)
     self->movetype = MOVETYPE_TOSS;
     self->svflags |= SVF_DEADMONSTER;
     self->nextthink = 0;
-    gi.linkentity(self);
+    gi_linkentity(self);
 }
 
 mframe_t chick_frames_death2 [] = {
@@ -340,7 +340,7 @@ void chick_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage,
 
 // check for gib
     if (self->health <= self->gib_health) {
-        gi.sound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, gi_soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
         for (n = 0; n < 2; n++)
             ThrowGib(self, "models/objects/gibs/bone/tris.md2", damage, GIB_ORGANIC);
         for (n = 0; n < 4; n++)
@@ -360,10 +360,10 @@ void chick_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage,
     n = Q_rand() % 2;
     if (n == 0) {
         self->monsterinfo.currentmove = &chick_move_death1;
-        gi.sound(self, CHAN_VOICE, sound_death1, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_death1, 1, ATTN_NORM, 0);
     } else {
         self->monsterinfo.currentmove = &chick_move_death2;
-        gi.sound(self, CHAN_VOICE, sound_death2, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_death2, 1, ATTN_NORM, 0);
     }
 }
 
@@ -376,7 +376,7 @@ void chick_duck_down(edict_t *self)
     self->maxs[2] -= 32;
     self->takedamage = DAMAGE_YES;
     self->monsterinfo.pause_framenum = level.framenum + 1 * BASE_FRAMERATE;
-    gi.linkentity(self);
+    gi_linkentity(self);
 }
 
 void chick_duck_hold(edict_t *self)
@@ -392,7 +392,7 @@ void chick_duck_up(edict_t *self)
     self->monsterinfo.aiflags &= ~AI_DUCKED;
     self->maxs[2] += 32;
     self->takedamage = DAMAGE_AIM;
-    gi.linkentity(self);
+    gi_linkentity(self);
 }
 
 mframe_t chick_frames_duck [] = {
@@ -422,7 +422,7 @@ void ChickSlash(edict_t *self)
     vec3_t  aim;
 
     VectorSet(aim, MELEE_DISTANCE, self->mins[0], 10);
-    gi.sound(self, CHAN_WEAPON, sound_melee_swing, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_WEAPON, sound_melee_swing, 1, ATTN_NORM, 0);
     fire_hit(self, aim, (10 + (Q_rand() % 6)), 100);
 }
 
@@ -447,12 +447,12 @@ void ChickRocket(edict_t *self)
 
 void Chick_PreAttack1(edict_t *self)
 {
-    gi.sound(self, CHAN_VOICE, sound_missile_prelaunch, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_VOICE, sound_missile_prelaunch, 1, ATTN_NORM, 0);
 }
 
 void ChickReload(edict_t *self)
 {
-    gi.sound(self, CHAN_VOICE, sound_missile_reload, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_VOICE, sound_missile_reload, 1, ATTN_NORM, 0);
 }
 
 
@@ -586,7 +586,7 @@ void chick_attack(edict_t *self)
 
 void chick_sight(edict_t *self, edict_t *other)
 {
-    gi.sound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
 }
 
 /*QUAKED monster_chick (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
@@ -598,25 +598,25 @@ void SP_monster_chick(edict_t *self)
         return;
     }
 
-    sound_missile_prelaunch = gi.soundindex("chick/chkatck1.wav");
-    sound_missile_launch    = gi.soundindex("chick/chkatck2.wav");
-    sound_melee_swing       = gi.soundindex("chick/chkatck3.wav");
-    sound_melee_hit         = gi.soundindex("chick/chkatck4.wav");
-    sound_missile_reload    = gi.soundindex("chick/chkatck5.wav");
-    sound_death1            = gi.soundindex("chick/chkdeth1.wav");
-    sound_death2            = gi.soundindex("chick/chkdeth2.wav");
-    sound_fall_down         = gi.soundindex("chick/chkfall1.wav");
-    sound_idle1             = gi.soundindex("chick/chkidle1.wav");
-    sound_idle2             = gi.soundindex("chick/chkidle2.wav");
-    sound_pain1             = gi.soundindex("chick/chkpain1.wav");
-    sound_pain2             = gi.soundindex("chick/chkpain2.wav");
-    sound_pain3             = gi.soundindex("chick/chkpain3.wav");
-    sound_sight             = gi.soundindex("chick/chksght1.wav");
-    sound_search            = gi.soundindex("chick/chksrch1.wav");
+    sound_missile_prelaunch = gi_soundindex("chick/chkatck1.wav");
+    sound_missile_launch    = gi_soundindex("chick/chkatck2.wav");
+    sound_melee_swing       = gi_soundindex("chick/chkatck3.wav");
+    sound_melee_hit         = gi_soundindex("chick/chkatck4.wav");
+    sound_missile_reload    = gi_soundindex("chick/chkatck5.wav");
+    sound_death1            = gi_soundindex("chick/chkdeth1.wav");
+    sound_death2            = gi_soundindex("chick/chkdeth2.wav");
+    sound_fall_down         = gi_soundindex("chick/chkfall1.wav");
+    sound_idle1             = gi_soundindex("chick/chkidle1.wav");
+    sound_idle2             = gi_soundindex("chick/chkidle2.wav");
+    sound_pain1             = gi_soundindex("chick/chkpain1.wav");
+    sound_pain2             = gi_soundindex("chick/chkpain2.wav");
+    sound_pain3             = gi_soundindex("chick/chkpain3.wav");
+    sound_sight             = gi_soundindex("chick/chksght1.wav");
+    sound_search            = gi_soundindex("chick/chksrch1.wav");
 
     self->movetype = MOVETYPE_STEP;
     self->solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/bitch/tris.md2");
+    self->s.modelindex = gi_modelindex("models/monsters/bitch/tris.md2");
     VectorSet(self->mins, -16, -16, 0);
     VectorSet(self->maxs, 16, 16, 56);
 
@@ -635,7 +635,7 @@ void SP_monster_chick(edict_t *self)
     self->monsterinfo.melee = chick_melee;
     self->monsterinfo.sight = chick_sight;
 
-    gi.linkentity(self);
+    gi_linkentity(self);
 
     self->monsterinfo.currentmove = &chick_move_stand;
     self->monsterinfo.scale = MODEL_SCALE;

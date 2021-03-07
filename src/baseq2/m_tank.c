@@ -46,28 +46,28 @@ static int  sound_strike;
 
 void tank_sight(edict_t *self, edict_t *other)
 {
-    gi.sound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
 }
 
 
 void tank_footstep(edict_t *self)
 {
-    gi.sound(self, CHAN_BODY, sound_step, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_BODY, sound_step, 1, ATTN_NORM, 0);
 }
 
 void tank_thud(edict_t *self)
 {
-    gi.sound(self, CHAN_BODY, sound_thud, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_BODY, sound_thud, 1, ATTN_NORM, 0);
 }
 
 void tank_windup(edict_t *self)
 {
-    gi.sound(self, CHAN_WEAPON, sound_windup, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_WEAPON, sound_windup, 1, ATTN_NORM, 0);
 }
 
 void tank_idle(edict_t *self)
 {
-    gi.sound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
+    gi_sound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
 }
 
 
@@ -293,7 +293,7 @@ void tank_pain(edict_t *self, edict_t *other, float kick, int damage)
     }
 
     self->pain_debounce_framenum = level.framenum + 3 * BASE_FRAMERATE;
-    gi.sound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM, 0);
 
     if (skill->value == 3)
         return;     // no pain anims in nightmare
@@ -338,7 +338,7 @@ void TankBlaster(edict_t *self)
 
 void TankStrike(edict_t *self)
 {
-    gi.sound(self, CHAN_WEAPON, sound_strike, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_WEAPON, sound_strike, 1, ATTN_NORM, 0);
 }
 
 void TankRocket(edict_t *self)
@@ -672,7 +672,7 @@ void tank_dead(edict_t *self)
     self->movetype = MOVETYPE_TOSS;
     self->svflags |= SVF_DEADMONSTER;
     self->nextthink = 0;
-    gi.linkentity(self);
+    gi_linkentity(self);
 }
 
 mframe_t tank_frames_death1 [] = {
@@ -717,7 +717,7 @@ void tank_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 
 // check for gib
     if (self->health <= self->gib_health) {
-        gi.sound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, gi_soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
         for (n = 0; n < 1 /*4*/; n++)
             ThrowGib(self, "models/objects/gibs/sm_meat/tris.md2", damage, GIB_ORGANIC);
         for (n = 0; n < 4; n++)
@@ -732,7 +732,7 @@ void tank_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
         return;
 
 // regular death
-    gi.sound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM, 0);
     self->deadflag = DEAD_DEAD;
     self->takedamage = DAMAGE_YES;
 
@@ -756,28 +756,28 @@ void SP_monster_tank(edict_t *self)
         return;
     }
 
-    self->s.modelindex = gi.modelindex("models/monsters/tank/tris.md2");
+    self->s.modelindex = gi_modelindex("models/monsters/tank/tris.md2");
     VectorSet(self->mins, -32, -32, -16);
     VectorSet(self->maxs, 32, 32, 72);
     self->movetype = MOVETYPE_STEP;
     self->solid = SOLID_BBOX;
 
-    sound_pain = gi.soundindex("tank/tnkpain2.wav");
-    sound_thud = gi.soundindex("tank/tnkdeth2.wav");
-    sound_idle = gi.soundindex("tank/tnkidle1.wav");
-    sound_die = gi.soundindex("tank/death.wav");
-    sound_step = gi.soundindex("tank/step.wav");
-    sound_windup = gi.soundindex("tank/tnkatck4.wav");
-    sound_strike = gi.soundindex("tank/tnkatck5.wav");
-    sound_sight = gi.soundindex("tank/sight1.wav");
+    sound_pain = gi_soundindex("tank/tnkpain2.wav");
+    sound_thud = gi_soundindex("tank/tnkdeth2.wav");
+    sound_idle = gi_soundindex("tank/tnkidle1.wav");
+    sound_die = gi_soundindex("tank/death.wav");
+    sound_step = gi_soundindex("tank/step.wav");
+    sound_windup = gi_soundindex("tank/tnkatck4.wav");
+    sound_strike = gi_soundindex("tank/tnkatck5.wav");
+    sound_sight = gi_soundindex("tank/sight1.wav");
 
-    gi.soundindex("tank/tnkatck1.wav");
-    gi.soundindex("tank/tnkatk2a.wav");
-    gi.soundindex("tank/tnkatk2b.wav");
-    gi.soundindex("tank/tnkatk2c.wav");
-    gi.soundindex("tank/tnkatk2d.wav");
-    gi.soundindex("tank/tnkatk2e.wav");
-    gi.soundindex("tank/tnkatck3.wav");
+    gi_soundindex("tank/tnkatck1.wav");
+    gi_soundindex("tank/tnkatk2a.wav");
+    gi_soundindex("tank/tnkatk2b.wav");
+    gi_soundindex("tank/tnkatk2c.wav");
+    gi_soundindex("tank/tnkatk2d.wav");
+    gi_soundindex("tank/tnkatk2e.wav");
+    gi_soundindex("tank/tnkatck3.wav");
 
     if (strcmp(self->classname, "monster_tank_commander") == 0) {
         self->health = 1000;
@@ -800,7 +800,7 @@ void SP_monster_tank(edict_t *self)
     self->monsterinfo.sight = tank_sight;
     self->monsterinfo.idle = tank_idle;
 
-    gi.linkentity(self);
+    gi_linkentity(self);
 
     self->monsterinfo.currentmove = &tank_move_stand;
     self->monsterinfo.scale = MODEL_SCALE;

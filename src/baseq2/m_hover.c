@@ -40,15 +40,15 @@ static int  sound_search2;
 
 void hover_sight(edict_t *self, edict_t *other)
 {
-    gi.sound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
+    gi_sound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
 }
 
 void hover_search(edict_t *self)
 {
     if (random() < 0.5f)
-        gi.sound(self, CHAN_VOICE, sound_search1, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_search1, 1, ATTN_NORM, 0);
     else
-        gi.sound(self, CHAN_VOICE, sound_search2, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_search2, 1, ATTN_NORM, 0);
 }
 
 
@@ -480,14 +480,14 @@ void hover_pain(edict_t *self, edict_t *other, float kick, int damage)
 
     if (damage <= 25) {
         if (random() < 0.5f) {
-            gi.sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
+            gi_sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
             self->monsterinfo.currentmove = &hover_move_pain3;
         } else {
-            gi.sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
+            gi_sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
             self->monsterinfo.currentmove = &hover_move_pain2;
         }
     } else {
-        gi.sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
         self->monsterinfo.currentmove = &hover_move_pain1;
     }
 }
@@ -509,7 +509,7 @@ void hover_dead(edict_t *self)
     self->think = hover_deadthink;
     self->nextthink = level.framenum + 1;
     self->timestamp = level.framenum + 15 * BASE_FRAMERATE;
-    gi.linkentity(self);
+    gi_linkentity(self);
 }
 
 void hover_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
@@ -518,7 +518,7 @@ void hover_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage,
 
 // check for gib
     if (self->health <= self->gib_health) {
-        gi.sound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, gi_soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
         for (n = 0; n < 2; n++)
             ThrowGib(self, "models/objects/gibs/bone/tris.md2", damage, GIB_ORGANIC);
         for (n = 0; n < 2; n++)
@@ -533,9 +533,9 @@ void hover_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage,
 
 // regular death
     if (random() < 0.5f)
-        gi.sound(self, CHAN_VOICE, sound_death1, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_death1, 1, ATTN_NORM, 0);
     else
-        gi.sound(self, CHAN_VOICE, sound_death2, 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_VOICE, sound_death2, 1, ATTN_NORM, 0);
     self->deadflag = DEAD_DEAD;
     self->takedamage = DAMAGE_YES;
     self->monsterinfo.currentmove = &hover_move_death1;
@@ -550,21 +550,21 @@ void SP_monster_hover(edict_t *self)
         return;
     }
 
-    sound_pain1 = gi.soundindex("hover/hovpain1.wav");
-    sound_pain2 = gi.soundindex("hover/hovpain2.wav");
-    sound_death1 = gi.soundindex("hover/hovdeth1.wav");
-    sound_death2 = gi.soundindex("hover/hovdeth2.wav");
-    sound_sight = gi.soundindex("hover/hovsght1.wav");
-    sound_search1 = gi.soundindex("hover/hovsrch1.wav");
-    sound_search2 = gi.soundindex("hover/hovsrch2.wav");
+    sound_pain1 = gi_soundindex("hover/hovpain1.wav");
+    sound_pain2 = gi_soundindex("hover/hovpain2.wav");
+    sound_death1 = gi_soundindex("hover/hovdeth1.wav");
+    sound_death2 = gi_soundindex("hover/hovdeth2.wav");
+    sound_sight = gi_soundindex("hover/hovsght1.wav");
+    sound_search1 = gi_soundindex("hover/hovsrch1.wav");
+    sound_search2 = gi_soundindex("hover/hovsrch2.wav");
 
-    gi.soundindex("hover/hovatck1.wav");
+    gi_soundindex("hover/hovatck1.wav");
 
-    self->s.sound = gi.soundindex("hover/hovidle1.wav");
+    self->s.sound = gi_soundindex("hover/hovidle1.wav");
 
     self->movetype = MOVETYPE_STEP;
     self->solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/hover/tris.md2");
+    self->s.modelindex = gi_modelindex("models/monsters/hover/tris.md2");
     VectorSet(self->mins, -24, -24, -24);
     VectorSet(self->maxs, 24, 24, 32);
 
@@ -583,7 +583,7 @@ void SP_monster_hover(edict_t *self)
     self->monsterinfo.sight = hover_sight;
     self->monsterinfo.search = hover_search;
 
-    gi.linkentity(self);
+    gi_linkentity(self);
 
     self->monsterinfo.currentmove = &hover_move_stand;
     self->monsterinfo.scale = MODEL_SCALE;

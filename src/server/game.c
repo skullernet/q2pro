@@ -21,7 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 game_export_t    *ge;
 
-static void PF_configstring(int index, const char *val);
+void PF_configstring(int index, const char *val);
 
 /*
 ================
@@ -56,17 +56,17 @@ static int PF_FindIndex(const char *name, int start, int max, const char *func)
     return i;
 }
 
-static int PF_ModelIndex(const char *name)
+int PF_ModelIndex(const char *name)
 {
     return PF_FindIndex(name, CS_MODELS, MAX_MODELS, __func__);
 }
 
-static int PF_SoundIndex(const char *name)
+int PF_SoundIndex(const char *name)
 {
     return PF_FindIndex(name, CS_SOUNDS, MAX_SOUNDS, __func__);
 }
 
-static int PF_ImageIndex(const char *name)
+int PF_ImageIndex(const char *name)
 {
     return PF_FindIndex(name, CS_IMAGES, MAX_IMAGES, __func__);
 }
@@ -79,7 +79,7 @@ Sends the contents of the mutlicast buffer to a single client.
 Archived in MVD stream.
 ===============
 */
-static void PF_Unicast(edict_t *ent, qboolean reliable)
+void PF_Unicast(edict_t *ent, qboolean reliable)
 {
     client_t    *client;
     int         cmd, flags, clientNum;
@@ -138,7 +138,7 @@ Sends text to all active clients.
 Archived in MVD stream.
 =================
 */
-static void PF_bprintf(int level, const char *fmt, ...)
+void PF_bprintf(int level, const char *fmt, ...)
 {
     va_list     argptr;
     char        string[MAX_STRING_CHARS];
@@ -207,7 +207,7 @@ Print to a single client if the level passes.
 Archived in MVD stream.
 ===============
 */
-static void PF_cprintf(edict_t *ent, int level, const char *fmt, ...)
+void PF_cprintf(edict_t *ent, int level, const char *fmt, ...)
 {
     char        msg[MAX_STRING_CHARS];
     va_list     argptr;
@@ -261,7 +261,7 @@ Centerprint to a single client.
 Archived in MVD stream.
 ===============
 */
-static void PF_centerprintf(edict_t *ent, const char *fmt, ...)
+void PF_centerprintf(edict_t *ent, const char *fmt, ...)
 {
     char        msg[MAX_STRING_CHARS];
     va_list     argptr;
@@ -319,7 +319,7 @@ PF_setmodel
 Also sets mins and maxs for inline bmodels
 =================
 */
-static void PF_setmodel(edict_t *ent, const char *name)
+void PF_setmodel(edict_t *ent, const char *name)
 {
     mmodel_t    *mod;
 
@@ -345,7 +345,7 @@ If game is actively running, broadcasts configstring change.
 Archived in MVD stream.
 ===============
 */
-static void PF_configstring(int index, const char *val)
+void PF_configstring(int index, const char *val)
 {
     size_t len, maxlen;
     client_t *client;
@@ -411,7 +411,7 @@ static void PF_configstring(int index, const char *val)
     SZ_Clear(&msg_write);
 }
 
-static void PF_WriteFloat(float f)
+void PF_WriteFloat(float f)
 {
     Com_Error(ERR_DROP, "PF_WriteFloat not implemented");
 }
@@ -446,7 +446,7 @@ PF_inPVS
 Also checks portalareas so that doors block sight
 =================
 */
-static qboolean PF_inPVS(vec3_t p1, vec3_t p2)
+qboolean PF_inPVS(vec3_t p1, vec3_t p2)
 {
     return PF_inVIS(p1, p2, DVIS_PVS);
 }
@@ -458,7 +458,7 @@ PF_inPHS
 Also checks portalareas so that doors block sound
 =================
 */
-static qboolean PF_inPHS(vec3_t p1, vec3_t p2)
+qboolean PF_inPHS(vec3_t p1, vec3_t p2)
 {
     return PF_inVIS(p1, p2, DVIS_PHS);
 }
@@ -489,9 +489,9 @@ If origin is NULL, the origin is determined from the entity origin
 or the midpoint of the entity box for bmodels.
 ==================
 */
-static void SV_StartSound(vec3_t origin, edict_t *edict, int channel,
-                          int soundindex, float volume,
-                          float attenuation, float timeofs)
+void SV_StartSound(vec3_t origin, edict_t *edict, int channel,
+                   int soundindex, float volume,
+                   float attenuation, float timeofs)
 {
     int         i, ent, flags, sendchan;
     vec3_t      origin_v;
@@ -648,9 +648,9 @@ static void SV_StartSound(vec3_t origin, edict_t *edict, int channel,
                      volume * 255, attenuation * 64, timeofs * 1000);
 }
 
-static void PF_StartSound(edict_t *entity, int channel,
-                          int soundindex, float volume,
-                          float attenuation, float timeofs)
+void PF_StartSound(edict_t *entity, int channel,
+                   int soundindex, float volume,
+                   float attenuation, float timeofs)
 {
     if (!entity)
         return;
@@ -666,7 +666,7 @@ void PF_Pmove(pmove_t *pm)
     }
 }
 
-static cvar_t *PF_cvar(const char *name, const char *value, int flags)
+cvar_t *PF_cvar(const char *name, const char *value, int flags)
 {
     if (flags & CVAR_EXTENDED_MASK) {
         Com_WPrintf("Game attemped to set extended flags on '%s', masked out.\n", name);
@@ -676,12 +676,12 @@ static cvar_t *PF_cvar(const char *name, const char *value, int flags)
     return Cvar_Get(name, value, flags | CVAR_GAME);
 }
 
-static void PF_AddCommandString(const char *string)
+void PF_AddCommandString(const char *string)
 {
     Cbuf_AddText(&cmd_buffer, string);
 }
 
-static void PF_SetAreaPortalState(int portalnum, qboolean open)
+void PF_SetAreaPortalState(int portalnum, qboolean open)
 {
     if (!sv.cm.cache) {
         Com_Error(ERR_DROP, "%s: no map loaded", __func__);
@@ -689,7 +689,7 @@ static void PF_SetAreaPortalState(int portalnum, qboolean open)
     CM_SetAreaPortalState(&sv.cm, portalnum, open);
 }
 
-static qboolean PF_AreasConnected(int area1, int area2)
+qboolean PF_AreasConnected(int area1, int area2)
 {
     if (!sv.cm.cache) {
         Com_Error(ERR_DROP, "%s: no map loaded", __func__);
@@ -716,7 +716,7 @@ static void PF_FreeTags(unsigned tag)
     Z_FreeTags(tag + TAG_MAX);
 }
 
-static void PF_DebugGraph(float value, int color)
+void PF_DebugGraph(float value, int color)
 {
 }
 
@@ -792,6 +792,11 @@ void SV_InitGameProgs(void)
 
     // unload anything we have now
     SV_ShutdownGameProgs();
+
+#if USE_WASM
+    if (SV_InitGameWasmProgs())
+        return;
+#endif
 
     // for debugging or `proxy' mods
     if (sys_forcegamelib->string[0])
@@ -884,12 +889,12 @@ void SV_InitGameProgs(void)
     ge->Init();
 
     // sanitize edict_size
-    if (ge->edict_size < sizeof(edict_t) || ge->edict_size > (unsigned)INT_MAX / MAX_EDICTS) {
+    if (ge->pool.edict_size < sizeof(edict_t) || ge->pool.edict_size > (unsigned)INT_MAX / MAX_EDICTS) {
         Com_Error(ERR_DROP, "Game library returned bad size of edict_t");
     }
 
     // sanitize max_edicts
-    if (ge->max_edicts <= sv_maxclients->integer || ge->max_edicts > MAX_EDICTS) {
+    if (ge->pool.max_edicts <= sv_maxclients->integer || ge->pool.max_edicts > MAX_EDICTS) {
         Com_Error(ERR_DROP, "Game library returned bad number of max_edicts");
     }
 }

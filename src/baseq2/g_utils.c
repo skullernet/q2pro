@@ -49,7 +49,7 @@ edict_t *G_Find(edict_t *from, int fieldofs, char *match)
     else
         from++;
 
-    for (; from < &g_edicts[globals.num_edicts] ; from++) {
+    for (; from < &g_edicts[pool->num_edicts] ; from++) {
         if (!from->inuse)
             continue;
         s = *(char **)((byte *)from + fieldofs);
@@ -81,7 +81,7 @@ edict_t *findradius(edict_t *from, vec3_t org, float rad)
         from = g_edicts;
     else
         from++;
-    for (; from < &g_edicts[globals.num_edicts]; from++) {
+    for (; from < &g_edicts[pool->num_edicts]; from++) {
         if (!from->inuse)
             continue;
         if (from->solid == SOLID_NOT)
@@ -118,7 +118,7 @@ edict_t *G_PickTarget(char *targetname)
     edict_t *choice[MAXCHOICES];
 
     if (!targetname) {
-        gi.dprintf("G_PickTarget called with NULL targetname\n");
+        gi_dprintf("G_PickTarget called with NULL targetname\n");
         return NULL;
     }
 
@@ -132,7 +132,7 @@ edict_t *G_PickTarget(char *targetname)
     }
 
     if (!num_choices) {
-        gi.dprintf("G_PickTarget: target %s not found\n", targetname);
+        gi_dprintf("G_PickTarget: target %s not found\n", targetname);
         return NULL;
     }
 
@@ -178,7 +178,7 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
         t->think = Think_Delay;
         t->activator = activator;
         if (!activator)
-            gi.dprintf("Think_Delay with no activator\n");
+            gi_dprintf("Think_Delay with no activator\n");
         t->message = ent->message;
         t->target = ent->target;
         t->killtarget = ent->killtarget;
@@ -190,11 +190,11 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
 // print the message
 //
     if ((ent->message) && !(activator->svflags & SVF_MONSTER)) {
-        gi.centerprintf(activator, "%s", ent->message);
+        gi_centerprintf(activator, "%s", ent->message);
         if (ent->noise_index)
-            gi.sound(activator, CHAN_AUTO, ent->noise_index, 1, ATTN_NORM, 0);
+            gi_sound(activator, CHAN_AUTO, ent->noise_index, 1, ATTN_NORM, 0);
         else
-            gi.sound(activator, CHAN_AUTO, gi.soundindex("misc/talk1.wav"), 1, ATTN_NORM, 0);
+            gi_sound(activator, CHAN_AUTO, gi_soundindex("misc/talk1.wav"), 1, ATTN_NORM, 0);
     }
 
 //
@@ -205,7 +205,7 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
         while ((t = G_Find(t, FOFS(targetname), ent->killtarget))) {
             G_FreeEdict(t);
             if (!ent->inuse) {
-                gi.dprintf("entity was removed while using killtargets\n");
+                gi_dprintf("entity was removed while using killtargets\n");
                 return;
             }
         }
@@ -223,13 +223,13 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
                 continue;
 
             if (t == ent) {
-                gi.dprintf("WARNING: Entity used itself.\n");
+                gi_dprintf("WARNING: Entity used itself.\n");
             } else {
                 if (t->use)
                     t->use(t, ent, activator);
             }
             if (!ent->inuse) {
-                gi.dprintf("entity was removed while using targets\n");
+                gi_dprintf("entity was removed while using targets\n");
                 return;
             }
         }
@@ -363,7 +363,7 @@ char *G_CopyString(char *in)
 {
     char    *out;
 
-    out = gi.TagMalloc(strlen(in) + 1, TAG_LEVEL);
+    out = gi_TagMalloc(strlen(in) + 1, TAG_LEVEL);
     strcpy(out, in);
     return out;
 }
@@ -394,7 +394,7 @@ edict_t *G_Spawn(void)
     edict_t     *e;
 
     e = &g_edicts[game.maxclients + 1];
-    for (i = game.maxclients + 1 ; i < globals.num_edicts ; i++, e++) {
+    for (i = game.maxclients + 1 ; i < pool->num_edicts ; i++, e++) {
         // the first couple seconds of server time can involve a lot of
         // freeing and allocating, so relax the replacement policy
         if (!e->inuse && (e->freetime < 2 || level.time - e->freetime > 0.5f)) {
@@ -404,9 +404,9 @@ edict_t *G_Spawn(void)
     }
 
     if (i == game.maxentities)
-        gi.error("ED_Alloc: no free edicts");
+        gi_error("ED_Alloc: no free edicts");
 
-    globals.num_edicts++;
+    pool->num_edicts++;
     G_InitEdict(e);
     return e;
 }
@@ -420,10 +420,10 @@ Marks the edict as free
 */
 void G_FreeEdict(edict_t *ed)
 {
-    gi.unlinkentity(ed);        // unlink from world
+    gi_unlinkentity(ed);        // unlink from world
 
     if ((ed - g_edicts) <= (maxclients->value + BODY_QUEUE_SIZE)) {
-//      gi.dprintf("tried to free special edict\n");
+//      gi_dprintf("tried to free special edict\n");
         return;
     }
 
@@ -449,7 +449,7 @@ void    G_TouchTriggers(edict_t *ent)
     if ((ent->client || (ent->svflags & SVF_MONSTER)) && (ent->health <= 0))
         return;
 
-    num = gi.BoxEdicts(ent->absmin, ent->absmax, touch
+    num = gi_BoxEdicts(ent->absmin, ent->absmax, touch
                        , MAX_EDICTS, AREA_TRIGGERS);
 
     // be careful, it is possible to have an entity in this
@@ -477,7 +477,7 @@ void    G_TouchSolids(edict_t *ent)
     int         i, num;
     edict_t     *touch[MAX_EDICTS], *hit;
 
-    num = gi.BoxEdicts(ent->absmin, ent->absmax, touch
+    num = gi_BoxEdicts(ent->absmin, ent->absmax, touch
                        , MAX_EDICTS, AREA_SOLID);
 
     // be careful, it is possible to have an entity in this
@@ -517,7 +517,7 @@ bool KillBox(edict_t *ent)
     trace_t     tr;
 
     while (1) {
-        tr = gi.trace(ent->s.origin, ent->mins, ent->maxs, ent->s.origin, NULL, MASK_PLAYERSOLID);
+        tr = gi_trace(ent->s.origin, ent->mins, ent->maxs, ent->s.origin, NULL, MASK_PLAYERSOLID);
         if (!tr.ent)
             break;
 

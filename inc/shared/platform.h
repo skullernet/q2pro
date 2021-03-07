@@ -42,6 +42,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define LIBSUFFIX   ".so"
 #endif
 
+#if USE_WASM
+#define WASMSUFFIX	".wasm"
+#endif
+
 #ifdef _WIN32
 #define PATH_SEP_CHAR       '\\'
 #define PATH_SEP_STRING     "\\"

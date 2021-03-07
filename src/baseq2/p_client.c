@@ -50,7 +50,7 @@ void SP_FixCoopSpots(edict_t *self)
         VectorSubtract(self->s.origin, spot->s.origin, d);
         if (VectorLength(d) < 384) {
             if ((!self->targetname) || Q_stricmp(self->targetname, spot->targetname) != 0) {
-//              gi.dprintf("FixCoopSpots changed %s at %s targetname from %s to %s\n", self->classname, vtos(self->s.origin), self->targetname, spot->targetname);
+//              gi_dprintf("FixCoopSpots changed %s at %s targetname from %s to %s\n", self->classname, vtos(self->s.origin), self->targetname, spot->targetname);
                 self->targetname = spot->targetname;
             }
             return;
@@ -158,7 +158,7 @@ void SP_info_player_coop(edict_t *self)
 The deathmatch intermission point will be at one of these
 Use 'angles' instead of 'angle', so you can set pitch or roll as well as yaw.  'pitch yaw roll'
 */
-void SP_info_player_intermission(void)
+void SP_info_player_intermission(edict_t *ent)
 {
 }
 
@@ -288,7 +288,7 @@ void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker)
             }
         }
         if (message) {
-            gi.bprintf(PRINT_MEDIUM, "%s %s.\n", self->client->pers.netname, message);
+            gi_bprintf(PRINT_MEDIUM, "%s %s.\n", self->client->pers.netname, message);
             if (deathmatch->value)
                 self->client->resp.score--;
             self->enemy = NULL;
@@ -368,7 +368,7 @@ void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker)
                 break;
             }
             if (message) {
-                gi.bprintf(PRINT_MEDIUM, "%s %s %s%s\n", self->client->pers.netname, message, attacker->client->pers.netname, message2);
+                gi_bprintf(PRINT_MEDIUM, "%s %s %s%s\n", self->client->pers.netname, message, attacker->client->pers.netname, message2);
                 if (deathmatch->value) {
                     if (ff)
                         attacker->client->resp.score--;
@@ -380,7 +380,7 @@ void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker)
         }
     }
 
-    gi.bprintf(PRINT_MEDIUM, "%s died.\n", self->client->pers.netname);
+    gi_bprintf(PRINT_MEDIUM, "%s died.\n", self->client->pers.netname);
     if (deathmatch->value)
         self->client->resp.score--;
 }
@@ -521,7 +521,7 @@ void player_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage
 
     if (self->health < -40) {
         // gib
-        gi.sound(self, CHAN_BODY, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_BODY, gi_soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
         for (n = 0; n < 4; n++)
             ThrowGib(self, "models/objects/gibs/sm_meat/tris.md2", damage, GIB_ORGANIC);
         ThrowClientHead(self, damage);
@@ -552,13 +552,13 @@ void player_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage
                     self->client->anim_end = FRAME_death308;
                     break;
                 }
-            gi.sound(self, CHAN_VOICE, gi.soundindex(va("*death%i.wav", (Q_rand() % 4) + 1)), 1, ATTN_NORM, 0);
+            gi_sound(self, CHAN_VOICE, gi_soundindex(va("*death%i.wav", (Q_rand() % 4) + 1)), 1, ATTN_NORM, 0);
         }
     }
 
     self->deadflag = DEAD_DEAD;
 
-    gi.linkentity(self);
+    gi_linkentity(self);
 }
 
 //=======================================================================
@@ -854,7 +854,7 @@ void    SelectSpawnPoint(edict_t *ent, vec3_t origin, vec3_t angles)
                 spot = G_Find(spot, FOFS(classname), "info_player_start");
             }
             if (!spot)
-                gi.error("Couldn't find spawn point %s", game.spawnpoint);
+                gi_error("Couldn't find spawn point %s", game.spawnpoint);
         }
     }
 
@@ -883,7 +883,7 @@ void body_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
     int n;
 
     if (self->health < -40) {
-        gi.sound(self, CHAN_BODY, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+        gi_sound(self, CHAN_BODY, gi_soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
         for (n = 0; n < 4; n++)
             ThrowGib(self, "models/objects/gibs/sm_meat/tris.md2", damage, GIB_ORGANIC);
         self->s.origin[2] -= 48;
@@ -896,7 +896,7 @@ void CopyToBodyQue(edict_t *ent)
 {
     edict_t     *body;
 
-    gi.unlinkentity(ent);
+    gi_unlinkentity(ent);
 
     // grab a body que and cycle to the next one
     body = &g_edicts[game.maxclients + level.body_que + 1];
@@ -904,14 +904,14 @@ void CopyToBodyQue(edict_t *ent)
 
     // send an effect on the removed body
     if (body->s.modelindex) {
-        gi.WriteByte(svc_temp_entity);
-        gi.WriteByte(TE_BLOOD);
-        gi.WritePosition(body->s.origin);
-        gi.WriteDir(vec3_origin);
-        gi.multicast(body->s.origin, MULTICAST_PVS);
+        gi_WriteByte(svc_temp_entity);
+        gi_WriteByte(TE_BLOOD);
+        gi_WritePosition(body->s.origin);
+        gi_WriteDir(vec3_origin);
+        gi_multicast(body->s.origin, MULTICAST_PVS);
     }
 
-    gi.unlinkentity(body);
+    gi_unlinkentity(body);
     body->s = ent->s;
     body->s.number = body - g_edicts;
     body->s.event = EV_OTHER_TELEPORT;
@@ -933,7 +933,7 @@ void CopyToBodyQue(edict_t *ent)
     body->die = body_die;
     body->takedamage = DAMAGE_YES;
 
-    gi.linkentity(body);
+    gi_linkentity(body);
 }
 
 void respawn(edict_t *self)
@@ -958,7 +958,7 @@ void respawn(edict_t *self)
     }
 
     // restart the entire server
-    gi.AddCommandString("pushmenu loadgame\n");
+    gi_AddCommandString("pushmenu loadgame\n");
 }
 
 /*
@@ -977,11 +977,11 @@ void spectator_respawn(edict_t *ent)
         if (*spectator_password->string &&
             strcmp(spectator_password->string, "none") &&
             strcmp(spectator_password->string, value)) {
-            gi.cprintf(ent, PRINT_HIGH, "Spectator password incorrect.\n");
+            gi_cprintf(ent, PRINT_HIGH, "Spectator password incorrect.\n");
             ent->client->pers.spectator = false;
-            gi.WriteByte(svc_stufftext);
-            gi.WriteString("spectator 0\n");
-            gi.unicast(ent, true);
+            gi_WriteByte(svc_stufftext);
+            gi_WriteString("spectator 0\n");
+            gi_unicast(ent, true);
             return;
         }
 
@@ -991,12 +991,12 @@ void spectator_respawn(edict_t *ent)
                 numspec++;
 
         if (numspec >= maxspectators->value) {
-            gi.cprintf(ent, PRINT_HIGH, "Server spectator limit is full.");
+            gi_cprintf(ent, PRINT_HIGH, "Server spectator limit is full.");
             ent->client->pers.spectator = false;
             // reset his spectator var
-            gi.WriteByte(svc_stufftext);
-            gi.WriteString("spectator 0\n");
-            gi.unicast(ent, true);
+            gi_WriteByte(svc_stufftext);
+            gi_WriteString("spectator 0\n");
+            gi_unicast(ent, true);
             return;
         }
     } else {
@@ -1005,11 +1005,11 @@ void spectator_respawn(edict_t *ent)
         char *value = Info_ValueForKey(ent->client->pers.userinfo, "password");
         if (*password->string && strcmp(password->string, "none") &&
             strcmp(password->string, value)) {
-            gi.cprintf(ent, PRINT_HIGH, "Password incorrect.\n");
+            gi_cprintf(ent, PRINT_HIGH, "Password incorrect.\n");
             ent->client->pers.spectator = true;
-            gi.WriteByte(svc_stufftext);
-            gi.WriteString("spectator 1\n");
-            gi.unicast(ent, true);
+            gi_WriteByte(svc_stufftext);
+            gi_WriteString("spectator 1\n");
+            gi_unicast(ent, true);
             return;
         }
     }
@@ -1023,10 +1023,10 @@ void spectator_respawn(edict_t *ent)
     // add a teleportation effect
     if (!ent->client->pers.spectator)  {
         // send effect
-        gi.WriteByte(svc_muzzleflash);
-        gi.WriteShort(ent - g_edicts);
-        gi.WriteByte(MZ_LOGIN);
-        gi.multicast(ent->s.origin, MULTICAST_PVS);
+        gi_WriteByte(svc_muzzleflash);
+        gi_WriteShort(ent - g_edicts);
+        gi_WriteByte(MZ_LOGIN);
+        gi_multicast(ent->s.origin, MULTICAST_PVS);
 
         // hold in place briefly
         ent->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
@@ -1036,9 +1036,9 @@ void spectator_respawn(edict_t *ent)
     ent->client->respawn_framenum = level.framenum;
 
     if (ent->client->pers.spectator)
-        gi.bprintf(PRINT_HIGH, "%s has moved to the sidelines\n", ent->client->pers.netname);
+        gi_bprintf(PRINT_HIGH, "%s has moved to the sidelines\n", ent->client->pers.netname);
     else
-        gi.bprintf(PRINT_HIGH, "%s joined the game\n", ent->client->pers.netname);
+        gi_bprintf(PRINT_HIGH, "%s joined the game\n", ent->client->pers.netname);
 }
 
 //==============================================================
@@ -1154,7 +1154,7 @@ void PutClientInServer(edict_t *ent)
             client->ps.fov = 160;
     }
 
-    client->ps.gunindex = gi.modelindex(client->pers.weapon->view_model);
+    client->ps.gunindex = gi_modelindex(client->pers.weapon->view_model);
 
     // clear entity state values
     ent->s.effects = 0;
@@ -1190,7 +1190,7 @@ void PutClientInServer(edict_t *ent)
         ent->solid = SOLID_NOT;
         ent->svflags |= SVF_NOCLIENT;
         ent->client->ps.gunindex = 0;
-        gi.linkentity(ent);
+        gi_linkentity(ent);
         return;
     } else
         client->resp.spectator = false;
@@ -1199,7 +1199,7 @@ void PutClientInServer(edict_t *ent)
         // could't spawn in?
     }
 
-    gi.linkentity(ent);
+    gi_linkentity(ent);
 
     // force the current weapon up
     client->newweapon = client->pers.weapon;
@@ -1227,13 +1227,13 @@ void ClientBeginDeathmatch(edict_t *ent)
         MoveClientToIntermission(ent);
     } else {
         // send effect
-        gi.WriteByte(svc_muzzleflash);
-        gi.WriteShort(ent - g_edicts);
-        gi.WriteByte(MZ_LOGIN);
-        gi.multicast(ent->s.origin, MULTICAST_PVS);
+        gi_WriteByte(svc_muzzleflash);
+        gi_WriteShort(ent - g_edicts);
+        gi_WriteByte(MZ_LOGIN);
+        gi_multicast(ent->s.origin, MULTICAST_PVS);
     }
 
-    gi.bprintf(PRINT_HIGH, "%s entered the game\n", ent->client->pers.netname);
+    gi_bprintf(PRINT_HIGH, "%s entered the game\n", ent->client->pers.netname);
 
     // make sure all view stuff is valid
     ClientEndServerFrame(ent);
@@ -1283,12 +1283,12 @@ void ClientBegin(edict_t *ent)
     } else {
         // send effect if in a multiplayer game
         if (game.maxclients > 1) {
-            gi.WriteByte(svc_muzzleflash);
-            gi.WriteShort(ent - g_edicts);
-            gi.WriteByte(MZ_LOGIN);
-            gi.multicast(ent->s.origin, MULTICAST_PVS);
+            gi_WriteByte(svc_muzzleflash);
+            gi_WriteShort(ent - g_edicts);
+            gi_WriteByte(MZ_LOGIN);
+            gi_multicast(ent->s.origin, MULTICAST_PVS);
 
-            gi.bprintf(PRINT_HIGH, "%s entered the game\n", ent->client->pers.netname);
+            gi_bprintf(PRINT_HIGH, "%s entered the game\n", ent->client->pers.netname);
         }
     }
 
@@ -1334,7 +1334,7 @@ void ClientUserinfoChanged(edict_t *ent, char *userinfo)
     playernum = ent - g_edicts - 1;
 
     // combine name and skin into a configstring
-    gi.configstring(CS_PLAYERSKINS + playernum, va("%s\\%s", ent->client->pers.netname, s));
+    gi_configstring(CS_PLAYERSKINS + playernum, va("%s\\%s", ent->client->pers.netname, s));
 
     // fov
     if (deathmatch->value && ((int)dmflags->value & DF_FIXED_FOV)) {
@@ -1428,7 +1428,7 @@ qboolean ClientConnect(edict_t *ent, char *userinfo)
     ClientUserinfoChanged(ent, userinfo);
 
     if (game.maxclients > 1)
-        gi.dprintf("%s connected\n", ent->client->pers.netname);
+        gi_dprintf("%s connected\n", ent->client->pers.netname);
 
     ent->svflags = 0; // make sure we start with known default
     ent->client->pers.connected = true;
@@ -1450,17 +1450,17 @@ void ClientDisconnect(edict_t *ent)
     if (!ent->client)
         return;
 
-    gi.bprintf(PRINT_HIGH, "%s disconnected\n", ent->client->pers.netname);
+    gi_bprintf(PRINT_HIGH, "%s disconnected\n", ent->client->pers.netname);
 
     // send effect
     if (ent->inuse) {
-        gi.WriteByte(svc_muzzleflash);
-        gi.WriteShort(ent - g_edicts);
-        gi.WriteByte(MZ_LOGOUT);
-        gi.multicast(ent->s.origin, MULTICAST_PVS);
+        gi_WriteByte(svc_muzzleflash);
+        gi_WriteShort(ent - g_edicts);
+        gi_WriteByte(MZ_LOGOUT);
+        gi_multicast(ent->s.origin, MULTICAST_PVS);
     }
 
-    gi.unlinkentity(ent);
+    gi_unlinkentity(ent);
     ent->s.modelindex = 0;
     ent->s.sound = 0;
     ent->s.event = 0;
@@ -1472,7 +1472,7 @@ void ClientDisconnect(edict_t *ent)
 
     // FIXME: don't break skins on corpses, etc
     //playernum = ent-g_edicts-1;
-    //gi.configstring (CS_PLAYERSKINS+playernum, "");
+    //gi_configstring (CS_PLAYERSKINS+playernum, "");
 }
 
 
@@ -1485,9 +1485,9 @@ edict_t *pm_passent;
 trace_t q_gameabi PM_trace(vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end)
 {
     if (pm_passent->health > 0)
-        return gi.trace(start, mins, maxs, end, pm_passent, MASK_PLAYERSOLID);
+        return gi_trace(start, mins, maxs, end, pm_passent, MASK_PLAYERSOLID);
     else
-        return gi.trace(start, mins, maxs, end, pm_passent, MASK_DEADSOLID);
+        return gi_trace(start, mins, maxs, end, pm_passent, MASK_DEADSOLID);
 }
 
 unsigned CheckBlock(void *b, int c)
@@ -1566,16 +1566,16 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 
         if (memcmp(&client->old_pmove, &pm.s, sizeof(pm.s))) {
             pm.snapinitial = true;
-            //      gi.dprintf ("pmove changed!\n");
+            //      gi_dprintf ("pmove changed!\n");
         }
 
         pm.cmd = *ucmd;
 
         pm.trace = PM_trace;    // adds default parms
-        pm.pointcontents = gi.pointcontents;
+        pm.pointcontents = gi_pointcontents;
 
         // perform a pmove
-        gi.Pmove(&pm);
+        gi_Pmove(&pm);
 
         // save results of pmove
         client->ps.pmove = pm.s;
@@ -1594,7 +1594,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         client->resp.cmd_angles[2] = SHORT2ANGLE(ucmd->angles[2]);
 
         if (ent->groundentity && !pm.groundentity && (pm.cmd.upmove >= 10) && (pm.waterlevel == 0)) {
-            gi.sound(ent, CHAN_VOICE, gi.soundindex("*jump1.wav"), 1, ATTN_NORM, 0);
+            gi_sound(ent, CHAN_VOICE, gi_soundindex("*jump1.wav"), 1, ATTN_NORM, 0);
             PlayerNoise(ent, ent->s.origin, PNOISE_SELF);
         }
 
@@ -1614,7 +1614,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
             VectorCopy(pm.viewangles, client->ps.viewangles);
         }
 
-        gi.linkentity(ent);
+        gi_linkentity(ent);
 
         if (ent->movetype != MOVETYPE_NOCLIP)
             G_TouchTriggers(ent);
