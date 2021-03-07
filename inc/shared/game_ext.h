@@ -16,8 +16,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef WASM_GAME_H
-#define WASM_GAME_H
+#ifndef GAME_EXT_H
+#define GAME_EXT_H
 
 #include <stdint.h>
 #include "game.h"
@@ -26,7 +26,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // Chosen because:
 // - 'W' in ASCII
 // - Doesn't conflict with any known API versions
-#define WASM_API_VERSION    87
+#define GAME_API_EXTENDED_VERSION    87
 
 // This may seem weird, but, since WASM doesn't deal with
 // import/export as function pointers this is completely legal.
@@ -49,13 +49,13 @@ typedef struct {
     int32_t apiversion;
     
     game_capability_t (*QueryEngineCapability)(const char *cap);
-} wasm_game_import_t;
+} game_import_87_t;
 
 typedef struct {
     game_export_t   ge;
     
     game_capability_t (*QueryGameCapability)(const char *cap);
-} wasm_game_export_t;
+} game_export_87_t;
 
 #ifdef GAME_INCLUDE
 // see game.h for what NATIVE_IMPORT does.
@@ -65,7 +65,6 @@ NATIVE_LINKAGE game_capability_t NATIVE_IMPORT(gi_QueryEngineCapability)(const c
 // =====
 // non_standard_layout::xxx 
 // =====
-// Shared with WASM modules
 typedef enum {
     WF_INVALID,
 
@@ -78,7 +77,7 @@ typedef enum {
     WF_POINTER,
 
     WF_UNSIGNED = 32
-} wasm_field_type_t;
+} game_field_type_t;
 
 #define WF_FIELD_TYPE(t) \
     ((t) & ~WF_UNSIGNED)
@@ -87,9 +86,9 @@ typedef enum {
     ((t) & WF_UNSIGNED)
 
 typedef struct {
-    wasm_field_type_t   type;
+    game_field_type_t   type;
     uint32_t            offset;
     uint32_t            count;
-} wasm_field_t;
+} game_field_t;
 
-#endif // WASM_GAME_H
+#endif // GAME_EXT_H

@@ -744,6 +744,7 @@ void SV_WriteFrameToClient_Enhanced(client_t *client);
 // sv_game.c
 //
 extern    game_export_t    *ge;
+extern    game_export_87_t  *xge;
 
 void SV_InitGameProgs(void);
 void SV_ShutdownGameProgs(void);

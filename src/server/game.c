@@ -20,6 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "server.h"
 
 game_export_t    *ge;
+game_export_87_t *xge;
 
 void PF_configstring(int index, const char *val);
 
@@ -720,6 +721,11 @@ void PF_DebugGraph(float value, int color)
 {
 }
 
+game_capability_t PF_QueryEngineCapability(const char *cap)
+{
+    return NULL;
+}
+
 //==============================================
 
 static void *game_library;
@@ -787,8 +793,8 @@ Init the game subsystem for a new map
 */
 void SV_InitGameProgs(void)
 {
-    game_import_t   import;
-    game_export_t   *(*entry)(game_import_t *) = NULL;
+    game_import_87_t   import;
+    game_export_87_t   *(*entry)(game_import_87_t *) = NULL;
 
     // unload anything we have now
     SV_ShutdownGameProgs();
@@ -821,69 +827,86 @@ void SV_InitGameProgs(void)
         Com_Error(ERR_DROP, "Failed to load game library");
 
     // load a new game dll
-    import.multicast = SV_Multicast;
-    import.unicast = PF_Unicast;
-    import.bprintf = PF_bprintf;
-    import.dprintf = PF_dprintf;
-    import.cprintf = PF_cprintf;
-    import.centerprintf = PF_centerprintf;
-    import.error = PF_error;
+    import.gi.multicast = SV_Multicast;
+    import.gi.unicast = PF_Unicast;
+    import.gi.bprintf = PF_bprintf;
+    import.gi.dprintf = PF_dprintf;
+    import.gi.cprintf = PF_cprintf;
+    import.gi.centerprintf = PF_centerprintf;
+    import.gi.error = PF_error;
 
-    import.linkentity = PF_LinkEdict;
-    import.unlinkentity = PF_UnlinkEdict;
-    import.BoxEdicts = SV_AreaEdicts;
-    import.trace = SV_Trace;
-    import.pointcontents = SV_PointContents;
-    import.setmodel = PF_setmodel;
-    import.inPVS = PF_inPVS;
-    import.inPHS = PF_inPHS;
-    import.Pmove = PF_Pmove;
+    import.gi.linkentity = PF_LinkEdict;
+    import.gi.unlinkentity = PF_UnlinkEdict;
+    import.gi.BoxEdicts = SV_AreaEdicts;
+    import.gi.trace = SV_Trace;
+    import.gi.pointcontents = SV_PointContents;
+    import.gi.setmodel = PF_setmodel;
+    import.gi.inPVS = PF_inPVS;
+    import.gi.inPHS = PF_inPHS;
+    import.gi.Pmove = PF_Pmove;
 
-    import.modelindex = PF_ModelIndex;
-    import.soundindex = PF_SoundIndex;
-    import.imageindex = PF_ImageIndex;
+    import.gi.modelindex = PF_ModelIndex;
+    import.gi.soundindex = PF_SoundIndex;
+    import.gi.imageindex = PF_ImageIndex;
 
-    import.configstring = PF_configstring;
-    import.sound = PF_StartSound;
-    import.positioned_sound = SV_StartSound;
+    import.gi.configstring = PF_configstring;
+    import.gi.sound = PF_StartSound;
+    import.gi.positioned_sound = SV_StartSound;
 
-    import.WriteChar = MSG_WriteChar;
-    import.WriteByte = MSG_WriteByte;
-    import.WriteShort = MSG_WriteShort;
-    import.WriteLong = MSG_WriteLong;
-    import.WriteFloat = PF_WriteFloat;
-    import.WriteString = MSG_WriteString;
-    import.WritePosition = MSG_WritePos;
-    import.WriteDir = MSG_WriteDir;
-    import.WriteAngle = MSG_WriteAngle;
+    import.gi.WriteChar = MSG_WriteChar;
+    import.gi.WriteByte = MSG_WriteByte;
+    import.gi.WriteShort = MSG_WriteShort;
+    import.gi.WriteLong = MSG_WriteLong;
+    import.gi.WriteFloat = PF_WriteFloat;
+    import.gi.WriteString = MSG_WriteString;
+    import.gi.WritePosition = MSG_WritePos;
+    import.gi.WriteDir = MSG_WriteDir;
+    import.gi.WriteAngle = MSG_WriteAngle;
 
-    import.TagMalloc = PF_TagMalloc;
-    import.TagFree = Z_Free;
-    import.FreeTags = PF_FreeTags;
+    import.gi.TagMalloc = PF_TagMalloc;
+    import.gi.TagFree = Z_Free;
+    import.gi.FreeTags = PF_FreeTags;
 
-    import.cvar = PF_cvar;
-    import.cvar_set = Cvar_UserSet;
-    import.cvar_forceset = Cvar_Set;
+    import.gi.cvar = PF_cvar;
+    import.gi.cvar_set = Cvar_UserSet;
+    import.gi.cvar_forceset = Cvar_Set;
 
-    import.argc = Cmd_Argc;
-    import.argv = Cmd_Argv;
+    import.gi.argc = Cmd_Argc;
+    import.gi.argv = Cmd_Argv;
     // original Cmd_Args() did actually return raw arguments
-    import.args = Cmd_RawArgs;
-    import.AddCommandString = PF_AddCommandString;
+    import.gi.args = Cmd_RawArgs;
+    import.gi.AddCommandString = PF_AddCommandString;
 
-    import.DebugGraph = PF_DebugGraph;
-    import.SetAreaPortalState = PF_SetAreaPortalState;
-    import.AreasConnected = PF_AreasConnected;
+    import.gi.DebugGraph = PF_DebugGraph;
+    import.gi.SetAreaPortalState = PF_SetAreaPortalState;
+    import.gi.AreasConnected = PF_AreasConnected;
 
-    ge = entry(&import);
+    // first, import the legacy API
+    ge = (game_export_t *) entry(&import);
     if (!ge) {
         Com_Error(ERR_DROP, "Game library returned NULL exports");
     }
 
-    if (ge->apiversion != GAME_API_VERSION) {
-        Com_Error(ERR_DROP, "Game library is version %d, expected %d",
-                  ge->apiversion, GAME_API_VERSION);
+    // next, attempt import of the extended API.
+    import.gi.DebugGraph = NULL;
+    import.apiversion = GAME_API_EXTENDED_VERSION;
+    import.QueryEngineCapability = PF_QueryEngineCapability;
+
+    xge = entry(&import);
+
+    // check extended API result
+    if (xge->ge.apiversion != GAME_API_EXTENDED_VERSION) {
+
+        xge = NULL;
+
+        if (ge->apiversion != GAME_API_VERSION) {
+            Com_Error(ERR_DROP, "Game library is version %d, expected %d or %d",
+                      ge->apiversion, GAME_API_VERSION, GAME_API_EXTENDED_VERSION);
+        }
     }
+
+    // restore DebugGraph
+    import.gi.DebugGraph = PF_DebugGraph;
 
     // initialize
     ge->Init();

@@ -24,7 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "g_local.h"
 #include "shared/native.h"
 
-wasm_game_export_t   globals;
+game_export_87_t   globals;
 
 // Bring in the exports from elsewhere in the source.
 void InitGame(void);
@@ -136,7 +136,7 @@ static void GetGameAPI_V3(game_import_t *import)
     pool = &globals.ge.pool;
 }
 
-static void GetGameAPI_V87(wasm_game_import_t *import)
+static void GetGameAPI_V87(game_import_87_t *import)
 {
     // make sure it's a valid 87 implementation.
     // returning will fall back to just implementing 3.
@@ -147,12 +147,12 @@ static void GetGameAPI_V87(wasm_game_import_t *import)
     // provides only one new ability: a simple query feature
     // between engine and game. This should allow for anything
     // that any new API should need in the future.
-    if (import->apiversion != WASM_API_VERSION)
+    if (import->apiversion != GAME_API_EXTENDED_VERSION)
         return;
 
     gi_QueryEngineCapability = import->QueryEngineCapability;
 
-    globals.ge.apiversion = WASM_API_VERSION;
+    globals.ge.apiversion = GAME_API_EXTENDED_VERSION;
 
     globals.QueryGameCapability = QueryGameCapability;
 }
@@ -162,7 +162,7 @@ q_exported game_export_t *GetGameAPI(game_import_t *import)
     if (!globals.ge.apiversion)
         GetGameAPI_V3(import);
     else
-        GetGameAPI_V87((wasm_game_import_t *) import);
+        GetGameAPI_V87((game_import_87_t *) import);
 
     return (game_export_t *) &globals;
 }

@@ -197,6 +197,6 @@ NATIVE_LINKAGE void NATIVE_IMPORT(gi_DebugGraph)(float value, int color);
 
 #endif      // GAME_INCLUDE
 
-#include "wasm_game.h"
+#include "game_ext.h"
 
 #endif // GAME_H

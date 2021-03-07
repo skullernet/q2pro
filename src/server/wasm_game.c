@@ -380,37 +380,37 @@ typedef struct {
 
 typedef struct {
     struct {
-        wasm_field_t    number;
+        game_field_t    number;
 
-        wasm_field_t    origin;
-        wasm_field_t    angles;
-        wasm_field_t    old_origin;
-        wasm_field_t    modelindex;
-        wasm_field_t    modelindex2, modelindex3, modelindex4;
-        wasm_field_t    frame;
-        wasm_field_t    skinnum;
-        wasm_field_t    effects;
-        wasm_field_t    renderfx;
-        wasm_field_t    solid;
+        game_field_t    origin;
+        game_field_t    angles;
+        game_field_t    old_origin;
+        game_field_t    modelindex;
+        game_field_t    modelindex2, modelindex3, modelindex4;
+        game_field_t    frame;
+        game_field_t    skinnum;
+        game_field_t    effects;
+        game_field_t    renderfx;
+        game_field_t    solid;
 
-        wasm_field_t    sound;
-        wasm_field_t    event;
+        game_field_t    sound;
+        game_field_t    event;
     } s;
 
-    wasm_field_t    client;
-    wasm_field_t    inuse;
-    wasm_field_t    linkcount;
+    game_field_t    client;
+    game_field_t    inuse;
+    game_field_t    linkcount;
 
-    wasm_field_t    area_prev;
+    game_field_t    area_prev;
 
-    wasm_field_t    areanum, areanum2;
+    game_field_t    areanum, areanum2;
 
-    wasm_field_t    svflags;
-    wasm_field_t    mins, maxs;
-    wasm_field_t    absmin, absmax, size;
-    wasm_field_t    solid;
-    wasm_field_t    clipmask;
-    wasm_field_t    owner;
+    game_field_t    svflags;
+    game_field_t    mins, maxs;
+    game_field_t    absmin, absmax, size;
+    game_field_t    solid;
+    game_field_t    clipmask;
+    game_field_t    owner;
 } wasm_edict_layout_t;
 
 #define WASM_FIELD(t, member, n) \
@@ -1236,15 +1236,15 @@ static bool _SV_InitGameWasm(void)
 
     // it's a valid WASM module! It might still not be a valid mod binary, though.
     // now, we find all of the linked functions.
-    uint32_t return_values[1] = { WASM_API_VERSION };
+    uint32_t return_values[1] = { GAME_API_EXTENDED_VERSION };
 
 	wasm_function_t GetGameAPI = SV_GetWASMFunction("GetGameAPI", "(i)i", true);
 
     SV_CallWASMFunction(GetGameAPI, 1, return_values);
 
-    if (return_values[0] != WASM_API_VERSION) {
+    if (return_values[0] != GAME_API_EXTENDED_VERSION) {
         Com_Printf("Wasm library is version %d, expected %d\n",
-                  return_values[0], WASM_API_VERSION);
+                  return_values[0], GAME_API_EXTENDED_VERSION);
         return false;
     }
 
@@ -1580,8 +1580,8 @@ static game_capability_t SV_QueryGameCapabilityWasm(const char *cap)
     return (game_capability_t) args[0];
 }
 
-static wasm_game_export_t wasm_game_exports = {
-    WASM_API_VERSION,
+static game_export_87_t wasm_game_exports = {
+    GAME_API_EXTENDED_VERSION,
 
     // set up our game exports wrapper
     SV_InitGameWasm,
