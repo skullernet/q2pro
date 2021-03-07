@@ -84,6 +84,7 @@ extern cvar_t   *sys_forcegamelib;
 #if USE_WASM
 extern cvar_t   *sys_wasmstacksize;
 extern cvar_t   *sys_wasmheapsize;
+extern cvar_t   *sys_nowasm;
 #endif
 
 #endif // SYSTEM_H

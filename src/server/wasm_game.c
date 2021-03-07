@@ -378,28 +378,6 @@ typedef struct {
 	wasm_address_t	owner;
 } wasm_edict_t;
 
-/*
-
-    int     number;         // edict index
-
-    vec3_t  origin;
-    vec3_t  angles;
-    vec3_t  old_origin;     // for lerping
-    int     modelindex;
-    int     modelindex2, modelindex3, modelindex4;  // weapons, CTF flags, etc
-    int     frame;
-    int     skinnum;
-    unsigned int        effects;        // PGM - we're filling it, so it needs to be unsigned
-    int     renderfx;
-    int     solid;          // for client side prediction, 8*(bits 0-4) is x/y radius
-                            // 8*(bits 5-9) is z down distance, 8(bits10-15) is z up
-                            // gi.linkentity sets this properly
-    int     sound;          // for looping sounds, to guarantee shutoff
-    int     event;          // impulse events -- muzzle flashes, footsteps, etc
-                            // events only go out for a single frame, they
-                            // are automatically cleared each frame
-*/
-
 typedef struct {
     struct {
         wasm_field_t    number;
@@ -1645,6 +1623,12 @@ a new map. Returns false if we can't.
 */
 bool SV_InitGameWasmProgs(void)
 {
+    if (sys_nowasm->value)
+    {
+        Com_Printf("Skipping WASM due to sys_nowasm\n");
+        return false;
+    }
+
     List_Init(&tagged_memory);
 
     if (!_SV_InitGameWasm())

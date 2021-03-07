@@ -56,6 +56,7 @@ cvar_t  *sys_forcegamelib;
 #if USE_WASM
 cvar_t   *sys_wasmstacksize;
 cvar_t   *sys_wasmheapsize;
+cvar_t   *sys_nowasm;
 #endif
 
 /*
@@ -1120,6 +1121,7 @@ void Sys_Init(void)
 #if USE_WASM
     sys_wasmstacksize = Cvar_Get("sys_wasmstacksize", "8388608", CVAR_NOSET);
     sys_wasmheapsize = Cvar_Get("sys_wasmheapsize", "100663296", CVAR_NOSET);
+    sys_nowasm = Cvar_Get("sys_nowasm", "0", CVAR_NOSET);
 #endif
 
 #if USE_WINSVC

@@ -67,6 +67,8 @@ static void GetGameAPI_V3(game_import_t *import)
     gi_modelindex = import->modelindex;
     gi_soundindex = import->soundindex;
     gi_imageindex = import->imageindex;
+
+    gi_setmodel = import->setmodel;
     
     gi_trace = import->trace;
     gi_pointcontents = import->pointcontents;
