@@ -477,14 +477,14 @@ game_capability_t gi_QueryEngineCapability(const char *cap)
 int32_t GetGameAPI(int32_t apiversion) WASM_EXPORT(GetGameAPI)
 {
 	// bad version
-	if (apiversion != WASM_API_VERSION)
+	if (apiversion != GAME_API_EXTENDED_VERSION)
 		return 0;
 
 	pool = &entity_pool;
 	pool->edict_size = sizeof(edict_t);
 
 	// we're good!
-	return WASM_API_VERSION;
+	return GAME_API_EXTENDED_VERSION;
 }
 
 edict_t *GetEdicts(void) WASM_EXPORT(GetEdicts)
