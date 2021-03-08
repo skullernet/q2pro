@@ -2,9 +2,11 @@
 /.q2pro/
 /.q2proded/
 /.baseq2/
+/.quake2/
 /q2pro*
 /q2proded*
 /baseq2/
+/quake2*
 /game*.so
 /game*.dll
 /tags

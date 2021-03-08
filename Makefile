@@ -40,14 +40,17 @@ LIBS ?=
 CFLAGS_s := -iquote./inc
 CFLAGS_c := -iquote./inc
 CFLAGS_g := -iquote./inc
+CFLAGS_w :=
 
 RCFLAGS_s :=
 RCFLAGS_c :=
 RCFLAGS_g :=
+RCFLAGS_w :=
 
 LDFLAGS_s :=
 LDFLAGS_c :=
 LDFLAGS_g := -shared
+LDFLAGS_w :=
 
 ifdef CONFIG_WINDOWS
     # Force i?86-netware calling convention on x86 Windows
@@ -61,6 +64,7 @@ ifdef CONFIG_WINDOWS
     LDFLAGS_s += -mconsole
     LDFLAGS_c += -mwindows
     LDFLAGS_g += -mconsole
+    LDFLAGS_w += -mwindows
 
     # Mark images as DEP and ASLR compatible
     LDFLAGS_s += -Wl,--nxcompat,--dynamicbase
@@ -135,6 +139,7 @@ CFLAGS_c += $(BUILD_DEFS) $(VER_DEFS) $(PATH_DEFS) -DUSE_SERVER=1 -DUSE_CLIENT=1
 RCFLAGS_s += -DREVISION=$(REV) -DVERSION='\"$(VER)\"'
 RCFLAGS_c += -DREVISION=$(REV) -DVERSION='\"$(VER)\"'
 RCFLAGS_g += -DREVISION=$(REV) -DVERSION='\"$(VER)\"'
+RCFLAGS_w += -DREVISION=$(REV) -DVERSION='\"$(VER)\"'
 
 
 ### Object Files ###
@@ -257,6 +262,9 @@ OBJS_g := \
     src/baseq2/p_trail.o        \
     src/baseq2/p_view.o         \
     src/baseq2/p_weapon.o
+
+OBJS_w := \
+    src/win-wrapper/wrapper.o       \
 
 
 ### Configuration Options ###
@@ -455,6 +463,7 @@ ifdef CONFIG_WINDOWS
     OBJS_c += src/windows/res/q2pro.o
     OBJS_s += src/windows/res/q2proded.o
     OBJS_g += src/windows/res/baseq2.o
+    OBJS_w += src/windows/res/win-wrapper.o
 
     # System libs
     LIBS_s += -lws2_32 -lwinmm -ladvapi32
@@ -486,6 +495,7 @@ else
     LIBS_s += -lm
     LIBS_c += -lm
     LIBS_g += -lm
+    LIBS_w +=
 
     ifeq ($(SYS),Linux)
         LIBS_s += -ldl -lrt
@@ -511,13 +521,15 @@ ifdef CONFIG_WINDOWS
     TARG_s := q2proded.exe
     TARG_c := q2pro.exe
     TARG_g := game$(CPU).dll
+    TARG_w := quake2.exe
 else
     TARG_s := q2proded
     TARG_c := q2pro
     TARG_g := game$(CPU).so
+    TARG_w :=
 endif
 
-all: $(TARG_s) $(TARG_c) $(TARG_g)
+all: $(TARG_s) $(TARG_c) $(TARG_g) $(TARG_w)
 
 default: all
 
@@ -536,28 +548,32 @@ endif
 BUILD_s := .q2proded
 BUILD_c := .q2pro
 BUILD_g := .baseq2
+BUILD_w := .quake2
 
 # Rewrite paths to build directories
 OBJS_s := $(patsubst %,$(BUILD_s)/%,$(OBJS_s))
 OBJS_c := $(patsubst %,$(BUILD_c)/%,$(OBJS_c))
 OBJS_g := $(patsubst %,$(BUILD_g)/%,$(OBJS_g))
+OBJS_w := $(patsubst %,$(BUILD_w)/%,$(OBJS_w))
 
 DEPS_s := $(OBJS_s:.o=.d)
 DEPS_c := $(OBJS_c:.o=.d)
 DEPS_g := $(OBJS_g:.o=.d)
+DEPS_w := $(OBJS_w:.o=.d)
 
 -include $(DEPS_s)
 -include $(DEPS_c)
 -include $(DEPS_g)
+-include $(DEPS_w)
 
 clean:
 	$(E) [CLEAN]
-	$(Q)$(RM) $(TARG_s) $(TARG_c) $(TARG_g)
-	$(Q)$(RMDIR) $(BUILD_s) $(BUILD_c) $(BUILD_g)
+	$(Q)$(RM) $(TARG_s) $(TARG_c) $(TARG_g) $(TARG_w)
+	$(Q)$(RMDIR) $(BUILD_s) $(BUILD_c) $(BUILD_g) $(BUILD_w)
 
-strip: $(TARG_s) $(TARG_c) $(TARG_g)
+strip: $(TARG_s) $(TARG_c) $(TARG_g) $(TARG_w)
 	$(E) [STRIP]
-	$(Q)$(STRIP) $(TARG_s) $(TARG_c) $(TARG_g)
+	$(Q)$(STRIP) $(TARG_s) $(TARG_c) $(TARG_g) $(TARG_w)
 
 # ------
 
@@ -609,4 +625,21 @@ $(TARG_g): $(OBJS_g)
 	$(E) [LD] $@
 	$(Q)$(MKDIR) $(@D)
 	$(Q)$(CC) $(LDFLAGS) $(LDFLAGS_g) -o $@ $(OBJS_g) $(LIBS) $(LIBS_g)
+
+# ------
+
+$(BUILD_w)/%.o: %.c
+	$(E) [CC] $@
+	$(Q)$(MKDIR) $(@D)
+	$(Q)$(CC) -c $(CFLAGS) $(CFLAGS_w) -o $@ $<
+
+$(BUILD_w)/%.o: %.rc
+	$(E) [RC] $@
+	$(Q)$(MKDIR) $(@D)
+	$(Q)$(WINDRES) $(RCFLAGS) $(RCFLAGS_w) -o $@ $<
+
+$(TARG_w): $(OBJS_w)
+	$(E) [LD] $@
+	$(Q)$(MKDIR) $(@D)
+	$(Q)$(CC) $(LDFLAGS) $(LDFLAGS_w) -o $@ $(OBJS_w) $(LIBS) $(LIBS_w)
 
