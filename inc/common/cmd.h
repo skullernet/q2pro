@@ -204,4 +204,10 @@ void Cmd_PrintHelp(const cmd_option_t *opt);
 void Cmd_PrintUsage(const cmd_option_t *opt, const char *suffix);
 void Cmd_PrintHint(void);
 
+#if USE_SERVER && USE_WASM
+void Cmd_DestroyWASMLinkage(void);
+uint32_t Cmd_RawArgsWASM(void);
+uint32_t Cmd_ArgvWASM(int arg);
+#endif
+
 #endif // CMD_H

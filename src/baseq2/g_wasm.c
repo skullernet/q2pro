@@ -246,7 +246,14 @@ void _gi_trace(float start_x, float start_y, float start_z, float mins_x, float 
 trace_t q_gameabi gi_trace(vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *passent, int contentmask)
 {
 	static trace_t tr;
+	
+	if (!mins)
+		mins = vec3_origin;
+	if (!maxs)
+		maxs = vec3_origin;
+
 	_gi_trace(start[0], start[1], start[2], mins[0], mins[1], mins[2], maxs[0], maxs[1], maxs[2], end[0], end[1], end[2], passent, contentmask, &tr);
+
 	return tr;
 }
 

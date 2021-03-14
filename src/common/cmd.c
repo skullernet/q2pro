@@ -781,6 +781,67 @@ int             cmd_optind;
 char            *cmd_optarg;
 char            *cmd_optopt;
 
+#if USE_SERVER && USE_WASM
+#include "server/server.h"
+
+// Memory copies for WASM
+static uint32_t wasm_cmd_string;
+static uint32_t wasm_cmd_data;
+static uint32_t wasm_cmd_args;
+static uint32_t wasm_cmd_null_string;
+
+void Cmd_DestroyWASMLinkage(void)
+{
+    wasm_cmd_string = wasm_cmd_data = wasm_cmd_args = wasm_cmd_null_string = 0;
+}
+
+uint32_t Cmd_ArgvWASM(int arg)
+{
+    const char *argv = Cmd_Argv(arg);
+
+    if (argv == cmd_null_string)
+        return wasm_cmd_null_string;
+
+    return wasm_cmd_data + (argv - cmd_data);
+}
+
+static void Cmd_CopyToWasm(void)
+{
+    if (!SV_IsWASMRunning())
+        return;
+
+    if (!wasm_cmd_string)
+        wasm_cmd_string = SV_AllocateWASMMemory(MAX_STRING_TOKENS);
+
+    if (!wasm_cmd_data)
+        wasm_cmd_data = SV_AllocateWASMMemory(MAX_STRING_TOKENS);
+
+    if (!wasm_cmd_args)
+        wasm_cmd_args = SV_AllocateWASMMemory(MAX_STRING_TOKENS);
+
+    if (!wasm_cmd_null_string)
+    {
+        wasm_cmd_null_string = SV_AllocateWASMMemory(1);
+        *((char *) SV_ResolveWASMAddress(wasm_cmd_null_string)) = 0;
+    }
+    
+    memcpy(SV_ResolveWASMAddress(wasm_cmd_string), cmd_string, sizeof(cmd_string));
+
+    memcpy(SV_ResolveWASMAddress(wasm_cmd_data), cmd_data, sizeof(cmd_data));
+}
+
+uint32_t Cmd_RawArgsWASM(void)
+{
+    char *args = Cmd_RawArgs();
+
+    if (args == cmd_null_string)
+        return wasm_cmd_null_string;
+
+    return wasm_cmd_string + (args - cmd_string);
+}
+
+#endif
+
 from_t Cmd_From(void)
 {
     return cmd_current->from;
@@ -1284,6 +1345,10 @@ void Cmd_TokenizeString(const char *text, bool macroExpand)
     cmd_optind = 1;
     cmd_optarg = cmd_optopt = cmd_null_string;
 
+#if USE_SERVER && USE_WASM
+    Cmd_CopyToWasm();
+#endif
+
     if (!text[0]) {
         return;
     }
@@ -1318,9 +1383,15 @@ void Cmd_TokenizeString(const char *text, bool macroExpand)
 // skip whitespace up to a /n
         while (*data <= ' ') {
             if (*data == 0) {
+#if USE_SERVER && USE_WASM
+                Cmd_CopyToWasm();
+#endif
                 return; // end of text
             }
             if (*data == '\n') {
+#if USE_SERVER && USE_WASM
+                Cmd_CopyToWasm();
+#endif
                 return; // a newline seperates commands in the buffer
             }
             data++;
@@ -1337,6 +1408,10 @@ void Cmd_TokenizeString(const char *text, bool macroExpand)
             while (*data != '\"') {
                 if (*data == 0) {
                     *dest = 0;
+
+#if USE_SERVER && USE_WASM
+                    Cmd_CopyToWasm();
+#endif
                     return; // end of data
                 }
                 *dest++ = *data++;
@@ -1355,6 +1430,10 @@ void Cmd_TokenizeString(const char *text, bool macroExpand)
         }
         *dest++ = 0;
     }
+
+#if USE_SERVER && USE_WASM
+    Cmd_CopyToWasm();
+#endif
 }
 
 /*

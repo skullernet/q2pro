@@ -302,6 +302,7 @@ static void SV_ShutdownGameWasm(void)
     memset(&wasm_mem, 0, sizeof(wasm_mem));
 
     Cvar_DestroyWASMLinkage();
+    Cmd_DestroyWASMLinkage();
 
     Z_FreeTags(TAG_WASM);
 
@@ -1040,17 +1041,12 @@ static int32_t PF_wasm_argc(wasm_exec_env_t env)
 
 static uint32_t PF_wasm_argv(wasm_exec_env_t env, int32_t i)
 {
-    return 0;
-	/*if (i < 0 || i >= sizeof(wasm_buffers_t::cmds) / sizeof(*wasm_buffers_t::cmds))
-		return 0;
-
-	return WASM_BUFFERS_OFFSET(cmds[i]);*/
+    return Cmd_ArgvWASM(i);
 }
 
 static uint32_t PF_wasm_args(wasm_exec_env_t env)
 {
-    return 0;
-	//return WASM_BUFFERS_OFFSET(scmd);
+    return Cmd_RawArgsWASM();
 }
 
 static void PF_wasm_AddCommandString(wasm_exec_env_t env, const char *string)
@@ -1251,8 +1247,8 @@ static bool _SV_InitGameWasm(void)
 	wasm_ge.GetEdicts = SV_GetWASMFunction("GetEdicts", "()i", true);
 	wasm_ge.GetNumEdicts = SV_GetWASMFunction("GetNumEdicts", "()*", true);
 
-	wasm_ge.PmoveTrace = SV_GetWASMFunction("PmoveTrace", "(******)", true);
-	wasm_ge.PmovePointContents = SV_GetWASMFunction("PmovePointContents", "(**)", true);
+	wasm_ge.PmoveTrace = SV_GetWASMFunction("PmoveTrace", "(*ffffffffffff*)", true);
+	wasm_ge.PmovePointContents = SV_GetWASMFunction("PmovePointContents", "(*fff)", true);
 	wasm_ge.Init = SV_GetWASMFunction("Init", NULL, true);
 	wasm_ge.SpawnEntities = SV_GetWASMFunction("SpawnEntities", "($$$)", true);
 	wasm_ge.ClientConnect = SV_GetWASMFunction("ClientConnect", "(*$)i", true);
@@ -1267,7 +1263,6 @@ static bool _SV_InitGameWasm(void)
 	wasm_ge.ReadGame = SV_GetWASMFunction("ReadGame", "($)", true);
 	wasm_ge.WriteLevel = SV_GetWASMFunction("WriteLevel", "($)", true);
 	wasm_ge.ReadLevel = SV_GetWASMFunction("ReadLevel", "($)", true);
-
 	wasm_ge.QueryGameCapability = SV_GetWASMFunction("QueryGameCapability", "($)*", true);
     
     // from beyond this point, we mark as loaded so other subsystems can be made aware of
