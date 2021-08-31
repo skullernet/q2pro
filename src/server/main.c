@@ -1705,8 +1705,6 @@ static void SV_PrepWorldFrame(void)
     }
 #endif
 
-    sv.tracecount = 0;
-
     if (!SV_FRAMESYNC)
         return;
 
