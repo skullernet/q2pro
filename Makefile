@@ -74,6 +74,9 @@ ifdef CONFIG_WINDOWS
         LDFLAGS_s += -Wl,--pic-executable,--entry,_mainCRTStartup
         LDFLAGS_c += -Wl,--pic-executable,--entry,_WinMainCRTStartup
     endif
+
+    # Work around for GCC 10 linking shared libgcc by default
+    LDFLAGS_g += -static-libgcc
 else
     # Disable x86 features on other arches
     ifneq ($(CPU),i386)
