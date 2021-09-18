@@ -50,12 +50,6 @@ LDFLAGS_c :=
 LDFLAGS_g := -shared
 
 ifdef CONFIG_WINDOWS
-    # Disable x86 features on other arches
-    ifneq ($(CPU),x86)
-        CONFIG_X86_GAME_ABI_HACK :=
-        CONFIG_X86_NO_SSE_MATH := y
-    endif
-
     LDFLAGS_s += -mconsole
     LDFLAGS_c += -mwindows
     LDFLAGS_g += -mconsole
@@ -76,12 +70,6 @@ ifdef CONFIG_WINDOWS
     # Work around for GCC 10 linking shared libgcc by default
     LDFLAGS_g += -static-libgcc
 else
-    # Disable x86 features on other arches
-    ifneq ($(CPU),i386)
-        CONFIG_X86_GAME_ABI_HACK :=
-        CONFIG_X86_NO_SSE_MATH := y
-    endif
-
     # Disable Linux features on other systems
     ifneq ($(SYS),Linux)
         CONFIG_NO_ICMP := y
@@ -100,6 +88,12 @@ else
     endif
 
     CFLAGS_g += -fPIC
+endif
+
+# Disable x86 features on other arches
+ifeq ($(filter x86 i386,$(CPU)),)
+    CONFIG_X86_GAME_ABI_HACK :=
+    CONFIG_X86_NO_SSE_MATH := y
 endif
 
 ifndef CONFIG_X86_NO_SSE_MATH
