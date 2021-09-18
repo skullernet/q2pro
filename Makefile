@@ -50,10 +50,8 @@ LDFLAGS_c :=
 LDFLAGS_g := -shared
 
 ifdef CONFIG_WINDOWS
-    # Force i?86-netware calling convention on x86 Windows
-    ifeq ($(CPU),x86)
-        CONFIG_X86_GAME_ABI_HACK := y
-    else
+    # Disable x86 features on other arches
+    ifneq ($(CPU),x86)
         CONFIG_X86_GAME_ABI_HACK :=
         CONFIG_X86_NO_SSE_MATH := y
     endif
