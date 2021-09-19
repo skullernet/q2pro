@@ -521,6 +521,9 @@ win_disablewinkey::
     Disables the default Windows key action to prevent it from interfering with
     game when pressed. Default is 0 (don't disable).
 
+win_noborder::
+    Hides the main window bar (borderless). Default is 0 (show window bar).
+
 win_noresize::
     Prevents the main window from resizing by dragging the border. Default is 0
     (allow resizing).
