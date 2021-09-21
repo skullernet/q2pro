@@ -32,10 +32,7 @@ RM ?= rm -f
 RMDIR ?= rm -rf
 MKDIR ?= mkdir -p
 
-CFLAGS ?= -std=gnu99 -O2 -Wall -g -MMD $(INCLUDES)
-RCFLAGS ?=
-LDFLAGS ?=
-LIBS ?=
+CFLAGS += -std=gnu99 -O2 -Wall -g -MMD $(INCLUDES)
 
 CFLAGS_s := -iquote./inc
 CFLAGS_c := -iquote./inc
