@@ -67,7 +67,7 @@ ifdef CONFIG_WINDOWS
         LDFLAGS_c += -Wl,--pic-executable,--entry,_WinMainCRTStartup
     endif
 
-    # Work around for GCC 10 linking shared libgcc by default
+    # Workaround for GCC 10 linking shared libgcc by default
     LDFLAGS_g += -static-libgcc
 else
     # Disable Linux features on other systems
