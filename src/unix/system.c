@@ -291,7 +291,7 @@ void Sys_Init(void)
     if (HOMEDIR[0] == '~') {
         char *s = getenv("HOME");
         if (s && *s) {
-            homedir = va("%s%s", s, HOMEDIR + 1);
+            homedir = va("%s%s", s, &HOMEDIR[1]);
         } else {
             homedir = "";
         }
