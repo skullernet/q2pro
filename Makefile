@@ -47,6 +47,9 @@ LDFLAGS_c :=
 LDFLAGS_g := -shared
 
 ifdef CONFIG_WINDOWS
+    # Workaround for MinGW-w64 < 8.0.0
+    CFLAGS += -D__USE_MINGW_ANSI_STDIO=1
+
     LDFLAGS_s += -mconsole
     LDFLAGS_c += -mwindows
     LDFLAGS_g += -mconsole
