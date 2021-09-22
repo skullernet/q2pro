@@ -1,0 +1,76 @@
+name: build
+
+on:
+  push:
+    branches: [master, ci]
+  pull_request:
+    branches: [master]
+
+jobs:
+  mingw:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        suffix: ["32", "64"]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: main-build
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-mingw-w64
+          wget -nv https://github.com/skullernet/q2pro-mgw-sdk/releases/download/2021-09-07/q2pro-mgw-sdk.tar.gz
+          tar xf q2pro-mgw-sdk.tar.gz
+
+      - name: Build
+        working-directory: main-build
+        run: make V=1
+        env:
+          CONFIG_FILE: ".ci/config_windows${{ matrix.suffix }}"
+
+  llvm-mingw:
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        suffix: ["32", "64"]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: main-build
+
+      - name: Install dependencies
+        run: |
+          wget -nv https://github.com/mstorsjo/llvm-mingw/releases/download/20210423/llvm-mingw-20210423-msvcrt-ubuntu-18.04-x86_64.tar.xz
+          wget -nv https://github.com/skullernet/q2pro-mgw-sdk/releases/download/2021-09-07/q2pro-mgw-sdk.tar.gz
+          tar xf llvm-mingw-20210423-msvcrt-ubuntu-18.04-x86_64.tar.xz
+          tar xf q2pro-mgw-sdk.tar.gz
+          echo "$GITHUB_WORKSPACE/llvm-mingw-20210423-msvcrt-ubuntu-18.04-x86_64/bin" >> $GITHUB_PATH
+
+      - name: Build
+        working-directory: main-build
+        run: make V=1
+        env:
+          CONFIG_FILE: ".ci/config_windows${{ matrix.suffix }}"
+
+  linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt install -y libsdl2-dev libopenal-dev \
+          libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
+          libcurl4-gnutls-dev
+
+      - name: Build
+        run: make V=1
+        env:
+          CC: "${{ matrix.cc }}"
+          CONFIG_FILE: ".ci/config_linux"
