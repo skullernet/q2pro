@@ -630,6 +630,9 @@ stuffcvar <userid> <variable> [...]::
     console once a reply is received. More than one variable can be specified on
     command line.
 
+printall <text ...>::
+    Prints the given raw _text_ to all connected clients.
+
 dumpents [filename]::
     Dumps the entity string of current map into ‘maps/_filename_.ent’ file. See
     also ‘map_override_path’ variable description.
