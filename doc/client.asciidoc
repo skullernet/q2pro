@@ -993,6 +993,20 @@ com_date_format::
     Date format used by ‘com_date’ macro. Default value is "%Y-%m-%d". See
     strftime(3) for syntax description.
 
+uf::
+    User flags variable, automatically exported to game mod in userinfo.
+    Meaning and level of support of individual flags is game mod dependent.
+    Default value is empty. Commonly supported flags are reproduced below.
+    Flags 4 and 64 are supported during local demo playback. Flags 4-64 are
+    supported in MVD/GTV client mode.
+        - 1 — auto screenshot at end of match
+        - 2 — auto record demo at beginning of match
+        - 4 — prefer user FOV over chased player FOV
+        - 8 — mute player chat
+        - 16 — mute observer chat
+        - 32 — mute other messages
+        - 64 — prefer chased player FOV over user FOV
+
 Macros
 ------
 
@@ -1060,6 +1074,10 @@ demo [/]<filename[.ext]>::
     root of quake file system. Can be used to launch MVD playback as well, if
     MVD file type is detected, it will be automatically passed to the server
     subsystem. To stop demo playback, type ‘disconnect’.
+
+NOTE: By default, during demo playback, Q2PRO overrides FOV value stored in
+demo file with value of local ‘fov’ variable, unless stored FOV value is less
+than 90. This behavior can be changed with ‘uf’ variable (see above).
 
 seek [+-]<timespec>::
     Seeks the given amount of time during demo playback.  Prepend with ‘+’ to
