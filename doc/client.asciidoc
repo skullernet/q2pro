@@ -745,6 +745,12 @@ gl_screenshot_async::
      - 1 — save PNG screenshots in background thread
      - 2 — save JPG and PNG screenshots in background thread
 
+gl_screenshot_template::
+    Specifies filename template in "fileXXX" format for ‘screenshot’ command.
+    Template must contain at least 3 and at most 9 consecutive ‘X’ in the last
+    component. Template may contain slashes to save under subdirectory. Default
+    value is "quakeXXX".
+
 r_override_textures::
     Enables automatic overriding of palettized textures (in WAL or PCX format)
     with truecolor replacements (in PNG, JPG or TGA format) by stripping off
