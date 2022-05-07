@@ -551,6 +551,9 @@ extern cvar_t       *sv_uptime;
 extern cvar_t       *sv_allow_unconnected_cmds;
 
 extern cvar_t       *g_features;
+extern cvar_t       *g_view_predict;
+extern cvar_t       *g_view_low;
+extern cvar_t       *g_view_high;
 
 extern cvar_t       *map_override_path;
 

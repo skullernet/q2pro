@@ -1152,6 +1152,14 @@ static void CL_ParseSetting(void)
         set_server_fps(value);
         break;
 #endif
+	case SVS_VIEW_LOW:
+		cl.view_predict = 1;
+		cl.view_low = value;
+		break;
+	case SVS_VIEW_HIGH:
+		cl.view_predict = 1;
+		cl.view_high = value;
+		break;
     default:
         break;
     }

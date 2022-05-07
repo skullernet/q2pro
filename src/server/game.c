@@ -743,6 +743,7 @@ void SV_ShutdownGameProgs(void)
         game_library = NULL;
     }
     Cvar_Set("g_features", "0");
+	Cvar_Set("g_view_predict", "0");
 }
 
 static void *_SV_LoadGameLibrary(const char *path)

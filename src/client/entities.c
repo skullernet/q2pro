@@ -1167,6 +1167,7 @@ void CL_CalcViewValues(void)
         float backlerp = lerp - 1.0f;
 
         VectorMA(cl.predicted_origin, backlerp, cl.prediction_error, cl.refdef.vieworg);
+		LerpVector(ops->viewoffset, ps->viewoffset, lerp, viewoffset);
 
         // smooth out stair climbing
         if (cl.predicted_step < 127 * 0.125f) {
@@ -1175,6 +1176,13 @@ void CL_CalcViewValues(void)
         if (delta < 100) {
             cl.refdef.vieworg[2] -= cl.predicted_step * (100 - delta) * 0.01f;
         }
+
+		if (cl_predict_crouch->integer == 2 || (cl_predict_crouch->integer && cl.view_predict))
+		{
+			viewoffset[2] = cl.predicted_viewheight[1];
+			viewoffset[2] -= (cl.predicted_viewheight[1] - cl.predicted_viewheight[0]) * lerp;
+		}
+
     } else {
         int i;
 
@@ -1183,6 +1191,8 @@ void CL_CalcViewValues(void)
             cl.refdef.vieworg[i] = SHORT2COORD(ops->pmove.origin[i] +
                 lerp * (ps->pmove.origin[i] - ops->pmove.origin[i]));
         }
+
+		LerpVector(ops->viewoffset, ps->viewoffset, lerp, viewoffset);
     }
 
     // if not running a demo or on a locked frame, add the local angle movement
@@ -1224,8 +1234,6 @@ void CL_CalcViewValues(void)
     // interpolate field of view
     cl.fov_x = lerp_client_fov(ops->fov, ps->fov, lerp);
     cl.fov_y = V_CalcFov(cl.fov_x, 4, 3);
-
-    LerpVector(ops->viewoffset, ps->viewoffset, lerp, viewoffset);
 
     AngleVectors(cl.refdef.viewangles, cl.v_forward, cl.v_right, cl.v_up);
 
