@@ -362,7 +362,8 @@ typedef enum {
     // r1q2 specific
     SVS_PLAYERUPDATES,
     SVS_FPS,
-
+	SVS_VIEW_LOW,
+	SVS_VIEW_HIGH,
     SVS_MAX
 } serverSetting_t;
 

@@ -389,6 +389,20 @@ void SV_New_f(void)
 
     // send next command
     SV_ClientCommand(sv_client, "precache %i\n", sv_client->spawncount);
+
+
+	if (sv_client->protocol == PROTOCOL_VERSION_Q2PRO && g_view_predict->integer)
+	{
+		MSG_WriteByte(svc_setting);
+		MSG_WriteLong(SVS_VIEW_LOW);
+		MSG_WriteLong(g_view_low->integer);
+
+		MSG_WriteByte(svc_setting);
+		MSG_WriteLong(SVS_VIEW_HIGH);
+		MSG_WriteLong(g_view_high->integer);
+
+		SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
+	}
 }
 
 /*

@@ -103,6 +103,9 @@ cvar_t  *sv_allow_unconnected_cmds;
 cvar_t  *sv_lrcon_password;
 
 cvar_t  *g_features;
+cvar_t  *g_view_predict;
+cvar_t  *g_view_low;
+cvar_t  *g_view_high;
 
 cvar_t  *map_override_path;
 
@@ -2242,6 +2245,9 @@ void SV_Init(void)
 
     Cvar_Get("sv_features", va("%d", SV_FEATURES), CVAR_ROM);
     g_features = Cvar_Get("g_features", "0", CVAR_ROM);
+	g_view_predict = Cvar_Get("g_view_predict", "0", CVAR_ROM);
+	g_view_low = Cvar_Get("g_view_low", "0", CVAR_ROM);
+	g_view_high = Cvar_Get("g_view_high", "0", CVAR_ROM);
 
     map_override_path = Cvar_Get("map_override_path", "", 0);
 

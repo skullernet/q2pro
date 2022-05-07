@@ -25,6 +25,7 @@ cvar_t  *cl_noskins;
 cvar_t  *cl_footsteps;
 cvar_t  *cl_timeout;
 cvar_t  *cl_predict;
+cvar_t  *cl_predict_crouch;
 cvar_t  *cl_gun;
 cvar_t  *cl_gunalpha;
 cvar_t  *cl_warn_on_fps_rounding;
@@ -2704,6 +2705,7 @@ static void CL_InitLocal(void)
     cl_noskins->changed = cl_noskins_changed;
     cl_predict = Cvar_Get("cl_predict", "1", 0);
     cl_predict->changed = cl_predict_changed;
+	cl_predict_crouch = Cvar_Get("cl_predict_crouch", "1", 0);
     cl_kickangles = Cvar_Get("cl_kickangles", "1", CVAR_CHEAT);
     cl_warn_on_fps_rounding = Cvar_Get("cl_warn_on_fps_rounding", "1", 0);
     cl_maxfps = Cvar_Get("cl_maxfps", "60", 0);
