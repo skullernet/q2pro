@@ -121,7 +121,7 @@ ifndef CONFIG_WINDOWS
     PATH_DEFS += -DDATADIR='"$(CONFIG_PATH_DATA)"'
     PATH_DEFS += -DLIBDIR='"$(CONFIG_PATH_LIB)"'
 endif
-# All builds have a CONFIG_PATH_HOME defined
+# All builds can have a CONFIG_PATH_HOME defined
 PATH_DEFS += -DHOMEDIR='"$(CONFIG_PATH_HOME)"'
 
 CFLAGS_s += $(BUILD_DEFS) $(VER_DEFS) $(PATH_DEFS) -DUSE_SERVER=1
