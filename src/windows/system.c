@@ -1089,17 +1089,12 @@ void Sys_Init(void)
 
     // homedir <path>
     // specifies per-user writable directory for demos, screenshots, etc
-    if (strlen(HOMEDIR > 0)){
-        char *s = getenv("LOCALAPPDATA");
-        if (s && *s) {
-            homedir = va("%s%s", s, &HOMEDIR[1]);
-        } else {
-            homedir = "";
-        }
+    char *s = getenv("LOCALAPPDATA");
+    if (s && *s) {
+        homedir = va("%s%s", s, &HOMEDIR[1]);
     } else {
-        homedir = HOMEDIR;
+        homedir = "";
     }
-
     sys_homedir = Cvar_Get("homedir", homedir, CVAR_NOSET);
     sys_forcegamelib = Cvar_Get("sys_forcegamelib", "", CVAR_NOSET);
 
