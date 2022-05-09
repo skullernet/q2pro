@@ -1072,6 +1072,7 @@ void Sys_Init(void)
     HMODULE module;
     BOOL (WINAPI * pSetProcessDEPPolicy)(DWORD);
 #endif
+    char    *homedir;
     cvar_t *var q_unused;
 
     // check windows version
@@ -1088,8 +1089,18 @@ void Sys_Init(void)
 
     // homedir <path>
     // specifies per-user writable directory for demos, screenshots, etc
-    sys_homedir = Cvar_Get("homedir", "", CVAR_NOSET);
+    if (strlen(HOMEDIR > 0)){
+        char *s = getenv("LOCALAPPDATA");
+        if (s && *s) {
+            homedir = va("%s%s", s, &HOMEDIR[1]);
+        } else {
+            homedir = "";
+        }
+    } else {
+        homedir = HOMEDIR;
+    }
 
+    sys_homedir = Cvar_Get("homedir", homedir, CVAR_NOSET);
     sys_forcegamelib = Cvar_Get("sys_forcegamelib", "", CVAR_NOSET);
 
 #if USE_WINSVC
