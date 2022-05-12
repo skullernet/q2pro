@@ -27,18 +27,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 //
 
 #define PRODUCT         "AQtion"
-#define RELEASEVERSION  "LATEST"
 #define SKULLERCREDIT   "https://github.com/skullernet/q2pro"
 #define CONSOLE_VERSION SKULLERCREDIT " " VERSION
 
 #if USE_CLIENT
-#ifdef PLATFORM
-#define APPLICATION     PLATFORM
+#define APPLICATION     PRODUCT
 #else
-#define APPLICATION     ""
-#endif
-
-#if !USE_CLIENT
 #define APPLICATION     "q2proded"
 #endif
 
