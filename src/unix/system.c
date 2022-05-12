@@ -282,6 +282,22 @@ void Sys_Init(void)
     signal(SIGPIPE, SIG_IGN);
     signal(SIGUSR1, hup_handler);
 
+    #ifdef __APPLE__
+	// set AQ.app/Contents/Resources as basedir
+	char path[MAX_OSPATH], *c;
+	unsigned int i = sizeof(path);
+
+	if (_NSGetExecutablePath(path, &i) > -1) {
+		if ((c = strstr(path, "AQ.app"))) {
+			strcpy(c, "AQ.app/Contents/MacOS");
+			Cvar_FullSet("basedir", path, CVAR_NOSET, FROM_CODE);
+
+			strcpy(c, "AQ.app/Contents/MacOS");
+			Cvar_FullSet("libdir", path, CVAR_NOSET, FROM_CODE);
+		}
+	}
+    #endif
+
     // basedir <path>
     // allows the game to run from outside the data tree
     sys_basedir = Cvar_Get("basedir", DATADIR, CVAR_NOSET);

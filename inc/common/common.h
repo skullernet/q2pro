@@ -26,11 +26,19 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // common.h -- definitions common between client and server, but not game.dll
 //
 
-#define PRODUCT         "Q2PRO"
+#define PRODUCT         "AQtion"
+#define RELEASEVERSION  "LATEST"
+#define SKULLERCREDIT   "https://github.com/skullernet/q2pro"
+#define CONSOLE_VERSION SKULLERCREDIT " " VERSION
 
 #if USE_CLIENT
-#define APPLICATION     "q2pro"
+#ifdef PLATFORM
+#define APPLICATION     PLATFORM
 #else
+#define APPLICATION     ""
+#endif
+
+#if !USE_CLIENT
 #define APPLICATION     "q2proded"
 #endif
 

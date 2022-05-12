@@ -1007,7 +1007,7 @@ static void Con_DrawSolidConsole(void)
 // draw version
     if (!row || widths[0] + VER_WIDTH <= con.vidWidth) {
         SCR_DrawStringEx(con.vidWidth - CHAR_WIDTH, y, UI_RIGHT,
-                         MAX_STRING_CHARS, APP_VERSION, con.charsetImage);
+                         MAX_STRING_CHARS, CONSOLE_VERSION, con.charsetImage);
     }
 
     // restore rendering parameters
