@@ -34,9 +34,9 @@ jobs:
         with:
           name: "q2pro-win-${{ matrix.suffix }}"
           path: |
-            build/q2pro.exe
-            build/q2proded.exe
-            build/versions
+            main-build/q2pro.exe
+            main-build/q2proded.exe
+            main-build/versions
 
 
   llvm-mingw:
