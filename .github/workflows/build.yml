@@ -29,6 +29,16 @@ jobs:
         env:
           CONFIG_FILE: ".ci/config_windows${{ matrix.suffix }}"
 
+      - name: Generate archive
+        uses: actions/upload-artifact@v3
+        with:
+          name: "q2pro-win-${{ matrix.suffix }}"
+          path: |
+            build/q2pro.exe
+            build/q2proded.exe
+            build/versions
+
+
   llvm-mingw:
     runs-on: ubuntu-18.04
     strategy:

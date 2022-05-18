@@ -880,14 +880,14 @@ void CL_RequestNextDownload(void)
                 for (i = 0; i < cl.bsp->numtexinfo; i++) {
                 len = Q_concat(fn, sizeof(fn), "textures/", cl.bsp->texinfo[i].name, ".jpg");
                 check_file_len(fn, len, DL_OTHER);
+                }
             }
-        }
             else {
                 for (i = 0; i < cl.bsp->numtexinfo; i++) {
                     len = Q_concat(fn, sizeof(fn), "textures/", cl.bsp->texinfo[i].name, ".wal");
                     check_file_len(fn, len, DL_OTHER);
                 }
-        }
+            }
         }
 
         precache_check = PRECACHE_FINAL;
