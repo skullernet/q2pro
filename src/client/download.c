@@ -880,9 +880,10 @@ void CL_RequestNextDownload(void)
                 // Some textures do not have high def versions, for those we still default to wal, 
                 // so we download both of them
                 for (i = 0; i < cl.bsp->numtexinfo; i++) {
-                    len = Q_concat(fn, sizeof(fn), "textures/", cl.bsp->texinfo[i].name, ".jpg");
-                    len = Q_concat(fn, sizeof(fn), "textures/", cl.bsp->texinfo[i].name, ".wal");
-                    check_file_len(fn, len, DL_OTHER);
+                    hqlen = Q_concat(fn, sizeof(fn), "textures/", cl.bsp->texinfo[i].name, ".jpg");
+                    check_file_len(fn, hqlen, DL_OTHER);
+                    wallen = Q_concat(fn, sizeof(fn), "textures/", cl.bsp->texinfo[i].name, ".wal");
+                    check_file_len(fn, wallen, DL_OTHER);
                 }
             }
             else { // Only download wal
