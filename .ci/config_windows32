@@ -15,6 +15,9 @@ CONFIG_WINDOWS_SERVICE=y
 CONFIG_TESTS=y
 CONFIG_DEBUG=y
 
+## Uncomment below to enable user AppData/Local path for downloaded files
+#CONFIG_PATH_HOME=//.baseq2
+
 CPU=x86
 SYS=Win32
 
