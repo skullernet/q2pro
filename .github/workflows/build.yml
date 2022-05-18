@@ -1,10 +1,17 @@
 name: build
 
 on:
-  push:
-    branches: [master, ci]
-  pull_request:
-    branches: [master]
+  workflow_dispatch:
+    inputs:
+      github_repo:
+        description: "Github repo"
+        required: true
+        default: actionquake/q2pro
+      github_branch:
+        description: "Github branch"
+        required: true
+        default: bots
+
 
 jobs:
   mingw:
@@ -15,6 +22,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
+          repo: ${{ github.event.inputs.github_repo }}
+          ref: ${{ github.event.inputs.github_branch }}
           path: main-build
 
       - name: Install dependencies
