@@ -2,7 +2,9 @@ name: build
 
 on:
   push:
-    branches: ["downloadserver-hdtextures"]
+    branches: [master, ci]
+  pull_request:
+    branches: [master]
 
 jobs:
   mingw:
@@ -13,7 +15,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          ref: downloadserver-hdtextures
           path: main-build
 
       - name: Install dependencies
@@ -28,16 +29,6 @@ jobs:
         run: make V=1
         env:
           CONFIG_FILE: ".ci/config_windows${{ matrix.suffix }}"
-
-      - name: Generate archive
-        uses: actions/upload-artifact@v3
-        with:
-          name: "q2pro-win-${{ matrix.suffix }}"
-          path: |
-            main-build/q2pro.exe
-            main-build/q2proded.exe
-            main-build/versions
-
 
   llvm-mingw:
     runs-on: ubuntu-18.04
