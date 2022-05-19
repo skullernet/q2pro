@@ -1072,7 +1072,7 @@ void Sys_Init(void)
     HMODULE module;
     BOOL (WINAPI * pSetProcessDEPPolicy)(DWORD);
 #endif
-    char    *homedir;
+    //char    *homedir;
     cvar_t *var q_unused;
 
     // check windows version
