@@ -1089,14 +1089,14 @@ void Sys_Init(void)
 
     // homedir <path>
     // specifies per-user writable directory for demos, screenshots, etc
-    char *s = getenv("LOCALAPPDATA");
-    if (s && *s) {
-        homedir = va("%s%s", s, &HOMEDIR[1]);
-    } else {
-        homedir = "";
-    }
-    sys_homedir = Cvar_Get("homedir", homedir, CVAR_NOSET);
-    sys_forcegamelib = Cvar_Get("sys_forcegamelib", "", CVAR_NOSET);
+    // char *s = getenv("PROGRAMDATA");
+    // if (s && *s) {
+    //     homedir = va("%s%s", s, &HOMEDIR[1]);
+    // } else {
+    //     homedir = "";
+    // }
+    // sys_homedir = Cvar_Get("homedir", homedir, CVAR_NOSET);
+    // sys_forcegamelib = Cvar_Get("sys_forcegamelib", "", CVAR_NOSET);
 
 #if USE_WINSVC
     Cmd_AddCommand("installservice", Sys_InstallService_f);
