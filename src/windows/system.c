@@ -1086,6 +1086,11 @@ void Sys_Init(void)
     // allows the game to run from outside the data tree
     sys_basedir = Cvar_Get("basedir", currentDirectory, CVAR_NOSET);
     sys_libdir = Cvar_Get("libdir", currentDirectory, CVAR_NOSET);
+    // homedir <path>
+    // specifies per-user writable directory for demos, screenshots, etc
+    sys_homedir = Cvar_Get("homedir", "", CVAR_NOSET);
+
+    sys_forcegamelib = Cvar_Get("sys_forcegamelib", "", CVAR_NOSET);
 
     // homedir <path>
     // specifies per-user writable directory for demos, screenshots, etc
@@ -1095,9 +1100,6 @@ void Sys_Init(void)
     // } else {
     //     homedir = "";
     // }
-    // sys_homedir = Cvar_Get("homedir", homedir, CVAR_NOSET);
-    // sys_forcegamelib = Cvar_Get("sys_forcegamelib", "", CVAR_NOSET);
-
 #if USE_WINSVC
     Cmd_AddCommand("installservice", Sys_InstallService_f);
     Cmd_AddCommand("deleteservice", Sys_DeleteService_f);
