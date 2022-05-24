@@ -202,7 +202,7 @@ static void CL_UpdateGibSetting(void)
     if (!cls.netchan) {
         return;
     }
-    if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO) {
+	if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO && cls.serverProtocol != PROTOCOL_VERSION_AQTION) {
         return;
     }
 
@@ -217,7 +217,7 @@ static void CL_UpdateFootstepsSetting(void)
     if (!cls.netchan) {
         return;
     }
-    if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO) {
+	if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO && cls.serverProtocol != PROTOCOL_VERSION_AQTION) {
         return;
     }
 
@@ -232,7 +232,7 @@ static void CL_UpdatePredictSetting(void)
     if (!cls.netchan) {
         return;
     }
-    if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO) {
+    if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO && cls.serverProtocol != PROTOCOL_VERSION_AQTION) {
         return;
     }
 
@@ -248,7 +248,7 @@ static void CL_UpdateRateSetting(void)
     if (!cls.netchan) {
         return;
     }
-    if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO) {
+    if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO && cls.serverProtocol != PROTOCOL_VERSION_AQTION) {
         return;
     }
 
@@ -398,8 +398,12 @@ void CL_CheckForResend(void)
         cls.serverAddress.type = NA_LOOPBACK;
         cls.serverProtocol = cl_protocol->integer;
         if (cls.serverProtocol < PROTOCOL_VERSION_DEFAULT ||
-            cls.serverProtocol > PROTOCOL_VERSION_Q2PRO) {
-            cls.serverProtocol = PROTOCOL_VERSION_Q2PRO;
+            cls.serverProtocol > PROTOCOL_VERSION_AQTION) {
+			#ifdef AQTION_EXTENSION
+            cls.serverProtocol = PROTOCOL_VERSION_AQTION;
+			#else
+			cls.serverProtocol = PROTOCOL_VERSION_Q2PRO;
+			#endif
         }
 
         // we don't need a challenge on the localhost
@@ -457,6 +461,12 @@ void CL_CheckForResend(void)
                    PROTOCOL_VERSION_Q2PRO_CURRENT);
         cls.quakePort = net_qport->integer & 0xff;
         break;
+	case PROTOCOL_VERSION_AQTION:
+		Q_snprintf(tail, sizeof(tail), " %d %d %d %d",
+			maxmsglen, net_chantype->integer, USE_ZLIB,
+			PROTOCOL_VERSION_AQTION_CURRENT);
+		cls.quakePort = net_qport->integer & 0xff;
+		break;
     default:
         tail[0] = 0;
         cls.quakePort = net_qport->integer;
@@ -496,6 +506,7 @@ static void CL_Connect_c(genctx_t *ctx, int argnum)
             Prompt_AddMatch(ctx, "34");
             Prompt_AddMatch(ctx, "35");
             Prompt_AddMatch(ctx, "36");
+			Prompt_AddMatch(ctx, "38");
         }
     }
 }
@@ -522,13 +533,18 @@ usage:
     if (argc > 2) {
         protocol = atoi(Cmd_Argv(2));
         if (protocol < PROTOCOL_VERSION_DEFAULT ||
-            protocol > PROTOCOL_VERSION_Q2PRO) {
+            protocol > PROTOCOL_VERSION_AQTION ||
+			protocol == PROTOCOL_VERSION_MVD) {
             goto usage;
         }
     } else {
         protocol = cl_protocol->integer;
         if (!protocol) {
-            protocol = PROTOCOL_VERSION_Q2PRO;
+			#ifdef AQTION_EXTENSION
+			protocol = PROTOCOL_VERSION_AQTION;
+			#else
+			protocol = PROTOCOL_VERSION_Q2PRO;
+			#endif
         }
     }
 
@@ -1349,7 +1365,9 @@ static void CL_ConnectionlessPacket(void)
                         mask |= 1;
                     } else if (k == PROTOCOL_VERSION_Q2PRO) {
                         mask |= 2;
-                    }
+                    } else if (k == PROTOCOL_VERSION_AQTION) {
+						mask |= 4;
+					}
                     s = strchr(s, ',');
                     if (s == NULL) {
                         break;
@@ -1361,6 +1379,12 @@ static void CL_ConnectionlessPacket(void)
 
         // choose supported protocol
         switch (cls.serverProtocol) {
+		case PROTOCOL_VERSION_AQTION:
+			if (mask & 4) {
+				break;
+			}
+			cls.serverProtocol = PROTOCOL_VERSION_Q2PRO;
+			// fall through
         case PROTOCOL_VERSION_Q2PRO:
             if (mask & 2) {
                 break;
@@ -1402,7 +1426,7 @@ static void CL_ConnectionlessPacket(void)
             return;
         }
 
-        if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO) {
+        if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO || cls.serverProtocol == PROTOCOL_VERSION_AQTION) {
             type = NETCHAN_NEW;
         } else {
             type = NETCHAN_OLD;
@@ -1642,7 +1666,7 @@ void CL_UpdateUserinfo(cvar_t *var, from_t from)
         return;
     }
 
-    if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO) {
+    if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO && cls.serverProtocol != PROTOCOL_VERSION_AQTION) {
         // transmit at next oportunity
         cls.userinfo_modified = MAX_PACKET_USERINFOS;
         goto done;

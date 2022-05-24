@@ -242,6 +242,10 @@ typedef struct client_state_s {
     char        layout[MAX_NET_STRING];     // general 2D overlay
     int         inventory[MAX_ITEMS];
 
+#ifdef AQTION_EXTENSION
+	ghud_element_t ghud[MAX_GHUDS];
+#endif
+
     //
     // server state information
     //

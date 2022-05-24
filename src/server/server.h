@@ -17,6 +17,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 // server.h
 
+//#define AQTION_EXTENSION
+
 #include "shared/shared.h"
 #include "shared/list.h"
 #include "shared/game.h"
@@ -175,8 +177,9 @@ typedef struct {
 
 // hack for smooth BSP model rotation
 #define Q2PRO_SHORTANGLES(c, e) \
-    ((c)->protocol == PROTOCOL_VERSION_Q2PRO && \
-     (c)->version >= PROTOCOL_VERSION_Q2PRO_SHORT_ANGLES && \
+	((((c)->protocol == PROTOCOL_VERSION_Q2PRO && \
+	 (c)->version >= PROTOCOL_VERSION_Q2PRO_SHORT_ANGLES) || \
+	 (c)->protocol == PROTOCOL_VERSION_AQTION) && \
      sv.state == ss_game && \
      EDICT_POOL(c, e)->solid == SOLID_BSP)
 
@@ -383,6 +386,11 @@ typedef struct client_s {
     string_entry_t  *ac_bad_files;
     char            *ac_token;
 #endif
+
+#ifdef AQTION_EXTENSION
+	short			ghud_updateflags[MAX_GHUDS];
+	short			ghud_forceflags[MAX_GHUDS];
+#endif
 } client_t;
 
 // a client can leave the server in one of four ways:
@@ -487,6 +495,10 @@ typedef struct server_static_s {
     ratelimit_t     ratelimit_rcon;
 
     challenge_t     challenges[MAX_CHALLENGES]; // to prevent invalid IPs from connecting
+
+#ifdef AQTION_EXTENSION
+	ghud_element_t ghud[MAX_GHUDS];
+#endif
 } server_static_t;
 
 //=============================================================================
@@ -747,6 +759,7 @@ void SV_PrintMiscInfo(void);
 void SV_BuildClientFrame(client_t *client);
 void SV_WriteFrameToClient_Default(client_t *client);
 void SV_WriteFrameToClient_Enhanced(client_t *client);
+void SV_WriteFrameToClient_Aqtion(client_t *client);
 
 //
 // sv_game.c
@@ -758,6 +771,10 @@ void SV_ShutdownGameProgs(void);
 void SV_InitEdict(edict_t *e);
 
 void PF_Pmove(pmove_t *pm);
+
+#ifdef AQTION_EXTENSION
+void G_InitializeExtensions(void);
+#endif
 
 //
 // sv_save.c
@@ -772,6 +789,23 @@ void SV_RegisterSavegames(void);
 #define SV_AutoSaveEnd()            (void)0
 #define SV_CheckForSavegame(cmd)    (void)0
 #define SV_RegisterSavegames()      (void)0
+#endif
+
+#ifdef AQTION_EXTENSION
+//
+// sv_ghud.c
+//
+void SV_Ghud_Clear(void);
+void SV_Ghud_SendUpdateToClient(client_t *client);
+int  SV_Ghud_NewElement(int type);
+void SV_Ghud_SetFlags(int i, int val);
+void SV_Ghud_UnicastSetFlags(edict_t *ent, int i, int flags);
+void SV_Ghud_SetInt(int i, int val);
+void SV_Ghud_SetText(int i, char *text);
+void SV_Ghud_SetPosition(int i, int x, int y);
+void SV_Ghud_SetAnchor(int i, float x, float y);
+void SV_Ghud_SetColor(int i, int r, int g, int b, int a);
+void SV_Ghud_SetSize(int i, int x, int y);
 #endif
 
 //============================================================
