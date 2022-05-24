@@ -810,6 +810,10 @@ void SV_Ghud_SetColor(int i, int r, int g, int b, int a);
 void SV_Ghud_SetSize(int i, int x, int y);
 #endif
 
+#ifdef AQTION_EXTENSION
+int(*GE_customizeentityforclient)(edict_t *client, edict_t *ent, entity_state_t *state); // 0 don't send, 1 send normally
+#endif
+
 //============================================================
 
 //
