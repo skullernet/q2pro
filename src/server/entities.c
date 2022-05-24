@@ -608,9 +608,18 @@ void SV_BuildClientFrame(client_t *client)
             ent->s.number = e;
         }
 
+
+#ifdef AQTION_EXTENSION
+		entity_state_t ent_state;
+		ent_state = ent->s;
+		if (GE_customizeentityforclient)
+			if (!GE_customizeentityforclient(client->edict, ent, &ent_state))
+				continue;
+#endif
+
         // add it to the circular client_entities array
         state = &svs.entities[svs.next_entity % svs.num_entities];
-        MSG_PackEntity(state, &ent->s, Q2PRO_SHORTANGLES(client, e));
+        MSG_PackEntity(state, &ent_state, Q2PRO_SHORTANGLES(client, e));
 
 #if USE_FPS
         // fix old entity origins for clients not running at

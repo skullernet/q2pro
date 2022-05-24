@@ -744,6 +744,10 @@ void SV_ShutdownGameProgs(void)
     }
     Cvar_Set("g_features", "0");
 	Cvar_Set("g_view_predict", "0");
+
+#ifdef AQTION_EXTENSION
+	GE_customizeentityforclient = NULL;
+#endif
 }
 
 static void *_SV_LoadGameLibrary(const char *path)
@@ -1018,4 +1022,8 @@ void SV_InitGameProgs(void)
     if (ge->max_edicts <= sv_maxclients->integer || ge->max_edicts > MAX_EDICTS) {
         Com_Error(ERR_DROP, "Game library returned bad number of max_edicts");
     }
+
+#ifdef AQTION_EXTENSION
+	GE_customizeentityforclient = ge->FetchGameExtension("customizeentityforclient");
+#endif
 }
