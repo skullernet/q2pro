@@ -822,7 +822,7 @@ static void write_datagram_new(client_t *client)
     } else {
         write_unreliables(client, msg_write.maxsize);
     }
-
+		
 #ifdef _DEBUG
     if (sv_pad_packets->integer) {
         size_t pad = msg_write.cursize + sv_pad_packets->integer;

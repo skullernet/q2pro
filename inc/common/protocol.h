@@ -30,6 +30,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define PROTOCOL_VERSION_R1Q2       35
 #define PROTOCOL_VERSION_Q2PRO      36
 #define PROTOCOL_VERSION_MVD        37 // not used for UDP connections
+#define PROTOCOL_VERSION_AQTION     38
 
 #define PROTOCOL_VERSION_R1Q2_MINIMUM           1903    // b6377
 #define PROTOCOL_VERSION_R1Q2_UCMD              1904    // b7387
@@ -52,6 +53,16 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define PROTOCOL_VERSION_MVD_MINIMUM            2009    // r168
 #define PROTOCOL_VERSION_MVD_CURRENT            2010    // r177
 
+
+#define PROTOCOL_VERSION_AQTION_MINIMUM			3011	//  minimum is equivalent to PROTOCOL_VERSION_Q2PRO_ZLIB_DOWNLOADS
+#ifndef AQTION_EXTENSION
+#define PROTOCOL_VERSION_AQTION_CURRENT         3011
+#else
+#define PROTOCOL_VERSION_AQTION_GHUD			3022	// game dll defined hud elements
+#define PROTOCOL_VERSION_AQTION_CURRENT         3022
+#endif
+
+
 #define R1Q2_SUPPORTED(x) \
     ((x) >= PROTOCOL_VERSION_R1Q2_MINIMUM && \
      (x) <= PROTOCOL_VERSION_R1Q2_CURRENT)
@@ -63,6 +74,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MVD_SUPPORTED(x) \
     ((x) >= PROTOCOL_VERSION_MVD_MINIMUM && \
      (x) <= PROTOCOL_VERSION_MVD_CURRENT)
+
+#define AQTION_SUPPORTED(x) \
+    ((x) >= PROTOCOL_VERSION_AQTION_MINIMUM && \
+     (x) <= PROTOCOL_VERSION_AQTION_CURRENT)
 
 //=========================================
 
@@ -135,6 +150,8 @@ typedef enum {
     svc_zdownload,
     svc_gamestate, // q2pro specific, means svc_playerupdate in r1q2
     svc_setting,
+
+	svc_ghudupdate,
 
     svc_num_types
 } svc_ops_t;
@@ -233,6 +250,12 @@ typedef enum {
 
 #define EPS_BITS            7
 #define EPS_MASK            ((1<<EPS_BITS)-1)
+
+// aqtion protocol specific flags
+#define AQPS_PMFLAGS		(1<<0)
+#define AQPS_TIMESTAMP		(1<<1)
+#define AQPS_LEGHITS		(1<<2)
+
 
 //==============================================
 

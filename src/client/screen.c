@@ -1875,6 +1875,70 @@ static void SCR_DrawCrosshair(void)
                      scr.crosshair_pic);
 }
 
+#ifdef AQTION_EXTENSION
+static void SCR_DrawGhud(void)
+{
+	int x, y;
+	int i;
+
+	float alpha_base = Cvar_ClampValue(scr_alpha, 0, 1);
+	color_t color_base;
+
+	for (i = 0; i < MAX_GHUDS; i++)
+	{
+		ghud_element_t *element = &(cl.ghud[i]);
+		if (!(element->flags & GHF_INUSE) || (element->flags & GHF_HIDE))
+			continue;
+
+		if (element->color[3] <= 0) // totally transparent
+			continue;
+
+
+		byte alpha = element->color[3];
+		if (element->flags & GHF_BLINK)
+			alpha = (element->color[3] * 0.65) + (element->color[3] * 0.35 * sin((float)cls.realtime / 200));
+
+
+		color_base.u8[0] = element->color[0];
+		color_base.u8[1] = element->color[1];
+		color_base.u8[2] = element->color[2];
+		color_base.u8[3] = (alpha_base * alpha);
+		R_SetColor(color_base.u32);
+
+		x = element->pos[0] + (scr.hud_width * element->anchor[0]);
+		y = element->pos[1] + (scr.hud_height * element->anchor[1]);
+
+		switch (element->type)
+		{
+		case GHT_TEXT:
+			R_DrawString(x, y, 0, MAX_STRING_CHARS, element->text, scr.font_pic);
+			continue;
+		case GHT_IMG:
+			if (!element->val)
+				continue;
+
+			R_DrawStretchPic(x, y, element->size[0], element->size[1], cl.image_precache[element->val]);
+			continue;
+		case GHT_NUM:;
+			int numsize = element->size[0];
+			if (numsize <= 0)
+			{
+				double val = element->val;
+				if (val <= 0)
+					val = 0;
+				else
+					val = log10(val);
+
+				numsize = val + 1;
+			}
+
+			HUD_DrawNumber(x, y, 0, numsize, element->val);
+			continue;
+		}
+	}
+}
+#endif
+
 // The status bar is a small layout program that is based on the stats array
 static void SCR_DrawStats(void)
 {
@@ -1923,6 +1987,15 @@ static void SCR_Draw2D(void)
 
     SCR_DrawLayout();
 
+#ifdef AQTION_EXTENSION
+	// Draw game defined hud elements
+	SCR_DrawGhud();
+
+	// gotta redo the colors because the ghud messes with them, sadly.
+	R_ClearColor();
+	R_SetAlpha(Cvar_ClampValue(scr_alpha, 0, 1));
+#endif
+
     SCR_DrawInventory();
 
     SCR_DrawCenterString();
@@ -1935,7 +2008,7 @@ static void SCR_Draw2D(void)
 
     SCR_DrawTurtle();
 
-    SCR_DrawPause();
+	SCR_DrawPause();
 
     // debug stats have no alpha
     R_ClearColor();

@@ -25,7 +25,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // game.h -- game dll information visible to server
 //
 
-#define GAME_API_VERSION    3
+#ifdef AQTION_EXTENSION
+#define GAME_API_VERSION        4
+#else
+#define GAME_API_VERSION        3
+#endif
 
 // edict->svflags
 
@@ -182,6 +186,10 @@ typedef struct {
     void (*AddCommandString)(const char *text);
 
     void (*DebugGraph)(float value, int color);
+
+#ifdef AQTION_EXTENSION
+	void *(*CheckForExtension)(char *text);
+#endif
 } game_import_t;
 
 //

@@ -34,7 +34,7 @@ FRAME PARSING
 
 static inline bool entity_is_optimized(const entity_state_t *state)
 {
-    if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO)
+    if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO && cls.serverProtocol != PROTOCOL_VERSION_AQTION)
         return false;
 
     if (state->number != cl.frame.clientNum + 1)

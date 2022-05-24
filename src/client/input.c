@@ -1088,7 +1088,7 @@ static void CL_SendUserinfo(void)
         MSG_WriteByte(clc_userinfo);
         MSG_WriteData(userinfo, len + 1);
         MSG_FlushTo(&cls.netchan->message);
-    } else if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO) {
+    } else if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO || cls.serverProtocol == PROTOCOL_VERSION_AQTION) {
         Com_DDPrintf("%s: %u: %d updates\n", __func__, com_framenum,
                      cls.userinfo_modified);
         for (i = 0; i < cls.userinfo_modified; i++) {
@@ -1155,7 +1155,7 @@ void CL_SendCmd(void)
     // send a userinfo update if needed
     CL_SendReliable();
 
-    if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO && cl_batchcmds->integer) {
+    if ((cls.serverProtocol == PROTOCOL_VERSION_Q2PRO || cls.serverProtocol == PROTOCOL_VERSION_AQTION) && cl_batchcmds->integer) {
         CL_SendBatchedCmd();
     } else {
         CL_SendDefaultCmd();

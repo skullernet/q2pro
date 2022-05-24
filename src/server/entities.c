@@ -28,7 +28,7 @@ Encode a client frame onto the network channel
 
 // some protocol optimizations are disabled when recording a demo
 #define Q2PRO_OPTIMIZE(c) \
-    ((c)->protocol == PROTOCOL_VERSION_Q2PRO && !(c)->settings[CLS_RECORDING])
+    (((c)->protocol == PROTOCOL_VERSION_Q2PRO || (c)->protocol == PROTOCOL_VERSION_AQTION) && !(c)->settings[CLS_RECORDING])
 
 /*
 =============
@@ -316,6 +316,104 @@ void SV_WriteFrameToClient_Enhanced(client_t *client)
     SV_EmitPacketEntities(client, oldframe, frame, clientEntityNum);
 }
 
+
+void SV_WriteFrameToClient_Aqtion(client_t *client)
+{
+	client_frame_t  *frame, *oldframe;
+	player_packed_t *oldstate;
+	uint32_t        extraflags, delta;
+	int             suppressed;
+	byte            *b1, *b2;
+	msgPsFlags_t    psFlags;
+	int             clientEntityNum;
+
+	// this is the frame we are creating
+	frame = &client->frames[client->framenum & UPDATE_MASK];
+
+	// this is the frame we are delta'ing from
+	oldframe = get_last_frame(client);
+	if (oldframe) {
+		oldstate = &oldframe->ps;
+		delta = client->framenum - client->lastframe;
+	}
+	else {
+		oldstate = NULL;
+		delta = 31;
+	}
+
+	// first byte to be patched
+	b1 = SZ_GetSpace(&msg_write, 1);
+
+	MSG_WriteLong((client->framenum & FRAMENUM_MASK) | (delta << FRAMENUM_BITS));
+
+	// second byte to be patched
+	b2 = SZ_GetSpace(&msg_write, 1);
+
+	// send over the areabits
+	MSG_WriteByte(frame->areabytes);
+	MSG_WriteData(frame->areabits, frame->areabytes);
+
+	// ignore some parts of playerstate if not recording demo
+	psFlags = 0;
+	if (!client->settings[CLS_RECORDING]) {
+		if (client->settings[CLS_NOGUN]) {
+			psFlags |= MSG_PS_IGNORE_GUNFRAMES;
+			if (client->settings[CLS_NOGUN] != 2) {
+				psFlags |= MSG_PS_IGNORE_GUNINDEX;
+			}
+		}
+		if (client->settings[CLS_NOBLEND]) {
+			psFlags |= MSG_PS_IGNORE_BLEND;
+		}
+		if (frame->ps.pmove.pm_type < PM_DEAD) {
+			if (!(frame->ps.pmove.pm_flags & PMF_NO_PREDICTION)) {
+				psFlags |= MSG_PS_IGNORE_VIEWANGLES;
+			}
+		}
+		else {
+			// lying dead on a rotating platform?
+			psFlags |= MSG_PS_IGNORE_DELTAANGLES;
+		}
+	}
+
+	clientEntityNum = 0;
+	if (frame->ps.pmove.pm_type < PM_DEAD && !client->settings[CLS_RECORDING]) {
+		clientEntityNum = frame->clientNum + 1;
+	}
+	if (client->settings[CLS_NOPREDICT]) {
+		psFlags |= MSG_PS_IGNORE_PREDICTION;
+	}
+	suppressed = client->frameflags;
+
+
+	// delta encode the playerstate
+	MSG_WriteByte(svc_playerinfo);
+	extraflags = MSG_WriteDeltaPlayerstate_Aqtion(oldstate, &frame->ps, psFlags);
+
+
+	// delta encode the clientNum
+	int clientNum = oldframe ? oldframe->clientNum : 0;
+	if (clientNum != frame->clientNum) {
+		extraflags |= EPS_CLIENTNUM;
+		MSG_WriteByte(frame->clientNum);
+	}
+
+	// save 3 high bits of extraflags
+	*b1 = svc_frame | (((extraflags & 0x70) << 1));
+
+	// save 4 low bits of extraflags
+	*b2 = (suppressed & SUPPRESSCOUNT_MASK) |
+		((extraflags & 0x0F) << SUPPRESSCOUNT_BITS);
+
+	client->suppress_count = 0;
+	client->frameflags = 0;
+
+	// delta encode the entities
+	MSG_WriteByte(svc_packetentities);
+	SV_EmitPacketEntities(client, oldframe, frame, clientEntityNum);
+}
+
+
 /*
 =============================================================================
 
@@ -395,6 +493,7 @@ void SV_BuildClientFrame(client_t *client)
     if (!clent->client)
         return;        // not in game yet
 
+
     // this is the frame we are creating
     frame = &client->frames[client->framenum & UPDATE_MASK];
     frame->number = client->framenum;
@@ -413,7 +512,7 @@ void SV_BuildClientFrame(client_t *client)
 
     // calculate the visible areas
     frame->areabytes = CM_WriteAreaBits(client->cm, frame->areabits, clientarea);
-    if (!frame->areabytes && client->protocol != PROTOCOL_VERSION_Q2PRO) {
+    if (!frame->areabytes && (client->protocol != PROTOCOL_VERSION_Q2PRO && client->protocol != PROTOCOL_VERSION_AQTION)) {
         frame->areabits[0] = 255;
         frame->areabytes = 1;
     }
