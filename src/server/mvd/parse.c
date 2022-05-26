@@ -429,6 +429,7 @@ static void MVD_ParseUnicast(mvd_t *mvd, mvd_ops_t op, int extrabits)
 
     while (msg_read.readcount < last) {
         cmd = MSG_ReadByte();
+
 #ifdef _DEBUG
         if (mvd_shownet->integer > 1) {
             MSG_ShowSVC(cmd);

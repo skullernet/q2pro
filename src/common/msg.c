@@ -3023,6 +3023,14 @@ const char *MSG_ServerCommandString(int cmd)
         S(zpacket)
         S(zdownload)
         S(gamestate)
+		S(setting)
+		S(reserved1)
+		S(reserved2)
+		S(reserved3)
+		S(reserved4)
+		S(ghudupdate)
+		S(extend)
+		S(userstatistic)
 #undef S
     }
 }

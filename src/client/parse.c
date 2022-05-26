@@ -1279,6 +1279,9 @@ void CL_ParseServerMessage(void)
         extrabits = cmd >> SVCMD_BITS;
         cmd &= SVCMD_MASK;
 
+		if (cmd == svc_extend)
+			cmd = MSG_ReadByte();
+
 #ifdef _DEBUG
         if (cl_shownet->integer > 1) {
             MSG_ShowSVC(cmd);
@@ -1412,6 +1415,19 @@ void CL_ParseServerMessage(void)
 			goto badbyte;
 #endif
 			continue;
+
+		case svc_userstatistic:
+			if (cls.serverProtocol < PROTOCOL_VERSION_AQTION) {
+				goto badbyte;
+			}
+
+			char key[MAX_STRING_CHARS];
+			int value;
+
+			MSG_ReadString(key, sizeof(key));
+			value = MSG_ReadLong();
+			
+			continue;
         }
 
         // if recording demos, copy off protocol invariant stuff
@@ -1470,6 +1486,9 @@ void CL_SeekDemoMessage(void)
 
         extrabits = cmd >> SVCMD_BITS;
         cmd &= SVCMD_MASK;
+
+		if (cmd == svc_extend)
+			cmd = MSG_ReadByte();
 
 #ifdef _DEBUG
         if (cl_shownet->integer > 1) {
