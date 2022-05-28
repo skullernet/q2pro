@@ -802,7 +802,7 @@ void SV_Ghud_SetFlags(int i, int val);
 void SV_Ghud_UnicastSetFlags(edict_t *ent, int i, int flags);
 void SV_Ghud_SetInt(int i, int val);
 void SV_Ghud_SetText(int i, char *text);
-void SV_Ghud_SetPosition(int i, int x, int y);
+void SV_Ghud_SetPosition(int i, int x, int y, int z);
 void SV_Ghud_SetAnchor(int i, float x, float y);
 void SV_Ghud_SetColor(int i, int r, int g, int b, int a);
 void SV_Ghud_SetSize(int i, int x, int y);

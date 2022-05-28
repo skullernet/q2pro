@@ -709,12 +709,14 @@ void CL_ClearState(void)
     CL_ClearEffects();
     CL_ClearLightStyles();
     CL_ClearTEnts();
+	CL_Clear3DGhudQueue();
     LOC_FreeLocations();
 
     // wipe the entire cl structure
     BSP_Free(cl.bsp);
     memset(&cl, 0, sizeof(cl));
     memset(&cl_entities, 0, sizeof(cl_entities));
+
 
     if (cls.state > ca_connected) {
         cls.state = ca_connected;

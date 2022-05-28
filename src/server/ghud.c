@@ -150,7 +150,7 @@ void SV_Ghud_SetInt(int i, int val)
 	SV_Ghud_UpdateFlags(i, GHU_INT);
 }
 
-void SV_Ghud_SetPosition(int i, int x, int y)
+void SV_Ghud_SetPosition(int i, int x, int y, int z)
 {
 	ghud_element_t *element = &svs.ghud[i];
 
@@ -162,6 +162,7 @@ void SV_Ghud_SetPosition(int i, int x, int y)
 
 	element->pos[0] = x;
 	element->pos[1] = y;
+	element->pos[2] = z;
 	
 	SV_Ghud_UpdateFlags(i, GHU_POS);
 }
