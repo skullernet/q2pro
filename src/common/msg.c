@@ -2097,6 +2097,7 @@ void MSG_WriteGhud(ghud_element_t *element, byte flags, short eflags)
 	{
 		MSG_WriteShort(element->pos[0]);
 		MSG_WriteShort(element->pos[1]);
+		MSG_WriteShort(element->pos[2]);
 		MSG_WriteByte(element->anchor[0] * 200);
 		MSG_WriteByte(element->anchor[1] * 200);
 	}
@@ -2134,6 +2135,7 @@ void MSG_ParseGhud(ghud_element_t *element)
 	{
 		element->pos[0] = MSG_ReadShort();
 		element->pos[1] = MSG_ReadShort();
+		element->pos[2] = MSG_ReadShort();
 		element->anchor[0] = (float)MSG_ReadByte() / 200;
 		element->anchor[1] = (float)MSG_ReadByte() / 200;
 	}

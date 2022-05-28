@@ -18,9 +18,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // cl_scrn.c -- master for refresh, status bar, console, chat, notify, etc
 
 #include "client.h"
+#include "common/math.h"
 
 #define STAT_PICS       11
 #define STAT_MINUS      (STAT_PICS - 1)  // num frame for '-' stats digit
+
+float	r_viewmatrix[16];
 
 static struct {
     bool        initialized;        // ready to draw
@@ -1876,6 +1879,56 @@ static void SCR_DrawCrosshair(void)
 }
 
 #ifdef AQTION_EXTENSION
+void CL_Clear3DGhudQueue(void)
+{
+	ghud_3delement_t *link;
+	ghud_3delement_t *hold;
+	for (link = cl.ghud_3dlist; link != NULL; hold = link, link = link->next, free(hold));
+}
+
+
+static void SCR_DrawGhudElement(ghud_element_t *element, float alpha_base, color_t color_base, int x, int y, int sizex, int sizey)
+{
+	byte alpha = element->color[3];
+	if (element->flags & GHF_BLINK)
+		alpha = min((element->color[3] * 0.85) + (element->color[3] * 0.25 * sin((float)cls.realtime / 125)), 255);
+
+	color_base.u8[0] = element->color[0];
+	color_base.u8[1] = element->color[1];
+	color_base.u8[2] = element->color[2];
+	color_base.u8[3] = (alpha_base * alpha);
+	R_SetColor(color_base.u32);
+
+	switch (element->type)
+	{
+	case GHT_TEXT:
+		R_DrawString(x, y, 0, MAX_STRING_CHARS, element->text, scr.font_pic);
+		break;
+	case GHT_IMG:
+		if (!element->val)
+			break;
+
+		R_DrawStretchPic(x, y, sizex, sizey, cl.image_precache[element->val]);
+		break;
+	case GHT_NUM:;
+		int numsize = element->size[0];
+		if (numsize <= 0)
+		{
+			double val = element->val;
+			if (val <= 0)
+				val = 0;
+			else
+				val = log10(val);
+
+			numsize = val + 1;
+		}
+
+		HUD_DrawNumber(x, y, 0, numsize, element->val);
+		break;
+	}
+}
+
+
 static void SCR_DrawGhud(void)
 {
 	int x, y;
@@ -1883,6 +1936,85 @@ static void SCR_DrawGhud(void)
 
 	float alpha_base = Cvar_ClampValue(scr_alpha, 0, 1);
 	color_t color_base;
+
+
+	if (cl.ghud_3dlist)
+	{
+		/*build view and projection matricies*/
+		float modelview[16];
+		float proj[16];
+
+		Matrix4x4_CM_ModelViewMatrix(modelview, cl.refdef.viewangles, cl.refdef.vieworg);
+		Matrix4x4_CM_Projection2(proj, cl.refdef.fov_x, cl.refdef.fov_y, 4);
+
+		/*build the vp matrix*/
+		Matrix4_Multiply(proj, modelview, r_viewmatrix);
+		
+		ghud_element_t *element;
+		ghud_3delement_t *link;
+		ghud_3delement_t *hold;
+		for (link = cl.ghud_3dlist; link; hold = link, link = link->next, free(hold))
+		{
+			element = link->element;
+			element->color[3] = 200;
+
+			float v[4], tempv[4], out[4];
+
+			// get position
+			v[0] = element->pos[0];
+			v[1] = element->pos[1];
+			v[2] = element->pos[2];
+			v[3] = 1;
+
+			Matrix4x4_CM_Transform4(r_viewmatrix, v, tempv);
+
+			if (tempv[3] < 0) // the element is behind us
+				continue;
+
+			tempv[0] /= tempv[3];
+			tempv[1] /= tempv[3];
+			tempv[2] /= tempv[3];
+
+			out[0] = (1 + tempv[0]) / 2;
+			out[1] = 1 - (1 + tempv[1]) / 2;
+			out[2] = tempv[2];
+
+			x = out[0] * scr.hud_width;
+			y = out[1] * scr.hud_height;
+			//
+
+			float mult = 300 / link->distance;
+			clamp(mult, 0.25, 5);
+
+			int sizex = element->size[0] * mult;
+			int sizey = element->size[1] * mult;
+
+			x -= (sizex / 2);
+			y -= (sizey / 2);
+
+			float alpha_mult = 1;
+			alpha_mult = min(1 / mult, 1);
+
+			
+			vec3_t pos, xhair;
+			pos[0] = x;
+			pos[1] = y;
+			xhair[0] = scr.hud_width / 2;
+			xhair[1] = scr.hud_height / 2;
+
+			float scale_dimension = min(scr.hud_width, scr.hud_height) / 6;
+			VectorSubtract(pos, xhair, pos);
+			float len = VectorLength(pos);
+			if (len < scale_dimension)
+			{
+				alpha_mult *= len / scale_dimension;
+			}
+
+			SCR_DrawGhudElement(element, alpha_base * alpha_mult, color_base, x, y, sizex, sizey);
+		}
+
+		cl.ghud_3dlist = NULL;
+	}
 
 	for (i = 0; i < MAX_GHUDS; i++)
 	{
@@ -1893,48 +2025,52 @@ static void SCR_DrawGhud(void)
 		if (element->color[3] <= 0) // totally transparent
 			continue;
 
-
-		byte alpha = element->color[3];
-		if (element->flags & GHF_BLINK)
-			alpha = (element->color[3] * 0.65) + (element->color[3] * 0.35 * sin((float)cls.realtime / 200));
-
-
-		color_base.u8[0] = element->color[0];
-		color_base.u8[1] = element->color[1];
-		color_base.u8[2] = element->color[2];
-		color_base.u8[3] = (alpha_base * alpha);
-		R_SetColor(color_base.u32);
-
-		x = element->pos[0] + (scr.hud_width * element->anchor[0]);
-		y = element->pos[1] + (scr.hud_height * element->anchor[1]);
-
-		switch (element->type)
+		if (element->flags & GHF_3DPOS)
 		{
-		case GHT_TEXT:
-			R_DrawString(x, y, 0, MAX_STRING_CHARS, element->text, scr.font_pic);
-			continue;
-		case GHT_IMG:
-			if (!element->val)
-				continue;
+			ghud_3delement_t *link = malloc(sizeof(ghud_3delement_t));
+			link->element = element;
 
-			R_DrawStretchPic(x, y, element->size[0], element->size[1], cl.image_precache[element->val]);
-			continue;
-		case GHT_NUM:;
-			int numsize = element->size[0];
-			if (numsize <= 0)
+			vec3_t org;
+			org[0] = element->pos[0];
+			org[1] = element->pos[1];
+			org[2] = element->pos[2];
+			VectorSubtract(org, cl.refdef.vieworg, org);
+			link->distance = VectorLength(org);
+			link->next = NULL;
+
+			///*
+			if (cl.ghud_3dlist == NULL)
+				cl.ghud_3dlist = link;
+			else if (cl.ghud_3dlist->distance < link->distance)
 			{
-				double val = element->val;
-				if (val <= 0)
-					val = 0;
-				else
-					val = log10(val);
-
-				numsize = val + 1;
+				link->next = cl.ghud_3dlist;
+				cl.ghud_3dlist = link;
 			}
+			else
+			{
+				ghud_3delement_t *hold, *list;
+				list = cl.ghud_3dlist;
+				hold = list;
+				while (list && list->distance >= link->distance)
+				{
+					hold = list;
+					list = list->next;
+				}
 
-			HUD_DrawNumber(x, y, 0, numsize, element->val);
+				link->next = hold->next;
+				hold->next = link;
+			}
+			//*/
+
 			continue;
 		}
+		else
+		{
+			x = element->pos[0] + (scr.hud_width * element->anchor[0]);
+			y = element->pos[1] + (scr.hud_height * element->anchor[1]);
+		}
+
+		SCR_DrawGhudElement(element, alpha_base, color_base, x, y, element->size[0], element->size[1]);
 	}
 }
 #endif

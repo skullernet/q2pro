@@ -193,6 +193,7 @@ static void GL_Frustum(void)
     matrix[11] = -1;
     matrix[15] = 0;
 
+
     gl_static.backend.proj_matrix(matrix);
 }
 

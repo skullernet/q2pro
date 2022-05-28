@@ -243,6 +243,7 @@ typedef struct client_state_s {
     int         inventory[MAX_ITEMS];
 
 #ifdef AQTION_EXTENSION
+	ghud_3delement_t *ghud_3dlist;
 	ghud_element_t ghud[MAX_GHUDS];
 #endif
 
@@ -924,6 +925,8 @@ void    SCR_DrawStringMulti(int x, int y, int flags, size_t maxlen, const char *
 
 void    SCR_ClearChatHUD_f(void);
 void    SCR_AddToChatHUD(const char *text);
+
+void	CL_Clear3DGhudQueue();
 
 
 //

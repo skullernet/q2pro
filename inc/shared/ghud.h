@@ -29,11 +29,19 @@ typedef struct
 	short	flags;
 	char	text[MAX_QPATH];
 	int		val;
-	short	pos[2];
+	short	pos[3];
 	float	anchor[2];
 	short	size[2];
 	byte	color[4];
 } ghud_element_t;
+
+
+typedef struct ghud_3delement_s
+{
+	ghud_element_t *element;
+	float			distance;
+	struct ghud_3delement_s *next;
+} ghud_3delement_t;
 #endif
 
 
