@@ -2,9 +2,9 @@ name: build
 
 on:
   push:
-    branches: [master, ci]
+    branches: [master, aqtion, ci]
   pull_request:
-    branches: [master]
+    branches: [master, aqtion]
 
 jobs:
   mingw:
