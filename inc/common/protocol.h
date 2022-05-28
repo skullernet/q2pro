@@ -58,8 +58,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef AQTION_EXTENSION
 #define PROTOCOL_VERSION_AQTION_CURRENT         3011
 #else
-#define PROTOCOL_VERSION_AQTION_GHUD			3022	// game dll defined hud elements
-#define PROTOCOL_VERSION_AQTION_CURRENT         3022
+#define PROTOCOL_VERSION_AQTION_GHUD			3012	// game dll defined hud elements
+#define PROTOCOL_VERSION_AQTION_CURRENT         3012
 #endif
 
 
