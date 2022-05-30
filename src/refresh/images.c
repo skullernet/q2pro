@@ -405,7 +405,7 @@ TGA_DECODE(bgr_rle)
 
             if (packet_header & 0x80) {
                 // run-length packet
-                if (in + 3 > max_in) {
+                if (max_in - in < 3) {
                     return Q_ERR_BAD_RLE_PACKET;
                 }
                 color = MakeColor(in[2], in[1], in[0], 255);
@@ -424,7 +424,7 @@ TGA_DECODE(bgr_rle)
                 }
             } else {
                 // non run-length packet
-                if (in + 3 * packet_size > max_in) {
+                if (max_in - in < 3 * packet_size) {
                     return Q_ERR_BAD_RLE_PACKET;
                 }
                 for (j = 0; j < packet_size; j++) {
@@ -467,7 +467,7 @@ TGA_DECODE(bgra_rle)
 
             if (packet_header & 0x80) {
                 // run-length packet
-                if (in + 4 > max_in) {
+                if (max_in - in < 4) {
                     return Q_ERR_BAD_RLE_PACKET;
                 }
                 color = MakeColor(in[2], in[1], in[0], in[3]);
@@ -486,7 +486,7 @@ TGA_DECODE(bgra_rle)
                 }
             } else {
                 // non run-length packet
-                if (in + 4 * packet_size > max_in) {
+                if (max_in - in < 4 * packet_size) {
                     return Q_ERR_BAD_RLE_PACKET;
                 }
                 for (j = 0; j < packet_size; j++) {
