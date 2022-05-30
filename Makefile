@@ -128,9 +128,15 @@ endif
 # All builds can have a CONFIG_PATH_HOME defined
 #PATH_DEFS += -DHOMEDIR='"$(CONFIG_PATH_HOME)"'
 
-
 CFLAGS_s += $(BUILD_DEFS) $(VER_DEFS) $(PATH_DEFS) $(PLAT_DEFS) -DUSE_SERVER=1
 CFLAGS_c += $(BUILD_DEFS) $(VER_DEFS) $(PATH_DEFS) $(PLAT_DEFS) -DUSE_SERVER=1 -DUSE_CLIENT=1
+
+ifdef LIN_32BIT
+CFLAGS_s += -m32
+CFLAGS_c += -m32
+LDFLAGS_s += -m32
+LDFLAGS_c += -m32
+endif
 
 # windres needs special quoting...
 RCFLAGS_s += -DREVISION=$(REV) -DVERSION='\"$(VER)\"'
@@ -519,6 +525,12 @@ else
 endif
 
 all: $(TARG_s) $(TARG_c) $(TARG_g)
+
+server: $(TARG_s)
+
+client: $(TARG_c)
+
+game: $(TARG_g)
 
 default: all
 
