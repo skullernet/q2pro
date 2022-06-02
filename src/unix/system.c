@@ -47,6 +47,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <SDL.h>
 #endif
 
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
+
 cvar_t  *sys_basedir;
 cvar_t  *sys_libdir;
 cvar_t  *sys_homedir;
@@ -282,7 +286,23 @@ void Sys_Init(void)
     signal(SIGPIPE, SIG_IGN);
     signal(SIGUSR1, hup_handler);
 
-    // basedir <path>
+#ifdef __APPLE__
+	// set Q2Pro.app/Contents/Resources as basedir
+	char path[MAX_OSPATH], *c;
+	unsigned int i = sizeof(path);
+
+	if (_NSGetExecutablePath(path, &i) > -1) {
+		if ((c = strstr(path, "Q2Pro.app"))) {
+			strcpy(c, "Q2Pro.app/Contents/Resources");
+			Cvar_FullSet("basedir", path, CVAR_NOSET, FROM_CODE);
+
+			strcpy(c, "Q2Pro.app/Contents/MacOS");
+			Cvar_FullSet("libdir", path, CVAR_NOSET, FROM_CODE);
+		}
+	}
+#endif 
+	
+	// basedir <path>
     // allows the game to run from outside the data tree
     sys_basedir = Cvar_Get("basedir", DATADIR, CVAR_NOSET);
 

@@ -1,3 +1,15 @@
+<<<<<<< HEAD
+.*.swp
+.DS_Store
+.baseq2
+.config
+.q2pro
+.q2proded
+q2pro
+q2proded
+game*.so
+*target/
+=======
 /.config*
 /.q2pro/
 /.q2proded/
@@ -9,3 +21,4 @@
 /game*.dll
 /tags
 /TAGS
+>>>>>>> upstream/master
