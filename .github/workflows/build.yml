@@ -21,7 +21,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-mingw-w64
-          wget -nv https://github.com/skullernet/q2pro-mgw-sdk/releases/download/2021-09-07/q2pro-mgw-sdk.tar.gz
+          wget -nv https://github.com/skullernet/q2pro-mgw-sdk/releases/download/2022-05-29/q2pro-mgw-sdk.tar.gz
           tar xf q2pro-mgw-sdk.tar.gz
 
       - name: Build
@@ -42,11 +42,11 @@ jobs:
 
       - name: Install dependencies
         run: |
-          wget -nv https://github.com/mstorsjo/llvm-mingw/releases/download/20210423/llvm-mingw-20210423-msvcrt-ubuntu-18.04-x86_64.tar.xz
-          wget -nv https://github.com/skullernet/q2pro-mgw-sdk/releases/download/2021-09-07/q2pro-mgw-sdk.tar.gz
-          tar xf llvm-mingw-20210423-msvcrt-ubuntu-18.04-x86_64.tar.xz
+          wget -nv https://github.com/mstorsjo/llvm-mingw/releases/download/20220323/llvm-mingw-20220323-msvcrt-ubuntu-18.04-x86_64.tar.xz
+          wget -nv https://github.com/skullernet/q2pro-mgw-sdk/releases/download/2022-05-29/q2pro-mgw-sdk.tar.gz
+          tar xf llvm-mingw-20220323-msvcrt-ubuntu-18.04-x86_64.tar.xz
           tar xf q2pro-mgw-sdk.tar.gz
-          echo "$GITHUB_WORKSPACE/llvm-mingw-20210423-msvcrt-ubuntu-18.04-x86_64/bin" >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/llvm-mingw-20220323-msvcrt-ubuntu-18.04-x86_64/bin" >> $GITHUB_PATH
 
       - name: Build
         working-directory: main-build
