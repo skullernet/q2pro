@@ -1641,6 +1641,13 @@ static void r_texture_formats_changed(cvar_t *self)
 
 #endif // USE_PNG || USE_JPG || USE_TGA
 
+static bool need_override_image(imagetype_t type)
+{
+    int o = r_override_textures->integer;
+    bool hud = type == IT_PIC || type == IT_FONT;
+    return o == 1 || (o == 2 && hud) || (o == 3 && !hud);
+}
+
 // finds or loads the given image, adding it to the hash table.
 static int find_or_load_image(const char *name, size_t len,
                               imagetype_t type, imageflags_t flags,
@@ -1703,7 +1710,7 @@ static int find_or_load_image(const char *name, size_t len,
             // not found, change error to invalid path
             ret = Q_ERR_INVALID_PATH;
         }
-    } else if (r_override_textures->integer) {
+    } else if (need_override_image(type)) {
         // forcibly replace the extension
         ret = try_other_formats(IM_MAX, image, &pic);
     } else {
