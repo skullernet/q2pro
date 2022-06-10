@@ -423,6 +423,7 @@ ifdef CONFIG_WINDOWS
 
     ifndef CONFIG_NO_SOFTWARE_SOUND
         OBJS_c += src/windows/wave.o
+        LIBS_c += -lwinmm
         ifdef CONFIG_DIRECT_SOUND
             CFLAGS_c += -DUSE_DSOUND=1
             OBJS_c += src/windows/dsound.o
@@ -441,6 +442,7 @@ ifdef CONFIG_WINDOWS
 
     ifdef CONFIG_WINDOWS_SERVICE
         CFLAGS_s += -DUSE_WINSVC=1
+        LIBS_s += -ladvapi32
     endif
 
     OBJS_c += src/windows/hunk.o src/windows/system.o
@@ -452,8 +454,8 @@ ifdef CONFIG_WINDOWS
     OBJS_g += src/windows/res/baseq2.o
 
     # System libs
-    LIBS_s += -lws2_32 -lwinmm -ladvapi32
-    LIBS_c += -lws2_32 -lwinmm
+    LIBS_s += -lws2_32
+    LIBS_c += -lws2_32
 else
     SDL_CFLAGS ?= $(shell sdl2-config --cflags)
     SDL_LIBS ?= $(shell sdl2-config --libs)
