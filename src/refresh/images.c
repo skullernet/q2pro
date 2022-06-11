@@ -1639,14 +1639,14 @@ static void r_texture_formats_changed(cvar_t *self)
     }
 }
 
-#endif // USE_PNG || USE_JPG || USE_TGA
-
 static bool need_override_image(imagetype_t type)
 {
     int o = r_override_textures->integer;
     bool hud = type == IT_PIC || type == IT_FONT;
     return o == 1 || (o == 2 && hud) || (o == 3 && !hud);
 }
+
+#endif // USE_PNG || USE_JPG || USE_TGA
 
 // finds or loads the given image, adding it to the hash table.
 static int find_or_load_image(const char *name, size_t len,
