@@ -315,7 +315,7 @@ IMG_LOAD(WAL)
 
     w = LittleLong(mt->width);
     h = LittleLong(mt->height);
-    if (w < 1 || h < 1 || w > 512 || h > 512) {
+    if (w < 1 || h < 1 || w > MAX_TEXTURE_SIZE || h > MAX_TEXTURE_SIZE) {
         return Q_ERR_INVALID_FORMAT;
     }
 
@@ -1593,7 +1593,7 @@ static void get_image_dimensions(imageformat_t fmt, image_t *image)
         }
     }
 
-    if (w < 1 || h < 1 || w > 512 || h > 512) {
+    if (w < 1 || h < 1 || w > MAX_TEXTURE_SIZE || h > MAX_TEXTURE_SIZE) {
         return;
     }
 
