@@ -305,7 +305,7 @@ WAL LOADING
 IMG_LOAD(WAL)
 {
     miptex_t    *mt;
-    size_t      w, h, offset, size, endpos;
+    unsigned    w, h, offset, size, endpos;
 
     if (rawlen < sizeof(miptex_t)) {
         return Q_ERR_FILE_TOO_SMALL;
@@ -515,10 +515,9 @@ break_out:
 
 IMG_LOAD(TGA)
 {
-    size_t offset;
     byte *pixels;
     byte *row_pointers[MAX_TEXTURE_SIZE];
-    unsigned i, bpp, id_length, colormap_type, image_type, w, h, pixel_size, attributes;
+    unsigned i, bpp, id_length, colormap_type, image_type, w, h, pixel_size, attributes, offset;
     tga_decode_t decode;
     int ret;
 
