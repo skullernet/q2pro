@@ -1587,8 +1587,8 @@ static void get_image_dimensions(imageformat_t fmt, image_t *image)
         if (f) {
             len = FS_Read(&pcx, sizeof(pcx), f);
             if (len == sizeof(pcx)) {
-                w = LittleShort(pcx.xmax) + 1;
-                h = LittleShort(pcx.ymax) + 1;
+                w = (LittleShort(pcx.xmax) - LittleShort(pcx.xmin)) + 1;
+                h = (LittleShort(pcx.ymax) - LittleShort(pcx.ymin)) + 1;
             }
             FS_FCloseFile(f);
         }
