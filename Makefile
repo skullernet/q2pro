@@ -81,7 +81,7 @@ else
     CFLAGS_g += -fvisibility=hidden
 
     # Resolve all symbols at link time
-    ifneq ($(filter Linux FreeBSD,$(SYS)), )
+    ifneq ($(filter Linux FreeBSD,$(SYS)),)
         LDFLAGS_s += -Wl,--no-undefined
         LDFLAGS_c += -Wl,--no-undefined
         LDFLAGS_g += -Wl,--no-undefined
@@ -484,7 +484,7 @@ else
     LIBS_c += -lm -lpthread
     LIBS_g += -lm
 
-    ifeq ($(SYS), Linux)
+    ifeq ($(SYS),Linux)
         LIBS_s += -ldl -lrt
         LIBS_c += -ldl -lrt
     endif
