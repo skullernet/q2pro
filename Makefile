@@ -75,6 +75,10 @@ else
         CONFIG_NO_ICMP := y
     endif
 
+    # Enable POSIX threads
+    CFLAGS_c += -pthread
+    LDFLAGS_c += -pthread
+
     # Hide ELF symbols by default
     CFLAGS_s += -fvisibility=hidden
     CFLAGS_c += -fvisibility=hidden
@@ -481,7 +485,7 @@ else
 
     # System libs
     LIBS_s += -lm
-    LIBS_c += -lm -lpthread
+    LIBS_c += -lm
     LIBS_g += -lm
 
     ifeq ($(SYS),Linux)
