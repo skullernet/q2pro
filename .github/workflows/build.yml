@@ -6,9 +6,12 @@ on:
   pull_request:
     branches: [master]
 
+env:
+  MINGW_SDK: "https://github.com/skullernet/q2pro-mgw-sdk/releases/download/2022-06-14/q2pro-mgw-sdk.tar.gz"
+
 jobs:
   mingw:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         suffix: ["32", "64"]
@@ -21,7 +24,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-mingw-w64
-          wget -nv https://github.com/skullernet/q2pro-mgw-sdk/releases/download/2022-05-29/q2pro-mgw-sdk.tar.gz
+          wget -nv $MINGW_SDK
           tar xf q2pro-mgw-sdk.tar.gz
 
       - name: Build
@@ -42,11 +45,13 @@ jobs:
 
       - name: Install dependencies
         run: |
-          wget -nv https://github.com/mstorsjo/llvm-mingw/releases/download/20220323/llvm-mingw-20220323-msvcrt-ubuntu-18.04-x86_64.tar.xz
-          wget -nv https://github.com/skullernet/q2pro-mgw-sdk/releases/download/2022-05-29/q2pro-mgw-sdk.tar.gz
-          tar xf llvm-mingw-20220323-msvcrt-ubuntu-18.04-x86_64.tar.xz
+          LLVM_VER=20220323
+          LLVM=llvm-mingw-$LLVM_VER-msvcrt-ubuntu-18.04-x86_64
+          LLVM_URL=https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_VER/$LLVM.tar.xz
+          wget -nv $LLVM_URL $MINGW_SDK
+          tar xf $LLVM.tar.xz
           tar xf q2pro-mgw-sdk.tar.gz
-          echo "$GITHUB_WORKSPACE/llvm-mingw-20220323-msvcrt-ubuntu-18.04-x86_64/bin" >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/$LLVM/bin" >> $GITHUB_PATH
 
       - name: Build
         working-directory: main-build
