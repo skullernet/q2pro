@@ -272,7 +272,7 @@ s_swapstereo::
     engine. Default value is 0 (don't swap).
 
 al_driver::
-    Specifies the name of OpenAL driver to use. Default value is ‘openal32’
+    Specifies the name of OpenAL driver to use. Default value is ‘soft_oal’
     on Windows, and ‘libopenal.so.1’ on Linux.
 
 al_device::
@@ -280,8 +280,8 @@ al_device::
     your OpenAL implementation. Default value is empty, which means default
     sound output device is used.
 
-TIP: Using http://kcat.strangesoft.net/openal.html[OpenAL Soft] implementation
-of OpenAL is recommended.
+TIP: Using https://openal-soft.org/[OpenAL Soft] implementation of OpenAL is
+recommended.
 
 
 Graphical Console
