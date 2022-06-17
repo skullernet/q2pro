@@ -44,6 +44,7 @@ cvar_t  *maxspectators;
 cvar_t  *maxentities;
 cvar_t  *g_select_empty;
 cvar_t  *dedicated;
+cvar_t  *steamid;
 
 cvar_t  *filterban;
 
@@ -126,6 +127,7 @@ void InitGame(void)
 
     // noset vars
     dedicated = gi.cvar("dedicated", "0", CVAR_NOSET);
+    steamid = gi.cvar("steamid", "0", CVAR_NOSET);
 
     // latched vars
     sv_cheats = gi.cvar("cheats", "0", CVAR_SERVERINFO | CVAR_LATCH);
