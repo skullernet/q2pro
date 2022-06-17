@@ -305,7 +305,7 @@ WAL LOADING
 IMG_LOAD(WAL)
 {
     miptex_t    *mt;
-    size_t      w, h, offset, size, endpos;
+    unsigned    w, h, offset, size, endpos;
 
     if (rawlen < sizeof(miptex_t)) {
         return Q_ERR_FILE_TOO_SMALL;
@@ -315,7 +315,7 @@ IMG_LOAD(WAL)
 
     w = LittleLong(mt->width);
     h = LittleLong(mt->height);
-    if (w < 1 || h < 1 || w > 512 || h > 512) {
+    if (w < 1 || h < 1 || w > MAX_TEXTURE_SIZE || h > MAX_TEXTURE_SIZE) {
         return Q_ERR_INVALID_FORMAT;
     }
 
@@ -515,10 +515,9 @@ break_out:
 
 IMG_LOAD(TGA)
 {
-    size_t offset;
     byte *pixels;
     byte *row_pointers[MAX_TEXTURE_SIZE];
-    unsigned i, bpp, id_length, colormap_type, image_type, w, h, pixel_size, attributes;
+    unsigned i, bpp, id_length, colormap_type, image_type, w, h, pixel_size, attributes, offset;
     tga_decode_t decode;
     int ret;
 
@@ -694,6 +693,7 @@ static void my_error_exit(j_common_ptr cinfo)
 static int my_jpeg_start_decompress(j_decompress_ptr cinfo, byte *rawdata, size_t rawlen)
 {
     my_error_ptr jerr = (my_error_ptr)cinfo->err;
+    int expected_components;
 
     if (setjmp(jerr->setjmp_buffer)) {
         return Q_ERR_LIBRARY_ERROR;
@@ -703,14 +703,26 @@ static int my_jpeg_start_decompress(j_decompress_ptr cinfo, byte *rawdata, size_
     jpeg_mem_src(cinfo, rawdata, rawlen);
     jpeg_read_header(cinfo, TRUE);
 
-    if (cinfo->out_color_space != JCS_RGB && cinfo->out_color_space != JCS_GRAYSCALE) {
+    switch (cinfo->out_color_space) {
+    case JCS_GRAYSCALE:
+        expected_components = 1;
+        break;
+    case JCS_RGB:
+        expected_components = 3;
+        break;
+    default:
         Com_DPrintf("%s: %s: invalid image color space\n", __func__, jerr->filename);
         return Q_ERR_INVALID_FORMAT;
     }
 
+#ifdef JCS_ALPHA_EXTENSIONS
+    cinfo->out_color_space = JCS_EXT_RGBA;
+    expected_components = 4;
+#endif
+
     jpeg_start_decompress(cinfo);
 
-    if (cinfo->output_components != 3 && cinfo->output_components != 1) {
+    if (cinfo->output_components != expected_components) {
         Com_DPrintf("%s: %s: invalid number of color components\n", __func__, jerr->filename);
         return Q_ERR_INVALID_FORMAT;
     }
@@ -722,6 +734,24 @@ static int my_jpeg_start_decompress(j_decompress_ptr cinfo, byte *rawdata, size_
 
     return 0;
 }
+
+#ifdef JCS_ALPHA_EXTENSIONS
+
+static int my_jpeg_finish_decompress(j_decompress_ptr cinfo, JSAMPARRAY row_pointers)
+{
+    my_error_ptr jerr = (my_error_ptr)cinfo->err;
+
+    if (setjmp(jerr->setjmp_buffer))
+        return Q_ERR_LIBRARY_ERROR;
+
+    while (cinfo->output_scanline < cinfo->output_height)
+        jpeg_read_scanlines(cinfo, &row_pointers[cinfo->output_scanline], cinfo->output_height - cinfo->output_scanline);
+
+    jpeg_finish_decompress(cinfo);
+    return 0;
+}
+
+#else
 
 static int my_jpeg_finish_decompress(j_decompress_ptr cinfo, JSAMPROW row_pointer, byte *out)
 {
@@ -759,11 +789,12 @@ static int my_jpeg_finish_decompress(j_decompress_ptr cinfo, JSAMPROW row_pointe
     return 0;
 }
 
+#endif
+
 IMG_LOAD(JPG)
 {
     struct jpeg_decompress_struct cinfo;
     struct my_error_mgr jerr;
-    JSAMPROW buffer;
     byte *pixels;
     int ret;
 
@@ -780,10 +811,23 @@ IMG_LOAD(JPG)
     image->upload_height = image->height = cinfo.output_height;
     image->flags |= IF_OPAQUE;
 
-    buffer = malloc(sizeof(JSAMPLE) * cinfo.output_width * cinfo.output_components);
     pixels = IMG_AllocPixels(cinfo.output_height * cinfo.output_width * 4);
-    ret = my_jpeg_finish_decompress(&cinfo, buffer, pixels);
-    free(buffer);
+
+#ifdef JCS_ALPHA_EXTENSIONS
+    JSAMPROW row_pointers[MAX_TEXTURE_SIZE];
+
+    for (int row = 0; row < cinfo.output_height; row++)
+        row_pointers[row] = (JSAMPROW)(pixels + row * cinfo.output_width * 4);
+
+    ret = my_jpeg_finish_decompress(&cinfo, row_pointers);
+#else
+    JSAMPROW row_pointer;
+
+    row_pointer = malloc(sizeof(JSAMPLE) * cinfo.output_width * cinfo.output_components);
+    ret = my_jpeg_finish_decompress(&cinfo, row_pointer, pixels);
+    free(row_pointer);
+#endif
+
     if (ret < 0) {
         IMG_FreePixels(pixels);
         goto fail;
@@ -1587,14 +1631,14 @@ static void get_image_dimensions(imageformat_t fmt, image_t *image)
         if (f) {
             len = FS_Read(&pcx, sizeof(pcx), f);
             if (len == sizeof(pcx)) {
-                w = LittleShort(pcx.xmax) + 1;
-                h = LittleShort(pcx.ymax) + 1;
+                w = (LittleShort(pcx.xmax) - LittleShort(pcx.xmin)) + 1;
+                h = (LittleShort(pcx.ymax) - LittleShort(pcx.ymin)) + 1;
             }
             FS_FCloseFile(f);
         }
     }
 
-    if (w < 1 || h < 1 || w > 512 || h > 512) {
+    if (w < 1 || h < 1 || w > MAX_TEXTURE_SIZE || h > MAX_TEXTURE_SIZE) {
         return;
     }
 
@@ -1639,14 +1683,14 @@ static void r_texture_formats_changed(cvar_t *self)
     }
 }
 
-#endif // USE_PNG || USE_JPG || USE_TGA
-
 static bool need_override_image(imagetype_t type)
 {
     int o = r_override_textures->integer;
     bool hud = type == IT_PIC || type == IT_FONT;
     return o == 1 || (o == 2 && hud) || (o == 3 && !hud);
 }
+
+#endif // USE_PNG || USE_JPG || USE_TGA
 
 // finds or loads the given image, adding it to the hash table.
 static int find_or_load_image(const char *name, size_t len,

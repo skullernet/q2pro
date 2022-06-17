@@ -75,13 +75,17 @@ else
         CONFIG_NO_ICMP := y
     endif
 
+    # Enable POSIX threads
+    CFLAGS_c += -pthread
+    LDFLAGS_c += -pthread
+
     # Hide ELF symbols by default
     CFLAGS_s += -fvisibility=hidden
     CFLAGS_c += -fvisibility=hidden
     CFLAGS_g += -fvisibility=hidden
 
     # Resolve all symbols at link time
-    ifeq ($(SYS),Linux)
+    ifneq ($(filter Linux FreeBSD,$(SYS)),)
         LDFLAGS_s += -Wl,--no-undefined
         LDFLAGS_c += -Wl,--no-undefined
         LDFLAGS_g += -Wl,--no-undefined
@@ -498,7 +502,7 @@ else
 
     ifeq ($(SYS),Linux)
         LIBS_s += -ldl -lrt
-        LIBS_c += -ldl -lrt -lpthread
+        LIBS_c += -ldl -lrt
     endif
 endif
 
