@@ -1464,6 +1464,7 @@ static int              img_total;
 
 static cvar_t   *r_override_textures;
 static cvar_t   *r_texture_formats;
+static cvar_t   *r_texture_overrides;
 #endif
 
 /*
@@ -1685,9 +1686,7 @@ static void r_texture_formats_changed(cvar_t *self)
 
 static bool need_override_image(imagetype_t type)
 {
-    int o = r_override_textures->integer;
-    bool hud = type == IT_PIC || type == IT_FONT;
-    return o == 1 || (o == 2 && hud) || (o == 3 && !hud);
+    return r_override_textures->integer && r_texture_overrides->integer & (1 << type);
 }
 
 #endif // USE_PNG || USE_JPG || USE_TGA
@@ -2057,6 +2056,7 @@ void IMG_Init(void)
                                  , 0);
     r_texture_formats->changed = r_texture_formats_changed;
     r_texture_formats_changed(r_texture_formats);
+    r_texture_overrides = Cvar_Get("r_texture_overrides", "-1", CVAR_FILES);
 
 #if USE_JPG
     r_screenshot_format = Cvar_Get("gl_screenshot_format", "jpg", 0);
