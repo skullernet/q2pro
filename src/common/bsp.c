@@ -985,6 +985,11 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
         return filelen;
     }
 
+    if (filelen < sizeof(dheader_t)) {
+        ret = Q_ERR_FILE_TOO_SMALL;
+        goto fail2;
+    }
+
     // byte swap and validate the header
     header = (dheader_t *)buf;
     if (LittleLong(header->ident) != IDBSPHEADER) {

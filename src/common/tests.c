@@ -25,6 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/tests.h"
 #include "refresh/refresh.h"
 #include "system/system.h"
+#include "client/sound/sound.h"
 
 // test error shutdown procedures
 static void Com_Error_f(void)
@@ -519,6 +520,46 @@ static void Com_TestModels_f(void)
 }
 #endif
 
+#if USE_CLIENT
+static void Com_TestSounds_f(void)
+{
+    void **list;
+    int i, count, errors;
+    unsigned start, end;
+
+    list = FS_ListFiles("sound", ".wav", FS_SEARCH_SAVEPATH, &count);
+    if (!list) {
+        Com_Printf("No sounds found\n");
+        return;
+    }
+
+    start = Sys_Milliseconds();
+
+    S_BeginRegistration();
+
+    errors = 0;
+    for (i = 0; i < count; i++) {
+        if (i > 0 && !(i & (MAX_SOUNDS - 1))) {
+            S_EndRegistration();
+            S_BeginRegistration();
+        }
+        if (!S_RegisterSound(list[i] + 6)) {
+            errors++;
+            continue;
+        }
+    }
+
+    S_EndRegistration();
+
+    end = Sys_Milliseconds();
+
+    Com_Printf("%d msec, %d failures, %d sounds tested\n",
+               end - start, errors, count);
+
+    FS_FreeList(list);
+}
+#endif
+
 static const char *const mdfour_str[] = {
     "", "a", "abc", "message digest", "abcdefghijklmnopqrstuvwxyz",
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
@@ -601,6 +642,44 @@ static void Com_MdfourTest_f(void)
     Com_Printf("%d failures, %d strings tested\n", errors, tests);
 }
 
+typedef struct {
+    const char *ext;
+    const char *name;
+    bool result;
+} extcmptest_t;
+
+static const extcmptest_t extcmptests[] = {
+    { ".foo;.bar",          "test.bar",         true  },
+    { ".foo;.bar",          "test.FOO",         true  },
+    { ".foo;.bar",          "test.baz",         false },
+    { ".foo;.BAR;.baz;",    "test.bar",         true  },
+    { ".abc;.foo;.def",     "/path.foo/test",   false },
+    { ".abc;.foo;.def",     "",                 false },
+    { "",                   "test",             true  },
+    { "",                   "test.foo",         false },
+    { ".bar;;.baz",         "test",             true  },
+    { ";;;",                "test.foo",         false },
+};
+
+static const int numextcmptests = q_countof(extcmptests);
+
+static void Com_ExtCmpTest_f(void)
+{
+    int errors = 0;
+
+    for (int i = 0; i < numextcmptests; i++) {
+        const extcmptest_t *t = &extcmptests[i];
+        bool res = FS_ExtCmp(t->ext, t->name);
+        if (res != t->result) {
+            Com_EPrintf("FS_ExtCmp(\"%s\", \"%s\") == %d, expected %d\n",
+                        t->ext, t->name, res, t->result);
+            errors++;
+        }
+    }
+
+    Com_Printf("%d failures, %d strings tested\n", errors, numextcmptests);
+}
+
 void TST_Init(void)
 {
     Cmd_AddCommand("error", Com_Error_f);
@@ -616,5 +695,9 @@ void TST_Init(void)
 #if USE_REF
     Cmd_AddCommand("modeltest", Com_TestModels_f);
 #endif
+#if USE_CLIENT
+    Cmd_AddCommand("soundtest", Com_TestSounds_f);
+#endif
     Cmd_AddCommand("mdfourtest", Com_MdfourTest_f);
+    Cmd_AddCommand("extcmptest", Com_ExtCmpTest_f);
 }
