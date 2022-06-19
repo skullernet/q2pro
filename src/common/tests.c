@@ -263,20 +263,20 @@ static void Com_TestNorm_f(void)
 {
     const normtest_t *n;
     char buffer[MAX_QPATH];
-    int i, errors, pass;
+    int i, ret, errors, pass;
 
     for (pass = 0; pass < 2; pass++) {
         errors = 0;
         for (i = 0; i < numnormtests; i++) {
             n = &normtests[i];
             if (pass == 0) {
-                FS_NormalizePathBuffer(buffer, n->in, sizeof(buffer));
+                ret = FS_NormalizePathBuffer(buffer, n->in, sizeof(buffer));
             } else {
                 // test in place operation
                 strcpy(buffer, n->in);
-                FS_NormalizePath(buffer);
+                ret = FS_NormalizePath(buffer);
             }
-            if (strcmp(n->out, buffer)) {
+            if (ret != strlen(n->out) || strcmp(n->out, buffer)) {
                 Com_EPrintf(
                     "FS_NormalizePath( \"%s\" ) == \"%s\", expected \"%s\" (pass %d)\n",
                     n->in, buffer, n->out, pass);
@@ -285,6 +285,13 @@ static void Com_TestNorm_f(void)
         }
         if (errors)
             break;
+    }
+
+    memset(buffer, 0, sizeof(buffer));
+    i = FS_NormalizePathBuffer(buffer, "foo/bar/baz", 8);
+    if (i != 8 || strcmp(buffer, "foo/bar")) {
+        Com_EPrintf("Overflow test failed");
+        errors++;
     }
 
     Com_Printf("%d failures, %d paths tested (%d passes)\n",
