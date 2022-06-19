@@ -312,10 +312,11 @@ reset:
 
 /*
 ================
-FS_NormalizePath
+FS_NormalizePathBuffer
 
 Simplifies the path, converting backslashes to slashes and removing ./ and ../
 components, as well as duplicated slashes. Any leading slashes are also skipped.
+Return value == size signifies overflow.
 
 May operate in place if in == out.
 
@@ -328,10 +329,13 @@ May operate in place if in == out.
     ./foo        -> foo
 ================
 */
-size_t FS_NormalizePath(char *out, const char *in)
+size_t FS_NormalizePathBuffer(char *out, const char *in, size_t size)
 {
     char *start = out;
     uint32_t pre = '/';
+
+    if (!size)
+        return 0;
 
     while (1) {
         int c = *in++;
@@ -381,33 +385,17 @@ size_t FS_NormalizePath(char *out, const char *in)
             c = '/';
         }
 
+        if (out - start == size - 1) {
+            *out = 0;
+            return size;
+        }
+
         pre = (pre << 8) | c;
         *out++ = c;
     }
 
     *out = 0;
     return out - start;
-}
-
-/*
-================
-FS_NormalizePathBuffer
-
-Buffer safe version of FS_NormalizePath. Return value >= size signifies
-overflow, empty string is stored in output buffer in this case.
-================
-*/
-size_t FS_NormalizePathBuffer(char *out, const char *in, size_t size)
-{
-    size_t len = strlen(in);
-
-    if (len >= size) {
-        if (size)
-            *out = 0;
-        return len;
-    }
-
-    return FS_NormalizePath(out, in);
 }
 
 // =============================================================================
@@ -1647,7 +1635,7 @@ static qhandle_t easy_open_read(char *buf, size_t size, unsigned mode,
         }
 
         // print normalized path in case of error
-        FS_NormalizePath(buf, buf);
+        FS_NormalizePath(buf);
 
         ret = FS_FOpenFile(buf, &f, mode);
         if (f) {
@@ -1996,7 +1984,7 @@ static void pack_hash_file(pack_t *pack, packfile_t *file)
 {
     unsigned hash;
 
-    file->namelen = FS_NormalizePath(file->name, file->name);
+    file->namelen = FS_NormalizePath(file->name);
 
     hash = FS_HashPath(file->name, pack->hash_size);
     file->hash_next = pack->file_hash[hash];
