@@ -65,16 +65,18 @@ static const char   z_tagnames[TAG_MAX][8] = {
     "cmodel"
 };
 
+#define TAG_INDEX(tag)  ((tag) < TAG_MAX ? (tag) : TAG_FREE)
+
 static inline void Z_CountFree(zhead_t *z)
 {
-    zstats_t *s = &z_stats[z->tag < TAG_MAX ? z->tag : TAG_FREE];
+    zstats_t *s = &z_stats[TAG_INDEX(z->tag)];
     s->count--;
     s->bytes -= z->size;
 }
 
 static inline void Z_CountAlloc(zhead_t *z)
 {
-    zstats_t *s = &z_stats[z->tag < TAG_MAX ? z->tag : TAG_FREE];
+    zstats_t *s = &z_stats[TAG_INDEX(z->tag)];
     s->count++;
     s->bytes += z->size;
 }
@@ -106,7 +108,7 @@ void Z_LeakTest(memtag_t tag)
         Com_WPrintf("************* Z_LeakTest *************\n"
                     "%s leaked %zu bytes of memory (%zu object%s)\n"
                     "**************************************\n",
-                    z_tagnames[tag < TAG_MAX ? tag : TAG_FREE],
+                    z_tagnames[TAG_INDEX(tag)],
                     numBytes, numLeaks, numLeaks == 1 ? "" : "s");
     }
 }
@@ -285,55 +287,6 @@ void *Z_TagMallocz(size_t size, memtag_t tag)
         return NULL;
     }
     return memset(Z_TagMalloc(size, tag), 0, size);
-}
-
-static byte     *z_reserved_data;
-static size_t   z_reserved_inuse;
-static size_t   z_reserved_total;
-
-void Z_TagReserve(size_t size, memtag_t tag)
-{
-    z_reserved_data = Z_TagMalloc(size, tag);
-    z_reserved_total = size;
-    z_reserved_inuse = 0;
-}
-
-void *Z_ReservedAlloc(size_t size)
-{
-    void *ptr;
-
-    if (!size) {
-        return NULL;
-    }
-
-    if (size > z_reserved_total - z_reserved_inuse) {
-        Com_Error(ERR_FATAL, "%s: couldn't allocate %zu bytes", __func__, size);
-    }
-
-    ptr = z_reserved_data + z_reserved_inuse;
-    z_reserved_inuse += size;
-
-    return ptr;
-}
-
-void *Z_ReservedAllocz(size_t size)
-{
-    if (!size) {
-        return NULL;
-    }
-    return memset(Z_ReservedAlloc(size), 0, size);
-}
-
-char *Z_ReservedCopyString(const char *in)
-{
-    size_t len;
-
-    if (!in) {
-        return NULL;
-    }
-
-    len = strlen(in) + 1;
-    return memcpy(Z_ReservedAlloc(len), in, len);
 }
 
 /*
