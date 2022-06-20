@@ -1845,6 +1845,9 @@ static image_t *find_or_load_image(const char *name, size_t len,
     // upload the image
     IMG_Load(image, pic);
 
+    // don't need pics in memory after GL upload
+    Z_Free(pic);
+
     return image;
 
 fail:
