@@ -1749,17 +1749,14 @@ static void print_error(const char *name, imageflags_t flags, int err)
 }
 
 // finds or loads the given image, adding it to the hash table.
-static int find_or_load_image(const char *name, size_t len,
-                              imagetype_t type, imageflags_t flags,
-                              image_t **image_p)
+static image_t *find_or_load_image(const char *name, size_t len,
+                                   imagetype_t type, imageflags_t flags)
 {
     image_t         *image;
     byte            *pic;
     unsigned        hash;
     imageformat_t   fmt;
     int             ret;
-
-    *image_p = NULL;
 
     // must have an extension and at least 1 char of base name
     if (len <= 4) {
@@ -1777,8 +1774,7 @@ static int find_or_load_image(const char *name, size_t len,
     if ((image = lookup_image(name, type, hash, len - 4)) != NULL) {
         image->flags |= flags & IF_PERMANENT;
         image->registration_sequence = registration_sequence;
-        *image_p = image;
-        return Q_ERR_SUCCESS;
+        return image;
     }
 
     // allocate image slot
@@ -1841,7 +1837,7 @@ static int find_or_load_image(const char *name, size_t len,
     if (ret < 0) {
         print_error(image->name, flags, ret);
         memset(image, 0, sizeof(*image));
-        return ret;
+        return NULL;
     }
 
     List_Append(&r_imageHash[hash], &image->entry);
@@ -1849,12 +1845,11 @@ static int find_or_load_image(const char *name, size_t len,
     // upload the image
     IMG_Load(image, pic);
 
-    *image_p = image;
-    return Q_ERR_SUCCESS;
+    return image;
 
 fail:
     print_error(name, flags, ret);
-    return ret;
+    return NULL;
 }
 
 image_t *IMG_Find(const char *name, imagetype_t type, imageflags_t flags)
@@ -1872,8 +1867,7 @@ image_t *IMG_Find(const char *name, imagetype_t type, imageflags_t flags)
         Com_Error(ERR_FATAL, "%s: oversize name", __func__);
     }
 
-    find_or_load_image(name, len, type, flags, &image);
-    if (image) {
+    if ((image = find_or_load_image(name, len, type, flags))) {
         return image;
     }
     return R_NOTEXTURE;
@@ -1931,8 +1925,7 @@ qhandle_t R_RegisterImage(const char *name, imagetype_t type, imageflags_t flags
         return 0;
     }
 
-    find_or_load_image(fullname, len, type, flags, &image);
-    if (image) {
+    if ((image = find_or_load_image(fullname, len, type, flags))) {
         return image - r_images;
     }
     return 0;
