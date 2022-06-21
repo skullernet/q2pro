@@ -115,8 +115,9 @@ static void show_console_input(void)
         }
 
         size_t len = strlen(text);
-        DWORD res = min(len, f->visibleChars) + 1;
-        WriteConsoleOutputCharacter(houtput, va("]%s", text), res, (COORD){ 0, info.dwCursorPosition.Y }, &res);
+        DWORD res, nch = min(len, f->visibleChars);
+        WriteConsoleOutputCharacter(houtput,  "]",   1, (COORD){ 0, info.dwCursorPosition.Y }, &res);
+        WriteConsoleOutputCharacter(houtput, text, nch, (COORD){ 1, info.dwCursorPosition.Y }, &res);
         SetConsoleCursorPosition(houtput, (COORD){ pos + 1, info.dwCursorPosition.Y });
     }
 }
@@ -483,7 +484,7 @@ void Sys_RunConsole(void)
                     f->text[f->cursorPos + 0] = ch;
                     f->text[f->cursorPos + 1] = 0;
                 } else if (f->text[f->cursorPos] == 0 && f->cursorPos + 1 < f->visibleChars) {
-                    write_console_data(va("%c", ch), 1);
+                    write_console_data((char []){ ch }, 1);
                     f->text[f->cursorPos + 0] = ch;
                     f->text[f->cursorPos + 1] = 0;
                     f->cursorPos++;
