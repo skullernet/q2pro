@@ -290,6 +290,8 @@ void Sys_Init(void)
     // specifies per-user writable directory for demos, screenshots, etc
     if (HOMEDIR[0] == '~') {
         char *s = getenv("HOME");
+        if (s && strlen(s) >= MAX_OSPATH - MAX_QPATH)
+            Sys_Error("HOME path too long");
         if (s && *s) {
             homedir = va("%s%s", s, &HOMEDIR[1]);
         } else {
