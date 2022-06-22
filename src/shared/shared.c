@@ -392,7 +392,9 @@ char *COM_Parse(const char **data_p)
     int         c;
     int         len;
     const char  *data;
-    char        *s = com_token[com_tokidx++ & 3];
+    char        *s = com_token[com_tokidx];
+
+    com_tokidx = (com_tokidx + 1) & 3;
 
     data = *data_p;
     len = 0;
@@ -957,7 +959,7 @@ char *Info_ValueForKey(const char *s, const char *key)
     char        pkey[MAX_INFO_STRING];
     char        *o;
 
-    valueindex++;
+    valueindex = (valueindex + 1) & 3;
     if (*s == '\\')
         s++;
     while (1) {
@@ -970,14 +972,14 @@ char *Info_ValueForKey(const char *s, const char *key)
         *o = 0;
         s++;
 
-        o = value[valueindex & 3];
+        o = value[valueindex];
         while (*s != '\\' && *s) {
             *o++ = *s++;
         }
         *o = 0;
 
         if (!strcmp(key, pkey))
-            return value[valueindex & 3];
+            return value[valueindex];
 
         if (!*s)
             goto fail;
@@ -985,7 +987,7 @@ char *Info_ValueForKey(const char *s, const char *key)
     }
 
 fail:
-    o = value[valueindex & 3];
+    o = value[valueindex];
     *o = 0;
     return o;
 }
