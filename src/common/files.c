@@ -1785,6 +1785,27 @@ qhandle_t FS_EasyOpenFile(char *buf, size_t size, unsigned mode,
     return easy_open_write(buf, size, mode, dir, name, ext);
 }
 
+#if USE_TESTS
+static cvar_t *fs_fuzz_factor;
+static cvar_t *fs_fuzz_filter;
+
+static void fuzz_data(const char *path, byte *buf, int size)
+{
+    if (fs_fuzz_factor->value <= 0)
+        return;
+    if (!strcmp(path, "pics/colormap.pcx") || !strcmp(path, "pics/conchars.pcx"))
+        return;
+    if (!FS_WildCmp(fs_fuzz_filter->string, path))
+        return;
+    int nbits = size * 8;
+    int ncorrupt = nbits * Cvar_ClampValue(fs_fuzz_factor, 0, 1);
+    for (int i = 0; i < ncorrupt; i++) {
+        int pos = Q_rand_uniform(nbits);
+        buf[pos >> 3] ^= 1 << (pos & 7);
+    }
+}
+#endif
+
 /*
 ============
 FS_LoadFile
@@ -1846,6 +1867,10 @@ int FS_LoadFileEx(const char *path, void **buffer, unsigned flags, memtag_t tag)
         Z_Free(buf);
         goto done;
     }
+
+#if USE_TESTS
+    fuzz_data(path, buf, len);
+#endif
 
     *buffer = buf;
     buf[len] = 0;
@@ -3710,6 +3735,11 @@ void FS_Init(void)
 
 #if USE_DEBUG
     fs_debug = Cvar_Get("fs_debug", "0", 0);
+#endif
+
+#if USE_TESTS
+    fs_fuzz_factor = Cvar_Get("fs_fuzz_factor", "0", 0);
+    fs_fuzz_filter = Cvar_Get("fs_fuzz_filter", "*", 0);
 #endif
 
     // get the game cvar and start the filesystem
