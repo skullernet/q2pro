@@ -51,8 +51,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #if USE_CLIENT
 
-#include <tchar.h>
-
 #define IDI_APP 100
 
 #define MOUSE_BUTTONS   5

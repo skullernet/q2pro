@@ -1045,7 +1045,7 @@ void Win_Init(void)
                            IMAGE_ICON, 16, 16, LR_CREATEDIBSECTION);
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
     wc.hbrBackground = GetStockObject(BLACK_BRUSH);
-    wc.lpszClassName = _T(WINDOW_CLASS_NAME);
+    wc.lpszClassName = WINDOW_CLASS_NAME;
 
     if (!RegisterClassEx(&wc)) {
         Com_Error(ERR_FATAL, "Couldn't register main window class");
@@ -1053,8 +1053,8 @@ void Win_Init(void)
 
     // create the window
     win.wnd = CreateWindow(
-                  _T(WINDOW_CLASS_NAME),
-                  _T(PRODUCT),
+                  WINDOW_CLASS_NAME,
+                  PRODUCT,
                   0, //style
                   0, 0, 0, 0,
                   NULL,
@@ -1099,7 +1099,7 @@ void Win_Shutdown(void)
     ShowWindow(win.wnd, SW_SHOWNORMAL);
     ReleaseDC(win.wnd, win.dc);
     DestroyWindow(win.wnd);
-    UnregisterClass(_T(WINDOW_CLASS_NAME), hGlobalInstance);
+    UnregisterClass(WINDOW_CLASS_NAME, hGlobalInstance);
 
     if (win.kbdHook) {
         UnhookWindowsHookEx(win.kbdHook);

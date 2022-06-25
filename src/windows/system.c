@@ -1447,7 +1447,7 @@ WinMain
 
 ==================
 */
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
     // previous instances do not exist in Win32
     if (hPrevInstance) {
@@ -1476,7 +1476,7 @@ static VOID WINAPI ServiceHandler(DWORD fdwControl)
     }
 }
 
-static VOID WINAPI ServiceMain(DWORD argc, LPTSTR *argv)
+static VOID WINAPI ServiceMain(DWORD argc, LPSTR *argv)
 {
     SERVICE_STATUS    status;
 
