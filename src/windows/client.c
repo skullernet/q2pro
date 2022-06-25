@@ -1012,7 +1012,7 @@ Win_Init
 */
 void Win_Init(void)
 {
-    WNDCLASSEX wc;
+    WNDCLASSEXA wc;
 
     // register variables
     vid_flip_on_switch = Cvar_Get("vid_flip_on_switch", "0", 0);
@@ -1047,12 +1047,12 @@ void Win_Init(void)
     wc.hbrBackground = GetStockObject(BLACK_BRUSH);
     wc.lpszClassName = WINDOW_CLASS_NAME;
 
-    if (!RegisterClassEx(&wc)) {
+    if (!RegisterClassExA(&wc)) {
         Com_Error(ERR_FATAL, "Couldn't register main window class");
     }
 
     // create the window
-    win.wnd = CreateWindow(
+    win.wnd = CreateWindowA(
                   WINDOW_CLASS_NAME,
                   PRODUCT,
                   0, //style
@@ -1099,7 +1099,7 @@ void Win_Shutdown(void)
     ShowWindow(win.wnd, SW_SHOWNORMAL);
     ReleaseDC(win.wnd, win.dc);
     DestroyWindow(win.wnd);
-    UnregisterClass(WINDOW_CLASS_NAME, hGlobalInstance);
+    UnregisterClassA(WINDOW_CLASS_NAME, hGlobalInstance);
 
     if (win.kbdHook) {
         UnhookWindowsHookEx(win.kbdHook);
@@ -1158,7 +1158,7 @@ static void Win_AcquireMouse(void)
     Win_ClipCursor();
     SetCapture(win.wnd);
 
-    SetWindowText(win.wnd, "[" PRODUCT "]");
+    SetWindowTextA(win.wnd, "[" PRODUCT "]");
 }
 
 // Called when the window loses focus
@@ -1172,7 +1172,7 @@ static void Win_DeAcquireMouse(void)
     ClipCursor(NULL);
     ReleaseCapture();
 
-    SetWindowText(win.wnd, PRODUCT);
+    SetWindowTextA(win.wnd, PRODUCT);
 }
 
 static bool Win_GetMouseMotion(int *dx, int *dy)
