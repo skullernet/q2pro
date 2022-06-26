@@ -508,7 +508,7 @@ static void Win_Activate(WPARAM wParam)
     }
 }
 
-STATIC LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
     PKBDLLHOOKSTRUCT kb = (PKBDLLHOOKSTRUCT)lParam;
     unsigned key;
@@ -852,7 +852,7 @@ static void pos_changed_event(HWND wnd, WINDOWPOS *pos)
 }
 
 // main window procedure
-STATIC LRESULT WINAPI Win_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+static LRESULT WINAPI Win_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     switch (uMsg) {
     case WM_MOUSEWHEEL:
