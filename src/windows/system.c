@@ -20,9 +20,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/cvar.h"
 #include "common/field.h"
 #include "common/prompt.h"
+
 #if USE_WINSVC
 #include <winsvc.h>
+#include <setjmp.h>
 #endif
+
 #include <versionhelpers.h>
 
 HINSTANCE                       hGlobalInstance;
@@ -35,15 +38,10 @@ static char                     currentDirectory[MAX_OSPATH];
 
 #if USE_WINSVC
 static SERVICE_STATUS_HANDLE    statusHandle;
+static jmp_buf                  exitBuf;
 #endif
 
-typedef enum {
-    SE_NOT,
-    SE_YES,
-    SE_FULL
-} should_exit_t;
-
-static volatile should_exit_t   shouldExit;
+static volatile bool            shouldExit;
 static volatile bool            errorEntered;
 
 static LARGE_INTEGER            timer_freq;
@@ -619,7 +617,7 @@ static BOOL WINAPI Sys_ConsoleCtrlHandler(DWORD dwCtrlType)
     if (errorEntered) {
         exit(1);
     }
-    shouldExit = SE_FULL;
+    shouldExit = true;
     return TRUE;
 }
 
@@ -957,18 +955,18 @@ void Sys_Error(const char *error, ...)
 #endif
 
 #if USE_WINSVC
-    if (!statusHandle)
+    if (statusHandle)
+        longjmp(exitBuf, 1);
 #endif
-    {
-#if USE_SYSCON
-        if (gotConsole) {
-            hide_console_input();
-            Sleep(INFINITE);
-        }
-#endif
-        MessageBoxA(NULL, text, PRODUCT " Fatal Error", MB_ICONERROR | MB_OK);
-    }
 
+#if USE_SYSCON
+    if (gotConsole) {
+        hide_console_input();
+        Sleep(INFINITE);
+    }
+#endif
+
+    MessageBoxA(NULL, text, PRODUCT " Fatal Error", MB_ICONERROR | MB_OK);
     exit(1);
 }
 
@@ -983,17 +981,15 @@ void Sys_Quit(void)
 {
     shutdown_work();
 
-#if USE_CLIENT
-#if USE_SYSCON
+#if USE_CLIENT && USE_SYSCON
     if (dedicated && dedicated->integer) {
         FreeConsole();
     }
 #endif
-#elif USE_WINSVC
-    if (statusHandle && !shouldExit) {
-        shouldExit = SE_YES;
-        Com_AbortFrame();
-    }
+
+#if USE_WINSVC
+    if (statusHandle)
+        longjmp(exitBuf, 1);
 #endif
 
     exit(0);
@@ -1337,23 +1333,21 @@ static int Sys_Main(int argc, char **argv)
     _set_invalid_parameter_handler(msvcrt_sucks);
 #endif
 
+#if USE_WINSVC
+    if (statusHandle && setjmp(exitBuf))
+        return 0;
+#endif
+
     Qcommon_Init(argc, argv);
 
     // main program loop
-    while (1) {
+    while (!shouldExit) {
         complete_work();
         Qcommon_Frame();
-        if (shouldExit) {
-#if USE_WINSVC
-            if (shouldExit == SE_FULL)
-#endif
-                Com_Quit(NULL, ERR_DISCONNECT);
-            break;
-        }
     }
 
-    // may get here when our service stops
-    return 0;
+    Com_Quit(NULL, ERR_DISCONNECT);
+    return 0;   // never gets here
 }
 
 #if USE_CLIENT
@@ -1425,7 +1419,7 @@ static int      sys_argc;
 static VOID WINAPI ServiceHandler(DWORD fdwControl)
 {
     if (fdwControl == SERVICE_CONTROL_STOP) {
-        shouldExit = SE_FULL;
+        shouldExit = true;
     }
 }
 
