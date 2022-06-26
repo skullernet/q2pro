@@ -1350,11 +1350,9 @@ static BOOL fix_current_directory(void)
         *p = 0;
     }
 
-#ifndef UNDER_CE
     if (!SetCurrentDirectoryA(currentDirectory)) {
         return FALSE;
     }
-#endif
 
     return TRUE;
 }
@@ -1451,10 +1449,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     }
 
     hGlobalInstance = hInstance;
-#ifndef UNICODE
-    // TODO: wince support
+
     Sys_ParseCommandLine(lpCmdLine);
-#endif
+
     return Sys_Main(sys_argc, sys_argv);
 }
 
