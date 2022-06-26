@@ -715,7 +715,7 @@ static void Sys_InstallService_f(void)
         return;
     }
 
-    Q_concat(serviceName, sizeof(serviceName), "Q2PRO - ", Cmd_Argv(1));
+    Q_concat(serviceName, sizeof(serviceName), PRODUCT " - ", Cmd_Argv(1));
 
     length = GetModuleFileNameA(NULL, servicePath, sizeof(servicePath) - 1);
     if (!length) {
@@ -763,7 +763,7 @@ static void Sys_DeleteService_f(void)
         return;
     }
 
-    Q_concat(serviceName, sizeof(serviceName), "Q2PRO - ", Cmd_Argv(1));
+    Q_concat(serviceName, sizeof(serviceName), PRODUCT " - ", Cmd_Argv(1));
 
     service = OpenServiceA(scm, serviceName, DELETE);
     if (!service) {
