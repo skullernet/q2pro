@@ -1428,7 +1428,7 @@ static VOID WINAPI ServiceMain(DWORD argc, LPSTR *argv)
     SetServiceStatus(statusHandle, &status);
 }
 
-static SERVICE_TABLE_ENTRYA serviceTable[] = {
+static const SERVICE_TABLE_ENTRYA serviceTable[] = {
     { APPLICATION, ServiceMain },
     { NULL, NULL }
 };
