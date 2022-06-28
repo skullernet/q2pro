@@ -93,6 +93,14 @@ static void Com_Crash_f(void)
     }
 }
 
+static void Com_DoubleFree_f(void)
+{
+    void *p = malloc(64);
+    Com_PageInMemory(p, 64);
+    free(p);
+    free(p);
+}
+
 // use twice normal print buffer size to test for overflows, etc
 static void Com_PrintJunk_f(void)
 {
@@ -692,6 +700,7 @@ void TST_Init(void)
     Cmd_AddCommand("errordrop", Com_ErrorDrop_f);
     Cmd_AddCommand("freeze", Com_Freeze_f);
     Cmd_AddCommand("crash", Com_Crash_f);
+    Cmd_AddCommand("doublefree", Com_DoubleFree_f);
     Cmd_AddCommand("printjunk", Com_PrintJunk_f);
     Cmd_AddCommand("bsptest", BSP_Test_f);
     Cmd_AddCommand("wildtest", Com_TestWild_f);
