@@ -82,6 +82,7 @@ cvar_t  *info_msg;
 cvar_t  *info_hand;
 cvar_t  *info_gender;
 cvar_t  *info_uf;
+cvar_t  *info_steamid;
 
 #if USE_REF
 extern cvar_t *gl_modulate_world;
@@ -2786,6 +2787,7 @@ static void CL_InitLocal(void)
     info_gender = Cvar_Get("gender", "male", CVAR_USERINFO | CVAR_ARCHIVE);
     info_gender->modified = false; // clear this so we know when user sets it manually
     info_uf = Cvar_Get("uf", "", CVAR_USERINFO);
+    info_steamid = Cvar_Get("steamid", "", CVAR_USERINFO);
 
 
     //

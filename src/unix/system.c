@@ -288,19 +288,21 @@ void Sys_Init(void)
     signal(SIGUSR1, hup_handler);
 
     #ifdef __APPLE__
-	// set AQ.app/Contents/Resources as basedir
-	char path[MAX_OSPATH], *c;
-	unsigned int i = sizeof(path);
+      #ifdef CONFIG_MAC_STANDALONE
+	    // set AQ.app/Contents/Resources as basedir
+        char path[MAX_OSPATH], *c;
+        unsigned int i = sizeof(path);
 
-	if (_NSGetExecutablePath(path, &i) > -1) {
-		if ((c = strstr(path, "AQ.app"))) {
-			strcpy(c, "AQ.app/Contents/MacOS");
-			Cvar_FullSet("basedir", path, CVAR_NOSET, FROM_CODE);
+        if (_NSGetExecutablePath(path, &i) > -1) {
+            if ((c = strstr(path, "AQ.app"))) {
+                strcpy(c, "AQ.app/Contents/MacOS");
+                Cvar_FullSet("basedir", path, CVAR_NOSET, FROM_CODE);
 
-			strcpy(c, "AQ.app/Contents/MacOS");
-			Cvar_FullSet("libdir", path, CVAR_NOSET, FROM_CODE);
-		}
-	}
+                strcpy(c, "AQ.app/Contents/MacOS");
+                Cvar_FullSet("libdir", path, CVAR_NOSET, FROM_CODE);
+            }
+        }
+      #endif
     #endif
 
     // basedir <path>

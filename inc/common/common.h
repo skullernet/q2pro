@@ -147,6 +147,7 @@ extern cvar_t  *z_perturb;
 extern cvar_t   *developer;
 #endif
 extern cvar_t   *dedicated;
+extern cvar_t   *steamid;
 #if USE_CLIENT
 extern cvar_t   *host_speeds;
 #endif
