@@ -1026,7 +1026,7 @@ static void MVD_ParseServerData(mvd_t *mvd, int extrabits)
     Com_Printf("[%s] -=- Loading %s...\n", mvd->name, string);
     ret = CM_LoadMap(&mvd->cm, string);
     if (ret) {
-        Com_EPrintf("[%s] =!= Couldn't load %s: %s\n", mvd->name, string, Q_ErrorString(ret));
+        Com_EPrintf("[%s] =!= Couldn't load %s: %s\n", mvd->name, string, BSP_ErrorString(ret));
         // continue with null visibility
     }
 #if USE_MAPCHECKSUM

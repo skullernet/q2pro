@@ -153,21 +153,25 @@ static int _IMG_LoadPCX(byte *rawdata, size_t rawlen, byte *pixels,
     }
 
     if (pcx->encoding != 1 || pcx->bits_per_pixel != 8) {
+        Com_SetLastError("invalid encoding or bits per pixel");
         return Q_ERR_INVALID_FORMAT;
     }
 
     w = (LittleShort(pcx->xmax) - LittleShort(pcx->xmin)) + 1;
     h = (LittleShort(pcx->ymax) - LittleShort(pcx->ymin)) + 1;
     if (w < 1 || h < 1 || w > 640 || h > 480) {
+        Com_SetLastError("invalid image dimensions");
         return Q_ERR_INVALID_FORMAT;
     }
 
     if (pcx->color_planes != 1) {
+        Com_SetLastError("invalid number of color planes");
         return Q_ERR_INVALID_FORMAT;
     }
 
     scan = LittleShort(pcx->bytes_per_line);
     if (scan < w) {
+        Com_SetLastError("invalid number of bytes per line");
         return Q_ERR_INVALID_FORMAT;
     }
 
@@ -316,6 +320,7 @@ IMG_LOAD(WAL)
     w = LittleLong(mt->width);
     h = LittleLong(mt->height);
     if (w < 1 || h < 1 || w > MAX_TEXTURE_SIZE || h > MAX_TEXTURE_SIZE) {
+        Com_SetLastError("invalid image dimensions");
         return Q_ERR_INVALID_FORMAT;
     }
 
@@ -540,7 +545,7 @@ IMG_LOAD(TGA)
     }
 
     if (colormap_type) {
-        Com_DPrintf("%s: %s: color mapped images are not supported\n", __func__, image->name);
+        Com_SetLastError("color mapped images are not supported");
         return Q_ERR_INVALID_FORMAT;
     }
 
@@ -549,12 +554,12 @@ IMG_LOAD(TGA)
     } else if (pixel_size == 24) {
         bpp = 3;
     } else {
-        Com_DPrintf("%s: %s: only 32 and 24 bit targa RGB images supported\n", __func__, image->name);
+        Com_SetLastError("only 32 and 24 bit targa RGB images supported");
         return Q_ERR_INVALID_FORMAT;
     }
 
     if (w < 1 || h < 1 || w > MAX_TEXTURE_SIZE || h > MAX_TEXTURE_SIZE) {
-        Com_DPrintf("%s: %s: invalid image dimensions\n", __func__, image->name);
+        Com_SetLastError("invalid image dimensions");
         return Q_ERR_INVALID_FORMAT;
     }
 
@@ -574,7 +579,7 @@ IMG_LOAD(TGA)
             decode = tga_decode_bgr_rle;
         }
     } else {
-        Com_DPrintf("%s: %s: only type 2 and 10 targa RGB images supported\n", __func__, image->name);
+        Com_SetLastError("only type 2 and 10 targa RGB images supported");
         return Q_ERR_INVALID_FORMAT;
     }
 
@@ -670,22 +675,32 @@ typedef struct my_error_mgr {
     const char              *filename;
 } *my_error_ptr;
 
-static void my_output_message(j_common_ptr cinfo)
+static void my_output_message_2(j_common_ptr cinfo, bool err_exit)
 {
     char buffer[JMSG_LENGTH_MAX];
     my_error_ptr jerr = (my_error_ptr)cinfo->err;
 
+    if (!jerr->filename)
+        return;
+
     (*cinfo->err->format_message)(cinfo, buffer);
 
-    if (jerr->filename)
-        Com_EPrintf("libjpeg: %s: %s\n", jerr->filename, buffer);
+    if (err_exit)
+        Com_SetLastError(buffer);
+    else
+        Com_WPrintf("libjpeg: %s: %s\n", jerr->filename, buffer);
+}
+
+static void my_output_message(j_common_ptr cinfo)
+{
+    my_output_message_2(cinfo, false);
 }
 
 static void my_error_exit(j_common_ptr cinfo)
 {
     my_error_ptr jerr = (my_error_ptr)cinfo->err;
 
-    (*cinfo->err->output_message)(cinfo);
+    my_output_message_2(cinfo, true);
 
     longjmp(jerr->setjmp_buffer, 1);
 }
@@ -711,7 +726,7 @@ static int my_jpeg_start_decompress(j_decompress_ptr cinfo, byte *rawdata, size_
         expected_components = 3;
         break;
     default:
-        Com_DPrintf("%s: %s: invalid image color space\n", __func__, jerr->filename);
+        Com_SetLastError("invalid image color space");
         return Q_ERR_INVALID_FORMAT;
     }
 
@@ -723,12 +738,12 @@ static int my_jpeg_start_decompress(j_decompress_ptr cinfo, byte *rawdata, size_
     jpeg_start_decompress(cinfo);
 
     if (cinfo->output_components != expected_components) {
-        Com_DPrintf("%s: %s: invalid number of color components\n", __func__, jerr->filename);
+        Com_SetLastError("invalid number of color components");
         return Q_ERR_INVALID_FORMAT;
     }
 
     if (cinfo->output_width > MAX_TEXTURE_SIZE || cinfo->output_height > MAX_TEXTURE_SIZE) {
-        Com_DPrintf("%s: %s: invalid image dimensions\n", __func__, jerr->filename);
+        Com_SetLastError("invalid image dimensions");
         return Q_ERR_INVALID_FORMAT;
     }
 
@@ -930,7 +945,8 @@ static void my_png_error_fn(png_structp png_ptr, png_const_charp error_msg)
     my_png_error *err = png_get_error_ptr(png_ptr);
 
     if (err->filename)
-        Com_EPrintf("libpng: %s: %s\n", err->filename, error_msg);
+        Com_SetLastError(error_msg);
+
     longjmp(err->setjmp_buffer, -1);
 }
 
@@ -958,11 +974,11 @@ static int my_png_read_header(png_structp png_ptr, png_infop info_ptr,
     png_read_info(png_ptr, info_ptr);
 
     if (!png_get_IHDR(png_ptr, info_ptr, &w, &h, &bitdepth, &colortype, NULL, NULL, NULL)) {
-        return Q_ERR_LIBRARY_ERROR;
+        return Q_ERR_FAILURE;
     }
 
     if (w > MAX_TEXTURE_SIZE || h > MAX_TEXTURE_SIZE) {
-        Com_DPrintf("%s: %s: invalid image dimensions\n", __func__, image->name);
+        Com_SetLastError("invalid image dimensions");
         return Q_ERR_INVALID_FORMAT;
     }
 
@@ -1036,18 +1052,19 @@ IMG_LOAD(PNG)
         return Q_ERR_FILE_TOO_SMALL;
 
     if (!png_check_sig(rawdata, 8))
-        return Q_ERR_INVALID_FORMAT;
+        return Q_ERR_UNKNOWN_FORMAT;
 
     my_err.filename = image->name;
     png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING,
                                      (png_voidp)&my_err, my_png_error_fn, my_png_warning_fn);
     if (!png_ptr) {
+        Com_SetLastError("png_create_read_struct failed");
         return Q_ERR_LIBRARY_ERROR;
     }
 
     info_ptr = png_create_info_struct(png_ptr);
     if (!info_ptr) {
-        ret = Q_ERR_LIBRARY_ERROR;
+        ret = Q_ERR_FAILURE;
         goto fail;
     }
 
@@ -1107,12 +1124,14 @@ static int IMG_SavePNG(screenshot_t *s)
     png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING,
                                       (png_voidp)&my_err, my_png_error_fn, my_png_warning_fn);
     if (!png_ptr) {
+        if (!s->async)
+            Com_SetLastError("png_create_write_struct failed");
         return Q_ERR_LIBRARY_ERROR;
     }
 
     info_ptr = png_create_info_struct(png_ptr);
     if (!info_ptr) {
-        ret = Q_ERR_LIBRARY_ERROR;
+        ret = Q_ERR_FAILURE;
         goto fail;
     }
 
@@ -1249,7 +1268,14 @@ static void screenshot_done_cb(void *arg)
     Z_Free(s->pixels);
 
     if (s->status < 0) {
-        Com_EPrintf("Couldn't write %s: %s\n", s->filename, Q_ErrorString(s->status));
+        const char *msg;
+
+        if (s->status == Q_ERR_LIBRARY_ERROR && !s->async)
+            msg = Com_GetLastError();
+        else
+            msg = Q_ErrorString(s->status);
+
+        Com_EPrintf("Couldn't write %s: %s\n", s->filename, msg);
         remove(s->filename);
     } else {
         Com_Printf("Wrote %s\n", s->filename);
@@ -1691,10 +1717,40 @@ static bool need_override_image(imagetype_t type)
 
 #endif // USE_PNG || USE_JPG || USE_TGA
 
+static void print_error(const char *name, imageflags_t flags, int err)
+{
+    const char *msg;
+    int level = PRINT_ERROR;
+
+    switch (err) {
+    case Q_ERR_INVALID_FORMAT:
+    case Q_ERR_LIBRARY_ERROR:
+        msg = Com_GetLastError();
+        break;
+    case Q_ERR_NOENT:
+        if (flags & IF_PERMANENT) {
+            // ugly hack for console code
+            if (strcmp(name, "pics/conchars.pcx"))
+                level = PRINT_WARNING;
+#ifdef _DEBUG
+        } else if (developer->integer >= 2) {
+            level = PRINT_DEVELOPER;
+#endif
+        } else {
+            return;
+        }
+        // fall through
+    default:
+        msg = Q_ErrorString(err);
+        break;
+    }
+
+    Com_LPrintf(level, "Couldn't load %s: %s\n", name, msg);
+}
+
 // finds or loads the given image, adding it to the hash table.
-static int find_or_load_image(const char *name, size_t len,
-                              imagetype_t type, imageflags_t flags,
-                              image_t **image_p)
+static image_t *find_or_load_image(const char *name, size_t len,
+                                   imagetype_t type, imageflags_t flags)
 {
     image_t         *image;
     byte            *pic;
@@ -1702,30 +1758,33 @@ static int find_or_load_image(const char *name, size_t len,
     imageformat_t   fmt;
     int             ret;
 
-    *image_p = NULL;
-
     // must have an extension and at least 1 char of base name
     if (len <= 4) {
-        return Q_ERR_NAMETOOSHORT;
+        ret = Q_ERR_NAMETOOSHORT;
+        goto fail;
     }
     if (name[len - 4] != '.') {
-        return Q_ERR_INVALID_PATH;
+        ret = Q_ERR_INVALID_PATH;
+        goto fail;
     }
 
     hash = FS_HashPathLen(name, len - 4, RIMAGES_HASH);
 
     // look for it
     if ((image = lookup_image(name, type, hash, len - 4)) != NULL) {
-        image->flags |= flags & IF_PERMANENT;
         image->registration_sequence = registration_sequence;
-        *image_p = image;
-        return Q_ERR_SUCCESS;
+        if (image->upload_width && image->upload_height) {
+            image->flags |= flags & IF_PERMANENT;
+            return image;
+        }
+        return NULL;
     }
 
     // allocate image slot
     image = alloc_image();
     if (!image) {
-        return Q_ERR_OUT_OF_SLOTS;
+        ret = Q_ERR_OUT_OF_SLOTS;
+        goto fail;
     }
 
     // fill in some basic info
@@ -1779,8 +1838,15 @@ static int find_or_load_image(const char *name, size_t len,
 #endif
 
     if (ret < 0) {
-        memset(image, 0, sizeof(*image));
-        return ret;
+        print_error(image->name, flags, ret);
+        if (flags & IF_PERMANENT) {
+            memset(image, 0, sizeof(*image));
+        } else {
+            // don't reload temp pics every frame
+            image->upload_width = image->upload_height = 0;
+            List_Append(&r_imageHash[hash], &image->entry);
+        }
+        return NULL;
     }
 
     List_Append(&r_imageHash[hash], &image->entry);
@@ -1788,15 +1854,20 @@ static int find_or_load_image(const char *name, size_t len,
     // upload the image
     IMG_Load(image, pic);
 
-    *image_p = image;
-    return Q_ERR_SUCCESS;
+    // don't need pics in memory after GL upload
+    Z_Free(pic);
+
+    return image;
+
+fail:
+    print_error(name, flags, ret);
+    return NULL;
 }
 
 image_t *IMG_Find(const char *name, imagetype_t type, imageflags_t flags)
 {
     image_t *image;
     size_t len;
-    int ret;
 
     if (!name) {
         Com_Error(ERR_FATAL, "%s: NULL", __func__);
@@ -1808,16 +1879,9 @@ image_t *IMG_Find(const char *name, imagetype_t type, imageflags_t flags)
         Com_Error(ERR_FATAL, "%s: oversize name", __func__);
     }
 
-    ret = find_or_load_image(name, len, type, flags, &image);
-    if (image) {
+    if ((image = find_or_load_image(name, len, type, flags))) {
         return image;
     }
-
-    // don't spam about missing images
-    if (ret != Q_ERR_NOENT) {
-        Com_EPrintf("Couldn't load %s: %s\n", name, Q_ErrorString(ret));
-    }
-
     return R_NOTEXTURE;
 }
 
@@ -1840,25 +1904,19 @@ image_t *IMG_ForHandle(qhandle_t h)
 R_RegisterImage
 ===============
 */
-qhandle_t R_RegisterImage(const char *name, imagetype_t type,
-                          imageflags_t flags, int *err_p)
+qhandle_t R_RegisterImage(const char *name, imagetype_t type, imageflags_t flags)
 {
     image_t     *image;
     char        fullname[MAX_QPATH];
     size_t      len;
-    int         err;
 
     // empty names are legal, silently ignore them
     if (!*name) {
-        if (err_p)
-            *err_p = Q_ERR_NAMETOOSHORT;
         return 0;
     }
 
     // no images = not initialized
     if (!r_numImages) {
-        if (err_p)
-            *err_p = Q_ERR_AGAIN;
         return 0;
     }
 
@@ -1869,30 +1927,19 @@ qhandle_t R_RegisterImage(const char *name, imagetype_t type,
     } else {
         len = Q_concat(fullname, sizeof(fullname), "pics/", name);
         if (len < sizeof(fullname)) {
-            FS_NormalizePath(fullname, fullname);
+            FS_NormalizePath(fullname);
             len = COM_DefaultExtension(fullname, ".pcx", sizeof(fullname));
         }
     }
 
     if (len >= sizeof(fullname)) {
-        err = Q_ERR_NAMETOOLONG;
-        goto fail;
+        print_error(fullname, flags, Q_ERR_NAMETOOLONG);
+        return 0;
     }
 
-    err = find_or_load_image(fullname, len, type, flags, &image);
-    if (image) {
-        if (err_p)
-            *err_p = Q_ERR_SUCCESS;
+    if ((image = find_or_load_image(fullname, len, type, flags))) {
         return image - r_images;
     }
-
-fail:
-    // don't spam about missing images
-    if (err_p)
-        *err_p = err;
-    else if (err != Q_ERR_NOENT)
-        Com_EPrintf("Couldn't load %s: %s\n", fullname, Q_ErrorString(err));
-
     return 0;
 }
 

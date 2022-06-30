@@ -93,6 +93,14 @@ static void Com_Crash_f(void)
     }
 }
 
+static void Com_DoubleFree_f(void)
+{
+    void *p = malloc(64);
+    Com_PageInMemory(p, 64);
+    free(p);
+    free(p);
+}
+
 // use twice normal print buffer size to test for overflows, etc
 static void Com_PrintJunk_f(void)
 {
@@ -140,12 +148,11 @@ static void BSP_Test_f(void)
         name = list[i];
         ret = BSP_Load(name, &bsp);
         if (!bsp) {
-            Com_EPrintf("%s: %s\n", name, Q_ErrorString(ret));
+            Com_EPrintf("Couldn't load %s: %s\n", name, BSP_ErrorString(ret));
             errors++;
             continue;
         }
 
-        Com_DPrintf("%s: success\n", name);
         BSP_Free(bsp);
     }
 
@@ -263,20 +270,20 @@ static void Com_TestNorm_f(void)
 {
     const normtest_t *n;
     char buffer[MAX_QPATH];
-    int i, errors, pass;
+    int i, ret, errors, pass;
 
     for (pass = 0; pass < 2; pass++) {
         errors = 0;
         for (i = 0; i < numnormtests; i++) {
             n = &normtests[i];
             if (pass == 0) {
-                FS_NormalizePath(buffer, n->in);
+                ret = FS_NormalizePathBuffer(buffer, n->in, sizeof(buffer));
             } else {
                 // test in place operation
                 strcpy(buffer, n->in);
-                FS_NormalizePath(buffer, buffer);
+                ret = FS_NormalizePath(buffer);
             }
-            if (strcmp(n->out, buffer)) {
+            if (ret != strlen(n->out) || strcmp(n->out, buffer)) {
                 Com_EPrintf(
                     "FS_NormalizePath( \"%s\" ) == \"%s\", expected \"%s\" (pass %d)\n",
                     n->in, buffer, n->out, pass);
@@ -285,6 +292,13 @@ static void Com_TestNorm_f(void)
         }
         if (errors)
             break;
+    }
+
+    memset(buffer, 0, sizeof(buffer));
+    i = FS_NormalizePathBuffer(buffer, "foo/bar/baz", 8);
+    if (i != 8 || strcmp(buffer, "foo/bar")) {
+        Com_EPrintf("Overflow test failed");
+        errors++;
     }
 
     Com_Printf("%d failures, %d paths tested (%d passes)\n",
@@ -653,12 +667,12 @@ static const extcmptest_t extcmptests[] = {
     { ".foo;.bar",          "test.FOO",         true  },
     { ".foo;.bar",          "test.baz",         false },
     { ".foo;.BAR;.baz;",    "test.bar",         true  },
-    { ".abc;.foo;.def",     "/path.foo/test",   false },
     { ".abc;.foo;.def",     "",                 false },
     { "",                   "test",             true  },
-    { "",                   "test.foo",         false },
+    { "",                   "test.foo",         true  },
+    { ".foo.bar",           "test.foo.bar",     true  },
     { ".bar;;.baz",         "test",             true  },
-    { ";;;",                "test.foo",         false },
+    { ";;;",                "test.foo",         true  },
 };
 
 static const int numextcmptests = q_countof(extcmptests);
@@ -686,6 +700,7 @@ void TST_Init(void)
     Cmd_AddCommand("errordrop", Com_ErrorDrop_f);
     Cmd_AddCommand("freeze", Com_Freeze_f);
     Cmd_AddCommand("crash", Com_Crash_f);
+    Cmd_AddCommand("doublefree", Com_DoubleFree_f);
     Cmd_AddCommand("printjunk", Com_PrintJunk_f);
     Cmd_AddCommand("bsptest", BSP_Test_f);
     Cmd_AddCommand("wildtest", Com_TestWild_f);

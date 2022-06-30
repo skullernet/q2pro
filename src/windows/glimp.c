@@ -231,7 +231,7 @@ hard:
 
 static unsigned GetFakeWindowExtensions(void)
 {
-    WNDCLASSEX wc;
+    WNDCLASSEXA wc;
     PIXELFORMATDESCRIPTOR pfd;
     int pixelformat;
     HWND wnd;
@@ -245,10 +245,10 @@ static unsigned GetFakeWindowExtensions(void)
     wc.hInstance = hGlobalInstance;
     wc.lpszClassName = FAKE_WINDOW_CLASS;
 
-    if (!RegisterClassEx(&wc))
+    if (!RegisterClassExA(&wc))
         goto fail0;
 
-    wnd = CreateWindow(
+    wnd = CreateWindowA(
         FAKE_WINDOW_CLASS,
         FAKE_WINDOW_NAME,
         0,
@@ -314,7 +314,7 @@ fail3:
 fail2:
     DestroyWindow(wnd);
 fail1:
-    UnregisterClass(FAKE_WINDOW_CLASS, hGlobalInstance);
+    UnregisterClassA(FAKE_WINDOW_CLASS, hGlobalInstance);
 fail0:
     return extensions;
 }

@@ -65,7 +65,7 @@ void WGL_Shutdown(void)
 
 bool WGL_Init(const char *dllname)
 {
-    if ((glw.hinstOpenGL = LoadLibrary(dllname)) == NULL) {
+    if ((glw.hinstOpenGL = LoadLibraryA(dllname)) == NULL) {
         return false;
     }
 

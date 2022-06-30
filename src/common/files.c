@@ -312,10 +312,11 @@ reset:
 
 /*
 ================
-FS_NormalizePath
+FS_NormalizePathBuffer
 
 Simplifies the path, converting backslashes to slashes and removing ./ and ../
 components, as well as duplicated slashes. Any leading slashes are also skipped.
+Return value == size signifies overflow.
 
 May operate in place if in == out.
 
@@ -328,23 +329,26 @@ May operate in place if in == out.
     ./foo        -> foo
 ================
 */
-size_t FS_NormalizePath(char *out, const char *in)
+size_t FS_NormalizePathBuffer(char *out, const char *in, size_t size)
 {
     char *start = out;
     uint32_t pre = '/';
+
+    if (!size)
+        return 0;
 
     while (1) {
         int c = *in++;
 
         if (c == '/' || c == '\\' || c == 0) {
             if ((pre & 0xffffff) == (('/' << 16) | ('.' << 8) | '.')) {
-                out -= 4;
-                if (out < start) {
+                if (out < start + 4) {
                     // can't go past root
                     out = start;
                     if (c == 0)
                         break;
                 } else {
+                    out -= 4;
                     while (out > start && *out != '/')
                         out--;
                     if (c == 0)
@@ -381,33 +385,17 @@ size_t FS_NormalizePath(char *out, const char *in)
             c = '/';
         }
 
+        if (out - start == size - 1) {
+            *out = 0;
+            return size;
+        }
+
         pre = (pre << 8) | c;
         *out++ = c;
     }
 
     *out = 0;
     return out - start;
-}
-
-/*
-================
-FS_NormalizePathBuffer
-
-Buffer safe version of FS_NormalizePath. Return value >= size signifies
-overflow, empty string is stored in output buffer in this case.
-================
-*/
-size_t FS_NormalizePathBuffer(char *out, const char *in, size_t size)
-{
-    size_t len = strlen(in);
-
-    if (len >= size) {
-        if (size)
-            *out = 0;
-        return len;
-    }
-
-    return FS_NormalizePath(out, in);
 }
 
 // =============================================================================
@@ -1647,7 +1635,7 @@ static qhandle_t easy_open_read(char *buf, size_t size, unsigned mode,
         }
 
         // print normalized path in case of error
-        FS_NormalizePath(buf, buf);
+        FS_NormalizePath(buf);
 
         ret = FS_FOpenFile(buf, &f, mode);
         if (f) {
@@ -1996,7 +1984,7 @@ static void pack_hash_file(pack_t *pack, packfile_t *file)
 {
     unsigned hash;
 
-    file->namelen = FS_NormalizePath(file->name, file->name);
+    file->namelen = FS_NormalizePath(file->name);
 
     hash = FS_HashPath(file->name, pack->hash_size);
     file->hash_next = pack->file_hash[hash];
@@ -2526,13 +2514,12 @@ bool FS_WildCmp(const char *filter, const char *string)
 
 bool FS_ExtCmp(const char *ext, const char *name)
 {
-    char *name_ext = COM_FileExtension(name);
-    size_t name_len = strlen(name_ext);
+    size_t name_len = strlen(name);
 
     while (1) {
         char *p = Q_strchrnul(ext, ';');
         size_t len = p - ext;
-        if (name_len == len && !Q_stricmpn(name_ext, ext, len))
+        if (name_len >= len && !Q_stricmpn(name + name_len - len, ext, len))
             return true;
         if (!*p)
             break;
