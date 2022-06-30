@@ -733,9 +733,6 @@ void IMG_Load(image_t *image, byte *pic)
         image->tl = 0;
         image->th = 1;
     }
-
-    // don't need pics in memory after GL upload
-    Z_Free(pic);
 }
 
 void IMG_Unload(image_t *image)

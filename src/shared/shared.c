@@ -358,16 +358,15 @@ va
 
 does a varargs printf into a temp buffer, so I don't need to have
 varargs versions of all text functions.
-FIXME: make this buffer size safe someday
 ============
 */
 char *va(const char *format, ...)
 {
     va_list         argptr;
-    static char     buffers[2][0x2800];
+    static char     buffers[4][MAX_STRING_CHARS];
     static int      index;
 
-    index ^= 1;
+    index = (index + 1) & 3;
 
     va_start(argptr, format);
     Q_vsnprintf(buffers[index], sizeof(buffers[0]), format, argptr);
@@ -392,7 +391,9 @@ char *COM_Parse(const char **data_p)
     int         c;
     int         len;
     const char  *data;
-    char        *s = com_token[com_tokidx++ & 3];
+    char        *s = com_token[com_tokidx];
+
+    com_tokidx = (com_tokidx + 1) & 3;
 
     data = *data_p;
     len = 0;
@@ -957,7 +958,7 @@ char *Info_ValueForKey(const char *s, const char *key)
     char        pkey[MAX_INFO_STRING];
     char        *o;
 
-    valueindex++;
+    valueindex = (valueindex + 1) & 3;
     if (*s == '\\')
         s++;
     while (1) {
@@ -970,14 +971,14 @@ char *Info_ValueForKey(const char *s, const char *key)
         *o = 0;
         s++;
 
-        o = value[valueindex & 3];
+        o = value[valueindex];
         while (*s != '\\' && *s) {
             *o++ = *s++;
         }
         *o = 0;
 
         if (!strcmp(key, pkey))
-            return value[valueindex & 3];
+            return value[valueindex];
 
         if (!*s)
             goto fail;
@@ -985,7 +986,7 @@ char *Info_ValueForKey(const char *s, const char *key)
     }
 
 fail:
-    o = value[valueindex & 3];
+    o = value[valueindex];
     *o = 0;
     return o;
 }

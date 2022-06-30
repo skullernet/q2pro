@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-    <assemblyIdentity type="win32" name="q2pro" version="1.0.0.0"/>
-    <description>Q2PRO client</description>
+    <assemblyIdentity type="win32" name="q2proded" version="1.0.0.0"/>
+    <description>Q2PRO dedicated server</description>
     <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
         <security>
             <requestedPrivileges>
@@ -11,7 +11,6 @@
     </trustInfo>
     <application xmlns="urn:schemas-microsoft-com:asm.v3">
         <windowsSettings>
-            <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">True/PM</dpiAware>
             <activeCodePage xmlns="http://schemas.microsoft.com/SMI/2019/WindowsSettings">UTF-8</activeCodePage>
         </windowsSettings>
     </application>

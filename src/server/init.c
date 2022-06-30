@@ -319,7 +319,7 @@ bool SV_ParseMapCmd(mapcmd_t *cmd)
     }
 
     if (ret < 0) {
-        Com_Printf("Couldn't load %s: %s\n", expanded, Q_ErrorString(ret));
+        Com_Printf("Couldn't load %s: %s\n", expanded, BSP_ErrorString(ret));
         return false;
     }
 

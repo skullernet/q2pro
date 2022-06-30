@@ -232,6 +232,11 @@ void Sys_Sleep(int msec)
     nanosleep(&req, NULL);
 }
 
+const char *Sys_ErrorString(int err)
+{
+    return strerror(err);
+}
+
 #if USE_AC_CLIENT
 bool Sys_GetAntiCheatAPI(void)
 {
@@ -256,7 +261,7 @@ static void kill_handler(int signum)
 {
     tty_shutdown_input();
 
-#if USE_CLIENT && USE_REF && !USE_X11
+#if USE_CLIENT && USE_REF
     VID_FatalShutdown();
 #endif
 
@@ -306,6 +311,8 @@ void Sys_Init(void)
     // specifies per-user writable directory for demos, screenshots, etc
     if (HOMEDIR[0] == '~') {
         char *s = getenv("HOME");
+        if (s && strlen(s) >= MAX_OSPATH - MAX_QPATH)
+            Sys_Error("HOME path too long");
         if (s && *s) {
             homedir = va("%s%s", s, &HOMEDIR[1]);
         } else {

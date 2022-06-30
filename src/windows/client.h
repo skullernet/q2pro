@@ -37,21 +37,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-#ifndef STATIC
-#define STATIC static
-#endif
-
-// supported in XP SP3 or greater
-#ifndef PROCESS_DEP_ENABLE
-#define PROCESS_DEP_ENABLE 0x01
-#endif
-#ifndef PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION
-#define PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION 0x02
-#endif
-
 #if USE_CLIENT
-
-#include <tchar.h>
 
 #define IDI_APP 100
 
