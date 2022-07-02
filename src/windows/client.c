@@ -775,7 +775,6 @@ static void raw_input_event(HANDLE handle)
 
 static void pos_changing_event(HWND wnd, WINDOWPOS *pos)
 {
-    int w, h, nc_w, nc_h;
     LONG style;
     RECT rc;
 
@@ -790,25 +789,14 @@ static void pos_changing_event(HWND wnd, WINDOWPOS *pos)
     // calculate size of non-client area
     rc.left = 0;
     rc.top = 0;
-    rc.right = 1;
-    rc.bottom = 1;
+    rc.right = 320;
+    rc.bottom = 240;
 
     AdjustWindowRect(&rc, style, FALSE);
 
-    nc_w = rc.right - rc.left - 1;
-    nc_h = rc.bottom - rc.top - 1;
-
-    // align client area
-    w = pos->cx - nc_w;
-    h = pos->cy - nc_h;
-
     // don't allow too small size
-    if (w < 320) w = 320;
-    if (h < 240) h = 240;
-
-    // convert back to window size
-    pos->cx = w + nc_w;
-    pos->cy = h + nc_h;
+    pos->cx = max(pos->cx, rc.right - rc.left);
+    pos->cy = max(pos->cy, rc.bottom - rc.top);
 }
 
 static void pos_changed_event(HWND wnd, WINDOWPOS *pos)
