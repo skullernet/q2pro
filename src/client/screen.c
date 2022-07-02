@@ -1368,17 +1368,17 @@ static void SCR_TileClear(void)
     right = left + scr_vrect.width;
 
     // clear above view screen
-    R_TileClear(0, 0, r_config.width, top, scr.backtile_pic);
+    R_TileClear(0, 0, scr.hud_width, top, scr.backtile_pic);
 
     // clear below view screen
-    R_TileClear(0, bottom, r_config.width,
-                r_config.height - bottom, scr.backtile_pic);
+    R_TileClear(0, bottom, scr.hud_width,
+                scr.hud_height - bottom, scr.backtile_pic);
 
     // clear left of view screen
     R_TileClear(0, top, left, scr_vrect.height, scr.backtile_pic);
 
     // clear right of view screen
-    R_TileClear(right, top, r_config.width - right,
+    R_TileClear(right, top, scr.hud_width - right,
                 scr_vrect.height, scr.backtile_pic);
 }
 
