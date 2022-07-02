@@ -1363,9 +1363,9 @@ static void SCR_TileClear(void)
         return;     // full screen rendering
 
     top = scr_vrect.y;
-    bottom = top + scr_vrect.height - 1;
+    bottom = top + scr_vrect.height;
     left = scr_vrect.x;
-    right = left + scr_vrect.width - 1;
+    right = left + scr_vrect.width;
 
     // clear above view screen
     R_TileClear(0, 0, r_config.width, top, scr.backtile_pic);
