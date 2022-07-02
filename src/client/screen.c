@@ -956,13 +956,9 @@ static void SCR_CalcVrect(void)
 
     // bound viewsize
     size = Cvar_ClampInteger(scr_viewsize, 40, 100);
-    scr_viewsize->modified = false;
 
     scr_vrect.width = scr.hud_width * size / 100;
-    scr_vrect.width &= ~7;
-
     scr_vrect.height = scr.hud_height * size / 100;
-    scr_vrect.height &= ~1;
 
     scr_vrect.x = (scr.hud_width - scr_vrect.width) / 2;
     scr_vrect.y = (scr.hud_height - scr_vrect.height) / 2;
