@@ -383,10 +383,6 @@ void Win_SetMode(void)
     // parse vid_geometry specification
     VID_GetGeometry(&win.rc);
 
-    // align client area
-    win.rc.width &= ~7;
-    win.rc.height &= ~1;
-
     // don't allow too small size
     if (win.rc.width < 320) win.rc.width = 320;
     if (win.rc.height < 240) win.rc.height = 240;
@@ -803,8 +799,8 @@ static void pos_changing_event(HWND wnd, WINDOWPOS *pos)
     nc_h = rc.bottom - rc.top - 1;
 
     // align client area
-    w = (pos->cx - nc_w) & ~7;
-    h = (pos->cy - nc_h) & ~1;
+    w = pos->cx - nc_w;
+    h = pos->cy - nc_h;
 
     // don't allow too small size
     if (w < 320) w = 320;
