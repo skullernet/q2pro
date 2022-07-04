@@ -78,7 +78,7 @@ void VID_Shutdown(void)
 
 static void ReportLastError(const char *what)
 {
-    Com_EPrintf("%s failed with error %lu\n", what, GetLastError());
+    Com_EPrintf("%s failed: %s\n", what, Sys_ErrorString(GetLastError()));
 }
 
 static void ReportPixelFormat(int pixelformat, PIXELFORMATDESCRIPTOR *pfd)
@@ -349,10 +349,10 @@ static int LoadGL(const char *driver)
     }
 
     if (glw.minidriver) {
-        // check if MCD entry points are present if using a minidriver
+        // check if additional WGL entry points are present if using a minidriver
         if (!qwglChoosePixelFormat || !qwglSetPixelFormat ||
             !qwglDescribePixelFormat || !qwglSwapBuffers) {
-            Com_EPrintf("Required MCD entry points are missing\n");
+            Com_EPrintf("Minidriver WGL entry points are missing\n");
             goto fail;
         }
     }
@@ -381,6 +381,7 @@ static int LoadGL(const char *driver)
 
     // attempt to recover
     if (ret == FAIL_SOFT && (colorbits || depthbits || stencilbits || multisamples > 1)) {
+        Com_Printf("...falling back to default pixel format\n");
         Cvar_Set("gl_multisamples", "0");
         ret = SetupGL(0, 0, 0, 0);
     }
@@ -525,8 +526,9 @@ void VID_EndFrame(void)
 
         // this happens sometimes when the window is iconified
         if (!IsIconic(win.wnd)) {
-            Com_Error(ERR_FATAL, "%s failed with error %lu",
-                      glw.minidriver ? "wglSwapBuffers" : "SwapBuffers", error);
+            Com_Error(ERR_FATAL, "%s failed: %s",
+                      glw.minidriver ? "wglSwapBuffers" : "SwapBuffers",
+                      Sys_ErrorString(error));
         }
     }
 }

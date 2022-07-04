@@ -265,31 +265,39 @@ BAR GRAPHS
 static void draw_percent_bar(int percent, bool paused, int framenum)
 {
     char buffer[16];
-    int x, w;
+    int x, w, h;
     size_t len;
 
-    scr.hud_height -= CHAR_HEIGHT;
-
     w = scr.hud_width * percent / 100;
+    h = Q_rint(CHAR_HEIGHT / scr.hud_scale);
 
-    R_DrawFill8(0, scr.hud_height, w, CHAR_HEIGHT, 4);
-    R_DrawFill8(w, scr.hud_height, scr.hud_width - w, CHAR_HEIGHT, 0);
+    scr.hud_height -= h;
+
+    R_DrawFill8(0, scr.hud_height, w, h, 4);
+    R_DrawFill8(w, scr.hud_height, scr.hud_width - w, h, 0);
+
+    R_SetScale(scr.hud_scale);
+
+    w = Q_rint(scr.hud_width * scr.hud_scale);
+    h = Q_rint(scr.hud_height * scr.hud_scale);
 
     len = Q_scnprintf(buffer, sizeof(buffer), "%d%%", percent);
-    x = (scr.hud_width - len * CHAR_WIDTH) / 2;
-    R_DrawString(x, scr.hud_height, 0, MAX_STRING_CHARS, buffer, scr.font_pic);
+    x = (w - len * CHAR_WIDTH) / 2;
+    R_DrawString(x, h, 0, MAX_STRING_CHARS, buffer, scr.font_pic);
 
     if (scr_demobar->integer > 1) {
         int sec = framenum / 10;
         int min = sec / 60; sec %= 60;
 
         Q_scnprintf(buffer, sizeof(buffer), "%d:%02d.%d", min, sec, framenum % 10);
-        R_DrawString(0, scr.hud_height, 0, MAX_STRING_CHARS, buffer, scr.font_pic);
+        R_DrawString(0, h, 0, MAX_STRING_CHARS, buffer, scr.font_pic);
     }
 
     if (paused) {
-        SCR_DrawString(scr.hud_width, scr.hud_height, UI_RIGHT, "[PAUSED]");
+        SCR_DrawString(w, h, UI_RIGHT, "[PAUSED]");
     }
+
+    R_SetScale(1.0f);
 }
 
 static void SCR_DrawDemo(void)
@@ -950,13 +958,9 @@ static void SCR_CalcVrect(void)
 
     // bound viewsize
     size = Cvar_ClampInteger(scr_viewsize, 40, 100);
-    scr_viewsize->modified = false;
 
     scr_vrect.width = scr.hud_width * size / 100;
-    scr_vrect.width &= ~7;
-
     scr_vrect.height = scr.hud_height * size / 100;
-    scr_vrect.height &= ~1;
 
     scr_vrect.x = (scr.hud_width - scr_vrect.width) / 2;
     scr_vrect.y = (scr.hud_height - scr_vrect.height) / 2;
@@ -1381,22 +1385,22 @@ static void SCR_TileClear(void)
         return;     // full screen rendering
 
     top = scr_vrect.y;
-    bottom = top + scr_vrect.height - 1;
+    bottom = top + scr_vrect.height;
     left = scr_vrect.x;
-    right = left + scr_vrect.width - 1;
+    right = left + scr_vrect.width;
 
     // clear above view screen
-    R_TileClear(0, 0, r_config.width, top, scr.backtile_pic);
+    R_TileClear(0, 0, scr.hud_width, top, scr.backtile_pic);
 
     // clear below view screen
-    R_TileClear(0, bottom, r_config.width,
-                r_config.height - bottom, scr.backtile_pic);
+    R_TileClear(0, bottom, scr.hud_width,
+                scr.hud_height - bottom, scr.backtile_pic);
 
     // clear left of view screen
     R_TileClear(0, top, left, scr_vrect.height, scr.backtile_pic);
 
     // clear right of view screen
-    R_TileClear(right, top, r_config.width - right,
+    R_TileClear(right, top, scr.hud_width - right,
                 scr_vrect.height, scr.backtile_pic);
 }
 
@@ -1939,8 +1943,8 @@ static void SCR_Draw2D(void)
 
     R_SetScale(scr.hud_scale);
 
-    scr.hud_height *= scr.hud_scale;
-    scr.hud_width *= scr.hud_scale;
+    scr.hud_height = Q_rint(scr.hud_height * scr.hud_scale);
+    scr.hud_width = Q_rint(scr.hud_width * scr.hud_scale);
 
     // crosshair has its own color and alpha
     SCR_DrawCrosshair();
