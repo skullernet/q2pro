@@ -1021,7 +1021,7 @@ void Win_Init(void)
     // register the frame class
     memset(&wc, 0, sizeof(wc));
     wc.cbSize = sizeof(wc);
-    wc.lpfnWndProc = (WNDPROC)Win_MainWndProc;
+    wc.lpfnWndProc = Win_MainWndProc;
     wc.hInstance = hGlobalInstance;
     wc.hIcon = LoadImage(hGlobalInstance, MAKEINTRESOURCE(IDI_APP),
                          IMAGE_ICON, 32, 32, LR_CREATEDIBSECTION);
