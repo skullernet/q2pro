@@ -1071,10 +1071,14 @@ void Win_Shutdown(void)
         SetDeviceGammaRamp(win.dc, win.gamma_orig);
     }
 
-    // prevents leaving empty slots in the taskbar
-    ShowWindow(win.wnd, SW_SHOWNORMAL);
-    ReleaseDC(win.wnd, win.dc);
-    DestroyWindow(win.wnd);
+    if (win.dc) {
+        ReleaseDC(win.wnd, win.dc);
+    }
+
+    if (win.wnd) {
+        DestroyWindow(win.wnd);
+    }
+
     UnregisterClassA(WINDOW_CLASS_NAME, hGlobalInstance);
 
     if (win.kbdHook) {
