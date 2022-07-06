@@ -1036,16 +1036,8 @@ void Win_Init(void)
     }
 
     // create the window
-    win.wnd = CreateWindowA(
-                  WINDOW_CLASS_NAME,
-                  PRODUCT,
-                  0, //style
-                  0, 0, 0, 0,
-                  NULL,
-                  NULL,
-                  hGlobalInstance,
-                  NULL);
-
+    win.wnd = CreateWindowA(WINDOW_CLASS_NAME, PRODUCT, 0, 0, 0, 0, 0, NULL,
+                            NULL, hGlobalInstance, NULL);
     if (!win.wnd) {
         Com_Error(ERR_FATAL, "Couldn't create main window");
     }
