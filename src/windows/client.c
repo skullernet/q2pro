@@ -248,14 +248,12 @@ char *VID_GetDefaultModeList(void)
 
     len = Q_strlcpy(buf, "desktop ", size);
     for (i = 0; i < num_modes; i++) {
-        len += Q_scnprintf(buf + len, size - len, "%lux%lu@%lu",
+        len += Q_scnprintf(buf + len, size - len, "%lux%lu@%lu ",
                            modes[i].dmPelsWidth,
                            modes[i].dmPelsHeight,
                            modes[i].dmDisplayFrequency);
-        if (len < size - 1 && i < num_modes - 1)
-            buf[len++] = ' ';
     }
-    buf[len] = 0;
+    buf[len - 1] = 0;
 
     Z_Free(modes);
 
