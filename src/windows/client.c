@@ -604,14 +604,7 @@ static void legacy_key_event(WPARAM wParam, LPARAM lParam, bool down)
         return;
     }
 
-    if (result == K_LALT || result == K_RALT)
-        Key_Event(K_ALT, down, win.lastMsgTime);
-    else if (result == K_LCTRL || result == K_RCTRL)
-        Key_Event(K_CTRL, down, win.lastMsgTime);
-    else if (result == K_LSHIFT || result == K_RSHIFT)
-        Key_Event(K_SHIFT, down, win.lastMsgTime);
-
-    Key_Event(result, down, win.lastMsgTime);
+    Key_Event2(result, down, win.lastMsgTime);
 }
 
 static void mouse_wheel_event(int delta)
