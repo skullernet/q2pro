@@ -435,6 +435,10 @@ ifdef CONFIG_WINDOWS
     endif
 
     OBJS_c += src/windows/wgl.o
+    ifdef CONFIG_WINDOWS_EGL
+        CFLAGS_s += -DUSE_WIN32EGL=1
+        OBJS_c += src/windows/egl.o
+    endif
 
     ifdef CONFIG_WINDOWS_CRASH_DUMPS
         CFLAGS_c += -DUSE_DBGHELP=1

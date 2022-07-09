@@ -223,6 +223,10 @@ LOADING / SHUTDOWN
 extern const vid_driver_t   vid_win32wgl;
 #endif
 
+#if USE_WIN32EGL
+extern const vid_driver_t   vid_win32egl;
+#endif
+
 #if USE_SDL
 extern const vid_driver_t   vid_sdl;
 #endif
@@ -230,6 +234,9 @@ extern const vid_driver_t   vid_sdl;
 static const vid_driver_t *const vid_drivers[] = {
 #ifdef _WIN32
     &vid_win32wgl,
+#endif
+#if USE_WIN32EGL
+    &vid_win32egl,
 #endif
 #if USE_SDL
     &vid_sdl,
