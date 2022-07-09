@@ -54,7 +54,7 @@ static unsigned wgl_parse_extension_string(const char *s)
     return Com_ParseExtensionString(s, extnames);
 }
 
-void VID_Shutdown(void)
+static void wgl_shutdown(void)
 {
     wglMakeCurrent(NULL, NULL);
 
@@ -266,7 +266,7 @@ fail0:
     return extensions;
 }
 
-bool VID_Init(void)
+static bool wgl_init(void)
 {
     const char *extensions = NULL;
     unsigned fake_extensions = 0;
@@ -353,7 +353,7 @@ bool VID_Init(void)
     return true;
 }
 
-void *VID_GetProcAddr(const char *sym)
+static void *wgl_get_proc_addr(const char *sym)
 {
     void *entry = wglGetProcAddress(sym);
 
@@ -363,12 +363,12 @@ void *VID_GetProcAddr(const char *sym)
     return GetProcAddress(wgl.handle, sym);
 }
 
-void VID_SwapBuffers(void)
+static void wgl_swap_buffers(void)
 {
     SwapBuffers(win.dc);
 }
 
-void VID_SwapInterval(int val)
+static void wgl_swap_interval(int val)
 {
     if (val < 0 && !(wgl.extensions & QWGL_EXT_swap_control_tear)) {
         Com_Printf("Negative swap interval is not supported on this system.\n");
@@ -378,3 +378,34 @@ void VID_SwapInterval(int val)
     if (wgl.SwapIntervalEXT && !wgl.SwapIntervalEXT(val))
         print_error("wglSwapIntervalEXT");
 }
+
+static bool wgl_probe(void)
+{
+    return true;
+}
+
+const vid_driver_t vid_win32wgl = {
+    .name = "win32wgl",
+
+    .probe = wgl_probe,
+    .init = wgl_init,
+    .shutdown = wgl_shutdown,
+    .pump_events = Win_PumpEvents,
+
+    .get_mode_list = Win_GetModeList,
+    .set_mode = Win_SetMode,
+    .update_gamma = Win_UpdateGamma,
+
+    .get_proc_addr = wgl_get_proc_addr,
+    .swap_buffers = wgl_swap_buffers,
+    .swap_interval = wgl_swap_interval,
+
+    .get_clipboard_data = Win_GetClipboardData,
+    .set_clipboard_data = Win_SetClipboardData,
+
+    .init_mouse = Win_InitMouse,
+    .shutdown_mouse = Win_ShutdownMouse,
+    .grab_mouse = Win_GrabMouse,
+    .warp_mouse = Win_WarpMouse,
+    .get_mouse_motion = Win_GetMouseMotion,
+};

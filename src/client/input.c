@@ -61,7 +61,6 @@ INPUT SUBSYSTEM
 
 typedef struct {
     bool        modified;
-    inputAPI_t  api;
     int         old_dx;
     int         old_dy;
 } in_state_t;
@@ -109,8 +108,8 @@ IN_Activate
 */
 void IN_Activate(void)
 {
-    if (input.api.Grab) {
-        input.api.Grab(IN_GetCurrentGrab());
+    if (vid.grab_mouse) {
+        vid.grab_mouse(IN_GetCurrentGrab());
     }
 }
 
@@ -134,11 +133,6 @@ void IN_Frame(void)
 {
     if (input.modified) {
         IN_Restart_f();
-        return;
-    }
-
-    if (input.api.GetEvents) {
-        input.api.GetEvents();
     }
 }
 
@@ -149,8 +143,8 @@ IN_WarpMouse
 */
 void IN_WarpMouse(int x, int y)
 {
-    if (input.api.Warp) {
-        input.api.Warp(x, y);
+    if (vid.warp_mouse) {
+        vid.warp_mouse(x, y);
     }
 }
 
@@ -165,8 +159,8 @@ void IN_Shutdown(void)
         in_grab->changed = NULL;
     }
 
-    if (input.api.Shutdown) {
-        input.api.Shutdown();
+    if (vid.shutdown_mouse) {
+        vid.shutdown_mouse();
     }
 
     memset(&input, 0, sizeof(input));
@@ -196,8 +190,7 @@ void IN_Init(void)
         return;
     }
 
-    VID_FillInputAPI(&input.api);
-    if (!input.api.Init()) {
+    if (!vid.init_mouse()) {
         Cvar_Set("in_enable", "0");
         return;
     }
@@ -459,13 +452,13 @@ static void CL_MouseMove(void)
     float mx, my;
     float speed;
 
-    if (!input.api.GetMotion) {
+    if (!vid.get_mouse_motion) {
         return;
     }
     if (cls.key_dest & (KEY_MENU | KEY_CONSOLE)) {
         return;
     }
-    if (!input.api.GetMotion(&dx, &dy)) {
+    if (!vid.get_mouse_motion(&dx, &dy)) {
         return;
     }
 

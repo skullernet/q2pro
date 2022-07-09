@@ -110,8 +110,17 @@ extern win_state_t      win;
 
 void Win_Init(void);
 void Win_Shutdown(void);
+char *Win_GetModeList(void);
 void Win_SetMode(void);
-void Win_ModeChanged(void);
+void Win_UpdateGamma(const byte *table);
+void Win_PumpEvents(void);
+char *Win_GetClipboardData(void);
+void Win_SetClipboardData(const char *data);
+bool Win_InitMouse(void);
+void Win_ShutdownMouse(void);
+void Win_GrabMouse(bool grab);
+void Win_WarpMouse(int x, int y);
+bool Win_GetMouseMotion(int *dx, int *dy);
 
 #endif // USE_CLIENT
 

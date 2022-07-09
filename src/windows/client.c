@@ -43,7 +43,6 @@ static cvar_t   *win_xpfix;
 static cvar_t   *win_rawmouse;
 static cvar_t   *win_noborder;
 
-static bool     Win_InitMouse(void);
 static void     Win_ClipCursor(void);
 
 /*
@@ -123,7 +122,7 @@ static void Win_SetPosition(void)
 Win_ModeChanged
 ============
 */
-void Win_ModeChanged(void)
+static void Win_ModeChanged(void)
 {
     R_ModeChanged(win.rc.width, win.rc.height, win.flags);
     SCR_ModeChanged();
@@ -190,10 +189,10 @@ static bool modes_are_equal(const DEVMODE *base, const DEVMODE *compare)
 
 /*
 ============
-VID_GetDefaultModeList
+Win_GetModeList
 ============
 */
-char *VID_GetDefaultModeList(void)
+char *Win_GetModeList(void)
 {
     DEVMODE desktop, dm, *modes;
     int i, j, num_modes, max_modes;
@@ -341,6 +340,7 @@ static LONG set_fullscreen_mode(void)
     win.dm = dm;
     win.flags |= QVF_FULLSCREEN;
     Win_SetPosition();
+    Win_ModeChanged();
     win.mode_changed = 0;
 
     return ret;
@@ -391,6 +391,7 @@ void Win_SetMode(void)
     memset(&win.dm, 0, sizeof(win.dm));
     win.flags &= ~QVF_FULLSCREEN;
     Win_SetPosition();
+    Win_ModeChanged();
     win.mode_changed = 0;
 
     // set vid_geometry back
@@ -399,10 +400,10 @@ void Win_SetMode(void)
 
 /*
 ============
-VID_UpdateGamma
+Win_UpdateGamma
 ============
 */
-void VID_UpdateGamma(const byte *table)
+void Win_UpdateGamma(const byte *table)
 {
     WORD v;
     int i;
@@ -928,21 +929,10 @@ static LRESULT WINAPI Win_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 
 /*
 ============
-VID_SetMode
+Win_PumpEvents
 ============
 */
-void VID_SetMode(void)
-{
-    Win_SetMode();
-    Win_ModeChanged();
-}
-
-/*
-============
-VID_PumpEvents
-============
-*/
-void VID_PumpEvents(void)
+void Win_PumpEvents(void)
 {
     MSG        msg;
 
@@ -1146,7 +1136,7 @@ static void Win_DeAcquireMouse(void)
     SetWindowTextA(win.wnd, PRODUCT);
 }
 
-static bool Win_GetMouseMotion(int *dx, int *dy)
+bool Win_GetMouseMotion(int *dx, int *dy)
 {
     POINT pt;
 
@@ -1192,7 +1182,7 @@ static BOOL register_raw_mouse(DWORD flags)
     return RegisterRawInputDevices(&rid, 1, sizeof(rid));
 }
 
-static void Win_ShutdownMouse(void)
+void Win_ShutdownMouse(void)
 {
     if (!win.mouse.initialized) {
         return;
@@ -1226,7 +1216,7 @@ static void win_rawmouse_changed(cvar_t *self)
     }
 }
 
-static bool Win_InitMouse(void)
+bool Win_InitMouse(void)
 {
     if (!win.wnd) {
         return false;
@@ -1257,7 +1247,7 @@ static bool Win_InitMouse(void)
 }
 
 // Called when the main window gains or loses focus.
-static void Win_GrabMouse(bool grab)
+void Win_GrabMouse(bool grab)
 {
     if (!win.mouse.initialized) {
         return;
@@ -1286,17 +1276,17 @@ static void Win_GrabMouse(bool grab)
     win.mouse.my = 0;
 }
 
-static void Win_WarpMouse(int x, int y)
+void Win_WarpMouse(int x, int y)
 {
     SetCursorPos(win.screen_rc.left + x, win.screen_rc.top + y);
 }
 
 /*
 ================
-VID_GetClipboardData
+Win_GetClipboardData
 ================
 */
-char *VID_GetClipboardData(void)
+char *Win_GetClipboardData(void)
 {
     HANDLE clipdata;
     char *cliptext, *data;
@@ -1320,10 +1310,10 @@ char *VID_GetClipboardData(void)
 
 /*
 ================
-VID_SetClipboardData
+Win_SetClipboardData
 ================
 */
-void VID_SetClipboardData(const char *data)
+void Win_SetClipboardData(const char *data)
 {
     HANDLE clipdata;
     char *cliptext;
@@ -1350,19 +1340,4 @@ void VID_SetClipboardData(const char *data)
     }
 
     CloseClipboard();
-}
-
-/*
-@@@@@@@@@@@@@@@@@@@
-VID_FillInputAPI
-@@@@@@@@@@@@@@@@@@@
-*/
-void VID_FillInputAPI(inputAPI_t *api)
-{
-    api->Init = Win_InitMouse;
-    api->Shutdown = Win_ShutdownMouse;
-    api->Grab = Win_GrabMouse;
-    api->Warp = Win_WarpMouse;
-    api->GetEvents = NULL;
-    api->GetMotion = Win_GetMouseMotion;
 }

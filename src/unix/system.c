@@ -262,7 +262,8 @@ static void kill_handler(int signum)
     tty_shutdown_input();
 
 #if USE_CLIENT && USE_REF
-    VID_FatalShutdown();
+    if (vid.fatal_shutdown)
+        vid.fatal_shutdown();
 #endif
 
     fprintf(stderr, "%s\n", strsignal(signum));
@@ -339,7 +340,8 @@ void Sys_Error(const char *error, ...)
     tty_shutdown_input();
 
 #if USE_CLIENT && USE_REF
-    VID_FatalShutdown();
+    if (vid.fatal_shutdown)
+        vid.fatal_shutdown();
 #endif
 
     va_start(argptr, error);
