@@ -19,7 +19,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef VIDEO_H
 #define VIDEO_H
 
-extern cvar_t       *vid_ref;
 extern cvar_t       *vid_geometry;
 extern cvar_t       *vid_modelist;
 extern cvar_t       *vid_fullscreen;

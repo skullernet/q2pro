@@ -317,7 +317,7 @@ ifndef CONFIG_NO_MAPCHECKSUM
 endif
 
 ifndef CONFIG_NO_REFRESH
-    CFLAGS_c += -DUSE_REF=1 -DVID_REF='"gl"'
+    CFLAGS_c += -DUSE_REF=1
     ifdef CONFIG_GLES
         CFLAGS_c += -DUSE_GLES=1
     endif

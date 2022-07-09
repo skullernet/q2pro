@@ -24,7 +24,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client.h"
 
 // Console variables that we need to access from this module
-cvar_t      *vid_ref;           // Name of Refresh DLL loaded
 cvar_t      *vid_geometry;
 cvar_t      *vid_modelist;
 cvar_t      *vid_fullscreen;
@@ -288,8 +287,9 @@ void CL_InitRefresh(void)
         return;
     }
 
+    Cvar_Get("vid_ref", "gl", CVAR_ROM);
+
     // Create the video variables so we know how to start the graphics drivers
-    vid_ref = Cvar_Get("vid_ref", VID_REF, CVAR_ROM);
     vid_fullscreen = Cvar_Get("vid_fullscreen", "0", CVAR_ARCHIVE);
     _vid_fullscreen = Cvar_Get("_vid_fullscreen", "1", CVAR_ARCHIVE);
     vid_geometry = Cvar_Get("vid_geometry", VID_GEOMETRY, CVAR_ARCHIVE);
