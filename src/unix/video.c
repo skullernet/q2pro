@@ -47,13 +47,6 @@ OPENGL STUFF
 ===============================================================================
 */
 
-static void gl_swapinterval_changed(cvar_t *self)
-{
-    if (SDL_GL_SetSwapInterval(self->integer) < 0) {
-        Com_EPrintf("Couldn't set swap interval %d: %s\n", self->integer, SDL_GetError());
-    }
-}
-
 static void VID_SDL_GL_SetAttributes(void)
 {
     r_opengl_config_t *cfg = R_GetGLConfig();
@@ -85,6 +78,17 @@ static void VID_SDL_GL_SetAttributes(void)
 void *VID_GetProcAddr(const char *sym)
 {
     return SDL_GL_GetProcAddress(sym);
+}
+
+void VID_SwapBuffers(void)
+{
+    SDL_GL_SwapWindow(sdl_window);
+}
+
+void VID_SwapInterval(int val)
+{
+    if (SDL_GL_SetSwapInterval(val) < 0)
+        Com_EPrintf("Couldn't set swap interval %d: %s\n", val, SDL_GetError());
 }
 
 /*
@@ -140,15 +144,6 @@ void VID_SetMode(void)
 
     SDL_SetWindowFullscreen(sdl_window, flags);
     VID_SDL_ModeChanged();
-}
-
-void VID_BeginFrame(void)
-{
-}
-
-void VID_EndFrame(void)
-{
-    SDL_GL_SwapWindow(sdl_window);
 }
 
 void VID_FatalShutdown(void)
@@ -267,10 +262,6 @@ bool VID_Init(void)
         Com_EPrintf("Couldn't create OpenGL context: %s\n", SDL_GetError());
         goto fail;
     }
-
-    cvar_t *gl_swapinterval = Cvar_Get("gl_swapinterval", "0", 0);
-    gl_swapinterval->changed = gl_swapinterval_changed;
-    gl_swapinterval_changed(gl_swapinterval);
 
     cvar_t *vid_hwgamma = Cvar_Get("vid_hwgamma", "0", CVAR_REFRESH);
     if (vid_hwgamma->integer) {

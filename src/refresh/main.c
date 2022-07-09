@@ -52,6 +52,7 @@ cvar_t *gl_modulate_entities;
 cvar_t *gl_doublelight_entities;
 cvar_t *gl_fontshadow;
 cvar_t *gl_shaders;
+cvar_t *gl_swapinterval;
 
 // development variables
 cvar_t *gl_znear;
@@ -600,7 +601,7 @@ void R_EndFrame(void)
 
     GL_ShowErrors(__func__);
 
-    VID_EndFrame();
+    VID_SwapBuffers();
 }
 
 // ==============================================================================
@@ -694,6 +695,11 @@ static void gl_novis_changed(cvar_t *self)
     glr.viewcluster1 = glr.viewcluster2 = -2;
 }
 
+static void gl_swapinterval_changed(cvar_t *self)
+{
+     VID_SwapInterval(self->integer);
+}
+
 static void GL_Register(void)
 {
     // regular variables
@@ -720,6 +726,8 @@ static void GL_Register(void)
     gl_doublelight_entities = Cvar_Get("gl_doublelight_entities", "1", 0);
     gl_fontshadow = Cvar_Get("gl_fontshadow", "0", 0);
     gl_shaders = Cvar_Get("gl_shaders", (gl_config.caps & QGL_CAP_SHADER) ? "1" : "0", CVAR_REFRESH);
+    gl_swapinterval = Cvar_Get("gl_swapinterval", "1", CVAR_ARCHIVE);
+    gl_swapinterval->changed = gl_swapinterval_changed;
 
     // development variables
     gl_znear = Cvar_Get("gl_znear", "2", CVAR_CHEAT);
@@ -754,6 +762,7 @@ static void GL_Register(void)
 
     gl_lightmap_changed(NULL);
     gl_modulate_entities_changed(NULL);
+    gl_swapinterval_changed(gl_swapinterval);
 
     Cmd_AddCommand("strings", GL_Strings_f);
     Cmd_AddMacro("gl_viewcluster", GL_ViewCluster_m);

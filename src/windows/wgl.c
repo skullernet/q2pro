@@ -31,7 +31,6 @@ static struct {
 } wgl;
 
 static cvar_t   *gl_allow_software;
-static cvar_t   *gl_swapinterval;
 
 enum {
     QWGL_ARB_create_context     = (1 << 0),
@@ -65,9 +64,6 @@ void VID_Shutdown(void)
     }
 
     Win_Shutdown();
-
-    if (gl_swapinterval)
-        gl_swapinterval->changed = NULL;
 
     memset(&wgl, 0, sizeof(wgl));
 }
@@ -270,17 +266,6 @@ fail0:
     return extensions;
 }
 
-static void gl_swapinterval_changed(cvar_t *self)
-{
-    if (self->integer < 0 && !(wgl.extensions & QWGL_EXT_swap_control_tear)) {
-        Com_Printf("Negative swap interval is not supported on this system.\n");
-        Cvar_Reset(self);
-    }
-
-    if (wgl.SwapIntervalEXT && !wgl.SwapIntervalEXT(self->integer))
-        print_error("wglSwapIntervalEXT");
-}
-
 bool VID_Init(void)
 {
     const char *extensions = NULL;
@@ -361,9 +346,6 @@ bool VID_Init(void)
             Com_Printf("Enabling WGL_EXT_swap_control_tear\n");
         else
             Com_Printf("Enabling WGL_EXT_swap_control\n");
-        gl_swapinterval = Cvar_Get("gl_swapinterval", "1", CVAR_ARCHIVE);
-        gl_swapinterval->changed = gl_swapinterval_changed;
-        gl_swapinterval_changed(gl_swapinterval);
     } else {
         Com_WPrintf("WGL_EXT_swap_control not found\n");
     }
@@ -381,11 +363,18 @@ void *VID_GetProcAddr(const char *sym)
     return GetProcAddress(wgl.handle, sym);
 }
 
-void VID_BeginFrame(void)
-{
-}
-
-void VID_EndFrame(void)
+void VID_SwapBuffers(void)
 {
     SwapBuffers(win.dc);
+}
+
+void VID_SwapInterval(int val)
+{
+    if (val < 0 && !(wgl.extensions & QWGL_EXT_swap_control_tear)) {
+        Com_Printf("Negative swap interval is not supported on this system.\n");
+        val = -val;
+    }
+
+    if (wgl.SwapIntervalEXT && !wgl.SwapIntervalEXT(val))
+        print_error("wglSwapIntervalEXT");
 }
