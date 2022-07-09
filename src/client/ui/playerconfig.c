@@ -270,7 +270,7 @@ static bool Push(menuFrameWork_t *self)
     m_player.hand.curvalue = Cvar_VariableInteger("hand");
     clamp(m_player.hand.curvalue, 0, 2);
 
-    m_player.menu.banner = R_RegisterPic("m_banner_plauer_setup");
+    m_player.menu.banner = R_RegisterPic("m_banner_player_setup");
     if (m_player.menu.banner) {
         R_GetPicSize(&m_player.menu.banner_rc.width,
                      &m_player.menu.banner_rc.height, m_player.menu.banner);
