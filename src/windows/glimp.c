@@ -479,8 +479,6 @@ bool VID_Init(void)
     gl_drawbuffer->changed = gl_drawbuffer_changed;
     gl_drawbuffer_changed(gl_drawbuffer);
 
-    VID_SetMode();
-
     return true;
 }
 

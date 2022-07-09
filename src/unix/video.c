@@ -110,7 +110,7 @@ static void VID_SDL_ModeChanged(void)
     SCR_ModeChanged();
 }
 
-static void VID_SDL_SetMode(void)
+void VID_SetMode(void)
 {
     Uint32 flags;
     vrect_t rc;
@@ -139,11 +139,6 @@ static void VID_SDL_SetMode(void)
     }
 
     SDL_SetWindowFullscreen(sdl_window, flags);
-}
-
-void VID_SetMode(void)
-{
-    VID_SDL_SetMode();
     VID_SDL_ModeChanged();
 }
 
@@ -191,20 +186,6 @@ void VID_UpdateGamma(const byte *table)
     }
 }
 
-static int VID_SDL_InitSubSystem(void)
-{
-    int ret;
-
-    if (SDL_WasInit(SDL_INIT_VIDEO))
-        return 0;
-
-    ret = SDL_InitSubSystem(SDL_INIT_VIDEO);
-    if (ret == -1)
-        Com_EPrintf("Couldn't initialize SDL video: %s\n", SDL_GetError());
-
-    return ret;
-}
-
 static int VID_SDL_EventFilter(void *userdata, SDL_Event *event)
 {
     // SDL uses relative time, we need absolute
@@ -218,9 +199,6 @@ char *VID_GetDefaultModeList(void)
     size_t size, len;
     char *buf;
     int i, num_modes;
-
-    if (VID_SDL_InitSubSystem())
-        return NULL;
 
     num_modes = SDL_GetNumDisplayModes(0);
     if (num_modes < 1)
@@ -247,7 +225,8 @@ bool VID_Init(void)
 {
     vrect_t rc;
 
-    if (VID_SDL_InitSubSystem()) {
+    if (SDL_InitSubSystem(SDL_INIT_VIDEO) == -1) {
+        Com_EPrintf("Couldn't initialize SDL video: %s\n", SDL_GetError());
         return false;
     }
 
@@ -283,8 +262,6 @@ bool VID_Init(void)
         SDL_FreeSurface(icon);
     }
 
-    VID_SDL_SetMode();
-
     sdl_context = SDL_GL_CreateContext(sdl_window);
     if (!sdl_context) {
         Com_EPrintf("Couldn't create OpenGL context: %s\n", SDL_GetError());
@@ -309,7 +286,6 @@ bool VID_Init(void)
         }
     }
 
-    VID_SDL_ModeChanged();
     return true;
 
 fail:

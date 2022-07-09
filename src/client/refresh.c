@@ -288,21 +288,11 @@ void CL_InitRefresh(void)
         return;
     }
 
-    Com_SetLastError(NULL);
-
-    modelist = VID_GetDefaultModeList();
-    if (!modelist) {
-        Com_Error(ERR_FATAL, "Couldn't initialize refresh: %s", Com_GetLastError());
-    }
-
     // Create the video variables so we know how to start the graphics drivers
     vid_ref = Cvar_Get("vid_ref", VID_REF, CVAR_ROM);
     vid_fullscreen = Cvar_Get("vid_fullscreen", "0", CVAR_ARCHIVE);
     _vid_fullscreen = Cvar_Get("_vid_fullscreen", "1", CVAR_ARCHIVE);
-    vid_modelist = Cvar_Get("vid_modelist", modelist, 0);
     vid_geometry = Cvar_Get("vid_geometry", VID_GEOMETRY, CVAR_ARCHIVE);
-
-    Z_Free(modelist);
 
     if (vid_fullscreen->integer) {
         Cvar_Set("_vid_fullscreen", vid_fullscreen->string);
@@ -315,6 +305,12 @@ void CL_InitRefresh(void)
     if (!R_Init(true)) {
         Com_Error(ERR_FATAL, "Couldn't initialize refresh: %s", Com_GetLastError());
     }
+
+    modelist = VID_GetDefaultModeList();
+    vid_modelist = Cvar_Get("vid_modelist", modelist, 0);
+    Z_Free(modelist);
+
+    VID_SetMode();
 
     cls.ref_initialized = true;
 
