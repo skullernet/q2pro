@@ -39,10 +39,6 @@ static cvar_t   *gl_driver;
 static cvar_t   *gl_drawbuffer;
 static cvar_t   *gl_swapinterval;
 static cvar_t   *gl_allow_software;
-static cvar_t   *gl_colorbits;
-static cvar_t   *gl_depthbits;
-static cvar_t   *gl_stencilbits;
-static cvar_t   *gl_multisamples;
 
 /*
 VID_Shutdown
@@ -92,7 +88,7 @@ static void ReportPixelFormat(int pixelformat, PIXELFORMATDESCRIPTOR *pfd)
 #define FAIL_SOFT   -1
 #define FAIL_HARD   -2
 
-static int SetupGL(int colorbits, int depthbits, int stencilbits, int multisamples)
+static int SetupGL(r_opengl_config_t *cfg)
 {
     PIXELFORMATDESCRIPTOR pfd;
     int pixelformat;
@@ -100,17 +96,8 @@ static int SetupGL(int colorbits, int depthbits, int stencilbits, int multisampl
     // create the main window
     Win_Init();
 
-    if (colorbits == 0)
-        colorbits = 24;
-
-    if (depthbits == 0)
-        depthbits = colorbits > 16 ? 24 : 16;
-
-    if (depthbits < 24)
-        stencilbits = 0;
-
     // choose pixel format
-    if (qwglChoosePixelFormatARB && multisamples > 1) {
+    if (qwglChoosePixelFormatARB && cfg->multisamples) {
         int iAttributes[20];
         UINT numFormats;
 
@@ -123,15 +110,15 @@ static int SetupGL(int colorbits, int depthbits, int stencilbits, int multisampl
         iAttributes[6] = WGL_PIXEL_TYPE_ARB;
         iAttributes[7] = WGL_TYPE_RGBA_ARB;
         iAttributes[8] = WGL_COLOR_BITS_ARB;
-        iAttributes[9] = colorbits;
+        iAttributes[9] = cfg->colorbits;
         iAttributes[10] = WGL_DEPTH_BITS_ARB;
-        iAttributes[11] = depthbits;
+        iAttributes[11] = cfg->depthbits;
         iAttributes[12] = WGL_STENCIL_BITS_ARB;
-        iAttributes[13] = stencilbits;
+        iAttributes[13] = cfg->stencilbits;
         iAttributes[14] = WGL_SAMPLE_BUFFERS_ARB;
         iAttributes[15] = 1;
         iAttributes[16] = WGL_SAMPLES_ARB;
-        iAttributes[17] = multisamples;
+        iAttributes[17] = cfg->multisamples;
         iAttributes[18] = 0;
         iAttributes[19] = 0;
 
@@ -149,9 +136,9 @@ static int SetupGL(int colorbits, int depthbits, int stencilbits, int multisampl
         pfd.nVersion = 1;
         pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
         pfd.iPixelType = PFD_TYPE_RGBA;
-        pfd.cColorBits = colorbits;
-        pfd.cDepthBits = depthbits;
-        pfd.cStencilBits = stencilbits;
+        pfd.cColorBits = cfg->colorbits;
+        pfd.cDepthBits = cfg->depthbits;
+        pfd.cStencilBits = cfg->stencilbits;
         pfd.iLayerType = PFD_MAIN_PLANE;
 
         if (glw.minidriver) {
@@ -321,10 +308,6 @@ fail0:
 
 static int LoadGL(const char *driver)
 {
-    int colorbits = Cvar_ClampInteger(gl_colorbits, 0, 32);
-    int depthbits = Cvar_ClampInteger(gl_depthbits, 0, 32);
-    int stencilbits = Cvar_ClampInteger(gl_stencilbits, 0, 8);
-    int multisamples = Cvar_ClampInteger(gl_multisamples, 0, 32);
     int ret;
 
     // figure out if we're running on a minidriver or not
@@ -357,8 +340,10 @@ static int LoadGL(const char *driver)
         }
     }
 
+    r_opengl_config_t *cfg = R_GetGLConfig();
+
     // check for WGL_ARB_multisample by creating a fake window
-    if (multisamples > 1) {
+    if (cfg->multisamples) {
         unsigned extensions = GetFakeWindowExtensions();
 
         if (extensions & QWGL_ARB_multisample) {
@@ -367,23 +352,27 @@ static int LoadGL(const char *driver)
             } else {
                 Com_Printf("...ignoring WGL_ARB_multisample, WGL_ARB_pixel_format not found\n");
                 Cvar_Set("gl_multisamples", "0");
-                multisamples = 0;
+                cfg->multisamples = 0;
             }
         } else {
             Com_Printf("WGL_ARB_multisample not found\n");
             Cvar_Set("gl_multisamples", "0");
-            multisamples = 0;
+            cfg->multisamples = 0;
         }
     }
 
     // create window, choose PFD, setup OpenGL context
-    ret = SetupGL(colorbits, depthbits, stencilbits, multisamples);
+    ret = SetupGL(cfg);
 
     // attempt to recover
-    if (ret == FAIL_SOFT && (colorbits || depthbits || stencilbits || multisamples > 1)) {
+    if (ret == FAIL_SOFT) {
         Com_Printf("...falling back to default pixel format\n");
         Cvar_Set("gl_multisamples", "0");
-        ret = SetupGL(0, 0, 0, 0);
+        r_opengl_config_t failsafe = {
+            .colorbits = 24,
+            .depthbits = 24
+        };
+        ret = SetupGL(&failsafe);
     }
 
     if (ret)

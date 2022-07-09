@@ -128,6 +128,14 @@ typedef struct refdef_s {
     particle_t  *particles;
 } refdef_t;
 
+typedef struct {
+    int     colorbits;
+    int     depthbits;
+    int     stencilbits;
+    int     multisamples;
+    bool    debug;
+} r_opengl_config_t;
+
 typedef enum {
     QVF_ACCELERATED     = (1 << 0),
     QVF_GAMMARAMP       = (1 << 1),
@@ -224,5 +232,7 @@ void    R_DrawFill32(int x, int y, int w, int h, uint32_t color);
 void    R_BeginFrame(void);
 void    R_EndFrame(void);
 void    R_ModeChanged(int width, int height, int flags);
+
+r_opengl_config_t *R_GetGLConfig(void);
 
 #endif // REFRESH_H
