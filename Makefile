@@ -434,7 +434,6 @@ ifdef CONFIG_WINDOWS
         endif
     endif
 
-    OBJS_c += src/windows/glimp.o
     OBJS_c += src/windows/wgl.o
 
     ifdef CONFIG_WINDOWS_CRASH_DUMPS
@@ -458,8 +457,8 @@ ifdef CONFIG_WINDOWS
     OBJS_g += src/windows/res/baseq2.o
 
     # System libs
+    LIBS_c += -lws2_32 -lopengl32
     LIBS_s += -lws2_32
-    LIBS_c += -lws2_32
 else
     SDL_CFLAGS ?= $(shell sdl2-config --cflags)
     SDL_LIBS ?= $(shell sdl2-config --libs)

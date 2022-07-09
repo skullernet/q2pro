@@ -15,113 +15,36 @@ You should have received a copy of the GNU General Public License along
 with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
+
 #include "client.h"
-#include "glimp.h"
-#include "wgl.h"
 
-void (APIENTRY * qwglDrawBuffer)(GLenum mode);
-const GLubyte * (APIENTRY * qwglGetString)(GLenum name);
+#include <GL/gl.h>
+#include <GL/wglext.h>
 
-int (WINAPI * qwglChoosePixelFormat)(HDC, CONST PIXELFORMATDESCRIPTOR *);
-int (WINAPI * qwglDescribePixelFormat)(HDC, int, UINT, LPPIXELFORMATDESCRIPTOR);
-BOOL (WINAPI * qwglSetPixelFormat)(HDC, int, CONST PIXELFORMATDESCRIPTOR *);
-BOOL (WINAPI * qwglSwapBuffers)(HDC);
+static struct {
+    HGLRC       context;        // handle to GL rendering context
+    HMODULE     handle;         // handle to GL library
+    unsigned    extensions;
+    PFNWGLCREATECONTEXTATTRIBSARBPROC   CreateContextAttribsARB;
+    PFNWGLCHOOSEPIXELFORMATARBPROC      ChoosePixelFormatARB;
+    PFNWGLSWAPINTERVALEXTPROC           SwapIntervalEXT;
+} wgl;
 
-HGLRC (WINAPI * qwglCreateContext)(HDC);
-BOOL (WINAPI * qwglDeleteContext)(HGLRC);
-PROC (WINAPI * qwglGetProcAddress)(LPCSTR);
-BOOL (WINAPI * qwglMakeCurrent)(HDC, HGLRC);
+static cvar_t   *gl_allow_software;
+static cvar_t   *gl_swapinterval;
 
-const char * (WINAPI * qwglGetExtensionsStringARB)(HDC hdc);
+enum {
+    QWGL_ARB_create_context     = (1 << 0),
+    QWGL_ARB_multisample        = (1 << 1),
+    QWGL_ARB_pixel_format       = (1 << 2),
+    QWGL_EXT_swap_control       = (1 << 3),
+    QWGL_EXT_swap_control_tear  = (1 << 4),
+};
 
-BOOL (WINAPI * qwglChoosePixelFormatARB)(HDC, const int *, const FLOAT *, UINT, int *, UINT *);
-
-BOOL (WINAPI * qwglSwapIntervalEXT)(int interval);
-
-void WGL_Shutdown(void)
+static unsigned wgl_parse_extension_string(const char *s)
 {
-    if (glw.hinstOpenGL) {
-        FreeLibrary(glw.hinstOpenGL);
-        glw.hinstOpenGL = NULL;
-    }
-
-    qwglDrawBuffer              = NULL;
-    qwglGetString               = NULL;
-
-    qwglChoosePixelFormat       = NULL;
-    qwglDescribePixelFormat     = NULL;
-    qwglSetPixelFormat          = NULL;
-    qwglSwapBuffers             = NULL;
-
-    qwglCreateContext           = NULL;
-    qwglDeleteContext           = NULL;
-    qwglGetProcAddress          = NULL;
-    qwglMakeCurrent             = NULL;
-
-    WGL_ShutdownExtensions(~0);
-}
-
-#define GPA(x)  (void *)GetProcAddress(glw.hinstOpenGL, x);
-
-bool WGL_Init(const char *dllname)
-{
-    if ((glw.hinstOpenGL = LoadLibraryA(dllname)) == NULL) {
-        return false;
-    }
-
-    qwglDrawBuffer              = GPA("glDrawBuffer");
-    qwglGetString               = GPA("glGetString");
-
-    qwglChoosePixelFormat       = GPA("wglChoosePixelFormat");
-    qwglDescribePixelFormat     = GPA("wglDescribePixelFormat");
-    qwglSetPixelFormat          = GPA("wglSetPixelFormat");
-    qwglSwapBuffers             = GPA("wglSwapBuffers");
-
-    qwglCreateContext           = GPA("wglCreateContext");
-    qwglDeleteContext           = GPA("wglDeleteContext");
-    qwglGetProcAddress          = GPA("wglGetProcAddress");
-    qwglMakeCurrent             = GPA("wglMakeCurrent");
-
-    return true;
-}
-
-#undef GPA
-
-void WGL_ShutdownExtensions(unsigned mask)
-{
-    if (mask & QWGL_ARB_extensions_string) {
-        qwglGetExtensionsStringARB  = NULL;
-    }
-    if (mask & QWGL_ARB_pixel_format) {
-        qwglChoosePixelFormatARB    = NULL;
-    }
-    if (mask & QWGL_EXT_swap_control) {
-        qwglSwapIntervalEXT         = NULL;
-    }
-}
-
-#define GPA(x)  (void *)qwglGetProcAddress(x)
-
-void WGL_InitExtensions(unsigned mask)
-{
-    if (mask & QWGL_ARB_extensions_string) {
-        qwglGetExtensionsStringARB  = GPA("wglGetExtensionsStringARB");
-    }
-    if (mask & QWGL_ARB_pixel_format) {
-        qwglChoosePixelFormatARB    = GPA("wglChoosePixelFormatARB");
-    }
-    if (mask & QWGL_EXT_swap_control) {
-        qwglSwapIntervalEXT         = GPA("wglSwapIntervalEXT");
-    }
-}
-
-#undef GPA
-
-unsigned WGL_ParseExtensionString(const char *s)
-{
-    // must match defines in win_wgl.h!
     static const char *const extnames[] = {
-        "WGL_ARB_extensions_string",
+        "WGL_ARB_create_context",
         "WGL_ARB_multisample",
         "WGL_ARB_pixel_format",
         "WGL_EXT_swap_control",
@@ -130,4 +53,339 @@ unsigned WGL_ParseExtensionString(const char *s)
     };
 
     return Com_ParseExtensionString(s, extnames);
+}
+
+void VID_Shutdown(void)
+{
+    wglMakeCurrent(NULL, NULL);
+
+    if (wgl.context) {
+        wglDeleteContext(wgl.context);
+        wgl.context = NULL;
+    }
+
+    Win_Shutdown();
+
+    if (gl_swapinterval)
+        gl_swapinterval->changed = NULL;
+
+    memset(&wgl, 0, sizeof(wgl));
+}
+
+static void print_error(const char *what)
+{
+    Com_EPrintf("%s failed: %s\n", what, Sys_ErrorString(GetLastError()));
+}
+
+#define FAIL_OK     0
+#define FAIL_SOFT   -1
+#define FAIL_HARD   -2
+
+static int wgl_setup_gl(r_opengl_config_t *cfg)
+{
+    PIXELFORMATDESCRIPTOR pfd;
+    int pixelformat;
+
+    // create the main window
+    Win_Init();
+
+    // choose pixel format
+    if (wgl.ChoosePixelFormatARB && cfg->multisamples) {
+        int attr[] = {
+            WGL_DRAW_TO_WINDOW_ARB, TRUE,
+            WGL_SUPPORT_OPENGL_ARB, TRUE,
+            WGL_DOUBLE_BUFFER_ARB, TRUE,
+            WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
+            WGL_COLOR_BITS_ARB, cfg->colorbits,
+            WGL_DEPTH_BITS_ARB, cfg->depthbits,
+            WGL_STENCIL_BITS_ARB, cfg->stencilbits,
+            WGL_SAMPLE_BUFFERS_ARB, 1,
+            WGL_SAMPLES_ARB, cfg->multisamples,
+            0
+        };
+        UINT num_formats;
+
+        if (!wgl.ChoosePixelFormatARB(win.dc, attr, NULL, 1, &pixelformat, &num_formats)) {
+            print_error("wglChoosePixelFormatARB");
+            goto soft;
+        }
+        if (num_formats == 0) {
+            Com_EPrintf("No suitable OpenGL pixelformat found for %d multisamples\n", cfg->multisamples);
+            goto soft;
+        }
+    } else {
+        pfd = (PIXELFORMATDESCRIPTOR) {
+            .nSize = sizeof(pfd),
+            .nVersion = 1,
+            .dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+            .iPixelType = PFD_TYPE_RGBA,
+            .cColorBits = cfg->colorbits,
+            .cDepthBits = cfg->depthbits,
+            .cStencilBits = cfg->stencilbits,
+            .iLayerType = PFD_MAIN_PLANE,
+        };
+
+        if (!(pixelformat = ChoosePixelFormat(win.dc, &pfd))) {
+            print_error("ChoosePixelFormat");
+            goto soft;
+        }
+    }
+
+    // set pixel format
+    if (!DescribePixelFormat(win.dc, pixelformat, sizeof(pfd), &pfd)) {
+        print_error("DescribePixelFormat");
+        goto soft;
+    }
+
+    if (!SetPixelFormat(win.dc, pixelformat, &pfd)) {
+        print_error("SetPixelFormat");
+        goto soft;
+    }
+
+    // check for software emulation
+    if (pfd.dwFlags & PFD_GENERIC_FORMAT) {
+        if (!gl_allow_software->integer) {
+            Com_EPrintf("No hardware OpenGL acceleration detected\n");
+            goto soft;
+        }
+        Com_WPrintf("Using software emulation\n");
+    } else if (pfd.dwFlags & PFD_GENERIC_ACCELERATED) {
+        Com_DPrintf("MCD acceleration found\n");
+        win.flags |= QVF_ACCELERATED;
+    } else {
+        Com_DPrintf("ICD acceleration found\n");
+        win.flags |= QVF_ACCELERATED;
+    }
+
+    // startup the OpenGL subsystem by creating a context and making it current
+    if (wgl.CreateContextAttribsARB && cfg->debug) {
+        int attr[] = {
+            WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_DEBUG_BIT_ARB,
+            0
+        };
+        if (!(wgl.context = wgl.CreateContextAttribsARB(win.dc, NULL, attr))) {
+            print_error("wglCreateContextAttribsARB");
+            goto soft;
+        }
+    } else {
+        if (!(wgl.context = wglCreateContext(win.dc))) {
+            print_error("wglCreateContext");
+            goto hard;
+        }
+    }
+
+    if (!wglMakeCurrent(win.dc, wgl.context)) {
+        print_error("wglMakeCurrent");
+        wglDeleteContext(wgl.context);
+        wgl.context = NULL;
+        goto hard;
+    }
+
+    return FAIL_OK;
+
+soft:
+    // it failed, clean up
+    Win_Shutdown();
+    return FAIL_SOFT;
+
+hard:
+    Win_Shutdown();
+    return FAIL_HARD;
+}
+
+#define GPA(x)  (void *)wglGetProcAddress(x)
+
+static unsigned get_fake_window_extensions(void)
+{
+    static const char class[] = "Q2PRO FAKE WINDOW CLASS";
+    static const char name[] = "Q2PRO FAKE WINDOW NAME";
+    unsigned extensions = 0;
+
+    WNDCLASSEXA wc = {
+        .cbSize = sizeof(wc),
+        .lpfnWndProc = DefWindowProc,
+        .hInstance = hGlobalInstance,
+        .lpszClassName = class,
+    };
+
+    if (!RegisterClassExA(&wc))
+        goto fail0;
+
+    HWND wnd = CreateWindowA(class, name, 0, 0, 0, 0, 0,
+                             NULL, NULL, hGlobalInstance, NULL);
+    if (!wnd)
+        goto fail1;
+
+    HDC dc;
+    if (!(dc = GetDC(wnd)))
+        goto fail2;
+
+    PIXELFORMATDESCRIPTOR pfd = {
+        .nSize = sizeof(pfd),
+        .nVersion = 1,
+        .dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+        .iPixelType = PFD_TYPE_RGBA,
+        .cColorBits = 24,
+        .cDepthBits = 24,
+        .iLayerType = PFD_MAIN_PLANE,
+    };
+
+    int pixelformat;
+    if (!(pixelformat = ChoosePixelFormat(dc, &pfd)))
+        goto fail3;
+
+    if (!SetPixelFormat(dc, pixelformat, &pfd))
+        goto fail3;
+
+    HGLRC rc;
+    if (!(rc = wglCreateContext(dc)))
+        goto fail3;
+
+    if (!wglMakeCurrent(dc, rc))
+        goto fail4;
+
+    PFNWGLGETEXTENSIONSSTRINGARBPROC wglGetExtensionsStringARB = GPA("wglGetExtensionsStringARB");
+    if (!wglGetExtensionsStringARB)
+        goto fail5;
+
+    extensions = wgl_parse_extension_string(wglGetExtensionsStringARB(dc));
+
+    if (extensions & QWGL_ARB_create_context)
+        wgl.CreateContextAttribsARB = GPA("wglCreateContextAttribsARB");
+
+    if (extensions & QWGL_ARB_pixel_format)
+        wgl.ChoosePixelFormatARB = GPA("wglChoosePixelFormatARB");
+
+fail5:
+    wglMakeCurrent(NULL, NULL);
+fail4:
+    wglDeleteContext(rc);
+fail3:
+    ReleaseDC(wnd, dc);
+fail2:
+    DestroyWindow(wnd);
+fail1:
+    UnregisterClassA(class, hGlobalInstance);
+fail0:
+    return extensions;
+}
+
+static void gl_swapinterval_changed(cvar_t *self)
+{
+    if (self->integer < 0 && !(wgl.extensions & QWGL_EXT_swap_control_tear)) {
+        Com_Printf("Negative swap interval is not supported on this system.\n");
+        Cvar_Reset(self);
+    }
+
+    if (wgl.SwapIntervalEXT && !wgl.SwapIntervalEXT(self->integer))
+        print_error("wglSwapIntervalEXT");
+}
+
+bool VID_Init(void)
+{
+    const char *extensions = NULL;
+    unsigned fake_extensions = 0;
+    int ret;
+
+    Cvar_Get("gl_driver", "opengl32", CVAR_ROM);
+    gl_allow_software = Cvar_Get("gl_allow_software", "0", 0);
+
+    wgl.handle = GetModuleHandle("opengl32");
+    if (!wgl.handle) {
+        print_error("GetModuleHandle");
+        return false;
+    }
+
+    r_opengl_config_t *cfg = R_GetGLConfig();
+
+    // check for extensions by creating a fake window
+    if (cfg->multisamples || cfg->debug)
+        fake_extensions = get_fake_window_extensions();
+
+    if (cfg->multisamples) {
+        if (fake_extensions & QWGL_ARB_multisample) {
+            if (wgl.ChoosePixelFormatARB) {
+                Com_Printf("Enabling WGL_ARB_multisample\n");
+            } else {
+                Com_WPrintf("Ignoring WGL_ARB_multisample, WGL_ARB_pixel_format not found\n");
+                cfg->multisamples = 0;
+            }
+        } else {
+            Com_WPrintf("WGL_ARB_multisample not found\n");
+            cfg->multisamples = 0;
+        }
+    }
+
+    if (cfg->debug) {
+        if (wgl.CreateContextAttribsARB)
+            Com_Printf("Enabling WGL_ARB_create_context\n");
+        else
+            Com_WPrintf("WGL_ARB_create_context not found\n");
+    }
+
+    // create window, choose PFD, setup OpenGL context
+    ret = wgl_setup_gl(cfg);
+
+    // attempt to recover
+    if (ret == FAIL_SOFT) {
+        Com_Printf("Falling back to failsafe config\n");
+        r_opengl_config_t failsafe = {
+            .colorbits = 24,
+            .depthbits = 24,
+        };
+        ret = wgl_setup_gl(&failsafe);
+    }
+
+    if (ret) {
+        // it failed, clean up
+        memset(&wgl, 0, sizeof(wgl));
+        return false;
+    }
+
+    // initialize WGL extensions
+    PFNWGLGETEXTENSIONSSTRINGARBPROC wglGetExtensionsStringARB = GPA("wglGetExtensionsStringARB");
+    if (wglGetExtensionsStringARB)
+        extensions = wglGetExtensionsStringARB(win.dc);
+
+    // fall back to GL_EXTENSIONS for legacy drivers
+    if (!extensions || !*extensions)
+        extensions = (const char *)glGetString(GL_EXTENSIONS);
+
+    wgl.extensions = wgl_parse_extension_string(extensions);
+
+    if (wgl.extensions & QWGL_EXT_swap_control)
+        wgl.SwapIntervalEXT = GPA("wglSwapIntervalEXT");
+
+    if (wgl.SwapIntervalEXT) {
+        if (wgl.extensions & QWGL_EXT_swap_control_tear)
+            Com_Printf("Enabling WGL_EXT_swap_control_tear\n");
+        else
+            Com_Printf("Enabling WGL_EXT_swap_control\n");
+        gl_swapinterval = Cvar_Get("gl_swapinterval", "1", CVAR_ARCHIVE);
+        gl_swapinterval->changed = gl_swapinterval_changed;
+        gl_swapinterval_changed(gl_swapinterval);
+    } else {
+        Com_WPrintf("WGL_EXT_swap_control not found\n");
+    }
+
+    return true;
+}
+
+void *VID_GetProcAddr(const char *sym)
+{
+    void *entry = wglGetProcAddress(sym);
+
+    if (entry)
+        return entry;
+
+    return GetProcAddress(wgl.handle, sym);
+}
+
+void VID_BeginFrame(void)
+{
+}
+
+void VID_EndFrame(void)
+{
+    SwapBuffers(win.dc);
 }
