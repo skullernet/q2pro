@@ -885,6 +885,8 @@ bool R_Init(bool total)
 
     GL_PostInit();
 
+    GL_ShowErrors(__func__);
+
     Com_Printf("----------------------\n");
 
     return true;
