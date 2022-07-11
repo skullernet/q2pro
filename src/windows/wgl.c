@@ -147,10 +147,8 @@ static int wgl_setup_gl(r_opengl_config_t *cfg)
         Com_WPrintf("Using software emulation\n");
     } else if (pfd.dwFlags & PFD_GENERIC_ACCELERATED) {
         Com_DPrintf("MCD acceleration found\n");
-        win.flags |= QVF_ACCELERATED;
     } else {
         Com_DPrintf("ICD acceleration found\n");
-        win.flags |= QVF_ACCELERATED;
     }
 
     // startup the OpenGL subsystem by creating a context and making it current
