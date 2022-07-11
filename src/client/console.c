@@ -1156,9 +1156,10 @@ static void Con_Paste(void)
             IF_CharEvent(&con.prompt.inputLine, ' ');
             break;
         default:
-            if (Q_isprint(c)) {
-                IF_CharEvent(&con.prompt.inputLine, c);
+            if (!Q_isprint(c)) {
+                c = '?';
             }
+            IF_CharEvent(&con.prompt.inputLine, c);
             break;
         }
     }
