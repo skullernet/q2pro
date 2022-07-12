@@ -860,8 +860,6 @@ bool R_Init(bool total)
     }
 
     Com_Printf("------- R_Init -------\n");
-    Com_DPrintf("ref_gl " VERSION ", " __DATE__ "\n");
-
     Com_Printf("Using video driver: %s\n", vid.name);
 
     // initialize OS-specific parts of OpenGL
