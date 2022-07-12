@@ -241,8 +241,6 @@ static bool init(void)
 
     set_gl_attributes();
 
-    Cvar_Get("gl_driver", LIBGL, CVAR_ROM);
-
     SDL_SetEventFilter(my_event_filter, NULL);
 
     if (!VID_GetGeometry(&rc)) {

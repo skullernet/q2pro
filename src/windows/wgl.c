@@ -270,7 +270,6 @@ static bool wgl_init(void)
     unsigned fake_extensions = 0;
     int ret;
 
-    Cvar_Get("gl_driver", "opengl32", CVAR_ROM);
     gl_allow_software = Cvar_Get("gl_allow_software", "0", 0);
 
     wgl.handle = GetModuleHandle("opengl32");
