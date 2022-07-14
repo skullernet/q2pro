@@ -773,7 +773,7 @@ static bool get_mouse_motion(int *dx, int *dy)
     return true;
 }
 
-static char *get_clipboard_data(void)
+static char *get_selection_data(void)
 {
     Atom type;
     int format, result;
@@ -847,7 +847,7 @@ const vid_driver_t vid_x11 = {
     .swap_buffers = swap_buffers,
     .swap_interval = swap_interval,
 
-    .get_clipboard_data = get_clipboard_data,
+    .get_selection_data = get_selection_data,
 
     .init_mouse = init_mouse,
     .shutdown_mouse = shutdown_mouse,
