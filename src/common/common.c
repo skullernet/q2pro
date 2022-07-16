@@ -929,7 +929,7 @@ void Qcommon_Init(int argc, char **argv)
     com_debug_break = Cvar_Get("com_debug_break", "0", 0);
 #endif
     com_fatal_error = Cvar_Get("com_fatal_error", "0", 0);
-    com_version = Cvar_Get("version", com_version_string, CVAR_SERVERINFO | CVAR_ROM);
+    com_version = Cvar_Get("version", com_version_string, CVAR_USERINFO | CVAR_SERVERINFO | CVAR_ROM);
 
     allow_download = Cvar_Get("allow_download", COM_DEDICATED ? "0" : "1", CVAR_ARCHIVE);
     allow_download_players = Cvar_Get("allow_download_players", "1", CVAR_ARCHIVE);
