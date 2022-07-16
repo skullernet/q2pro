@@ -465,12 +465,12 @@ else
     SDL_LIBS ?= $(shell sdl2-config --libs)
     CFLAGS_c += -DUSE_SDL=2 $(SDL_CFLAGS)
     LIBS_c += $(SDL_LIBS)
-    OBJS_c += src/unix/video.o
+    OBJS_c += src/unix/video/sdl.o
 
     ifdef CONFIG_X11
         CFLAGS_c += -DUSE_X11
         LIBS_c += -lGLX -lXi -lX11
-        OBJS_c += src/unix/x11.o
+        OBJS_c += src/unix/video/x11.o
     endif
 
     ifndef CONFIG_NO_SOFTWARE_SOUND
