@@ -474,10 +474,10 @@ else
     endif
 
     ifndef CONFIG_NO_SOFTWARE_SOUND
-        OBJS_c += src/unix/sound.o
+        OBJS_c += src/unix/sound/sdl.o
         ifdef CONFIG_OSS
             CFLAGS_c += -DUSE_OSS=1
-            OBJS_c += src/unix/oss.o
+            OBJS_c += src/unix/sound/oss.o
         endif
     endif
 
