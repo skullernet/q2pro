@@ -426,12 +426,9 @@ ifdef CONFIG_WINDOWS
     OBJS_c += src/windows/client.o
 
     ifndef CONFIG_NO_SOFTWARE_SOUND
+        OBJS_c += src/windows/dsound.o
         OBJS_c += src/windows/wave.o
         LIBS_c += -lwinmm
-        ifdef CONFIG_DIRECT_SOUND
-            CFLAGS_c += -DUSE_DSOUND=1
-            OBJS_c += src/windows/dsound.o
-        endif
     endif
 
     OBJS_c += src/windows/wgl.o
@@ -478,8 +475,8 @@ else
 
     ifndef CONFIG_NO_SOFTWARE_SOUND
         OBJS_c += src/unix/sound.o
-        ifdef CONFIG_DIRECT_SOUND
-            CFLAGS_c += -DUSE_DSOUND=1
+        ifdef CONFIG_OSS
+            CFLAGS_c += -DUSE_OSS=1
             OBJS_c += src/unix/oss.o
         endif
     endif
