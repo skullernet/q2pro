@@ -261,7 +261,7 @@ static void kill_handler(int signum)
 {
     tty_shutdown_input();
 
-#if USE_CLIENT && USE_REF
+#if USE_REF
     if (vid.fatal_shutdown)
         vid.fatal_shutdown();
 #endif
@@ -339,7 +339,7 @@ void Sys_Error(const char *error, ...)
 
     tty_shutdown_input();
 
-#if USE_CLIENT && USE_REF
+#if USE_REF
     if (vid.fatal_shutdown)
         vid.fatal_shutdown();
 #endif
