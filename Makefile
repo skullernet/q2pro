@@ -59,6 +59,13 @@ ifdef CONFIG_WINDOWS
     LDFLAGS_c += -Wl,--nxcompat,--dynamicbase
     LDFLAGS_g += -Wl,--nxcompat,--dynamicbase
 
+    # Enable high-entropy-va
+    ifeq ($(CPU),x86_64)
+        LDFLAGS_s += -Wl,--high-entropy-va,--image-base=0x140000000
+        LDFLAGS_c += -Wl,--high-entropy-va,--image-base=0x140000000
+        LDFLAGS_g += -Wl,--high-entropy-va,--image-base=0x180000000
+    endif
+
     # Workaround for GCC 10 linking shared libgcc by default
     LDFLAGS_g += -static-libgcc
 else
