@@ -105,6 +105,16 @@ static void Win_SetPosition(void)
     w = r.right - r.left;
     h = r.bottom - r.top;
 
+    // clip to monitor work area
+    if (!(win.flags & QVF_FULLSCREEN)) {
+        OffsetRect(&r, x, y);
+        MONITORINFO mi = { .cbSize = sizeof(mi) };
+        if (GetMonitorInfoA(MonitorFromRect(&r, MONITOR_DEFAULTTONEAREST), &mi)) {
+            x = max(mi.rcWork.left, min(mi.rcWork.right  - w, x));
+            y = max(mi.rcWork.top,  min(mi.rcWork.bottom - h, y));
+        }
+    }
+
     // set new window style and position
     SetWindowLong(win.wnd, GWL_STYLE, style);
     SetWindowPos(win.wnd, after, x, y, w, h, SWP_FRAMECHANGED | SWP_SHOWWINDOW);
