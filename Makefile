@@ -59,14 +59,6 @@ ifdef CONFIG_WINDOWS
     LDFLAGS_c += -Wl,--nxcompat,--dynamicbase
     LDFLAGS_g += -Wl,--nxcompat,--dynamicbase
 
-    # Force relocations to be generated for 32-bit .exe files and work around
-    # binutils bug that causes invalid image entry point to be set when
-    # relocations are enabled.
-    ifeq ($(CPU),x86)
-        LDFLAGS_s += -Wl,--pic-executable,--entry,_mainCRTStartup
-        LDFLAGS_c += -Wl,--pic-executable,--entry,_WinMainCRTStartup
-    endif
-
     # Workaround for GCC 10 linking shared libgcc by default
     LDFLAGS_g += -static-libgcc
 else
