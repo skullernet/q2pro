@@ -457,12 +457,10 @@ static void Win_Activate(WPARAM wParam)
     if (HIWORD(wParam)) {
         // we don't want to act like we're active if we're minimized
         active = ACT_MINIMIZED;
+    } else if (LOWORD(wParam)) {
+        active = ACT_ACTIVATED;
     } else {
-        if (LOWORD(wParam)) {
-            active = ACT_ACTIVATED;
-        } else {
-            active = ACT_RESTORED;
-        }
+        active = ACT_RESTORED;
     }
 
     CL_Activate(active);
