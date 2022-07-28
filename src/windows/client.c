@@ -21,6 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 //
 
 #include "client.h"
+#include <hidusage.h>
 
 #define WINDOW_CLASS_NAME   "Quake 2 Pro"
 
@@ -1061,15 +1062,17 @@ bool Win_GetMouseMotion(int *dx, int *dy)
     return true;
 }
 
-static BOOL register_raw_mouse(DWORD flags)
+static BOOL register_raw_mouse(bool enable)
 {
-    RAWINPUTDEVICE rid;
+    RAWINPUTDEVICE rid = {
+        .usUsagePage = HID_USAGE_PAGE_GENERIC,
+        .usUsage = HID_USAGE_GENERIC_MOUSE,
+    };
 
-    memset(&rid, 0, sizeof(rid));
-    rid.usUsagePage = 0x01;
-    rid.usUsage = 0x02;
-    rid.dwFlags = flags;
-    rid.hwndTarget = win.wnd;
+    if (enable)
+        rid.hwndTarget = win.wnd;
+    else
+        rid.dwFlags = RIDEV_REMOVE;
 
     return RegisterRawInputDevices(&rid, 1, sizeof(rid));
 }
@@ -1084,7 +1087,7 @@ void Win_ShutdownMouse(void)
         Win_DeAcquireMouse();
     }
 
-    register_raw_mouse(RIDEV_REMOVE);
+    register_raw_mouse(false);
 
     memset(&win.mouse, 0, sizeof(win.mouse));
 }
@@ -1095,7 +1098,7 @@ bool Win_InitMouse(void)
         return false;
     }
 
-    if (!register_raw_mouse(0)) {
+    if (!register_raw_mouse(true)) {
         Com_EPrintf("RegisterRawInputDevices failed with error %#lx\n", GetLastError());
         return false;
     }
