@@ -1019,18 +1019,6 @@ MOUSE
 ===============================================================================
 */
 
-static void Win_HideCursor(void)
-{
-    while (ShowCursor(FALSE) >= 0)
-        ;
-}
-
-static void Win_ShowCursor(void)
-{
-    while (ShowCursor(TRUE) < 0)
-        ;
-}
-
 // Called when the window gains focus or changes in some way
 static void Win_ClipCursor(void)
 {
@@ -1044,7 +1032,8 @@ static void Win_AcquireMouse(void)
     Win_ClipCursor();
     SetCapture(win.wnd);
 
-    SetWindowTextA(win.wnd, "[" PRODUCT "]");
+    while (ShowCursor(FALSE) >= 0)
+        ;
 }
 
 // Called when the window loses focus
@@ -1055,7 +1044,8 @@ static void Win_DeAcquireMouse(void)
     ClipCursor(NULL);
     ReleaseCapture();
 
-    SetWindowTextA(win.wnd, PRODUCT);
+    while (ShowCursor(TRUE) < 0)
+        ;
 }
 
 bool Win_GetMouseMotion(int *dx, int *dy)
@@ -1090,8 +1080,9 @@ void Win_ShutdownMouse(void)
         return;
     }
 
-    Win_DeAcquireMouse();
-    Win_ShowCursor();
+    if (win.mouse.grabbed) {
+        Win_DeAcquireMouse();
+    }
 
     register_raw_mouse(RIDEV_REMOVE);
 
@@ -1129,10 +1120,8 @@ void Win_GrabMouse(bool grab)
 
     if (grab) {
         Win_AcquireMouse();
-        Win_HideCursor();
     } else {
         Win_DeAcquireMouse();
-        Win_ShowCursor();
     }
 
     win.mouse.grabbed = grab;
