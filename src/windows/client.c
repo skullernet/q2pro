@@ -39,8 +39,6 @@ static cvar_t   *win_disablewinkey;
 static cvar_t   *win_noresize;
 static cvar_t   *win_notitle;
 static cvar_t   *win_alwaysontop;
-static cvar_t   *win_xpfix;
-static cvar_t   *win_rawmouse;
 static cvar_t   *win_noborder;
 
 static void     Win_ClipCursor(void);
@@ -652,43 +650,6 @@ static void mouse_hwheel_event(int delta)
     Key_Event(key, false, win.lastMsgTime);
 }
 
-// this is complicated because Win32 seems to pack multiple mouse events into
-// one update sometimes, so we always check all states and look for events
-static void legacy_mouse_event(WPARAM wParam)
-{
-    int i, mask, temp = 0;
-
-    if (wParam & MK_LBUTTON)
-        temp |= 1;
-
-    if (wParam & MK_RBUTTON)
-        temp |= 2;
-
-    if (wParam & MK_MBUTTON)
-        temp |= 4;
-
-    if (wParam & MK_XBUTTON1)
-        temp |= 8;
-
-    if (wParam & MK_XBUTTON2)
-        temp |= 16;
-
-    if (temp == win.mouse.state)
-        return;
-
-    // perform button actions
-    for (i = 0, mask = 1; i < MOUSE_BUTTONS; i++, mask <<= 1) {
-        if ((temp & mask) && !(win.mouse.state & mask)) {
-            Key_Event(K_MOUSE1 + i, true, win.lastMsgTime);
-        }
-        if (!(temp & mask) && (win.mouse.state & mask)) {
-            Key_Event(K_MOUSE1 + i, false, win.lastMsgTime);
-        }
-    }
-
-    win.mouse.state = temp;
-}
-
 // returns TRUE if mouse cursor inside client area
 static BOOL check_cursor_pos(void)
 {
@@ -832,38 +793,16 @@ static void pos_changed_event(HWND wnd, WINDOWPOS *pos)
 static LRESULT WINAPI Win_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     switch (uMsg) {
-    case WM_MOUSEWHEEL:
-        if (win.mouse.initialized == WIN_MOUSE_LEGACY)
-            mouse_wheel_event((short)HIWORD(wParam));
-        break;
-
-    case WM_MOUSEHWHEEL:
-        if (win.mouse.initialized == WIN_MOUSE_LEGACY)
-            mouse_hwheel_event((short)HIWORD(wParam));
-        break;
-
     case WM_MOUSEMOVE:
         if (win.mouse.initialized)
             UI_MouseEvent((short)LOWORD(lParam), (short)HIWORD(lParam));
-        // fall through
-
-    case WM_LBUTTONDOWN:
-    case WM_LBUTTONUP:
-    case WM_RBUTTONDOWN:
-    case WM_RBUTTONUP:
-    case WM_MBUTTONDOWN:
-    case WM_MBUTTONUP:
-    case WM_XBUTTONDOWN:
-    case WM_XBUTTONUP:
-        if (win.mouse.initialized == WIN_MOUSE_LEGACY)
-            legacy_mouse_event(wParam);
         break;
 
     case WM_HOTKEY:
         return FALSE;
 
     case WM_INPUT:
-        if (wParam == RIM_INPUT && win.mouse.initialized == WIN_MOUSE_RAW)
+        if (wParam == RIM_INPUT && win.mouse.initialized)
             raw_input_event((HANDLE)lParam);
         break;
 
@@ -993,8 +932,6 @@ void Win_Init(void)
     win_notitle->changed = win_style_changed;
     win_alwaysontop = Cvar_Get("win_alwaysontop", "0", 0);
     win_alwaysontop->changed = win_style_changed;
-    win_xpfix = Cvar_Get("win_xpfix", "0", 0);
-    win_rawmouse = Cvar_Get("win_rawmouse", "1", 0);
     win_noborder = Cvar_Get("win_noborder", "0", 0);
     win_noborder->changed = win_style_changed;
 
@@ -1104,19 +1041,6 @@ static void Win_ClipCursor(void)
 // Called when the window gains focus
 static void Win_AcquireMouse(void)
 {
-    int parms[3];
-
-    if (win.mouse.parmsvalid) {
-        if (win_xpfix->integer) {
-            parms[0] = parms[1] = parms[2] = 0;
-        } else {
-            parms[0] = parms[1] = 0;
-            parms[2] = 1;
-        }
-        win.mouse.restoreparms = SystemParametersInfo(
-                                     SPI_SETMOUSE, 0, parms, 0);
-    }
-
     Win_ClipCursor();
     SetCapture(win.wnd);
 
@@ -1126,9 +1050,6 @@ static void Win_AcquireMouse(void)
 // Called when the window loses focus
 static void Win_DeAcquireMouse(void)
 {
-    if (win.mouse.restoreparms)
-        SystemParametersInfo(SPI_SETMOUSE, 0, win.mouse.originalparms, 0);
-
     SetCursorPos(win.center_x, win.center_y);
 
     ClipCursor(NULL);
@@ -1139,34 +1060,14 @@ static void Win_DeAcquireMouse(void)
 
 bool Win_GetMouseMotion(int *dx, int *dy)
 {
-    POINT pt;
-
-    if (!win.mouse.initialized) {
-        return false;
-    }
-
     if (!win.mouse.grabbed) {
         return false;
     }
 
-    if (win.mouse.initialized == WIN_MOUSE_RAW) {
-        *dx = win.mouse.mx;
-        *dy = win.mouse.my;
-        win.mouse.mx = 0;
-        win.mouse.my = 0;
-        return true;
-    }
-
-    // find mouse movement
-    if (!GetCursorPos(&pt)) {
-        return false;
-    }
-
-    *dx = pt.x - win.center_x;
-    *dy = pt.y - win.center_y;
-
-    // force the mouse to the center, so there's room to move
-    SetCursorPos(win.center_x, win.center_y);
+    *dx = win.mouse.mx;
+    *dy = win.mouse.my;
+    win.mouse.mx = 0;
+    win.mouse.my = 0;
     return true;
 }
 
@@ -1192,29 +1093,9 @@ void Win_ShutdownMouse(void)
     Win_DeAcquireMouse();
     Win_ShowCursor();
 
-    if (win.mouse.initialized == WIN_MOUSE_RAW) {
-        register_raw_mouse(RIDEV_REMOVE);
-    }
-
-    win_xpfix->changed = NULL;
-    win_rawmouse->changed = NULL;
+    register_raw_mouse(RIDEV_REMOVE);
 
     memset(&win.mouse, 0, sizeof(win.mouse));
-}
-
-static void win_xpfix_changed(cvar_t *self)
-{
-    if (win.mouse.grabbed) {
-        Win_AcquireMouse();
-    }
-}
-
-static void win_rawmouse_changed(cvar_t *self)
-{
-    if (win.mouse.initialized) {
-        Win_ShutdownMouse();
-        Win_InitMouse();
-    }
 }
 
 bool Win_InitMouse(void)
@@ -1223,27 +1104,13 @@ bool Win_InitMouse(void)
         return false;
     }
 
-    win.mouse.initialized = WIN_MOUSE_LEGACY;
-
-    if (win_rawmouse->integer) {
-        if (!register_raw_mouse(/*RIDEV_NOLEGACY*/ 0)) {
-            Com_EPrintf("RegisterRawInputDevices failed with error %#lx\n", GetLastError());
-            Cvar_Set("win_rawmouse", "0");
-        } else {
-            Com_Printf("Raw mouse initialized.\n");
-            win.mouse.initialized = WIN_MOUSE_RAW;
-        }
+    if (!register_raw_mouse(0)) {
+        Com_EPrintf("RegisterRawInputDevices failed with error %#lx\n", GetLastError());
+        return false;
     }
 
-    if (win.mouse.initialized == WIN_MOUSE_LEGACY) {
-        win.mouse.parmsvalid = SystemParametersInfo(SPI_GETMOUSE, 0,
-                               win.mouse.originalparms, 0);
-        win_xpfix->changed = win_xpfix_changed;
-        Com_Printf("Legacy mouse initialized.\n");
-    }
-
-    win_rawmouse->changed = win_rawmouse_changed;
-
+    Com_Printf("Raw mouse initialized.\n");
+    win.mouse.initialized = true;
     return true;
 }
 
@@ -1255,9 +1122,6 @@ void Win_GrabMouse(bool grab)
     }
 
     if (win.mouse.grabbed == grab) {
-        if (win.mouse.initialized == WIN_MOUSE_LEGACY) {
-            SetCursorPos(win.center_x, win.center_y);
-        }
         win.mouse.mx = 0;
         win.mouse.my = 0;
         return;
@@ -1272,7 +1136,6 @@ void Win_GrabMouse(bool grab)
     }
 
     win.mouse.grabbed = grab;
-    win.mouse.state = 0;
     win.mouse.mx = 0;
     win.mouse.my = 0;
 }

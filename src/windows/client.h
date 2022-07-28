@@ -92,16 +92,8 @@ typedef struct {
     int     mode_changed;
 
     struct {
-        enum {
-            WIN_MOUSE_DISABLED,
-            WIN_MOUSE_LEGACY,
-            WIN_MOUSE_RAW
-        } initialized;
+        bool        initialized;
         bool        grabbed;
-        int         state;
-        bool        parmsvalid;
-        bool        restoreparms;
-        int         originalparms[3];
         int         mx, my;
     } mouse;
 } win_state_t;
