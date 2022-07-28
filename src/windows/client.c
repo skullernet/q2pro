@@ -391,10 +391,6 @@ void Win_SetMode(void)
     // parse vid_geometry specification
     VID_GetGeometry(&win.rc);
 
-    // don't allow too small size
-    if (win.rc.width < 320) win.rc.width = 320;
-    if (win.rc.height < 240) win.rc.height = 240;
-
     Com_DPrintf("...setting windowed mode: %dx%d%+d%+d\n",
                 win.rc.width, win.rc.height, win.rc.x, win.rc.y);
 
@@ -403,9 +399,6 @@ void Win_SetMode(void)
     Win_SetPosition();
     Win_ModeChanged();
     win.mode_changed = 0;
-
-    // set vid_geometry back
-    VID_SetGeometry(&win.rc);
 }
 
 /*
