@@ -701,7 +701,7 @@ static void raw_mouse_event(PRAWMOUSE rm)
     }
 }
 
-static void raw_input_event(HANDLE handle)
+static void raw_input_event(HRAWINPUT handle)
 {
     BYTE buffer[64];
     UINT len, ret;
@@ -709,7 +709,7 @@ static void raw_input_event(HANDLE handle)
 
     len = sizeof(buffer);
     ret = GetRawInputData(handle, RID_INPUT, buffer, &len, sizeof(RAWINPUTHEADER));
-    if (ret == (UINT) - 1) {
+    if (ret == (UINT)-1) {
         Com_EPrintf("GetRawInputData failed with error %#lx\n", GetLastError());
         return;
     }
@@ -796,7 +796,7 @@ static LRESULT WINAPI Win_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 
     case WM_INPUT:
         if (wParam == RIM_INPUT && win.mouse.initialized)
-            raw_input_event((HANDLE)lParam);
+            raw_input_event((HRAWINPUT)lParam);
         break;
 
     case WM_CLOSE:
