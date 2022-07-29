@@ -586,12 +586,10 @@ static void legacy_key_event(WPARAM wParam, LPARAM lParam, bool down)
 {
     int scancode = (lParam >> 16) & 255;
     int extended = (lParam >> 24) & 1;
-    byte result;
+    int result = 0;
 
     if (scancode < 96)
         result = scantokey[extended][scancode];
-    else
-        result = 0;
 
     if (!result) {
         Com_DPrintf("%s: unknown %sscancode %d\n",
