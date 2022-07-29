@@ -127,7 +127,5 @@ bool Win_GetMouseMotion(int *dx, int *dy);
 extern HINSTANCE                    hGlobalInstance;
 
 #if USE_DBGHELP
-extern LPTOP_LEVEL_EXCEPTION_FILTER prevExceptionFilter;
-
-LONG WINAPI Sys_ExceptionFilter(LPEXCEPTION_POINTERS);
+void Sys_InstallExceptionFilter(void);
 #endif
