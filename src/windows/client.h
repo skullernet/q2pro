@@ -89,7 +89,13 @@ typedef struct {
     int     center_x, center_y;
 
     bool    alttab_disabled;
-    int     mode_changed;
+
+    enum {
+        MODE_SIZE       = (1 << 0),
+        MODE_POS        = (1 << 1),
+        MODE_STYLE      = (1 << 2),
+        MODE_REPOSITION = (1 << 3),
+    } mode_changed;
 
     struct {
         bool        initialized;

@@ -25,12 +25,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define WINDOW_CLASS_NAME   "Quake 2 Pro"
 
-// mode_changed flags
-#define MODE_SIZE       (1 << 0)
-#define MODE_POS        (1 << 1)
-#define MODE_STYLE      (1 << 2)
-#define MODE_REPOSITION (1 << 3)
-
 win_state_t     win;
 
 static cvar_t   *vid_flip_on_switch;
