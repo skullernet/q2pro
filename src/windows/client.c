@@ -16,14 +16,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-//
-// vid_win.c
-//
-
 #include "client.h"
 #include <hidusage.h>
-
-#define WINDOW_CLASS_NAME   "Quake 2 Pro"
 
 win_state_t     win;
 
