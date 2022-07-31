@@ -90,6 +90,8 @@ else
         LDFLAGS_g += -Wl,--no-undefined
     endif
 
+    CFLAGS_c += -D_GNU_SOURCE
+    CFLAGS_s += -D_GNU_SOURCE
     CFLAGS_g += -fPIC
 endif
 

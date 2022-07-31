@@ -166,6 +166,9 @@ win32 = host_machine.system() == 'windows'
 x86 = host_machine.cpu_family() == 'x86'
 
 common_args = ['-DHAVE_CONFIG_H']
+if not win32
+  common_args += '-D_GNU_SOURCE'
+endif
 
 common_link_args = []
 exe_link_args = []
