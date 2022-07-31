@@ -367,6 +367,7 @@ config.set_quoted('VID_GEOMETRY', get_option('vid-geometry'))
 config.set_quoted('VID_MODELIST', get_option('vid-modelist'))
 
 config.set10('USE_AUTOREPLY',     get_option('auto-reply'))
+config.set10('USE_DEBUG',         get_option('debug'))
 config.set10('USE_DLIGHTS',       get_option('dynamic-lights'))
 config.set10('USE_FPS',           get_option('variable-fps'))
 config.set10('USE_GAME_ABI_HACK', get_option('game-abi-hack').require(x86).allowed())
@@ -375,8 +376,5 @@ config.set10('USE_MAPCHECKSUM',   get_option('map-checksum'))
 config.set10('USE_MD3',           get_option('md3'))
 config.set10('USE_PACKETDUP',     get_option('packetdup-hack'))
 config.set10('USE_TGA',           get_option('tga'))
-if get_option('debug')
-  config.set10('_DEBUG', true)
-endif
 
 configure_file(output: 'config.h', configuration: config)

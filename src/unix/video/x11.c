@@ -635,7 +635,7 @@ static void focus_event(XFocusChangeEvent *event)
     x11.mouse.grab_pending = false;
 }
 
-#ifdef _DEBUG
+#if USE_DEBUG
 static const char *const eventtab[LASTEvent] = {
     "<error>", "<reply>", "KeyPress", "KeyRelease", "ButtonPress",
     "ButtonRelease", "MotionNotify", "EnterNotify", "LeaveNotify", "FocusIn",

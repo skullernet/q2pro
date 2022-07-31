@@ -52,7 +52,7 @@ static struct {
 static cvar_t   *scr_viewsize;
 static cvar_t   *scr_centertime;
 static cvar_t   *scr_showpause;
-#ifdef _DEBUG
+#if USE_DEBUG
 static cvar_t   *scr_showstats;
 static cvar_t   *scr_showpmove;
 #endif
@@ -882,7 +882,7 @@ static void SCR_DrawTurtle(void)
 #undef DF
 }
 
-#ifdef _DEBUG
+#if USE_DEBUG
 
 static void SCR_DrawDebugStats(void)
 {
@@ -1258,7 +1258,7 @@ void SCR_Init(void)
     scr_lag_min = Cvar_Get("scr_lag_min", "0", 0);
     scr_lag_max = Cvar_Get("scr_lag_max", "200", 0);
     scr_alpha = Cvar_Get("scr_alpha", "1", 0);
-#ifdef _DEBUG
+#if USE_DEBUG
     scr_showstats = Cvar_Get("scr_showstats", "0", 0);
     scr_showpmove = Cvar_Get("scr_showpmove", "0", 0);
 #endif
@@ -1322,7 +1322,7 @@ void SCR_BeginLoadingPlaque(void)
         return;
     }
 
-#ifdef _DEBUG
+#if USE_DEBUG
     if (developer->integer) {
         return;
     }
@@ -1942,7 +1942,7 @@ static void SCR_Draw2D(void)
     // debug stats have no alpha
     R_ClearColor();
 
-#ifdef _DEBUG
+#if USE_DEBUG
     SCR_DrawDebugStats();
     SCR_DrawDebugPmove();
 #endif

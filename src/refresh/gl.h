@@ -194,7 +194,7 @@ extern cvar_t *gl_shaders;
 extern cvar_t *gl_znear;
 extern cvar_t *gl_drawsky;
 extern cvar_t *gl_showtris;
-#ifdef _DEBUG
+#if USE_DEBUG
 extern cvar_t *gl_nobind;
 extern cvar_t *gl_test;
 #endif
@@ -500,7 +500,7 @@ typedef struct {
 
 extern drawStatic_t draw;
 
-#ifdef _DEBUG
+#if USE_DEBUG
 void Draw_Stringf(int x, int y, const char *fmt, ...);
 void Draw_Stats(void);
 void Draw_Lightmaps(void);

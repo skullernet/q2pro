@@ -507,8 +507,8 @@ ifdef CONFIG_TESTS
 endif
 
 ifdef CONFIG_DEBUG
-    CFLAGS_c += -D_DEBUG
-    CFLAGS_s += -D_DEBUG
+    CFLAGS_c += -DUSE_DEBUG=1
+    CFLAGS_s += -DUSE_DEBUG=1
 endif
 
 ### Targets ###
