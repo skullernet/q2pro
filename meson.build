@@ -298,7 +298,7 @@ endif
 
 if get_option('anticheat-server')
   server_src += 'src/server/ac.c'
-  config.set10('USE_AC_SERVER', true)
+  config.set('USE_AC_SERVER', 'USE_SERVER')
 endif
 
 if get_option('mvd-server')
