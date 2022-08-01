@@ -1452,7 +1452,7 @@ static void SCR_DrawInventory(void)
     int     index[MAX_ITEMS];
     char    string[MAX_STRING_CHARS];
     int     x, y;
-    char    *bind;
+    const char  *bind;
     int     selected;
     int     top;
 

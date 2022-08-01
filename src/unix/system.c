@@ -277,7 +277,7 @@ Sys_Init
 */
 void Sys_Init(void)
 {
-    char    *homedir;
+    const char  *homedir;
     cvar_t  *sys_parachute;
 
     signal(SIGTERM, term_handler);
