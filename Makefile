@@ -521,6 +521,11 @@ ifndef CONFIG_NO_AQTION
     CFLAGS_s += -DAQTION_EXTENSION=y
 endif
 
+ifndef CONFIG_NO_AQTION
+	CFLAGS_c += -DAQTION_EXTENSION=y
+    CFLAGS_s += -DAQTION_EXTENSION=y
+endif
+
 ### Targets ###
 
 ifdef CONFIG_WINDOWS
