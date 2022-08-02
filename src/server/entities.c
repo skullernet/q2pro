@@ -608,10 +608,9 @@ void SV_BuildClientFrame(client_t *client)
             ent->s.number = e;
         }
 
-
-#ifdef AQTION_EXTENSION
 		entity_state_t ent_state;
 		ent_state = ent->s;
+#ifdef AQTION_EXTENSION
 		if (GE_customizeentityforclient)
 			if (!GE_customizeentityforclient(client->edict, ent, &ent_state))
 				continue;

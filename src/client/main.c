@@ -709,7 +709,9 @@ void CL_ClearState(void)
     CL_ClearEffects();
     CL_ClearLightStyles();
     CL_ClearTEnts();
+#ifdef AQTION_EXTENSION
 	CL_Clear3DGhudQueue();
+#endif
     LOC_FreeLocations();
 
     // wipe the entire cl structure
