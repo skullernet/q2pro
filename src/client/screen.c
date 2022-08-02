@@ -48,6 +48,7 @@ static struct {
     qhandle_t   net_pic;
     qhandle_t   font_pic;
 
+	int			hud_x, hud_y;
     int         hud_width, hud_height;
     float       hud_scale;
 } scr;
@@ -68,6 +69,9 @@ static cvar_t   *scr_lag_draw;
 static cvar_t   *scr_lag_min;
 static cvar_t   *scr_lag_max;
 static cvar_t   *scr_alpha;
+
+static cvar_t   *scr_hudborder_x;
+static cvar_t   *scr_hudborder_y;
 
 static cvar_t   *scr_demobar;
 static cvar_t   *scr_font;
@@ -401,9 +405,9 @@ static void SCR_DrawCenterString(void)
 
     R_SetAlpha(alpha * scr_alpha->value);
 
-    y = scr.hud_height / 4 - scr_center_lines * 8 / 2;
+    y = scr.hud_y + (scr.hud_height / 4 - scr_center_lines * 8 / 2);
 
-    SCR_DrawStringMulti(scr.hud_width / 2, y, UI_CENTER,
+    SCR_DrawStringMulti(scr.hud_x + (scr.hud_width / 2), y, UI_CENTER,
                         MAX_STRING_CHARS, scr_centerstring, scr.font_pic);
 
     R_SetAlpha(scr_alpha->value);
@@ -498,8 +502,8 @@ static void SCR_LagDraw(int x, int y)
 
 static void SCR_DrawNet(void)
 {
-    int x = scr_lag_x->integer;
-    int y = scr_lag_y->integer;
+    int x = scr_lag_x->integer + scr.hud_x;
+    int y = scr_lag_y->integer + scr.hud_y;
 
     if (x < 0) {
         x += scr.hud_width - LAG_WIDTH + 1;
@@ -724,8 +728,8 @@ static void SCR_DrawObjects(void)
     drawobj_t *obj;
 
     FOR_EACH_DRAWOBJ(obj) {
-        x = obj->x;
-        y = obj->y;
+        x = obj->x + scr.hud_x;
+        y = obj->y + scr.hud_y;
         if (x < 0) {
             x += scr.hud_width + 1;
         }
@@ -797,8 +801,8 @@ static void SCR_DrawChatHUD(void)
     if (scr_chathud->integer == 0)
         return;
 
-    x = scr_chathud_x->integer;
-    y = scr_chathud_y->integer;
+    x = scr_chathud_x->integer + scr.hud_x;
+    y = scr_chathud_y->integer + scr.hud_y;
 
     if (scr_chathud->integer == 2)
         flags = UI_ALTCOLOR;
@@ -1261,6 +1265,9 @@ void SCR_Init(void)
     scr_lag_min = Cvar_Get("scr_lag_min", "0", 0);
     scr_lag_max = Cvar_Get("scr_lag_max", "200", 0);
     scr_alpha = Cvar_Get("scr_alpha", "1", 0);
+
+	scr_hudborder_x = Cvar_Get("scr_hudborder_x", "0", 0);
+	scr_hudborder_y = Cvar_Get("scr_hudborder_y", "0", 0);
 #if USE_DEBUG
     scr_showstats = Cvar_Get("scr_showstats", "0", 0);
     scr_showpmove = Cvar_Get("scr_showpmove", "0", 0);
@@ -1484,8 +1491,8 @@ static void SCR_DrawInventory(void)
         top = 0;
     }
 
-    x = (scr.hud_width - 256) / 2;
-    y = (scr.hud_height - 240) / 2;
+    x = scr.hud_x + ((scr.hud_width - 256) / 2);
+    y = scr.hud_y + ((scr.hud_height - 240) / 2);
 
     R_DrawPic(x, y + 8, scr.inven_pic);
     y += 24;
@@ -1532,8 +1539,8 @@ static void SCR_ExecuteLayoutString(const char *s)
     if (!s[0])
         return;
 
-    x = 0;
-    y = 0;
+    x = scr.hud_x;
+    y = scr.hud_y;
 
     while (s) {
         token = COM_Parse(&s);
@@ -1541,19 +1548,19 @@ static void SCR_ExecuteLayoutString(const char *s)
             if (token[0] == 'x') {
                 if (token[1] == 'l') {
                     token = COM_Parse(&s);
-                    x = atoi(token);
+                    x = scr.hud_x + atoi(token);
                     continue;
                 }
 
                 if (token[1] == 'r') {
                     token = COM_Parse(&s);
-                    x = scr.hud_width + atoi(token);
+                    x = scr.hud_x + scr.hud_width + atoi(token);
                     continue;
                 }
 
                 if (token[1] == 'v') {
                     token = COM_Parse(&s);
-                    x = scr.hud_width / 2 - 160 + atoi(token);
+                    x = scr.hud_x + scr.hud_width / 2 - 160 + atoi(token);
                     continue;
                 }
             }
@@ -1561,19 +1568,19 @@ static void SCR_ExecuteLayoutString(const char *s)
             if (token[0] == 'y') {
                 if (token[1] == 't') {
                     token = COM_Parse(&s);
-                    y = atoi(token);
+                    y = scr.hud_y + atoi(token);
                     continue;
                 }
 
                 if (token[1] == 'b') {
                     token = COM_Parse(&s);
-                    y = scr.hud_height + atoi(token);
+                    y = scr.hud_y + scr.hud_height + atoi(token);
                     continue;
                 }
 
                 if (token[1] == 'v') {
                     token = COM_Parse(&s);
-                    y = scr.hud_height / 2 - 120 + atoi(token);
+                    y = scr.hud_y + scr.hud_height / 2 - 120 + atoi(token);
                     continue;
                 }
             }
@@ -1602,9 +1609,9 @@ static void SCR_ExecuteLayoutString(const char *s)
             int     score, ping, time;
 
             token = COM_Parse(&s);
-            x = scr.hud_width / 2 - 160 + atoi(token);
+            x = scr.hud_x + scr.hud_width / 2 - 160 + atoi(token);
             token = COM_Parse(&s);
-            y = scr.hud_height / 2 - 120 + atoi(token);
+            y = scr.hud_y + scr.hud_height / 2 - 120 + atoi(token);
 
             token = COM_Parse(&s);
             value = atoi(token);
@@ -1643,9 +1650,9 @@ static void SCR_ExecuteLayoutString(const char *s)
             int     score, ping;
 
             token = COM_Parse(&s);
-            x = scr.hud_width / 2 - 160 + atoi(token);
+            x = scr.hud_x + scr.hud_width / 2 - 160 + atoi(token);
             token = COM_Parse(&s);
-            y = scr.hud_height / 2 - 120 + atoi(token);
+            y = scr.hud_y + scr.hud_height / 2 - 120 + atoi(token);
 
             token = COM_Parse(&s);
             value = atoi(token);
@@ -1836,8 +1843,8 @@ static void SCR_DrawPause(void)
     if (scr_showpause->integer != 1)
         return;
 
-    x = (scr.hud_width - scr.pause_width) / 2;
-    y = (scr.hud_height - scr.pause_height) / 2;
+    x = scr.hud_x + (scr.hud_width - scr.pause_width) / 2;
+    y = scr.hud_y + (scr.hud_height - scr.pause_height) / 2;
 
     R_DrawPic(x, y, scr.pause_pic);
 }
@@ -1868,8 +1875,8 @@ static void SCR_DrawCrosshair(void)
     if (!scr_crosshair->integer)
         return;
 
-    x = (scr.hud_width - scr.crosshair_width) / 2;
-    y = (scr.hud_height - scr.crosshair_height) / 2;
+    x = scr.hud_x + (scr.hud_width - scr.crosshair_width) / 2;
+    y = scr.hud_y + (scr.hud_height - scr.crosshair_height) / 2;
 
     R_SetColor(scr.crosshair_color.u32);
 
@@ -1880,6 +1887,7 @@ static void SCR_DrawCrosshair(void)
                      scr.crosshair_pic);
 }
 
+#define AQTION_EXTENSION
 #ifdef AQTION_EXTENSION
 void CL_Clear3DGhudQueue(void)
 {
@@ -1981,8 +1989,8 @@ static void SCR_DrawGhud(void)
 			out[1] = 1 - (1 + tempv[1]) / 2;
 			out[2] = tempv[2];
 
-			x = out[0] * scr.hud_width;
-			y = out[1] * scr.hud_height;
+			x = scr.hud_x + out[0] * scr.hud_width;
+			y = scr.hud_y + out[1] * scr.hud_height;
 			//
 
 			float mult = 300 / link->distance;
@@ -2068,8 +2076,8 @@ static void SCR_DrawGhud(void)
 		}
 		else
 		{
-			x = element->pos[0] + (scr.hud_width * element->anchor[0]);
-			y = element->pos[1] + (scr.hud_height * element->anchor[1]);
+			x = scr.hud_x + element->pos[0] + (scr.hud_width * element->anchor[0]);
+			y = scr.hud_y + element->pos[1] + (scr.hud_height * element->anchor[1]);
 		}
 
 		SCR_DrawGhudElement(element, alpha_base, color_base, x, y, element->size[0], element->size[1]);
@@ -2111,8 +2119,12 @@ static void SCR_Draw2D(void)
 
     R_SetScale(scr.hud_scale);
 
-    scr.hud_height = Q_rint(scr.hud_height * scr.hud_scale);
-    scr.hud_width = Q_rint(scr.hud_width * scr.hud_scale);
+	scr.hud_x = Q_rint(scr_hudborder_x->integer);
+	scr.hud_y = Q_rint(scr_hudborder_y->integer);
+    scr.hud_width = Q_rint((scr.hud_width - scr.hud_x) * scr.hud_scale);
+	scr.hud_height = Q_rint((scr.hud_height - scr.hud_y) * scr.hud_scale);
+	scr.hud_x *= scr.hud_scale / 2;
+	scr.hud_y *= scr.hud_scale / 2;
 
     // crosshair has its own color and alpha
     SCR_DrawCrosshair();
