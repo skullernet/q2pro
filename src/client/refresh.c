@@ -24,11 +24,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client.h"
 
 // Console variables that we need to access from this module
-cvar_t      *vid_ref;           // Name of Refresh DLL loaded
 cvar_t      *vid_geometry;
 cvar_t      *vid_modelist;
 cvar_t      *vid_fullscreen;
 cvar_t      *_vid_fullscreen;
+
+vid_driver_t    vid;
 
 #define MODE_GEOMETRY   1
 #define MODE_FULLSCREEN 2
@@ -116,7 +117,7 @@ bool VID_GetFullscreen(vrect_t *rc, int *freq_p, int *depth_p)
     }
 
     // sanity check
-    if (w < 64 || w > 8192 || h < 64 || h > 8192 || freq > 1000 || depth > 32) {
+    if (w < 320 || w > 8192 || h < 240 || h > 8192 || freq > 1000 || depth > 32) {
         Com_DPrintf("Mode %lux%lu@%lu:%lu doesn't look sane\n", w, h, freq, depth);
         return false;
     }
@@ -170,7 +171,7 @@ bool VID_GetGeometry(vrect_t *rc)
     }
 
     // sanity check
-    if (w < 64 || w > 8192 || h < 64 || h > 8192) {
+    if (w < 320 || w > 8192 || h < 240 || h > 8192) {
         Com_DPrintf("Geometry %lux%lu doesn't look sane\n", w, h);
         return false;
     }
@@ -218,6 +219,45 @@ LOADING / SHUTDOWN
 ==========================================================================
 */
 
+#ifdef _WIN32
+extern const vid_driver_t   vid_win32wgl;
+#endif
+
+#if USE_WIN32EGL
+extern const vid_driver_t   vid_win32egl;
+#endif
+
+#if USE_WAYLAND
+extern const vid_driver_t   vid_wayland;
+#endif
+
+#if USE_X11
+extern const vid_driver_t   vid_x11;
+#endif
+
+#if USE_SDL
+extern const vid_driver_t   vid_sdl;
+#endif
+
+static const vid_driver_t *const vid_drivers[] = {
+#ifdef _WIN32
+    &vid_win32wgl,
+#endif
+#if USE_WIN32EGL
+    &vid_win32egl,
+#endif
+#if USE_WAYLAND
+    &vid_wayland,
+#endif
+#if USE_X11
+    &vid_x11,
+#endif
+#if USE_SDL
+    &vid_sdl,
+#endif
+    NULL
+};
+
 /*
 ============
 CL_RunResfresh
@@ -229,22 +269,22 @@ void CL_RunRefresh(void)
         return;
     }
 
-    VID_PumpEvents();
+    vid.pump_events();
 
     if (mode_changed) {
         if (mode_changed & MODE_FULLSCREEN) {
-            VID_SetMode();
+            vid.set_mode();
             if (vid_fullscreen->integer) {
                 Cvar_Set("_vid_fullscreen", vid_fullscreen->string);
             }
         } else {
             if (vid_fullscreen->integer) {
                 if (mode_changed & MODE_MODELIST) {
-                    VID_SetMode();
+                    vid.set_mode();
                 }
             } else {
                 if (mode_changed & MODE_GEOMETRY) {
-                    VID_SetMode();
+                    vid.set_mode();
                 }
             }
         }
@@ -275,6 +315,12 @@ static void vid_modelist_changed(cvar_t *self)
     mode_changed |= MODE_MODELIST;
 }
 
+static void vid_driver_g(genctx_t *ctx)
+{
+    for (int i = 0; vid_drivers[i]; i++)
+        Prompt_AddMatch(ctx, vid_drivers[i]->name);
+}
+
 /*
 ============
 CL_InitRefresh
@@ -283,26 +329,20 @@ CL_InitRefresh
 void CL_InitRefresh(void)
 {
     char *modelist;
+    int i;
 
     if (cls.ref_initialized) {
         return;
     }
 
-    Com_SetLastError(NULL);
-
-    modelist = VID_GetDefaultModeList();
-    if (!modelist) {
-        Com_Error(ERR_FATAL, "Couldn't initialize refresh: %s", Com_GetLastError());
-    }
+    Cvar_Get("vid_ref", "gl", CVAR_ROM);
 
     // Create the video variables so we know how to start the graphics drivers
-    vid_ref = Cvar_Get("vid_ref", VID_REF, CVAR_ROM);
+    cvar_t *vid_driver = Cvar_Get("vid_driver", "", CVAR_REFRESH);
+    vid_driver->generator = vid_driver_g;
     vid_fullscreen = Cvar_Get("vid_fullscreen", "0", CVAR_ARCHIVE);
     _vid_fullscreen = Cvar_Get("_vid_fullscreen", "1", CVAR_ARCHIVE);
-    vid_modelist = Cvar_Get("vid_modelist", modelist, 0);
     vid_geometry = Cvar_Get("vid_geometry", VID_GEOMETRY, CVAR_ARCHIVE);
-
-    Z_Free(modelist);
 
     if (vid_fullscreen->integer) {
         Cvar_Set("_vid_fullscreen", vid_fullscreen->string);
@@ -310,11 +350,50 @@ void CL_InitRefresh(void)
         Cvar_Set("_vid_fullscreen", "1");
     }
 
-    Com_SetLastError(NULL);
+    Com_SetLastError("No available video driver");
 
-    if (!R_Init(true)) {
-        Com_Error(ERR_FATAL, "Couldn't initialize refresh: %s", Com_GetLastError());
+    // Try to initialize selected driver first
+    bool ok = false;
+    for (i = 0; vid_drivers[i]; i++) {
+        if (!strcmp(vid_drivers[i]->name, vid_driver->string)) {
+            vid = *vid_drivers[i];
+            ok = R_Init(true);
+            break;
+        }
     }
+
+    if (!vid_drivers[i] && vid_driver->string[0]) {
+        Com_Printf("No such video driver: %s.\n"
+                   "Available video drivers: ", vid_driver->string);
+        for (int j = 0; vid_drivers[j]; j++) {
+            if (j)
+                Com_Printf(", ");
+            Com_Printf("%s", vid_drivers[j]->name);
+        }
+        Com_Printf(".\n");
+    }
+
+    // Fall back to other available drivers
+    if (!ok) {
+        int tried = i;
+        for (i = 0; vid_drivers[i]; i++) {
+            if (i == tried || !vid_drivers[i]->probe || !vid_drivers[i]->probe())
+                continue;
+            vid = *vid_drivers[i];
+            if ((ok = R_Init(true)))
+                break;
+        }
+        Cvar_Reset(vid_driver);
+    }
+
+    if (!ok)
+        Com_Error(ERR_FATAL, "Couldn't initialize refresh: %s", Com_GetLastError());
+
+    modelist = vid.get_mode_list();
+    vid_modelist = Cvar_Get("vid_modelist", modelist, 0);
+    Z_Free(modelist);
+
+    vid.set_mode();
 
     cls.ref_initialized = true;
 
@@ -356,6 +435,8 @@ void CL_ShutdownRefresh(void)
     vid_modelist->changed = NULL;
 
     R_Shutdown(true);
+
+    memset(&vid, 0, sizeof(vid));
 
     cls.ref_initialized = false;
 

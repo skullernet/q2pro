@@ -52,6 +52,7 @@ cvar_t *gl_modulate_entities;
 cvar_t *gl_doublelight_entities;
 cvar_t *gl_fontshadow;
 cvar_t *gl_shaders;
+cvar_t *gl_swapinterval;
 
 // development variables
 cvar_t *gl_znear;
@@ -61,7 +62,7 @@ cvar_t *gl_drawsky;
 cvar_t *gl_showtris;
 cvar_t *gl_showorigins;
 cvar_t *gl_showtearing;
-#ifdef _DEBUG
+#if USE_DEBUG
 cvar_t *gl_showstats;
 cvar_t *gl_showscrap;
 cvar_t *gl_nobind;
@@ -555,7 +556,7 @@ void R_RenderFrame(refdef_t *fd)
         GL_Blend();
     }
 
-#ifdef _DEBUG
+#if USE_DEBUG
     if (gl_lightmap->integer > 1) {
         Draw_Lightmaps();
     }
@@ -583,7 +584,7 @@ void R_BeginFrame(void)
 
 void R_EndFrame(void)
 {
-#ifdef _DEBUG
+#if USE_DEBUG
     if (gl_showstats->integer) {
         GL_Flush2D();
         Draw_Stats();
@@ -600,7 +601,7 @@ void R_EndFrame(void)
 
     GL_ShowErrors(__func__);
 
-    VID_EndFrame();
+    vid.swap_buffers();
 }
 
 // ==============================================================================
@@ -694,8 +695,16 @@ static void gl_novis_changed(cvar_t *self)
     glr.viewcluster1 = glr.viewcluster2 = -2;
 }
 
+static void gl_swapinterval_changed(cvar_t *self)
+{
+    if (vid.swap_interval)
+        vid.swap_interval(self->integer);
+}
+
 static void GL_Register(void)
 {
+    Cvar_Get("gl_driver", LIBGL, CVAR_ROM);
+
     // regular variables
     gl_partscale = Cvar_Get("gl_partscale", "2", 0);
     gl_partstyle = Cvar_Get("gl_partstyle", "0", 0);
@@ -720,6 +729,8 @@ static void GL_Register(void)
     gl_doublelight_entities = Cvar_Get("gl_doublelight_entities", "1", 0);
     gl_fontshadow = Cvar_Get("gl_fontshadow", "0", 0);
     gl_shaders = Cvar_Get("gl_shaders", (gl_config.caps & QGL_CAP_SHADER) ? "1" : "0", CVAR_REFRESH);
+    gl_swapinterval = Cvar_Get("gl_swapinterval", "1", CVAR_ARCHIVE);
+    gl_swapinterval->changed = gl_swapinterval_changed;
 
     // development variables
     gl_znear = Cvar_Get("gl_znear", "2", CVAR_CHEAT);
@@ -730,7 +741,7 @@ static void GL_Register(void)
     gl_showtris = Cvar_Get("gl_showtris", "0", CVAR_CHEAT);
     gl_showorigins = Cvar_Get("gl_showorigins", "0", CVAR_CHEAT);
     gl_showtearing = Cvar_Get("gl_showtearing", "0", CVAR_CHEAT);
-#ifdef _DEBUG
+#if USE_DEBUG
     gl_showstats = Cvar_Get("gl_showstats", "0", 0);
     gl_showscrap = Cvar_Get("gl_showscrap", "0", 0);
     gl_nobind = Cvar_Get("gl_nobind", "0", CVAR_CHEAT);
@@ -754,6 +765,7 @@ static void GL_Register(void)
 
     gl_lightmap_changed(NULL);
     gl_modulate_entities_changed(NULL);
+    gl_swapinterval_changed(gl_swapinterval);
 
     Cmd_AddCommand("strings", GL_Strings_f);
     Cmd_AddMacro("gl_viewcluster", GL_ViewCluster_m);
@@ -762,6 +774,20 @@ static void GL_Register(void)
 static void GL_Unregister(void)
 {
     Cmd_RemoveCommand("strings");
+}
+
+static void APIENTRY myDebugProc(GLenum source, GLenum type, GLuint id, GLenum severity,
+                                 GLsizei length, const GLchar *message, const void *userParam)
+{
+    int level = PRINT_DEVELOPER;
+
+    switch (severity) {
+    case GL_DEBUG_SEVERITY_HIGH:   level = PRINT_ERROR;   break;
+    case GL_DEBUG_SEVERITY_MEDIUM: level = PRINT_WARNING; break;
+    case GL_DEBUG_SEVERITY_LOW:    level = PRINT_ALL;     break;
+    }
+
+    Com_LPrintf(level, "%s\n", message);
 }
 
 static void GL_SetupConfig(void)
@@ -781,6 +807,12 @@ static void GL_SetupConfig(void)
 
     qglGetIntegerv(GL_STENCIL_BITS, &integer);
     gl_config.stencilbits = integer;
+
+    if (qglDebugMessageCallback && qglIsEnabled(GL_DEBUG_OUTPUT)) {
+        Com_Printf("Enabling GL debug output.\n");
+        qglEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+        qglDebugMessageCallback(myDebugProc, NULL);
+    }
 }
 
 static void GL_InitTables(void)
@@ -828,11 +860,11 @@ bool R_Init(bool total)
     }
 
     Com_Printf("------- R_Init -------\n");
-    Com_DPrintf("ref_gl " VERSION ", " __DATE__ "\n");
+    Com_Printf("Using video driver: %s\n", vid.name);
 
     // initialize OS-specific parts of OpenGL
     // create the window and set up the context
-    if (!VID_Init()) {
+    if (!vid.init()) {
         return false;
     }
 
@@ -853,6 +885,8 @@ bool R_Init(bool total)
 
     GL_PostInit();
 
+    GL_ShowErrors(__func__);
+
     Com_Printf("----------------------\n");
 
     return true;
@@ -861,7 +895,7 @@ fail:
     memset(&gl_static, 0, sizeof(gl_static));
     memset(&gl_config, 0, sizeof(gl_config));
     QGL_Shutdown();
-    VID_Shutdown();
+    vid.shutdown();
     return false;
 }
 
@@ -888,12 +922,42 @@ void R_Shutdown(bool total)
     QGL_Shutdown();
 
     // shut down OS specific OpenGL stuff like contexts, etc.
-    VID_Shutdown();
+    vid.shutdown();
 
     GL_Unregister();
 
     memset(&gl_static, 0, sizeof(gl_static));
     memset(&gl_config, 0, sizeof(gl_config));
+}
+
+/*
+===============
+R_GetGLConfig
+===============
+*/
+r_opengl_config_t *R_GetGLConfig(void)
+{
+    static r_opengl_config_t cfg;
+
+    cfg.colorbits    = Cvar_ClampInteger(Cvar_Get("gl_colorbits",    "0", CVAR_REFRESH), 0, 32);
+    cfg.depthbits    = Cvar_ClampInteger(Cvar_Get("gl_depthbits",    "0", CVAR_REFRESH), 0, 32);
+    cfg.stencilbits  = Cvar_ClampInteger(Cvar_Get("gl_stencilbits",  "8", CVAR_REFRESH), 0,  8);
+    cfg.multisamples = Cvar_ClampInteger(Cvar_Get("gl_multisamples", "0", CVAR_REFRESH), 0, 32);
+
+    if (cfg.colorbits == 0)
+        cfg.colorbits = 24;
+
+    if (cfg.depthbits == 0)
+        cfg.depthbits = cfg.colorbits > 16 ? 24 : 16;
+
+    if (cfg.depthbits < 24)
+        cfg.stencilbits = 0;
+
+    if (cfg.multisamples < 2)
+        cfg.multisamples = 0;
+
+    cfg.debug = Cvar_Get("gl_debug", "0", CVAR_REFRESH)->integer;
+    return &cfg;
 }
 
 /*

@@ -30,10 +30,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 HINSTANCE                       hGlobalInstance;
 
-#if USE_DBGHELP
-LPTOP_LEVEL_EXCEPTION_FILTER    prevExceptionFilter;
-#endif
-
 static char                     currentDirectory[MAX_OSPATH];
 
 #if USE_WINSVC
@@ -76,7 +72,7 @@ static commandPrompt_t  sys_con;
 static int              sys_hidden;
 static bool             gotConsole;
 
-static void write_console_data(void *data, size_t len)
+static void write_console_data(const char *data, size_t len)
 {
     DWORD res;
     WriteFile(houtput, data, len, &res, NULL);
@@ -1094,7 +1090,7 @@ void Sys_Init(void)
     // install our exception filter
     cvar_t *var = Cvar_Get("sys_disablecrashdump", "0", CVAR_NOSET);
     if (!var->integer)
-        prevExceptionFilter = SetUnhandledExceptionFilter(Sys_ExceptionFilter);
+        Sys_InstallExceptionFilter();
 #endif
 }
 

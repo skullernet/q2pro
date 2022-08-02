@@ -141,7 +141,7 @@ void SV_SpawnServer(mapcmd_t *cmd)
 {
     int         i;
     client_t    *client;
-    char        *entitystring;
+    const char  *entitystring;
 
     SCR_BeginLoadingPlaque();           // for local system
 

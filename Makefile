@@ -59,12 +59,11 @@ ifdef CONFIG_WINDOWS
     LDFLAGS_c += -Wl,--nxcompat,--dynamicbase
     LDFLAGS_g += -Wl,--nxcompat,--dynamicbase
 
-    # Force relocations to be generated for 32-bit .exe files and work around
-    # binutils bug that causes invalid image entry point to be set when
-    # relocations are enabled.
-    ifeq ($(CPU),x86)
-        LDFLAGS_s += -Wl,--pic-executable,--entry,_mainCRTStartup
-        LDFLAGS_c += -Wl,--pic-executable,--entry,_WinMainCRTStartup
+    # Enable high-entropy-va
+    ifeq ($(CPU),x86_64)
+        LDFLAGS_s += -Wl,--high-entropy-va,--image-base=0x140000000
+        LDFLAGS_c += -Wl,--high-entropy-va,--image-base=0x140000000
+        LDFLAGS_g += -Wl,--high-entropy-va,--image-base=0x180000000
     endif
 
     # Workaround for GCC 10 linking shared libgcc by default
@@ -91,6 +90,8 @@ else
         LDFLAGS_g += -Wl,--no-undefined
     endif
 
+    CFLAGS_c += -D_GNU_SOURCE
+    CFLAGS_s += -D_GNU_SOURCE
     CFLAGS_g += -fPIC
 endif
 
@@ -132,15 +133,15 @@ endif
 # All builds can have a CONFIG_PATH_HOME defined
 #PATH_DEFS += -DHOMEDIR='"$(CONFIG_PATH_HOME)"'
 
-CFLAGS_s += $(BUILD_DEFS) $(VER_DEFS) $(PATH_DEFS) $(PLAT_DEFS) -DUSE_SERVER=1
-CFLAGS_c += $(BUILD_DEFS) $(VER_DEFS) $(PATH_DEFS) $(PLAT_DEFS) -DUSE_SERVER=1 -DUSE_CLIENT=1
-
 ifdef LIN_32BIT
 CFLAGS_s += -m32
 CFLAGS_c += -m32
 LDFLAGS_s += -m32
 LDFLAGS_c += -m32
 endif
+
+CFLAGS_s += $(BUILD_DEFS) $(VER_DEFS) $(PATH_DEFS) -DUSE_SERVER=1
+CFLAGS_c += $(BUILD_DEFS) $(VER_DEFS) $(PATH_DEFS) -DUSE_CLIENT=1
 
 # windres needs special quoting...
 RCFLAGS_s += -DREVISION=$(REV) -DVERSION='\"$(VER)\"'
@@ -329,7 +330,7 @@ ifndef CONFIG_NO_MAPCHECKSUM
 endif
 
 ifndef CONFIG_NO_REFRESH
-    CFLAGS_c += -DUSE_REF=1 -DVID_REF='"gl"'
+    CFLAGS_c += -DUSE_REF=1
     ifdef CONFIG_GLES
         CFLAGS_c += -DUSE_GLES=1
     endif
@@ -438,16 +439,16 @@ ifdef CONFIG_WINDOWS
     OBJS_c += src/windows/client.o
 
     ifndef CONFIG_NO_SOFTWARE_SOUND
+        OBJS_c += src/windows/dsound.o
         OBJS_c += src/windows/wave.o
         LIBS_c += -lwinmm
-        ifdef CONFIG_DIRECT_SOUND
-            CFLAGS_c += -DUSE_DSOUND=1
-            OBJS_c += src/windows/dsound.o
-        endif
     endif
 
-    OBJS_c += src/windows/glimp.o
     OBJS_c += src/windows/wgl.o
+    ifdef CONFIG_WINDOWS_EGL
+        CFLAGS_s += -DUSE_WIN32EGL=1
+        OBJS_c += src/windows/egl.o
+    endif
 
     ifdef CONFIG_WINDOWS_CRASH_DUMPS
         CFLAGS_c += -DUSE_DBGHELP=1
@@ -470,20 +471,26 @@ ifdef CONFIG_WINDOWS
     OBJS_g += src/windows/res/baseq2.o
 
     # System libs
+    LIBS_c += -lws2_32 -lopengl32
     LIBS_s += -lws2_32
-    LIBS_c += -lws2_32
 else
     SDL_CFLAGS ?= $(shell sdl2-config --cflags)
     SDL_LIBS ?= $(shell sdl2-config --libs)
     CFLAGS_c += -DUSE_SDL=2 $(SDL_CFLAGS)
     LIBS_c += $(SDL_LIBS)
-    OBJS_c += src/unix/video.o
+    OBJS_c += src/unix/video/sdl.o
+
+    ifdef CONFIG_X11
+        CFLAGS_c += -DUSE_X11
+        LIBS_c += -lGLX -lXi -lX11
+        OBJS_c += src/unix/video/x11.o
+    endif
 
     ifndef CONFIG_NO_SOFTWARE_SOUND
-        OBJS_c += src/unix/sound.o
-        ifdef CONFIG_DIRECT_SOUND
-            CFLAGS_c += -DUSE_DSOUND=1
-            OBJS_c += src/unix/oss.o
+        OBJS_c += src/unix/sound/sdl.o
+        ifdef CONFIG_OSS
+            CFLAGS_c += -DUSE_OSS=1
+            OBJS_c += src/unix/sound/oss.o
         endif
     endif
 
@@ -514,8 +521,8 @@ ifdef CONFIG_TESTS
 endif
 
 ifdef CONFIG_DEBUG
-    CFLAGS_c += -D_DEBUG
-    CFLAGS_s += -D_DEBUG
+    CFLAGS_c += -DUSE_DEBUG=1
+    CFLAGS_s += -DUSE_DEBUG=1
 endif
 
 ### Targets ###
