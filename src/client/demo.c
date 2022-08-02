@@ -607,7 +607,7 @@ static int read_next_message(qhandle_t f)
 
 static void finish_demo(int ret)
 {
-    char *s = Cvar_VariableString("nextserver");
+    const char *s = Cvar_VariableString("nextserver");
 
     if (!s[0]) {
         if (ret == 0) {

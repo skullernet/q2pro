@@ -23,9 +23,9 @@
 # Enable OpenAL sound engine.
 #CONFIG_OPENAL=y
 
-# Enable direct sound driver (DirectSound on Windows, OSS on Linux). This
-# option has no effect if CONFIG_NO_SOFTWARE_SOUND is set.
-#CONFIG_DIRECT_SOUND=y
+# Enable OSS sound output driver. This option has no effect if
+# CONFIG_NO_SOFTWARE_SOUND or CONFIG_WINDOWS is set.
+#CONFIG_OSS=y
 
 # Enable when building for systems that support OpenGL ES 1.1 only (e.g. Raspberry Pi)
 #CONFIG_GLES=y

@@ -16,7 +16,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#define _GNU_SOURCE
 #include "shared/shared.h"
 #include "common/cmd.h"
 #include "common/common.h"
@@ -261,8 +260,9 @@ static void kill_handler(int signum)
 {
     tty_shutdown_input();
 
-#if USE_CLIENT && USE_REF
-    VID_FatalShutdown();
+#if USE_REF
+    if (vid.fatal_shutdown)
+        vid.fatal_shutdown();
 #endif
 
     fprintf(stderr, "%s\n", strsignal(signum));
@@ -277,7 +277,7 @@ Sys_Init
 */
 void Sys_Init(void)
 {
-    char    *homedir;
+    const char  *homedir;
     cvar_t  *sys_parachute;
 
     signal(SIGTERM, term_handler);
@@ -356,8 +356,9 @@ void Sys_Error(const char *error, ...)
 
     tty_shutdown_input();
 
-#if USE_CLIENT && USE_REF
-    VID_FatalShutdown();
+#if USE_REF
+    if (vid.fatal_shutdown)
+        vid.fatal_shutdown();
 #endif
 
     va_start(argptr, error);

@@ -32,7 +32,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client/video.h"
 #include "refresh/refresh.h"
 #include "system/system.h"
-#include "res/q2pro.xbm"
+#include "../res/q2pro.xbm"
 #include <SDL.h>
 
 static SDL_Window       *sdl_window;
@@ -47,50 +47,25 @@ OPENGL STUFF
 ===============================================================================
 */
 
-static void gl_swapinterval_changed(cvar_t *self)
+static void set_gl_attributes(void)
 {
-    if (SDL_GL_SetSwapInterval(self->integer) < 0) {
-        Com_EPrintf("Couldn't set swap interval %d: %s\n", self->integer, SDL_GetError());
-    }
-}
+    r_opengl_config_t *cfg = R_GetGLConfig();
 
-static void VID_SDL_GL_SetAttributes(void)
-{
-    int colorbits = Cvar_ClampInteger(
-        Cvar_Get("gl_colorbits", "0", CVAR_REFRESH), 0, 32);
-    int depthbits = Cvar_ClampInteger(
-        Cvar_Get("gl_depthbits", "0", CVAR_REFRESH), 0, 32);
-    int stencilbits = Cvar_ClampInteger(
-        Cvar_Get("gl_stencilbits", "8", CVAR_REFRESH), 0, 8);
-    int multisamples = Cvar_ClampInteger(
-        Cvar_Get("gl_multisamples", "0", CVAR_REFRESH), 0, 32);
+    int colorbits = cfg->colorbits > 16 ? 8 : 5;
+    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, colorbits);
+    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, colorbits);
+    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, colorbits);
 
-    if (colorbits == 0)
-        colorbits = 24;
-
-    if (depthbits == 0)
-        depthbits = colorbits > 16 ? 24 : 16;
-
-    if (depthbits < 24)
-        stencilbits = 0;
-
-    if (colorbits > 16) {
-        SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
-        SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
-        SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-    } else {
-        SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
-        SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
-        SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
-    }
-
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, depthbits);
-    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, stencilbits);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, cfg->depthbits);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, cfg->stencilbits);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-    if (multisamples > 1) {
+    if (cfg->multisamples) {
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, multisamples);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, cfg->multisamples);
+    }
+    if (cfg->debug) {
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
     }
 
 #if USE_GLES
@@ -100,9 +75,20 @@ static void VID_SDL_GL_SetAttributes(void)
 #endif
 }
 
-void *VID_GetProcAddr(const char *sym)
+static void *get_proc_addr(const char *sym)
 {
     return SDL_GL_GetProcAddress(sym);
+}
+
+static void swap_buffers(void)
+{
+    SDL_GL_SwapWindow(sdl_window);
+}
+
+static void swap_interval(int val)
+{
+    if (SDL_GL_SetSwapInterval(val) < 0)
+        Com_EPrintf("Couldn't set swap interval %d: %s\n", val, SDL_GetError());
 }
 
 /*
@@ -113,7 +99,7 @@ VIDEO
 ===============================================================================
 */
 
-static void VID_SDL_ModeChanged(void)
+static void mode_changed(void)
 {
     int width, height;
     SDL_GetWindowSize(sdl_window, &width, &height);
@@ -128,7 +114,7 @@ static void VID_SDL_ModeChanged(void)
     SCR_ModeChanged();
 }
 
-static void VID_SDL_SetMode(void)
+static void set_mode(void)
 {
     Uint32 flags;
     vrect_t rc;
@@ -157,24 +143,10 @@ static void VID_SDL_SetMode(void)
     }
 
     SDL_SetWindowFullscreen(sdl_window, flags);
+    mode_changed();
 }
 
-void VID_SetMode(void)
-{
-    VID_SDL_SetMode();
-    VID_SDL_ModeChanged();
-}
-
-void VID_BeginFrame(void)
-{
-}
-
-void VID_EndFrame(void)
-{
-    SDL_GL_SwapWindow(sdl_window);
-}
-
-void VID_FatalShutdown(void)
+static void fatal_shutdown(void)
 {
     SDL_SetWindowGrab(sdl_window, SDL_FALSE);
     SDL_SetRelativeMouseMode(SDL_FALSE);
@@ -182,7 +154,7 @@ void VID_FatalShutdown(void)
     SDL_Quit();
 }
 
-char *VID_GetClipboardData(void)
+static char *get_clipboard_data(void)
 {
     // returned data must be Z_Free'd
     char *text = SDL_GetClipboardText();
@@ -191,12 +163,12 @@ char *VID_GetClipboardData(void)
     return copy;
 }
 
-void VID_SetClipboardData(const char *data)
+static void set_clipboard_data(const char *data)
 {
     SDL_SetClipboardText(data);
 }
 
-void VID_UpdateGamma(const byte *table)
+static void update_gamma(const byte *table)
 {
     Uint16 ramp[256];
     int i;
@@ -209,36 +181,19 @@ void VID_UpdateGamma(const byte *table)
     }
 }
 
-static int VID_SDL_InitSubSystem(void)
-{
-    int ret;
-
-    if (SDL_WasInit(SDL_INIT_VIDEO))
-        return 0;
-
-    ret = SDL_InitSubSystem(SDL_INIT_VIDEO);
-    if (ret == -1)
-        Com_EPrintf("Couldn't initialize SDL video: %s\n", SDL_GetError());
-
-    return ret;
-}
-
-static int VID_SDL_EventFilter(void *userdata, SDL_Event *event)
+static int my_event_filter(void *userdata, SDL_Event *event)
 {
     // SDL uses relative time, we need absolute
     event->common.timestamp = Sys_Milliseconds();
     return 1;
 }
 
-char *VID_GetDefaultModeList(void)
+static char *get_mode_list(void)
 {
     SDL_DisplayMode mode;
     size_t size, len;
     char *buf;
     int i, num_modes;
-
-    if (VID_SDL_InitSubSystem())
-        return NULL;
 
     num_modes = SDL_GetNumDisplayModes(0);
     if (num_modes < 1)
@@ -256,28 +211,37 @@ char *VID_GetDefaultModeList(void)
         len += Q_scnprintf(buf + len, size - len, "%dx%d@%d ",
                            mode.w, mode.h, mode.refresh_rate);
     }
-
-    if (len == 0)
-        buf[0] = 0;
-    else if (buf[len - 1] == ' ')
-        buf[len - 1] = 0;
+    buf[len - 1] = 0;
 
     return buf;
 }
 
-bool VID_Init(void)
+static void shutdown(void)
+{
+    if (sdl_context) {
+        SDL_GL_DeleteContext(sdl_context);
+        sdl_context = NULL;
+    }
+    if (sdl_window) {
+        SDL_DestroyWindow(sdl_window);
+        sdl_window = NULL;
+    }
+    SDL_QuitSubSystem(SDL_INIT_VIDEO);
+    sdl_flags = 0;
+}
+
+static bool init(void)
 {
     vrect_t rc;
 
-    if (VID_SDL_InitSubSystem()) {
+    if (SDL_InitSubSystem(SDL_INIT_VIDEO) == -1) {
+        Com_EPrintf("Couldn't initialize SDL video: %s\n", SDL_GetError());
         return false;
     }
 
-    VID_SDL_GL_SetAttributes();
+    set_gl_attributes();
 
-    Cvar_Get("gl_driver", LIBGL, CVAR_ROM);
-
-    SDL_SetEventFilter(VID_SDL_EventFilter, NULL);
+    SDL_SetEventFilter(my_event_filter, NULL);
 
     if (!VID_GetGeometry(&rc)) {
         rc.x = SDL_WINDOWPOS_UNDEFINED;
@@ -305,17 +269,11 @@ bool VID_Init(void)
         SDL_FreeSurface(icon);
     }
 
-    VID_SDL_SetMode();
-
     sdl_context = SDL_GL_CreateContext(sdl_window);
     if (!sdl_context) {
         Com_EPrintf("Couldn't create OpenGL context: %s\n", SDL_GetError());
         goto fail;
     }
-
-    cvar_t *gl_swapinterval = Cvar_Get("gl_swapinterval", "0", 0);
-    gl_swapinterval->changed = gl_swapinterval_changed;
-    gl_swapinterval_changed(gl_swapinterval);
 
     cvar_t *vid_hwgamma = Cvar_Get("vid_hwgamma", "0", CVAR_REFRESH);
     if (vid_hwgamma->integer) {
@@ -331,26 +289,11 @@ bool VID_Init(void)
         }
     }
 
-    VID_SDL_ModeChanged();
     return true;
 
 fail:
-    VID_Shutdown();
+    shutdown();
     return false;
-}
-
-void VID_Shutdown(void)
-{
-    if (sdl_context) {
-        SDL_GL_DeleteContext(sdl_context);
-        sdl_context = NULL;
-    }
-    if (sdl_window) {
-        SDL_DestroyWindow(sdl_window);
-        sdl_window = NULL;
-    }
-    SDL_QuitSubSystem(SDL_INIT_VIDEO);
-    sdl_flags = 0;
 }
 
 /*
@@ -400,56 +343,36 @@ static void window_event(SDL_WindowEvent *event)
             rc.height = event->data2;
             VID_SetGeometry(&rc);
         }
-        VID_SDL_ModeChanged();
+        mode_changed();
         break;
     }
 }
 
-static const byte scantokey[128] = {
-//  0               1               2               3               4               5               6                   7
-//  8               9               A               B               C               D               E                   F
-    0,              0,              0,              0,              'a',            'b',            'c',                'd',            // 0
-    'e',            'f',            'g',            'h',            'i',            'j',            'k',                'l',
-    'm',            'n',            'o',            'p',            'q',            'r',            's',                't',            // 1
-    'u',            'v',            'w',            'x',            'y',            'z',            '1',                '2',
-    '3',            '4',            '5',            '6',            '7',            '8',            '9',                '0',            // 2
-    K_ENTER,        K_ESCAPE,       K_BACKSPACE,    K_TAB,          K_SPACE,        '-',            '=',                '[',
-    ']',            '\\',           0,              ';',            '\'',           '`',            ',',                '.',            // 3
-    '/' ,           K_CAPSLOCK,     K_F1,           K_F2,           K_F3,           K_F4,           K_F5,               K_F6,
-    K_F7,           K_F8,           K_F9,           K_F10,          K_F11,          K_F12,          K_PRINTSCREEN,      K_SCROLLOCK,    // 4
-    K_PAUSE,        K_INS,          K_HOME,         K_PGUP,         K_DEL,          K_END,          K_PGDN,             K_RIGHTARROW,
-    K_LEFTARROW,    K_DOWNARROW,    K_UPARROW,      K_NUMLOCK,      K_KP_SLASH,     K_KP_MULTIPLY,  K_KP_MINUS,         K_KP_PLUS,      // 5
-    K_KP_ENTER,     K_KP_END,       K_KP_DOWNARROW, K_KP_PGDN,      K_KP_LEFTARROW, K_KP_5,         K_KP_RIGHTARROW,    K_KP_HOME,
-    K_KP_UPARROW,   K_KP_PGUP,      K_KP_INS,       K_KP_DEL,       K_102ND,        0,              0,                  0,              // 6
-    0,              0,              0,              0,              0,              0,              0,                  0,
-    0,              0,              0,              0,              0,              0,              K_MENU,             0,              // 7
-    K_LCTRL,        K_LSHIFT,       K_LALT,         K_LWINKEY,      K_RCTRL,        K_RSHIFT,       K_RALT,             K_RWINKEY,      // E
+static const byte scantokey[] = {
+    #include "keytable_sdl.h"
+};
+
+static const byte scantokey2[] = {
+    K_LCTRL, K_LSHIFT, K_LALT, K_LWINKEY, K_RCTRL, K_RSHIFT, K_RALT, K_RWINKEY
 };
 
 static void key_event(SDL_KeyboardEvent *event)
 {
-    byte result;
+    unsigned key = event->keysym.scancode;
 
-    if (event->keysym.scancode < 120)
-        result = scantokey[event->keysym.scancode];
-    else if (event->keysym.scancode >= 224 && event->keysym.scancode < 224 + 8)
-        result = scantokey[event->keysym.scancode - 104];
+    if (key < q_countof(scantokey))
+        key = scantokey[key];
+    else if (key >= SDL_SCANCODE_LCTRL && key < SDL_SCANCODE_LCTRL + q_countof(scantokey2))
+        key = scantokey2[key - SDL_SCANCODE_LCTRL];
     else
-        result = 0;
+        key = 0;
 
-    if (result == 0) {
+    if (!key) {
         Com_DPrintf("%s: unknown scancode %d\n", __func__, event->keysym.scancode);
         return;
     }
 
-    if (result == K_LALT || result == K_RALT)
-        Key_Event(K_ALT, event->state, event->timestamp);
-    else if (result == K_LCTRL || result == K_RCTRL)
-        Key_Event(K_CTRL, event->state, event->timestamp);
-    else if (result == K_LSHIFT || result == K_RSHIFT)
-        Key_Event(K_SHIFT, event->state, event->timestamp);
-
-    Key_Event(result, event->state, event->timestamp);
+    Key_Event2(key, event->state, event->timestamp);
 }
 
 static void mouse_button_event(SDL_MouseButtonEvent *event)
@@ -499,12 +422,7 @@ static void mouse_wheel_event(SDL_MouseWheelEvent *event)
     }
 }
 
-/*
-============
-VID_PumpEvents
-============
-*/
-void VID_PumpEvents(void)
+static void pump_events(void)
 {
     SDL_Event    event;
 
@@ -542,7 +460,7 @@ MOUSE
 ===============================================================================
 */
 
-static bool GetMouseMotion(int *dx, int *dy)
+static bool get_mouse_motion(int *dx, int *dy)
 {
     if (!SDL_GetRelativeMouseMode()) {
         return false;
@@ -551,20 +469,20 @@ static bool GetMouseMotion(int *dx, int *dy)
     return true;
 }
 
-static void WarpMouse(int x, int y)
+static void warp_mouse(int x, int y)
 {
     SDL_WarpMouseInWindow(sdl_window, x, y);
     SDL_GetRelativeMouseState(NULL, NULL);
 }
 
-static void ShutdownMouse(void)
+static void shutdown_mouse(void)
 {
     SDL_SetWindowGrab(sdl_window, SDL_FALSE);
     SDL_SetRelativeMouseMode(SDL_FALSE);
     SDL_ShowCursor(SDL_ENABLE);
 }
 
-static bool InitMouse(void)
+static bool init_mouse(void)
 {
     if (!SDL_WasInit(SDL_INIT_VIDEO)) {
         return false;
@@ -574,7 +492,7 @@ static bool InitMouse(void)
     return true;
 }
 
-static void GrabMouse(bool grab)
+static void grab_mouse(bool grab)
 {
     SDL_SetWindowGrab(sdl_window, grab);
     SDL_SetRelativeMouseMode(grab && !(Key_GetDest() & KEY_MENU));
@@ -582,17 +500,34 @@ static void GrabMouse(bool grab)
     SDL_ShowCursor(!(sdl_flags & QVF_FULLSCREEN));
 }
 
-/*
-============
-VID_FillInputAPI
-============
-*/
-void VID_FillInputAPI(inputAPI_t *api)
+static bool probe(void)
 {
-    api->Init = InitMouse;
-    api->Shutdown = ShutdownMouse;
-    api->Grab = GrabMouse;
-    api->Warp = WarpMouse;
-    api->GetEvents = NULL;
-    api->GetMotion = GetMouseMotion;
+    return true;
 }
+
+const vid_driver_t vid_sdl = {
+    .name = "sdl",
+
+    .probe = probe,
+    .init = init,
+    .shutdown = shutdown,
+    .fatal_shutdown = fatal_shutdown,
+    .pump_events = pump_events,
+
+    .get_mode_list = get_mode_list,
+    .set_mode = set_mode,
+    .update_gamma = update_gamma,
+
+    .get_proc_addr = get_proc_addr,
+    .swap_buffers = swap_buffers,
+    .swap_interval = swap_interval,
+
+    .get_clipboard_data = get_clipboard_data,
+    .set_clipboard_data = set_clipboard_data,
+
+    .init_mouse = init_mouse,
+    .shutdown_mouse = shutdown_mouse,
+    .grab_mouse = grab_mouse,
+    .warp_mouse = warp_mouse,
+    .get_mouse_motion = get_mouse_motion,
+};

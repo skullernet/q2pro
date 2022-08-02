@@ -16,19 +16,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-//
-// vid_win.c
-//
-
 #include "client.h"
-
-#define WINDOW_CLASS_NAME   "Quake 2 Pro"
-
-// mode_changed flags
-#define MODE_SIZE       (1 << 0)
-#define MODE_POS        (1 << 1)
-#define MODE_STYLE      (1 << 2)
-#define MODE_REPOSITION (1 << 3)
+#include <hidusage.h>
 
 win_state_t     win;
 
@@ -39,11 +28,8 @@ static cvar_t   *win_disablewinkey;
 static cvar_t   *win_noresize;
 static cvar_t   *win_notitle;
 static cvar_t   *win_alwaysontop;
-static cvar_t   *win_xpfix;
-static cvar_t   *win_rawmouse;
 static cvar_t   *win_noborder;
 
-static bool     Win_InitMouse(void);
 static void     Win_ClipCursor(void);
 
 /*
@@ -106,6 +92,16 @@ static void Win_SetPosition(void)
     w = r.right - r.left;
     h = r.bottom - r.top;
 
+    // clip to monitor work area
+    if (!(win.flags & QVF_FULLSCREEN)) {
+        OffsetRect(&r, x, y);
+        MONITORINFO mi = { .cbSize = sizeof(mi) };
+        if (GetMonitorInfoA(MonitorFromRect(&r, MONITOR_DEFAULTTONEAREST), &mi)) {
+            x = max(mi.rcWork.left, min(mi.rcWork.right  - w, x));
+            y = max(mi.rcWork.top,  min(mi.rcWork.bottom - h, y));
+        }
+    }
+
     // set new window style and position
     SetWindowLong(win.wnd, GWL_STYLE, style);
     SetWindowPos(win.wnd, after, x, y, w, h, SWP_FRAMECHANGED | SWP_SHOWWINDOW);
@@ -123,7 +119,7 @@ static void Win_SetPosition(void)
 Win_ModeChanged
 ============
 */
-void Win_ModeChanged(void)
+static void Win_ModeChanged(void)
 {
     R_ModeChanged(win.rc.width, win.rc.height, win.flags);
     SCR_ModeChanged();
@@ -190,10 +186,10 @@ static bool modes_are_equal(const DEVMODE *base, const DEVMODE *compare)
 
 /*
 ============
-VID_GetDefaultModeList
+Win_GetModeList
 ============
 */
-char *VID_GetDefaultModeList(void)
+char *Win_GetModeList(void)
 {
     DEVMODE desktop, dm, *modes;
     int i, j, num_modes, max_modes;
@@ -248,14 +244,12 @@ char *VID_GetDefaultModeList(void)
 
     len = Q_strlcpy(buf, "desktop ", size);
     for (i = 0; i < num_modes; i++) {
-        len += Q_scnprintf(buf + len, size - len, "%lux%lu@%lu",
+        len += Q_scnprintf(buf + len, size - len, "%lux%lu@%lu ",
                            modes[i].dmPelsWidth,
                            modes[i].dmPelsHeight,
                            modes[i].dmDisplayFrequency);
-        if (len < size - 1 && i < num_modes - 1)
-            buf[len++] = ' ';
     }
-    buf[len] = 0;
+    buf[len - 1] = 0;
 
     Z_Free(modes);
 
@@ -343,6 +337,7 @@ static LONG set_fullscreen_mode(void)
     win.dm = dm;
     win.flags |= QVF_FULLSCREEN;
     Win_SetPosition();
+    Win_ModeChanged();
     win.mode_changed = 0;
 
     return ret;
@@ -383,28 +378,22 @@ void Win_SetMode(void)
     // parse vid_geometry specification
     VID_GetGeometry(&win.rc);
 
-    // don't allow too small size
-    if (win.rc.width < 320) win.rc.width = 320;
-    if (win.rc.height < 240) win.rc.height = 240;
-
     Com_DPrintf("...setting windowed mode: %dx%d%+d%+d\n",
                 win.rc.width, win.rc.height, win.rc.x, win.rc.y);
 
     memset(&win.dm, 0, sizeof(win.dm));
     win.flags &= ~QVF_FULLSCREEN;
     Win_SetPosition();
+    Win_ModeChanged();
     win.mode_changed = 0;
-
-    // set vid_geometry back
-    VID_SetGeometry(&win.rc);
 }
 
 /*
 ============
-VID_UpdateGamma
+Win_UpdateGamma
 ============
 */
-void VID_UpdateGamma(const byte *table)
+void Win_UpdateGamma(const byte *table)
 {
     WORD v;
     int i;
@@ -455,12 +444,10 @@ static void Win_Activate(WPARAM wParam)
     if (HIWORD(wParam)) {
         // we don't want to act like we're active if we're minimized
         active = ACT_MINIMIZED;
+    } else if (LOWORD(wParam)) {
+        active = ACT_ACTIVATED;
     } else {
-        if (LOWORD(wParam)) {
-            active = ACT_ACTIVATED;
-        } else {
-            active = ACT_RESTORED;
-        }
+        active = ACT_RESTORED;
     }
 
     CL_Activate(active);
@@ -593,12 +580,10 @@ static void legacy_key_event(WPARAM wParam, LPARAM lParam, bool down)
 {
     int scancode = (lParam >> 16) & 255;
     int extended = (lParam >> 24) & 1;
-    byte result;
+    int result = 0;
 
     if (scancode < 96)
         result = scantokey[extended][scancode];
-    else
-        result = 0;
 
     if (!result) {
         Com_DPrintf("%s: unknown %sscancode %d\n",
@@ -606,14 +591,7 @@ static void legacy_key_event(WPARAM wParam, LPARAM lParam, bool down)
         return;
     }
 
-    if (result == K_LALT || result == K_RALT)
-        Key_Event(K_ALT, down, win.lastMsgTime);
-    else if (result == K_LCTRL || result == K_RCTRL)
-        Key_Event(K_CTRL, down, win.lastMsgTime);
-    else if (result == K_LSHIFT || result == K_RSHIFT)
-        Key_Event(K_SHIFT, down, win.lastMsgTime);
-
-    Key_Event(result, down, win.lastMsgTime);
+    Key_Event2(result, down, win.lastMsgTime);
 }
 
 static void mouse_wheel_event(int delta)
@@ -657,43 +635,6 @@ static void mouse_hwheel_event(int delta)
 
     Key_Event(key, true, win.lastMsgTime);
     Key_Event(key, false, win.lastMsgTime);
-}
-
-// this is complicated because Win32 seems to pack multiple mouse events into
-// one update sometimes, so we always check all states and look for events
-static void legacy_mouse_event(WPARAM wParam)
-{
-    int i, mask, temp = 0;
-
-    if (wParam & MK_LBUTTON)
-        temp |= 1;
-
-    if (wParam & MK_RBUTTON)
-        temp |= 2;
-
-    if (wParam & MK_MBUTTON)
-        temp |= 4;
-
-    if (wParam & MK_XBUTTON1)
-        temp |= 8;
-
-    if (wParam & MK_XBUTTON2)
-        temp |= 16;
-
-    if (temp == win.mouse.state)
-        return;
-
-    // perform button actions
-    for (i = 0, mask = 1; i < MOUSE_BUTTONS; i++, mask <<= 1) {
-        if ((temp & mask) && !(win.mouse.state & mask)) {
-            Key_Event(K_MOUSE1 + i, true, win.lastMsgTime);
-        }
-        if (!(temp & mask) && (win.mouse.state & mask)) {
-            Key_Event(K_MOUSE1 + i, false, win.lastMsgTime);
-        }
-    }
-
-    win.mouse.state = temp;
 }
 
 // returns TRUE if mouse cursor inside client area
@@ -754,7 +695,7 @@ static void raw_mouse_event(PRAWMOUSE rm)
     }
 }
 
-static void raw_input_event(HANDLE handle)
+static void raw_input_event(HRAWINPUT handle)
 {
     BYTE buffer[64];
     UINT len, ret;
@@ -762,7 +703,7 @@ static void raw_input_event(HANDLE handle)
 
     len = sizeof(buffer);
     ret = GetRawInputData(handle, RID_INPUT, buffer, &len, sizeof(RAWINPUTHEADER));
-    if (ret == (UINT) - 1) {
+    if (ret == (UINT)-1) {
         Com_EPrintf("GetRawInputData failed with error %#lx\n", GetLastError());
         return;
     }
@@ -839,39 +780,17 @@ static void pos_changed_event(HWND wnd, WINDOWPOS *pos)
 static LRESULT WINAPI Win_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     switch (uMsg) {
-    case WM_MOUSEWHEEL:
-        if (win.mouse.initialized == WIN_MOUSE_LEGACY)
-            mouse_wheel_event((short)HIWORD(wParam));
-        break;
-
-    case WM_MOUSEHWHEEL:
-        if (win.mouse.initialized == WIN_MOUSE_LEGACY)
-            mouse_hwheel_event((short)HIWORD(wParam));
-        break;
-
     case WM_MOUSEMOVE:
         if (win.mouse.initialized)
             UI_MouseEvent((short)LOWORD(lParam), (short)HIWORD(lParam));
-        // fall through
-
-    case WM_LBUTTONDOWN:
-    case WM_LBUTTONUP:
-    case WM_RBUTTONDOWN:
-    case WM_RBUTTONUP:
-    case WM_MBUTTONDOWN:
-    case WM_MBUTTONUP:
-    case WM_XBUTTONDOWN:
-    case WM_XBUTTONUP:
-        if (win.mouse.initialized == WIN_MOUSE_LEGACY)
-            legacy_mouse_event(wParam);
         break;
 
     case WM_HOTKEY:
         return FALSE;
 
     case WM_INPUT:
-        if (wParam == RIM_INPUT && win.mouse.initialized == WIN_MOUSE_RAW)
-            raw_input_event((HANDLE)lParam);
+        if (wParam == RIM_INPUT && win.mouse.initialized)
+            raw_input_event((HRAWINPUT)lParam);
         break;
 
     case WM_CLOSE:
@@ -937,21 +856,10 @@ static LRESULT WINAPI Win_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 
 /*
 ============
-VID_SetMode
+Win_PumpEvents
 ============
 */
-void VID_SetMode(void)
-{
-    Win_SetMode();
-    Win_ModeChanged();
-}
-
-/*
-============
-VID_PumpEvents
-============
-*/
-void VID_PumpEvents(void)
+void Win_PumpEvents(void)
 {
     MSG        msg;
 
@@ -1011,8 +919,6 @@ void Win_Init(void)
     win_notitle->changed = win_style_changed;
     win_alwaysontop = Cvar_Get("win_alwaysontop", "0", 0);
     win_alwaysontop->changed = win_style_changed;
-    win_xpfix = Cvar_Get("win_xpfix", "0", 0);
-    win_rawmouse = Cvar_Get("win_rawmouse", "1", 0);
     win_noborder = Cvar_Get("win_noborder", "0", 0);
     win_noborder->changed = win_style_changed;
 
@@ -1021,7 +927,7 @@ void Win_Init(void)
     // register the frame class
     memset(&wc, 0, sizeof(wc));
     wc.cbSize = sizeof(wc);
-    wc.lpfnWndProc = (WNDPROC)Win_MainWndProc;
+    wc.lpfnWndProc = Win_MainWndProc;
     wc.hInstance = hGlobalInstance;
     wc.hIcon = LoadImage(hGlobalInstance, MAKEINTRESOURCE(IDI_APP),
                          IMAGE_ICON, 32, 32, LR_CREATEDIBSECTION);
@@ -1036,16 +942,8 @@ void Win_Init(void)
     }
 
     // create the window
-    win.wnd = CreateWindowA(
-                  WINDOW_CLASS_NAME,
-                  PRODUCT,
-                  0, //style
-                  0, 0, 0, 0,
-                  NULL,
-                  NULL,
-                  hGlobalInstance,
-                  NULL);
-
+    win.wnd = CreateWindowA(WINDOW_CLASS_NAME, PRODUCT, 0, 0, 0, 0, 0, NULL,
+                            NULL, hGlobalInstance, NULL);
     if (!win.wnd) {
         Com_Error(ERR_FATAL, "Couldn't create main window");
     }
@@ -1079,10 +977,14 @@ void Win_Shutdown(void)
         SetDeviceGammaRamp(win.dc, win.gamma_orig);
     }
 
-    // prevents leaving empty slots in the taskbar
-    ShowWindow(win.wnd, SW_SHOWNORMAL);
-    ReleaseDC(win.wnd, win.dc);
-    DestroyWindow(win.wnd);
+    if (win.dc) {
+        ReleaseDC(win.wnd, win.dc);
+    }
+
+    if (win.wnd) {
+        DestroyWindow(win.wnd);
+    }
+
     UnregisterClassA(WINDOW_CLASS_NAME, hGlobalInstance);
 
     if (win.kbdHook) {
@@ -1104,18 +1006,6 @@ MOUSE
 ===============================================================================
 */
 
-static void Win_HideCursor(void)
-{
-    while (ShowCursor(FALSE) >= 0)
-        ;
-}
-
-static void Win_ShowCursor(void)
-{
-    while (ShowCursor(TRUE) < 0)
-        ;
-}
-
 // Called when the window gains focus or changes in some way
 static void Win_ClipCursor(void)
 {
@@ -1126,160 +1016,92 @@ static void Win_ClipCursor(void)
 // Called when the window gains focus
 static void Win_AcquireMouse(void)
 {
-    int parms[3];
-
-    if (win.mouse.parmsvalid) {
-        if (win_xpfix->integer) {
-            parms[0] = parms[1] = parms[2] = 0;
-        } else {
-            parms[0] = parms[1] = 0;
-            parms[2] = 1;
-        }
-        win.mouse.restoreparms = SystemParametersInfo(
-                                     SPI_SETMOUSE, 0, parms, 0);
-    }
-
     Win_ClipCursor();
     SetCapture(win.wnd);
 
-    SetWindowTextA(win.wnd, "[" PRODUCT "]");
+    while (ShowCursor(FALSE) >= 0)
+        ;
 }
 
 // Called when the window loses focus
 static void Win_DeAcquireMouse(void)
 {
-    if (win.mouse.restoreparms)
-        SystemParametersInfo(SPI_SETMOUSE, 0, win.mouse.originalparms, 0);
-
     SetCursorPos(win.center_x, win.center_y);
 
     ClipCursor(NULL);
     ReleaseCapture();
 
-    SetWindowTextA(win.wnd, PRODUCT);
+    while (ShowCursor(TRUE) < 0)
+        ;
 }
 
-static bool Win_GetMouseMotion(int *dx, int *dy)
+bool Win_GetMouseMotion(int *dx, int *dy)
 {
-    POINT pt;
-
-    if (!win.mouse.initialized) {
-        return false;
-    }
-
     if (!win.mouse.grabbed) {
         return false;
     }
 
-    if (win.mouse.initialized == WIN_MOUSE_RAW) {
-        *dx = win.mouse.mx;
-        *dy = win.mouse.my;
-        win.mouse.mx = 0;
-        win.mouse.my = 0;
-        return true;
-    }
-
-    // find mouse movement
-    if (!GetCursorPos(&pt)) {
-        return false;
-    }
-
-    *dx = pt.x - win.center_x;
-    *dy = pt.y - win.center_y;
-
-    // force the mouse to the center, so there's room to move
-    SetCursorPos(win.center_x, win.center_y);
+    *dx = win.mouse.mx;
+    *dy = win.mouse.my;
+    win.mouse.mx = 0;
+    win.mouse.my = 0;
     return true;
 }
 
-static BOOL register_raw_mouse(DWORD flags)
+static BOOL register_raw_mouse(bool enable)
 {
-    RAWINPUTDEVICE rid;
+    RAWINPUTDEVICE rid = {
+        .usUsagePage = HID_USAGE_PAGE_GENERIC,
+        .usUsage = HID_USAGE_GENERIC_MOUSE,
+    };
 
-    memset(&rid, 0, sizeof(rid));
-    rid.usUsagePage = 0x01;
-    rid.usUsage = 0x02;
-    rid.dwFlags = flags;
-    rid.hwndTarget = win.wnd;
+    if (enable)
+        rid.hwndTarget = win.wnd;
+    else
+        rid.dwFlags = RIDEV_REMOVE;
 
     return RegisterRawInputDevices(&rid, 1, sizeof(rid));
 }
 
-static void Win_ShutdownMouse(void)
+void Win_ShutdownMouse(void)
 {
     if (!win.mouse.initialized) {
         return;
     }
 
-    Win_DeAcquireMouse();
-    Win_ShowCursor();
-
-    if (win.mouse.initialized == WIN_MOUSE_RAW) {
-        register_raw_mouse(RIDEV_REMOVE);
+    if (win.mouse.grabbed) {
+        Win_DeAcquireMouse();
     }
 
-    win_xpfix->changed = NULL;
-    win_rawmouse->changed = NULL;
+    register_raw_mouse(false);
 
     memset(&win.mouse, 0, sizeof(win.mouse));
 }
 
-static void win_xpfix_changed(cvar_t *self)
-{
-    if (win.mouse.grabbed) {
-        Win_AcquireMouse();
-    }
-}
-
-static void win_rawmouse_changed(cvar_t *self)
-{
-    if (win.mouse.initialized) {
-        Win_ShutdownMouse();
-        Win_InitMouse();
-    }
-}
-
-static bool Win_InitMouse(void)
+bool Win_InitMouse(void)
 {
     if (!win.wnd) {
         return false;
     }
 
-    win.mouse.initialized = WIN_MOUSE_LEGACY;
-
-    if (win_rawmouse->integer) {
-        if (!register_raw_mouse(/*RIDEV_NOLEGACY*/ 0)) {
-            Com_EPrintf("RegisterRawInputDevices failed with error %#lx\n", GetLastError());
-            Cvar_Set("win_rawmouse", "0");
-        } else {
-            Com_Printf("Raw mouse initialized.\n");
-            win.mouse.initialized = WIN_MOUSE_RAW;
-        }
+    if (!register_raw_mouse(true)) {
+        Com_EPrintf("RegisterRawInputDevices failed with error %#lx\n", GetLastError());
+        return false;
     }
 
-    if (win.mouse.initialized == WIN_MOUSE_LEGACY) {
-        win.mouse.parmsvalid = SystemParametersInfo(SPI_GETMOUSE, 0,
-                               win.mouse.originalparms, 0);
-        win_xpfix->changed = win_xpfix_changed;
-        Com_Printf("Legacy mouse initialized.\n");
-    }
-
-    win_rawmouse->changed = win_rawmouse_changed;
-
+    Com_Printf("Raw mouse initialized.\n");
+    win.mouse.initialized = true;
     return true;
 }
 
 // Called when the main window gains or loses focus.
-static void Win_GrabMouse(bool grab)
+void Win_GrabMouse(bool grab)
 {
     if (!win.mouse.initialized) {
         return;
     }
 
     if (win.mouse.grabbed == grab) {
-        if (win.mouse.initialized == WIN_MOUSE_LEGACY) {
-            SetCursorPos(win.center_x, win.center_y);
-        }
         win.mouse.mx = 0;
         win.mouse.my = 0;
         return;
@@ -1287,29 +1109,26 @@ static void Win_GrabMouse(bool grab)
 
     if (grab) {
         Win_AcquireMouse();
-        Win_HideCursor();
     } else {
         Win_DeAcquireMouse();
-        Win_ShowCursor();
     }
 
     win.mouse.grabbed = grab;
-    win.mouse.state = 0;
     win.mouse.mx = 0;
     win.mouse.my = 0;
 }
 
-static void Win_WarpMouse(int x, int y)
+void Win_WarpMouse(int x, int y)
 {
     SetCursorPos(win.screen_rc.left + x, win.screen_rc.top + y);
 }
 
 /*
 ================
-VID_GetClipboardData
+Win_GetClipboardData
 ================
 */
-char *VID_GetClipboardData(void)
+char *Win_GetClipboardData(void)
 {
     HANDLE clipdata;
     char *cliptext, *data;
@@ -1333,10 +1152,10 @@ char *VID_GetClipboardData(void)
 
 /*
 ================
-VID_SetClipboardData
+Win_SetClipboardData
 ================
 */
-void VID_SetClipboardData(const char *data)
+void Win_SetClipboardData(const char *data)
 {
     HANDLE clipdata;
     char *cliptext;
@@ -1363,19 +1182,4 @@ void VID_SetClipboardData(const char *data)
     }
 
     CloseClipboard();
-}
-
-/*
-@@@@@@@@@@@@@@@@@@@
-VID_FillInputAPI
-@@@@@@@@@@@@@@@@@@@
-*/
-void VID_FillInputAPI(inputAPI_t *api)
-{
-    api->Init = Win_InitMouse;
-    api->Shutdown = Win_ShutdownMouse;
-    api->Grab = Win_GrabMouse;
-    api->Warp = Win_WarpMouse;
-    api->GetEvents = NULL;
-    api->GetMotion = Win_GetMouseMotion;
 }

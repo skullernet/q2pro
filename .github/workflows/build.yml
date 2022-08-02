@@ -7,60 +7,57 @@ on:
     branches: [master, aqtion]
 
 env:
-  MINGW_SDK: "https://github.com/skullernet/q2pro-mgw-sdk/releases/download/2022-06-14/q2pro-mgw-sdk.tar.gz"
+  MESON_ARGS: >-
+    --werror
+    --fatal-meson-warnings
+    -Danticheat-server=true
+    -Dclient-gtv=true
+    -Doss=auto
+    -Dpacketdup-hack=true
+    -Dtests=true
+    -Dvariable-fps=true
 
 jobs:
   mingw:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        suffix: ["32", "64"]
+        arch: ["i686", "x86_64"]
     steps:
       - uses: actions/checkout@v2
-        with:
-          path: main-build
 
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-mingw-w64
-          wget -nv $MINGW_SDK
-          tar xf q2pro-mgw-sdk.tar.gz
+          sudo apt-get install -y gcc-mingw-w64 meson nasm
 
       - name: Build
-        working-directory: main-build
-        run: make V=1
-        env:
-          CONFIG_FILE: ".ci/config_windows${{ matrix.suffix }}"
+        run: |
+          meson setup --cross-file=.ci/${{ matrix.arch }}-w64-mingw32.txt ${{ env.MESON_ARGS }} builddir
+          ninja -C builddir
 
-  llvm-mingw:
-    runs-on: ubuntu-18.04
+  msvc:
+    runs-on: windows-latest
     strategy:
       matrix:
-        suffix: ["32", "64"]
+        arch: ["x86", "x64"]
     steps:
       - uses: actions/checkout@v2
+
+      - uses: ilammy/msvc-dev-cmd@d8610e2b41c6d0f0c3b4c46dad8df0fd826c68e1
         with:
-          path: main-build
+          arch: ${{ matrix.arch }}
 
       - name: Install dependencies
-        run: |
-          LLVM_VER=20220323
-          LLVM=llvm-mingw-$LLVM_VER-msvcrt-ubuntu-18.04-x86_64
-          LLVM_URL=https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_VER/$LLVM.tar.xz
-          wget -nv $LLVM_URL $MINGW_SDK
-          tar xf $LLVM.tar.xz
-          tar xf q2pro-mgw-sdk.tar.gz
-          echo "$GITHUB_WORKSPACE/$LLVM/bin" >> $GITHUB_PATH
+        run: pip3 install --no-input meson ninja
 
       - name: Build
-        working-directory: main-build
-        run: make V=1
-        env:
-          CONFIG_FILE: ".ci/config_windows${{ matrix.suffix }}"
+        run: |
+          meson setup ${{ env.MESON_ARGS }} builddir
+          ninja -C builddir
 
   linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         cc: [gcc, clang]
@@ -70,12 +67,14 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt install -y libsdl2-dev libopenal-dev \
+          sudo apt-get install -y meson libsdl2-dev libopenal-dev \
           libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
-          libcurl4-gnutls-dev
+          libcurl4-gnutls-dev libx11-dev libxi-dev \
+          libwayland-dev wayland-protocols
 
       - name: Build
-        run: make V=1
+        run: |
+          meson setup ${{ env.MESON_ARGS }} builddir
+          ninja -C builddir
         env:
-          CC: "${{ matrix.cc }}"
-          CONFIG_FILE: ".ci/config_linux"
+          CC: ${{ matrix.cc }}
