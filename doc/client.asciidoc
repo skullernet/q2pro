@@ -1419,9 +1419,13 @@ need to review your config and adapt it for Q2PRO. This section tries to
 document most of these incompatibilities so that when something doesn't work as
 it used to be you know where to look. The following list may be incomplete.
 
-- Q2PRO has a built-in renderer and doesn't support run-time loading of external
-  renderers.  Thus, ‘vid_ref’ cvar has been made read-only and exists only for
-  informational purpose.
+- Q2PRO has a built-in OpenGL renderer and doesn't support dynamic loading of
+  external renderers. Thus, ‘vid_ref’ cvar has been made read-only and exists
+  only for compatibility with tools like Q2Admin.
+
+- Q2PRO supports loading system OpenGL library only. Thus, ‘gl_driver’ cvar has
+  been made read-only and exists only for compatibility with tools like
+  Q2Admin.
 
 - Default value of ‘gl_dynamic’ variable has been changed from 1 to 2. This means
   dynamic lights will be disabled by default.
