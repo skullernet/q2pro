@@ -230,6 +230,7 @@ config.set10('USE_JPG', jpeg.found())
 config.set10('USE_PNG', png.found())
 
 curl = dependency('libcurl',
+  version:         '>= 7.32.0',
   required:        get_option('libcurl'),
   allow_fallback:  win32,
   default_options: fallback_opt,
