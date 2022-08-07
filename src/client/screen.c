@@ -1804,6 +1804,7 @@ static void SCR_ExecuteLayoutString(const char *s)
             continue;
         }
 
+        // Q2PRO extension
         if (!strcmp(token, "color")) {
             color_t     color;
 
