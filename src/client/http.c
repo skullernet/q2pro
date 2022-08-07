@@ -75,19 +75,23 @@ bandwidth.
 */
 
 // libcurl callback to update progress info.
-static int progress_func(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow)
+static int progress_func(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow)
 {
     dlhandle_t *dl = (dlhandle_t *)clientp;
+
+    //abort if download exceedes 2 GiB
+    if (dlnow > INT_MAX)
+        return -1;
 
     //don't care which download shows as long as something does :)
     cls.download.current = dl->queue;
 
     if (dltotal)
-        cls.download.percent = (int)((dlnow / dltotal) * 100.0);
+        cls.download.percent = dlnow * 100 / dltotal;
     else
         cls.download.percent = 0;
 
-    cls.download.position = (int)dlnow;
+    cls.download.position = dlnow;
 
     return 0;
 }
@@ -296,8 +300,8 @@ static void start_download(dlqueue_t *entry, dlhandle_t *dl)
         curl_easy_setopt(dl->curl, CURLOPT_PROXY, NULL);
     curl_easy_setopt(dl->curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(dl->curl, CURLOPT_MAXREDIRS, 5L);
-    curl_easy_setopt(dl->curl, CURLOPT_PROGRESSFUNCTION, progress_func);
-    curl_easy_setopt(dl->curl, CURLOPT_PROGRESSDATA, dl);
+    curl_easy_setopt(dl->curl, CURLOPT_XFERINFOFUNCTION, progress_func);
+    curl_easy_setopt(dl->curl, CURLOPT_XFERINFODATA, dl);
     curl_easy_setopt(dl->curl, CURLOPT_USERAGENT, com_version->string);
     curl_easy_setopt(dl->curl, CURLOPT_REFERER, download_referer);
     curl_easy_setopt(dl->curl, CURLOPT_URL, dl->url);
