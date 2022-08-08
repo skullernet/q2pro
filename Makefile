@@ -273,6 +273,11 @@ OBJS_g := \
 
 ### Configuration Options ###
 
+ifndef CONFIG_DISCORD
+    CFLAGS_c += -DUSE_DISCORD=1
+    LIBS_c += extern/discord/lib/x86_64/discord_game_sdk.so
+endif
+
 ifdef CONFIG_HTTP
     CURL_CFLAGS ?= $(shell pkg-config libcurl --cflags)
     CURL_LIBS ?= $(shell pkg-config libcurl --libs)
