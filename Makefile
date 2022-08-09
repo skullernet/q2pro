@@ -275,7 +275,14 @@ OBJS_g := \
 
 ifndef CONFIG_DISCORD
     CFLAGS_c += -DUSE_DISCORD=1
-    LIBS_c += extern/discord/lib/x86_64/discord_game_sdk.so
+
+    ifeq ($(SYS),Darwin)# Are we building for Mac?
+        LIBS_c += extern/discord/lib/x86_64/discord_game_sdk.dylib
+    else ifeq ($(SYS),Linux)# Are we building for Linux?
+        LIBS_c += extern/discord/lib/x86_64/discord_game_sdk.so
+    else # We're Windows
+        LIBS_c += extern/discord/lib/x86_64/discord_game_sdk.dll
+    endif
 endif
 
 ifdef CONFIG_HTTP
