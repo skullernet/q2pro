@@ -230,7 +230,7 @@ qboolean CL_IsPrivateNetwork(void)
     else if (cls.serverAddress.type >= NA_BROADCAST) // LAN, IPv4, IPv6
     {
         qboolean ispv = NET_IsLanAddress(&cls.serverAddress);
-        if (NET_IsLanAddress(&cls.serverAddress)) // Private IP
+        if (ispv) // Private IP
         {
             return true; // (10.x  172.x  192.x  etc)
         }
