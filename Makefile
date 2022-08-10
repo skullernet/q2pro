@@ -280,7 +280,7 @@ ifndef CONFIG_DISCORD
         LIBS_c += extern/discord/lib/x86_64/discord_game_sdk.dylib
     else ifeq ($(SYS),Linux)# Are we building for Linux?
         LIBS_c += extern/discord/lib/x86_64/discord_game_sdk.so
-    else ifeq ($(filter x86 i386,$(CPU)),) # We're Windows 32-bit
+    else ifneq ($(filter x86 i386,$(CPU)),) # We're Windows 32-bit
         LIBS_c += extern/discord/lib/x86/discord_game_sdk.dll
     else # We're Windows 64-bit
         LIBS_c += extern/discord/lib/x86_64/discord_game_sdk.dll
