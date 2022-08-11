@@ -147,19 +147,19 @@ extern sndstarted_t s_started;
 extern bool s_active;
 
 #define MAX_CHANNELS            32
-extern  channel_t   channels[MAX_CHANNELS];
-extern  int         s_numchannels;
+extern channel_t    channels[MAX_CHANNELS];
+extern int          s_numchannels;
 
-extern  int         s_paintedtime;
-extern  playsound_t s_pendingplays;
+extern int          s_paintedtime;
+extern playsound_t  s_pendingplays;
 
-extern  vec3_t      listener_origin;
-extern  vec3_t      listener_forward;
-extern  vec3_t      listener_right;
-extern  vec3_t      listener_up;
-extern  int         listener_entnum;
+extern vec3_t       listener_origin;
+extern vec3_t       listener_forward;
+extern vec3_t       listener_right;
+extern vec3_t       listener_up;
+extern int          listener_entnum;
 
-extern  wavinfo_t   s_info;
+extern wavinfo_t    s_info;
 
 extern cvar_t   *s_volume;
 #if USE_SNDDMA
