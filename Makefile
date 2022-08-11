@@ -276,15 +276,15 @@ OBJS_g := \
 ifndef CONFIG_DISCORD
     CFLAGS_c += -DUSE_DISCORD=1
 
-    ifeq ($(SYS),Darwin)# Are we building for Mac?
-        LIBS_c += extern/discord/lib/x86_64/discord_game_sdk.dylib
-    else ifeq ($(CPU),aarch64) # Are we building for non-Mac ARM processors (Rasp Pi)?
+    ifeq ($(CPU),aarch64) && ($(SYS),Darwin) # We're Apple Silicon
         LIBS_c += extern/discord/lib/aarch64/discord_game_sdk.dylib
-    else ifeq ($(SYS),Linux)# Are we building for Linux?
+    else ifeq ($(CPU),x86_64) && ($(SYS),Darwin) # We're Apple Intel
+        LIBS_c += extern/discord/lib/x86_64/discord_game_sdk.dylib
+    else ifeq ($(SYS),Linux) # We're x86_64 Linux
         LIBS_c += extern/discord/lib/x86_64/discord_game_sdk.so
-    else ifneq ($(filter x86 i386,$(CPU)),) # We're Windows 32-bit
+    else ifneq ($(filter x86 i386,$(CPU)),) # We're i386 Windows
         LIBS_c += extern/discord/lib/x86/discord_game_sdk.dll
-    else # We're Windows 64-bit
+    else # We're x86_64 Windows
         LIBS_c += extern/discord/lib/x86_64/discord_game_sdk.dll
     endif
 endif

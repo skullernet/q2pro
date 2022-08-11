@@ -258,11 +258,13 @@ qboolean CL_IsPrivateNetwork(void)
 
 #if _MSC_VER >= 1920 && !__INTEL_COMPILER
 #pragma comment(lib, "../extern/discord/lib/x86_64/discord_game_sdk.dll.lib")
-#else // older MSC
+#elif _MSC_VER < 1920 // older MSC
 // Push/Pop fix needed for older versions of Visual Studio to prevent unexpected crashes due to compile configurations
 #pragma pack(push, 8)
 #include "../extern/discord/c/discord_game_sdk.h"
 #pragma pack(pop)
+#else // mingw?
+#include "../extern/discord/c/discord_game_sdk.h"
 #endif // _MSC_VER >= 1920 && !__INTEL_COMPILER
 
 
