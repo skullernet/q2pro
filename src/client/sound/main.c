@@ -25,7 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 int         s_registration_sequence;
 
-channel_t   channels[MAX_CHANNELS];
+channel_t   s_channels[MAX_CHANNELS];
 int         s_numchannels;
 
 sndstarted_t s_started;
@@ -564,7 +564,7 @@ channel_t *S_PickChannel(int entnum, int entchannel)
     first_to_die = -1;
     life_left = 0x7fffffff;
     for (ch_idx = 0; ch_idx < s_numchannels; ch_idx++) {
-        ch = &channels[ch_idx];
+        ch = &s_channels[ch_idx];
         // channel 0 never overrides unless out of channels
         if (ch->entnum == entnum && ch->entchannel == entchannel && entchannel != 0) {
             if (entchannel > 255 && ch->sfx) {
@@ -588,7 +588,7 @@ channel_t *S_PickChannel(int entnum, int entchannel)
     if (first_to_die == -1)
         return NULL;
 
-    ch = &channels[first_to_die];
+    ch = &s_channels[first_to_die];
 #if USE_OPENAL
     if (s_started == SS_OAL && ch->sfx)
         AL_StopChannel(ch);
@@ -932,7 +932,7 @@ void S_StopAllSounds(void)
 #endif
 
     // clear all the channels
-    memset(channels, 0, sizeof(channels));
+    memset(s_channels, 0, sizeof(s_channels));
 }
 
 // =======================================================================
@@ -1096,8 +1096,7 @@ void S_Update(void)
         S_InitScaletable();
 
     // update spatialization for dynamic sounds
-    ch = channels;
-    for (i = 0; i < s_numchannels; i++, ch++) {
+    for (i = 0, ch = s_channels; i < s_numchannels; i++, ch++) {
         if (!ch->sfx)
             continue;
         if (ch->autosound) {
@@ -1121,8 +1120,7 @@ void S_Update(void)
     //
     if (s_show->integer) {
         int total = 0;
-        ch = channels;
-        for (i = 0; i < s_numchannels; i++, ch++)
+        for (i = 0, ch = s_channels; i < s_numchannels; i++, ch++)
             if (ch->sfx && (ch->leftvol || ch->rightvol)) {
                 Com_Printf("%3i %3i %s\n", ch->leftvol, ch->rightvol, ch->sfx->name);
                 total++;
