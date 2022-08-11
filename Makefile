@@ -273,17 +273,17 @@ OBJS_g := \
 
 ### Configuration Options ###
 
-ifndef CONFIG_DISCORD
+ifdef CONFIG_DISCORD
     CFLAGS_c += -DUSE_DISCORD=1
 
     ifeq ($(CPU),aarch64) && ($(SYS),Linux) # We're Linux arm64 (Discord does not support)
         LIBS_c ?=
+    else ifeq ($(CPU),x86_64) && ($(SYS),Linux) # We're x86_64 Linux
+        LIBS_c += extern/discord/lib/x86_64/discord_game_sdk.so
     else ifeq ($(CPU),aarch64) && ($(SYS),Darwin) # We're Apple Silicon
         LIBS_c += extern/discord/lib/aarch64/discord_game_sdk.dylib
     else ifeq ($(CPU),x86_64) && ($(SYS),Darwin) # We're Apple Intel
         LIBS_c += extern/discord/lib/x86_64/discord_game_sdk.dylib
-    else ifeq ($(CPU),x86_64) && ($(SYS),Linux) # We're x86_64 Linux
-        LIBS_c += extern/discord/lib/x86_64/discord_game_sdk.so
     else ifneq ($(filter x86 i386,$(CPU)),) # We're i386 Windows
         LIBS_c += extern/discord/lib/x86/discord_game_sdk.dll
     else # We're x86_64 Windows

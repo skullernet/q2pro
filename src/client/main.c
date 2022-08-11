@@ -263,8 +263,6 @@ qboolean CL_IsPrivateNetwork(void)
 #pragma pack(push, 8)
 #include "../extern/discord/c/discord_game_sdk.h"
 #pragma pack(pop)
-#else // mingw?
-#include "../extern/discord/c/discord_game_sdk.h"
 #endif // _MSC_VER >= 1920 && !__INTEL_COMPILER
 
 
