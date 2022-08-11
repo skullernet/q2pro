@@ -39,10 +39,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <limits.h>
 #include <time.h>
 
-#if HAVE_ENDIAN_H
-#include <endian.h>
-#endif
-
 #include "shared/platform.h"
 
 #define q_countof(a)        (sizeof(a) / sizeof(a[0]))
@@ -519,7 +515,7 @@ static inline float FloatSwap(float f)
     return dat2.f;
 }
 
-#if __BYTE_ORDER == __LITTLE_ENDIAN
+#if USE_LITTLE_ENDIAN
 #define BigShort    ShortSwap
 #define BigLong     LongSwap
 #define BigFloat    FloatSwap
@@ -528,7 +524,7 @@ static inline float FloatSwap(float f)
 #define LittleFloat(x)    ((float)(x))
 #define MakeRawLong(b1,b2,b3,b4) (((unsigned)(b4)<<24)|((b3)<<16)|((b2)<<8)|(b1))
 #define MakeRawShort(b1,b2) (((b2)<<8)|(b1))
-#elif __BYTE_ORDER == __BIG_ENDIAN
+#elif USE_BIG_ENDIAN
 #define BigShort(x)     ((uint16_t)(x))
 #define BigLong(x)      ((uint32_t)(x))
 #define BigFloat(x)     ((float)(x))

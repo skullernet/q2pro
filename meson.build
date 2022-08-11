@@ -382,5 +382,6 @@ config.set10('USE_MAPCHECKSUM',   get_option('map-checksum'))
 config.set10('USE_MD3',           get_option('md3'))
 config.set10('USE_PACKETDUP',     get_option('packetdup-hack'))
 config.set10('USE_TGA',           get_option('tga'))
+config.set10('USE_' + host_machine.endian().to_upper() + '_ENDIAN', true)
 
 configure_file(output: 'config.h', configuration: config)
