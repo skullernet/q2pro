@@ -29,11 +29,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define AL_CopyVector(a,b)  ((b)[0]=-(a)[1],(b)[1]=(a)[2],(b)[2]=-(a)[0])
 
 // OpenAL implementation should support at least this number of sources
-#define MIN_CHANNELS 16
+#define MIN_CHANNELS    16
 
-static ALuint s_srcnums[MAX_CHANNELS];
-static ALboolean s_loop_points;
-static int s_framecount;
+static ALuint       s_srcnums[MAX_CHANNELS];
+static ALboolean    s_loop_points;
+static int          s_framecount;
 
 static void AL_SoundInfo(void)
 {
@@ -106,7 +106,6 @@ static void AL_Shutdown(void)
 
 static sfxcache_t *AL_UploadSfx(sfx_t *s)
 {
-    sfxcache_t *sc;
     ALsizei size = s_info.samples * s_info.width * s_info.channels;
     ALenum format = AL_FORMAT_MONO8 + (s_info.channels - 1) * 2 + (s_info.width - 1);
     ALuint name;
@@ -126,7 +125,7 @@ static sfxcache_t *AL_UploadSfx(sfx_t *s)
     }
 
     // allocate placeholder sfxcache
-    sc = s->cache = S_Malloc(sizeof(*sc));
+    sfxcache_t *sc = s->cache = S_Malloc(sizeof(*sc));
     sc->length = s_info.samples * 1000 / s_info.rate; // in msec
     sc->loopstart = s_info.loopstart;
     sc->width = s_info.width;
@@ -139,16 +138,11 @@ static sfxcache_t *AL_UploadSfx(sfx_t *s)
 
 static void AL_DeleteSfx(sfx_t *s)
 {
-    sfxcache_t *sc;
-    ALuint name;
-
-    sc = s->cache;
-    if (!sc) {
-        return;
+    sfxcache_t *sc = s->cache;
+    if (sc) {
+        ALuint name = sc->bufnum;
+        qalDeleteBuffers(1, &name);
     }
-
-    name = sc->bufnum;
-    qalDeleteBuffers(1, &name);
 }
 
 static int AL_SetBeginofs(float timeofs)
@@ -225,11 +219,9 @@ static void AL_PlayChannel(channel_t *ch)
 
 static void AL_IssuePlaysounds(void)
 {
-    playsound_t *ps;
-
     // start any playsounds
     while (1) {
-        ps = s_pendingplays.next;
+        playsound_t *ps = s_pendingplays.next;
         if (ps == &s_pendingplays)
             break;  // no more pending sounds
         if (ps->begin > s_paintedtime)
@@ -278,9 +270,8 @@ static void AL_AddLoopSounds(void)
     int         num;
     entity_state_t  *ent;
 
-    if (cls.state != ca_active || sv_paused->integer || !s_ambient->integer) {
+    if (cls.state != ca_active || sv_paused->integer || !s_ambient->integer)
         return;
-    }
 
     S_BuildSoundList(sounds);
 
@@ -328,9 +319,8 @@ static void AL_Update(void)
     channel_t   *ch;
     vec_t       orientation[6];
 
-    if (!s_active) {
+    if (!s_active)
         return;
-    }
 
     s_paintedtime = cl.time;
 
