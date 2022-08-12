@@ -33,6 +33,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 static ALuint       s_srcnums[MAX_CHANNELS];
 static ALboolean    s_loop_points;
+static ALboolean    s_source_spatialize;
 static int          s_framecount;
 
 static void AL_SoundInfo(void)
@@ -79,6 +80,7 @@ static bool AL_Init(void)
     s_numchannels = i;
 
     s_loop_points = qalIsExtensionPresent("AL_SOFT_loop_points");
+    s_source_spatialize = qalIsExtensionPresent("AL_SOFT_source_spatialize");
 
     Com_Printf("OpenAL initialized.\n");
     return true;
@@ -156,12 +158,16 @@ static void AL_Spatialize(channel_t *ch)
 
     // anything coming from the view entity will always be full volume
     // no attenuation = no spatialization
-    if (ch->entnum == -1 || ch->entnum == listener_entnum || !ch->dist_mult) {
+    if (S_IsFullVolume(ch)) {
         VectorCopy(listener_origin, origin);
     } else if (ch->fixed_origin) {
         VectorCopy(ch->origin, origin);
     } else {
         CL_GetEntitySoundOrigin(ch->entnum, origin);
+    }
+
+    if (s_source_spatialize) {
+        qalSourcei(ch->srcnum, AL_SOURCE_SPATIALIZE_SOFT, !S_IsFullVolume(ch));
     }
 
     qalSource3f(ch->srcnum, AL_POSITION, AL_UnpackVector(origin));
