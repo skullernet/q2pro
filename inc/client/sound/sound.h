@@ -39,10 +39,10 @@ void S_BeginRegistration(void);
 qhandle_t S_RegisterSound(const char *sample);
 void S_EndRegistration(void);
 
-extern  vec3_t  listener_origin;
-extern  vec3_t  listener_forward;
-extern  vec3_t  listener_right;
-extern  vec3_t  listener_up;
-extern  int     listener_entnum;
+extern vec3_t   listener_origin;
+extern vec3_t   listener_forward;
+extern vec3_t   listener_right;
+extern vec3_t   listener_up;
+extern int      listener_entnum;
 
 #endif // SOUND_H
