@@ -24,11 +24,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client/sound/dma.h"
 #endif
 
-typedef struct samplepair_s {
-    int         left;
-    int         right;
-} samplepair_t;
-
 typedef struct sfxcache_s {
     int         length;
     int         loopstart;
@@ -63,7 +58,7 @@ typedef struct playsound_s {
     int         entchannel;
     bool        fixed_origin;   // use origin field instead of entnum's origin
     vec3_t      origin;
-    unsigned    begin;          // begin on this sample
+    int         begin;          // begin on this sample
 } playsound_t;
 
 typedef struct channel_s {
@@ -72,7 +67,6 @@ typedef struct channel_s {
     int         rightvol;       // 0-255 volume
     int         end;            // end time in global paintsamples
     int         pos;            // sample position in sfx
-    int         looping;        // where to loop, -1 = no looping OBSOLETE?
     int         entnum;         // to allow overriding a specific sound
     int         entchannel;     //
     vec3_t      origin;         // only use if fixed_origin is set
@@ -104,26 +98,27 @@ typedef struct {
 ====================================================================
 */
 
+typedef struct {
+    bool (*init)(void);
+    void (*shutdown)(void);
+    void (*update)(void);
+    void (*activate)(void);
+    void (*sound_info)(void);
+    sfxcache_t *(*upload_sfx)(sfx_t *s);
+    void (*delete_sfx)(sfx_t *s);
+    void (*page_in_sfx)(sfx_t *s);
+    int (*set_begin_ofs)(float timeofs);
+    void (*play_channel)(channel_t *ch);
+    void (*stop_channel)(channel_t *ch);
+    void (*stop_all_sounds)(void);
+} sndapi_t;
+
 #if USE_SNDDMA
-void DMA_SoundInfo(void);
-bool DMA_Init(void);
-void DMA_Shutdown(void);
-void DMA_Activate(void);
-int DMA_DriftBeginofs(float timeofs);
-void DMA_ClearBuffer(void);
-void DMA_Update(void);
+extern const sndapi_t   snd_dma;
 #endif
 
 #if USE_OPENAL
-void AL_SoundInfo(void);
-bool AL_Init(void);
-void AL_Shutdown(void);
-sfxcache_t *AL_UploadSfx(sfx_t *s);
-void AL_DeleteSfx(sfx_t *s);
-void AL_StopChannel(channel_t *ch);
-void AL_PlayChannel(channel_t *ch);
-void AL_StopAllChannels(void);
-void AL_Update(void);
+extern const sndapi_t   snd_openal;
 #endif
 
 //====================================================================
@@ -144,7 +139,8 @@ typedef enum {
 } sndstarted_t;
 
 extern sndstarted_t s_started;
-extern bool s_active;
+extern bool         s_active;
+extern sndapi_t     s_api;
 
 #define MAX_CHANNELS            32
 extern channel_t    s_channels[MAX_CHANNELS];
@@ -162,13 +158,13 @@ extern int          listener_entnum;
 extern wavinfo_t    s_info;
 
 extern cvar_t   *s_volume;
+extern cvar_t   *s_ambient;
+#if USE_DEBUG
+extern cvar_t   *s_show;
+#endif
 #if USE_SNDDMA
 extern cvar_t   *s_khz;
-extern cvar_t   *s_testsound;
-extern cvar_t   *s_swapstereo;
 #endif
-extern cvar_t   *s_ambient;
-extern cvar_t   *s_show;
 
 #define S_Malloc(x)     Z_TagMalloc(x, TAG_SOUND)
 #define S_CopyString(x) Z_TagCopyString(x, TAG_SOUND)
@@ -178,7 +174,3 @@ sfxcache_t *S_LoadSound(sfx_t *s);
 channel_t *S_PickChannel(int entnum, int entchannel);
 void S_IssuePlaysound(playsound_t *ps);
 void S_BuildSoundList(int *sounds);
-#if USE_SNDDMA
-void S_InitScaletable(void);
-void S_PaintChannels(int endtime);
-#endif

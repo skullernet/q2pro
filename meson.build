@@ -288,7 +288,7 @@ if get_option('client-ui')
 endif
 
 if get_option('software-sound')
-  client_src += ['src/client/sound/dma.c', 'src/client/sound/mix.c']
+  client_src += 'src/client/sound/dma.c'
   if sdl2.found()
     client_src += 'src/unix/sound/sdl.c'
   endif

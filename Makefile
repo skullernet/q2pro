@@ -276,7 +276,6 @@ endif
 
 ifndef CONFIG_NO_SOFTWARE_SOUND
     CFLAGS_c += -DUSE_SNDDMA=1
-    OBJS_c += src/client/sound/mix.o
     OBJS_c += src/client/sound/dma.o
 endif
 
