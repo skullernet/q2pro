@@ -275,23 +275,21 @@ bool SV_ParseMapCmd(mapcmd_t *cmd)
 
     s = cmd->buffer;
 
-    // skip the end-of-unit flag if necessary
-    if (*s == '*') {
-        s++;
-        cmd->endofunit = true;
-    }
-
-    // if there is a + in the map, set nextserver to the remainder.
-    // we go directly to nextserver because we don't support cinematics.
-    ch = strchr(s, '+');
-    if (ch) {
-        s = ch + 1;
-
+    while (1) {
         // skip the end-of-unit flag if necessary
         if (*s == '*') {
             s++;
             cmd->endofunit = true;
         }
+
+        // if there is a + in the map, set nextserver to the remainder.
+        // we go directly to nextserver because we don't support cinematics.
+        ch = strchr(s, '+');
+        if (!ch) {
+            break;
+        }
+
+        s = ch + 1;
     }
 
     cmd->server = s;
