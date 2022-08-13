@@ -292,7 +292,9 @@ bool SV_ParseMapCmd(mapcmd_t *cmd)
         s = ch + 1;
     }
 
-    cmd->server = s;
+    // copy it off to keep original mapcmd intact
+    Q_strlcpy(cmd->server, s, sizeof(cmd->server));
+    s = cmd->server;
 
     // if there is a $, use the remainder as a spawnpoint
     ch = strchr(s, '$');
@@ -300,7 +302,7 @@ bool SV_ParseMapCmd(mapcmd_t *cmd)
         *ch = 0;
         cmd->spawnpoint = ch + 1;
     } else {
-        cmd->spawnpoint = cmd->buffer + strlen(cmd->buffer);
+        cmd->spawnpoint = s + strlen(s);
     }
 
     // now expand and try to load the map
