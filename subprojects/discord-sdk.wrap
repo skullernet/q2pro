@@ -1,0 +1,6 @@
+[wrap-file]
+directory = extern/discord
+source_url = https://dl-game-sdk.discordapp.net/latest/discord_game_sdk.zip
+source_filename = discord_game_sdk.zip
+[provide]
+discord-sdk = discord-sdk_dep
