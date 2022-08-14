@@ -2,5 +2,7 @@
 directory = discord
 source_url = https://dl-game-sdk.discordapp.net/latest/discord_game_sdk.zip
 source_filename = discord_game_sdk.zip
+source_hash = c5bbac0e07f1f21095c8607eb46c7018a477996f
+
 [provide]
 discord-sdk = discord-sdk_dep
