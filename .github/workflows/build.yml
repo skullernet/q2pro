@@ -32,9 +32,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-mingw-w64 meson nasm
-          mkdir -p extern/discord
-          wget https://dl-game-sdk.discordapp.net/latest/discord_game_sdk.zip && unzip discord_game_sdk.zip -d extern/discord/
-          sed -i 's/Windows.h/windows.h/g' extern/discord/c/discord_game_sdk.h
 
       - name: Build
         run: |
@@ -54,12 +51,7 @@ jobs:
           arch: ${{ matrix.arch }}
 
       - name: Install dependencies
-        run: |
-          pip3 install --no-input meson ninja
-          mkdir -p extern/discord
-          wget https://dl-game-sdk.discordapp.net/latest/discord_game_sdk.zip && unzip discord_game_sdk.zip -d extern/discord/
-          sed -i 's/Windows.h/windows.h/g' extern/discord/c/discord_game_sdk.h
-
+        run: pip3 install --no-input meson ninja
 
       - name: Build
         run: |
@@ -83,12 +75,6 @@ jobs:
       #     libcurl4-gnutls-dev libx11-dev libxi-dev \
       #     libwayland-dev wayland-protocols
 
-      - name: Install dependencies
-        run: |
-          mkdir -p extern/discord
-          wget https://dl-game-sdk.discordapp.net/latest/discord_game_sdk.zip && unzip discord_game_sdk.zip -d extern/discord/
-          sed -i 's/Windows.h/windows.h/g' extern/discord/c/discord_game_sdk.h
-
       - name: Build
         run: |
           meson setup --cross-file=.ci/x86_64-linux64.txt ${{ env.MESON_ARGS }} builddir
@@ -106,9 +92,11 @@ jobs:
 
       - name: Install dependencies
         run: |
-          mkdir -p extern/discord
-          wget https://dl-game-sdk.discordapp.net/latest/discord_game_sdk.zip && unzip discord_game_sdk.zip -d extern/discord/
-          sed -i 's/Windows.h/windows.h/g' extern/discord/c/discord_game_sdk.h
+          sudo apt-get update
+          sudo apt-get install -y meson libsdl2-dev libopenal-dev \
+          libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
+          libcurl4-gnutls-dev libx11-dev libxi-dev \
+          libwayland-dev wayland-protocols
 
       - name: Build
         run: |
