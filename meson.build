@@ -318,6 +318,7 @@ endif
 
 if get_option('aqtion-build')
   config.set10('USE_AQTION', true)
+  config.set10('AQTION_EXTENSION', true)
 endif
 
 if get_option('system-console')
