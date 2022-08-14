@@ -330,6 +330,7 @@ if get_option('discord-sdk')
     if host_machine.cpu_family() == 'aarch64' # I am Linux ARM 64-bit
           # Discord does not have an SDK for this platform yet, setting USE_DISCORD to false
           config.set10('USE_DISCORD', false)
+    endif
 
     # discord = dependency('discord-sdk', 
     # required: get_option('discord-sdk'), 
