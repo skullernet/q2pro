@@ -59,7 +59,8 @@ jobs:
           ninja -C builddir
 
   linux64:
-    runs-on: ubuntu-22.04
+    #runs-on: ubuntu-22.04
+    runs-on: [self-hosted, x86_64]
     strategy:
       matrix:
         cc: [gcc, clang]
