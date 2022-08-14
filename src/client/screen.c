@@ -1462,7 +1462,7 @@ static void SCR_DrawInventory(void)
     int     index[MAX_ITEMS];
     char    string[MAX_STRING_CHARS];
     int     x, y;
-    char    *bind;
+    const char  *bind;
     int     selected;
     int     top;
 
@@ -1814,6 +1814,7 @@ static void SCR_ExecuteLayoutString(const char *s)
             continue;
         }
 
+        // Q2PRO extension
         if (!strcmp(token, "color")) {
             color_t     color;
 

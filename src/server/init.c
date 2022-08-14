@@ -141,7 +141,7 @@ void SV_SpawnServer(mapcmd_t *cmd)
 {
     int         i;
     client_t    *client;
-    char        *entitystring;
+    const char  *entitystring;
 
     SCR_BeginLoadingPlaque();           // for local system
 
@@ -276,26 +276,26 @@ bool SV_ParseMapCmd(mapcmd_t *cmd)
 
     s = cmd->buffer;
 
-    // skip the end-of-unit flag if necessary
-    if (*s == '*') {
-        s++;
-        cmd->endofunit = true;
-    }
-
-    // if there is a + in the map, set nextserver to the remainder.
-    // we go directly to nextserver because we don't support cinematics.
-    ch = strchr(s, '+');
-    if (ch) {
-        s = ch + 1;
-
+    while (1) {
         // skip the end-of-unit flag if necessary
         if (*s == '*') {
             s++;
             cmd->endofunit = true;
         }
+
+        // if there is a + in the map, set nextserver to the remainder.
+        // we go directly to nextserver because we don't support cinematics.
+        ch = strchr(s, '+');
+        if (!ch) {
+            break;
+        }
+
+        s = ch + 1;
     }
 
-    cmd->server = s;
+    // copy it off to keep original mapcmd intact
+    Q_strlcpy(cmd->server, s, sizeof(cmd->server));
+    s = cmd->server;
 
     // if there is a $, use the remainder as a spawnpoint
     ch = strchr(s, '$');
@@ -303,7 +303,7 @@ bool SV_ParseMapCmd(mapcmd_t *cmd)
         *ch = 0;
         cmd->spawnpoint = ch + 1;
     } else {
-        cmd->spawnpoint = cmd->buffer + strlen(cmd->buffer);
+        cmd->spawnpoint = s + strlen(s);
     }
 
     // now expand and try to load the map
@@ -386,17 +386,15 @@ void SV_InitGame(unsigned mvd_spawn)
 
     // init clients
     if (Cvar_VariableInteger("deathmatch")) {
-        if (sv_maxclients->integer <= 1) {
-            Cvar_SetInteger(sv_maxclients, 8, FROM_CODE);
-        } else if (sv_maxclients->integer > CLIENTNUM_RESERVED) {
-            Cvar_SetInteger(sv_maxclients, CLIENTNUM_RESERVED, FROM_CODE);
-        }
+        if (sv_maxclients->integer <= 1)
+            Cvar_Set("maxclients", "8");
     } else if (Cvar_VariableInteger("coop")) {
-        if (sv_maxclients->integer <= 1 || sv_maxclients->integer > 4)
+        if (sv_maxclients->integer <= 1)
             Cvar_Set("maxclients", "4");
     } else {    // non-deathmatch, non-coop is one player
-        Cvar_FullSet("maxclients", "1", CVAR_SERVERINFO | CVAR_LATCH, FROM_CODE);
+        Cvar_Set("maxclients", "1");
     }
+    Cvar_ClampInteger(sv_maxclients, 1, CLIENTNUM_RESERVED);
 
     // enable networking
     if (sv_maxclients->integer > 1) {

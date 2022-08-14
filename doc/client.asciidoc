@@ -554,6 +554,17 @@ win_alwaysontop::
     Puts the main window on top of other windows. Default is 0 (main window can
     be obscured by other windows).
 
+sys_viewlog::
+    Show system console window when running a client. Can be set from command
+    line only.
+
+sys_disablecrashdump::
+    Disable crash dump generation. Can be set from command line only.
+
+sys_exitonerror::
+    Exit on fatal error instead of showing error message. Can be set from
+    command line only.
+
 
 OpenGL Renderer
 ~~~~~~~~~~~~~~~
@@ -855,10 +866,10 @@ cl_http_proxy::
 Locations
 ~~~~~~~~~
 
-Client side location files provide a way to report player's position on the map
-in team chat messages without depending on the game mod.  Locations are loaded
-from ‘locs/<mapname>.loc’ file. Once location file is loaded, ‘loc_here’ and
-‘loc_there’ macros will expand to the name of location closest to the given
+Client side location files provide a way to report a player's position on the
+map in team chat messages without depending on the game mod. Locations are
+loaded from ‘locs/<mapname>.loc’ file. Once location file is loaded, ‘loc_here’
+and ‘loc_there’ macros will expand to the name of location closest to the given
 position. Variables listed below control some aspects of location selection.
 
 loc_trace::
@@ -1181,7 +1192,7 @@ dec <cvar> [value]::
     Otherwise, subtract the specified floating point _value_.
 
 reset <cvar>::
-    Reset the specified _cvar_ to it's default value.
+    Reset the specified _cvar_ to its default value.
 
 resetall::
     Resets all cvars to their default values.
@@ -1408,9 +1419,13 @@ need to review your config and adapt it for Q2PRO. This section tries to
 document most of these incompatibilities so that when something doesn't work as
 it used to be you know where to look. The following list may be incomplete.
 
-- Q2PRO has a built-in renderer and doesn't support run-time loading of external
-  renderers.  Thus, ‘vid_ref’ cvar has been made read-only and exists only for
-  informational purpose.
+- Q2PRO has a built-in OpenGL renderer and doesn't support dynamic loading of
+  external renderers. Thus, ‘vid_ref’ cvar has been made read-only and exists
+  only for compatibility with tools like Q2Admin.
+
+- Q2PRO supports loading system OpenGL library only. Thus, ‘gl_driver’ cvar has
+  been made read-only and exists only for compatibility with tools like
+  Q2Admin.
 
 - Default value of ‘gl_dynamic’ variable has been changed from 1 to 2. This means
   dynamic lights will be disabled by default.
@@ -1425,7 +1440,7 @@ it used to be you know where to look. The following list may be incomplete.
 - ‘gl_particle_*’ series of variables are gone, as well as
   ‘gl_ext_pointparameters’ and R1GL-specific ‘gl_ext_point_sprite’. For
   controlling size of particles, which are always drawn as textured triangles,
-  Q2PRO supports it's own ‘gl_partscale’ variable.
+  Q2PRO supports its own ‘gl_partscale’ variable.
 
 - ‘ip’ variable has been renamed to ‘net_ip’.
 

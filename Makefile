@@ -279,7 +279,6 @@ endif
 
 ifndef CONFIG_NO_SOFTWARE_SOUND
     CFLAGS_c += -DUSE_SNDDMA=1
-    OBJS_c += src/client/sound/mix.o
     OBJS_c += src/client/sound/dma.o
 endif
 
@@ -521,10 +520,14 @@ ifndef CONFIG_NO_AQTION
     CFLAGS_s += -DAQTION_EXTENSION=y
 endif
 
-ifndef CONFIG_NO_AQTION
-	CFLAGS_c += -DAQTION_EXTENSION=y
-    CFLAGS_s += -DAQTION_EXTENSION=y
-endif
+ifdef CONFIG_BIG_ENDIAN
+    CFLAGS_c += -DUSE_BIG_ENDIAN=1
+    CFLAGS_s += -DUSE_BIG_ENDIAN=1
+    CFLAGS_g += -DUSE_BIG_ENDIAN=1
+else
+    CFLAGS_c += -DUSE_LITTLE_ENDIAN=1
+    CFLAGS_s += -DUSE_LITTLE_ENDIAN=1
+    CFLAGS_g += -DUSE_LITTLE_ENDIAN=1
 
 ### Targets ###
 

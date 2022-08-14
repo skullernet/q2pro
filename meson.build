@@ -5,9 +5,6 @@ project('q2pro', 'c',
   default_options: [
     'c_std=gnu99',
     'buildtype=debugoptimized',
-    'bindir=games',
-    'datadir=share/games/q2pro',
-    'libdir=lib/games/q2pro',
   ],
 )
 
@@ -160,6 +157,9 @@ game_src = [
   'src/shared/shared.c',
 ]
 
+datadir = get_option('prefix') / get_option('datadir') / meson.project_name()
+libdir = get_option('prefix') / get_option('libdir') / meson.project_name()
+
 cc = meson.get_compiler('c')
 
 win32 = host_machine.system() == 'windows'
@@ -230,6 +230,7 @@ config.set10('USE_JPG', jpeg.found())
 config.set10('USE_PNG', png.found())
 
 curl = dependency('libcurl',
+  version:         '>= 7.32.0',
   required:        get_option('libcurl'),
   allow_fallback:  win32,
   default_options: fallback_opt,
@@ -283,11 +284,11 @@ endif
 if get_option('client-ui')
   client_src += ui_src
   config.set10('USE_UI', true)
-  install_data('src/client/ui/q2pro.menu', install_dir: get_option('datadir') / get_option('base-game'))
+  install_data('src/client/ui/q2pro.menu', install_dir: datadir / get_option('base-game'))
 endif
 
 if get_option('software-sound')
-  client_src += ['src/client/sound/dma.c', 'src/client/sound/mix.c']
+  client_src += 'src/client/sound/dma.c'
   if sdl2.found()
     client_src += 'src/unix/sound/sdl.c'
   endif
@@ -298,7 +299,7 @@ endif
 
 if get_option('anticheat-server')
   server_src += 'src/server/ac.c'
-  config.set10('USE_AC_SERVER', true)
+  config.set('USE_AC_SERVER', 'USE_SERVER')
 endif
 
 if get_option('mvd-server')
@@ -354,7 +355,7 @@ shared_library('game' + host_machine.cpu_family(), game_src,
   gnu_symbol_visibility: 'hidden',
   link_args:             dll_link_args,
   install:               true,
-  install_dir:           get_option('libdir') / get_option('base-game'),
+  install_dir:           libdir / get_option('base-game'),
 )
 
 config.set('REVISION',            meson.project_version().substring(1).split('~')[0].to_int())
@@ -364,8 +365,8 @@ config.set_quoted('BUILDSTRING',  host_machine.system())
 config.set_quoted('BASEGAME',     get_option('base-game'))
 config.set_quoted('DEFGAME',      get_option('default-game'))
 if not win32
-  config.set_quoted('DATADIR',    get_option('prefix') / get_option('datadir'))
-  config.set_quoted('LIBDIR',     get_option('prefix') / get_option('libdir'))
+  config.set_quoted('DATADIR',    datadir)
+  config.set_quoted('LIBDIR',     libdir)
   config.set_quoted('HOMEDIR',    get_option('homedir'))
 endif
 config.set_quoted('VID_GEOMETRY', get_option('vid-geometry'))
@@ -381,5 +382,6 @@ config.set10('USE_MAPCHECKSUM',   get_option('map-checksum'))
 config.set10('USE_MD3',           get_option('md3'))
 config.set10('USE_PACKETDUP',     get_option('packetdup-hack'))
 config.set10('USE_TGA',           get_option('tga'))
+config.set10('USE_' + host_machine.endian().to_upper() + '_ENDIAN', true)
 
 configure_file(output: 'config.h', configuration: config)
