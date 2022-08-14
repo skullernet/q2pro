@@ -325,7 +325,7 @@ if get_option('discord-sdk')
     config.set10('USE_DISCORD', true)
     discord_sdk_path = 'extern/discord/lib/'
 
-    discord-sdk = dependency('discord-sdk', required: get_option('discord-sdk'))
+    discord = dependency('discord-sdk', required: get_option('discord-sdk'))
 
     if host_machine.system() == 'windows'
       if host_machine.cpu_family() == 'x86_64' # I am Windows 64-bit
