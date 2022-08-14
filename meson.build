@@ -326,13 +326,13 @@ if get_option('discord-sdk')
     discord_sdk_path = 'extern/discord/lib/'
     if host_machine.system() == 'windows'
       if host_machine.cpu_family() == 'x86_64' # I am Windows 64-bit
-        static_library(discord_sdk_path / host_machine.cpu_family() / discord_game_sdk.dll)
+        find_library('discord_game_sdk.dll',  dirs : [discord_sdk_path/host_machine.cpu_family()])
       elif host_machine.cpu_family() == 'x86' # I am Windows 32-bit
-        static_library(discord_sdk_path / host_machine.cpu_family() / discord_game_sdk.dll)
+        find_library('discord_game_sdk.dll',  dirs : [discord_sdk_path/host_machine.cpu_family()])
       endif
     elif host_machine.system() == 'linux'
       if host_machine.cpu_family() == 'x86_64' # I am Linux x86_64
-        static_library(discord_sdk_path / host_machine.cpu_family() / discord_game_sdk.so)
+        find_library('discord_game_sdk.so',  dirs : [discord_sdk_path/host_machine.cpu_family()])
       #elif host_machine.cpu_family() == 'aarch64' # I am Linux ARM 64-bit
         #Discord SDK does not have an ARM64/aarch64 version for Linux
       endif
