@@ -275,26 +275,26 @@ bool SV_ParseMapCmd(mapcmd_t *cmd)
 
     s = cmd->buffer;
 
-    // skip the end-of-unit flag if necessary
-    if (*s == '*') {
-        s++;
-        cmd->endofunit = true;
-    }
-
-    // if there is a + in the map, set nextserver to the remainder.
-    // we go directly to nextserver because we don't support cinematics.
-    ch = strchr(s, '+');
-    if (ch) {
-        s = ch + 1;
-
+    while (1) {
         // skip the end-of-unit flag if necessary
         if (*s == '*') {
             s++;
             cmd->endofunit = true;
         }
+
+        // if there is a + in the map, set nextserver to the remainder.
+        // we go directly to nextserver because we don't support cinematics.
+        ch = strchr(s, '+');
+        if (!ch) {
+            break;
+        }
+
+        s = ch + 1;
     }
 
-    cmd->server = s;
+    // copy it off to keep original mapcmd intact
+    Q_strlcpy(cmd->server, s, sizeof(cmd->server));
+    s = cmd->server;
 
     // if there is a $, use the remainder as a spawnpoint
     ch = strchr(s, '$');
@@ -302,7 +302,7 @@ bool SV_ParseMapCmd(mapcmd_t *cmd)
         *ch = 0;
         cmd->spawnpoint = ch + 1;
     } else {
-        cmd->spawnpoint = cmd->buffer + strlen(cmd->buffer);
+        cmd->spawnpoint = s + strlen(s);
     }
 
     // now expand and try to load the map

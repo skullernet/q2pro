@@ -632,12 +632,7 @@ static int IMG_SaveTGA(screenshot_t *s)
     for (i = 0; i < s->height; i++) {
         p = s->pixels + i * s->row_stride;
         for (j = 0; j < s->width; j++) {
-            byte tmp;
-
-            tmp = p[2];
-            p[2] = p[0];
-            p[0] = tmp;
-
+            SWAP(byte, p[0], p[2]);
             p += 3;
         }
     }
