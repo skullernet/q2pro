@@ -1437,10 +1437,9 @@ void CL_ParseServerMessage(void)
 			}
 
 			char key[MAX_STRING_CHARS];
-			int value;
 
 			MSG_ReadString(key, sizeof(key));
-			value = MSG_ReadLong();
+			MSG_ReadLong(); // Reki - unused for now, can be used to network end of game statistics to players
 			
 			continue;
         }

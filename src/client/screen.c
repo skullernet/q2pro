@@ -1888,7 +1888,6 @@ static void SCR_DrawCrosshair(void)
                      scr.crosshair_pic);
 }
 
-#define AQTION_EXTENSION
 #ifdef AQTION_EXTENSION
 void CL_Clear3DGhudQueue(void)
 {
