@@ -1933,9 +1933,9 @@ static void SCR_DrawGhudElement(ghud_element_t *element, float alpha_base, color
 	if (element->flags & GHF_BLINK)
 		alpha = min((element->color[3] * 0.85) + (element->color[3] * 0.25 * sin((float)cls.realtime / 125)), 255);
 
-	color_base.u8[0] = element->color[0];
-	color_base.u8[1] = element->color[1];
-	color_base.u8[2] = element->color[2];
+	color_base.u8[0] = element->color[0] * (color_base.u8[2] / 0xFF);
+	color_base.u8[1] = element->color[1] * (color_base.u8[2] / 0xFF);
+	color_base.u8[2] = element->color[2] * (color_base.u8[2] / 0xFF);
 	color_base.u8[3] = (alpha_base * alpha);
 	R_SetColor(color_base.u32);
 
@@ -1990,6 +1990,7 @@ static void SCR_DrawGhud(void)
 
 	float alpha_base = Cvar_ClampValue(scr_alpha, 0, 1);
 	color_t color_base;
+	color_base.u32 = 0xFFFFFFFF;
 
 
 	if (cl.ghud_3dlist)
