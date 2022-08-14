@@ -5,7 +5,7 @@ option('base-game', type: 'string', value: 'action', description: 'base game dir
 option('client-gtv', type: 'boolean', value: false, description: 'client GTV relay')
 option('client-ui', type: 'boolean', value: true, description: 'client UI')
 option('default-game', type: 'string', value: '', description: 'default game directory')
-option('discord-sdk', type: 'boolean', value: true, description: 'enable Discord SDK')
+option('discord-sdk', type: 'boolean', value: false, description: 'enable Discord SDK')
 option('dynamic-lights', type: 'boolean', value: true, description: 'dynamic lighting')
 option('game-abi-hack', type: 'feature', value: 'disabled', description: 'game ABI compat hack')
 option('homedir', type: 'string', value: '~/.aqtion', description: 'default home directory')
