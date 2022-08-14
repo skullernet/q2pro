@@ -326,13 +326,13 @@ if get_option('discord-sdk')
     discord_sdk_path = meson.current_source_dir() + '/extern/discord/lib/'
 
     if host_machine.system() == 'windows'
-      discord-sdk_dep = declare_dependency(
+      discord_sdk_dep = declare_dependency(
         dependencies : cc.find_library('discord_game_sdk.dll', 
         dirs : discord_sdk_path/host_machine.cpu_family())
       )
       #discord_dep = cc.find_library('discord_game_sdk.dll', dirs : [discord_sdk_path/host_machine.cpu_family()])
     elif host_machine.system() == 'linux'
-      discord-sdk_dep = declare_dependency(
+      discord_sdk_dep = declare_dependency(
         dependencies : cc.find_library('discord_game_sdk.so', 
         dirs : discord_sdk_path/host_machine.cpu_family())
       )
