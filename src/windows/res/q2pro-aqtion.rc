@@ -13,11 +13,11 @@
 #endif
 
 #ifdef _WIN64
-#define VER_FILEDESCRIPTION_STR     "Q2PRO dedicated server (64-bit)"
-#define VER_ORIGINALFILENAME_STR    "q2proded64.exe"
+#define VER_FILEDESCRIPTION_STR     "Q2PRO client (64-bit)"
+#define VER_ORIGINALFILENAME_STR    "q2pro64.exe"
 #else
-#define VER_FILEDESCRIPTION_STR     "Q2PRO dedicated server"
-#define VER_ORIGINALFILENAME_STR    "q2proded.exe"
+#define VER_FILEDESCRIPTION_STR     "Q2PRO client"
+#define VER_ORIGINALFILENAME_STR    "q2pro.exe"
 #endif
 
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
@@ -40,7 +40,7 @@ BEGIN
             VALUE "FileDescription", VER_FILEDESCRIPTION_STR
             VALUE "OriginalFilename", VER_ORIGINALFILENAME_STR
             VALUE "FileVersion", VERSION
-            VALUE "InternalName", "q2proded"
+            VALUE "InternalName", "q2pro"
             VALUE "LegalCopyright", "Copyright © 2022 skuller.net"
             VALUE "ProductName", "Q2PRO"
             VALUE "ProductVersion", VERSION
@@ -54,5 +54,5 @@ END
 
 LANGUAGE LANG_NEUTRAL, SUBLANG_DEFAULT
 
-100 ICON "q2proded.ico"
-CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "q2proded.exe.manifest"
+100 ICON "q2pro-aqtion.ico"
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "q2pro.exe.manifest"
