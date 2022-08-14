@@ -2,9 +2,9 @@ name: build
 
 on:
   push:
-    branches: [master, ci]
+    branches: [master, aqtion, ci]
   pull_request:
-    branches: [master]
+    branches: [master, aqtion]
 
 env:
   MESON_ARGS: >-
@@ -16,6 +16,7 @@ env:
     -Dpacketdup-hack=true
     -Dtests=true
     -Dvariable-fps=true
+    -Daqtion-build=true    
 
 jobs:
   mingw:
@@ -56,8 +57,31 @@ jobs:
           meson setup ${{ env.MESON_ARGS }} builddir
           ninja -C builddir
 
-  linux:
+  linux64:
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y meson libsdl2-dev libopenal-dev \
+          libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
+          libcurl4-gnutls-dev libx11-dev libxi-dev \
+          libwayland-dev wayland-protocols
+
+      - name: Build
+        run: |
+          meson setup ${{ env.MESON_ARGS }} builddir
+          ninja -C builddir
+        env:
+          CC: ${{ matrix.cc }}
+
+  linuxARM64:
+    runs-on: [self-hosted, ARM64]
     strategy:
       matrix:
         cc: [gcc, clang]

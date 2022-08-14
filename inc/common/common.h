@@ -27,12 +27,20 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // common.h -- definitions common between client and server, but not game.dll
 //
 
-#define PRODUCT         "Q2PRO"
+#define PRODUCT         "AQtion"
+#define SKULLERCREDIT   "https://github.com/skullernet/q2pro"
+#define CONSOLE_VERSION SKULLERCREDIT " " VERSION
 
 #if USE_CLIENT
-#define APPLICATION     "q2pro"
+#define APPLICATION     PRODUCT
 #else
 #define APPLICATION     "q2proded"
+#endif
+
+#if USE_AQTION
+#define PLATFORM     "Steam"
+#else
+#define PLATFORM     "Standalone"
 #endif
 
 #define COM_DEFAULT_CFG     "default.cfg"
@@ -146,6 +154,7 @@ extern cvar_t  *z_perturb;
 extern cvar_t   *developer;
 #endif
 extern cvar_t   *dedicated;
+extern cvar_t   *steamid;
 #if USE_CLIENT
 extern cvar_t   *host_speeds;
 #endif
