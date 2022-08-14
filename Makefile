@@ -452,6 +452,14 @@ ifdef CONFIG_PACKETDUP
     CFLAGS_s += -DUSE_PACKETDUP=1
 endif
 
+ifdef USE_AQTION
+    CFLAGS_c += -DPLATFORM="Steam"
+    CFLAGS_s += -DPLATFORM="Steam"
+else
+    CFLAGS_c += -DPLATFORM="Standalone"
+    CFLAGS_s += -DPLATFORM="Standalone"
+endif
+
 ifdef CONFIG_WINDOWS
     OBJS_c += src/windows/client.o
 

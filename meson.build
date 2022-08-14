@@ -317,9 +317,7 @@ if get_option('mvd-client')
 endif
 
 if get_option('aqtion-build')
-  config.set10('PLATFORM', 'Steam')
-else
-  config.set10('PLATFORM', 'Standalone')
+  config.set10('USE_AQTION', true)
 endif
 
 if get_option('system-console')
