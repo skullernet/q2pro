@@ -10,7 +10,7 @@
 #define GHF_INUSE	0x0001
 #define GHF_LERP	0x0002	// reserved, not added yet
 #define GHF_BLINK	0x0004
-#define GHF_3DPOS	0x0008	// reserved, not added yet
+#define GHF_3DPOS	0x0008
 #define GHF_HIDE	0x0010
 
 #define GHU_TYPE	0x0001
