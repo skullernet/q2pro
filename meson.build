@@ -316,6 +316,12 @@ if get_option('mvd-client')
   config.set10('USE_MVD_CLIENT', true)
 endif
 
+if get_option('steam-build')
+  config.set10('PLATFORM', 'Steam')
+else
+  config.set10('PLATFORM', 'Standalone')
+endif
+
 if get_option('system-console')
   if not win32
     common_src += 'src/unix/tty.c'
@@ -381,7 +387,6 @@ config.set10('USE_ICMP',          get_option('icmp-errors').require(win32 or cc.
 config.set10('USE_MAPCHECKSUM',   get_option('map-checksum'))
 config.set10('USE_MD3',           get_option('md3'))
 config.set10('USE_PACKETDUP',     get_option('packetdup-hack'))
-config.set10('PLATFORM',          get_option('platform'))
 config.set10('USE_TGA',           get_option('tga'))
 config.set10('USE_' + host_machine.endian().to_upper() + '_ENDIAN', true)
 

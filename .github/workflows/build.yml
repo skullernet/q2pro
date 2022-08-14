@@ -17,6 +17,9 @@ env:
     -Dtests=true
     -Dvariable-fps=true
 
+  PLATFORM: >-
+    -Dsteam-build=true
+
 jobs:
   mingw:
     runs-on: ubuntu-22.04
@@ -33,7 +36,7 @@ jobs:
 
       - name: Build
         run: |
-          meson setup --cross-file=.ci/${{ matrix.arch }}-w64-mingw32.txt ${{ env.MESON_ARGS }} builddir
+          meson setup --cross-file=.ci/${{ matrix.arch }}-w64-mingw32.txt ${{ env.MESON_ARGS }} ${{ env.PLATFORM }} builddir
           ninja -C builddir
 
   msvc:
@@ -53,7 +56,7 @@ jobs:
 
       - name: Build
         run: |
-          meson setup ${{ env.MESON_ARGS }} builddir
+          meson setup ${{ env.MESON_ARGS }} ${{ env.PLATFORM }} builddir
           ninja -C builddir
 
   linux64:
@@ -74,13 +77,13 @@ jobs:
 
       - name: Build
         run: |
-          meson setup ${{ env.MESON_ARGS }} builddir
+          meson setup ${{ env.MESON_ARGS }} ${{ env.PLATFORM }} builddir
           ninja -C builddir
         env:
           CC: ${{ matrix.cc }}
 
   linuxARM64:
-    runs-on: ubuntu-22.04
+    runs-on: [self-hosted, ARM64]
     strategy:
       matrix:
         cc: [gcc, clang]
@@ -97,7 +100,7 @@ jobs:
 
       - name: Build
         run: |
-          meson setup ${{ env.MESON_ARGS }} builddir
+          meson setup ${{ env.MESON_ARGS }} ${{ env.PLATFORM }} builddir
           ninja -C builddir
         env:
           CC: ${{ matrix.cc }}
