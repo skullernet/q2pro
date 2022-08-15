@@ -809,7 +809,7 @@ void SV_Ghud_SetSize(int i, int x, int y);
 #endif
 
 #ifdef AQTION_EXTENSION
-int(*GE_customizeentityforclient)(edict_t *client, edict_t *ent, entity_state_t *state); // 0 don't send, 1 send normally
+extern int(*GE_customizeentityforclient)(edict_t *client, edict_t *ent, entity_state_t *state); // 0 don't send, 1 send normally
 #endif
 
 //============================================================
