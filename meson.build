@@ -324,10 +324,9 @@ endif
 if get_option('discord-sdk')
     config.set10('USE_DISCORD', true)
     client_deps += 'discord'
-    discord_sdk_dep = subproject('discord').get_variable('discord_dep')
     discord_dep_dec = declare_dependency(
-        dependencies: cc.find_library('libdiscord',
-        dirs : [ meson.current_source_dir()/subprojects/discord],
+        dependencies: cc.find_library('discord',
+        dirs : [ meson.current_source_dir()/extern/discord],
         include_directories : include_directories('lib'),
       )
     )
