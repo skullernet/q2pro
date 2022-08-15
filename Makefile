@@ -195,6 +195,7 @@ OBJS_c := \
     src/client/screen.o     \
     src/client/tent.o       \
     src/client/view.o       \
+    src/client/ghud.o       \
     src/client/sound/main.o \
     src/client/sound/mem.o  \
     src/server/commands.o   \
@@ -206,6 +207,7 @@ OBJS_c := \
     src/server/main.o       \
     src/server/user.o       \
     src/server/world.o      \
+    src/server/ghud.o       \
 
 OBJS_s := \
     $(COMMON_OBJS)  \
@@ -217,7 +219,8 @@ OBJS_s := \
     src/server/send.o       \
     src/server/main.o       \
     src/server/user.o       \
-    src/server/world.o
+    src/server/world.o      \
+    src/server/ghud.o
 
 OBJS_g := \
     src/shared/shared.o         \
@@ -550,6 +553,11 @@ ifdef CONFIG_DEBUG
     CFLAGS_s += -DUSE_DEBUG=1
 endif
 
+ifndef CONFIG_NO_AQTION
+	CFLAGS_c += -DAQTION_EXTENSION=y
+    CFLAGS_s += -DAQTION_EXTENSION=y
+endif
+
 ifdef CONFIG_BIG_ENDIAN
     CFLAGS_c += -DUSE_BIG_ENDIAN=1
     CFLAGS_s += -DUSE_BIG_ENDIAN=1
@@ -558,7 +566,6 @@ else
     CFLAGS_c += -DUSE_LITTLE_ENDIAN=1
     CFLAGS_s += -DUSE_LITTLE_ENDIAN=1
     CFLAGS_g += -DUSE_LITTLE_ENDIAN=1
-endif
 
 ### Targets ###
 

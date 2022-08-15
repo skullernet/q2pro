@@ -25,6 +25,7 @@ cvar_t  *cl_noskins;
 cvar_t  *cl_footsteps;
 cvar_t  *cl_timeout;
 cvar_t  *cl_predict;
+cvar_t  *cl_predict_crouch;
 cvar_t  *cl_gun;
 cvar_t  *cl_gunalpha;
 cvar_t  *cl_warn_on_fps_rounding;
@@ -1339,7 +1340,7 @@ static void CL_UpdateGibSetting(void)
     if (!cls.netchan) {
         return;
     }
-    if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO) {
+	if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO && cls.serverProtocol != PROTOCOL_VERSION_AQTION) {
         return;
     }
 
@@ -1354,7 +1355,7 @@ static void CL_UpdateFootstepsSetting(void)
     if (!cls.netchan) {
         return;
     }
-    if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO) {
+	if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO && cls.serverProtocol != PROTOCOL_VERSION_AQTION) {
         return;
     }
 
@@ -1369,7 +1370,7 @@ static void CL_UpdatePredictSetting(void)
     if (!cls.netchan) {
         return;
     }
-    if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO) {
+    if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO && cls.serverProtocol != PROTOCOL_VERSION_AQTION) {
         return;
     }
 
@@ -1385,7 +1386,7 @@ static void CL_UpdateRateSetting(void)
     if (!cls.netchan) {
         return;
     }
-    if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO) {
+    if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO && cls.serverProtocol != PROTOCOL_VERSION_AQTION) {
         return;
     }
 
@@ -1535,8 +1536,12 @@ void CL_CheckForResend(void)
         cls.serverAddress.type = NA_LOOPBACK;
         cls.serverProtocol = cl_protocol->integer;
         if (cls.serverProtocol < PROTOCOL_VERSION_DEFAULT ||
-            cls.serverProtocol > PROTOCOL_VERSION_Q2PRO) {
-            cls.serverProtocol = PROTOCOL_VERSION_Q2PRO;
+            cls.serverProtocol > PROTOCOL_VERSION_AQTION) {
+			#ifdef AQTION_EXTENSION
+            cls.serverProtocol = PROTOCOL_VERSION_AQTION;
+			#else
+			cls.serverProtocol = PROTOCOL_VERSION_Q2PRO;
+			#endif
         }
 
         // we don't need a challenge on the localhost
@@ -1594,6 +1599,12 @@ void CL_CheckForResend(void)
                    PROTOCOL_VERSION_Q2PRO_CURRENT);
         cls.quakePort = net_qport->integer & 0xff;
         break;
+	case PROTOCOL_VERSION_AQTION:
+		Q_snprintf(tail, sizeof(tail), " %d %d %d %d",
+			maxmsglen, net_chantype->integer, USE_ZLIB,
+			PROTOCOL_VERSION_AQTION_CURRENT);
+		cls.quakePort = net_qport->integer & 0xff;
+		break;
     default:
         tail[0] = 0;
         cls.quakePort = net_qport->integer;
@@ -1633,6 +1644,7 @@ static void CL_Connect_c(genctx_t *ctx, int argnum)
             Prompt_AddMatch(ctx, "34");
             Prompt_AddMatch(ctx, "35");
             Prompt_AddMatch(ctx, "36");
+			Prompt_AddMatch(ctx, "38");
         }
     }
 }
@@ -1659,13 +1671,18 @@ usage:
     if (argc > 2) {
         protocol = atoi(Cmd_Argv(2));
         if (protocol < PROTOCOL_VERSION_DEFAULT ||
-            protocol > PROTOCOL_VERSION_Q2PRO) {
+            protocol > PROTOCOL_VERSION_AQTION ||
+			protocol == PROTOCOL_VERSION_MVD) {
             goto usage;
         }
     } else {
         protocol = cl_protocol->integer;
         if (!protocol) {
-            protocol = PROTOCOL_VERSION_Q2PRO;
+			#ifdef AQTION_EXTENSION
+			protocol = PROTOCOL_VERSION_AQTION;
+			#else
+			protocol = PROTOCOL_VERSION_Q2PRO;
+			#endif
         }
     }
 
@@ -1830,12 +1847,16 @@ void CL_ClearState(void)
     CL_ClearEffects();
     CL_ClearLightStyles();
     CL_ClearTEnts();
+#ifdef AQTION_EXTENSION
+	CL_Clear3DGhudQueue();
+#endif
     LOC_FreeLocations();
 
     // wipe the entire cl structure
     BSP_Free(cl.bsp);
     memset(&cl, 0, sizeof(cl));
     memset(&cl_entities, 0, sizeof(cl_entities));
+
 
     if (cls.state > ca_connected) {
         cls.state = ca_connected;
@@ -2491,7 +2512,9 @@ static void CL_ConnectionlessPacket(void)
                         mask |= 1;
                     } else if (k == PROTOCOL_VERSION_Q2PRO) {
                         mask |= 2;
-                    }
+                    } else if (k == PROTOCOL_VERSION_AQTION) {
+						mask |= 4;
+					}
                     s = strchr(s, ',');
                     if (s == NULL) {
                         break;
@@ -2503,6 +2526,12 @@ static void CL_ConnectionlessPacket(void)
 
         // choose supported protocol
         switch (cls.serverProtocol) {
+		case PROTOCOL_VERSION_AQTION:
+			if (mask & 4) {
+				break;
+			}
+			cls.serverProtocol = PROTOCOL_VERSION_Q2PRO;
+			// fall through
         case PROTOCOL_VERSION_Q2PRO:
             if (mask & 2) {
                 break;
@@ -2544,7 +2573,7 @@ static void CL_ConnectionlessPacket(void)
             return;
         }
 
-        if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO) {
+        if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO || cls.serverProtocol == PROTOCOL_VERSION_AQTION) {
             type = NETCHAN_NEW;
         } else {
             type = NETCHAN_OLD;
@@ -2784,7 +2813,7 @@ void CL_UpdateUserinfo(cvar_t *var, from_t from)
         return;
     }
 
-    if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO) {
+    if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO && cls.serverProtocol != PROTOCOL_VERSION_AQTION) {
         // transmit at next oportunity
         cls.userinfo_modified = MAX_PACKET_USERINFOS;
         goto done;
@@ -3847,6 +3876,7 @@ static void CL_InitLocal(void)
     cl_noskins->changed = cl_noskins_changed;
     cl_predict = Cvar_Get("cl_predict", "1", 0);
     cl_predict->changed = cl_predict_changed;
+	cl_predict_crouch = Cvar_Get("cl_predict_crouch", "1", 0);
     cl_kickangles = Cvar_Get("cl_kickangles", "1", CVAR_CHEAT);
     cl_warn_on_fps_rounding = Cvar_Get("cl_warn_on_fps_rounding", "1", 0);
     cl_maxfps = Cvar_Get("cl_maxfps", "60", 0);

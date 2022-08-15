@@ -19,6 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef COMMON_H
 #define COMMON_H
 
+
 #include "common/cmd.h"
 #include "common/utils.h"
 
@@ -121,6 +122,10 @@ void        Com_AddConfigFile(const char *name, unsigned flags);
 #define COM_DEDICATED   (dedicated->integer != 0)
 #else
 #define COM_DEDICATED   1
+#endif
+
+#ifdef AQTION_EXTENSION
+void G_InitializeExtensions(void);
 #endif
 
 #if USE_DEBUG
