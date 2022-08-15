@@ -332,7 +332,7 @@ if get_option('discord-sdk')
     )
 
     if host_machine.system() == 'windows'
-        discord_dep = cc.find_library('discord_game_sdk.dll', dirs : [discord_sdk_path/host_machine.cpu_family()])
+      discord_dep = cc.find_library('discord_game_sdk.dll', dirs : [discord_sdk_path/host_machine.cpu_family()])
     elif host_machine.system() == 'linux'
       discord_dep = cc.find_library('discord_game_sdk.so', dirs : [discord_sdk_path/host_machine.cpu_family()])
     elif host_machine.cpu_family() == 'aarch64' # I am Linux ARM 64-bit
