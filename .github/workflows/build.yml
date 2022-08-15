@@ -77,7 +77,7 @@ jobs:
 
       - name: Build
         run: |
-          meson setup --cross-file=.ci/x86_64-linux64.txt ${{ env.MESON_ARGS }} builddir
+          meson setup ${{ env.MESON_ARGS }} builddir
           ninja -C builddir
         env:
           CC: ${{ matrix.cc }}
@@ -100,7 +100,7 @@ jobs:
 
       - name: Build
         run: |
-          meson setup --cross-file=.ci/x86_64-linuxarm64.txt ${{ env.MESON_ARGS }} builddir
+          meson setup ${{ env.MESON_ARGS }} builddir
           ninja -C builddir
         env:
           CC: ${{ matrix.cc }}
