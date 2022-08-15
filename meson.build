@@ -324,9 +324,12 @@ if get_option('aqtion-build')
 endif
 
 if get_option('discord-sdk')
+  if host_machine.cpu_family() == 'aarch64' # I am Linux ARM 64-bit
+    # Discord does not have an SDK for this platform yet, setting USE_DISCORD to false
+    config.set10('USE_DISCORD', false)
+  else
     config.set10('USE_DISCORD', true)
     discord_dep_path = join_paths(meson.current_source_dir(), 'extern/discord/lib', host_machine.cpu_family())
-
     discord_dep = cc.find_library('discord', dirs : discord_dep_path)
 
     # Link against libA.lib here ...
@@ -337,6 +340,8 @@ if get_option('discord-sdk')
     my_dep = declare_dependency(link_with : discord_dep, include_directories : dis_inc)
 
     client_deps += discord_dep
+
+    endif
 
 
 
