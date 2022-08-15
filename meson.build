@@ -323,7 +323,7 @@ endif
 
 if get_option('discord-sdk')
     config.set10('USE_DISCORD', true)
-    discord_sdk_path = meson.current_source_dir() + '/extern/discord/lib/'
+    discord_sdk_path = 'extern/discord/lib/'
 
     discord_dep_dec = declare_dependency(
         dependencies: cc.find_library('discord_game_sdk', 
