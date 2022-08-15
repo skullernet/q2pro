@@ -84,9 +84,6 @@ jobs:
 
   linuxARM64:
     runs-on: [self-hosted, ARM64]
-    strategy:
-      matrix:
-        cc: gcc
     steps:
       - uses: actions/checkout@v2
 
@@ -103,4 +100,4 @@ jobs:
           meson setup ${{ env.MESON_ARGS }} builddir
           ninja -C builddir
         env:
-          CC: ${{ matrix.cc }}
+          CC: "gcc"
