@@ -328,7 +328,7 @@ if get_option('discord-sdk')
     client_deps += 'discord'
     discord_dep_dec = declare_dependency(
         dependencies: cc.find_library('discord',
-        dirs : [ meson.current_source_dir()/extern/discord],
+        dirs : [ 'extern/discord' ],
         include_directories : include_directories('lib'),
       )
     )
