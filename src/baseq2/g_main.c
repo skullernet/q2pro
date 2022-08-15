@@ -171,6 +171,9 @@ void InitGame(void)
 
     // export our own features
     gi.cvar_forceset("g_features", va("%d", G_FEATURES));
+	gi.cvar_forceset("g_view_predict", "1");
+	gi.cvar_forceset("g_view_high", "22");
+	gi.cvar_forceset("g_view_low", "4");
 
     // items
     InitItems();
