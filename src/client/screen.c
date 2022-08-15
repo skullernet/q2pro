@@ -2054,8 +2054,10 @@ static void SCR_DrawGhud(void)
 			vec3_t pos, xhair;
 			pos[0] = x;
 			pos[1] = y;
+			pos[2] = 0;
 			xhair[0] = scr.hud_width / 2;
 			xhair[1] = scr.hud_height / 2;
+			xhair[2] = 0;
 
 			float scale_dimension = min(scr.hud_width, scr.hud_height) / 6;
 			VectorSubtract(pos, xhair, pos);
