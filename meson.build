@@ -323,15 +323,22 @@ endif
 
 if get_option('discord-sdk')
     config.set10('USE_DISCORD', true)
-    discord_sdk_path = 'extern/discord/lib/'
-
+    client_deps += 'discord'
+    discord_sdk_dep = subproject('discord').get_variable('discord_dep')
     discord_dep_dec = declare_dependency(
-        dependencies: cc.find_library('discord_game_sdk', 
-        dirs : [discord_sdk_path/host_machine.cpu_family()],
-        include_directories : include_directories(discord_sdk_path/host_machine.cpu_family())
+        dependencies: cc.find_library('libdiscord',
+        dirs : [ meson.current_source_dir()/subprojects/discord],
+        include_directories : include_directories('lib'),
       )
     )
-    discord_sdk_dep = subproject('discord_game_sdk').get_variable('discord_dep_dec')
+
+
+    # discord_dep_dec = declare_dependency(
+    #     dependencies: cc.find_library('discord-sdk', 
+    #     dirs : [discord_sdk_path/host_machine.cpu_family()],
+    #     include_directories : include_directories(discord_sdk_path/host_machine.cpu_family())
+    #   )
+    # )
 
     # if host_machine.system() == 'windows'
       

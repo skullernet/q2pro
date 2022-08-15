@@ -6,4 +6,4 @@ source_hash = 6757bb4a1f5b42aa7b6707cbf2158420278760ac5d80d40ca708bb01d20ae6b4
 lead_directory_missing = extern/discord
 
 [provide]
-discord-sdk = discord-sdk_dep
+discord = discord_dep
