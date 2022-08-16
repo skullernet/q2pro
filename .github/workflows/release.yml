@@ -1,11 +1,9 @@
 name: Q2Pro Release
 
-# on:
-#   push:
-#     tags:
-#       - '*'
-
 on:
+  push:
+    tags:
+      - '*'
   workflow_dispatch:
 
 jobs:
@@ -28,8 +26,8 @@ jobs:
         with:
           draft: false
           prerelease: false
-          release_name: aq2-tng_${{ steps.version.outputs.version }}
-          tag_name: ${{ steps.version.outputs.version }}
+          release_name: q2pro_${{ steps.version.outputs.version }}
+          tag_name: ${{github.ref_name}}
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
@@ -88,7 +86,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           body_path: 
-          tag_name: ${{ steps.version.outputs.version }}
+          tag_name: ${{github.ref_name}}
           files: |
             q2pro-mingw-x86_64.zip
             q2pro-mingw-i686.zip
