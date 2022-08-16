@@ -1,4 +1,4 @@
-name: TNG Release
+name: Q2Pro Release
 
 # on:
 #   push:
@@ -15,7 +15,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          repository: actionquake/aq2-tng
+          repository: actionquake/q2pro
           ref: ${{ github.ref }}
 
       - name: version
