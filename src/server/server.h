@@ -146,6 +146,10 @@ typedef struct {
     server_state_t  state;      // precache commands are only valid during load
     int             spawncount; // random number generated each server spawn
 
+#if USE_CLIENT
+    int         gamedetecthack;
+#endif
+
 #if USE_FPS
     int         framerate;
     int         frametime;
@@ -763,12 +767,14 @@ void PF_Pmove(pmove_t *pm);
 void SV_AutoSaveBegin(mapcmd_t *cmd);
 void SV_AutoSaveEnd(void);
 void SV_CheckForSavegame(mapcmd_t *cmd);
+void SV_CheckForEnhancedSavegames(void);
 void SV_RegisterSavegames(void);
 #else
-#define SV_AutoSaveBegin(cmd)       (void)0
-#define SV_AutoSaveEnd()            (void)0
-#define SV_CheckForSavegame(cmd)    (void)0
-#define SV_RegisterSavegames()      (void)0
+#define SV_AutoSaveBegin(cmd)           (void)0
+#define SV_AutoSaveEnd()                (void)0
+#define SV_CheckForSavegame(cmd)        (void)0
+#define SV_CheckForEnhancedSavegames()  (void)0
+#define SV_RegisterSavegames()          (void)0
 #endif
 
 //============================================================
