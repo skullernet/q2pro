@@ -192,6 +192,14 @@ static void PF_dprintf(const char *fmt, ...)
     char        msg[MAXPRINTMSG];
     va_list     argptr;
 
+#if USE_CLIENT
+    // detect YQ2 game lib by unique first two messages
+    if (!sv.gamedetecthack)
+        sv.gamedetecthack = 1 + !strcmp(fmt, "Game is starting up.\n");
+    else if (sv.gamedetecthack == 2)
+        sv.gamedetecthack = 3 + !strcmp(fmt, "Game is %s built on %s.\n");
+#endif
+
     va_start(argptr, fmt);
     Q_vsnprintf(msg, sizeof(msg), fmt, argptr);
     va_end(argptr);
@@ -678,6 +686,10 @@ static cvar_t *PF_cvar(const char *name, const char *value, int flags)
 
 static void PF_AddCommandString(const char *string)
 {
+#if USE_CLIENT
+    if (!strcmp(string, "menu_loadgame\n"))
+        string = "pushmenu loadgame\n";
+#endif
     Cbuf_AddText(&cmd_buffer, string);
 }
 
