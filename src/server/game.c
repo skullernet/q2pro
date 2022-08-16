@@ -802,6 +802,7 @@ extension_func_t *g_extension_funcs;
 				g_extension_funcs = ext; \
 				} while (0);
 
+int(*GE_customizeentityforclient)(edict_t *client, edict_t *ent, entity_state_t *state);
 
 /*
 ================
