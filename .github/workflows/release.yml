@@ -36,49 +36,49 @@ jobs:
       - name: Download Linux x64 clang build artifacts
         uses: dawidd6/action-download-artifact@v2
         with:
-          workflow: build.yaml
+          workflow: build.yml
           name: q2pro-lin-clang
           skip_unpack: true
 
       - name: Download Linux x64 gcc build artifacts
         uses: dawidd6/action-download-artifact@v2
         with:
-          workflow: build.yaml
+          workflow: build.yml
           name: q2pro-lin-gcc
           skip_unpack: true
       
       - name: Download Linux ARM x64 build artifacts
         uses: dawidd6/action-download-artifact@v2
         with:
-          workflow: build.yaml
+          workflow: build.yml
           name: q2pro-lin-arm64
           skip_unpack: true
 
       - name: Download Win MSVC x86 build artifacts
         uses: dawidd6/action-download-artifact@v2
         with:
-          workflow: build.yaml
+          workflow: build.yml
           name: q2pro-msvc-x86
           skip_unpack: true
 
       - name: Download Win MSVC x64 build artifacts
         uses: dawidd6/action-download-artifact@v2
         with:
-          workflow: build.yaml
+          workflow: build.yml
           name: q2pro-msvc-x64
           skip_unpack: true
 
       - name: Download Win mingw i686 build artifacts
         uses: dawidd6/action-download-artifact@v2
         with:
-          workflow: build.yaml
+          workflow: build.yml
           name: q2pro-mingw-i686
           skip_unpack: true
 
       - name: Download Win mingw x64 build artifacts
         uses: dawidd6/action-download-artifact@v2
         with:
-          workflow: build.yaml
+          workflow: build.yml
           name: q2pro-mingw-x86_64
           skip_unpack: true
 
