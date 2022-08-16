@@ -386,6 +386,9 @@ shared_library('game' + host_machine.cpu_family(), game_src,
   install_dir:           libdir / get_option('base-game'),
 )
 
+# AQtion datadir overrides
+datadir = "."
+
 config.set('REVISION',            meson.project_version().substring(1).split('~')[0].to_int())
 config.set_quoted('VERSION',      meson.project_version())
 config.set_quoted('CPUSTRING',    host_machine.cpu_family())
