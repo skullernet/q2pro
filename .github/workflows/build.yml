@@ -16,8 +16,6 @@ env:
     -Dpacketdup-hack=true
     -Dtests=true
     -Dvariable-fps=true
-    -Daqtion-build=true
-    -Ddiscord-sdk=true
 
 jobs:
   mingw:
