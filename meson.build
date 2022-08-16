@@ -329,66 +329,19 @@ if get_option('discord-sdk')
     config.set10('USE_DISCORD', false)
   else
     config.set10('USE_DISCORD', true)
-    discord_dep_path = join_paths(meson.current_source_dir(), 'extern/discord/lib', host_machine.cpu_family())
+    discord_dep_path = join_paths(meson.current_source_dir(), 'extern/discord/lib/', host_machine.cpu_family())
     discord_dep = cc.find_library('discord', dirs : discord_dep_path)
 
     # Link against libA.lib here ...
 #    B_lib = library('libB', 'libB.cpp', dependencies : discord_dep)
 #    B_exe = executable('exeB', 'source.cpp', dependencies : discord_dep)
 
-    dis_inc = include_directories('extern/discord/lib')
-    my_dep = declare_dependency(link_with : discord_dep, include_directories : dis_inc)
+    dis_inc = include_directories('extern/discord/lib/')
+    discord_dep_dec = declare_dependency(link_with : discord_dep, include_directories : dis_inc)
 
     client_deps += discord_dep
 
     endif
-
-
-
-
-    # discord_dep_dec = declare_dependency(
-    #     dependencies: cc.find_library('discord-sdk', 
-    #     dirs : [discord_sdk_path/host_machine.cpu_family()],
-    #     include_directories : include_directories(discord_sdk_path/host_machine.cpu_family())
-    #   )
-    # )
-
-    # if host_machine.system() == 'windows'
-      
-    # )
-    # elif host_machine.system() == 'linux'
-    #   discord_dep = declare_dependency(
-    #     dependencies: cc.find_library('discord_game_sdk.so', 
-    #     dirs : [discord_sdk_path/host_machine.cpu_family()],
-    #     include_directories : include_directories(discord_sdk_path/host_machine.cpu_family())
-    #   )
-    # elif host_machine.cpu_family() == 'aarch64' # I am Linux ARM 64-bit
-    #       # Discord does not have an SDK for this platform yet, setting USE_DISCORD to false
-    #       config.set10('USE_DISCORD', false)
-    # endif
-
-    # discord = dependency('discord-sdk', 
-    # required: get_option('discord-sdk'), 
-    # allow_fallback:  win32,
-    # default_options: fallback_opt,
-    # )
-
-    #if discord.found()
-      # if host_machine.system() == 'windows'
-      #   if host_machine.cpu_family() == 'x86_64' # I am Windows 64-bit
-      #     discord_dep = cc.find_library('discord_game_sdk', dirs : [discord_sdk_path/host_machine.cpu_family()])
-      #   elif host_machine.cpu_family() == 'x86' # I am Windows 32-bit
-      #     discord_dep = cc.find_library('discord_game_sdk', dirs : [discord_sdk_path/host_machine.cpu_family()])
-      #   endif
-      # elif host_machine.system() == 'linux'
-      #   if host_machine.cpu_family() == 'x86_64' # I am Linux x86_64
-      #     discord_dep = cc.find_library('discord_game_sdk', dirs : [discord_sdk_path/host_machine.cpu_family()])
-      #   elif host_machine.cpu_family() == 'aarch64' # I am Linux ARM 64-bit
-      #     # Discord does not have an SDK for this platform yet, setting USE_DISCORD to false
-      #     config.set10('USE_DISCORD', false)
-      #   endif
-      # endif
-    #endif
 endif
 
 if get_option('system-console')

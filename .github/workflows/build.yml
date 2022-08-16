@@ -40,15 +40,16 @@ jobs:
 
   msvc:
     runs-on: windows-latest
-    strategy:
-      matrix:
-        arch: ["x86", "x64"]
+    #strategy:
+    #  matrix:
+    #    arch: ["x86", "x64"]
     steps:
       - uses: actions/checkout@v2
 
       - uses: ilammy/msvc-dev-cmd@d8610e2b41c6d0f0c3b4c46dad8df0fd826c68e1
         with:
-          arch: ${{ matrix.arch }}
+          #arch: "${{ matrix.arch }}"
+          arch: "x64"
 
       - name: Install dependencies
         run: pip3 install --no-input meson ninja
