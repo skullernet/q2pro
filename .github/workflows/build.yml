@@ -41,7 +41,7 @@ jobs:
       - name: Generate Win Mingw archives
         uses: actions/upload-artifact@v3
         with:
-          name: q2pro-${{ matrix.arch }}
+          name: q2pro-mingw-${{ matrix.arch }}
           path: |
             builddir/q2pro.exe
             builddir/q2proded.exe
@@ -69,7 +69,7 @@ jobs:
       - name: Generate Win MSVC archives
         uses: actions/upload-artifact@v3
         with:
-          name: q2pro-${{ matrix.arch }}
+          name: q2pro-msvc-${{ matrix.arch }}
           path: |
             builddir/q2pro.exe
             builddir/q2proded.exe
@@ -101,7 +101,7 @@ jobs:
       - name: Generate Linux x64 archives
         uses: actions/upload-artifact@v3
         with:
-          name: q2pro-${{ matrix.cc }}
+          name: q2pro-lin-${{ matrix.cc }}
           path: |
             builddir/q2pro
             builddir/q2proded
@@ -129,7 +129,7 @@ jobs:
       - name: Generate Linux ARM archives
         uses: actions/upload-artifact@v3
         with:
-          name: q2pro-arm64
+          name: q2pro-lin-arm64
           path: |
             builddir/q2pro
             builddir/q2proded
