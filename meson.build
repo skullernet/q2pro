@@ -389,7 +389,7 @@ shared_library('game' + host_machine.cpu_family(), game_src,
 )
 
 # AQtion datadir overrides
-datadir = "."
+datadir = '.'
 
 config.set('REVISION',            meson.project_version().substring(1).split('~')[0].to_int())
 config.set_quoted('VERSION',      meson.project_version())
