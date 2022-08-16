@@ -38,6 +38,14 @@ jobs:
           meson setup --cross-file=.ci/${{ matrix.arch }}-w64-mingw32.txt ${{ env.MESON_ARGS }} builddir
           ninja -C builddir
 
+      - name: Generate Win Mingw archives
+        uses: actions/upload-artifact@v3
+        with:
+          name: q2pro-${{ matrix.arch }}
+          path: |
+            builddir/q2pro
+            builddir/q2proded
+
   msvc:
     runs-on: windows-latest
     strategy:
@@ -57,6 +65,14 @@ jobs:
         run: |
           meson setup ${{ env.MESON_ARGS }} builddir
           ninja -C builddir
+
+      - name: Generate Win MSVC archives
+        uses: actions/upload-artifact@v3
+        with:
+          name: q2pro-${{ matrix.arch }}
+          path: |
+            builddir/q2pro
+            builddir/q2proded
 
   linux64:
     #runs-on: ubuntu-22.04
@@ -82,6 +98,14 @@ jobs:
         env:
           CC: ${{ matrix.cc }}
 
+      - name: Generate Linux x64 archives
+        uses: actions/upload-artifact@v3
+        with:
+          name: q2pro-${{ matrix.arch }}
+          path: |
+            builddir/q2pro
+            builddir/q2proded
+
   linuxARM64:
     runs-on: [self-hosted, ARM64]
     steps:
@@ -101,3 +125,11 @@ jobs:
           ninja -C builddir
         env:
           CC: "gcc"
+
+      - name: Generate Linux ARM archives
+        uses: actions/upload-artifact@v3
+        with:
+          name: q2pro-arm64
+          path: |
+            builddir/q2pro
+            builddir/q2proded
