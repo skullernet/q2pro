@@ -43,8 +43,8 @@ jobs:
         with:
           name: q2pro-${{ matrix.arch }}
           path: |
-            builddir/q2pro
-            builddir/q2proded
+            builddir/q2pro.exe
+            builddir/q2proded.exe
 
   msvc:
     runs-on: windows-latest
@@ -103,8 +103,8 @@ jobs:
         with:
           name: q2pro-${{ matrix.cc }}
           path: |
-            builddir/q2pro.exe
-            builddir/q2proded.exe
+            builddir/q2pro
+            builddir/q2proded
 
   linuxARM64:
     runs-on: [self-hosted, ARM64]
