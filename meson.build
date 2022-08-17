@@ -8,6 +8,8 @@ project('q2pro', 'c',
   ],
 )
 
+q2pro_include_dir = ['inc']
+
 common_src = [
   'src/common/bsp.c',
   'src/common/cmd.c',
@@ -339,6 +341,7 @@ if get_option('discord-sdk')
     #discord_dep_dec = declare_dependency(link_with : discord_dep, include_directories : dis_inc)
 
     client_deps += discord_dep
+    q2pro_include_dir += discord_inc_path
 
     endif
 endif
@@ -357,7 +360,7 @@ endif
 
 executable('q2pro', common_src, client_src, refresh_src,
   dependencies:          common_deps + client_deps,
-  include_directories:   ['inc', discord_inc_path],
+  include_directories:   q2pro_include_dir,
   gnu_symbol_visibility: 'hidden',
   win_subsystem:         'windows',
   link_args:             exe_link_args,
