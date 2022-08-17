@@ -357,7 +357,7 @@ endif
 
 executable('q2pro', common_src, client_src, refresh_src,
   dependencies:          common_deps + client_deps,
-  include_directories:   ['inc', discord_dep_path],
+  include_directories:   ['inc', discord_inc_path],
   gnu_symbol_visibility: 'hidden',
   win_subsystem:         'windows',
   link_args:             exe_link_args,
