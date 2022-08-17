@@ -330,15 +330,10 @@ if get_option('discord-sdk')
   else
     config.set10('USE_DISCORD', true)
     discord_inc_path = join_paths('extern/discord/lib/', host_machine.cpu_family())
-
-    discord_dep_path = join_paths(meson.current_source_dir(), discord_inc_path)
-    discord_dep = cc.find_library('discord', dirs : discord_dep_path)
-
-    # Link against libA.lib here ...
-#    B_lib = library('libB', 'libB.cpp', dependencies : discord_dep)
-#    B_exe = executable('exeB', 'source.cpp', dependencies : discord_dep)
-
     dis_inc = include_directories(discord_inc_path)
+    discord_dep_path = join_paths(meson.current_source_dir(), discord_inc_path)
+    
+    discord_dep = cc.find_library('discord', dirs : discord_dep_path)
     discord_dep_dec = declare_dependency(link_with : discord_dep, include_directories : dis_inc)
 
     client_deps += discord_dep
