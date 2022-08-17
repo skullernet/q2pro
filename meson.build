@@ -336,7 +336,7 @@ if get_option('discord-sdk')
     #dis_lib = dependency('discord', method : 'system')
 
     discord_dep = cc.find_library('discord', dirs : discord_dep_path)
-    discord_dep_dec = declare_dependency(link_with : discord_dep, include_directories : dis_inc)
+    #discord_dep_dec = declare_dependency(link_with : discord_dep, include_directories : dis_inc)
 
     client_deps += discord_dep
 
@@ -357,7 +357,7 @@ endif
 
 executable('q2pro', common_src, client_src, refresh_src,
   dependencies:          common_deps + client_deps,
-  include_directories:   'inc',
+  include_directories:   ['inc', discord_dep_path],
   gnu_symbol_visibility: 'hidden',
   win_subsystem:         'windows',
   link_args:             exe_link_args,
