@@ -19,6 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef MSG_H
 #define MSG_H
 
+#include "shared/ghud.h"
 #include "common/protocol.h"
 #include "common/sizebuf.h"
 
@@ -110,6 +111,7 @@ void    MSG_WriteDeltaEntity(const entity_packed_t *from, const entity_packed_t 
 void    MSG_PackPlayer(player_packed_t *out, const player_state_t *in);
 void    MSG_WriteDeltaPlayerstate_Default(const player_packed_t *from, const player_packed_t *to);
 int     MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t *from, player_packed_t *to, msgPsFlags_t flags);
+int     MSG_WriteDeltaPlayerstate_Aqtion(const player_packed_t *from, player_packed_t *to, msgPsFlags_t flags);
 void    MSG_WriteDeltaPlayerstate_Packet(const player_packed_t *from, const player_packed_t *to, int number, msgPsFlags_t flags);
 
 static inline void *MSG_WriteData(const void *data, size_t len)
@@ -145,8 +147,15 @@ void    MSG_ParseDeltaEntity(const entity_state_t *from, entity_state_t *to, int
 #if USE_CLIENT
 void    MSG_ParseDeltaPlayerstate_Default(const player_state_t *from, player_state_t *to, int flags);
 void    MSG_ParseDeltaPlayerstate_Enhanced(const player_state_t *from, player_state_t *to, int flags, int extraflags);
+void    MSG_ParseDeltaPlayerstate_Aqtion(const player_state_t *from, player_state_t *to, int flags, int extraflags);
 #endif
 void    MSG_ParseDeltaPlayerstate_Packet(const player_state_t *from, player_state_t *to, int flags);
+#ifdef AQTION_EXTENSION
+void	MSG_WriteGhud(ghud_element_t *element, byte flags, short eflags);
+#if USE_CLIENT
+void	MSG_ParseGhud();
+#endif
+#endif
 
 #if USE_DEBUG
 #if USE_CLIENT

@@ -113,6 +113,9 @@ BUILD_DEFS += -DBUILDSTRING='"$(SYS)"'
 VER_DEFS := -DREVISION=$(REV)
 VER_DEFS += -DVERSION='"$(VER)"'
 
+PLATFORM ?= Standalone
+PLAT_DEFS := -DPLATFORM='"($(PLATFORM))"'
+
 CONFIG_GAME_BASE ?= baseq2
 CONFIG_GAME_DEFAULT ?=
 PATH_DEFS := -DBASEGAME='"$(CONFIG_GAME_BASE)"'
@@ -122,14 +125,23 @@ PATH_DEFS += -DDEFGAME='"$(CONFIG_GAME_DEFAULT)"'
 ifndef CONFIG_WINDOWS
     CONFIG_PATH_DATA ?= .
     CONFIG_PATH_LIB ?= .
-    CONFIG_PATH_HOME ?=
+    CONFIG_PATH_HOME =
     PATH_DEFS += -DDATADIR='"$(CONFIG_PATH_DATA)"'
     PATH_DEFS += -DLIBDIR='"$(CONFIG_PATH_LIB)"'
     PATH_DEFS += -DHOMEDIR='"$(CONFIG_PATH_HOME)"'
 endif
+# All builds can have a CONFIG_PATH_HOME defined
+#PATH_DEFS += -DHOMEDIR='"$(CONFIG_PATH_HOME)"'
 
-CFLAGS_s += $(BUILD_DEFS) $(VER_DEFS) $(PATH_DEFS) -DUSE_SERVER=1
-CFLAGS_c += $(BUILD_DEFS) $(VER_DEFS) $(PATH_DEFS) -DUSE_CLIENT=1
+ifdef LIN_32BIT
+CFLAGS_s += -m32
+CFLAGS_c += -m32
+LDFLAGS_s += -m32
+LDFLAGS_c += -m32
+endif
+
+CFLAGS_s += $(BUILD_DEFS) $(VER_DEFS) $(PATH_DEFS) $(PLAT_DEFS) -DUSE_SERVER=1
+CFLAGS_c += $(BUILD_DEFS) $(VER_DEFS) $(PATH_DEFS) $(PLAT_DEFS) -DUSE_CLIENT=1
 
 # windres needs special quoting...
 RCFLAGS_s += -DREVISION=$(REV) -DVERSION='\"$(VER)\"'
@@ -183,6 +195,7 @@ OBJS_c := \
     src/client/screen.o     \
     src/client/tent.o       \
     src/client/view.o       \
+    src/client/ghud.o       \
     src/client/sound/main.o \
     src/client/sound/mem.o  \
     src/server/commands.o   \
@@ -194,6 +207,7 @@ OBJS_c := \
     src/server/main.o       \
     src/server/user.o       \
     src/server/world.o      \
+    src/server/ghud.o       \
 
 OBJS_s := \
     $(COMMON_OBJS)  \
@@ -205,7 +219,8 @@ OBJS_s := \
     src/server/send.o       \
     src/server/main.o       \
     src/server/user.o       \
-    src/server/world.o
+    src/server/world.o      \
+    src/server/ghud.o
 
 OBJS_g := \
     src/shared/shared.o         \
@@ -260,6 +275,24 @@ OBJS_g := \
 
 
 ### Configuration Options ###
+
+ifdef CONFIG_DISCORD
+    CFLAGS_c += -DUSE_DISCORD=1
+
+    ifeq ($(CPU),aarch64) && ($(SYS),Linux) # We're Linux arm64 (Discord does not support)
+        LIBS_c ?=
+    else ifeq ($(CPU),x86_64) && ($(SYS),Linux) # We're x86_64 Linux
+        LIBS_c += extern/discord/lib/x86_64/discord_game_sdk.so
+    else ifeq ($(CPU),aarch64) && ($(SYS),Darwin) # We're Apple Silicon
+        LIBS_c += extern/discord/lib/aarch64/discord_game_sdk.dylib
+    else ifeq ($(CPU),x86_64) && ($(SYS),Darwin) # We're Apple Intel
+        LIBS_c += extern/discord/lib/x86_64/discord_game_sdk.dylib
+    else ifneq ($(filter x86 i386,$(CPU)),) # We're i386 Windows
+        LIBS_c += extern/discord/lib/x86/discord_game_sdk.dll
+    else # We're x86_64 Windows
+        LIBS_c += extern/discord/lib/x86_64/discord_game_sdk.dll
+    endif
+endif
 
 ifdef CONFIG_HTTP
     CURL_CFLAGS ?= $(shell pkg-config libcurl --cflags)
@@ -422,6 +455,14 @@ ifdef CONFIG_PACKETDUP
     CFLAGS_s += -DUSE_PACKETDUP=1
 endif
 
+ifdef USE_AQTION
+    CFLAGS_c += -DPLATFORM="Steam"
+    CFLAGS_s += -DPLATFORM="Steam"
+else
+    CFLAGS_c += -DPLATFORM="Standalone"
+    CFLAGS_s += -DPLATFORM="Standalone"
+endif
+
 ifdef CONFIG_WINDOWS
     OBJS_c += src/windows/client.o
 
@@ -512,6 +553,11 @@ ifdef CONFIG_DEBUG
     CFLAGS_s += -DUSE_DEBUG=1
 endif
 
+ifndef CONFIG_NO_AQTION
+	CFLAGS_c += -DAQTION_EXTENSION=y
+    CFLAGS_s += -DAQTION_EXTENSION=y
+endif
+
 ifdef CONFIG_BIG_ENDIAN
     CFLAGS_c += -DUSE_BIG_ENDIAN=1
     CFLAGS_s += -DUSE_BIG_ENDIAN=1
@@ -520,7 +566,6 @@ else
     CFLAGS_c += -DUSE_LITTLE_ENDIAN=1
     CFLAGS_s += -DUSE_LITTLE_ENDIAN=1
     CFLAGS_g += -DUSE_LITTLE_ENDIAN=1
-endif
 
 ### Targets ###
 
@@ -535,6 +580,12 @@ else
 endif
 
 all: $(TARG_s) $(TARG_c) $(TARG_g)
+
+server: $(TARG_s)
+
+client: $(TARG_c)
+
+game: $(TARG_g)
 
 default: all
 

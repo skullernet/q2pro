@@ -19,6 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef COMMON_H
 #define COMMON_H
 
+
 #include "common/cmd.h"
 #include "common/utils.h"
 
@@ -26,12 +27,20 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // common.h -- definitions common between client and server, but not game.dll
 //
 
-#define PRODUCT         "Q2PRO"
+#define PRODUCT         "AQtion"
+#define SKULLERCREDIT   "https://github.com/skullernet/q2pro"
+#define CONSOLE_VERSION SKULLERCREDIT " " VERSION
 
 #if USE_CLIENT
-#define APPLICATION     "q2pro"
+#define APPLICATION     PRODUCT
 #else
 #define APPLICATION     "q2proded"
+#endif
+
+#if USE_AQTION
+#define PLATFORM     "Steam"
+#else
+#define PLATFORM     "Standalone"
 #endif
 
 #define COM_DEFAULT_CFG     "default.cfg"
@@ -115,6 +124,10 @@ void        Com_AddConfigFile(const char *name, unsigned flags);
 #define COM_DEDICATED   1
 #endif
 
+#ifdef AQTION_EXTENSION
+void G_InitializeExtensions(void);
+#endif
+
 #if USE_DEBUG
 #define Com_DPrintf(...) \
     if (developer && developer->integer > 0) \
@@ -141,6 +154,7 @@ extern cvar_t  *z_perturb;
 extern cvar_t   *developer;
 #endif
 extern cvar_t   *dedicated;
+extern cvar_t   *steamid;
 #if USE_CLIENT
 extern cvar_t   *host_speeds;
 #endif

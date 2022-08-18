@@ -8,6 +8,8 @@ project('q2pro', 'c',
   ],
 )
 
+q2pro_include_dir = ['inc']
+
 common_src = [
   'src/common/bsp.c',
   'src/common/cmd.c',
@@ -55,6 +57,7 @@ client_src = [
   'src/client/sound/mem.c',
   'src/server/commands.c',
   'src/server/entities.c',
+  'src/server/ghud.c',
   'src/server/game.c',
   'src/server/init.c',
   'src/server/save.c',
@@ -97,6 +100,7 @@ server_src = [
   'src/client/null.c',
   'src/server/commands.c',
   'src/server/entities.c',
+  'src/server/ghud.c',
   'src/server/game.c',
   'src/server/init.c',
   'src/server/send.c',
@@ -316,6 +320,32 @@ if get_option('mvd-client')
   config.set10('USE_MVD_CLIENT', true)
 endif
 
+if get_option('aqtion-build')
+  config.set10('USE_AQTION', true)
+  config.set10('AQTION_EXTENSION', true)
+endif
+
+if get_option('discord-sdk')
+  if host_machine.cpu_family() == 'aarch64' # I am Linux ARM 64-bit
+    # Discord does not have an SDK for this platform yet, setting USE_DISCORD to false
+    config.set10('USE_DISCORD', false)
+  else
+    config.set10('USE_DISCORD', true)
+    discord_inc_path = join_paths('extern/discord/lib/', host_machine.cpu_family())
+    dis_inc = include_directories(discord_inc_path)
+    discord_dep_path = join_paths(meson.current_source_dir(), discord_inc_path)
+    
+    #dis_lib = dependency('discord', method : 'system')
+
+    discord_dep = cc.find_library('discord', dirs : discord_dep_path)
+    #discord_dep_dec = declare_dependency(link_with : discord_dep, include_directories : dis_inc)
+
+    client_deps += discord_dep
+    q2pro_include_dir += discord_inc_path
+
+    endif
+endif
+
 if get_option('system-console')
   if not win32
     common_src += 'src/unix/tty.c'
@@ -330,7 +360,7 @@ endif
 
 executable('q2pro', common_src, client_src, refresh_src,
   dependencies:          common_deps + client_deps,
-  include_directories:   'inc',
+  include_directories:   q2pro_include_dir,
   gnu_symbol_visibility: 'hidden',
   win_subsystem:         'windows',
   link_args:             exe_link_args,
@@ -357,6 +387,9 @@ shared_library('game' + host_machine.cpu_family(), game_src,
   install:               true,
   install_dir:           libdir / get_option('base-game'),
 )
+
+# AQtion datadir overrides
+datadir = '.'
 
 config.set('REVISION',            meson.project_version().substring(1).split('~')[0].to_int())
 config.set_quoted('VERSION',      meson.project_version())
