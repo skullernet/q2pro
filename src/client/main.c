@@ -265,9 +265,11 @@ qboolean CL_IsPrivateNetwork(void)
     #endif // End 64/32 bit check
 #elif _MSC_VER < 1920 // older MSC
 // Push/Pop fix needed for older versions of Visual Studio to prevent unexpected crashes due to compile configurations
-#pragma pack(push, 8)
-#include "../extern/discord/c/discord_game_sdk.h"
-#pragma pack(pop)
+    #pragma pack(push, 8)
+        #include "../extern/discord/c/discord_game_sdk.h"
+    #pragma pack(pop)
+#elif defined( __linux__ )
+    #pragma comment(lib, "../extern/discord/lib/x86_64/discord_game_sdk.so")
 #endif // _MSC_VER >= 1920 && !__INTEL_COMPILER
 
 #define DISCORD_APP_ID 1002762540247433297  // Discord application ID (also referred to as "Client ID" is the game's unique identifier across Discord)
