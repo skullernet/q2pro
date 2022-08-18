@@ -24,7 +24,8 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        arch: ["i686", "x86_64"]
+        #arch: ["i686", "x86_64"]
+        arch: ["x86_64"]
     steps:
       - uses: actions/checkout@v2
 
@@ -50,7 +51,8 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        arch: ["x86", "x64"]
+        #arch: ["x86", "x64"]
+        arch: ["x64"]
     steps:
       - uses: actions/checkout@v2
 
