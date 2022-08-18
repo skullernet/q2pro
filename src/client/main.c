@@ -270,7 +270,6 @@ qboolean CL_IsPrivateNetwork(void)
 #pragma pack(pop)
 #endif // _MSC_VER >= 1920 && !__INTEL_COMPILER
 
-
 #define DISCORD_APP_ID 1002762540247433297  // Discord application ID (also referred to as "Client ID" is the game's unique identifier across Discord)
 #define DISCORD_APP_TEXT "AQtion"           // Tooltip name
 #define DISCORD_APP_IMAGE "aqtion"          // Rich presence -> art asset -> asset name
