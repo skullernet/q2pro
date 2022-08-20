@@ -22,6 +22,7 @@ option('packetdup-hack', type: 'boolean', value: false, description: 'packet dup
 option('sdl2', type: 'feature', value: 'auto', description: 'SDL2 support')
 option('software-sound', type: 'boolean', value: true, description: 'software sound')
 option('system-console', type: 'boolean', value: true, description: 'system console')
+option('system-wide', type: 'boolean', value: true, description: 'system-wide install')
 option('tests', type: 'boolean', value: false, description: 'tests')
 option('tga', type: 'boolean', value: true, description: 'TGA images support')
 option('variable-fps', type: 'boolean', value: false, description: 'variable server FPS')

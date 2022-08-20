@@ -157,9 +157,6 @@ game_src = [
   'src/shared/shared.c',
 ]
 
-datadir = get_option('prefix') / get_option('datadir') / meson.project_name()
-libdir = get_option('prefix') / get_option('libdir') / meson.project_name()
-
 cc = meson.get_compiler('c')
 
 win32 = host_machine.system() == 'windows'
@@ -184,6 +181,17 @@ else
     sys = sys.substring(0, -3) + sys.substring(-3).to_upper()
   endif
   sys = sys[0].to_upper() + sys.substring(1)
+endif
+
+datadir = '.'
+libdir = '.'
+homedir = ''
+
+system_wide = not win32 and get_option('system-wide')
+if system_wide
+  datadir = get_option('prefix') / get_option('datadir') / meson.project_name()
+  libdir = get_option('prefix') / get_option('libdir') / meson.project_name()
+  homedir = get_option('homedir')
 endif
 
 common_args = ['-DHAVE_CONFIG_H']
@@ -305,7 +313,9 @@ endif
 if get_option('client-ui')
   client_src += ui_src
   config.set10('USE_UI', true)
-  install_data('src/client/ui/q2pro.menu', install_dir: datadir / get_option('base-game'))
+  if system_wide
+    install_data('src/client/ui/q2pro.menu', install_dir: datadir / get_option('base-game'))
+  endif
 endif
 
 if get_option('software-sound')
@@ -356,7 +366,7 @@ executable('q2pro', common_src, client_src, refresh_src,
   win_subsystem:         'windows',
   link_args:             exe_link_args,
   c_args:                ['-DUSE_CLIENT=1', '-DUSE_REF=1'],
-  install:               true,
+  install:               system_wide,
 )
 
 executable('q2proded', common_src, server_src,
@@ -366,7 +376,7 @@ executable('q2proded', common_src, server_src,
   win_subsystem:         'console',
   link_args:             exe_link_args,
   c_args:                ['-DUSE_SERVER=1'],
-  install:               true,
+  install:               system_wide,
 )
 
 shared_library('game' + cpu, game_src,
@@ -375,7 +385,7 @@ shared_library('game' + cpu, game_src,
   include_directories:   'inc',
   gnu_symbol_visibility: 'hidden',
   link_args:             dll_link_args,
-  install:               true,
+  install:               system_wide,
   install_dir:           libdir / get_option('base-game'),
 )
 
@@ -388,7 +398,7 @@ config.set_quoted('DEFGAME',      get_option('default-game'))
 if not win32
   config.set_quoted('DATADIR',    datadir)
   config.set_quoted('LIBDIR',     libdir)
-  config.set_quoted('HOMEDIR',    get_option('homedir'))
+  config.set_quoted('HOMEDIR',    homedir)
 endif
 config.set_quoted('VID_GEOMETRY', get_option('vid-geometry'))
 config.set_quoted('VID_MODELIST', get_option('vid-modelist'))
