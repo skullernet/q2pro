@@ -288,7 +288,7 @@ ifdef CONFIG_DISCORD
 
     ifeq ($(SYS),Darwin)
       CFLAGS_c += -DUSE_DISCORD=1 -I extern/discord/c/discord_game_sdk.h
-      ifeq ($(CPU),aarch64 ) # We're Apple Silicon
+      ifeq ($(CPU),arm ) # We're Apple Silicon
         LIBS_c += extern/discord/lib/aarch64/libdiscord.dylib
       endif
       ifeq ($(CPU),x86_64) # We're Apple Intel
@@ -395,7 +395,7 @@ ifdef CONFIG_PNG
 endif
 
 ifdef CONFIG_JPEG
-    JPG_CFLAGS ?=
+    JPG_CFLAGS ?= 
     JPG_LIBS ?= -ljpeg
     CFLAGS_c += -DUSE_JPG=1 $(JPG_CFLAGS)
     LIBS_c += $(JPG_LIBS)
