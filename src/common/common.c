@@ -1146,12 +1146,11 @@ void Qcommon_Init(int argc, char **argv)
     Com_AddConfigFile(COM_POSTINIT_CFG, FS_TYPE_REAL);
 
     Com_Printf("====== " PRODUCT " initialized ======\n\n");
+    Com_LPrintf(PRINT_NOTICE, APPLICATION " " VERSION ", " __DATE__ "\n");
 
     #if USE_AQTION
-    Com_LPrintf(PRINT_NOTICE, APPLICATION " " PLATFORM ", " __DATE__ "\n");
     Com_Printf("https://aqtiongame.com\n\n");
     #else
-    Com_LPrintf(PRINT_NOTICE, APPLICATION " " VERSION ", " __DATE__ "\n");
     Com_Printf("https://github.com/skullernet/q2pro\n\n");
     #endif
 
