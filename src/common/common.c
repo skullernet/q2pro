@@ -64,6 +64,11 @@ static int      com_printEntered;
 static qhandle_t    com_logFile;
 static bool         com_logNewline;
 
+// #if USE_AQTION
+// static qhandle_t    com_statlogFile;
+// static bool         com_statlogNewline;
+// #endif
+
 static char     **com_argv;
 static int      com_argc;
 
@@ -82,6 +87,11 @@ cvar_t  *logfile_enable;    // 1 = create new, 2 = append to existing
 cvar_t  *logfile_flush;     // 1 = flush after each print
 cvar_t  *logfile_name;
 cvar_t  *logfile_prefix;
+
+// #if USE_AQTION
+// cvar_t  *statlogfile_enable;    // 1 = create new, 2 = append to existing
+// cvar_t  *statlogfile_name;
+// #endif
 
 #if USE_CLIENT
 cvar_t  *cl_running;
@@ -249,6 +259,110 @@ static void logfile_param_changed(cvar_t *self)
         logfile_open();
     }
 }
+
+// AQTION Stats Added
+// #if USE_AQTION
+// statlogfile_enable = Cvar_Get("statlogfile", "1", 0);
+// statlogfile_name = Cvar_Get("statlogfile_name", "statlog", 0);
+// static void statlogfile_close(void)
+// {
+//     if (!com_statlogFile) {
+//         return;
+//     }
+
+//     Com_Printf("Closing stat log.\n");
+
+//     FS_FCloseFile(com_statlogFile);
+//     com_statlogFile = 0;
+// }
+
+// static void statlogfile_open(void)
+// {
+//     char buffer[MAX_OSPATH];
+//     unsigned mode;
+//     qhandle_t f;
+
+//     mode = statlogfile_enable->integer > 1 ? FS_MODE_APPEND : FS_MODE_WRITE;
+//     // Stat logs must be unbuffered, half JSON won't work
+//     mode |= FS_BUF_LINE;
+
+//     f = FS_EasyOpenFile(buffer, sizeof(buffer), mode | FS_FLAG_TEXT,
+//                         "logs/", statlogfile_name->string, ".stats");
+//     if (!f) {
+//         Cvar_Set("statlogfile", "0");
+//         return;
+//     }
+
+//     com_statlogFile = f;
+//     com_statlogNewline = true;
+//     Com_Printf("Logging stats to %s\n", buffer);
+// }
+
+// static void statlogfile_enable_changed(cvar_t *self)
+// {
+//     statlogfile_close();
+//     if (self->integer) {
+//         statlogfile_open();
+//     }
+// }
+
+// static void statlogfile_param_changed(cvar_t *self)
+// {
+//     if (statlogfile_enable->integer) {
+//         statlogfile_close();
+//         statlogfile_open();
+//     }
+// }
+
+// static void statlogfile_write(print_type_t type, const char *s)
+// {
+//     char text[MAXPRINTMSG];
+//     char buf[MAX_QPATH];
+//     char *p, *maxp;
+//     size_t len;
+//     int ret;
+//     int c;
+
+//     len = 0;
+//     p = text;
+//     maxp = text + sizeof(text) - 1;
+//     while (*s) {
+//         if (com_logNewline) {
+//             if (len > 0 && p + len < maxp) {
+//                 memcpy(p, buf, len);
+//                 p += len;
+//             }
+//             com_logNewline = false;
+//         }
+
+//         if (p == maxp) {
+//             break;
+//         }
+
+//         c = *s++;
+//         if (c == '\n') {
+//             com_logNewline = true;
+//         } else {
+//             c = Q_charascii(c);
+//         }
+
+//         *p++ = c;
+//     }
+//     *p = 0;
+
+//     len = p - text;
+//     ret = FS_Write(text, len, com_statlogFile);
+//     if (ret != len) {
+//         // zero handle BEFORE doing anything else to avoid recursion
+//         qhandle_t tmp = com_statlogFile;
+//         com_statlogFile = 0;
+//         FS_FCloseFile(tmp);
+//         Com_EPrintf("Couldn't write stat log: %s\n", Q_ErrorString(ret));
+//         Cvar_Set("statlogfile", "0");
+//     }
+// }
+// // AQTION stats end
+// #endif
 
 size_t Com_FormatLocalTime(char *buffer, size_t size, const char *fmt)
 {
@@ -924,6 +1038,12 @@ void Qcommon_Init(int argc, char **argv)
 #if USE_DEBUG
     com_debug_break = Cvar_Get("com_debug_break", "0", 0);
 #endif
+// #if USE_AQTION
+//     // after FS is initialized, open logfile
+//     statlogfile_enable->changed = statlogfile_enable_changed;
+//     statlogfile_name->changed = statlogfile_param_changed;
+//     statlogfile_enable_changed(statlogfile_enable);
+// #endif
     com_fatal_error = Cvar_Get("com_fatal_error", "0", 0);
     com_version = Cvar_Get("version", com_version_string, CVAR_USERINFO | CVAR_SERVERINFO | CVAR_ROM);
 

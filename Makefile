@@ -11,7 +11,7 @@ ifdef CONFIG_WINDOWS
     SYS ?= Win32
 else
     ifndef CPU
-        CPU := $(shell uname -m | sed -e s/i.86/i386/ -e s/amd64/x86_64/ -e s/sun4u/sparc64/ -e s/arm.*/arm/ -e s/sa110/arm/ -e s/alpha/axp/)
+        CPU := $(shell uname -m | sed -e 's/i.86/i386/' -e 's/amd64/x86_64/' -e 's/sun4u/sparc64/' -e 's/arm.*/arm/' -e 's/sa110/arm/' -e 's/alpha/axp/')
     endif
     ifndef SYS
         SYS := $(shell uname -s)
@@ -113,9 +113,6 @@ BUILD_DEFS += -DBUILDSTRING='"$(SYS)"'
 VER_DEFS := -DREVISION=$(REV)
 VER_DEFS += -DVERSION='"$(VER)"'
 
-PLATFORM ?= Standalone
-PLAT_DEFS := -DPLATFORM='"($(PLATFORM))"'
-
 CONFIG_GAME_BASE ?= baseq2
 CONFIG_GAME_DEFAULT ?=
 PATH_DEFS := -DBASEGAME='"$(CONFIG_GAME_BASE)"'
@@ -138,6 +135,12 @@ CFLAGS_s += -m32
 CFLAGS_c += -m32
 LDFLAGS_s += -m32
 LDFLAGS_c += -m32
+endif
+
+ifdef USE_AQTION
+PLAT_DEFS := -DPLATFORM='"($(PLATFORM))"'
+CFLAGS_c += -DAQTION_EXTENSION=1 -DUSE_AQTION=1
+CFLAGS_s += -DAQTION_EXTENSION=1 -DUSE_AQTION=1
 endif
 
 CFLAGS_s += $(BUILD_DEFS) $(VER_DEFS) $(PATH_DEFS) $(PLAT_DEFS) -DUSE_SERVER=1
@@ -273,24 +276,25 @@ OBJS_g := \
     src/baseq2/p_view.o         \
     src/baseq2/p_weapon.o
 
-
 ### Configuration Options ###
 
-ifdef CONFIG_DISCORD
-    CFLAGS_c += -DUSE_DISCORD=1
+# This makefile is only used for Mac builds for now
 
-    ifeq ($(CPU),aarch64) && ($(SYS),Linux) # We're Linux arm64 (Discord does not support)
+ifdef CONFIG_DISCORD
+    ifeq ($(SYS),Linux)
+      ifeq ($(CPU),aarch64) # We're Linux arm64 (Discord does not support)
         LIBS_c ?=
-    else ifeq ($(CPU),x86_64) && ($(SYS),Linux) # We're x86_64 Linux
-        LIBS_c += extern/discord/lib/x86_64/discord_game_sdk.so
-    else ifeq ($(CPU),aarch64) && ($(SYS),Darwin) # We're Apple Silicon
-        LIBS_c += extern/discord/lib/aarch64/discord_game_sdk.dylib
-    else ifeq ($(CPU),x86_64) && ($(SYS),Darwin) # We're Apple Intel
-        LIBS_c += extern/discord/lib/x86_64/discord_game_sdk.dylib
-    else ifneq ($(filter x86 i386,$(CPU)),) # We're i386 Windows
-        LIBS_c += extern/discord/lib/x86/discord_game_sdk.dll
-    else # We're x86_64 Windows
-        LIBS_c += extern/discord/lib/x86_64/discord_game_sdk.dll
+      endif
+    endif
+
+    ifeq ($(SYS),Darwin)
+      CFLAGS_c += -DUSE_DISCORD=1 -I extern/discord/c/discord_game_sdk.h
+      ifeq ($(CPU),aarch64 ) # We're Apple Silicon
+        LIBS_c += extern/discord/lib/aarch64/libdiscord.dylib
+      endif
+      ifeq ($(CPU),x86_64) # We're Apple Intel
+        LIBS_c += extern/discord/lib/x86_64/libdiscord.dylib
+      endif
     endif
 endif
 
@@ -455,14 +459,6 @@ ifdef CONFIG_PACKETDUP
     CFLAGS_s += -DUSE_PACKETDUP=1
 endif
 
-ifdef USE_AQTION
-    CFLAGS_c += -DPLATFORM="Steam"
-    CFLAGS_s += -DPLATFORM="Steam"
-else
-    CFLAGS_c += -DPLATFORM="Standalone"
-    CFLAGS_s += -DPLATFORM="Standalone"
-endif
-
 ifdef CONFIG_WINDOWS
     OBJS_c += src/windows/client.o
 
@@ -553,11 +549,6 @@ ifdef CONFIG_DEBUG
     CFLAGS_s += -DUSE_DEBUG=1
 endif
 
-ifndef CONFIG_NO_AQTION
-	CFLAGS_c += -DAQTION_EXTENSION=y
-    CFLAGS_s += -DAQTION_EXTENSION=y
-endif
-
 ifdef CONFIG_BIG_ENDIAN
     CFLAGS_c += -DUSE_BIG_ENDIAN=1
     CFLAGS_s += -DUSE_BIG_ENDIAN=1
@@ -566,6 +557,7 @@ else
     CFLAGS_c += -DUSE_LITTLE_ENDIAN=1
     CFLAGS_s += -DUSE_LITTLE_ENDIAN=1
     CFLAGS_g += -DUSE_LITTLE_ENDIAN=1
+endif
 
 ### Targets ###
 

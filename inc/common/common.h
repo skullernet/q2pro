@@ -37,12 +37,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define APPLICATION     "q2proded"
 #endif
 
-#if USE_AQTION
-#define PLATFORM     "Steam"
-#else
-#define PLATFORM     "Standalone"
-#endif
-
 #define COM_DEFAULT_CFG     "default.cfg"
 #define COM_AUTOEXEC_CFG    "autoexec.cfg"
 #define COM_POSTEXEC_CFG    "postexec.cfg"

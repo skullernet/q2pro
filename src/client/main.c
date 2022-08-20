@@ -2107,7 +2107,7 @@ static void CL_ParsePrintMessage(void)
             UI_StatusEvent(&status);
             break;
 #endif
-#if USE_DISCORD && USE_CURL //rekkie -- discord  --s
+#if USE_DISCORD && USE_CURL && USE_AQTION //rekkie -- discord  --s
         case REQ_STATUS_DISCORD:
             CL_DiscordParseServerStatus(&status, string);
             break;
