@@ -540,6 +540,44 @@ static void Com_TestModels_f(void)
 
     FS_FreeList(list);
 }
+
+static void Com_TestImages_f(void)
+{
+    void **list;
+    int i, count, errors;
+    unsigned start, end;
+
+    list = FS_ListFiles(NULL, ".pcx;.wal;.png;.jpg;.tga", FS_SEARCH_SAVEPATH, &count);
+    if (!list) {
+        Com_Printf("No images found\n");
+        return;
+    }
+
+    start = Sys_Milliseconds();
+
+    R_BeginRegistration(NULL);
+
+    errors = 0;
+    for (i = 0; i < count; i++) {
+        if (i > 0 && !(i & (MAX_IMAGES - 1))) {
+            R_EndRegistration();
+            R_BeginRegistration(NULL);
+        }
+        if (!R_RegisterPic2(va("/%s", (char *)list[i]))) {
+            errors++;
+            continue;
+        }
+    }
+
+    R_EndRegistration();
+
+    end = Sys_Milliseconds();
+
+    Com_Printf("%d msec, %d failures, %d images tested\n",
+               end - start, errors, count);
+
+    FS_FreeList(list);
+}
 #endif
 
 #if USE_CLIENT
@@ -717,6 +755,7 @@ void TST_Init(void)
     Cmd_AddCommand("snprintftest", Com_TestSnprintf_f);
 #if USE_REF
     Cmd_AddCommand("modeltest", Com_TestModels_f);
+    Cmd_AddCommand("imagetest", Com_TestImages_f);
 #endif
 #if USE_CLIENT
     Cmd_AddCommand("soundtest", Com_TestSounds_f);
