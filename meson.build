@@ -167,7 +167,6 @@ game_src = [
 
 ## AQtion
 datadir = '.'
-libdir = '.'
 
 cc = meson.get_compiler('c')
 
@@ -401,7 +400,7 @@ config.set_quoted('BASEGAME',     get_option('base-game'))
 config.set_quoted('DEFGAME',      get_option('default-game'))
 if not win32
   config.set_quoted('DATADIR',    datadir)
-  config.set_quoted('LIBDIR',     libdir)
+  #config.set_quoted('LIBDIR',     libdir)
   config.set_quoted('HOMEDIR',    get_option('homedir'))
 endif
 config.set_quoted('VID_GEOMETRY', get_option('vid-geometry'))
