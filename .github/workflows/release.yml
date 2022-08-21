@@ -26,8 +26,8 @@ jobs:
         with:
           draft: false
           prerelease: false
-          release_name: q2pro_${{github.ref_name}}
-          tag_name: ${{github.ref_name}}
+          release_name: q2pro_${{ steps.version.outputs.version }}
+          tag_name: ${{ steps.version.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
@@ -86,7 +86,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           body_path: 
-          tag_name: ${{github.ref_name}}
+          tag_name: ${{ steps.version.outputs.version }}
           files: |
             q2pro-mingw-x86_64.zip
             q2pro-msvc-x64.zip
