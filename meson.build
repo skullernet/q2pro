@@ -389,7 +389,7 @@ shared_library('game' + host_machine.cpu_family(), game_src,
   gnu_symbol_visibility: 'hidden',
   link_args:             dll_link_args,
   install:               true,
-  install_dir:           libdir / get_option('base-game'),
+  install_dir:           '"."' / get_option('base-game'),
 )
 
 config.set('REVISION',            meson.project_version().substring(1).split('~')[0].to_int())
