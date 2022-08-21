@@ -161,8 +161,13 @@ game_src = [
   'src/shared/shared.c',
 ]
 
-datadir = get_option('prefix') / get_option('datadir') / meson.project_name()
-libdir = get_option('prefix') / get_option('libdir') / meson.project_name()
+## Default q2pro
+# datadir = get_option('prefix') / get_option('datadir') / meson.project_name()
+# libdir = get_option('prefix') / get_option('libdir') / meson.project_name()
+
+## AQtion
+datadir = '.'
+libdir = '.'
 
 cc = meson.get_compiler('c')
 
@@ -387,9 +392,6 @@ shared_library('game' + host_machine.cpu_family(), game_src,
   install:               true,
   install_dir:           libdir / get_option('base-game'),
 )
-
-# AQtion datadir overrides
-datadir = '.'
 
 config.set('REVISION',            meson.project_version().substring(1).split('~')[0].to_int())
 config.set_quoted('VERSION',      meson.project_version())
