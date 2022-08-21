@@ -1,8 +1,9 @@
 [Desktop Entry]
 Name=Q2PRO
 GenericName=Quake 2 client
-Exec=q2pro
+Exec=q2pro +connect %u
 Icon=q2pro
 Terminal=false
 Type=Application
 Categories=Game;ActionGame;
+MimeType=x-scheme-handler/quake2;
