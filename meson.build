@@ -162,12 +162,12 @@ game_src = [
 ]
 
 ## Default q2pro
-#datadir = get_option('prefix') / get_option('datadir') / meson.project_name()
-#libdir = get_option('prefix') / get_option('libdir') / meson.project_name()
+datadir = get_option('prefix') / get_option('datadir') / meson.project_name()
+libdir = get_option('prefix') / get_option('libdir') / meson.project_name()
 
 ## AQtion
-datadir = '.'
-libdir = '.'
+#datadir = '.'
+#libdir = '.'
 
 cc = meson.get_compiler('c')
 
