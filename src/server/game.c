@@ -775,6 +775,11 @@ static void *SV_LoadGameLibraryFrom(const char *path)
     return entry;
 }
 
+#ifdef _WIN32
+#   undef X_OK
+#   define X_OK R_OK
+#endif    
+
 static void *SV_LoadGameLibrary(const char *libdir, const char *gamedir)
 {
     char path[MAX_OSPATH];
