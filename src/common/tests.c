@@ -129,13 +129,16 @@ static void Com_PrintJunk_f(void)
 static void BSP_Test_f(void)
 {
     void **list;
-    char *name;
+    const char *name = "maps";
     int i, count, errors;
     bsp_t *bsp;
     int ret;
     unsigned start, end;
 
-    list = FS_ListFiles("maps", ".bsp", FS_SEARCH_SAVEPATH, &count);
+    if (Cmd_Argc() > 1)
+        name = Cmd_Argv(1);
+
+    list = FS_ListFiles(name, ".bsp", FS_SEARCH_SAVEPATH, &count);
     if (!list) {
         Com_Printf("No maps found\n");
         return;
