@@ -8,7 +8,7 @@ option('default-game', type: 'string', value: 'action', description: 'default ga
 option('discord-sdk', type: 'boolean', value: false, description: 'enable Discord SDK')
 option('dynamic-lights', type: 'boolean', value: true, description: 'dynamic lighting')
 option('game-abi-hack', type: 'feature', value: 'disabled', description: 'game ABI compat hack')
-option('homedir', type: 'string', value: '.', description: 'default home directory')
+option('homedir', type: 'string', value: '', description: 'default home directory')
 option('icmp-errors', type: 'feature', value: 'auto', description: 'handle ICMP errors')
 option('libcurl', type: 'feature', value: 'auto', description: 'libcurl support')
 option('libjpeg', type: 'feature', value: 'auto', description: 'libjpeg support')
