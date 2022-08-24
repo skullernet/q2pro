@@ -200,6 +200,8 @@ if cc.get_argument_syntax() == 'gcc'
     endif
 
     dll_link_args += '-static-libgcc'
+  else
+    common_link_args += '-rpath=$$ORIGIN'
   endif
 elif cc.get_id() == 'msvc'
   common_args += ['/D_USE_MATH_DEFINES', '/wd4146', '/wd4244', '/wd4305']
