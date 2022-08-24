@@ -200,8 +200,6 @@ if cc.get_argument_syntax() == 'gcc'
     endif
 
     dll_link_args += '-static-libgcc'
-  else
-    common_link_args += '-rpath=$$ORIGIN'
   endif
 elif cc.get_id() == 'msvc'
   common_args += ['/D_USE_MATH_DEFINES', '/wd4146', '/wd4244', '/wd4305']
@@ -341,12 +339,7 @@ if get_option('discord-sdk')
     discord_inc_path = join_paths('extern/discord/lib/', host_machine.cpu_family())
     dis_inc = include_directories(discord_inc_path)
     discord_dep_path = join_paths(meson.current_source_dir(), discord_inc_path)
-    
-    #dis_lib = dependency('discord', method : 'system')
-
-    discord_dep = cc.find_library('discord', dirs : discord_dep_path)
-    #discord_dep_dec = declare_dependency(link_with : discord_dep, include_directories : dis_inc)
-
+    discord_dep = cc.find_library('discord_game_sdk', dirs : discord_dep_path)
     client_deps += discord_dep
     q2pro_include_dir += discord_inc_path
 
