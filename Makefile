@@ -289,10 +289,10 @@ ifdef CONFIG_DISCORD
     ifeq ($(SYS),Darwin)
       CFLAGS_c += -DUSE_DISCORD=1 -I extern/discord/c/discord_game_sdk.h
       ifeq ($(CPU),arm) # We're Apple Silicon
-        LIBS_c += extern/discord/lib/aarch64/libdiscord.dylib
+        LIBS_c += extern/discord/lib/aarch64/discord_game_sdk.dylib
       endif
       ifeq ($(CPU),x86_64) # We're Apple Intel
-        LIBS_c += extern/discord/lib/x86_64/libdiscord.dylib
+        LIBS_c += extern/discord/lib/x86_64/discord_game_sdk.dylib
       endif
     endif
 endif
