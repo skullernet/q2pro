@@ -27,7 +27,7 @@ jobs:
           draft: false
           prerelease: false
           release_name: q2pro_${{ steps.version.outputs.version }}
-          tag_name: ${{github.ref_name}}
+          tag_name: ${{ steps.version.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
@@ -52,12 +52,12 @@ jobs:
           name: q2pro-lin-arm64
           skip_unpack: true
 
-      - name: Download Win MSVC x86 build artifacts
-        uses: dawidd6/action-download-artifact@v2
-        with:
-          workflow: build.yml
-          name: q2pro-msvc-x86
-          skip_unpack: true
+      # - name: Download Win MSVC x86 build artifacts
+      #   uses: dawidd6/action-download-artifact@v2
+      #   with:
+      #     workflow: build.yml
+      #     name: q2pro-msvc-x86
+      #     skip_unpack: true
 
       - name: Download Win MSVC x64 build artifacts
         uses: dawidd6/action-download-artifact@v2
@@ -66,12 +66,12 @@ jobs:
           name: q2pro-msvc-x64
           skip_unpack: true
 
-      - name: Download Win mingw i686 build artifacts
-        uses: dawidd6/action-download-artifact@v2
-        with:
-          workflow: build.yml
-          name: q2pro-mingw-i686
-          skip_unpack: true
+      # - name: Download Win mingw i686 build artifacts
+      #   uses: dawidd6/action-download-artifact@v2
+      #   with:
+      #     workflow: build.yml
+      #     name: q2pro-mingw-i686
+      #     skip_unpack: true
 
       - name: Download Win mingw x64 build artifacts
         uses: dawidd6/action-download-artifact@v2
@@ -86,15 +86,21 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           body_path: 
-          tag_name: ${{github.ref_name}}
+          tag_name: ${{ steps.version.outputs.version }}
           files: |
             q2pro-mingw-x86_64.zip
-            q2pro-mingw-i686.zip
             q2pro-msvc-x64.zip
-            q2pro-msvc-x86.zip
             q2pro-lin-arm64.zip
             q2pro-lin-gcc.zip
             q2pro-lin-clang.zip
+          # files: |
+          #   q2pro-mingw-x86_64.zip
+          #   q2pro-mingw-i686.zip
+          #   q2pro-msvc-x64.zip
+          #   q2pro-msvc-x86.zip
+          #   q2pro-lin-arm64.zip
+          #   q2pro-lin-gcc.zip
+          #   q2pro-lin-clang.zip
 
 
             

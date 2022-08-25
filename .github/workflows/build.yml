@@ -16,13 +16,16 @@ env:
     -Dpacketdup-hack=true
     -Dtests=true
     -Dvariable-fps=true
+    -Daqtion-build=true
+    -Ddiscord-sdk=true
 
 jobs:
   mingw:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        arch: ["i686", "x86_64"]
+        #arch: ["i686", "x86_64"]
+        arch: ["x86_64"]
     steps:
       - uses: actions/checkout@v2
 
@@ -34,7 +37,7 @@ jobs:
       - name: Build
         run: |
           meson setup --cross-file=.ci/${{ matrix.arch }}-w64-mingw32.txt ${{ env.MESON_ARGS }} builddir
-          ninja -C builddir
+          ninja -vC builddir
 
       - name: Generate Win Mingw archives
         uses: actions/upload-artifact@v3
@@ -48,7 +51,8 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        arch: ["x86", "x64"]
+        #arch: ["x86", "x64"]
+        arch: ["x64"]
     steps:
       - uses: actions/checkout@v2
 
@@ -62,7 +66,7 @@ jobs:
       - name: Build
         run: |
           meson setup ${{ env.MESON_ARGS }} builddir
-          ninja -C builddir
+          ninja -vC builddir
 
       - name: Generate Win MSVC archives
         uses: actions/upload-artifact@v3
@@ -92,7 +96,7 @@ jobs:
       - name: Build
         run: |
           meson setup ${{ env.MESON_ARGS }} builddir
-          ninja -C builddir
+          ninja -vC builddir
         env:
           CC: ${{ matrix.cc }}
 
@@ -120,7 +124,7 @@ jobs:
       - name: Build
         run: |
           meson setup ${{ env.MESON_ARGS }} builddir
-          ninja -C builddir
+          ninja -vC builddir
         env:
           CC: "gcc"
 

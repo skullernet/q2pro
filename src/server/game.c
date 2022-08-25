@@ -755,6 +755,11 @@ void SV_ShutdownGameProgs(void)
         game_library = NULL;
     }
     Cvar_Set("g_features", "0");
+	Cvar_Set("g_view_predict", "0");
+
+#ifdef AQTION_EXTENSION
+	GE_customizeentityforclient = NULL;
+#endif
 }
 
 static void *SV_LoadGameLibraryFrom(const char *path)
@@ -781,13 +786,131 @@ static void *SV_LoadGameLibrary(const char *libdir, const char *gamedir)
         return NULL;
     }
 
-    if (os_access(path, X_OK)) {
+    if (os_access(path, SOLIB_X_OK)) {
         Com_Printf("Can't access %s: %s\n", path, strerror(errno));
         return NULL;
     }
 
     return SV_LoadGameLibraryFrom(path);
 }
+
+
+#ifdef AQTION_EXTENSION
+typedef struct extension_func_s
+{
+	char		name[MAX_QPATH];
+	void*		func;
+	struct extension_func_s *n;
+} extension_func_t;
+extension_func_t *g_extension_funcs;
+
+// the do {} while here is a bizarre C-ism to allow for our local variable, probably not the best way to do this
+#define g_addextension(ename, efunc) \
+				do { \
+				extension_func_t *ext = malloc(sizeof(extension_func_t)); \
+				strcpy(ext->name, ename); \
+				ext->func = efunc; \
+				ext->n = g_extension_funcs; \
+				g_extension_funcs = ext; \
+				} while (0);
+
+int(*GE_customizeentityforclient)(edict_t *client, edict_t *ent, entity_state_t *state);
+
+/*
+================
+G_CheckForExtension
+
+Check for (and return) an extension function by name
+================
+*/
+void* G_CheckForExtension(char *text)
+{
+	Com_Printf("G_CheckForExtension for %s\n", text);
+	extension_func_t *ext;
+	for(ext = g_extension_funcs; ext != NULL; ext = ext->n)
+	{
+		if (strcmp(ext->name, text))
+			continue;
+
+		return ext->func;
+	}
+
+	Com_Printf("Extension not found.\n");
+	return NULL;
+}
+
+int G_Ext_Client_GetProtocol(edict_t *ent)
+{
+	if (!ent->client)
+		return 0;
+
+	client_t *client;
+	FOR_EACH_CLIENT(client) {
+		if (client->edict != ent)
+			continue;
+
+		return client->protocol;
+	}
+
+	return 0;
+}
+
+int G_Ext_Client_GetVersion(edict_t *ent)
+{
+	if (!ent->client)
+		return 0;
+
+	client_t *client;
+	FOR_EACH_CLIENT(client) {
+		if (client->edict != ent)
+			continue;
+
+		return client->version;
+	}
+
+	return 0;
+}
+
+
+void G_Ext_Ghud_SendUpdateToClient(edict_t *ent)
+{
+	if (!ent->client)
+		return;
+
+	client_t *client;
+	FOR_EACH_CLIENT(client) {
+		if (client->edict != ent)
+			continue;
+
+		SV_Ghud_SendUpdateToClient(client);
+		return;
+	}
+}
+
+
+void G_InitializeExtensions(void)
+{
+	// client networking info
+	g_addextension("Client_GetVersion", G_Ext_Client_GetVersion);
+	g_addextension("Client_GetProtocol", G_Ext_Client_GetProtocol);
+
+
+	// gamedll hud stuff
+	g_addextension("Ghud_SendUpdates", G_Ext_Ghud_SendUpdateToClient);
+	g_addextension("Ghud_NewElement",	SV_Ghud_NewElement);
+	g_addextension("Ghud_SetFlags",		SV_Ghud_SetFlags);
+	g_addextension("Ghud_UnicastSetFlags", SV_Ghud_UnicastSetFlags);
+	g_addextension("Ghud_SetText",		SV_Ghud_SetText);
+	g_addextension("Ghud_SetInt",		SV_Ghud_SetInt);
+	g_addextension("Ghud_SetPosition",	SV_Ghud_SetPosition);
+	g_addextension("Ghud_SetAnchor",	SV_Ghud_SetAnchor);
+	g_addextension("Ghud_SetColor",		SV_Ghud_SetColor);
+	g_addextension("Ghud_SetSize",		SV_Ghud_SetSize);
+}
+
+
+#endif
+
 
 /*
 ===============
@@ -803,6 +926,10 @@ void SV_InitGameProgs(void)
 
     // unload anything we have now
     SV_ShutdownGameProgs();
+
+#ifdef AQTION_EXTENSION
+	SV_Ghud_Clear();
+#endif
 
     // for debugging or `proxy' mods
     if (sys_forcegamelib->string[0])
@@ -883,6 +1010,10 @@ void SV_InitGameProgs(void)
     import.SetAreaPortalState = PF_SetAreaPortalState;
     import.AreasConnected = PF_AreasConnected;
 
+#ifdef AQTION_EXTENSION
+	import.CheckForExtension = G_CheckForExtension;
+#endif
+
     ge = entry(&import);
     if (!ge) {
         Com_Error(ERR_DROP, "Game library returned NULL exports");
@@ -905,4 +1036,8 @@ void SV_InitGameProgs(void)
     if (ge->max_edicts <= sv_maxclients->integer || ge->max_edicts > MAX_EDICTS) {
         Com_Error(ERR_DROP, "Game library returned bad number of max_edicts");
     }
+
+#ifdef AQTION_EXTENSION
+	GE_customizeentityforclient = ge->FetchGameExtension("customizeentityforclient");
+#endif
 }
