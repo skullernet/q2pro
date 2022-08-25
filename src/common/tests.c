@@ -129,16 +129,13 @@ static void Com_PrintJunk_f(void)
 static void BSP_Test_f(void)
 {
     void **list;
-    const char *name = "maps";
+    char *name;
     int i, count, errors;
     bsp_t *bsp;
     int ret;
     unsigned start, end;
 
-    if (Cmd_Argc() > 1)
-        name = Cmd_Argv(1);
-
-    list = FS_ListFiles(name, ".bsp", FS_SEARCH_SAVEPATH, &count);
+    list = FS_ListFiles(NULL, ".bsp", FS_SEARCH_SAVEPATH | FS_SEARCH_RECURSIVE, &count);
     if (!list) {
         Com_Printf("No maps found\n");
         return;
@@ -512,7 +509,7 @@ static void Com_TestModels_f(void)
     int i, count, errors;
     unsigned start, end;
 
-    list = FS_ListFiles(NULL, ".md2", FS_SEARCH_SAVEPATH, &count);
+    list = FS_ListFiles(NULL, ".md2", FS_SEARCH_SAVEPATH | FS_SEARCH_RECURSIVE, &count);
     if (!list) {
         Com_Printf("No models found\n");
         return;
@@ -550,7 +547,7 @@ static void Com_TestImages_f(void)
     int i, count, errors;
     unsigned start, end;
 
-    list = FS_ListFiles(NULL, ".pcx;.wal;.png;.jpg;.tga", FS_SEARCH_SAVEPATH, &count);
+    list = FS_ListFiles(NULL, ".pcx;.wal;.png;.jpg;.tga", FS_SEARCH_SAVEPATH | FS_SEARCH_RECURSIVE, &count);
     if (!list) {
         Com_Printf("No images found\n");
         return;
@@ -590,7 +587,7 @@ static void Com_TestSounds_f(void)
     int i, count, errors;
     unsigned start, end;
 
-    list = FS_ListFiles(NULL, ".wav", FS_SEARCH_SAVEPATH, &count);
+    list = FS_ListFiles(NULL, ".wav", FS_SEARCH_SAVEPATH | FS_SEARCH_RECURSIVE, &count);
     if (!list) {
         Com_Printf("No sounds found\n");
         return;
