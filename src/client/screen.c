@@ -1964,6 +1964,8 @@ static void SCR_DrawActive(void)
     }
 
     if (cls.state == ca_cinematic) {
+        if (R_GetPicSize(NULL, NULL, cl.image_precache[0]))
+            R_DrawFill8(0, 0, r_config.width, r_config.height, 0);
         R_DrawStretchPic(0, 0, r_config.width, r_config.height, cl.image_precache[0]);
         return;
     }

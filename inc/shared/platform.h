@@ -71,7 +71,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define os_ftell(f)         _ftelli64(f)
 #endif
 #define os_fileno(f)        _fileno(f)
-#define os_access(p, m)     _access(p, m)
+#define os_access(p, m)     _access(p, (m) & ~X_OK)
 #define Q_ISREG(m)          (((m) & _S_IFMT) == _S_IFREG)
 #define Q_ISDIR(m)          (((m) & _S_IFMT) == _S_IFDIR)
 #define Q_STATBUF           struct _stat64

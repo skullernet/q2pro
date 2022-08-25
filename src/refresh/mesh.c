@@ -293,13 +293,10 @@ static glCullResult_t cull_lerped_model(model_t *model)
     maliasframe_t *newframe = &model->frames[newframenum];
     maliasframe_t *oldframe = &model->frames[oldframenum];
     vec3_t bounds[2];
-    vec_t radius;
     glCullResult_t cull;
 
     if (glr.entrotated) {
-        radius = newframe->radius > oldframe->radius ?
-                 newframe->radius : oldframe->radius;
-        cull = GL_CullSphere(origin, radius);
+        cull = GL_CullSphere(origin, max(newframe->radius, oldframe->radius));
         if (cull == CULL_OUT) {
             c.spheresCulled++;
             return cull;

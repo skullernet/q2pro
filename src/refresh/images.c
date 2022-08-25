@@ -545,7 +545,7 @@ IMG_LOAD(TGA)
     }
 
     if (colormap_type) {
-        Com_SetLastError("color mapped images are not supported");
+        Com_SetLastError("color mapped targa images are not supported");
         return Q_ERR_INVALID_FORMAT;
     }
 
