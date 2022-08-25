@@ -8,8 +8,6 @@ project('q2pro', 'c',
   ],
 )
 
-q2pro_include_dir = ['inc']
-
 common_src = [
   'src/common/bsp.c',
   'src/common/cmd.c',
@@ -160,14 +158,6 @@ game_src = [
   'src/shared/m_flash.c',
   'src/shared/shared.c',
 ]
-
-## Default q2pro
-#datadir = get_option('prefix') / get_option('datadir') / meson.project_name()
-#libdir = get_option('prefix') / get_option('libdir') / meson.project_name()
-
-## AQtion
-datadir = '.'
-libdir = '.'
 
 cc = meson.get_compiler('c')
 
@@ -361,7 +351,7 @@ endif
 
 executable('q2pro', common_src, client_src, refresh_src,
   dependencies:          common_deps + client_deps,
-  include_directories:   q2pro_include_dir,
+  include_directories:   'inc',
   gnu_symbol_visibility: 'hidden',
   win_subsystem:         'windows',
   link_args:             exe_link_args,
