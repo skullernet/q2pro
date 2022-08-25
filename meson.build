@@ -164,6 +164,38 @@ cc = meson.get_compiler('c')
 win32 = host_machine.system() == 'windows'
 x86 = host_machine.cpu_family() == 'x86'
 
+cpuremap = {
+  'x86': win32 ? 'x86' : 'i386',
+  'aarch64': 'arm64',
+  'alpha': 'axp',
+}
+
+cpu = host_machine.cpu_family()
+if cpu in cpuremap
+  cpu = cpuremap[cpu]
+endif
+
+if win32
+  sys = cpu.endswith('64') ? 'Win64' : 'Win32'
+else
+  sys = host_machine.system()
+  if sys.endswith('bsd')
+    sys = sys.substring(0, -3) + sys.substring(-3).to_upper()
+  endif
+  sys = sys[0].to_upper() + sys.substring(1)
+endif
+
+datadir = '.'
+libdir = '.'
+homedir = ''
+
+system_wide = not win32 and get_option('system-wide')
+if system_wide
+  datadir = get_option('prefix') / get_option('datadir') / meson.project_name()
+  libdir = get_option('prefix') / get_option('libdir') / meson.project_name()
+  homedir = get_option('homedir')
+endif
+
 common_args = ['-DHAVE_CONFIG_H']
 if not win32
   common_args += '-D_GNU_SOURCE'
@@ -184,7 +216,7 @@ if cc.get_argument_syntax() == 'gcc'
     common_args += '-D__USE_MINGW_ANSI_STDIO=1'
     common_link_args += '-Wl,--nxcompat,--dynamicbase'
 
-    if host_machine.cpu_family() == 'x86_64'
+    if cpu == 'x86_64'
       exe_link_args += '-Wl,--high-entropy-va,--image-base=0x140000000'
       dll_link_args += '-Wl,--high-entropy-va,--image-base=0x180000000'
     endif
@@ -283,7 +315,9 @@ endif
 if get_option('client-ui')
   client_src += ui_src
   config.set10('USE_UI', true)
-  install_data('src/client/ui/q2pro.menu', install_dir: datadir / get_option('base-game'))
+  if system_wide
+    install_data('src/client/ui/q2pro.menu', install_dir: datadir / get_option('base-game'))
+  endif
 endif
 
 if get_option('software-sound')
@@ -351,12 +385,12 @@ endif
 
 executable('q2pro', common_src, client_src, refresh_src,
   dependencies:          common_deps + client_deps,
-  include_directories:   'inc',
+  include_directories:   q2pro_include_dir,
   gnu_symbol_visibility: 'hidden',
   win_subsystem:         'windows',
   link_args:             exe_link_args,
   c_args:                ['-DUSE_CLIENT=1', '-DUSE_REF=1'],
-  install:               true,
+  install:               system_wide,
 )
 
 executable('q2proded', common_src, server_src,
@@ -366,29 +400,29 @@ executable('q2proded', common_src, server_src,
   win_subsystem:         'console',
   link_args:             exe_link_args,
   c_args:                ['-DUSE_SERVER=1'],
-  install:               true,
+  install:               system_wide,
 )
 
-shared_library('game' + host_machine.cpu_family(), game_src,
+shared_library('game' + cpu, game_src,
   name_prefix:           '',
   dependencies:          game_deps,
   include_directories:   'inc',
   gnu_symbol_visibility: 'hidden',
   link_args:             dll_link_args,
-  install:               true,
+  install:               system_wide,
   install_dir:           libdir / get_option('base-game'),
 )
 
 config.set('REVISION',            meson.project_version().substring(1).split('~')[0].to_int())
 config.set_quoted('VERSION',      meson.project_version())
-config.set_quoted('CPUSTRING',    host_machine.cpu_family())
-config.set_quoted('BUILDSTRING',  host_machine.system())
+config.set_quoted('CPUSTRING',    cpu)
+config.set_quoted('BUILDSTRING',  sys)
 config.set_quoted('BASEGAME',     get_option('base-game'))
 config.set_quoted('DEFGAME',      get_option('default-game'))
 if not win32
   config.set_quoted('DATADIR',    datadir)
   config.set_quoted('LIBDIR',     libdir)
-  config.set_quoted('HOMEDIR',    get_option('homedir'))
+  config.set_quoted('HOMEDIR',    homedir)
 endif
 config.set_quoted('VID_GEOMETRY', get_option('vid-geometry'))
 config.set_quoted('VID_MODELIST', get_option('vid-modelist'))
