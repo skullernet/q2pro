@@ -366,7 +366,6 @@ if get_option('discord-sdk')
       discord_dep_path = join_paths(meson.current_source_dir(), discord_inc_path)
       discord_dep = cc.find_library('discord_game_sdk', dirs : discord_dep_path)
       client_deps += discord_dep
-      q2pro_include_dir += discord_inc_path
     endif
   endif
 endif
@@ -385,7 +384,7 @@ endif
 
 executable('q2pro', common_src, client_src, refresh_src,
   dependencies:          common_deps + client_deps,
-  include_directories:   q2pro_include_dir,
+  include_directories:   'inc',
   gnu_symbol_visibility: 'hidden',
   win_subsystem:         'windows',
   link_args:             exe_link_args,
