@@ -1051,12 +1051,12 @@ void Pmove(pmove_t *pmove, pmoveParams_t *params)
 	if (pm->s.pm_aq2_flags & PMF_AQ2_LIMP)
 	{
 		int frame_mod_6 = (pm->s.pm_timestamp) % 600;
-		if (frame_mod_6 <= 200)
+		if (frame_mod_6 <= 300)
 		{
 			pm->cmd.forwardmove = 0;
 			pm->cmd.sidemove = 0;
 		}
-		else if (frame_mod_6 > 200 && frame_mod_6 <= 300)
+		else if (frame_mod_6 > 300 && frame_mod_6 <= 400)
 		{
 			pm->cmd.forwardmove /= pm->s.pm_aq2_leghits + 1;
 			pm->cmd.sidemove /= pm->s.pm_aq2_leghits + 1;
