@@ -233,7 +233,6 @@ bool GL_ShowErrors(const char *func);
  */
 
 #define MAX_ALIAS_SKINS     32
-#define MAX_ALIAS_VERTS     4096
 
 typedef struct maliastc_s {
     float   st[2];

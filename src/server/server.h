@@ -165,7 +165,6 @@ typedef struct {
 
     char        name[MAX_QPATH];            // map name, or cinematic name
     cm_t        cm;
-    char        *entitystring;
 
     char        configstrings[MAX_CONFIGSTRINGS][MAX_QPATH];
 
@@ -568,8 +567,6 @@ extern cvar_t       *g_features;
 extern cvar_t       *g_view_predict;
 extern cvar_t       *g_view_low;
 extern cvar_t       *g_view_high;
-
-extern cvar_t       *map_override_path;
 
 extern cvar_t       *sv_timeout;
 extern cvar_t       *sv_zombietime;

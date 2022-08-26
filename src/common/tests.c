@@ -129,13 +129,16 @@ static void Com_PrintJunk_f(void)
 static void BSP_Test_f(void)
 {
     void **list;
-    char *name;
+    const char *name = "maps";
     int i, count, errors;
     bsp_t *bsp;
     int ret;
     unsigned start, end;
 
-    list = FS_ListFiles("maps", ".bsp", FS_SEARCH_SAVEPATH, &count);
+    if (Cmd_Argc() > 1)
+        name = Cmd_Argv(1);
+
+    list = FS_ListFiles(name, ".bsp", FS_SEARCH_SAVEPATH, &count);
     if (!list) {
         Com_Printf("No maps found\n");
         return;
@@ -509,7 +512,7 @@ static void Com_TestModels_f(void)
     int i, count, errors;
     unsigned start, end;
 
-    list = FS_ListFiles("models", ".md2", FS_SEARCH_SAVEPATH, &count);
+    list = FS_ListFiles(NULL, ".md2", FS_SEARCH_SAVEPATH, &count);
     if (!list) {
         Com_Printf("No models found\n");
         return;
@@ -517,17 +520,63 @@ static void Com_TestModels_f(void)
 
     start = Sys_Milliseconds();
 
+    R_BeginRegistration(NULL);
+
     errors = 0;
     for (i = 0; i < count; i++) {
+        if (i > 0 && !(i & (MAX_MODELS - 1))) {
+            R_EndRegistration();
+            R_BeginRegistration(NULL);
+        }
         if (!R_RegisterModel(list[i])) {
             errors++;
             continue;
         }
     }
 
+    R_EndRegistration();
+
     end = Sys_Milliseconds();
 
     Com_Printf("%d msec, %d failures, %d models tested\n",
+               end - start, errors, count);
+
+    FS_FreeList(list);
+}
+
+static void Com_TestImages_f(void)
+{
+    void **list;
+    int i, count, errors;
+    unsigned start, end;
+
+    list = FS_ListFiles(NULL, ".pcx;.wal;.png;.jpg;.tga", FS_SEARCH_SAVEPATH, &count);
+    if (!list) {
+        Com_Printf("No images found\n");
+        return;
+    }
+
+    start = Sys_Milliseconds();
+
+    R_BeginRegistration(NULL);
+
+    errors = 0;
+    for (i = 0; i < count; i++) {
+        if (i > 0 && !(i & (MAX_IMAGES - 1))) {
+            R_EndRegistration();
+            R_BeginRegistration(NULL);
+        }
+        if (!R_RegisterPic2(va("/%s", (char *)list[i]))) {
+            errors++;
+            continue;
+        }
+    }
+
+    R_EndRegistration();
+
+    end = Sys_Milliseconds();
+
+    Com_Printf("%d msec, %d failures, %d images tested\n",
                end - start, errors, count);
 
     FS_FreeList(list);
@@ -541,7 +590,7 @@ static void Com_TestSounds_f(void)
     int i, count, errors;
     unsigned start, end;
 
-    list = FS_ListFiles("sound", ".wav", FS_SEARCH_SAVEPATH, &count);
+    list = FS_ListFiles(NULL, ".wav", FS_SEARCH_SAVEPATH, &count);
     if (!list) {
         Com_Printf("No sounds found\n");
         return;
@@ -557,7 +606,7 @@ static void Com_TestSounds_f(void)
             S_EndRegistration();
             S_BeginRegistration();
         }
-        if (!S_RegisterSound((char *)list[i] + 6)) {
+        if (!S_RegisterSound(va("#%s", (char *)list[i]))) {
             errors++;
             continue;
         }
@@ -709,6 +758,7 @@ void TST_Init(void)
     Cmd_AddCommand("snprintftest", Com_TestSnprintf_f);
 #if USE_REF
     Cmd_AddCommand("modeltest", Com_TestModels_f);
+    Cmd_AddCommand("imagetest", Com_TestImages_f);
 #endif
 #if USE_CLIENT
     Cmd_AddCommand("soundtest", Com_TestSounds_f);

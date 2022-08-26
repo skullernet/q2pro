@@ -107,8 +107,6 @@ cvar_t  *g_view_predict;
 cvar_t  *g_view_low;
 cvar_t  *g_view_high;
 
-cvar_t  *map_override_path;
-
 static bool     sv_registered;
 
 //============================================================================
@@ -1536,6 +1534,10 @@ static void SV_PacketEvent(void)
     netchan_t   *netchan;
     int         qport;
 
+    if (msg_read.cursize < 4) {
+        return;
+    }
+
     // check for connectionless packet (0xffffffff) first
     // connectionless packets are processed even if the server is down
     if (*(int *)msg_read.data == -1) {
@@ -1557,11 +1559,17 @@ static void SV_PacketEvent(void)
         // read the qport out of the message so we can fix up
         // stupid address translating routers
         if (client->protocol == PROTOCOL_VERSION_DEFAULT) {
-            qport = msg_read.data[8] | (msg_read.data[9] << 8);
+            if (msg_read.cursize < PACKET_HEADER) {
+                continue;
+            }
+            qport = LittleShortMem(&msg_read.data[8]);
             if (netchan->qport != qport) {
                 continue;
             }
         } else if (netchan->qport) {
+            if (msg_read.cursize < PACKET_HEADER - 1) {
+                continue;
+            }
             qport = msg_read.data[8];
             if (netchan->qport != qport) {
                 continue;
@@ -2293,8 +2301,6 @@ void SV_Init(void)
 	g_view_low = Cvar_Get("g_view_low", "0", CVAR_ROM);
 	g_view_high = Cvar_Get("g_view_high", "0", CVAR_ROM);
 
-    map_override_path = Cvar_Get("map_override_path", "", 0);
-
     init_rate_limits();
 
 #if USE_FPS
@@ -2404,7 +2410,6 @@ void SV_Shutdown(const char *finalmsg, error_type_t type)
 
     // free current level
     CM_FreeMap(&sv.cm);
-    SV_FreeFile(sv.entitystring);
     memset(&sv, 0, sizeof(sv));
 
     // free server static data
