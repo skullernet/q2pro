@@ -886,9 +886,6 @@ static int shell_effect_hack(void)
     centity_t   *ent;
     int         flags = 0;
 
-    if (cl.frame.clientNum == CLIENTNUM_NONE)
-        return 0;
-
     ent = &cl_entities[cl.frame.clientNum + 1];
     if (ent->serverframe != cl.frame.number)
         return 0;
@@ -1069,9 +1066,6 @@ static void CL_FinishViewValues(void)
     centity_t *ent;
 
     if (!cl_thirdperson->integer)
-        goto first;
-
-    if (cl.frame.clientNum == CLIENTNUM_NONE)
         goto first;
 
     ent = &cl_entities[cl.frame.clientNum + 1];
