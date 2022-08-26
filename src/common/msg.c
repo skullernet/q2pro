@@ -1187,7 +1187,7 @@ int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
     return eflags;
 }
 
-#if USE_MVD_SERVER || USE_MVD_CLIENT
+#if USE_MVD_SERVER || USE_MVD_CLIENT || USE_CLIENT_GTV
 
 /*
 ==================
@@ -1366,7 +1366,7 @@ void MSG_WriteDeltaPlayerstate_Packet(const player_packed_t *from,
     }
 }
 
-#endif // USE_MVD_SERVER || USE_MVD_CLIENT
+#endif // USE_MVD_SERVER || USE_MVD_CLIENT || USE_CLIENT_GTV
 
 
 /*
