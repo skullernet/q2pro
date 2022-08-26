@@ -1620,8 +1620,8 @@ static void SCR_ExecuteLayoutString(const char *s)
                 // action mod scope scaling
                 image_t *image = IMG_ForHandle(cl.image_precache[value]);
                 if (strncmp(image->name, "pics/scope", 10) == 0) {
-                    x = (scr.hud_width - scr.scope_width) / 2;
-                    y = (scr.hud_height - scr.scope_height) / 2;
+                    x = scr.hud_x + ((scr.hud_width - scr.scope_width) / 2);
+                    y = scr.hud_y + ((scr.hud_height - scr.scope_height) / 2);
                     R_DrawStretchPic(x + ch_x->integer,
                                      y + ch_y->integer,
                                      scr.scope_width,
