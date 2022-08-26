@@ -507,10 +507,10 @@ static void SCR_DrawNet(void)
     int x = scr_lag_x->integer + scr.hud_x;
     int y = scr_lag_y->integer + scr.hud_y;
 
-    if (x < 0) {
+    if (scr_lag_x->integer < 0) {
         x += scr.hud_width - LAG_WIDTH + 1;
     }
-    if (y < 0) {
+    if (scr_lag_y->integer < 0) {
         y += scr.hud_height - LAG_HEIGHT + 1;
     }
 
@@ -732,10 +732,10 @@ static void SCR_DrawObjects(void)
     FOR_EACH_DRAWOBJ(obj) {
         x = obj->x + scr.hud_x;
         y = obj->y + scr.hud_y;
-        if (x < 0) {
+        if (obj->x < 0) {
             x += scr.hud_width + 1;
         }
-        if (y < 0) {
+        if (obj->y < 0) {
             y += scr.hud_height - CHAR_HEIGHT + 1;
         }
         if (!(obj->flags & UI_IGNORECOLOR)) {
@@ -811,14 +811,14 @@ static void SCR_DrawChatHUD(void)
     else
         flags = 0;
 
-    if (x < 0) {
+    if (scr_chathud_x->integer < 0) {
         x += scr.hud_width + 1;
         flags |= UI_RIGHT;
     } else {
         flags |= UI_LEFT;
     }
 
-    if (y < 0) {
+    if (scr_chathud_y->integer < 0) {
         y += scr.hud_height - CHAR_HEIGHT + 1;
         step = -CHAR_HEIGHT;
     } else {
