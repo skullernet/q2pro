@@ -335,22 +335,7 @@ static void CL_ParseFrame(int extrabits)
 	bits = MSG_ReadWord();
 	if (cls.serverProtocol == PROTOCOL_VERSION_AQTION) {
 		MSG_ParseDeltaPlayerstate_Aqtion(from, &frame.ps, bits, extraflags);
-#ifdef _DEBUG
-		if (cl_shownet->integer > 2 && (bits || extraflags)) {
-			MSG_ShowDeltaPlayerstateBits_Enhanced(bits, extraflags);
-			Com_LPrintf(PRINT_DEVELOPER, "\n");
-		}
-#endif
-		// parse clientNum
-		if (extraflags & EPS_CLIENTNUM) {
-			frame.clientNum = MSG_ReadByte();
-		}
-		else if (oldframe) {
-			frame.clientNum = oldframe->clientNum;
-		}
-	} else if (cls.serverProtocol > PROTOCOL_VERSION_DEFAULT) {
-        MSG_ParseDeltaPlayerstate_Enhanced(from, &frame.ps, bits, extraflags);
-#ifdef _DEBUG
+#ifdef USE_DEBUG
 		if (cl_shownet->integer > 2 && (bits || extraflags)) {
 			MSG_ShowDeltaPlayerstateBits_Enhanced(bits, extraflags);
 			Com_LPrintf(PRINT_DEVELOPER, "\n");
