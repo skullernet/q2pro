@@ -374,6 +374,8 @@ void SV_InitGame(unsigned mvd_spawn)
                      -MAX_WBITS, 9, Z_DEFAULT_STRATEGY) != Z_OK) {
         Com_Error(ERR_FATAL, "%s: deflateInit2() failed", __func__);
     }
+    svs.z_buffer_size = ZPACKET_HEADER + deflateBound(&svs.z, MAX_MSGLEN);
+    svs.z_buffer = SV_Malloc(svs.z_buffer_size);
 #endif
 
     // init game
