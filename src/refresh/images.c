@@ -1705,9 +1705,13 @@ static void r_texture_formats_changed(cvar_t *self)
     }
 }
 
-static bool need_override_image(imagetype_t type)
+static bool need_override_image(imagetype_t type, imageformat_t fmt)
 {
-    return r_override_textures->integer && r_texture_overrides->integer & (1 << type);
+    if (r_override_textures->integer < 1)
+        return false;
+    if (r_override_textures->integer == 1 && fmt > IM_WAL)
+        return false;
+    return r_texture_overrides->integer & (1 << type);
 }
 
 #endif // USE_PNG || USE_JPG || USE_TGA
@@ -1807,7 +1811,7 @@ static image_t *find_or_load_image(const char *name, size_t len,
             // not found, change error to invalid path
             ret = Q_ERR_INVALID_PATH;
         }
-    } else if (need_override_image(type)) {
+    } else if (need_override_image(type, fmt)) {
         // forcibly replace the extension
         ret = try_other_formats(IM_MAX, image, &pic);
     } else {
