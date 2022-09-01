@@ -55,6 +55,7 @@ static struct {
         Atom    delete;
         Atom    wm_state;
         Atom    fs;
+        Atom    hidden;
     } atom;
 
     struct {
@@ -310,11 +311,12 @@ static bool init(void)
     Atom *list = get_prop_list(x11.root, XA(_NET_SUPPORTED), XA_ATOM, 32, &nitems);
     if (list) {
         Atom fs = XA(_NET_WM_STATE_FULLSCREEN);
+        Atom hidden = XA(_NET_WM_STATE_HIDDEN);
         for (int i = 0; i < nitems; i++) {
-            if (list[i] == fs) {
+            if (list[i] == fs)
                 x11.atom.fs = fs;
-                break;
-            }
+            else if (list[i] == hidden)
+                x11.atom.hidden = hidden;
         }
         XFree(list);
     }
@@ -495,9 +497,14 @@ static void property_event(XPropertyEvent *event)
         return;
 
     bool fs = false;
+    bool hidden = false;
     for (int i = 0; i < nitems; i++) {
+        if (state[i] == None)
+            continue;
         if (state[i] == x11.atom.fs)
             fs = true;
+        else if (state[i] == x11.atom.hidden)
+            hidden = true;
         Com_DDPrintf("  %s\n", XGetAtomName(x11.dpy, state[i]));
     }
     XFree(state);
@@ -513,6 +520,9 @@ static void property_event(XPropertyEvent *event)
 
     if ((bool)vid_fullscreen->integer != fs)
         Cvar_SetInteger(vid_fullscreen, fs, FROM_CODE);
+
+    if (hidden)
+        CL_Activate(ACT_MINIMIZED);
 }
 
 static void raw_motion_event(XIRawEvent *event)
