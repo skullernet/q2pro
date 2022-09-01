@@ -778,7 +778,7 @@ static bool get_mouse_motion(int *dx, int *dy)
 static char *get_selection_data(void)
 {
     Atom type;
-    int format, result;
+    int format;
     unsigned long nitems;
     unsigned long bytes_left;
     unsigned char *data;
@@ -811,10 +811,14 @@ static char *get_selection_data(void)
         now = Sys_Milliseconds();
     }
 
-    result = XGetWindowProperty(x11.dpy, x11.win, property, 0, 1024, True,
-                                AnyPropertyType, &type, &format, &nitems, &bytes_left, &data);
-    if (result != Success)
+    if (XGetWindowProperty(x11.dpy, x11.win, property, 0, 1024, True,
+                           AnyPropertyType, &type, &format, &nitems, &bytes_left, &data))
         return NULL;
+
+    if (format != 8) {
+        XFree(data);
+        return NULL;
+    }
 
     char *copy = Z_CopyString((char *)data);
     XFree(data);
