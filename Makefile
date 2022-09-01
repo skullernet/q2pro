@@ -475,12 +475,6 @@ else
     LIBS_c += $(SDL_LIBS)
     OBJS_c += src/unix/video/sdl.o
 
-    ifdef CONFIG_X11
-        CFLAGS_c += -DUSE_X11
-        LIBS_c += -lGLX -lXi -lX11
-        OBJS_c += src/unix/video/x11.o
-    endif
-
     ifndef CONFIG_NO_SOFTWARE_SOUND
         OBJS_c += src/unix/sound/sdl.o
         ifdef CONFIG_OSS
