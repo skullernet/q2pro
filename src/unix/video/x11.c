@@ -28,6 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "client/ui.h"
 #include "refresh/refresh.h"
 #include "system/system.h"
+#include "keytables/keytables.h"
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -48,6 +49,7 @@ static struct {
     vidFlags_t  flags;
     vrect_t     rc;
     bool        mapped;
+    bool        evdev;
 
     struct {
         Atom    delete;
@@ -367,6 +369,12 @@ static bool init(void)
         XFreePixmap(x11.dpy, pixmap);
     }
 
+    char *rules = get_prop_list(x11.root, XA(_XKB_RULES_NAMES), XA_STRING, 8, NULL);
+    if (rules) {
+        x11.evdev = !strcmp(rules, "evdev");
+        XFree(rules);
+    }
+
     Bool set;
     XkbSetDetectableAutoRepeat(x11.dpy, True, &set);
     return true;
@@ -435,92 +443,17 @@ static void configure_event(XConfigureEvent *event)
     mode_changed();
 }
 
-static const struct {
-    KeySym sym;
-    int key;
-} keytable[] = {
-    { XK_BackSpace, K_BACKSPACE },
-    { XK_Tab,       K_TAB       },
-    { XK_Return,    K_ENTER     },
-    { XK_Pause,     K_PAUSE     },
-    { XK_Escape,    K_ESCAPE    },
-
-    { XK_KP_0,        K_KP_INS        },
-    { XK_KP_1,        K_KP_END        },
-    { XK_KP_2,        K_KP_DOWNARROW  },
-    { XK_KP_3,        K_KP_PGDN       },
-    { XK_KP_4,        K_KP_LEFTARROW  },
-    { XK_KP_5,        K_KP_5          },
-    { XK_KP_6,        K_KP_RIGHTARROW },
-    { XK_KP_7,        K_KP_HOME       },
-    { XK_KP_8,        K_KP_UPARROW    },
-    { XK_KP_9,        K_KP_PGUP       },
-    { XK_KP_Delete,   K_KP_DEL        },
-    { XK_KP_Divide,   K_KP_SLASH      },
-    { XK_KP_Multiply, K_KP_MULTIPLY   },
-    { XK_KP_Subtract, K_KP_MINUS      },
-    { XK_KP_Add,      K_KP_PLUS       },
-    { XK_KP_Enter,    K_KP_ENTER      },
-
-    { XK_Up,        K_UPARROW    },
-    { XK_Down,      K_DOWNARROW  },
-    { XK_Right,     K_RIGHTARROW },
-    { XK_Left,      K_LEFTARROW  },
-    { XK_Insert,    K_INS        },
-    { XK_Home,      K_HOME       },
-    { XK_End,       K_END        },
-    { XK_Page_Up,   K_PGUP       },
-    { XK_Page_Down, K_PGDN       },
-
-    { XK_F1,  K_F1  },
-    { XK_F2,  K_F2  },
-    { XK_F3,  K_F3  },
-    { XK_F4,  K_F4  },
-    { XK_F5,  K_F5  },
-    { XK_F6,  K_F6  },
-    { XK_F7,  K_F7  },
-    { XK_F8,  K_F8  },
-    { XK_F9,  K_F9  },
-    { XK_F10, K_F10 },
-    { XK_F11, K_F11 },
-    { XK_F12, K_F12 },
-
-    { XK_Num_Lock,    K_NUMLOCK   },
-    { XK_Caps_Lock,   K_CAPSLOCK  },
-    { XK_Scroll_Lock, K_SCROLLOCK },
-    { XK_Super_L,     K_LWINKEY   },
-    { XK_Super_R,     K_RWINKEY   },
-    { XK_Menu,        K_MENU      },
-
-    { XK_Shift_L,   K_LSHIFT },
-    { XK_Shift_R,   K_RSHIFT },
-    { XK_Control_L, K_LCTRL  },
-    { XK_Control_R, K_RCTRL  },
-    { XK_Alt_L,     K_LALT   },
-    { XK_Alt_R,     K_RALT   },
-};
-
-static int lookup_key(KeySym sym)
-{
-    for (int i = 0; i < q_countof(keytable); i++)
-        if (keytable[i].sym == sym)
-            return keytable[i].key;
-    return 0;
-}
-
 static void key_event(XKeyEvent *event)
 {
-    KeySym sym = XLookupKeysym(event, 0);
-    if (sym == NoSymbol) {
-        Com_DPrintf("Unknown keycode %d\n", event->keycode);
-        return;
-    }
+    const keytable_t *tab = x11.evdev ? &keytable_evdev : &keytable_at;
+    int code = event->keycode - 8;
+    int key = 0;
 
-    int key;
-    if (Q_isprint(sym)) {
-        key = sym;
-    } else if (!(key = lookup_key(sym))) {
-        Com_DPrintf("Unknown keysym %#lx\n", sym);
+    if (code > 0 && code < tab->count)
+        key = tab->keys[code];
+
+    if (!key) {
+        Com_DPrintf("Unknown keycode %d\n", code);
         return;
     }
 

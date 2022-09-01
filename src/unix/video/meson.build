@@ -13,7 +13,7 @@ foreach dep: x11_deps
 endforeach
 
 if x11_use
-  client_src += files('x11.c')
+  client_src += files('x11.c', 'keytables/evdev.c', 'keytables/at.c')
   client_deps += x11_deps
   config.set10('USE_X11', true)
 endif

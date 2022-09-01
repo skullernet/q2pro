@@ -26,5 +26,6 @@ typedef struct {
 } keytable_t;
 
 extern const keytable_t keytable_evdev;
+extern const keytable_t keytable_at;
 
 #endif
