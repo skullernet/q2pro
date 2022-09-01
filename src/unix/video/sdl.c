@@ -39,6 +39,8 @@ static struct {
     SDL_Window      *window;
     SDL_GLContext   *context;
     vidFlags_t      flags;
+    bool            wayland;
+    int             focus_hack;
 } sdl;
 
 /*
@@ -289,6 +291,11 @@ static bool init(void)
         }
     }
 
+    Com_Printf("Using SDL video driver: %s\n", SDL_GetCurrentVideoDriver());
+
+    // activate disgusting wayland hacks
+    sdl.wayland = !strcmp(SDL_GetCurrentVideoDriver(), "wayland");
+
     return true;
 
 fail:
@@ -309,6 +316,19 @@ static void window_event(SDL_WindowEvent *event)
     Uint32 flags = SDL_GetWindowFlags(sdl.window);
     active_t active;
     vrect_t rc;
+
+    // wayland doesn't set SDL_WINDOW_*_FOCUS flags
+    if (sdl.wayland) {
+        switch (event->event) {
+        case SDL_WINDOWEVENT_FOCUS_GAINED:
+            sdl.focus_hack = SDL_WINDOW_INPUT_FOCUS;
+            break;
+        case SDL_WINDOWEVENT_FOCUS_LOST:
+            sdl.focus_hack = 0;
+            break;
+        }
+        flags |= sdl.focus_hack;
+    }
 
     switch (event->event) {
     case SDL_WINDOWEVENT_MINIMIZED:
