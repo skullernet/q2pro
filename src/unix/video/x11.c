@@ -132,27 +132,29 @@ static void shutdown(void)
     memset(&x11, 0, sizeof(x11));
 }
 
-static Atom *get_prop_atom_list(Window win, Atom atom, int *nitems_p)
+static void *get_prop_list(Window win, Atom atom, Atom req_type, int req_format, int *nitems_p)
 {
     Atom type;
-    int format, result;
+    int format;
     unsigned long nitems;
     unsigned long bytes_left;
     unsigned char *data;
 
-    *nitems_p = 0;
-    result = XGetWindowProperty(x11.dpy, win, atom, 0, 1024, False, XA_ATOM,
-                                &type, &format, &nitems, &bytes_left, &data);
-    if (result != Success)
+    if (nitems_p)
+        *nitems_p = 0;
+
+    if (XGetWindowProperty(x11.dpy, win, atom, 0, 1024, False, req_type,
+                           &type, &format, &nitems, &bytes_left, &data))
         return NULL;
 
-    if (type != XA_ATOM || format != 32 || bytes_left) {
+    if (type != req_type || format != req_format || bytes_left) {
         XFree(data);
         return NULL;
     }
 
-    *nitems_p = nitems;
-    return (Atom *)data;
+    if (nitems_p)
+        *nitems_p = nitems;
+    return data;
 }
 
 static int io_error_handler(Display *dpy)
@@ -303,7 +305,7 @@ static bool init(void)
     x11.atom.wm_state = XA(_NET_WM_STATE);
 
     int nitems;
-    Atom *list = get_prop_atom_list(x11.root, XA(_NET_SUPPORTED), &nitems);
+    Atom *list = get_prop_list(x11.root, XA(_NET_SUPPORTED), XA_ATOM, 32, &nitems);
     if (list) {
         Atom fs = XA(_NET_WM_STATE_FULLSCREEN);
         for (int i = 0; i < nitems; i++) {
@@ -556,7 +558,7 @@ static void property_event(XPropertyEvent *event)
     Com_DDPrintf("%s\n", XGetAtomName(x11.dpy, event->atom));
     if (event->atom != x11.atom.wm_state)
         return;
-    if (!(state = get_prop_atom_list(x11.win, event->atom, &nitems)))
+    if (!(state = get_prop_list(x11.win, event->atom, XA_ATOM, 32, &nitems)))
         return;
 
     bool fs = false;
