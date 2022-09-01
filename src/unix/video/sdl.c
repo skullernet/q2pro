@@ -39,6 +39,12 @@ static struct {
     SDL_Window      *window;
     SDL_GLContext   *context;
     vidFlags_t      flags;
+
+    int             width;
+    int             height;
+    int             win_width;
+    int             win_height;
+
     bool            wayland;
     int             focus_hack;
 } sdl;
@@ -105,8 +111,9 @@ VIDEO
 
 static void mode_changed(void)
 {
-    int width, height;
-    SDL_GetWindowSize(sdl.window, &width, &height);
+    SDL_GetWindowSize(sdl.window, &sdl.win_width, &sdl.win_height);
+
+    SDL_GL_GetDrawableSize(sdl.window, &sdl.width, &sdl.height);
 
     Uint32 flags = SDL_GetWindowFlags(sdl.window);
     if (flags & SDL_WINDOW_FULLSCREEN)
@@ -114,7 +121,7 @@ static void mode_changed(void)
     else
         sdl.flags &= ~QVF_FULLSCREEN;
 
-    R_ModeChanged(width, height, sdl.flags);
+    R_ModeChanged(sdl.width, sdl.height, sdl.flags);
     SCR_ModeChanged();
 }
 
@@ -250,7 +257,8 @@ static bool init(void)
         rc.y = SDL_WINDOWPOS_UNDEFINED;
     }
 
-    sdl.window = SDL_CreateWindow(PRODUCT, rc.x, rc.y, rc.width, rc.height, SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
+    sdl.window = SDL_CreateWindow(PRODUCT, rc.x, rc.y, rc.width, rc.height,
+                                  SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI);
     if (!sdl.window) {
         Com_EPrintf("Couldn't create SDL window: %s\n", SDL_GetError());
         goto fail;
@@ -461,7 +469,9 @@ static void pump_events(void)
             key_event(&event.key);
             break;
         case SDL_MOUSEMOTION:
-            UI_MouseEvent(event.motion.x, event.motion.y);
+            if (sdl.win_width && sdl.win_height)
+                UI_MouseEvent(event.motion.x * sdl.width / sdl.win_width,
+                              event.motion.y * sdl.height / sdl.win_height);
             break;
         case SDL_MOUSEBUTTONDOWN:
         case SDL_MOUSEBUTTONUP:
