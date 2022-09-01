@@ -28,6 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "client/ui.h"
 #include "refresh/refresh.h"
 #include "system/system.h"
+#include "keytables/keytables.h"
 
 #include <wayland-client.h>
 #include <wayland-cursor.h>
@@ -219,11 +220,11 @@ static void keyboard_handle_key(void *data, struct wl_keyboard *wl_keyboard,
                                 uint32_t serial, uint32_t time, uint32_t ev_key,
                                 uint32_t state)
 {
-    static const uint8_t keytable[] = {
-        #include "keytable_linux.h"
-    };
+    int key = 0;
 
-    int key = ev_key < q_countof(keytable) ? keytable[ev_key] : 0;
+    if (ev_key < keytable_evdev.count)
+        key = keytable_evdev.keys[ev_key];
+
     if (!key) {
         Com_DPrintf("Unknown key %d\n", ev_key);
         return;
