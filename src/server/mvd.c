@@ -1554,11 +1554,7 @@ static void parse_stream_start(gtv_client_t *client)
     }
 
     maxbuf = MSG_ReadShort();
-    if (maxbuf < 10) {
-        maxbuf = 10;
-    }
-
-    client->maxbuf = maxbuf;
+    client->maxbuf = max(maxbuf, 10);
     client->state = cs_spawned;
 
     List_Append(&gtv_active_list, &client->active);
