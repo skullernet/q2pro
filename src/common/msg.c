@@ -1195,8 +1195,6 @@ int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
     return eflags;
 }
 
-#if USE_MVD_SERVER || USE_MVD_CLIENT || USE_CLIENT_GTV
-
 int MSG_WriteDeltaPlayerstate_Aqtion(const player_packed_t    *from,
 	player_packed_t    *to,
 	msgPsFlags_t       flags)
@@ -1330,7 +1328,6 @@ int MSG_WriteDeltaPlayerstate_Aqtion(const player_packed_t    *from,
 	if (statbits)
 		eflags |= EPS_STATS;
 
-
 	//
 	// aqtion extension checks
 	//
@@ -1342,7 +1339,6 @@ int MSG_WriteDeltaPlayerstate_Aqtion(const player_packed_t    *from,
 	if (to->pmove.pm_aq2_leghits != from->pmove.pm_aq2_leghits)
 		aqtflags |= AQPS_LEGHITS;
 #endif
-
 
 
 	//
@@ -1471,7 +1467,7 @@ int MSG_WriteDeltaPlayerstate_Aqtion(const player_packed_t    *from,
 }
 
 
-#if USE_MVD_SERVER || USE_MVD_CLIENT
+#if USE_MVD_SERVER || USE_MVD_CLIENT || USE_CLIENT_GTV
 
 /*
 ==================
