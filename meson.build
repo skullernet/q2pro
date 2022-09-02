@@ -55,6 +55,7 @@ client_src = [
   'src/client/sound/mem.c',
   'src/server/commands.c',
   'src/server/entities.c',
+  'src/server/ghud.c',
   'src/server/game.c',
   'src/server/init.c',
   'src/server/save.c',
@@ -97,6 +98,7 @@ server_src = [
   'src/client/null.c',
   'src/server/commands.c',
   'src/server/entities.c',
+  'src/server/ghud.c',
   'src/server/game.c',
   'src/server/init.c',
   'src/server/send.c',
@@ -345,6 +347,27 @@ if get_option('mvd-client')
     'src/server/mvd/parse.c'
   ]
   config.set10('USE_MVD_CLIENT', true)
+endif
+
+if get_option('aqtion-build')
+  config.set10('USE_AQTION', true)
+  config.set10('AQTION_EXTENSION', true)
+endif
+
+if get_option('discord-sdk')
+  #if host_machine.system() == 'linux'
+  if host_machine.cpu_family() == 'aarch64' # I am Linux ARM 64-bit
+    # Discord does not have an SDK for this platform yet, setting USE_DISCORD to false
+    config.set10('USE_DISCORD', false)
+  else
+    config.set10('USE_DISCORD', true)
+    discord_inc_path = join_paths('extern/discord/lib/', host_machine.cpu_family())
+    dis_inc = include_directories(discord_inc_path)
+    discord_dep_path = join_paths(meson.current_source_dir(), discord_inc_path)
+    discord_dep = cc.find_library('discord_game_sdk', dirs : discord_dep_path)
+    client_deps += discord_dep
+  endif
+  #endif
 endif
 
 if get_option('system-console')

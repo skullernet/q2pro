@@ -9,3 +9,6 @@
 /game*.dll
 /tags
 /TAGS
+/.vs/*
+/debug/*
+/.vscode

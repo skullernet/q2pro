@@ -94,6 +94,10 @@ typedef enum {
     PRINT_NOTICE        // print in cyan color
 } print_type_t;
 
+#ifdef AQTION_EXTENSION
+#include "shared/ghud.h"
+#endif
+
 void    Com_LPrintf(print_type_t type, const char *fmt, ...)
 q_printf(2, 3);
 void    Com_Error(error_type_t code, const char *fmt, ...)
@@ -738,6 +742,8 @@ typedef enum {
     PM_FREEZE
 } pmtype_t;
 
+//#define AQTION_EXTENSION
+
 // pmove->pm_flags
 #define PMF_DUCKED          1
 #define PMF_JUMP_HELD       2
@@ -747,6 +753,12 @@ typedef enum {
 #define PMF_TIME_TELEPORT   32  // pm_time is non-moving time
 #define PMF_NO_PREDICTION   64  // temporarily disables prediction (used for grappling hook)
 #define PMF_TELEPORT_BIT    128 // used by q2pro
+
+
+#ifdef AQTION_EXTENSION
+// pmove->pm_aq2_flags
+#define PMF_AQ2_LIMP		0x01 // used to predict limping
+#endif
 
 // this structure needs to be communicated bit-accurate
 // from the server to the client to guarantee that
@@ -758,11 +770,16 @@ typedef struct {
 
     short       origin[3];      // 12.3
     short       velocity[3];    // 12.3
-    byte        pm_flags;       // ducked, jump_held, etc
+	byte        pm_flags;       // ducked, jump_held, etc
     byte        pm_time;        // each unit = 8 ms
     short       gravity;
     short       delta_angles[3];    // add to command angles to get view direction
                                     // changed by spawns, rotating objects, and teleporters
+#ifdef AQTION_EXTENSION
+	short       pm_aq2_flags;   // limping, bandaging, etc
+	unsigned short pm_timestamp; // timestamp, resets every 60 seconds
+	byte		pm_aq2_leghits;		 // number of leg hits
+#endif
 } pmove_state_t;
 
 
