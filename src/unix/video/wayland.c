@@ -593,6 +593,7 @@ static bool init(void)
     CHECK(wl.registry = wl_display_get_registry(wl.display), "wl_display_get_registry");
     wl_registry_add_listener(wl.registry, &wl_registry_listener, NULL);
     wl_display_roundtrip(wl.display);
+    wl_display_roundtrip(wl.display);
 
     if (!wl.compositor || !wl.xdg_wm_base || !wl.seat) {
         Com_EPrintf("Required wayland interfaces missing\n");
