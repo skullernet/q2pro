@@ -40,6 +40,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <poll.h>
 
+#define XA(x)   XInternAtom(x11.dpy, #x, False)
+#define XAs(x)  XGetAtomName(x11.dpy, x)
+
 static struct {
     Display     *dpy;
     int         screen;
@@ -300,8 +303,6 @@ static bool init(void)
     XStoreName(x11.dpy, x11.win, PRODUCT);
     XSetIconName(x11.dpy, x11.win, PRODUCT);
 
-#define XA(x)   XInternAtom(x11.dpy, #x, False)
-
     x11.atom.delete = XA(WM_DELETE_WINDOW);
     XSetWMProtocols(x11.dpy, x11.win, &x11.atom.delete, 1);
 
@@ -490,7 +491,7 @@ static void property_event(XPropertyEvent *event)
     Atom *state;
     int nitems;
 
-    Com_DDPrintf("%s\n", XGetAtomName(x11.dpy, event->atom));
+    Com_DDPrintf("%s\n", XAs(event->atom));
     if (event->atom != x11.atom.wm_state)
         return;
     if (!(state = get_prop_list(x11.win, event->atom, XA_ATOM, 32, &nitems)))
@@ -505,7 +506,7 @@ static void property_event(XPropertyEvent *event)
             fs = true;
         else if (state[i] == x11.atom.hidden)
             hidden = true;
-        Com_DDPrintf("  %s\n", XGetAtomName(x11.dpy, state[i]));
+        Com_DDPrintf("  %s\n", XAs(state[i]));
     }
     XFree(state);
 
