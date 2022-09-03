@@ -53,6 +53,7 @@ static struct {
     vrect_t     rc;
     bool        mapped;
     bool        evdev;
+    char        *clipboard_data;
 
     struct {
         Atom    delete;
@@ -134,6 +135,8 @@ static void shutdown(void)
 
         XCloseDisplay(x11.dpy);
     }
+
+    Z_Free(x11.clipboard_data);
 
     memset(&x11, 0, sizeof(x11));
 }
@@ -581,6 +584,36 @@ static void focus_event(XFocusChangeEvent *event)
     x11.mouse.grab_pending = false;
 }
 
+static void selection_request(XSelectionRequestEvent *event)
+{
+    Com_DDPrintf("%#lx %s %s\n", event->requestor, XAs(event->selection), XAs(event->target));
+
+    XEvent reply = {
+        .xselection = {
+            .type = SelectionNotify,
+            .requestor = event->requestor,
+            .selection = event->selection,
+            .target = event->target,
+            .time = event->time,
+        }
+    };
+
+    if (x11.clipboard_data && event->selection == XA(CLIPBOARD) && event->property) {
+        if (event->target == XA(TARGETS)) {
+            Atom target = XA_STRING;
+            XChangeProperty(x11.dpy, event->requestor, event->property, XA_ATOM, 32,
+                            PropModeReplace, (unsigned char *)&target, 1);
+            reply.xselection.property = event->property;
+        } else if (event->target == XA_STRING) {
+            XChangeProperty(x11.dpy, event->requestor, event->property, XA_STRING, 8,
+                            PropModeReplace, (unsigned char *)x11.clipboard_data, strlen(x11.clipboard_data));
+            reply.xselection.property = event->property;
+        }
+    }
+
+    XSendEvent(x11.dpy, event->requestor, False, 0, &reply);
+}
+
 #if USE_DEBUG
 static const char *const eventtab[LASTEvent] = {
     "<error>", "<reply>", "KeyPress", "KeyRelease", "ButtonPress",
@@ -638,6 +671,15 @@ static void pump_events(void)
             break;
         case DestroyNotify:
             Com_Quit(NULL, ERR_DISCONNECT);
+            break;
+        case SelectionRequest:
+            selection_request(&event.xselectionrequest);
+            break;
+        case SelectionClear:
+            if (event.xselectionclear.selection == XA(CLIPBOARD)) {
+                Z_Free(x11.clipboard_data);
+                x11.clipboard_data = NULL;
+            }
             break;
         }
     }
@@ -719,7 +761,7 @@ static bool get_mouse_motion(int *dx, int *dy)
     return true;
 }
 
-static char *get_selection_data(void)
+static char *get_selection(Atom sel)
 {
     Atom type;
     int format;
@@ -727,13 +769,15 @@ static char *get_selection_data(void)
     unsigned long bytes_left;
     unsigned char *data;
 
-    Window sowner = XGetSelectionOwner(x11.dpy, XA_PRIMARY);
+    Window sowner = XGetSelectionOwner(x11.dpy, sel);
     if (sowner == None)
         return NULL;
+    if (sowner == x11.win)
+        return sel == XA(CLIPBOARD) ? Z_CopyString(x11.clipboard_data) : NULL;
 
     Atom property = XA(GETCLIPBOARDDATA_PROP);
 
-    XConvertSelection(x11.dpy, XA_PRIMARY, XA_STRING, property, x11.win, CurrentTime);
+    XConvertSelection(x11.dpy, sel, XA_STRING, property, x11.win, CurrentTime);
 
     unsigned now = Sys_Milliseconds();
     unsigned deadline = now + 50;
@@ -769,6 +813,30 @@ static char *get_selection_data(void)
     return copy;
 }
 
+static char *get_selection_data(void)
+{
+    return get_selection(XA_PRIMARY);
+}
+
+static char *get_clipboard_data(void)
+{
+    return get_selection(XA(CLIPBOARD));
+}
+
+static void set_clipboard_data(const char *data)
+{
+    if (!data || !*data)
+        return;
+
+    Z_Free(x11.clipboard_data);
+    x11.clipboard_data = NULL;
+
+    XSetSelectionOwner(x11.dpy, XA(CLIPBOARD), x11.win, CurrentTime);
+
+    if (XGetSelectionOwner(x11.dpy, XA(CLIPBOARD)) == x11.win)
+        x11.clipboard_data = Z_CopyString(data);
+}
+
 static bool probe(void)
 {
     Display *dpy = XOpenDisplay(NULL);
@@ -798,6 +866,8 @@ const vid_driver_t vid_x11 = {
     .swap_interval = swap_interval,
 
     .get_selection_data = get_selection_data,
+    .get_clipboard_data = get_clipboard_data,
+    .set_clipboard_data = set_clipboard_data,
 
     .init_mouse = init_mouse,
     .shutdown_mouse = shutdown_mouse,
