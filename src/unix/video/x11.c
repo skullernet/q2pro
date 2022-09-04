@@ -54,6 +54,7 @@ static struct {
     bool        mapped;
     bool        evdev;
     char        *clipboard_data;
+    int         dpi_scale;
 
     struct {
         Atom    delete;
@@ -287,10 +288,26 @@ static bool init(void)
         goto fail;
     }
 
+    x11.dpi_scale = 1;
+
+    int width = DisplayWidth(x11.dpy, x11.screen);
+    int height = DisplayHeight(x11.dpy, x11.screen);
+    int mm_width = DisplayWidthMM(x11.dpy, x11.screen);
+    int mm_height = DisplayHeightMM(x11.dpy, x11.screen);
+
+    if (mm_width > 0 && mm_height > 0) {
+        float dpi_x = width * 25.4f / mm_width;
+        float dpi_y = height * 25.4f / mm_height;
+        int scale_x = Q_rint(dpi_x / 96.0f);
+        int scale_y = Q_rint(dpi_y / 96.0f);
+        if (scale_x == scale_y)
+            x11.dpi_scale = clamp(scale_x, 1, 10);
+    }
+
     XSizeHints hints = {
         .flags = PMinSize,
-        .min_width = 320,
-        .min_height = 240,
+        .min_width = 320 * x11.dpi_scale,
+        .min_height = 240 * x11.dpi_scale,
     };
 
     XSetWMNormalHints(x11.dpy, x11.win, &hints);
@@ -430,6 +447,11 @@ static void set_mode(void)
 static char *get_mode_list(void)
 {
     return Z_CopyString("desktop");
+}
+
+static int get_dpi_scale(void)
+{
+    return x11.dpi_scale;
 }
 
 static void mode_changed(void)
@@ -860,6 +882,7 @@ const vid_driver_t vid_x11 = {
 
     .set_mode = set_mode,
     .get_mode_list = get_mode_list,
+    .get_dpi_scale = get_dpi_scale,
 
     .get_proc_addr = get_proc_addr,
     .swap_buffers = swap_buffers,
