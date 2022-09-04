@@ -607,7 +607,7 @@ static int read_next_message(qhandle_t f)
 
 static void finish_demo(int ret)
 {
-    char *s = Cvar_VariableString("nextserver");
+    const char *s = Cvar_VariableString("nextserver");
 
     if (!s[0]) {
         if (ret == 0) {
@@ -1049,7 +1049,6 @@ done:
 
 static void parse_info_string(demoInfo_t *info, int clientNum, int index, const char *string)
 {
-    size_t len;
     char *p;
 
     if (index >= CS_PLAYERSKINS && index < CS_PLAYERSKINS + MAX_CLIENTS) {
@@ -1061,11 +1060,7 @@ static void parse_info_string(demoInfo_t *info, int clientNum, int index, const 
             }
         }
     } else if (index == CS_MODELS + 1) {
-        len = strlen(string);
-        if (len > 9) {
-            memcpy(info->map, string + 5, len - 9);   // skip "maps/"
-            info->map[len - 9] = 0; // cut off ".bsp"
-        }
+        Com_ParseMapName(info->map, string, sizeof(info->map));
     }
 }
 

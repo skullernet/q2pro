@@ -289,6 +289,7 @@ static void Scrap_Shutdown(void)
 
 void Scrap_Upload(void)
 {
+    byte *data;
     int maxlevel;
 
     if (!scrap_dirty) {
@@ -297,14 +298,20 @@ void Scrap_Upload(void)
 
     GL_ForceTexture(0, TEXNUM_SCRAP);
 
+    // make a copy so that effects like gamma scaling don't accumulate
+    data = FS_AllocTempMem(sizeof(scrap_data));
+    memcpy(data, scrap_data, sizeof(scrap_data));
+
     maxlevel = GL_UpscaleLevel(SCRAP_BLOCK_WIDTH, SCRAP_BLOCK_HEIGHT, IT_PIC, IF_SCRAP);
     if (maxlevel) {
-        GL_Upscale32(scrap_data, SCRAP_BLOCK_WIDTH, SCRAP_BLOCK_HEIGHT, maxlevel, IT_PIC, IF_SCRAP);
+        GL_Upscale32(data, SCRAP_BLOCK_WIDTH, SCRAP_BLOCK_HEIGHT, maxlevel, IT_PIC, IF_SCRAP);
         GL_SetFilterAndRepeat(IT_PIC, IF_SCRAP | IF_UPSCALED);
     } else {
-        GL_Upload32(scrap_data, SCRAP_BLOCK_WIDTH, SCRAP_BLOCK_HEIGHT, maxlevel, IT_PIC, IF_SCRAP);
+        GL_Upload32(data, SCRAP_BLOCK_WIDTH, SCRAP_BLOCK_HEIGHT, maxlevel, IT_PIC, IF_SCRAP);
         GL_SetFilterAndRepeat(IT_PIC, IF_SCRAP);
     }
+
+    FS_FreeTempMem(data);
 
     scrap_dirty = false;
 }
@@ -733,9 +740,6 @@ void IMG_Load(image_t *image, byte *pic)
         image->tl = 0;
         image->th = 1;
     }
-
-    // don't need pics in memory after GL upload
-    Z_Free(pic);
 }
 
 void IMG_Unload(image_t *image)
@@ -816,7 +820,8 @@ static void GL_BuildGammaTables(void)
 static void gl_gamma_changed(cvar_t *self)
 {
     GL_BuildGammaTables();
-    VID_UpdateGamma(gammatable);
+    if (vid.update_gamma)
+        vid.update_gamma(gammatable);
 }
 
 static const byte dottexture[8][8] = {
@@ -1045,7 +1050,7 @@ void GL_InitImages(void)
     GL_ShowErrors(__func__);
 }
 
-#ifdef _DEBUG
+#if USE_DEBUG
 extern image_t *r_charset;
 #endif
 
@@ -1068,7 +1073,7 @@ void GL_ShutdownImages(void)
     qglDeleteTextures(NUM_TEXNUMS, gl_static.texnums);
     qglDeleteTextures(LM_MAX_LIGHTMAPS, lm.texnums);
 
-#ifdef _DEBUG
+#if USE_DEBUG
     r_charset = NULL;
 #endif
 

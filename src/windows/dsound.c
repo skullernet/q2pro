@@ -236,7 +236,7 @@ static sndinitstat_t DS_Init(void)
 
     if (!hInstDS) {
         Com_DPrintf("...loading dsound.dll: ");
-        hInstDS = LoadLibrary("dsound.dll");
+        hInstDS = LoadLibraryA("dsound.dll");
         if (hInstDS == NULL) {
             Com_DPrintf("failed\n");
             return SIS_FAILURE;
@@ -258,11 +258,11 @@ static sndinitstat_t DS_Init(void)
             return SIS_FAILURE;
         }
 
-        if (MessageBox(NULL,
-                       "The sound hardware is in use by another app.\n\n"
-                       "Select Retry to try to start sound again or Cancel to run " PRODUCT " with no sound.",
-                       "Sound not available",
-                       MB_RETRYCANCEL | MB_SETFOREGROUND | MB_ICONEXCLAMATION) != IDRETRY) {
+        if (MessageBoxA(NULL,
+                        "The sound hardware is in use by another app.\n\n"
+                        "Select Retry to try to start sound again or Cancel to run " PRODUCT " with no sound.",
+                        "Sound not available",
+                        MB_RETRYCANCEL | MB_SETFOREGROUND | MB_ICONEXCLAMATION) != IDRETRY) {
             Com_DPrintf("failed, hardware already in use\n");
             return SIS_NOTAVAIL;
         }
@@ -397,11 +397,11 @@ static void DS_Activate(bool active)
     }
 }
 
-void DS_FillAPI(snddmaAPI_t *api)
-{
-    api->Init = DS_Init;
-    api->Shutdown = DS_Shutdown;
-    api->BeginPainting = DS_BeginPainting;
-    api->Submit = DS_Submit;
-    api->Activate = DS_Activate;
-}
+const snddma_driver_t snddma_dsound = {
+    .name = "dsound",
+    .init = DS_Init,
+    .shutdown = DS_Shutdown,
+    .begin_painting = DS_BeginPainting,
+    .submit = DS_Submit,
+    .activate = DS_Activate,
+};

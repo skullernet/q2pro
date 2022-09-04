@@ -19,17 +19,16 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "g_local.h"
 #include "g_ptrs.h"
 
-//#define _DEBUG
 typedef struct {
     fieldtype_t type;
-#ifdef _DEBUG
+#if USE_DEBUG
     char *name;
 #endif
     unsigned ofs;
     unsigned size;
 } save_field_t;
 
-#ifdef _DEBUG
+#if USE_DEBUG
 #define _FA(type, name, size) { type, #name, _OFS(name), size }
 #else
 #define _FA(type, name, size) { type, _OFS(name), size }
@@ -785,8 +784,8 @@ static void read_fields(FILE *f, const save_field_t *fields, void *base)
 
 //=========================================================
 
-#define SAVE_MAGIC1     (('1'<<24)|('V'<<16)|('S'<<8)|'S')  // "SSV1"
-#define SAVE_MAGIC2     (('1'<<24)|('V'<<16)|('A'<<8)|'S')  // "SAV1"
+#define SAVE_MAGIC1     MakeLittleLong('S','S','V','1')
+#define SAVE_MAGIC2     MakeLittleLong('S','A','V','1')
 #define SAVE_VERSION    8
 
 /*

@@ -43,7 +43,7 @@ static inline void CL_ParseDeltaEntity(server_frame_t  *frame,
     cl.numEntityStates++;
     frame->numEntities++;
 
-#ifdef _DEBUG
+#if USE_DEBUG
     if (cl_shownet->integer > 2 && bits) {
         MSG_ShowDeltaEntityBits(bits);
         Com_LPrintf(PRINT_DEVELOPER, "\n");
@@ -312,7 +312,7 @@ static void CL_ParseFrame(int extrabits)
     bits = MSG_ReadWord();
     if (cls.serverProtocol > PROTOCOL_VERSION_DEFAULT) {
         MSG_ParseDeltaPlayerstate_Enhanced(from, &frame.ps, bits, extraflags);
-#ifdef _DEBUG
+#if USE_DEBUG
         if (cl_shownet->integer > 2 && (bits || extraflags)) {
             MSG_ShowDeltaPlayerstateBits_Enhanced(bits, extraflags);
             Com_LPrintf(PRINT_DEVELOPER, "\n");
@@ -321,7 +321,14 @@ static void CL_ParseFrame(int extrabits)
         if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO) {
             // parse clientNum
             if (extraflags & EPS_CLIENTNUM) {
-                frame.clientNum = MSG_ReadByte();
+                if (cls.protocolVersion < PROTOCOL_VERSION_Q2PRO_CLIENTNUM_SHORT) {
+                    frame.clientNum = MSG_ReadByte();
+                } else {
+                    frame.clientNum = MSG_ReadShort();
+                }
+                if (!VALIDATE_CLIENTNUM(frame.clientNum)) {
+                    Com_Error(ERR_DROP, "%s: bad clientNum", __func__);
+                }
             } else if (oldframe) {
                 frame.clientNum = oldframe->clientNum;
             }
@@ -330,7 +337,7 @@ static void CL_ParseFrame(int extrabits)
         }
     } else {
         MSG_ParseDeltaPlayerstate_Default(from, &frame.ps, bits);
-#ifdef _DEBUG
+#if USE_DEBUG
         if (cl_shownet->integer > 2 && bits) {
             MSG_ShowDeltaPlayerstateBits_Default(bits);
             Com_LPrintf(PRINT_DEVELOPER, "\n");
@@ -353,7 +360,7 @@ static void CL_ParseFrame(int extrabits)
     // save the frame off in the backup array for later delta comparisons
     cl.frames[currentframe & UPDATE_MASK] = frame;
 
-#ifdef _DEBUG
+#if USE_DEBUG
     if (cl_shownet->integer > 2) {
         int rtt = 0;
         if (cls.netchan) {
@@ -444,7 +451,7 @@ static void CL_ParseBaseline(int index, int bits)
     if (index < 1 || index >= MAX_EDICTS) {
         Com_Error(ERR_DROP, "%s: bad index: %d", __func__, index);
     }
-#ifdef _DEBUG
+#if USE_DEBUG
     if (cl_shownet->integer > 2) {
         MSG_ShowDeltaEntityBits(bits);
         Com_LPrintf(PRINT_DEVELOPER, "\n");
@@ -480,6 +487,7 @@ static void CL_ParseServerData(void)
 {
     char    levelname[MAX_QPATH];
     int     i, protocol, attractloop q_unused;
+    bool    cinematic;
 
     Cbuf_Execute(&cl_cmdbuf);          // make sure any stuffed commands are done
 
@@ -544,6 +552,7 @@ static void CL_ParseServerData(void)
 
     // setup default server state
     cl.serverstate = ss_game;
+    cinematic = cl.clientNum == -1;
 
     if (cls.serverProtocol == PROTOCOL_VERSION_R1Q2) {
         i = MSG_ReadByte();
@@ -587,6 +596,7 @@ static void CL_ParseServerData(void)
         if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_SERVER_STATE) {
             Com_DPrintf("Q2PRO server state %d\n", i);
             cl.serverstate = i;
+            cinematic = i == ss_pic;
         }
         i = MSG_ReadByte();
         if (i) {
@@ -598,29 +608,24 @@ static void CL_ParseServerData(void)
             Com_DPrintf("Q2PRO QW mode enabled\n");
             PmoveEnableQW(&cl.pmp);
         }
-        cl.esFlags |= MSG_ES_UMASK;
-        if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_LONG_SOLID) {
-            cl.esFlags |= MSG_ES_LONGSOLID;
+        i = MSG_ReadByte();
+        if (i) {
+            Com_DPrintf("Q2PRO waterjump hack enabled\n");
+            cl.pmp.waterhack = true;
         }
+        cl.esFlags |= MSG_ES_UMASK | MSG_ES_LONGSOLID;
         if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_BEAM_ORIGIN) {
             cl.esFlags |= MSG_ES_BEAMORIGIN;
         }
         if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_SHORT_ANGLES) {
             cl.esFlags |= MSG_ES_SHORTANGLES;
         }
-        if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_WATERJUMP_HACK) {
-            i = MSG_ReadByte();
-            if (i) {
-                Com_DPrintf("Q2PRO waterjump hack enabled\n");
-                cl.pmp.waterhack = true;
-            }
-        }
         cl.pmp.speedmult = 2;
         cl.pmp.flyhack = true; // fly hack is unconditionally enabled
         cl.pmp.flyfriction = 4;
     }
 
-    if (cl.clientNum == -1) {
+    if (cinematic) {
         SCR_PlayCinematic(levelname);
     } else {
         // seperate the printfs so the server message can have a color
@@ -636,8 +641,9 @@ static void CL_ParseServerData(void)
         Com_SetColor(COLOR_NONE);
 
         // make sure clientNum is in range
-        if (cl.clientNum < 0 || cl.clientNum >= MAX_CLIENTS) {
-            cl.clientNum = CLIENTNUM_NONE;
+        if (!VALIDATE_CLIENTNUM(cl.clientNum)) {
+            Com_WPrintf("Serverdata has invalid playernum %d\n", cl.clientNum);
+            cl.clientNum = -1;
         }
     }
 }
@@ -978,9 +984,9 @@ static void CL_ParsePrint(void)
 
     // play sound
     if (cl_chat_sound->integer > 1)
-        S_StartLocalSound_("misc/talk1.wav");
+        S_StartLocalSoundOnce("misc/talk1.wav");
     else if (cl_chat_sound->integer > 0)
-        S_StartLocalSound_("misc/talk.wav");
+        S_StartLocalSoundOnce("misc/talk.wav");
 }
 
 static void CL_ParseCenterPrint(void)
@@ -1168,7 +1174,7 @@ void CL_ParseServerMessage(void)
     size_t      readcount;
     int         index, bits;
 
-#ifdef _DEBUG
+#if USE_DEBUG
     if (cl_shownet->integer == 1) {
         Com_LPrintf(PRINT_DEVELOPER, "%zu ", msg_read.cursize);
     } else if (cl_shownet->integer > 1) {
@@ -1194,7 +1200,7 @@ void CL_ParseServerMessage(void)
         extrabits = cmd >> SVCMD_BITS;
         cmd &= SVCMD_MASK;
 
-#ifdef _DEBUG
+#if USE_DEBUG
         if (cl_shownet->integer > 1) {
             MSG_ShowSVC(cmd);
         }
@@ -1342,7 +1348,7 @@ void CL_SeekDemoMessage(void)
     int         cmd, extrabits;
     int         index;
 
-#ifdef _DEBUG
+#if USE_DEBUG
     if (cl_shownet->integer == 1) {
         Com_LPrintf(PRINT_DEVELOPER, "%zu ", msg_read.cursize);
     } else if (cl_shownet->integer > 1) {
@@ -1366,7 +1372,7 @@ void CL_SeekDemoMessage(void)
         extrabits = cmd >> SVCMD_BITS;
         cmd &= SVCMD_MASK;
 
-#ifdef _DEBUG
+#if USE_DEBUG
         if (cl_shownet->integer > 1) {
             MSG_ShowSVC(cmd);
         }

@@ -29,12 +29,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define AL_CopyVector(a,b)  ((b)[0]=-(a)[1],(b)[1]=(a)[2],(b)[2]=-(a)[0])
 
 // OpenAL implementation should support at least this number of sources
-#define MIN_CHANNELS 16
+#define MIN_CHANNELS    16
 
-static ALuint s_srcnums[MAX_CHANNELS];
-static int s_framecount;
+static ALuint       s_srcnums[MAX_CHANNELS];
+static ALboolean    s_loop_points;
+static ALboolean    s_source_spatialize;
+static int          s_framecount;
 
-void AL_SoundInfo(void)
+static void AL_SoundInfo(void)
 {
     Com_Printf("AL_VENDOR: %s\n", qalGetString(AL_VENDOR));
     Com_Printf("AL_RENDERER: %s\n", qalGetString(AL_RENDERER));
@@ -43,7 +45,7 @@ void AL_SoundInfo(void)
     Com_Printf("Number of sources: %d\n", s_numchannels);
 }
 
-bool AL_Init(void)
+static bool AL_Init(void)
 {
     int i;
 
@@ -77,6 +79,9 @@ bool AL_Init(void)
 
     s_numchannels = i;
 
+    s_loop_points = qalIsExtensionPresent("AL_SOFT_loop_points");
+    s_source_spatialize = qalIsExtensionPresent("AL_SOFT_source_spatialize");
+
     Com_Printf("OpenAL initialized.\n");
     return true;
 
@@ -87,7 +92,7 @@ fail0:
     return false;
 }
 
-void AL_Shutdown(void)
+static void AL_Shutdown(void)
 {
     Com_Printf("Shutting down OpenAL.\n");
 
@@ -101,17 +106,11 @@ void AL_Shutdown(void)
     QAL_Shutdown();
 }
 
-sfxcache_t *AL_UploadSfx(sfx_t *s)
+static sfxcache_t *AL_UploadSfx(sfx_t *s)
 {
-    sfxcache_t *sc;
-    ALsizei size = s_info.samples * s_info.width;
-    ALenum format = s_info.width == 2 ? AL_FORMAT_MONO16 : AL_FORMAT_MONO8;
+    ALsizei size = s_info.samples * s_info.width * s_info.channels;
+    ALenum format = AL_FORMAT_MONO8 + (s_info.channels - 1) * 2 + (s_info.width - 1);
     ALuint name;
-
-    if (!size) {
-        s->error = Q_ERR_TOO_FEW;
-        return NULL;
-    }
 
     qalGetError();
     qalGenBuffers(1, &name);
@@ -121,37 +120,36 @@ sfxcache_t *AL_UploadSfx(sfx_t *s)
         return NULL;
     }
 
-#if 0
     // specify OpenAL-Soft style loop points
-    if (s_info.loopstart > 0 && qalIsExtensionPresent("AL_SOFT_loop_points")) {
+    if (s_info.loopstart > 0 && s_loop_points) {
         ALint points[2] = { s_info.loopstart, s_info.samples };
         qalBufferiv(name, AL_LOOP_POINTS_SOFT, points);
     }
-#endif
 
     // allocate placeholder sfxcache
-    sc = s->cache = S_Malloc(sizeof(*sc));
-    sc->length = s_info.samples * 1000 / s_info.rate; // in msec
+    sfxcache_t *sc = s->cache = S_Malloc(sizeof(*sc));
+    sc->length = s_info.samples * 1000LL / s_info.rate; // in msec
     sc->loopstart = s_info.loopstart;
     sc->width = s_info.width;
+    sc->channels = s_info.channels;
     sc->size = size;
     sc->bufnum = name;
 
     return sc;
 }
 
-void AL_DeleteSfx(sfx_t *s)
+static void AL_DeleteSfx(sfx_t *s)
 {
-    sfxcache_t *sc;
-    ALuint name;
-
-    sc = s->cache;
-    if (!sc) {
-        return;
+    sfxcache_t *sc = s->cache;
+    if (sc) {
+        ALuint name = sc->bufnum;
+        qalDeleteBuffers(1, &name);
     }
+}
 
-    name = sc->bufnum;
-    qalDeleteBuffers(1, &name);
+static int AL_GetBeginofs(float timeofs)
+{
+    return s_paintedtime + timeofs * 1000;
 }
 
 static void AL_Spatialize(channel_t *ch)
@@ -160,7 +158,7 @@ static void AL_Spatialize(channel_t *ch)
 
     // anything coming from the view entity will always be full volume
     // no attenuation = no spatialization
-    if (ch->entnum == -1 || ch->entnum == listener_entnum || !ch->dist_mult) {
+    if (S_IsFullVolume(ch)) {
         VectorCopy(listener_origin, origin);
     } else if (ch->fixed_origin) {
         VectorCopy(ch->origin, origin);
@@ -168,12 +166,19 @@ static void AL_Spatialize(channel_t *ch)
         CL_GetEntitySoundOrigin(ch->entnum, origin);
     }
 
+    if (s_source_spatialize) {
+        qalSourcei(ch->srcnum, AL_SOURCE_SPATIALIZE_SOFT, !S_IsFullVolume(ch));
+    }
+
     qalSource3f(ch->srcnum, AL_POSITION, AL_UnpackVector(origin));
 }
 
-void AL_StopChannel(channel_t *ch)
+static void AL_StopChannel(channel_t *ch)
 {
-#ifdef _DEBUG
+    if (!ch->sfx)
+        return;
+
+#if USE_DEBUG
     if (s_show->integer > 1)
         Com_Printf("%s: %s\n", __func__, ch->sfx->name);
 #endif
@@ -184,23 +189,19 @@ void AL_StopChannel(channel_t *ch)
     memset(ch, 0, sizeof(*ch));
 }
 
-void AL_PlayChannel(channel_t *ch)
+static void AL_PlayChannel(channel_t *ch)
 {
     sfxcache_t *sc = ch->sfx->cache;
 
-#ifdef _DEBUG
+#if USE_DEBUG
     if (s_show->integer > 1)
         Com_Printf("%s: %s\n", __func__, ch->sfx->name);
 #endif
 
-    ch->srcnum = s_srcnums[ch - channels];
+    ch->srcnum = s_srcnums[ch - s_channels];
     qalGetError();
     qalSourcei(ch->srcnum, AL_BUFFER, sc->bufnum);
-    if (ch->autosound /*|| sc->loopstart >= 0*/) {
-        qalSourcei(ch->srcnum, AL_LOOPING, AL_TRUE);
-    } else {
-        qalSourcei(ch->srcnum, AL_LOOPING, AL_FALSE);
-    }
+    qalSourcei(ch->srcnum, AL_LOOPING, ch->autosound || sc->loopstart >= 0);
     qalSourcef(ch->srcnum, AL_GAIN, ch->master_vol);
     qalSourcef(ch->srcnum, AL_REFERENCE_DISTANCE, SOUND_FULLVOLUME);
     qalSourcef(ch->srcnum, AL_MAX_DISTANCE, 8192);
@@ -217,26 +218,23 @@ void AL_PlayChannel(channel_t *ch)
 
 static void AL_IssuePlaysounds(void)
 {
-    playsound_t *ps;
-
     // start any playsounds
     while (1) {
-        ps = s_pendingplays.next;
+        playsound_t *ps = s_pendingplays.next;
         if (ps == &s_pendingplays)
             break;  // no more pending sounds
-        if (ps->begin > paintedtime)
+        if (ps->begin > s_paintedtime)
             break;
         S_IssuePlaysound(ps);
     }
 }
 
-void AL_StopAllChannels(void)
+static void AL_StopAllSounds(void)
 {
     int         i;
     channel_t   *ch;
 
-    ch = channels;
-    for (i = 0; i < s_numchannels; i++, ch++) {
+    for (i = 0, ch = s_channels; i < s_numchannels; i++, ch++) {
         if (!ch->sfx)
             continue;
         AL_StopChannel(ch);
@@ -248,10 +246,7 @@ static channel_t *AL_FindLoopingSound(int entnum, sfx_t *sfx)
     int         i;
     channel_t   *ch;
 
-    ch = channels;
-    for (i = 0; i < s_numchannels; i++, ch++) {
-        if (!ch->sfx)
-            continue;
+    for (i = 0, ch = s_channels; i < s_numchannels; i++, ch++) {
         if (!ch->autosound)
             continue;
         if (entnum && ch->entnum != entnum)
@@ -274,9 +269,8 @@ static void AL_AddLoopSounds(void)
     int         num;
     entity_state_t  *ent;
 
-    if (cls.state != ca_active || sv_paused->integer || !s_ambient->integer) {
+    if (cls.state != ca_active || sv_paused->integer || !s_ambient->integer)
         return;
-    }
 
     S_BuildSoundList(sounds);
 
@@ -297,7 +291,7 @@ static void AL_AddLoopSounds(void)
         ch = AL_FindLoopingSound(ent->number, sfx);
         if (ch) {
             ch->autoframe = s_framecount;
-            ch->end = paintedtime + sc->length;
+            ch->end = s_paintedtime + sc->length;
             continue;
         }
 
@@ -306,39 +300,36 @@ static void AL_AddLoopSounds(void)
         if (!ch)
             continue;
 
+        // attempt to synchronize with existing sounds of the same type
         ch2 = AL_FindLoopingSound(0, sfx);
+        if (ch2) {
+            ALfloat offset = 0;
+            qalGetSourcef(ch2->srcnum, AL_SAMPLE_OFFSET, &offset);
+            qalSourcef(s_srcnums[ch - s_channels], AL_SAMPLE_OFFSET, offset);
+        }
 
         ch->autosound = true;   // remove next frame
         ch->autoframe = s_framecount;
         ch->sfx = sfx;
         ch->entnum = ent->number;
-        ch->master_vol = 1;
+        ch->master_vol = 1.0f;
         ch->dist_mult = SOUND_LOOPATTENUATE;
-        ch->end = paintedtime + sc->length;
+        ch->end = s_paintedtime + sc->length;
 
         AL_PlayChannel(ch);
-
-        // attempt to synchronize with existing sounds of the same type
-        if (ch2) {
-            ALint offset;
-
-            qalGetSourcei(ch2->srcnum, AL_SAMPLE_OFFSET, &offset);
-            qalSourcei(ch->srcnum, AL_SAMPLE_OFFSET, offset);
-        }
     }
 }
 
-void AL_Update(void)
+static void AL_Update(void)
 {
     int         i;
     channel_t   *ch;
     vec_t       orientation[6];
 
-    if (!s_active) {
+    if (!s_active)
         return;
-    }
 
-    paintedtime = cl.time;
+    s_paintedtime = cl.time;
 
     // set listener parameters
     qalListener3f(AL_POSITION, AL_UnpackVector(listener_origin));
@@ -349,8 +340,7 @@ void AL_Update(void)
     qalDistanceModel(AL_LINEAR_DISTANCE_CLAMPED);
 
     // update spatialization for dynamic sounds
-    ch = channels;
-    for (i = 0; i < s_numchannels; i++, ch++) {
+    for (i = 0, ch = s_channels; i < s_numchannels; i++, ch++) {
         if (!ch->sfx)
             continue;
 
@@ -371,10 +361,11 @@ void AL_Update(void)
             }
         }
 
-#ifdef _DEBUG
+#if USE_DEBUG
         if (s_show->integer) {
-            Com_Printf("%.1f %s\n", ch->master_vol, ch->sfx->name);
-            //    total++;
+            ALfloat offset = 0;
+            qalGetSourcef(ch->srcnum, AL_SAMPLE_OFFSET, &offset);
+            Com_Printf("%d %.1f %.1f %s\n", i, ch->master_vol, offset, ch->sfx->name);
         }
 #endif
 
@@ -388,3 +379,17 @@ void AL_Update(void)
 
     AL_IssuePlaysounds();
 }
+
+const sndapi_t snd_openal = {
+    .init = AL_Init,
+    .shutdown = AL_Shutdown,
+    .update = AL_Update,
+    .activate = S_StopAllSounds,
+    .sound_info = AL_SoundInfo,
+    .upload_sfx = AL_UploadSfx,
+    .delete_sfx = AL_DeleteSfx,
+    .get_begin_ofs = AL_GetBeginofs,
+    .play_channel = AL_PlayChannel,
+    .stop_channel = AL_StopChannel,
+    .stop_all_sounds = AL_StopAllSounds,
+};

@@ -69,7 +69,7 @@ static int      com_argc;
 
 cvar_t  *z_perturb;
 
-#ifdef _DEBUG
+#if USE_DEBUG
 cvar_t  *developer;
 #endif
 cvar_t  *timescale;
@@ -91,7 +91,7 @@ cvar_t  *sv_paused;
 cvar_t  *com_timedemo;
 cvar_t  *com_date_format;
 cvar_t  *com_time_format;
-#ifdef _DEBUG
+#if USE_DEBUG
 cvar_t  *com_debug_break;
 #endif
 cvar_t  *com_fatal_error;
@@ -379,13 +379,13 @@ void Com_SetLastError(const char *msg)
     if (msg) {
         Q_strlcpy(com_errorMsg, msg, sizeof(com_errorMsg));
     } else {
-        strcpy(com_errorMsg, "No error");
+        com_errorMsg[0] = 0;
     }
 }
 
-char *Com_GetLastError(void)
+const char *Com_GetLastError(void)
 {
-    return com_errorMsg;
+    return com_errorMsg[0] ? com_errorMsg : "No error";
 }
 
 /*
@@ -488,7 +488,7 @@ void Com_Error(error_type_t code, const char *fmt, ...)
 
     // may not be entered recursively
     if (com_errorEntered) {
-#ifdef _DEBUG
+#if USE_DEBUG
         if (com_debug_break && com_debug_break->integer) {
             Sys_DebugBreak();
         }
@@ -529,7 +529,7 @@ void Com_Error(error_type_t code, const char *fmt, ...)
         goto abort;
     }
 
-#ifdef _DEBUG
+#if USE_DEBUG
     if (com_debug_break && com_debug_break->integer) {
         Sys_DebugBreak();
     }
@@ -576,13 +576,6 @@ void Com_AbortFunc(void (*func)(void *), void *arg)
     com_abort_arg = arg;
 }
 
-#ifdef _WIN32
-void Com_AbortFrame(void)
-{
-    longjmp(com_abortframe, -1);
-}
-#endif
-
 /*
 =============
 Com_Quit
@@ -594,7 +587,7 @@ do the apropriate things. This function never returns.
 void Com_Quit(const char *reason, error_type_t type)
 {
     char buffer[MAX_STRING_CHARS];
-    char *what = type == ERR_RECONNECT ? "restarted" : "quit";
+    const char *what = type == ERR_RECONNECT ? "restarted" : "quit";
 
     if (reason && *reason) {
         Q_snprintf(buffer, sizeof(buffer),
@@ -877,8 +870,6 @@ void Qcommon_Init(int argc, char **argv)
     com_argc = argc;
     com_argv = argv;
 
-    Com_SetLastError(NULL);
-
     Q_srand(time(NULL));
 
     // prepare enough of the subsystems to handle
@@ -900,7 +891,7 @@ void Qcommon_Init(int argc, char **argv)
 #if USE_CLIENT
     host_speeds = Cvar_Get("host_speeds", "0", 0);
 #endif
-#ifdef _DEBUG
+#if USE_DEBUG
     developer = Cvar_Get("developer", "0", 0);
 #endif
     timescale = Cvar_Get("timescale", "1", CVAR_CHEAT);
@@ -925,7 +916,7 @@ void Qcommon_Init(int argc, char **argv)
 #else
     com_time_format = Cvar_Get("com_time_format", "%H:%M", 0);
 #endif
-#ifdef _DEBUG
+#if USE_DEBUG
     com_debug_break = Cvar_Get("com_debug_break", "0", 0);
 #endif
     com_fatal_error = Cvar_Get("com_fatal_error", "0", 0);
@@ -1008,7 +999,7 @@ void Qcommon_Init(int argc, char **argv)
     // add + commands from command line
     if (!Com_AddLateCommands()) {
         // if the user didn't give any commands, run default action
-        char *cmd = COM_DEDICATED ? "dedicated_start" : "client_start";
+        const char *cmd = COM_DEDICATED ? "dedicated_start" : "client_start";
 
         if ((cmd = Cmd_AliasCommand(cmd)) != NULL) {
             Cbuf_AddText(&cmd_buffer, cmd);

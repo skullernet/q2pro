@@ -4,19 +4,19 @@ Prerequisities
 Q2PRO can be built on Linux, BSD and similar platfroms using a recent version
 of GCC or Clang.
 
-Cross-compiling Q2PRO for Windows is also possible, see the MinGW-w64 section
-below.
+Q2PRO client requires either SDL2 or OpenAL for sound output. For video output,
+native X11 and Wayland backends are available, as well as generic SDL2 backend.
 
-Q2PRO client requires libSDL 2 for video and sound output. Both client and
-dedicated server require zlib support for full compatibility at network
-protocol level. The rest of dependencies are optional.
+Both client and dedicated server require zlib support for full compatibility at
+network protocol level. The rest of dependencies are optional.
 
 To install the *full* set of dependencies for building Q2PRO on Debian or
 Ubuntu use the following command:
 
-    apt-get install build-essential libsdl2-dev libopenal-dev \
+    apt-get install meson gcc libc6-dev libsdl2-dev libopenal-dev \
                     libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
-                    libcurl4-gnutls-dev
+                    libcurl4-gnutls-dev libx11-dev libxi-dev \
+                    libwayland-dev wayland-protocols
 
 Users of other distributions should look for equivalent development packages
 and install them.
@@ -25,22 +25,29 @@ and install them.
 Building
 --------
 
-Q2PRO uses a simple build system consisting of a single top-level Makefile and
-a build-time configuration file. Configuration file is optional; if there is no
-one, Q2PRO will be built with minimal subset of dependencies, but some features
-will be unavailable.
+Q2PRO uses Meson build system for its build process. Legacy Makefile-based
+build system is also available, but deprecated.
 
-Copy an example configuration file from `doc/examples/buildconfig` to `.config`
-and modify it to suit your needs. Enable needed features by uncommenting them.
-There is no autodetection of installed dependencies and by default *nothing*
-optional is enabled.
+Setup build directory (arbitrary name can be used instead of `builddir`):
 
-Type `make` to build a client, dedicated server and baseq2 game library. Type
-`make strip` to strip off debugging symbols from resulting executables. Type
-`make clean` to remove all generated executables, object files and
-dependencies.
+    meson setup builddir
 
-To enable verbose output during the build, set the V variable, e.g. `make V=1`.
+Review and configure options:
+
+    meson configure builddir
+
+Q2PRO specific options are listed in `Project options` section. They are
+defined in `meson_options.txt` file.
+
+E.g. to install to different prefix:
+
+    meson configure -Dprefix=/usr builddir
+
+Finally, invoke build command:
+
+    ninja -C builddir
+
+To enable verbose output during the build, use `ninja -C builddir -v`.
 
 
 Installation
@@ -49,38 +56,70 @@ Installation
 You need to have either full version of Quake 2 unpacked somewhere, or a demo.
 Both should be patched to 3.20 point release.
 
-Run the following commands to do a per-user installation of Q2PRO into your
-home directory.
+Run `sudo ninja -C builddir install` to install Q2PRO system-wide into
+configured prefix (`/usr/local` by default).
 
-    mkdir -p ~/.q2pro/baseq2
-    cp -a /path/to/quake2/baseq2/pak*.pak ~/.q2pro/baseq2/
-    cp -a /path/to/quake2/baseq2/players ~/.q2pro/baseq2/
-    cp -a src/client/ui/q2pro.menu ~/.q2pro/baseq2/
-    cp -a game*.so ~/.q2pro/baseq2/
-    cp -a q2pro ~/.q2pro/
+Copy `baseq2/pak*.pak` files and `baseq2/players` directory from unpacked
+Quake 2 data into `/usr/local/share/q2pro/baseq2` to complete the
+installation.
 
-Then change directory to `~/.q2pro` and run `./q2pro` from there.
+Alternatively, configure with `-Dsystem-wide=false` to build a ‘portable’
+version that expects to be launched from the root of Quake 2 data tree (this
+is default when building for Windows).
 
-Alternatively, you can do a system-wide installation (see documentation for
-`CONFIG_PATH_*` variables in `doc/examples/buildconfig`).
+On Windows, Q2PRO automatically sets current directory to the directory Q2PRO
+executable is in. On other platforms current directory must be set before
+launching Q2PRO executable if portable version is built.
 
 
 MinGW-w64
 ---------
 
 MinGW-w64 cross-compiler is available in recent versions of all major Linux
-distributions. A Q2PRO SDK for MinGW-w64 has been prepared that includes all
-additional libraries Q2PRO uses in precompiled form. It also contains scripts
-for rebuilding those libraries from source, should you ever need that.
+distributions.
+
+Library dependencies that Q2PRO uses have been prepared as Meson subprojects
+and will be automatically downloaded and built by Meson.
 
 To install MinGW-w64 on Debian or Ubuntu, use the following command:
 
     apt-get install mingw-w64
 
-Download the latest pre-built SDK archive from here:
+It is recommended to also install nasm, which is needed to build libjpeg-turbo
+with SIMD support:
 
-    https://github.com/skullernet/q2pro-mgw-sdk/releases
+    apt-get install nasm
 
-Extract it alongside Q2PRO source directory and copy `config` (or `config64`)
-file to `.config`, then change to Q2PRO source directory and type `make` or `make
-strip`.
+Meson needs correct cross build definition file for compilation. Example
+cross-files can be found in `.ci` subdirectory (available in git
+repository, but not source tarball).
+
+Setup build directory:
+
+    meson setup --cross-file .ci/x86_64-w64-mingw32.txt builddir
+
+Build:
+
+    ninja -C builddir
+
+
+Visual Studio
+-------------
+
+It is possible to build Q2PRO on Windows using Visual Studio 2022 and Meson.
+
+Install Visual Studio and Meson using official installers.
+
+Optionally, download and install nasm executable. The easiest way to add it
+into PATH is to put it into `Program Files/Meson`.
+
+The build needs to be launched from appropriate Visual Studio command line
+shell, e.g. `x64 Native Tools Command Prompt`.
+
+Change to Q2PRO source directory, then setup build directory:
+
+    meson setup builddir
+
+Build:
+
+    ninja -C builddir

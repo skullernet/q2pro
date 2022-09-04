@@ -75,7 +75,7 @@ typedef struct {
     int             pingindex;
     int             pingtime;
     int             pingextra;
-    char            *status_c;
+    const char      *status_c;
     char            status_r[32];
 } m_servers_t;
 
@@ -213,7 +213,8 @@ A server status response has been received, validated and parsed.
 void UI_StatusEvent(const serverStatus_t *status)
 {
     serverslot_t *slot;
-    char *hostname, *host, *mod, *map, *maxclients;
+    char *hostname;
+    const char *host, *mod, *map, *maxclients;
     unsigned timestamp, ping;
     const char *info = status->infostring;
     char key[MAX_INFO_STRING];
@@ -396,7 +397,8 @@ static menuSound_t CopyAddress(void)
 
     slot = m_servers.list.items[m_servers.list.curvalue];
 
-    VID_SetClipboardData(slot->hostname);
+    if (vid.set_clipboard_data)
+        vid.set_clipboard_data(slot->hostname);
     return QMS_OUT;
 }
 
@@ -912,7 +914,7 @@ static void SizeCompact(void)
 //
     m_servers.players.generic.x         = 0;
     m_servers.players.generic.y         = uis.height / 2 + 1;
-    m_servers.players.generic.height    = uis.height / 2 - CHAR_HEIGHT - 2;
+    m_servers.players.generic.height    = (uis.height + 1) / 2 - CHAR_HEIGHT - 2;
 
     m_servers.players.columns[0].width  = 3 * CHAR_WIDTH + MLIST_PADDING;
     m_servers.players.columns[1].width  = 3 * CHAR_WIDTH + MLIST_PADDING;
@@ -943,7 +945,7 @@ static void SizeFull(void)
 //
     m_servers.info.generic.x            = 0;
     m_servers.info.generic.y            = uis.height / 2 + 1;
-    m_servers.info.generic.height       = uis.height / 2 - CHAR_HEIGHT - 2;
+    m_servers.info.generic.height       = (uis.height + 1) / 2 - CHAR_HEIGHT - 2;
 
     m_servers.info.columns[0].width     = w / 3;
     m_servers.info.columns[1].width     = w - w / 3;

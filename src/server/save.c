@@ -18,8 +18,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "server.h"
 
-#define SAVE_MAGIC1     (('2'<<24)|('V'<<16)|('S'<<8)|'S')  // "SSV2"
-#define SAVE_MAGIC2     (('2'<<24)|('V'<<16)|('A'<<8)|'S')  // "SAV2"
+#define SAVE_MAGIC1     MakeLittleLong('S','S','V','2')
+#define SAVE_MAGIC2     MakeLittleLong('S','A','V','2')
 #define SAVE_VERSION    1
 
 #define SAVE_CURRENT    ".current"
@@ -538,6 +538,28 @@ void SV_CheckForSavegame(mapcmd_t *cmd)
         for (i = 0; i < 100; i++)
             ge->RunFrame();
     }
+}
+
+void SV_CheckForEnhancedSavegames(void)
+{
+    if (dedicated->integer)
+        return;
+
+    if (Cvar_VariableInteger("deathmatch"))
+        return;
+
+    if (g_features->integer & GMF_ENHANCED_SAVEGAMES) {
+        Com_Printf("Game supports Q2PRO enhanced savegames.\n");
+        return;
+    }
+
+    if (sv.gamedetecthack == 4) {
+        Com_Printf("Game supports YQ2 enhanced savegames.\n");
+        Cvar_SetInteger(g_features, g_features->integer | GMF_ENHANCED_SAVEGAMES, FROM_CODE);
+        return;
+    }
+
+    Com_WPrintf("Game does not support enhanced savegames. Savegames will not work.\n");
 }
 
 static void SV_Savegame_c(genctx_t *ctx, int argnum)

@@ -69,7 +69,7 @@ cvar_t  *sv_redirect_address;
 cvar_t  *sv_hostname;
 cvar_t  *sv_public;            // should heartbeats be sent
 
-#ifdef _DEBUG
+#if USE_DEBUG
 cvar_t  *sv_debug;
 cvar_t  *sv_pad_packets;
 #endif
@@ -103,8 +103,6 @@ cvar_t  *sv_allow_unconnected_cmds;
 cvar_t  *sv_lrcon_password;
 
 cvar_t  *g_features;
-
-cvar_t  *map_override_path;
 
 static bool     sv_registered;
 
@@ -664,7 +662,7 @@ static bool permit_connection(conn_params_t *p)
     addrmatch_t *match;
     int i, count;
     client_t *cl;
-    char *s;
+    const char *s;
 
     // loopback clients are permitted without any checks
     if (NET_IsLocalAddress(&net_from))
@@ -1000,16 +998,11 @@ static void init_pmove_and_es_flags(client_t *newcl)
         }
         newcl->pmp.flyhack = true;
         newcl->pmp.flyfriction = 4;
-        newcl->esFlags |= MSG_ES_UMASK;
-        if (newcl->version >= PROTOCOL_VERSION_Q2PRO_LONG_SOLID) {
-            newcl->esFlags |= MSG_ES_LONGSOLID;
-        }
+        newcl->esFlags |= MSG_ES_UMASK | MSG_ES_LONGSOLID;
         if (newcl->version >= PROTOCOL_VERSION_Q2PRO_BEAM_ORIGIN) {
             newcl->esFlags |= MSG_ES_BEAMORIGIN;
         }
-        if (newcl->version >= PROTOCOL_VERSION_Q2PRO_WATERJUMP_HACK) {
-            force = 1;
-        }
+        force = 1;
     }
     newcl->pmp.waterhack = sv_waterjump_hack->integer >= force;
 }
@@ -1489,6 +1482,10 @@ static void SV_PacketEvent(void)
     netchan_t   *netchan;
     int         qport;
 
+    if (msg_read.cursize < 4) {
+        return;
+    }
+
     // check for connectionless packet (0xffffffff) first
     // connectionless packets are processed even if the server is down
     if (*(int *)msg_read.data == -1) {
@@ -1510,11 +1507,17 @@ static void SV_PacketEvent(void)
         // read the qport out of the message so we can fix up
         // stupid address translating routers
         if (client->protocol == PROTOCOL_VERSION_DEFAULT) {
-            qport = msg_read.data[8] | (msg_read.data[9] << 8);
+            if (msg_read.cursize < PACKET_HEADER) {
+                continue;
+            }
+            qport = LittleShortMem(&msg_read.data[8]);
             if (netchan->qport != qport) {
                 continue;
             }
         } else if (netchan->qport) {
+            if (msg_read.cursize < PACKET_HEADER - 1) {
+                continue;
+            }
             qport = msg_read.data[8];
             if (netchan->qport != qport) {
                 continue;
@@ -2191,7 +2194,7 @@ void SV_Init(void)
     sv_downloadserver = Cvar_Get("sv_downloadserver", "", 0);
     sv_redirect_address = Cvar_Get("sv_redirect_address", "", 0);
 
-#ifdef _DEBUG
+#if USE_DEBUG
     sv_debug = Cvar_Get("sv_debug", "0", 0);
     sv_pad_packets = Cvar_Get("sv_pad_packets", "0", 0);
 #endif
@@ -2242,8 +2245,6 @@ void SV_Init(void)
 
     Cvar_Get("sv_features", va("%d", SV_FEATURES), CVAR_ROM);
     g_features = Cvar_Get("g_features", "0", CVAR_ROM);
-
-    map_override_path = Cvar_Get("map_override_path", "", 0);
 
     init_rate_limits();
 
@@ -2354,7 +2355,6 @@ void SV_Shutdown(const char *finalmsg, error_type_t type)
 
     // free current level
     CM_FreeMap(&sv.cm);
-    SV_FreeFile(sv.entitystring);
     memset(&sv, 0, sizeof(sv));
 
     // free server static data
@@ -2362,6 +2362,7 @@ void SV_Shutdown(const char *finalmsg, error_type_t type)
     Z_Free(svs.entities);
 #if USE_ZLIB
     deflateEnd(&svs.z);
+    Z_Free(svs.z_buffer);
 #endif
     memset(&svs, 0, sizeof(svs));
 

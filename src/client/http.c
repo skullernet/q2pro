@@ -25,7 +25,7 @@ static cvar_t  *cl_http_max_connections;
 static cvar_t  *cl_http_proxy;
 static cvar_t  *cl_http_default_url;
 
-#ifdef _DEBUG
+#if USE_DEBUG
 static cvar_t  *cl_http_debug;
 #endif
 
@@ -75,19 +75,23 @@ bandwidth.
 */
 
 // libcurl callback to update progress info.
-static int progress_func(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow)
+static int progress_func(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow)
 {
     dlhandle_t *dl = (dlhandle_t *)clientp;
+
+    //abort if download exceedes 2 GiB
+    if (dlnow > INT_MAX)
+        return -1;
 
     //don't care which download shows as long as something does :)
     cls.download.current = dl->queue;
 
     if (dltotal)
-        cls.download.percent = (int)((dlnow / dltotal) * 100.0);
+        cls.download.percent = dlnow * 100LL / dltotal;
     else
         cls.download.percent = 0;
 
-    cls.download.position = (int)dlnow;
+    cls.download.position = dlnow;
 
     return 0;
 }
@@ -129,7 +133,7 @@ oversize:
     return 0;
 }
 
-#ifdef _DEBUG
+#if USE_DEBUG
 static int debug_func(CURL *c, curl_infotype type, char *data, size_t size, void *ptr)
 {
     if (type == CURLINFO_TEXT) {
@@ -272,7 +276,7 @@ static void start_download(dlqueue_t *entry, dlhandle_t *dl)
         dl->curl = curl_easy_init();
 
     curl_easy_setopt(dl->curl, CURLOPT_ENCODING, "");
-#ifdef _DEBUG
+#if USE_DEBUG
     if (cl_http_debug->integer) {
         curl_easy_setopt(dl->curl, CURLOPT_DEBUGFUNCTION, debug_func);
         curl_easy_setopt(dl->curl, CURLOPT_VERBOSE, 1L);
@@ -296,8 +300,8 @@ static void start_download(dlqueue_t *entry, dlhandle_t *dl)
         curl_easy_setopt(dl->curl, CURLOPT_PROXY, NULL);
     curl_easy_setopt(dl->curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(dl->curl, CURLOPT_MAXREDIRS, 5L);
-    curl_easy_setopt(dl->curl, CURLOPT_PROGRESSFUNCTION, progress_func);
-    curl_easy_setopt(dl->curl, CURLOPT_PROGRESSDATA, dl);
+    curl_easy_setopt(dl->curl, CURLOPT_XFERINFOFUNCTION, progress_func);
+    curl_easy_setopt(dl->curl, CURLOPT_XFERINFODATA, dl);
     curl_easy_setopt(dl->curl, CURLOPT_USERAGENT, com_version->string);
     curl_easy_setopt(dl->curl, CURLOPT_REFERER, download_referer);
     curl_easy_setopt(dl->curl, CURLOPT_URL, dl->url);
@@ -444,7 +448,7 @@ void HTTP_Init(void)
     cl_http_proxy = Cvar_Get("cl_http_proxy", "", 0);
     cl_http_default_url = Cvar_Get("cl_http_default_url", "", 0);
 
-#ifdef _DEBUG
+#if USE_DEBUG
     cl_http_debug = Cvar_Get("cl_http_debug", "0", 0);
 #endif
 
@@ -626,7 +630,7 @@ static void check_and_queue_download(char *path)
         flags = 0;
     }
 
-    len = FS_NormalizePath(path, path);
+    len = FS_NormalizePath(path);
     if (len == 0)
         return;
 

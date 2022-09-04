@@ -84,12 +84,8 @@ void        Com_EndRedirect(void);
 
 void        Com_AbortFunc(void (*func)(void *), void *arg);
 
-#ifdef _WIN32
-void        Com_AbortFrame(void);
-#endif
-
-char        *Com_GetLastError(void);
 void        Com_SetLastError(const char *msg);
+const char  *Com_GetLastError(void);
 
 void        Com_Quit(const char *reason, error_type_t type) q_noreturn;
 
@@ -119,7 +115,7 @@ void        Com_AddConfigFile(const char *name, unsigned flags);
 #define COM_DEDICATED   1
 #endif
 
-#ifdef _DEBUG
+#if USE_DEBUG
 #define Com_DPrintf(...) \
     if (developer && developer->integer > 0) \
         Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__)
@@ -141,7 +137,7 @@ void        Com_AddConfigFile(const char *name, unsigned flags);
 
 extern cvar_t  *z_perturb;
 
-#ifdef _DEBUG
+#if USE_DEBUG
 extern cvar_t   *developer;
 #endif
 extern cvar_t   *dedicated;

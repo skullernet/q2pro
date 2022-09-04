@@ -321,15 +321,7 @@ void SV_Multicast(vec3_t origin, multicast_t to)
 }
 
 #if USE_ZLIB
-static size_t max_compressed_len(client_t *client)
-{
-    if (client->netchan->type == NETCHAN_NEW)
-        return MAX_MSGLEN - ZPACKET_HEADER;
-
-    return client->netchan->maxpacketlen - ZPACKET_HEADER;
-}
-
-static bool can_compress_message(client_t *client)
+static bool can_auto_compress(client_t *client)
 {
     if (!client->has_zlib)
         return false;
@@ -349,52 +341,44 @@ static bool can_compress_message(client_t *client)
     return true;
 }
 
-static bool compress_message(client_t *client, int flags)
+static int compress_message(client_t *client)
 {
-    byte    buffer[MAX_MSGLEN];
     int     ret, len;
+    byte    *hdr;
 
     if (!client->has_zlib)
-        return false;
+        return 0;
 
     svs.z.next_in = msg_write.data;
     svs.z.avail_in = msg_write.cursize;
-    svs.z.next_out = buffer + ZPACKET_HEADER;
-    svs.z.avail_out = max_compressed_len(client);
+    svs.z.next_out = svs.z_buffer + ZPACKET_HEADER;
+    svs.z.avail_out = svs.z_buffer_size - ZPACKET_HEADER;
 
     ret = deflate(&svs.z, Z_FINISH);
     len = svs.z.total_out;
 
-    // prepare for next deflate() or deflateBound()
+    // prepare for next deflate()
     deflateReset(&svs.z);
 
     if (ret != Z_STREAM_END) {
         Com_WPrintf("Error %d compressing %zu bytes message for %s\n",
                     ret, msg_write.cursize, client->name);
-        return false;
+        return 0;
     }
 
-    buffer[0] = svc_zpacket;
-    buffer[1] = len & 255;
-    buffer[2] = (len >> 8) & 255;
-    buffer[3] = msg_write.cursize & 255;
-    buffer[4] = (msg_write.cursize >> 8) & 255;
+    // write the packet header
+    hdr = svs.z_buffer;
+    hdr[0] = svc_zpacket;
+    hdr[1] = len & 255;
+    hdr[2] = (len >> 8) & 255;
+    hdr[3] = msg_write.cursize & 255;
+    hdr[4] = (msg_write.cursize >> 8) & 255;
 
-    len += ZPACKET_HEADER;
-
-    SV_DPrintf(0, "%s: comp: %zu into %d\n",
-               client->name, msg_write.cursize, len);
-
-    // did it compress good enough?
-    if (len >= msg_write.cursize)
-        return false;
-
-    client->AddMessage(client, buffer, len, flags & MSG_RELIABLE);
-    return true;
+    return len + ZPACKET_HEADER;
 }
 #else
-#define can_compress_message(client)    false
-#define compress_message(client, flags) false
+#define can_auto_compress(c)    false
+#define compress_message(c)     0
 #endif
 
 /*
@@ -408,19 +392,24 @@ unless told otherwise.
 */
 void SV_ClientAddMessage(client_t *client, int flags)
 {
-    SV_DPrintf(1, "Added %sreliable message to %s: %zu bytes\n",
-               (flags & MSG_RELIABLE) ? "" : "un", client->name, msg_write.cursize);
+    int len;
 
     if (!msg_write.cursize) {
         return;
     }
 
-    if ((flags & MSG_COMPRESS_AUTO) && can_compress_message(client)) {
+    if ((flags & MSG_COMPRESS_AUTO) && can_auto_compress(client)) {
         flags |= MSG_COMPRESS;
     }
 
-    if (!(flags & MSG_COMPRESS) || !compress_message(client, flags)) {
+    if ((flags & MSG_COMPRESS) && (len = compress_message(client)) && len < msg_write.cursize) {
+        client->AddMessage(client, svs.z_buffer, len, flags & MSG_RELIABLE);
+        SV_DPrintf(0, "Compressed %sreliable message to %s: %zu into %d\n",
+                   (flags & MSG_RELIABLE) ? "" : "un", client->name, msg_write.cursize, len);
+    } else {
         client->AddMessage(client, msg_write.data, msg_write.cursize, flags & MSG_RELIABLE);
+        SV_DPrintf(1, "Added %sreliable message to %s: %zu bytes\n",
+                   (flags & MSG_RELIABLE) ? "" : "un", client->name, msg_write.cursize);
     }
 
     if (flags & MSG_CLEAR) {
@@ -550,7 +539,7 @@ static void emit_snd(client_t *client, message_packet_t *msg)
 
     // check if position needs to be explicitly sent
     if (!(flags & SND_POS) && !check_entity(client, entnum)) {
-        SV_DPrintf(0, "Forcing position on entity %d for %s\n",
+        SV_DPrintf(1, "Forcing position on entity %d for %s\n",
                    entnum, client->name);
         flags |= SND_POS;   // entity is not present in frame
     }
@@ -743,9 +732,24 @@ static void write_datagram_old(client_t *client)
     // and the player_state_t
     client->WriteFrame(client);
     if (msg_write.cursize > maxsize) {
-        SV_DPrintf(0, "Frame %d overflowed for %s: %zu > %zu\n",
-                   client->framenum, client->name, msg_write.cursize, maxsize);
+        size_t size = msg_write.cursize;
+        int len = 0;
+
+        // try to compress if it has a chance to fit
+        // assume it can be compressed by at least 20%
+        if (size - size / 5 < maxsize)
+            len = compress_message(client);
+
         SZ_Clear(&msg_write);
+
+        if (len > 0 && len <= maxsize) {
+            SV_DPrintf(0, "Frame %d compressed for %s: %zu into %d\n",
+                       client->framenum, client->name, size, len);
+            SZ_Write(&msg_write, svs.z_buffer, len);
+        } else {
+            SV_DPrintf(0, "Frame %d overflowed for %s: %zu > %zu (comp %d)\n",
+                       client->framenum, client->name, size, maxsize, len);
+        }
     }
 
     // now write unreliable messages
@@ -761,6 +765,15 @@ static void write_datagram_old(client_t *client)
 
     // write at least one reliable message
     write_reliables_old(client, client->netchan->maxpacketlen - msg_write.cursize);
+
+#if USE_DEBUG
+    if (sv_pad_packets->integer > 0) {
+        size_t pad = min(MAX_PACKETLEN - 8, sv_pad_packets->integer);
+
+        while (msg_write.cursize < pad)
+            MSG_WriteByte(svc_nop);
+    }
+#endif
 
     // send the datagram
     cursize = client->netchan->Transmit(client->netchan,
@@ -819,16 +832,12 @@ static void write_datagram_new(client_t *client)
         write_unreliables(client, msg_write.maxsize);
     }
 
-#ifdef _DEBUG
-    if (sv_pad_packets->integer) {
-        size_t pad = msg_write.cursize + sv_pad_packets->integer;
+#if USE_DEBUG
+    if (sv_pad_packets->integer > 0) {
+        size_t pad = min(msg_write.maxsize, sv_pad_packets->integer);
 
-        if (pad > msg_write.maxsize) {
-            pad = msg_write.maxsize;
-        }
-        for (; pad > 0; pad--) {
+        while (msg_write.cursize < pad)
             MSG_WriteByte(svc_nop);
-        }
     }
 #endif
 
@@ -864,7 +873,7 @@ static void finish_frame(client_t *client)
     client->msg_unreliable_bytes = 0;
 }
 
-#if (defined _DEBUG) && USE_FPS
+#if USE_DEBUG && USE_FPS
 static void check_key_sync(client_t *client)
 {
     int div = sv.framediv / client->framediv;
@@ -900,7 +909,7 @@ void SV_SendClientMessages(void)
         if (!SV_CLIENTSYNC(client))
             continue;
 
-#if (defined _DEBUG) && USE_FPS
+#if USE_DEBUG && USE_FPS
         if (developer->integer)
             check_key_sync(client);
 #endif
@@ -1003,7 +1012,7 @@ void SV_SendAsyncPackets(void)
         // make sure all fragments are transmitted first
         if (netchan->fragment_pending) {
             cursize = netchan->TransmitNextFragment(netchan);
-            SV_DPrintf(0, "%s: frag: %zu\n", client->name, cursize);
+            SV_DPrintf(1, "%s: frag: %zu\n", client->name, cursize);
             goto calctime;
         }
 
@@ -1031,7 +1040,7 @@ void SV_SendAsyncPackets(void)
         if (netchan->message.cursize || netchan->reliable_ack_pending ||
             netchan->reliable_length || retransmit) {
             cursize = netchan->Transmit(netchan, 0, "", 1);
-            SV_DPrintf(0, "%s: send: %zu\n", client->name, cursize);
+            SV_DPrintf(1, "%s: send: %zu\n", client->name, cursize);
 calctime:
             SV_CalcSendTime(client, cursize);
         }

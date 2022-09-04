@@ -52,7 +52,7 @@ static struct {
 static cvar_t   *scr_viewsize;
 static cvar_t   *scr_centertime;
 static cvar_t   *scr_showpause;
-#ifdef _DEBUG
+#if USE_DEBUG
 static cvar_t   *scr_showstats;
 static cvar_t   *scr_showpmove;
 #endif
@@ -263,31 +263,39 @@ BAR GRAPHS
 static void draw_percent_bar(int percent, bool paused, int framenum)
 {
     char buffer[16];
-    int x, w;
+    int x, w, h;
     size_t len;
 
-    scr.hud_height -= CHAR_HEIGHT;
-
     w = scr.hud_width * percent / 100;
+    h = Q_rint(CHAR_HEIGHT / scr.hud_scale);
 
-    R_DrawFill8(0, scr.hud_height, w, CHAR_HEIGHT, 4);
-    R_DrawFill8(w, scr.hud_height, scr.hud_width - w, CHAR_HEIGHT, 0);
+    scr.hud_height -= h;
+
+    R_DrawFill8(0, scr.hud_height, w, h, 4);
+    R_DrawFill8(w, scr.hud_height, scr.hud_width - w, h, 0);
+
+    R_SetScale(scr.hud_scale);
+
+    w = Q_rint(scr.hud_width * scr.hud_scale);
+    h = Q_rint(scr.hud_height * scr.hud_scale);
 
     len = Q_scnprintf(buffer, sizeof(buffer), "%d%%", percent);
-    x = (scr.hud_width - len * CHAR_WIDTH) / 2;
-    R_DrawString(x, scr.hud_height, 0, MAX_STRING_CHARS, buffer, scr.font_pic);
+    x = (w - len * CHAR_WIDTH) / 2;
+    R_DrawString(x, h, 0, MAX_STRING_CHARS, buffer, scr.font_pic);
 
     if (scr_demobar->integer > 1) {
         int sec = framenum / 10;
         int min = sec / 60; sec %= 60;
 
         Q_scnprintf(buffer, sizeof(buffer), "%d:%02d.%d", min, sec, framenum % 10);
-        R_DrawString(0, scr.hud_height, 0, MAX_STRING_CHARS, buffer, scr.font_pic);
+        R_DrawString(0, h, 0, MAX_STRING_CHARS, buffer, scr.font_pic);
     }
 
     if (paused) {
-        SCR_DrawString(scr.hud_width, scr.hud_height, UI_RIGHT, "[PAUSED]");
+        SCR_DrawString(w, h, UI_RIGHT, "[PAUSED]");
     }
+
+    R_SetScale(1.0f);
 }
 
 static void SCR_DrawDemo(void)
@@ -874,7 +882,7 @@ static void SCR_DrawTurtle(void)
 #undef DF
 }
 
-#ifdef _DEBUG
+#if USE_DEBUG
 
 static void SCR_DrawDebugStats(void)
 {
@@ -948,13 +956,9 @@ static void SCR_CalcVrect(void)
 
     // bound viewsize
     size = Cvar_ClampInteger(scr_viewsize, 40, 100);
-    scr_viewsize->modified = false;
 
     scr_vrect.width = scr.hud_width * size / 100;
-    scr_vrect.width &= ~7;
-
     scr_vrect.height = scr.hud_height * size / 100;
-    scr_vrect.height &= ~1;
 
     scr_vrect.x = (scr.hud_width - scr_vrect.width) / 2;
     scr_vrect.y = (scr.hud_height - scr_vrect.height) / 2;
@@ -1148,8 +1152,6 @@ void SCR_ModeChanged(void)
     IN_Activate();
     Con_CheckResize();
     UI_ModeChanged();
-    // video sync flag may have changed
-    CL_UpdateFrameTimes();
     cls.disable_screen = 0;
     if (scr.initialized)
         scr.hud_scale = R_ClampScale(scr_scale);
@@ -1171,7 +1173,7 @@ void SCR_RegisterMedia(void)
     scr.inven_pic = R_RegisterPic("inventory");
     scr.field_pic = R_RegisterPic("field_3");
 
-    scr.backtile_pic = R_RegisterImage("backtile", IT_PIC, IF_PERMANENT | IF_REPEAT, NULL);
+    scr.backtile_pic = R_RegisterImage("backtile", IT_PIC, IF_PERMANENT | IF_REPEAT);
 
     scr.pause_pic = R_RegisterPic("pause");
     R_GetPicSize(&scr.pause_width, &scr.pause_height, scr.pause_pic);
@@ -1256,7 +1258,7 @@ void SCR_Init(void)
     scr_lag_min = Cvar_Get("scr_lag_min", "0", 0);
     scr_lag_max = Cvar_Get("scr_lag_max", "200", 0);
     scr_alpha = Cvar_Get("scr_alpha", "1", 0);
-#ifdef _DEBUG
+#if USE_DEBUG
     scr_showstats = Cvar_Get("scr_showstats", "0", 0);
     scr_showpmove = Cvar_Get("scr_showpmove", "0", 0);
 #endif
@@ -1320,7 +1322,7 @@ void SCR_BeginLoadingPlaque(void)
         return;
     }
 
-#ifdef _DEBUG
+#if USE_DEBUG
     if (developer->integer) {
         return;
     }
@@ -1363,22 +1365,22 @@ static void SCR_TileClear(void)
         return;     // full screen rendering
 
     top = scr_vrect.y;
-    bottom = top + scr_vrect.height - 1;
+    bottom = top + scr_vrect.height;
     left = scr_vrect.x;
-    right = left + scr_vrect.width - 1;
+    right = left + scr_vrect.width;
 
     // clear above view screen
-    R_TileClear(0, 0, r_config.width, top, scr.backtile_pic);
+    R_TileClear(0, 0, scr.hud_width, top, scr.backtile_pic);
 
     // clear below view screen
-    R_TileClear(0, bottom, r_config.width,
-                r_config.height - bottom, scr.backtile_pic);
+    R_TileClear(0, bottom, scr.hud_width,
+                scr.hud_height - bottom, scr.backtile_pic);
 
     // clear left of view screen
     R_TileClear(0, top, left, scr_vrect.height, scr.backtile_pic);
 
     // clear right of view screen
-    R_TileClear(right, top, r_config.width - right,
+    R_TileClear(right, top, scr.hud_width - right,
                 scr_vrect.height, scr.backtile_pic);
 }
 
@@ -1450,7 +1452,7 @@ static void SCR_DrawInventory(void)
     int     index[MAX_ITEMS];
     char    string[MAX_STRING_CHARS];
     int     x, y;
-    char    *bind;
+    const char  *bind;
     int     selected;
     int     top;
 
@@ -1802,6 +1804,7 @@ static void SCR_ExecuteLayoutString(const char *s)
             continue;
         }
 
+        // Q2PRO extension
         if (!strcmp(token, "color")) {
             color_t     color;
 
@@ -1909,8 +1912,8 @@ static void SCR_Draw2D(void)
 
     R_SetScale(scr.hud_scale);
 
-    scr.hud_height *= scr.hud_scale;
-    scr.hud_width *= scr.hud_scale;
+    scr.hud_height = Q_rint(scr.hud_height * scr.hud_scale);
+    scr.hud_width = Q_rint(scr.hud_width * scr.hud_scale);
 
     // crosshair has its own color and alpha
     SCR_DrawCrosshair();
@@ -1940,7 +1943,7 @@ static void SCR_Draw2D(void)
     // debug stats have no alpha
     R_ClearColor();
 
-#ifdef _DEBUG
+#if USE_DEBUG
     SCR_DrawDebugStats();
     SCR_DrawDebugPmove();
 #endif
@@ -1961,6 +1964,8 @@ static void SCR_DrawActive(void)
     }
 
     if (cls.state == ca_cinematic) {
+        if (R_GetPicSize(NULL, NULL, cl.image_precache[0]))
+            R_DrawFill8(0, 0, r_config.width, r_config.height, 0);
         R_DrawStretchPic(0, 0, r_config.width, r_config.height, cl.image_precache[0]);
         return;
     }

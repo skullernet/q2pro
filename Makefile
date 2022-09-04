@@ -11,7 +11,15 @@ ifdef CONFIG_WINDOWS
     SYS ?= Win32
 else
     ifndef CPU
-        CPU := $(shell uname -m | sed -e s/i.86/i386/ -e s/amd64/x86_64/ -e s/sun4u/sparc64/ -e s/arm.*/arm/ -e s/sa110/arm/ -e s/alpha/axp/)
+        CPU := $(shell uname -m | sed \
+			-e s/i.86/i386/ \
+			-e s/i86pc/i386/ \
+			-e s/amd64/x86_64/ \
+			-e s/sun4u/sparc64/ \
+			-e s/arm.*/arm/ \
+			-e s/sa110/arm/ \
+			-e s/aarch64.*/arm64/ \
+			-e s/alpha/axp/)
     endif
     ifndef SYS
         SYS := $(shell uname -s)
@@ -59,12 +67,11 @@ ifdef CONFIG_WINDOWS
     LDFLAGS_c += -Wl,--nxcompat,--dynamicbase
     LDFLAGS_g += -Wl,--nxcompat,--dynamicbase
 
-    # Force relocations to be generated for 32-bit .exe files and work around
-    # binutils bug that causes invalid image entry point to be set when
-    # relocations are enabled.
-    ifeq ($(CPU),x86)
-        LDFLAGS_s += -Wl,--pic-executable,--entry,_mainCRTStartup
-        LDFLAGS_c += -Wl,--pic-executable,--entry,_WinMainCRTStartup
+    # Enable high-entropy-va
+    ifeq ($(CPU),x86_64)
+        LDFLAGS_s += -Wl,--high-entropy-va,--image-base=0x140000000
+        LDFLAGS_c += -Wl,--high-entropy-va,--image-base=0x140000000
+        LDFLAGS_g += -Wl,--high-entropy-va,--image-base=0x180000000
     endif
 
     # Workaround for GCC 10 linking shared libgcc by default
@@ -91,6 +98,8 @@ else
         LDFLAGS_g += -Wl,--no-undefined
     endif
 
+    CFLAGS_c += -D_GNU_SOURCE
+    CFLAGS_s += -D_GNU_SOURCE
     CFLAGS_g += -fPIC
 endif
 
@@ -128,7 +137,7 @@ ifndef CONFIG_WINDOWS
 endif
 
 CFLAGS_s += $(BUILD_DEFS) $(VER_DEFS) $(PATH_DEFS) -DUSE_SERVER=1
-CFLAGS_c += $(BUILD_DEFS) $(VER_DEFS) $(PATH_DEFS) -DUSE_SERVER=1 -DUSE_CLIENT=1
+CFLAGS_c += $(BUILD_DEFS) $(VER_DEFS) $(PATH_DEFS) -DUSE_CLIENT=1
 
 # windres needs special quoting...
 RCFLAGS_s += -DREVISION=$(REV) -DVERSION='\"$(VER)\"'
@@ -275,7 +284,6 @@ endif
 
 ifndef CONFIG_NO_SOFTWARE_SOUND
     CFLAGS_c += -DUSE_SNDDMA=1
-    OBJS_c += src/client/sound/mix.o
     OBJS_c += src/client/sound/dma.o
 endif
 
@@ -317,7 +325,7 @@ ifndef CONFIG_NO_MAPCHECKSUM
 endif
 
 ifndef CONFIG_NO_REFRESH
-    CFLAGS_c += -DUSE_REF=1 -DVID_REF='"gl"'
+    CFLAGS_c += -DUSE_REF=1
     ifdef CONFIG_GLES
         CFLAGS_c += -DUSE_GLES=1
     endif
@@ -426,16 +434,16 @@ ifdef CONFIG_WINDOWS
     OBJS_c += src/windows/client.o
 
     ifndef CONFIG_NO_SOFTWARE_SOUND
+        OBJS_c += src/windows/dsound.o
         OBJS_c += src/windows/wave.o
         LIBS_c += -lwinmm
-        ifdef CONFIG_DIRECT_SOUND
-            CFLAGS_c += -DUSE_DSOUND=1
-            OBJS_c += src/windows/dsound.o
-        endif
     endif
 
-    OBJS_c += src/windows/glimp.o
     OBJS_c += src/windows/wgl.o
+    ifdef CONFIG_WINDOWS_EGL
+        CFLAGS_s += -DUSE_WIN32EGL=1
+        OBJS_c += src/windows/egl.o
+    endif
 
     ifdef CONFIG_WINDOWS_CRASH_DUMPS
         CFLAGS_c += -DUSE_DBGHELP=1
@@ -458,20 +466,20 @@ ifdef CONFIG_WINDOWS
     OBJS_g += src/windows/res/baseq2.o
 
     # System libs
+    LIBS_c += -lws2_32 -lopengl32
     LIBS_s += -lws2_32
-    LIBS_c += -lws2_32
 else
     SDL_CFLAGS ?= $(shell sdl2-config --cflags)
     SDL_LIBS ?= $(shell sdl2-config --libs)
     CFLAGS_c += -DUSE_SDL=2 $(SDL_CFLAGS)
     LIBS_c += $(SDL_LIBS)
-    OBJS_c += src/unix/video.o
+    OBJS_c += src/unix/video/sdl.o
 
     ifndef CONFIG_NO_SOFTWARE_SOUND
-        OBJS_c += src/unix/sound.o
-        ifdef CONFIG_DIRECT_SOUND
-            CFLAGS_c += -DUSE_DSOUND=1
-            OBJS_c += src/unix/oss.o
+        OBJS_c += src/unix/sound/sdl.o
+        ifdef CONFIG_OSS
+            CFLAGS_c += -DUSE_OSS=1
+            OBJS_c += src/unix/sound/oss.o
         endif
     endif
 
@@ -502,8 +510,18 @@ ifdef CONFIG_TESTS
 endif
 
 ifdef CONFIG_DEBUG
-    CFLAGS_c += -D_DEBUG
-    CFLAGS_s += -D_DEBUG
+    CFLAGS_c += -DUSE_DEBUG=1
+    CFLAGS_s += -DUSE_DEBUG=1
+endif
+
+ifdef CONFIG_BIG_ENDIAN
+    CFLAGS_c += -DUSE_BIG_ENDIAN=1
+    CFLAGS_s += -DUSE_BIG_ENDIAN=1
+    CFLAGS_g += -DUSE_BIG_ENDIAN=1
+else
+    CFLAGS_c += -DUSE_LITTLE_ENDIAN=1
+    CFLAGS_s += -DUSE_LITTLE_ENDIAN=1
+    CFLAGS_g += -DUSE_LITTLE_ENDIAN=1
 endif
 
 ### Targets ###

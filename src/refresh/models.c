@@ -24,17 +24,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #endif
 #include "format/sp2.h"
 
-#define MOD_Malloc(size)    Hunk_Alloc(&model->hunk, size)
+#define MOD_Malloc(size)    Hunk_TryAlloc(&model->hunk, size)
 
 #define CHECK(x)    if (!(x)) { ret = Q_ERR(ENOMEM); goto fail; }
-
-#if MAX_ALIAS_VERTS > TESS_MAX_VERTICES
-#error TESS_MAX_VERTICES
-#endif
-
-#if MD2_MAX_TRIANGLES > TESS_MAX_INDICES / 3
-#error TESS_MAX_INDICES
-#endif
 
 // during registration it is possible to have more models than could actually
 // be referenced during gameplay, because we don't want to free anything until
@@ -145,8 +137,10 @@ void MOD_FreeAll(void)
 static void LittleBlock(void *out, const void *in, size_t size)
 {
     memcpy(out, in, size);
+#if USE_BIG_ENDIAN
     for (int i = 0; i < size / 4; i++)
         ((uint32_t *)out)[i] = LittleLong(((uint32_t *)out)[i]);
+#endif
 }
 
 static int MOD_LoadSP2(model_t *model, const void *rawdata, size_t length)
@@ -196,7 +190,7 @@ static int MOD_LoadSP2(model_t *model, const void *rawdata, size_t length)
             Com_WPrintf("%s has bad frame name\n", model->name);
             dst_frame->image = R_NOTEXTURE;
         } else {
-            FS_NormalizePath(buffer, buffer);
+            FS_NormalizePath(buffer);
             dst_frame->image = IMG_Find(buffer, IT_SPRITE, IF_NONE);
         }
 
@@ -222,7 +216,7 @@ static int MOD_ValidateMD2(dmd2header_t *header, size_t length)
     // check triangles
     if (header->num_tris < 1)
         return Q_ERR_TOO_FEW;
-    if (header->num_tris > MD2_MAX_TRIANGLES)
+    if (header->num_tris > TESS_MAX_INDICES / 3)
         return Q_ERR_TOO_MANY;
 
     end = header->ofs_tris + sizeof(dmd2triangle_t) * header->num_tris;
@@ -234,7 +228,7 @@ static int MOD_ValidateMD2(dmd2header_t *header, size_t length)
     // check st
     if (header->num_st < 3)
         return Q_ERR_TOO_FEW;
-    if (header->num_st > MAX_ALIAS_VERTS)
+    if (header->num_st > INT_MAX / sizeof(dmd2stvert_t))
         return Q_ERR_TOO_MANY;
 
     end = header->ofs_st + sizeof(dmd2stvert_t) * header->num_st;
@@ -246,7 +240,7 @@ static int MOD_ValidateMD2(dmd2header_t *header, size_t length)
     // check xyz and frames
     if (header->num_xyz < 3)
         return Q_ERR_TOO_FEW;
-    if (header->num_xyz > MAX_ALIAS_VERTS)
+    if (header->num_xyz > MD2_MAX_VERTS)
         return Q_ERR_TOO_MANY;
     if (header->num_frames < 1)
         return Q_ERR_TOO_FEW;
@@ -256,6 +250,8 @@ static int MOD_ValidateMD2(dmd2header_t *header, size_t length)
     end = sizeof(dmd2frame_t) + (header->num_xyz - 1) * sizeof(dmd2trivertx_t);
     if (header->framesize < end || header->framesize > MD2_MAX_FRAMESIZE)
         return Q_ERR_BAD_EXTENT;
+    if (header->framesize % q_alignof(dmd2frame_t))
+        return Q_ERR_BAD_ALIGN;
 
     end = header->ofs_frames + (size_t)header->framesize * header->num_frames;
     if (header->ofs_frames < sizeof(*header) || end < header->ofs_frames || end > length)
@@ -411,7 +407,7 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
             ret = Q_ERR_STRING_TRUNCATED;
             goto fail;
         }
-        FS_NormalizePath(skinname, skinname);
+        FS_NormalizePath(skinname);
         dst_mesh->skins[i] = IMG_Find(skinname, IT_SKIN, IF_NONE);
         src_skin += MD2_MAX_SKINNAME;
     }
@@ -560,7 +556,7 @@ static int MOD_LoadMD3Mesh(model_t *model, maliasmesh_t *mesh,
     for (i = 0; i < header.num_skins; i++) {
         if (!Q_memccpy(skinname, src_skin->name, 0, sizeof(skinname)))
             return Q_ERR_STRING_TRUNCATED;
-        FS_NormalizePath(skinname, skinname);
+        FS_NormalizePath(skinname);
         mesh->skins[i] = IMG_Find(skinname, IT_SKIN, IF_NONE);
         src_skin++;
     }

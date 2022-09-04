@@ -39,10 +39,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <limits.h>
 #include <time.h>
 
-#if HAVE_ENDIAN_H
-#include <endian.h>
-#endif
-
 #include "shared/platform.h"
 
 #define q_countof(a)        (sizeof(a) / sizeof(a[0]))
@@ -165,6 +161,9 @@ typedef struct vrect_s {
 
 #define ALIGN(x, a)     (((x) + (a) - 1) & ~((a) - 1))
 
+#define SWAP(type, a, b) \
+    do { type SWAP_tmp = a; a = b; b = SWAP_tmp; } while (0)
+
 #define DotProduct(x,y)         ((x)[0]*(y)[0]+(x)[1]*(y)[1]+(x)[2]*(y)[2])
 #define CrossProduct(v1,v2,cross) \
         ((cross)[0]=(v1)[1]*(v2)[2]-(v1)[2]*(v2)[1], \
@@ -254,19 +253,9 @@ static inline void AnglesToAxis(vec3_t angles, vec3_t axis[3])
 
 static inline void TransposeAxis(vec3_t axis[3])
 {
-    vec_t temp;
-
-    temp = axis[0][1];
-    axis[0][1] = axis[1][0];
-    axis[1][0] = temp;
-
-    temp = axis[0][2];
-    axis[0][2] = axis[2][0];
-    axis[2][0] = temp;
-
-    temp = axis[1][2];
-    axis[1][2] = axis[2][1];
-    axis[2][1] = temp;
+    SWAP(vec_t, axis[0][1], axis[1][0]);
+    SWAP(vec_t, axis[0][2], axis[2][0]);
+    SWAP(vec_t, axis[1][2], axis[2][1]);
 }
 
 static inline void RotatePoint(vec3_t point, vec3_t axis[3])
@@ -519,7 +508,7 @@ static inline float FloatSwap(float f)
     return dat2.f;
 }
 
-#if __BYTE_ORDER == __LITTLE_ENDIAN
+#if USE_LITTLE_ENDIAN
 #define BigShort    ShortSwap
 #define BigLong     LongSwap
 #define BigFloat    FloatSwap
@@ -528,7 +517,7 @@ static inline float FloatSwap(float f)
 #define LittleFloat(x)    ((float)(x))
 #define MakeRawLong(b1,b2,b3,b4) (((unsigned)(b4)<<24)|((b3)<<16)|((b2)<<8)|(b1))
 #define MakeRawShort(b1,b2) (((b2)<<8)|(b1))
-#elif __BYTE_ORDER == __BIG_ENDIAN
+#elif USE_BIG_ENDIAN
 #define BigShort(x)     ((uint16_t)(x))
 #define BigLong(x)      ((uint32_t)(x))
 #define BigFloat(x)     ((float)(x))
@@ -544,8 +533,7 @@ static inline float FloatSwap(float f)
 #define LittleLongMem(p) (((unsigned)(p)[3]<<24)|((p)[2]<<16)|((p)[1]<<8)|(p)[0])
 #define LittleShortMem(p) (((p)[1]<<8)|(p)[0])
 
-#define RawLongMem(p) MakeRawLong((p)[0],(p)[1],(p)[2],(p)[3])
-#define RawShortMem(p) MakeRawShort((p)[0],(p)[1])
+#define MakeLittleLong(b1,b2,b3,b4) (((unsigned)(b4)<<24)|((b3)<<16)|((b2)<<8)|(b1))
 
 #define LittleVector(a,b) \
     ((b)[0]=LittleFloat((a)[0]),\
@@ -610,11 +598,13 @@ typedef struct cvar_s {
     struct cvar_s *next;
 
 // ------ new stuff ------
+#if USE_CLIENT || USE_SERVER
     int         integer;
     char        *default_string;
     xchanged_t      changed;
     xgenerator_t    generator;
     struct cvar_s   *hashNext;
+#endif
 } cvar_t;
 
 #endif      // CVAR

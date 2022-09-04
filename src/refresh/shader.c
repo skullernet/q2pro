@@ -35,7 +35,7 @@ static void write_header(char *buf)
     *buf = 0;
     if (gl_config.ver_es) {
         GLSF("#version 300 es\n");
-    } else if (gl_config.ver_sl >= 140) {
+    } else if (gl_config.ver_sl >= QGL_VER(1, 4)) {
         GLSF("#version 140\n");
     } else {
         GLSF("#version 130\n");
@@ -336,7 +336,7 @@ static void shader_update(void)
     gls.u_block.intensity = gl_intensity->value;
 }
 
-static void shader_view_matrix(const GLfloat *matrix)
+static void shader_load_view_matrix(const GLfloat *matrix)
 {
     static const GLfloat identity[16] = { [0] = 1, [5] = 1, [10] = 1, [15] = 1 };
 
@@ -347,7 +347,7 @@ static void shader_view_matrix(const GLfloat *matrix)
     upload_u_block();
 }
 
-static void shader_proj_matrix(const GLfloat *matrix)
+static void shader_load_proj_matrix(const GLfloat *matrix)
 {
     memcpy(gls.u_block.proj, matrix, sizeof(gls.u_block.proj));
     upload_u_block();
@@ -359,7 +359,7 @@ static void shader_reflect(void)
     upload_u_block();
 }
 
-static void shader_clear(void)
+static void shader_clear_state(void)
 {
     qglActiveTexture(GL_TEXTURE1);
     qglBindTexture(GL_TEXTURE_2D, 0);
@@ -408,11 +408,11 @@ const glbackend_t backend_shader = {
 
     .init = shader_init,
     .shutdown = shader_shutdown,
-    .clear = shader_clear,
+    .clear_state = shader_clear_state,
     .update = shader_update,
 
-    .proj_matrix = shader_proj_matrix,
-    .view_matrix = shader_view_matrix,
+    .load_proj_matrix = shader_load_proj_matrix,
+    .load_view_matrix = shader_load_view_matrix,
     .reflect = shader_reflect,
 
     .state_bits = shader_state_bits,

@@ -271,6 +271,15 @@ s_swapstereo::
     Swap left and right audio channels. Only effective when using DMA sound
     engine. Default value is 0 (don't swap).
 
+s_driver::
+    Specifies which DMA sound driver to use. Default value is empty (detect
+    automatically). Possible sound drivers are (not all of them are typically
+    available at the same time, depending on how client was compiled):
+      - dsound — DirectSound
+      - wave — Windows waveform audio
+      - sdl — SDL2 audio
+      - oss — OSS audio
+
 al_driver::
     Specifies the name of OpenAL driver to use. Default value is ‘soft_oal’
     on Windows, and ‘libopenal.so.1’ on Linux.
@@ -497,6 +506,16 @@ vid_hwgamma::
     Instructs the video driver to use hardware gamma correction for
     implementing ‘vid_gamma’.  Default value is 0 (use software gamma).
 
+vid_driver::
+    Specifies which video driver to use. Default value is empty (detect
+    automatically). Possible video drivers are (not all of them are typically
+    available at the same time, depending on how client was compiled):
+      - win32wgl — standard Windows OpenGL
+      - win32egl — OpenGL ES 3.0+ via third-party libEGL.dll (e.g. ANGLE)
+      - wayland — native Wayland
+      - x11 — native X11
+      - sdl — SDL2 video driver
+
 .Setting video modes
 ====================
 The following lines define 2 video modes: 640x480 and 800x600 at 75 Hz vertical refresh and
@@ -535,14 +554,16 @@ win_alwaysontop::
     Puts the main window on top of other windows. Default is 0 (main window can
     be obscured by other windows).
 
-win_xpfix::
-    Temporary disables mouse acceleration setting applied by the OS. Only
-    effective when legacy Windows mouse input is in use, otherwise ignored.
-    Default value is 0 (don't modify OS setting).
+sys_viewlog::
+    Show system console window when running a client. Can be set from command
+    line only.
 
-win_rawmouse::
-    Enables raw mouse input instead of legacy Windows mouse input. Default
-    value is 1 (use raw input).
+sys_disablecrashdump::
+    Disable crash dump generation. Can be set from command line only.
+
+sys_exitonerror::
+    Exit on fatal error instead of showing error message. Can be set from
+    command line only.
 
 
 OpenGL Renderer
@@ -757,14 +778,23 @@ r_override_textures::
     original file extension and searching for alternative filenames in the
     order specified by ‘r_texture_formats’ variable. Default value is 1.
      - 0 — don't override textures
-     - 1 — override all textures
-     - 2 — override only HUD pictures
-     - 3 — override all textures except HUD pictures
+     - 1 — override only palettized textures
+     - 2 — override all textures
 
 r_texture_formats::
     Specifies the order in which truecolor texture replacements are searched.
     Default value is "pjt", which means to try ‘.png’ extension first, then
     ‘.jpg’, then ‘.tga’.
+
+r_texture_overrides::
+    Specifies what types of textures are affected by ‘r_override_textures’.
+    This variable is a bitmask. Default value is -1 (all types).
+     - 1 — HUD pictures
+     - 2 — HUD fonts
+     - 4 — skins
+     - 8 — sprites
+     - 16 — wall textures
+     - 32 — sky textures
 
 .MD2 model overrides
 ********************
@@ -838,10 +868,10 @@ cl_http_proxy::
 Locations
 ~~~~~~~~~
 
-Client side location files provide a way to report player's position on the map
-in team chat messages without depending on the game mod.  Locations are loaded
-from ‘locs/<mapname>.loc’ file. Once location file is loaded, ‘loc_here’ and
-‘loc_there’ macros will expand to the name of location closest to the given
+Client side location files provide a way to report a player's position on the
+map in team chat messages without depending on the game mod. Locations are
+loaded from ‘locs/<mapname>.loc’ file. Once location file is loaded, ‘loc_here’
+and ‘loc_there’ macros will expand to the name of location closest to the given
 position. Variables listed below control some aspects of location selection.
 
 loc_trace::
@@ -1164,7 +1194,7 @@ dec <cvar> [value]::
     Otherwise, subtract the specified floating point _value_.
 
 reset <cvar>::
-    Reset the specified _cvar_ to it's default value.
+    Reset the specified _cvar_ to its default value.
 
 resetall::
     Resets all cvars to their default values.
@@ -1391,9 +1421,13 @@ need to review your config and adapt it for Q2PRO. This section tries to
 document most of these incompatibilities so that when something doesn't work as
 it used to be you know where to look. The following list may be incomplete.
 
-- Q2PRO has a built-in renderer and doesn't support run-time loading of external
-  renderers.  Thus, ‘vid_ref’ cvar has been made read-only and exists only for
-  informational purpose.
+- Q2PRO has a built-in OpenGL renderer and doesn't support dynamic loading of
+  external renderers. Thus, ‘vid_ref’ cvar has been made read-only and exists
+  only for compatibility with tools like Q2Admin.
+
+- Q2PRO supports loading system OpenGL library only. Thus, ‘gl_driver’ cvar has
+  been made read-only and exists only for compatibility with tools like
+  Q2Admin.
 
 - Default value of ‘gl_dynamic’ variable has been changed from 1 to 2. This means
   dynamic lights will be disabled by default.
@@ -1408,7 +1442,7 @@ it used to be you know where to look. The following list may be incomplete.
 - ‘gl_particle_*’ series of variables are gone, as well as
   ‘gl_ext_pointparameters’ and R1GL-specific ‘gl_ext_point_sprite’. For
   controlling size of particles, which are always drawn as textured triangles,
-  Q2PRO supports it's own ‘gl_partscale’ variable.
+  Q2PRO supports its own ‘gl_partscale’ variable.
 
 - ‘ip’ variable has been renamed to ‘net_ip’.
 

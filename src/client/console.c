@@ -386,8 +386,8 @@ void Con_CheckResize(void)
 
     con.scale = R_ClampScale(con_scale);
 
-    con.vidWidth = r_config.width * con.scale;
-    con.vidHeight = r_config.height * con.scale;
+    con.vidWidth = Q_rint(r_config.width * con.scale);
+    con.vidHeight = Q_rint(r_config.height * con.scale);
 
     width = con.vidWidth / CHAR_WIDTH - 2;
 
@@ -584,7 +584,8 @@ void CL_LoadState(load_state_t state)
 {
     con.loadstate = state;
     SCR_UpdateScreen();
-    VID_PumpEvents();
+    if (vid.pump_events)
+        vid.pump_events();
 }
 
 /*
@@ -669,29 +670,22 @@ Con_RegisterMedia
 */
 void Con_RegisterMedia(void)
 {
-    int err;
-
-    con.charsetImage = R_RegisterImage(con_font->string, IT_FONT, IF_PERMANENT, &err);
+    con.charsetImage = R_RegisterFont(con_font->string);
     if (!con.charsetImage) {
-        if (strcmp(con_font->string, "conchars")) {
-            Com_WPrintf("Couldn't load %s: %s\n", con_font->string, Q_ErrorString(err));
+        if (strcmp(con_font->string, con_font->default_string)) {
             Cvar_Reset(con_font);
-            con.charsetImage = R_RegisterImage("conchars", IT_FONT, IF_PERMANENT, &err);
+            con.charsetImage = R_RegisterFont(con_font->default_string);
         }
         if (!con.charsetImage) {
-            Com_Error(ERR_FATAL, "Couldn't load pics/conchars.pcx: %s", Q_ErrorString(err));
+            Com_Error(ERR_FATAL, "%s", Com_GetLastError());
         }
     }
 
-    con.backImage = R_RegisterImage(con_background->string, IT_PIC, IF_PERMANENT, &err);
+    con.backImage = R_RegisterPic(con_background->string);
     if (!con.backImage) {
-        if (strcmp(con_background->string, "conback")) {
-            Com_WPrintf("Couldn't load %s: %s\n", con_background->string, Q_ErrorString(err));
+        if (strcmp(con_background->string, con_background->default_string)) {
             Cvar_Reset(con_background);
-            con.backImage = R_RegisterImage("conback", IT_PIC, IF_PERMANENT, &err);
-        }
-        if (!con.backImage) {
-            Com_EPrintf("Couldn't load pics/conback.pcx: %s\n", Q_ErrorString(err));
+            con.backImage = R_RegisterPic(con_background->default_string);
         }
     }
 }
@@ -748,7 +742,7 @@ Draws the last few lines of output transparently over the game top
 static void Con_DrawNotify(void)
 {
     int     v;
-    char    *text;
+    const char  *text;
     int     i, j;
     unsigned    time;
     int     skip;
@@ -820,7 +814,7 @@ static void Con_DrawSolidConsole(void)
 {
     int             i, x, y;
     int             rows;
-    char            *text;
+    const char      *text;
     int             row;
     char            buffer[CON_LINEWIDTH];
     int             vislines;
@@ -1137,13 +1131,13 @@ static void Con_Action(void)
     }
 }
 
-static void Con_Paste(void)
+static void Con_Paste(char *(*func)(void))
 {
     char *cbd, *s;
 
     Con_InteractiveMode();
 
-    if ((cbd = VID_GetClipboardData()) == NULL) {
+    if (!func || !(cbd = func())) {
         return;
     }
 
@@ -1161,9 +1155,10 @@ static void Con_Paste(void)
             IF_CharEvent(&con.prompt.inputLine, ' ');
             break;
         default:
-            if (Q_isprint(c)) {
-                IF_CharEvent(&con.prompt.inputLine, c);
+            if (!Q_isprint(c)) {
+                c = '?';
             }
+            IF_CharEvent(&con.prompt.inputLine, c);
             break;
         }
     }
@@ -1195,9 +1190,13 @@ void Key_Console(int key)
         goto scroll;
     }
 
-    if ((key == 'v' && Key_IsDown(K_CTRL)) ||
-        (key == K_INS && Key_IsDown(K_SHIFT)) || key == K_MOUSE3) {
-        Con_Paste();
+    if (key == 'v' && Key_IsDown(K_CTRL)) {
+        Con_Paste(vid.get_clipboard_data);
+        goto scroll;
+    }
+
+    if ((key == K_INS && Key_IsDown(K_SHIFT)) || key == K_MOUSE3) {
+        Con_Paste(vid.get_selection_data);
         goto scroll;
     }
 

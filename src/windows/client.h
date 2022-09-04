@@ -37,21 +37,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-#ifndef STATIC
-#define STATIC static
-#endif
-
-// supported in XP SP3 or greater
-#ifndef PROCESS_DEP_ENABLE
-#define PROCESS_DEP_ENABLE 0x01
-#endif
-#ifndef PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION
-#define PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION 0x02
-#endif
-
 #if USE_CLIENT
 
-#include <tchar.h>
+#define WINDOW_CLASS_NAME   "Quake 2 Pro"
 
 #define IDI_APP 100
 
@@ -103,19 +91,17 @@ typedef struct {
     int     center_x, center_y;
 
     bool    alttab_disabled;
-    int     mode_changed;
+
+    enum {
+        MODE_SIZE       = (1 << 0),
+        MODE_POS        = (1 << 1),
+        MODE_STYLE      = (1 << 2),
+        MODE_REPOSITION = (1 << 3),
+    } mode_changed;
 
     struct {
-        enum {
-            WIN_MOUSE_DISABLED,
-            WIN_MOUSE_LEGACY,
-            WIN_MOUSE_RAW
-        } initialized;
+        bool        initialized;
         bool        grabbed;
-        int         state;
-        bool        parmsvalid;
-        bool        restoreparms;
-        int         originalparms[3];
         int         mx, my;
     } mouse;
 } win_state_t;
@@ -124,15 +110,22 @@ extern win_state_t      win;
 
 void Win_Init(void);
 void Win_Shutdown(void);
+char *Win_GetModeList(void);
 void Win_SetMode(void);
-void Win_ModeChanged(void);
+void Win_UpdateGamma(const byte *table);
+void Win_PumpEvents(void);
+char *Win_GetClipboardData(void);
+void Win_SetClipboardData(const char *data);
+bool Win_InitMouse(void);
+void Win_ShutdownMouse(void);
+void Win_GrabMouse(bool grab);
+void Win_WarpMouse(int x, int y);
+bool Win_GetMouseMotion(int *dx, int *dy);
 
 #endif // USE_CLIENT
 
 extern HINSTANCE                    hGlobalInstance;
 
 #if USE_DBGHELP
-extern LPTOP_LEVEL_EXCEPTION_FILTER prevExceptionFilter;
-
-LONG WINAPI Sys_ExceptionFilter(LPEXCEPTION_POINTERS);
+void Sys_InstallExceptionFilter(void);
 #endif

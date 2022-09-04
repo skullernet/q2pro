@@ -6,7 +6,7 @@
 
 #pragma code_page(65001)
 
-#ifdef _DEBUG
+#if USE_DEBUG
 #define VER_FILEFLAGS   VS_FF_DEBUG
 #else
 #define VER_FILEFLAGS   0x0L
@@ -55,3 +55,4 @@ END
 LANGUAGE LANG_NEUTRAL, SUBLANG_DEFAULT
 
 100 ICON "q2proded.ico"
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "q2proded.exe.manifest"

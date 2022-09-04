@@ -275,7 +275,7 @@ int R_DrawString(int x, int y, int flags, size_t maxlen, const char *s, qhandle_
     return x;
 }
 
-#ifdef _DEBUG
+#if USE_DEBUG
 
 image_t *r_charset;
 

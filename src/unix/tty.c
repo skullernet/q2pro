@@ -34,6 +34,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <fcntl.h>
 #include <signal.h>
 #include <errno.h>
+#include <poll.h>
 
 enum {
     CTRL_A = 1, CTRL_B = 2, CTRL_D = 4, CTRL_E = 5, CTRL_F = 6, CTRL_H = 8,
@@ -61,37 +62,67 @@ static void tty_fatal_error(const char *what)
               __func__, what, strerror(errno));
 }
 
-static int tty_stdout_sleep(void)
-{
-    fd_set fd;
-    FD_ZERO(&fd);
-    FD_SET(STDOUT_FILENO, &fd);
-
-    return select(STDOUT_FILENO + 1, NULL, &fd, NULL,
-                  &(struct timeval){ .tv_usec = 10 * 1000 });
-}
-
 // handles partial writes correctly, but never spins too much
 // blocks for 100 ms before giving up and losing data
 static void tty_stdout_write(const char *buf, size_t len)
 {
-    int ret, spins;
+    int ret = write(STDOUT_FILENO, buf, len);
+    if (ret == len)
+        return;
 
-    for (spins = 0; len && spins < 10; spins++) {
-        ret = write(STDOUT_FILENO, buf, len);
-        if (ret < 0) {
-            if (errno == EAGAIN) {
-                ret = tty_stdout_sleep();
-                if (ret >= 0 || errno == EINTR)
-                    continue;
-                tty_fatal_error("select");
-            } else {
-                tty_fatal_error("write");
-            }
-        }
+    if (ret < 0 && errno != EAGAIN)
+        tty_fatal_error("write");
+
+    if (ret > 0) {
         buf += ret;
         len -= ret;
     }
+
+    unsigned now = Sys_Milliseconds();
+    unsigned deadline = now + 100;
+    while (now < deadline) {
+        struct pollfd fd = {
+            .fd = STDOUT_FILENO,
+            .events = POLLOUT,
+        };
+
+        ret = poll(&fd, 1, deadline - now);
+        if (ret == 0)
+            break;
+
+        if (ret < 0 && ret != EINTR)
+            tty_fatal_error("poll");
+
+        if (ret > 0) {
+            ret = write(STDOUT_FILENO, buf, len);
+            if (ret == len)
+                break;
+
+            if (ret < 0 && errno != EAGAIN)
+                tty_fatal_error("write");
+
+            if (ret > 0) {
+                buf += ret;
+                len -= ret;
+            }
+        }
+
+        now = Sys_Milliseconds();
+    }
+}
+
+q_printf(1, 2)
+static void tty_stdout_writef(const char *fmt, ...)
+{
+    char buf[MAX_STRING_CHARS];
+    va_list ap;
+    size_t len;
+
+    va_start(ap, fmt);
+    len = Q_vscnprintf(buf, sizeof(buf), fmt, ap);
+    va_end(ap);
+
+    tty_stdout_write(buf, len);
 }
 
 static int tty_get_width(void)
@@ -136,8 +167,7 @@ static void tty_show_input(void)
 
         // move to start of line, print prompt and text,
         // move to start of line, forward N chars
-        char *s = va("\r]%.*s\r\033[%zuC", (int)f->visibleChars, text, pos + 1);
-        tty_stdout_write(s, strlen(s));
+        tty_stdout_writef("\r]%.*s\r\033[%zuC", (int)f->visibleChars, text, pos + 1);
     }
 }
 
@@ -164,8 +194,7 @@ static void tty_move_cursor(inputField_t *f, size_t pos)
             tty_stdout_write("\033[D", 3);
         } else {
             // move to start of line, forward N chars
-            char *s = va("\r\033[%zuC", pos + 1);
-            tty_stdout_write(s, strlen(s));
+            tty_stdout_writef("\r\033[%zuC", pos + 1);
         }
     } else {
         tty_hide_input();
@@ -310,12 +339,11 @@ static void tty_parse_input(const char *text)
                 // when cursor is at the rightmost column, terminal may or may
                 // not advance it. force absolute position to keep it in the
                 // same place.
-                s = va("%c\r\033[%zuC", key, f->cursorPos + 1);
-                tty_stdout_write(s, strlen(s));
+                tty_stdout_writef("%c\r\033[%zuC", key, f->cursorPos + 1);
                 f->text[f->cursorPos + 0] = key;
                 f->text[f->cursorPos + 1] = 0;
             } else if (f->text[f->cursorPos] == 0 && f->cursorPos + 1 < f->visibleChars) {
-                tty_stdout_write(va("%c", key), 1);
+                tty_stdout_write((char []){ key }, 1);
                 f->text[f->cursorPos + 0] = key;
                 f->text[f->cursorPos + 1] = 0;
                 f->cursorPos++;

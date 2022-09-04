@@ -38,7 +38,7 @@ cvar_t  *cl_rollhack;
 cvar_t  *cl_noglow;
 cvar_t  *cl_nolerp;
 
-#ifdef _DEBUG
+#if USE_DEBUG
 cvar_t  *cl_shownet;
 cvar_t  *cl_showmiss;
 cvar_t  *cl_showclamp;
@@ -1147,7 +1147,7 @@ static void CL_Reconnect_f(void)
     SCR_UpdateScreen();
 }
 
-#ifdef USE_UI
+#if USE_UI
 /*
 =================
 CL_SendStatusRequest
@@ -1522,6 +1522,10 @@ CL_PacketEvent
 */
 static void CL_PacketEvent(void)
 {
+    if (msg_read.cursize < 4) {
+        return;
+    }
+
     //
     // remote command packet
     //
@@ -2192,15 +2196,8 @@ static size_t CL_Ups_m(char *buffer, size_t size)
 {
     vec3_t vel;
 
-    if (cl.frame.clientNum == CLIENTNUM_NONE) {
-        if (size) {
-            *buffer = 0;
-        }
-        return 0;
-    }
-
-    if (!cls.demo.playback && cl.frame.clientNum == cl.clientNum &&
-        cl_predict->integer) {
+    if (!cls.demo.playback && cl_predict->integer &&
+        !(cl.frame.ps.pmove.pm_flags & PMF_NO_PREDICTION)) {
         VectorCopy(cl.predicted_velocity, vel);
     } else {
         VectorScale(cl.frame.ps.pmove.velocity, 0.125f, vel);
@@ -2724,7 +2721,7 @@ static void CL_InitLocal(void)
     warn_on_fps_rounding(cl_maxfps);
     warn_on_fps_rounding(r_maxfps);
 
-#ifdef _DEBUG
+#if USE_DEBUG
     cl_shownet = Cvar_Get("cl_shownet", "0", 0);
     cl_showmiss = Cvar_Get("cl_showmiss", "0", 0);
     cl_showclamp = Cvar_Get("showclamp", "0", 0);
@@ -2850,7 +2847,7 @@ CL_Activate
 void CL_Activate(active_t active)
 {
     if (cls.active != active) {
-        Com_DDDPrintf("%s: %u\n", __func__, active);
+        Com_DDPrintf("%s: %u\n", __func__, active);
         cls.active = active;
         cls.disable_screen = 0;
         Key_ClearStates();
@@ -3036,7 +3033,7 @@ typedef enum {
     ASYNC_FULL
 } sync_mode_t;
 
-#ifdef _DEBUG
+#if USE_DEBUG
 static const char *const sync_names[] = {
     "SYNC_TIMEDEMO",
     "SYNC_MAXFPS",
@@ -3321,13 +3318,8 @@ void CL_Init(void)
     // start with full screen console
     cls.key_dest = KEY_CONSOLE;
 
-#ifdef _WIN32
     CL_InitRefresh();
     S_Init();   // sound must be initialized after window is created
-#else
-    S_Init();
-    CL_InitRefresh();
-#endif
 
     CL_InitLocal();
     IN_Init();

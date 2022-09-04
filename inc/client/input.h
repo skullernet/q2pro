@@ -23,17 +23,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // input.h -- external (non-keyboard) input devices
 //
 
-typedef struct inputAPI_s {
-    bool (*Init)(void);
-    void (*Shutdown)(void);
-    void (*Grab)(bool grab);
-    void (*Warp)(int x, int y);
-    void (*GetEvents)(void);
-    bool (*GetMotion)(int *dx, int *dy);
-} inputAPI_t;
-
-void VID_FillInputAPI(inputAPI_t *api);
-
 void IN_Frame(void);
 void IN_Activate(void);
 void IN_WarpMouse(int x, int y);

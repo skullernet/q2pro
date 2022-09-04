@@ -56,7 +56,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SV_LoadFile(path, buf)  FS_LoadFileEx(path, buf, 0, TAG_SERVER)
 #define SV_FreeFile(buf)        Z_Free(buf)
 
-#ifdef _DEBUG
+#if USE_DEBUG
 #define SV_DPrintf(level,...) \
     if (sv_debug && sv_debug->integer > level) \
         Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__)
@@ -146,6 +146,10 @@ typedef struct {
     server_state_t  state;      // precache commands are only valid during load
     int             spawncount; // random number generated each server spawn
 
+#if USE_CLIENT
+    int         gamedetecthack;
+#endif
+
 #if USE_FPS
     int         framerate;
     int         frametime;
@@ -159,7 +163,6 @@ typedef struct {
 
     char        name[MAX_QPATH];            // map name, or cinematic name
     cm_t        cm;
-    char        *entitystring;
 
     char        configstrings[MAX_CONFIGSTRINGS][MAX_QPATH];
 
@@ -454,8 +457,8 @@ typedef struct {
 } master_t;
 
 typedef struct {
-    char            buffer[MAX_QPATH];
-    char            *server;
+    char            buffer[MAX_QPATH];  // original mapcmd
+    char            server[MAX_QPATH];  // parsed map name
     char            *spawnpoint;
     server_state_t  state;
     int             loadgame;
@@ -475,6 +478,8 @@ typedef struct server_static_s {
 
 #if USE_ZLIB
     z_stream        z;  // for compressing messages at once
+    byte            *z_buffer;
+    size_t          z_buffer_size;
 #endif
 
     unsigned        last_heartbeat;
@@ -521,7 +526,7 @@ extern cvar_t       *sv_fps;
 extern cvar_t       *sv_force_reconnect;
 extern cvar_t       *sv_iplimit;
 
-#ifdef _DEBUG
+#if USE_DEBUG
 extern cvar_t       *sv_debug;
 extern cvar_t       *sv_pad_packets;
 #endif
@@ -549,8 +554,6 @@ extern cvar_t       *sv_uptime;
 extern cvar_t       *sv_allow_unconnected_cmds;
 
 extern cvar_t       *g_features;
-
-extern cvar_t       *map_override_path;
 
 extern cvar_t       *sv_timeout;
 extern cvar_t       *sv_zombietime;
@@ -763,12 +766,14 @@ void PF_Pmove(pmove_t *pm);
 void SV_AutoSaveBegin(mapcmd_t *cmd);
 void SV_AutoSaveEnd(void);
 void SV_CheckForSavegame(mapcmd_t *cmd);
+void SV_CheckForEnhancedSavegames(void);
 void SV_RegisterSavegames(void);
 #else
-#define SV_AutoSaveBegin(cmd)       (void)0
-#define SV_AutoSaveEnd()            (void)0
-#define SV_CheckForSavegame(cmd)    (void)0
-#define SV_RegisterSavegames()      (void)0
+#define SV_AutoSaveBegin(cmd)           (void)0
+#define SV_AutoSaveEnd()                (void)0
+#define SV_CheckForSavegame(cmd)        (void)0
+#define SV_CheckForEnhancedSavegames()  (void)0
+#define SV_RegisterSavegames()          (void)0
 #endif
 
 //============================================================

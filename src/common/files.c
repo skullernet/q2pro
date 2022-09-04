@@ -16,7 +16,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#define _GNU_SOURCE
 #include "shared/shared.h"
 #include "shared/list.h"
 #include "common/common.h"
@@ -51,7 +50,7 @@ QUAKE FILESYSTEM
 #define MAX_FILE_HANDLES    32
 
 #if USE_ZLIB
-#define ZIP_MAXFILES    0x8000  // 32k files
+#define ZIP_MAXFILES    0x10000 // 64k files
 #define ZIP_BUFSIZE     0x10000 // inflate in blocks of 64k
 
 #define ZIP_BUFREADCOMMENT      1024
@@ -64,7 +63,7 @@ QUAKE FILESYSTEM
 #define ZIP_ENDHEADERMAGIC      0x06054b50
 #endif
 
-#ifdef _DEBUG
+#if USE_DEBUG
 #define FS_DPrintf(...) \
     if (fs_debug && fs_debug->integer) \
         Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__)
@@ -173,7 +172,7 @@ static list_t       fs_soft_links;
 
 static file_t       fs_files[MAX_FILE_HANDLES];
 
-#ifdef _DEBUG
+#if USE_DEBUG
 static int          fs_count_read;
 static int          fs_count_open;
 static int          fs_count_strcmp;
@@ -189,7 +188,7 @@ static int          fs_count_strlwr;
 #define FS_COUNT_STRLWR     (void)0
 #endif
 
-#ifdef _DEBUG
+#if USE_DEBUG
 static cvar_t       *fs_debug;
 #endif
 
@@ -312,10 +311,11 @@ reset:
 
 /*
 ================
-FS_NormalizePath
+FS_NormalizePathBuffer
 
 Simplifies the path, converting backslashes to slashes and removing ./ and ../
 components, as well as duplicated slashes. Any leading slashes are also skipped.
+Return value == size signifies overflow.
 
 May operate in place if in == out.
 
@@ -328,23 +328,26 @@ May operate in place if in == out.
     ./foo        -> foo
 ================
 */
-size_t FS_NormalizePath(char *out, const char *in)
+size_t FS_NormalizePathBuffer(char *out, const char *in, size_t size)
 {
     char *start = out;
     uint32_t pre = '/';
+
+    if (!size)
+        return 0;
 
     while (1) {
         int c = *in++;
 
         if (c == '/' || c == '\\' || c == 0) {
             if ((pre & 0xffffff) == (('/' << 16) | ('.' << 8) | '.')) {
-                out -= 4;
-                if (out < start) {
+                if (out < start + 4) {
                     // can't go past root
                     out = start;
                     if (c == 0)
                         break;
                 } else {
+                    out -= 4;
                     while (out > start && *out != '/')
                         out--;
                     if (c == 0)
@@ -381,33 +384,17 @@ size_t FS_NormalizePath(char *out, const char *in)
             c = '/';
         }
 
+        if (out - start == size - 1) {
+            *out = 0;
+            return size;
+        }
+
         pre = (pre << 8) | c;
         *out++ = c;
     }
 
     *out = 0;
     return out - start;
-}
-
-/*
-================
-FS_NormalizePathBuffer
-
-Buffer safe version of FS_NormalizePath. Return value >= size signifies
-overflow, empty string is stored in output buffer in this case.
-================
-*/
-size_t FS_NormalizePathBuffer(char *out, const char *in, size_t size)
-{
-    size_t len = strlen(in);
-
-    if (len >= size) {
-        if (size)
-            *out = 0;
-        return len;
-    }
-
-    return FS_NormalizePath(out, in);
 }
 
 // =============================================================================
@@ -1647,7 +1634,7 @@ static qhandle_t easy_open_read(char *buf, size_t size, unsigned mode,
         }
 
         // print normalized path in case of error
-        FS_NormalizePath(buf, buf);
+        FS_NormalizePath(buf);
 
         ret = FS_FOpenFile(buf, &f, mode);
         if (f) {
@@ -1996,7 +1983,7 @@ static void pack_hash_file(pack_t *pack, packfile_t *file)
 {
     unsigned hash;
 
-    file->namelen = FS_NormalizePath(file->name, file->name);
+    file->namelen = FS_NormalizePath(file->name);
 
     hash = FS_HashPath(file->name, pack->hash_size);
     file->hash_next = pack->file_hash[hash];
@@ -2526,48 +2513,19 @@ bool FS_WildCmp(const char *filter, const char *string)
 
 bool FS_ExtCmp(const char *ext, const char *name)
 {
-    int        c1, c2;
-    const char *e, *n, *l;
+    size_t name_len = strlen(name);
 
-    if (!name[0] || !ext[0]) {
-        return false;
+    while (1) {
+        char *p = Q_strchrnul(ext, ';');
+        size_t len = p - ext;
+        if (name_len >= len && !Q_stricmpn(name + name_len - len, ext, len))
+            return true;
+        if (!*p)
+            break;
+        ext = p + 1;
     }
 
-    for (l = name; l[1]; l++)
-        ;
-
-    for (e = ext; e[1]; e++)
-        ;
-
-rescan:
-    n = l;
-    do {
-        c1 = *e--;
-        c2 = *n--;
-
-        if (c1 == ';') {
-            break; // matched
-        }
-
-        if (c1 != c2) {
-            c1 = Q_tolower(c1);
-            c2 = Q_tolower(c2);
-            if (c1 != c2) {
-                while (e > ext) {
-                    c1 = *e--;
-                    if (c1 == ';') {
-                        goto rescan;
-                    }
-                }
-                return false;
-            }
-        }
-        if (n < name) {
-            return false;
-        }
-    } while (e >= ext);
-
-    return true;
+    return false;
 }
 
 static int infocmp(const void *p1, const void *p2)
@@ -3114,7 +3072,7 @@ static void FS_Path_f(void)
 #endif
 }
 
-#ifdef _DEBUG
+#if USE_DEBUG
 /*
 ================
 FS_Stats_f
@@ -3171,7 +3129,7 @@ static void FS_Stats_f(void)
         }
     }
 }
-#endif // _DEBUG
+#endif // USE_DEBUG
 
 static void FS_Link_g(genctx_t *ctx)
 {
@@ -3360,6 +3318,11 @@ static void setup_base_paths(void)
     // the GAME bit will be removed once gamedir is set,
     // and will be put back once gamedir is reset to basegame
     add_game_dir(FS_PATH_BASE | FS_PATH_GAME, "%s/"BASEGAME, sys_basedir->string);
+
+    if (sys_homedir->string[0]) {
+        add_game_dir(FS_PATH_BASE | FS_PATH_GAME, "%s/"BASEGAME, sys_homedir->string);
+    }
+
     fs_base_searchpaths = fs_searchpaths;
 }
 
@@ -3374,7 +3337,6 @@ static void setup_game_paths(void)
 
         // home paths override system paths
         if (sys_homedir->string[0]) {
-            add_game_dir(FS_PATH_BASE, "%s/"BASEGAME, sys_homedir->string);
             add_game_dir(FS_PATH_GAME, "%s/%s", sys_homedir->string, fs_game->string);
         }
 
@@ -3385,13 +3347,7 @@ static void setup_game_paths(void)
 
         // this var is set for compatibility with server browsers, etc
         Cvar_FullSet("gamedir", fs_game->string, CVAR_ROM | CVAR_SERVERINFO, FROM_CODE);
-
     } else {
-        if (sys_homedir->string[0]) {
-            add_game_dir(FS_PATH_BASE | FS_PATH_GAME,
-                         "%s/"BASEGAME, sys_homedir->string);
-        }
-
         // add the game bit to base paths
         for (path = fs_base_searchpaths; path; path = path->next) {
             path->mode |= FS_PATH_GAME;
@@ -3402,6 +3358,18 @@ static void setup_game_paths(void)
 
     // this var is used by the game library to find it's home directory
     Cvar_FullSet("fs_gamedir", fs_gamedir, CVAR_ROM, FROM_CODE);
+}
+
+static void setup_base_gamedir(void)
+{
+    if (sys_homedir->string[0]) {
+        Q_snprintf(fs_gamedir, sizeof(fs_gamedir), "%s/"BASEGAME, sys_homedir->string);
+    } else {
+        Q_snprintf(fs_gamedir, sizeof(fs_gamedir), "%s/"BASEGAME, sys_basedir->string);
+    }
+#ifdef _WIN32
+    FS_ReplaceSeparators(fs_gamedir, '/');
+#endif
 }
 
 /*
@@ -3422,10 +3390,7 @@ void FS_Restart(bool total)
     } else {
         // just change gamedir
         free_game_paths();
-        Q_snprintf(fs_gamedir, sizeof(fs_gamedir), "%s/"BASEGAME, sys_basedir->string);
-#ifdef _WIN32
-        FS_ReplaceSeparators(fs_gamedir, '/');
-#endif
+        setup_base_gamedir();
     }
 
     setup_game_paths();
@@ -3451,7 +3416,7 @@ static const cmdreg_t c_fs[] = {
     { "path", FS_Path_f },
     { "fdir", FS_FDir_f },
     { "dir", FS_Dir_f },
-#ifdef _DEBUG
+#if USE_DEBUG
     { "fs_stats", FS_Stats_f },
 #endif
     { "whereis", FS_WhereIs_f },
@@ -3563,7 +3528,7 @@ void FS_Init(void)
 
     Cmd_Register(c_fs);
 
-#ifdef _DEBUG
+#if USE_DEBUG
     fs_debug = Cvar_Get("fs_debug", "0", 0);
 #endif
 

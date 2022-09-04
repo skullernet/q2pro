@@ -505,6 +505,11 @@ POLYGONS BUILDING
 =============================================================================
 */
 
+#define DotProductDouble(x,y) \
+    ((double)(x)[0]*(y)[0]+\
+     (double)(x)[1]*(y)[1]+\
+     (double)(x)[2]*(y)[2])
+
 static uint32_t color_for_surface(mface_t *surf)
 {
     if (surf->drawflags & SURF_TRANS33)
@@ -583,8 +588,8 @@ static void build_surface_poly(mface_t *surf, vec_t *vbo)
         memcpy(vbo + 3, &color, sizeof(color));
 
         // texture0 coordinates
-        tc[0] = DotProduct(vbo, texinfo->axis[0]) + texinfo->offset[0];
-        tc[1] = DotProduct(vbo, texinfo->axis[1]) + texinfo->offset[1];
+        tc[0] = DotProductDouble(vbo, texinfo->axis[0]) + texinfo->offset[0];
+        tc[1] = DotProductDouble(vbo, texinfo->axis[1]) + texinfo->offset[1];
 
         if (mins[0] > tc[0]) mins[0] = tc[0];
         if (maxs[0] < tc[0]) maxs[0] = tc[0];
@@ -890,14 +895,12 @@ void GL_LoadWorld(const char *name)
     bsp_t *bsp;
     mtexinfo_t *info;
     mface_t *surf;
-    int ret;
-    imageflags_t flags;
-    int i;
+    int i, ret;
 
     ret = BSP_Load(name, &bsp);
     if (!bsp) {
         Com_Error(ERR_DROP, "%s: couldn't load %s: %s",
-                  __func__, name, Q_ErrorString(ret));
+                  __func__, name, BSP_ErrorString(ret));
     }
 
     // check if the required world model was already loaded
@@ -926,13 +929,9 @@ void GL_LoadWorld(const char *name)
 
     // register all texinfo
     for (i = 0, info = bsp->texinfo; i < bsp->numtexinfo; i++, info++) {
-        if (info->c.flags & SURF_WARP)
-            flags = IF_TURBULENT;
-        else
-            flags = IF_NONE;
-
+        imageflags_t flags = (info->c.flags & SURF_WARP) ? IF_TURBULENT : IF_NONE;
         Q_concat(buffer, sizeof(buffer), "textures/", info->name, ".wal");
-        FS_NormalizePath(buffer, buffer);
+        FS_NormalizePath(buffer);
         info->image = IMG_Find(buffer, IT_WALL, flags);
     }
 
