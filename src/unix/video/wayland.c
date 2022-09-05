@@ -731,6 +731,11 @@ static char *get_mode_list(void)
     return Z_CopyString("desktop");
 }
 
+static int get_dpi_scale(void)
+{
+    return wl.scale_factor;
+}
+
 static void pump_events(void)
 {
     while (wl_display_prepare_read(wl.display))
@@ -901,6 +906,7 @@ const vid_driver_t vid_wayland = {
 
     .set_mode = set_mode,
     .get_mode_list = get_mode_list,
+    .get_dpi_scale = get_dpi_scale,
 
     .get_proc_addr = get_proc_addr,
     .swap_buffers = swap_buffers,

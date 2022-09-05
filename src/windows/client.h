@@ -53,6 +53,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define RI_MOUSE_HWHEEL 0x0800
 #endif
 
+#ifndef WM_DPICHANGED
+#define WM_DPICHANGED   0x02E0
+#endif
+
+#ifndef USER_DEFAULT_SCREEN_DPI
+#define USER_DEFAULT_SCREEN_DPI 96
+#endif
+
 #ifndef __LPCGUID_DEFINED__
 #define __LPCGUID_DEFINED__
 typedef const GUID *LPCGUID;
@@ -104,6 +112,8 @@ typedef struct {
         bool        grabbed;
         int         mx, my;
     } mouse;
+
+    UINT (WINAPI *GetDpiForWindow)(HWND hwnd);
 } win_state_t;
 
 extern win_state_t      win;
@@ -111,6 +121,7 @@ extern win_state_t      win;
 void Win_Init(void);
 void Win_Shutdown(void);
 char *Win_GetModeList(void);
+int Win_GetDpiScale(void);
 void Win_SetMode(void);
 void Win_UpdateGamma(const byte *table);
 void Win_PumpEvents(void);
