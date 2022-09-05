@@ -13,7 +13,7 @@ foreach dep: x11_deps
 endforeach
 
 if x11_use
-  client_src += files('x11.c')
+  client_src += files('x11.c', 'keytables/evdev.c', 'keytables/at.c')
   client_deps += x11_deps
   config.set10('USE_X11', true)
 endif
@@ -71,6 +71,6 @@ endforeach
 wl_protocols_lib = static_library('wl_protocols', wl_protocols_source + wl_protocols_headers)
 wl_protocols_dep = declare_dependency(link_with: wl_protocols_lib, sources: wl_protocols_headers)
 
-client_src += files('wayland.c')
+client_src += files('wayland.c', 'keytables/evdev.c')
 client_deps += [wayland_deps, wl_protocols_dep]
 config.set10('USE_WAYLAND', true)

@@ -390,6 +390,7 @@ const vid_driver_t vid_win32wgl = {
     .pump_events = Win_PumpEvents,
 
     .get_mode_list = Win_GetModeList,
+    .get_dpi_scale = Win_GetDpiScale,
     .set_mode = Win_SetMode,
     .update_gamma = Win_UpdateGamma,
 

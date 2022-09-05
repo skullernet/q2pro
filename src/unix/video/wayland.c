@@ -28,6 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "client/ui.h"
 #include "refresh/refresh.h"
 #include "system/system.h"
+#include "keytables/keytables.h"
 
 #include <wayland-client.h>
 #include <wayland-cursor.h>
@@ -219,11 +220,11 @@ static void keyboard_handle_key(void *data, struct wl_keyboard *wl_keyboard,
                                 uint32_t serial, uint32_t time, uint32_t ev_key,
                                 uint32_t state)
 {
-    static const uint8_t keytable[] = {
-        #include "keytable_linux.h"
-    };
+    int key = 0;
 
-    int key = ev_key < q_countof(keytable) ? keytable[ev_key] : 0;
+    if (ev_key < keytable_evdev.count)
+        key = keytable_evdev.keys[ev_key];
+
     if (!key) {
         Com_DPrintf("Unknown key %d\n", ev_key);
         return;
@@ -592,6 +593,7 @@ static bool init(void)
     CHECK(wl.registry = wl_display_get_registry(wl.display), "wl_display_get_registry");
     wl_registry_add_listener(wl.registry, &wl_registry_listener, NULL);
     wl_display_roundtrip(wl.display);
+    wl_display_roundtrip(wl.display);
 
     if (!wl.compositor || !wl.xdg_wm_base || !wl.seat) {
         Com_EPrintf("Required wayland interfaces missing\n");
@@ -727,6 +729,11 @@ static void set_mode(void)
 static char *get_mode_list(void)
 {
     return Z_CopyString("desktop");
+}
+
+static int get_dpi_scale(void)
+{
+    return wl.scale_factor;
 }
 
 static void pump_events(void)
@@ -899,6 +906,7 @@ const vid_driver_t vid_wayland = {
 
     .set_mode = set_mode,
     .get_mode_list = get_mode_list,
+    .get_dpi_scale = get_dpi_scale,
 
     .get_proc_addr = get_proc_addr,
     .swap_buffers = swap_buffers,

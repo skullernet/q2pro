@@ -1030,16 +1030,11 @@ static void init_pmove_and_es_flags(client_t *newcl)
         }
         newcl->pmp.flyhack = true;
         newcl->pmp.flyfriction = 4;
-        newcl->esFlags |= MSG_ES_UMASK;
-        if (newcl->version >= PROTOCOL_VERSION_Q2PRO_LONG_SOLID) {
-            newcl->esFlags |= MSG_ES_LONGSOLID;
-        }
+        newcl->esFlags |= MSG_ES_UMASK | MSG_ES_LONGSOLID;
         if (newcl->version >= PROTOCOL_VERSION_Q2PRO_BEAM_ORIGIN) {
             newcl->esFlags |= MSG_ES_BEAMORIGIN;
         }
-        if (newcl->version >= PROTOCOL_VERSION_Q2PRO_WATERJUMP_HACK) {
-            force = 1;
-        }
+        force = 1;
     }
 	else if (newcl->protocol == PROTOCOL_VERSION_AQTION) {
 		if (sv_qwmod->integer) {
@@ -2417,6 +2412,7 @@ void SV_Shutdown(const char *finalmsg, error_type_t type)
     Z_Free(svs.entities);
 #if USE_ZLIB
     deflateEnd(&svs.z);
+    Z_Free(svs.z_buffer);
 #endif
     memset(&svs, 0, sizeof(svs));
 
