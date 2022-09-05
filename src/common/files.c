@@ -3349,7 +3349,7 @@ static void setup_game_paths(void)
         Cvar_FullSet("gamedir", fs_game->string, CVAR_ROM | CVAR_SERVERINFO, FROM_CODE);
 
         // add SteamCloud sync dir to VFS if enabled and steamID is found
-        if (strcmp(steamid->string, "0") && strcmp(steamcloudapp->string, "0") && strcmp(steamclouduser->string, "0") ) { // add check to to see if steam cloud is active!
+        if (strcmp(steamid->string, "0") && strcmp(steamcloudappenabled->string, "0") && strcmp(steamclouduserenabled->string, "0") ) { // add check to to see if steam cloud is active!
             add_game_dir(FS_PATH_GAME, "./SteamCloud/%s", steamid->string);
         }
     } else {
