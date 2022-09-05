@@ -1045,7 +1045,7 @@ static void init_pmove_and_es_flags(client_t *newcl)
 		newcl->esFlags |= MSG_ES_UMASK;
 		newcl->esFlags |= MSG_ES_LONGSOLID;
 		newcl->esFlags |= MSG_ES_BEAMORIGIN;
-		if (newcl->version >= PROTOCOL_VERSION_Q2PRO_WATERJUMP_HACK) {
+		if (newcl->version >= PROTOCOL_VERSION_Q2PRO_MINIMUM) {
 			force = 1;
 		}
 	}
