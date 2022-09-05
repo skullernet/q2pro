@@ -76,6 +76,8 @@ cvar_t  *timescale;
 cvar_t  *fixedtime;
 cvar_t  *dedicated;
 cvar_t  *steamid;
+cvar_t  *steamcloudapp;
+cvar_t  *steamclouduser;
 cvar_t  *com_version;
 
 cvar_t  *logfile_enable;    // 1 = create new, 2 = append to existing
@@ -907,6 +909,8 @@ void Qcommon_Init(int argc, char **argv)
 #if USE_CLIENT
     dedicated = Cvar_Get("dedicated", "0", CVAR_NOSET);
     steamid = Cvar_Get("steamid", "0", CVAR_NOSET);
+    steamcloudapp = Cvar_Get("steamcloudapp", "0", CVAR_NOSET);
+    steamclouduser = Cvar_Get("steamclouduser", "0", CVAR_NOSET);
     cl_running = Cvar_Get("cl_running", "0", CVAR_ROM);
     cl_paused = Cvar_Get("cl_paused", "0", CVAR_ROM);
 #else

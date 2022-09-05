@@ -84,6 +84,8 @@ cvar_t  *info_hand;
 cvar_t  *info_gender;
 cvar_t  *info_uf;
 cvar_t  *info_steamid;
+cvar_t  *info_steamcloudapp;
+cvar_t  *info_steamclouduser;
 cvar_t  *info_version;
 
 #if USE_REF
@@ -3979,6 +3981,8 @@ static void CL_InitLocal(void)
     info_gender->modified = false; // clear this so we know when user sets it manually
     info_uf = Cvar_Get("uf", "", CVAR_USERINFO);
     info_steamid = Cvar_Get("steamid", "", CVAR_USERINFO);
+    info_steamcloudapp = Cvar_Get("steamcloudapp", "", CVAR_USERINFO);
+    info_steamclouduser = Cvar_Get("steamclouduser", "", CVAR_USERINFO);
     info_version = Cvar_Get("version", "", CVAR_USERINFO);
 
 
