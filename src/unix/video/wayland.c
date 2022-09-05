@@ -741,8 +741,17 @@ static void pump_events(void)
     while (wl_display_prepare_read(wl.display))
         wl_display_dispatch_pending(wl.display);
     wl_display_flush(wl.display);
-    wl_display_read_events(wl.display);
-    wl_display_dispatch_pending(wl.display);
+
+    struct pollfd fd = {
+        .fd = wl_display_get_fd(wl.display),
+        .events = POLLIN,
+    };
+    if (poll(&fd, 1, 0) > 0 && (fd.revents & POLLIN)) {
+        wl_display_read_events(wl.display);
+        wl_display_dispatch_pending(wl.display);
+    } else {
+        wl_display_cancel_read(wl.display);
+    }
 
     if (wl.lastkeydown && wl.keyrepeat_delta
         && com_eventTime - wl.keydown_time   > wl.keyrepeat_delay
