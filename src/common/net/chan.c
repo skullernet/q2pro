@@ -217,7 +217,7 @@ static size_t NetchanOld_Transmit(netchan_t *chan, size_t length, const void *da
     if (chan->incoming_reliable_sequence)
         w2 |= 0x80000000;
 
-    SZ_TagInit(&send, send_buf, sizeof(send_buf), SZ_NC_SEND_OLD);
+    SZ_TagInit(&send, send_buf, sizeof(send_buf), "nc_send_old");
 
     SZ_WriteLong(&send, w1);
     SZ_WriteLong(&send, w2);
@@ -397,7 +397,7 @@ static size_t NetchanNew_TransmitNextFragment(netchan_t *chan)
     if (chan->incoming_reliable_sequence)
         w2 |= 0x80000000;
 
-    SZ_TagInit(&send, send_buf, sizeof(send_buf), SZ_NC_SEND_FRG);
+    SZ_TagInit(&send, send_buf, sizeof(send_buf), "nc_send_frg");
 
     SZ_WriteLong(&send, w1);
     SZ_WriteLong(&send, w2);
@@ -520,7 +520,7 @@ static size_t NetchanNew_Transmit(netchan_t *chan, size_t length, const void *da
     if (chan->incoming_reliable_sequence)
         w2 |= 0x80000000;
 
-    SZ_TagInit(&send, send_buf, sizeof(send_buf), SZ_NC_SEND_NEW);
+    SZ_TagInit(&send, send_buf, sizeof(send_buf), "nc_send_new");
 
     SZ_WriteLong(&send, w1);
     SZ_WriteLong(&send, w2);
@@ -764,8 +764,8 @@ netchan_t *Netchan_Setup(netsrc_t sock, netchan_type_t type,
         chan->fragment_out_buf = chan->message_buf + MAX_MSGLEN * 3;
 
         SZ_Init(&chan->message, chan->message_buf, MAX_MSGLEN);
-        SZ_TagInit(&chan->fragment_in, chan->fragment_in_buf, MAX_MSGLEN, SZ_NC_FRG_IN);
-        SZ_TagInit(&chan->fragment_out, chan->fragment_out_buf, MAX_MSGLEN, SZ_NC_FRG_OUT);
+        SZ_TagInit(&chan->fragment_in, chan->fragment_in_buf, MAX_MSGLEN, "nc_frg_in");
+        SZ_TagInit(&chan->fragment_out, chan->fragment_out_buf, MAX_MSGLEN, "nc_frg_out");
         break;
 
     default:

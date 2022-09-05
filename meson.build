@@ -210,7 +210,13 @@ if cc.get_argument_syntax() == 'gcc'
     add_global_arguments('-msse2', '-mfpmath=sse', language: 'c')
   endif
 
-  common_args += cc.get_supported_arguments('-Wpointer-arith', '-Wformat-security')
+  test_args = [
+    '-Wpointer-arith',
+    '-Wformat-security',
+    '-Werror=vla',
+  ]
+
+  common_args += cc.get_supported_arguments(test_args)
 
   if win32
     common_args += '-D__USE_MINGW_ANSI_STDIO=1'

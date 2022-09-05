@@ -149,6 +149,30 @@ clear:
     draw.scissor = true;
 }
 
+static int get_auto_scale(void)
+{
+    int scale = 1;
+
+    if (r_config.height < r_config.width) {
+        if (r_config.height >= 2160)
+            scale = 4;
+        else if (r_config.height >= 1080)
+            scale = 2;
+    } else {
+        if (r_config.width >= 3840)
+            scale = 4;
+        else if (r_config.width >= 1920)
+            scale = 2;
+    }
+
+    if (vid.get_dpi_scale) {
+        int min_scale = vid.get_dpi_scale();
+        return max(scale, min_scale);
+    }
+
+    return scale;
+}
+
 float R_ClampScale(cvar_t *var)
 {
     if (!var)
@@ -157,19 +181,7 @@ float R_ClampScale(cvar_t *var)
     if (var->value)
         return 1.0f / Cvar_ClampValue(var, 1.0f, 10.0f);
 
-    if (r_config.height < r_config.width) {
-        if (r_config.height >= 2160)
-            return 0.25f;
-        if (r_config.height >= 1080)
-            return 0.5f;
-    } else {
-        if (r_config.width >= 3840)
-            return 0.25f;
-        if (r_config.width >= 1920)
-            return 0.5f;
-    }
-
-    return 1.0f;
+    return 1.0f / get_auto_scale();
 }
 
 void R_SetScale(float scale)

@@ -343,6 +343,18 @@ static LONG set_fullscreen_mode(void)
     return ret;
 }
 
+int Win_GetDpiScale(void)
+{
+    if (win.GetDpiForWindow) {
+        int dpi = win.GetDpiForWindow(win.wnd);
+        if (dpi) {
+            int scale = (dpi + USER_DEFAULT_SCREEN_DPI / 2) / USER_DEFAULT_SCREEN_DPI;
+            return clamp(scale, 1, 10);
+        }
+    }
+    return 1;
+}
+
 /*
 ============
 Win_SetMode
@@ -714,10 +726,21 @@ static void raw_input_event(HRAWINPUT handle)
     }
 }
 
+static int get_window_dpi(void)
+{
+    if (win.GetDpiForWindow) {
+        int dpi = win.GetDpiForWindow(win.wnd);
+        if (dpi)
+            return dpi;
+    }
+    return USER_DEFAULT_SCREEN_DPI;
+}
+
 static void pos_changing_event(HWND wnd, WINDOWPOS *pos)
 {
     LONG style;
     RECT rc;
+    int dpi;
 
     if (win.flags & QVF_FULLSCREEN)
         return;
@@ -726,12 +749,13 @@ static void pos_changing_event(HWND wnd, WINDOWPOS *pos)
         return;
 
     style = GetWindowLong(wnd, GWL_STYLE);
+    dpi = get_window_dpi();
 
     // calculate size of non-client area
     rc.left = 0;
     rc.top = 0;
-    rc.right = 320;
-    rc.bottom = 240;
+    rc.right = MulDiv(320, dpi, USER_DEFAULT_SCREEN_DPI);
+    rc.bottom = MulDiv(240, dpi, USER_DEFAULT_SCREEN_DPI);
 
     AdjustWindowRect(&rc, style, FALSE);
 
@@ -846,6 +870,10 @@ static LRESULT WINAPI Win_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
             return FALSE;
         break;
 
+    case WM_DPICHANGED:
+        win.mode_changed |= MODE_SIZE;
+        break;
+
     default:
         break;
     }
@@ -923,6 +951,8 @@ void Win_Init(void)
     win_noborder->changed = win_style_changed;
 
     win_disablewinkey_changed(win_disablewinkey);
+
+    win.GetDpiForWindow = (PVOID)GetProcAddress(GetModuleHandle("user32"), "GetDpiForWindow");
 
     // register the frame class
     memset(&wc, 0, sizeof(wc));

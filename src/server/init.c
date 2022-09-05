@@ -349,17 +349,12 @@ void SV_InitGame(unsigned mvd_spawn)
     } else {    // non-deathmatch, non-coop is one player
         Cvar_Set("maxclients", "1");
     }
-    Cvar_ClampInteger(sv_maxclients, 1, CLIENTNUM_RESERVED);
+    Cvar_ClampInteger(sv_maxclients, 1, MAX_CLIENTS);
 
     // enable networking
     if (sv_maxclients->integer > 1) {
         NET_Config(NET_SERVER);
     }
-
-    svs.client_pool = SV_Mallocz(sizeof(client_t) * sv_maxclients->integer);
-
-    svs.num_entities = sv_maxclients->integer * UPDATE_BACKUP * MAX_PACKET_ENTITIES;
-    svs.entities = SV_Mallocz(sizeof(entity_packed_t) * svs.num_entities);
 
     // initialize MVD server
     if (!mvd_spawn) {
@@ -368,6 +363,11 @@ void SV_InitGame(unsigned mvd_spawn)
 
     Cvar_ClampInteger(sv_reserved_slots, 0, sv_maxclients->integer - 1);
 
+    svs.client_pool = SV_Mallocz(sizeof(client_t) * sv_maxclients->integer);
+
+    svs.num_entities = sv_maxclients->integer * UPDATE_BACKUP * MAX_PACKET_ENTITIES;
+    svs.entities = SV_Mallocz(sizeof(entity_packed_t) * svs.num_entities);
+
 #if USE_ZLIB
     svs.z.zalloc = SV_zalloc;
     svs.z.zfree = SV_zfree;
@@ -375,6 +375,8 @@ void SV_InitGame(unsigned mvd_spawn)
                      -MAX_WBITS, 9, Z_DEFAULT_STRATEGY) != Z_OK) {
         Com_Error(ERR_FATAL, "%s: deflateInit2() failed", __func__);
     }
+    svs.z_buffer_size = ZPACKET_HEADER + deflateBound(&svs.z, MAX_MSGLEN);
+    svs.z_buffer = SV_Malloc(svs.z_buffer_size);
 #endif
 
     // init game

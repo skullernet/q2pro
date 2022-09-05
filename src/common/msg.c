@@ -56,8 +56,8 @@ the allow underflow flag as appropriate.
 */
 void MSG_Init(void)
 {
-    SZ_TagInit(&msg_read, msg_read_buffer, MAX_MSGLEN, SZ_MSG_READ);
-    SZ_TagInit(&msg_write, msg_write_buffer, MAX_MSGLEN, SZ_MSG_WRITE);
+    SZ_TagInit(&msg_read, msg_read_buffer, MAX_MSGLEN, "msg_read");
+    SZ_TagInit(&msg_write, msg_write_buffer, MAX_MSGLEN, "msg_write");
 }
 
 
@@ -363,10 +363,9 @@ MSG_WriteDeltaUsercmd_Enhanced
 =============
 */
 int MSG_WriteDeltaUsercmd_Enhanced(const usercmd_t *from,
-                                   const usercmd_t *cmd,
-                                   int       version)
+                                   const usercmd_t *cmd)
 {
-    int     bits, delta, count;
+    int     bits, delta;
 
     if (!from) {
         from = &nullUserCmd;
@@ -425,20 +424,14 @@ int MSG_WriteDeltaUsercmd_Enhanced(const usercmd_t *from,
         MSG_WriteBits(cmd->angles[2], -16);
     }
 
-    if (version >= PROTOCOL_VERSION_Q2PRO_UCMD) {
-        count = -10;
-    } else {
-        count = -16;
-    }
-
     if (bits & CM_FORWARD) {
-        MSG_WriteBits(cmd->forwardmove, count);
+        MSG_WriteBits(cmd->forwardmove, -10);
     }
     if (bits & CM_SIDE) {
-        MSG_WriteBits(cmd->sidemove, count);
+        MSG_WriteBits(cmd->sidemove, -10);
     }
     if (bits & CM_UP) {
-        MSG_WriteBits(cmd->upmove, count);
+        MSG_WriteBits(cmd->upmove, -10);
     }
 
     if (bits & CM_BUTTONS) {
@@ -1486,7 +1479,7 @@ void MSG_WriteDeltaPlayerstate_Packet(const player_packed_t *from,
     int     pflags;
     int     statbits;
 
-    if (number < 0 || number >= MAX_CLIENTS)
+    if (number < 0 || number >= CLIENTNUM_NONE)
         Com_Error(ERR_DROP, "%s: bad number: %d", __func__, number);
 
     if (!to) {
@@ -1989,11 +1982,9 @@ int MSG_ReadBits(int bits)
     return value;
 }
 
-void MSG_ReadDeltaUsercmd_Enhanced(const usercmd_t *from,
-                                   usercmd_t *to,
-                                   int       version)
+void MSG_ReadDeltaUsercmd_Enhanced(const usercmd_t *from, usercmd_t *to)
 {
-    int bits, count;
+    int bits;
 
     if (from) {
         memcpy(to, from, sizeof(*to));
@@ -2027,20 +2018,14 @@ void MSG_ReadDeltaUsercmd_Enhanced(const usercmd_t *from,
     }
 
 // read movement
-    if (version >= PROTOCOL_VERSION_Q2PRO_UCMD) {
-        count = -10;
-    } else {
-        count = -16;
-    }
-
     if (bits & CM_FORWARD) {
-        to->forwardmove = MSG_ReadBits(count);
+        to->forwardmove = MSG_ReadBits(-10);
     }
     if (bits & CM_SIDE) {
-        to->sidemove = MSG_ReadBits(count);
+        to->sidemove = MSG_ReadBits(-10);
     }
     if (bits & CM_UP) {
-        to->upmove = MSG_ReadBits(count);
+        to->upmove = MSG_ReadBits(-10);
     }
 
 // read buttons
