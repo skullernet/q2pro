@@ -614,23 +614,10 @@ static bool choose_config(r_opengl_config_t *cfg, EGLConfig *config)
     return true;
 }
 
-#define CHECK(x, y)                                         \
-    if (!(x)) {                                             \
-        Com_EPrintf("%s failed: %s\n", y, strerror(errno)); \
-        goto fail;                                          \
-    }
-
-#define CHECK_DEC(x, y)                 \
-    if (!(x)) {                         \
-        Com_EPrintf("%s failed\n", y);  \
-        goto fail;                      \
-    }
-
-#define CHECK_EGL(x, y) \
-    if (!(x)) {         \
-        egl_error(y);   \
-        goto fail;      \
-    }
+#define CHECK(cond, stmt)     if (!(cond)) { stmt; goto fail; }
+#define CHECK_ERR(cond, what) CHECK(cond, Com_EPrintf("%s failed: %s\n", what, strerror(errno)))
+#define CHECK_UNK(cond, what) CHECK(cond, Com_EPrintf("%s failed\n", what))
+#define CHECK_EGL(cond, what) CHECK(cond, egl_error(what))
 
 static void shutdown(void);
 
@@ -645,8 +632,8 @@ static bool init(void)
     wl.keyrepeat_delta = 30;
     wl.keyrepeat_delay = 600;
 
-    CHECK(wl.display = wl_display_connect(NULL), "wl_display_connect");
-    CHECK(wl.registry = wl_display_get_registry(wl.display), "wl_display_get_registry");
+    CHECK_ERR(wl.display = wl_display_connect(NULL), "wl_display_connect");
+    CHECK_ERR(wl.registry = wl_display_get_registry(wl.display), "wl_display_get_registry");
     wl_registry_add_listener(wl.registry, &wl_registry_listener, NULL);
     wl_display_roundtrip(wl.display);
     wl_display_roundtrip(wl.display);
@@ -656,7 +643,7 @@ static bool init(void)
         goto fail;
     }
 
-    CHECK(wl.egl_display = eglGetDisplay(wl.display), "eglGetDisplay");
+    CHECK_UNK(wl.egl_display = eglGetDisplay(wl.display), "eglGetDisplay");
 
     EGLint egl_major, egl_minor;
     CHECK_EGL(eglInitialize(wl.egl_display, &egl_major, &egl_minor), "eglInitialize");
@@ -681,12 +668,12 @@ static bool init(void)
     wl_list_for_each(output, &wl.outputs, link)
         wl.scale_factor = max(wl.scale_factor, output->scale);
 
-    CHECK(wl.surface = wl_compositor_create_surface(wl.compositor), "wl_compositor_create_surface");
+    CHECK_ERR(wl.surface = wl_compositor_create_surface(wl.compositor), "wl_compositor_create_surface");
     wl_surface_add_listener(wl.surface, &surface_listener, NULL);
     wl_surface_set_buffer_scale(wl.surface, wl.scale_factor);
 
-    CHECK_DEC(wl.libdecor = libdecor_new(wl.display, &libdecor_interface), "libdecor_new");
-    CHECK_DEC(wl.frame = libdecor_decorate(wl.libdecor, wl.surface, &frame_interface, NULL), "libdecor_decorate");
+    CHECK_UNK(wl.libdecor = libdecor_new(wl.display, &libdecor_interface), "libdecor_new");
+    CHECK_UNK(wl.frame = libdecor_decorate(wl.libdecor, wl.surface, &frame_interface, NULL), "libdecor_decorate");
     libdecor_frame_set_title(wl.frame, PRODUCT);
     libdecor_frame_set_app_id(wl.frame, APPLICATION);
     libdecor_frame_set_min_content_size(wl.frame, 320, 240);
@@ -697,7 +684,7 @@ static bool init(void)
             zwp_primary_selection_device_v1_add_listener(wl.selection_device, &selection_device_listener, NULL);
     }
 
-    CHECK(wl.cursor_surface = wl_compositor_create_surface(wl.compositor), "wl_compositor_create_surface");
+    CHECK_ERR(wl.cursor_surface = wl_compositor_create_surface(wl.compositor), "wl_compositor_create_surface");
     reload_cursor();
 
     EGLint ctx_attr[] = {
@@ -707,7 +694,7 @@ static bool init(void)
     if (egl_major == 1 && egl_minor < 5)
         ctx_attr[0] = EGL_NONE;
 
-    CHECK(wl.egl_window = wl_egl_window_create(wl.surface, wl.width * wl.scale_factor, wl.height * wl.scale_factor), "wl_egl_window_create");
+    CHECK_ERR(wl.egl_window = wl_egl_window_create(wl.surface, wl.width * wl.scale_factor, wl.height * wl.scale_factor), "wl_egl_window_create");
     CHECK_EGL(wl.egl_surface = eglCreateWindowSurface(wl.egl_display, config, wl.egl_window, NULL), "eglCreateWindowSurface");
     CHECK_EGL(wl.egl_context = eglCreateContext(wl.egl_display, config, EGL_NO_CONTEXT, ctx_attr), "eglCreateContext");
     CHECK_EGL(eglMakeCurrent(wl.egl_display, wl.egl_surface, wl.egl_surface, wl.egl_context), "eglMakeCurrent");
