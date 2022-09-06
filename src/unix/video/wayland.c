@@ -34,8 +34,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <wayland-cursor.h>
 #include <wayland-egl.h>
 
-#include "xdg-shell.h"
-#include "xdg-decoration-unstable-v1.h"
+#include <libdecor.h>
+
 #include "relative-pointer-unstable-v1.h"
 #include "pointer-constraints-unstable-v1.h"
 #include "primary-selection-unstable-v1.h"
@@ -57,10 +57,9 @@ static struct {
     struct wl_display *display;
     struct wl_registry *registry;
     struct wl_compositor *compositor;
-    struct xdg_wm_base *xdg_wm_base;
     struct wl_surface *surface;
-    struct xdg_surface *xdg_surface;
-    struct xdg_toplevel *xdg_toplevel;
+    struct libdecor *libdecor;
+    struct libdecor_frame *frame;
     struct wl_egl_window *egl_window;
     struct wl_seat *seat;
     struct wl_pointer *pointer;
@@ -68,8 +67,6 @@ static struct {
     struct wl_shm *shm;
     struct wl_cursor_theme *cursor_theme;
     struct wl_surface *cursor_surface;
-    struct zxdg_decoration_manager_v1 *xdg_decoration_manager;
-    struct zxdg_toplevel_decoration_v1 *xdg_toplevel_decoration;
     struct zwp_relative_pointer_manager_v1 *rel_pointer_manager;
     struct zwp_relative_pointer_v1 *rel_pointer;
     struct zwp_pointer_constraints_v1 *pointer_constraints;
@@ -82,9 +79,9 @@ static struct {
     EGLSurface egl_surface;
     EGLContext egl_context;
 
-    int32_t scale_factor;
-    int32_t width;
-    int32_t height;
+    int scale_factor;
+    int width;
+    int height;
     vidFlags_t flags;
 
     bool mouse_grabbed;
@@ -361,9 +358,6 @@ static void mode_changed(void)
     if (wl.egl_window)
         wl_egl_window_resize(wl.egl_window, width, height, 0, 0);
 
-    if (!(wl.flags & QVF_FULLSCREEN))
-        Cvar_SetByVar(vid_geometry, va("%dx%d", wl.width, wl.height), FROM_CODE);
-
     R_ModeChanged(width, height, wl.flags);
     SCR_ModeChanged();
 }
@@ -394,57 +388,69 @@ static const struct wl_surface_listener surface_listener = {
     surface_handle_leave,
 };
 
-static void xdg_surface_configure(void *data, struct xdg_surface *xdg_surface, uint32_t serial)
+static void get_default_geometry(int *width, int *height)
 {
-    xdg_surface_ack_configure(xdg_surface, serial);
+    vrect_t rc;
+    VID_GetGeometry(&rc);
+    *width = rc.width;
+    *height = rc.height;
 }
 
-static const struct xdg_surface_listener xdg_surface_listener = {
-    xdg_surface_configure,
-};
-
-static void xdg_toplevel_configure(void *data, struct xdg_toplevel *toplevel,
-                                   int32_t width, int32_t height, struct wl_array *states)
+static void frame_configure(struct libdecor_frame *frame,
+                            struct libdecor_configuration *configuration,
+                            void *user_data)
 {
-    if (width == 0 || height == 0) {
-        vrect_t rc;
-        VID_GetGeometry(&rc);
-        width = rc.width;
-        height = rc.height;
-    }
+    int width, height;
+
+    if (!libdecor_configuration_get_content_size(configuration, frame, &width, &height))
+        get_default_geometry(&width, &height);
 
     wl.width = width;
     wl.height = height;
-    wl.flags = 0;
 
-    enum xdg_toplevel_state *state;
-    wl_array_for_each(state, states) {
-        if (*state == XDG_TOPLEVEL_STATE_FULLSCREEN) {
-            wl.flags = QVF_FULLSCREEN;
-            break;
-        }
+    enum libdecor_window_state window_state;
+    if (libdecor_configuration_get_window_state(configuration, &window_state)) {
+        if (window_state & LIBDECOR_WINDOW_STATE_FULLSCREEN)
+            wl.flags |= QVF_FULLSCREEN;
+        else
+            wl.flags &= ~QVF_FULLSCREEN;
     }
+
+    struct libdecor_state *state = libdecor_state_new(width, height);
+    libdecor_frame_commit(frame, state, configuration);
+    libdecor_state_free(state);
+
+    if (libdecor_frame_is_floating(wl.frame))
+        Cvar_SetByVar(vid_geometry, va("%dx%d", width, height), FROM_CODE);
 
     mode_changed();
 }
 
-static void xdg_toplevel_close(void *data, struct xdg_toplevel *xdg_toplevel)
+static void frame_close(struct libdecor_frame *frame, void *user_data)
 {
     Cbuf_AddText(&cmd_buffer, "quit\n");
 }
 
-static const struct xdg_toplevel_listener xdg_toplevel_listener = {
-    xdg_toplevel_configure,
-    xdg_toplevel_close,
-};
-
-static void xdg_wm_base_ping(void *data, struct xdg_wm_base *xdg_wm_base, uint32_t serial)
+static void frame_commit(struct libdecor_frame *frame, void *user_data)
 {
-    xdg_wm_base_pong(xdg_wm_base, serial);
+    wl_surface_commit(wl.surface);
 }
 
-static const struct xdg_wm_base_listener xdg_wm_base_listener = {
-    xdg_wm_base_ping,
+static struct libdecor_frame_interface frame_interface = {
+    frame_configure,
+    frame_close,
+    frame_commit,
+};
+
+static void libdecor_error(struct libdecor *context,
+                           enum libdecor_error error,
+                           const char *message)
+{
+    Com_EPrintf("libdecor: %s\n", message);
+}
+
+static struct libdecor_interface libdecor_interface = {
+    libdecor_error,
 };
 
 static void handle_data_offer(void *data,
@@ -486,22 +492,11 @@ static void registry_global(void *data, struct wl_registry *wl_registry,
         return;
     }
 
-    if (!strcmp(interface, xdg_wm_base_interface.name)) {
-        wl.xdg_wm_base = wl_registry_bind(wl_registry, name, &xdg_wm_base_interface, 1);
-        xdg_wm_base_add_listener(wl.xdg_wm_base, &xdg_wm_base_listener, NULL);
-        return;
-    }
-
     if (!strcmp(interface, wl_output_interface.name)) {
         struct wayland_output *out = Z_Malloc(sizeof(*out));
         out->output = wl_registry_bind(wl_registry, name, &wl_output_interface, 2);
         wl_output_add_listener(out->output, &output_listener, NULL);
         wl_list_insert(&wl.output_list, &out->link);
-        return;
-    }
-
-    if (!strcmp(interface, zxdg_decoration_manager_v1_interface.name)) {
-        wl.xdg_decoration_manager = wl_registry_bind(wl_registry, name, &zxdg_decoration_manager_v1_interface, 1);
         return;
     }
 
@@ -570,6 +565,12 @@ static bool choose_config(r_opengl_config_t *cfg, EGLConfig *config)
         goto fail;                                          \
     }
 
+#define CHECK_DEC(x, y)                 \
+    if (!(x)) {                         \
+        Com_EPrintf("%s failed\n", y);  \
+        goto fail;                      \
+    }
+
 #define CHECK_EGL(x, y) \
     if (!(x)) {         \
         egl_error(y);   \
@@ -583,8 +584,7 @@ static bool init(void)
     wl_list_init(&wl.output_list);
 
     wl.scale_factor = 1;
-    wl.width = 640;
-    wl.height = 480;
+    get_default_geometry(&wl.width, &wl.height);
 
     wl.keyrepeat_delta = 30;
     wl.keyrepeat_delay = 600;
@@ -595,7 +595,7 @@ static bool init(void)
     wl_display_roundtrip(wl.display);
     wl_display_roundtrip(wl.display);
 
-    if (!wl.compositor || !wl.xdg_wm_base || !wl.seat) {
+    if (!wl.compositor || !wl.seat) {
         Com_EPrintf("Required wayland interfaces missing\n");
         goto fail;
     }
@@ -624,20 +624,11 @@ static bool init(void)
     CHECK(wl.surface = wl_compositor_create_surface(wl.compositor), "wl_compositor_create_surface");
     wl_surface_add_listener(wl.surface, &surface_listener, NULL);
 
-    CHECK(wl.xdg_surface = xdg_wm_base_get_xdg_surface(wl.xdg_wm_base, wl.surface), "xdg_wm_base_get_xdg_surface");
-    xdg_surface_add_listener(wl.xdg_surface, &xdg_surface_listener, NULL);
-
-    CHECK(wl.xdg_toplevel = xdg_surface_get_toplevel(wl.xdg_surface), "xdg_surface_get_toplevel");
-    xdg_toplevel_add_listener(wl.xdg_toplevel, &xdg_toplevel_listener, NULL);
-    xdg_toplevel_set_title(wl.xdg_toplevel, PRODUCT);
-    xdg_toplevel_set_app_id(wl.xdg_toplevel, APPLICATION);
-    xdg_toplevel_set_min_size(wl.xdg_toplevel, 320, 240);
-
-    if (wl.xdg_decoration_manager) {
-        wl.xdg_toplevel_decoration = zxdg_decoration_manager_v1_get_toplevel_decoration(wl.xdg_decoration_manager, wl.xdg_toplevel);
-        if (wl.xdg_toplevel_decoration)
-            zxdg_toplevel_decoration_v1_set_mode(wl.xdg_toplevel_decoration, ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
-    }
+    CHECK_DEC(wl.libdecor = libdecor_new(wl.display, &libdecor_interface), "libdecor_new");
+    CHECK_DEC(wl.frame = libdecor_decorate(wl.libdecor, wl.surface, &frame_interface, NULL), "libdecor_decorate");
+    libdecor_frame_set_title(wl.frame, PRODUCT);
+    libdecor_frame_set_app_id(wl.frame, APPLICATION);
+    libdecor_frame_set_min_content_size(wl.frame, 320, 240);
 
     if (wl.selection_device_manager) {
         wl.selection_device = zwp_primary_selection_device_manager_v1_get_device(wl.selection_device_manager, wl.seat);
@@ -660,7 +651,7 @@ static bool init(void)
     CHECK_EGL(wl.egl_context = eglCreateContext(wl.egl_display, config, EGL_NO_CONTEXT, ctx_attr), "eglCreateContext");
     CHECK_EGL(eglMakeCurrent(wl.egl_display, wl.egl_surface, wl.egl_surface, wl.egl_context), "eglMakeCurrent");
 
-    wl_surface_commit(wl.surface);
+    libdecor_frame_map(wl.frame);
     wl_display_roundtrip(wl.display);
 
     CL_Activate(ACT_RESTORED);
@@ -692,11 +683,8 @@ static void shutdown(void)
 
     DESTROY(wl.egl_window, wl_egl_window_destroy);
     DESTROY(wl.egl_display, eglTerminate);
-    DESTROY(wl.xdg_toplevel_decoration, zxdg_toplevel_decoration_v1_destroy);
-    DESTROY(wl.xdg_decoration_manager, zxdg_decoration_manager_v1_destroy);
-    DESTROY(wl.xdg_toplevel, xdg_toplevel_destroy);
-    DESTROY(wl.xdg_surface, xdg_surface_destroy);
-    DESTROY(wl.xdg_wm_base, xdg_wm_base_destroy);
+    DESTROY(wl.frame, libdecor_frame_unref);
+    DESTROY(wl.libdecor, libdecor_unref);
     DESTROY(wl.rel_pointer, zwp_relative_pointer_v1_destroy);
     DESTROY(wl.rel_pointer_manager, zwp_relative_pointer_manager_v1_destroy);
     DESTROY(wl.locked_pointer, zwp_locked_pointer_v1_destroy);
@@ -721,9 +709,9 @@ static void shutdown(void)
 static void set_mode(void)
 {
     if (vid_fullscreen->integer)
-        xdg_toplevel_set_fullscreen(wl.xdg_toplevel, NULL);
+        libdecor_frame_set_fullscreen(wl.frame, NULL);
     else
-        xdg_toplevel_unset_fullscreen(wl.xdg_toplevel);
+        libdecor_frame_unset_fullscreen(wl.frame);
 }
 
 static char *get_mode_list(void)
@@ -738,20 +726,7 @@ static int get_dpi_scale(void)
 
 static void pump_events(void)
 {
-    while (wl_display_prepare_read(wl.display))
-        wl_display_dispatch_pending(wl.display);
-    wl_display_flush(wl.display);
-
-    struct pollfd fd = {
-        .fd = wl_display_get_fd(wl.display),
-        .events = POLLIN,
-    };
-    if (poll(&fd, 1, 0) > 0 && (fd.revents & POLLIN)) {
-        wl_display_read_events(wl.display);
-        wl_display_dispatch_pending(wl.display);
-    } else {
-        wl_display_cancel_read(wl.display);
-    }
+    libdecor_dispatch(wl.libdecor, 0);
 
     if (wl.lastkeydown && wl.keyrepeat_delta
         && com_eventTime - wl.keydown_time   > wl.keyrepeat_delay
