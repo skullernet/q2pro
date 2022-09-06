@@ -711,6 +711,7 @@ static bool init(void)
     CHECK_EGL(wl.egl_surface = eglCreateWindowSurface(wl.egl_display, config, wl.egl_window, NULL), "eglCreateWindowSurface");
     CHECK_EGL(wl.egl_context = eglCreateContext(wl.egl_display, config, EGL_NO_CONTEXT, ctx_attr), "eglCreateContext");
     CHECK_EGL(eglMakeCurrent(wl.egl_display, wl.egl_surface, wl.egl_surface, wl.egl_context), "eglMakeCurrent");
+    CHECK_EGL(eglSwapInterval(wl.egl_display, 0), "eglSwapInterval");
 
     libdecor_frame_map(wl.frame);
     wl_display_roundtrip(wl.display);
@@ -806,11 +807,6 @@ static void *get_proc_addr(const char *sym)
 static void swap_buffers(void)
 {
     eglSwapBuffers(wl.egl_display, wl.egl_surface);
-}
-
-static void swap_interval(int val)
-{
-    eglSwapInterval(wl.egl_display, val);
 }
 
 // input-event-codes.h defines this
@@ -955,7 +951,6 @@ const vid_driver_t vid_wayland = {
 
     .get_proc_addr = get_proc_addr,
     .swap_buffers = swap_buffers,
-    .swap_interval = swap_interval,
 
     .get_selection_data = get_selection_data,
 
