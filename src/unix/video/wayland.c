@@ -48,9 +48,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <unistd.h>
 #include <poll.h>
 
-struct wayland_output {
+struct output {
     struct wl_list link;
-    struct wl_output *output;
+    struct wl_list surf;
+    uint32_t id;
+    int scale;
+    struct wl_output *wl_output;
 };
 
 static struct {
@@ -100,8 +103,11 @@ static struct {
     unsigned keydown_time;
     unsigned keyrepeat_time;
 
-    struct wl_list output_list;
+    struct wl_list outputs;
+    struct wl_list surface_outputs;
 } wl;
+
+static const char *proxy_tag = APPLICATION;
 
 static void set_cursor(void)
 {
@@ -284,33 +290,6 @@ static const struct wl_seat_listener seat_listener = {
     seat_handle_caps,
 };
 
-static void output_handle_geometry(void *data, struct wl_output *wl_output, int32_t x, int32_t y,
-                                   int32_t physical_width, int32_t physical_height, int32_t subpixel,
-                                   const char *make, const char *model, int32_t transform)
-{
-}
-
-static void output_handle_mode(void *data, struct wl_output *wl_output, uint32_t flags,
-                               int32_t width, int32_t height, int32_t refresh)
-{
-}
-
-static void output_handle_done(void *data, struct wl_output *wl_output)
-{
-}
-
-static void output_handle_scale(void *data, struct wl_output *wl_output, int32_t factor)
-{
-    wl_output_set_user_data(wl_output, (void *)(intptr_t)factor);
-}
-
-static const struct wl_output_listener output_listener = {
-    output_handle_geometry,
-    output_handle_mode,
-    output_handle_done,
-    output_handle_scale,
-};
-
 static void reload_cursor(void)
 {
     if (!wl.shm)
@@ -362,30 +341,91 @@ static void mode_changed(void)
     SCR_ModeChanged();
 }
 
-static void surface_handle_enter(void *data, struct wl_surface *wl_surface,
-                                 struct wl_output *output)
+static void update_scale(void)
 {
-    int32_t factor = (int32_t)(intptr_t)wl_output_get_user_data(output);
-    if (!factor)
-        return;
+    struct output *output;
+    int scale = 1;
 
-    wl_surface_set_buffer_scale(wl.surface, factor);
+    wl_list_for_each(output, &wl.surface_outputs, surf)
+        scale = max(scale, output->scale);
+
+    wl_surface_set_buffer_scale(wl.surface, scale);
     wl_surface_commit(wl.surface);
-    if (wl.scale_factor != factor) {
-        wl.scale_factor = factor;
+    if (wl.scale_factor != scale) {
+        wl.scale_factor = scale;
         reload_cursor();
         mode_changed();
     }
 }
 
-static void surface_handle_leave(void *data, struct wl_surface *wl_surface,
-                                 struct wl_output *output)
+static void surface_handle_enter(void *data, struct wl_surface *wl_surface,
+                                 struct wl_output *wl_output)
 {
+    if (wl_proxy_get_tag((struct wl_proxy *)wl_output) != &proxy_tag)
+        return;
+
+    struct output *output = wl_output_get_user_data(wl_output);
+    if (!output)
+        return;
+    if (!wl_list_empty(&output->surf))
+        return;
+
+    wl_list_insert(&wl.surface_outputs, &output->surf);
+    update_scale();
+}
+
+static void surface_handle_leave(void *data, struct wl_surface *wl_surface,
+                                 struct wl_output *wl_output)
+{
+    if (wl_proxy_get_tag((struct wl_proxy *)wl_output) != &proxy_tag)
+        return;
+
+    struct output *output = wl_output_get_user_data(wl_output);
+    if (!output)
+        return;
+    if (wl_list_empty(&output->surf))
+        return;
+
+    wl_list_remove(&output->surf);
+    wl_list_init(&output->surf);
+    update_scale();
 }
 
 static const struct wl_surface_listener surface_listener = {
     surface_handle_enter,
     surface_handle_leave,
+};
+
+static void output_handle_geometry(void *data, struct wl_output *wl_output, int32_t x, int32_t y,
+                                   int32_t physical_width, int32_t physical_height, int32_t subpixel,
+                                   const char *make, const char *model, int32_t transform)
+{
+}
+
+static void output_handle_mode(void *data, struct wl_output *wl_output, uint32_t flags,
+                               int32_t width, int32_t height, int32_t refresh)
+{
+}
+
+static void output_handle_done(void *data, struct wl_output *wl_output)
+{
+    struct output *output = data;
+    if (!wl_list_empty(&output->surf))
+        update_scale();
+}
+
+static void output_handle_scale(void *data, struct wl_output *wl_output, int32_t factor)
+{
+    struct output *output = data;
+    if (factor > 0)
+        output->scale = factor;
+}
+
+static const struct wl_output_listener output_listener = {
+    output_handle_geometry,
+    output_handle_mode,
+    output_handle_done,
+    output_handle_scale,
 };
 
 static void get_default_geometry(int *width, int *height)
@@ -493,10 +533,14 @@ static void registry_global(void *data, struct wl_registry *wl_registry,
     }
 
     if (!strcmp(interface, wl_output_interface.name)) {
-        struct wayland_output *out = Z_Malloc(sizeof(*out));
-        out->output = wl_registry_bind(wl_registry, name, &wl_output_interface, 2);
-        wl_output_add_listener(out->output, &output_listener, NULL);
-        wl_list_insert(&wl.output_list, &out->link);
+        struct output *output = Z_Malloc(sizeof(*output));
+        output->id = name;
+        output->scale = 1;
+        output->wl_output = wl_registry_bind(wl_registry, name, &wl_output_interface, 2);
+        wl_list_init(&output->surf);
+        wl_proxy_set_tag((struct wl_proxy *)output->wl_output, &proxy_tag);
+        wl_output_add_listener(output->wl_output, &output_listener, output);
+        wl_list_insert(&wl.outputs, &output->link);
         return;
     }
 
@@ -518,6 +562,17 @@ static void registry_global(void *data, struct wl_registry *wl_registry,
 
 static void registry_global_remove(void *data, struct wl_registry *wl_registry, uint32_t name)
 {
+    struct output *output;
+
+    wl_list_for_each(output, &wl.outputs, link) {
+        if (output->id == name) {
+            wl_list_remove(&output->link);
+            wl_list_remove(&output->surf);
+            wl_output_destroy(output->wl_output);
+            Z_Free(output);
+            break;
+        }
+    }
 }
 
 static const struct wl_registry_listener wl_registry_listener = {
@@ -581,7 +636,8 @@ static void shutdown(void);
 
 static bool init(void)
 {
-    wl_list_init(&wl.output_list);
+    wl_list_init(&wl.outputs);
+    wl_list_init(&wl.surface_outputs);
 
     wl.scale_factor = 1;
     get_default_geometry(&wl.width, &wl.height);
@@ -621,8 +677,13 @@ static bool init(void)
             goto fail;
     }
 
+    struct output *output;
+    wl_list_for_each(output, &wl.outputs, link)
+        wl.scale_factor = max(wl.scale_factor, output->scale);
+
     CHECK(wl.surface = wl_compositor_create_surface(wl.compositor), "wl_compositor_create_surface");
     wl_surface_add_listener(wl.surface, &surface_listener, NULL);
+    wl_surface_set_buffer_scale(wl.surface, wl.scale_factor);
 
     CHECK_DEC(wl.libdecor = libdecor_new(wl.display, &libdecor_interface), "libdecor_new");
     CHECK_DEC(wl.frame = libdecor_decorate(wl.libdecor, wl.surface, &frame_interface, NULL), "libdecor_decorate");
@@ -646,7 +707,7 @@ static bool init(void)
     if (egl_major == 1 && egl_minor < 5)
         ctx_attr[0] = EGL_NONE;
 
-    CHECK(wl.egl_window = wl_egl_window_create(wl.surface, wl.width, wl.height), "wl_egl_window_create");
+    CHECK(wl.egl_window = wl_egl_window_create(wl.surface, wl.width * wl.scale_factor, wl.height * wl.scale_factor), "wl_egl_window_create");
     CHECK_EGL(wl.egl_surface = eglCreateWindowSurface(wl.egl_display, config, wl.egl_window, NULL), "eglCreateWindowSurface");
     CHECK_EGL(wl.egl_context = eglCreateContext(wl.egl_display, config, EGL_NO_CONTEXT, ctx_attr), "eglCreateContext");
     CHECK_EGL(eglMakeCurrent(wl.egl_display, wl.egl_surface, wl.egl_surface, wl.egl_context), "eglMakeCurrent");
@@ -666,10 +727,10 @@ fail:
 
 static void shutdown(void)
 {
-    struct wayland_output *out, *tmp;
-    wl_list_for_each_safe(out, tmp, &wl.output_list, link) {
-        wl_output_destroy(out->output);
-        Z_Free(out);
+    struct output *output, *next;
+    wl_list_for_each_safe(output, next, &wl.outputs, link) {
+        wl_output_destroy(output->wl_output);
+        Z_Free(output);
     }
 
     if (wl.egl_display)
