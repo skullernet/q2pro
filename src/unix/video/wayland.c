@@ -70,6 +70,10 @@ static struct {
     struct wl_shm *shm;
     struct wl_cursor_theme *cursor_theme;
     struct wl_surface *cursor_surface;
+    struct wl_data_device_manager *data_device_manager;
+    struct wl_data_device *data_device;
+    struct wl_data_offer *data_offer;
+    struct wl_data_source *data_source;
     struct zwp_relative_pointer_manager_v1 *rel_pointer_manager;
     struct zwp_relative_pointer_v1 *rel_pointer;
     struct zwp_pointer_constraints_v1 *pointer_constraints;
@@ -97,11 +101,16 @@ static struct {
     int cursor_hotspot_x;
     int cursor_hotspot_y;
 
+    uint32_t keyboard_enter_serial;
     int32_t keyrepeat_delta;
     int32_t keyrepeat_delay;
     int lastkeydown;
     unsigned keydown_time;
     unsigned keyrepeat_time;
+
+    char *clipboard_data;
+    const char *data_offer_type;
+    const char *selection_offer_type;
 
     struct wl_list outputs;
     struct wl_list surface_outputs;
@@ -204,6 +213,7 @@ static void keyboard_handle_enter(void *data, struct wl_keyboard *wl_keyboard,
                                   uint32_t serial, struct wl_surface *surface,
                                   struct wl_array *keys)
 {
+    wl.keyboard_enter_serial = serial;
     CL_Activate(ACT_ACTIVATED);
 }
 
@@ -211,6 +221,11 @@ static void keyboard_handle_leave(void *data, struct wl_keyboard *wl_keyboard,
                                   uint32_t serial, struct wl_surface *surface)
 {
     CL_Activate(ACT_RESTORED);
+
+    if (wl.data_offer) {
+        wl_data_offer_destroy(wl.data_offer);
+        wl.data_offer = NULL;
+    }
 
     if (wl.selection_offer) {
         zwp_primary_selection_offer_v1_destroy(wl.selection_offer);
@@ -494,26 +509,6 @@ static struct libdecor_interface libdecor_interface = {
     libdecor_error,
 };
 
-static void handle_data_offer(void *data,
-                              struct zwp_primary_selection_device_v1 *zwp_primary_selection_device_v1,
-                              struct zwp_primary_selection_offer_v1 *offer)
-{
-}
-
-static void handle_selection(void *data,
-                             struct zwp_primary_selection_device_v1 *zwp_primary_selection_device_v1,
-                             struct zwp_primary_selection_offer_v1 *offer)
-{
-    if (wl.selection_offer)
-        zwp_primary_selection_offer_v1_destroy(wl.selection_offer);
-    wl.selection_offer = offer;
-}
-
-static const struct zwp_primary_selection_device_v1_listener selection_device_listener = {
-    handle_data_offer,
-    handle_selection,
-};
-
 static void registry_global(void *data, struct wl_registry *wl_registry,
                             uint32_t name, const char *interface, uint32_t version)
 {
@@ -542,6 +537,11 @@ static void registry_global(void *data, struct wl_registry *wl_registry,
         wl_proxy_set_tag((struct wl_proxy *)output->wl_output, &proxy_tag);
         wl_output_add_listener(output->wl_output, &output_listener, output);
         wl_list_insert(&wl.outputs, &output->link);
+        return;
+    }
+
+    if (!strcmp(interface, wl_data_device_manager_interface.name)) {
+        wl.data_device_manager = wl_registry_bind(wl_registry, name, &wl_data_device_manager_interface, 3);
         return;
     }
 
@@ -621,6 +621,7 @@ static bool choose_config(r_opengl_config_t *cfg, EGLConfig *config)
 #define CHECK_EGL(cond, what) CHECK(cond, egl_error(what))
 
 static void shutdown(void);
+static void init_clipboard(void);
 
 static bool init(void)
 {
@@ -679,12 +680,6 @@ static bool init(void)
     libdecor_frame_set_app_id(wl.frame, APPLICATION);
     libdecor_frame_set_min_content_size(wl.frame, 320, 240);
 
-    if (wl.selection_device_manager) {
-        wl.selection_device = zwp_primary_selection_device_manager_v1_get_device(wl.selection_device_manager, wl.seat);
-        if (wl.selection_device)
-            zwp_primary_selection_device_v1_add_listener(wl.selection_device, &selection_device_listener, NULL);
-    }
-
     CHECK_ERR(wl.cursor_surface = wl_compositor_create_surface(wl.compositor), "wl_compositor_create_surface");
     reload_cursor();
 
@@ -700,6 +695,8 @@ static bool init(void)
     CHECK_EGL(wl.egl_context = eglCreateContext(wl.egl_display, config, EGL_NO_CONTEXT, ctx_attr), "eglCreateContext");
     CHECK_EGL(eglMakeCurrent(wl.egl_display, wl.egl_surface, wl.egl_surface, wl.egl_context), "eglMakeCurrent");
     CHECK_EGL(eglSwapInterval(wl.egl_display, 0), "eglSwapInterval");
+
+    init_clipboard();
 
     libdecor_frame_map(wl.frame);
     wl_display_roundtrip(wl.display);
@@ -744,6 +741,10 @@ static void shutdown(void)
     DESTROY(wl.compositor, wl_compositor_destroy);
     DESTROY(wl.cursor_theme, wl_cursor_theme_destroy);
     DESTROY(wl.shm, wl_shm_destroy);
+    DESTROY(wl.data_source, wl_data_source_destroy);
+    DESTROY(wl.data_offer, wl_data_offer_destroy);
+    DESTROY(wl.data_device, wl_data_device_destroy);
+    DESTROY(wl.data_device_manager, wl_data_device_manager_destroy);
     DESTROY(wl.selection_offer, zwp_primary_selection_offer_v1_destroy);
     DESTROY(wl.selection_device, zwp_primary_selection_device_v1_destroy);
     DESTROY(wl.selection_device_manager, zwp_primary_selection_device_manager_v1_destroy);
@@ -752,6 +753,8 @@ static void shutdown(void)
     DESTROY(wl.seat, wl_seat_destroy);
     DESTROY(wl.registry, wl_registry_destroy);
     DESTROY(wl.display, wl_display_disconnect);
+
+    Z_Free(wl.clipboard_data);
 
     memset(&wl, 0, sizeof(wl));
 }
@@ -877,39 +880,194 @@ static bool get_mouse_motion(int *dx, int *dy)
     return true;
 }
 
+static const char *const text_types[] = {
+    "text/plain",
+    "text/plain;charset=utf-8",
+    "TEXT",
+    "STRING",
+    "UTF8_STRING",
+};
+
+static const char *find_mime_type(const char *mime_type)
+{
+    for (int i = 0; i < q_countof(text_types); i++)
+        if (!strcmp(mime_type, text_types[i]))
+            return text_types[i];
+    return NULL;
+}
+
+static void data_offer_handle_offer(void *data, struct wl_data_offer *offer, const char *mime_type)
+{
+    wl.data_offer_type = find_mime_type(mime_type);
+}
+
+static const struct wl_data_offer_listener data_offer_listener = {
+    .offer = data_offer_handle_offer,
+};
+
+static void data_device_handle_data_offer(void *data, struct wl_data_device *data_device,
+                                          struct wl_data_offer *offer)
+{
+    wl_data_offer_add_listener(offer, &data_offer_listener, NULL);
+}
+
+static void data_device_handle_selection(void *data, struct wl_data_device *data_device,
+                                         struct wl_data_offer *offer)
+{
+    if (wl.data_offer)
+        wl_data_offer_destroy(wl.data_offer);
+    wl.data_offer = offer;
+}
+
+static const struct wl_data_device_listener data_device_listener = {
+    .data_offer = data_device_handle_data_offer,
+    .selection = data_device_handle_selection,
+};
+
+static void selection_offer_handle_offer(void *data, struct zwp_primary_selection_offer_v1 *offer,
+                                         const char *mime_type)
+{
+    wl.selection_offer_type = find_mime_type(mime_type);
+}
+
+static const struct zwp_primary_selection_offer_v1_listener selection_offer_listener = {
+    .offer = selection_offer_handle_offer,
+};
+
+static void selection_device_handle_data_offer(void *data,
+                                               struct zwp_primary_selection_device_v1 *device,
+                                               struct zwp_primary_selection_offer_v1 *offer)
+{
+    zwp_primary_selection_offer_v1_add_listener(offer, &selection_offer_listener, NULL);
+}
+
+static void selection_device_handle_selection(void *data,
+                                              struct zwp_primary_selection_device_v1 *device,
+                                              struct zwp_primary_selection_offer_v1 *offer)
+{
+    if (wl.selection_offer)
+        zwp_primary_selection_offer_v1_destroy(wl.selection_offer);
+    wl.selection_offer = offer;
+}
+
+static const struct zwp_primary_selection_device_v1_listener selection_device_listener = {
+    .data_offer = selection_device_handle_data_offer,
+    .selection = selection_device_handle_selection,
+};
+
+static void init_clipboard(void)
+{
+    if (wl.data_device_manager) {
+        wl.data_device = wl_data_device_manager_get_data_device(wl.data_device_manager, wl.seat);
+        if (wl.data_device)
+            wl_data_device_add_listener(wl.data_device, &data_device_listener, NULL);
+    }
+
+    if (wl.selection_device_manager) {
+        wl.selection_device = zwp_primary_selection_device_manager_v1_get_device(wl.selection_device_manager, wl.seat);
+        if (wl.selection_device)
+            zwp_primary_selection_device_v1_add_listener(wl.selection_device, &selection_device_listener, NULL);
+    }
+}
+
+static char *get_selection(int fd)
+{
+    wl_display_roundtrip(wl.display);
+
+    struct pollfd pfd = {
+        .fd = fd,
+        .events = POLLIN,
+    };
+
+    if (poll(&pfd, 1, 50) < 1 || !(pfd.revents & POLLIN)) {
+        close(fd);
+        return NULL;
+    }
+
+    char buf[MAX_STRING_CHARS];
+    int r = read(fd, buf, sizeof(buf) - 1);
+    close(fd);
+
+    if (r < 1)
+        return NULL;
+
+    buf[r] = 0;
+    return Z_CopyString(buf);
+}
+
 static char *get_selection_data(void)
 {
-    if (!wl.selection_offer)
+    if (!wl.selection_offer || !wl.selection_offer_type)
         return NULL;
 
     int fds[2];
     if (pipe2(fds, O_CLOEXEC) < 0)
         return NULL;
 
-    zwp_primary_selection_offer_v1_receive(wl.selection_offer, "text/plain;charset=utf-8", fds[1]);
+    zwp_primary_selection_offer_v1_receive(wl.selection_offer, wl.selection_offer_type, fds[1]);
     close(fds[1]);
 
-    wl_display_roundtrip(wl.display);
+    return get_selection(fds[0]);
+}
 
-    struct pollfd fd = {
-        .fd = fds[0],
-        .events = POLLIN,
-    };
-
-    if (poll(&fd, 1, 50) <= 0) {
-        close(fds[0]);
+static char *get_clipboard_data(void)
+{
+    if (!wl.data_offer || !wl.data_offer_type)
         return NULL;
+
+    int fds[2];
+    if (pipe2(fds, O_CLOEXEC) < 0)
+        return NULL;
+
+    wl_data_offer_receive(wl.data_offer, wl.data_offer_type, fds[1]);
+    close(fds[1]);
+
+    return get_selection(fds[0]);
+}
+
+static void handle_data_source_send(void *data, struct wl_data_source *source, const char *mime_type, int fd)
+{
+    if (wl.clipboard_data && find_mime_type(mime_type))
+        write(fd, wl.clipboard_data, strlen(wl.clipboard_data));
+    close(fd);
+}
+
+static void handle_data_source_cancelled(void *data, struct wl_data_source *source)
+{
+    if (wl.data_source) {
+        wl_data_source_destroy(wl.data_source);
+        wl.data_source = NULL;
     }
 
-    char buf[MAX_STRING_CHARS];
-    int r = read(fds[0], buf, sizeof(buf) - 1);
-    close(fds[0]);
+    if (wl.clipboard_data) {
+        Z_Free(wl.clipboard_data);
+        wl.clipboard_data = NULL;
+    }
+}
 
-    if (r <= 0)
-        return NULL;
+static const struct wl_data_source_listener data_source_listener = {
+    .send = handle_data_source_send,
+    .cancelled = handle_data_source_cancelled,
+};
 
-    buf[r] = 0;
-    return Z_CopyString(buf);
+static void set_clipboard_data(const char *data)
+{
+    if (!data || !*data)
+        return;
+    if (!wl.data_device_manager || !wl.data_device)
+        return;
+
+    Z_Free(wl.clipboard_data);
+    wl.clipboard_data = Z_CopyString(data);
+
+    if (!wl.data_source) {
+        wl.data_source = wl_data_device_manager_create_data_source(wl.data_device_manager);
+        wl_data_source_add_listener(wl.data_source, &data_source_listener, NULL);
+        for (int i = 0; i < q_countof(text_types); i++)
+            wl_data_source_offer(wl.data_source, text_types[i]);
+    }
+
+    wl_data_device_set_selection(wl.data_device, wl.data_source, wl.keyboard_enter_serial);
 }
 
 static bool probe(void)
@@ -941,6 +1099,8 @@ const vid_driver_t vid_wayland = {
     .swap_buffers = swap_buffers,
 
     .get_selection_data = get_selection_data,
+    .get_clipboard_data = get_clipboard_data,
+    .set_clipboard_data = set_clipboard_data,
 
     .init_mouse = init_mouse,
     .shutdown_mouse = shutdown_mouse,
