@@ -24,15 +24,14 @@ wayland_deps = [
   dependency('wayland-cursor', version: '>= 1.15.0', required: wayland_opt),
   dependency('wayland-egl', version: '>= 9.0.0', required: wayland_opt),
   dependency('wayland-protocols', version: '>= 1.15', required: wayland_opt),
+  dependency('libdecor-0', version: '>= 0.1.0', required: wayland_opt),
   dependency('egl', version: '>= 1.5', required: wayland_opt)
 ]
 
 wayland_protocols = [
-  'stable/xdg-shell/xdg-shell.xml',
   'unstable/pointer-constraints/pointer-constraints-unstable-v1.xml',
   'unstable/primary-selection/primary-selection-unstable-v1.xml',
   'unstable/relative-pointer/relative-pointer-unstable-v1.xml',
-  'unstable/xdg-decoration/xdg-decoration-unstable-v1.xml'
 ]
 
 foreach dep: wayland_deps
