@@ -137,6 +137,8 @@ static void pointer_handle_enter(void *data, struct wl_pointer *pointer,
         wl.pointer_enter_serial = serial;
         wl.pointer_focus = true;
         set_cursor();
+        UI_MouseEvent(wl_fixed_to_int(sx * wl.scale_factor),
+                      wl_fixed_to_int(sy * wl.scale_factor));
     }
 }
 
