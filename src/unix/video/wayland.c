@@ -119,6 +119,15 @@ static struct {
 
 static const char *proxy_tag = APPLICATION;
 
+
+/*
+===============================================================================
+
+SEAT
+
+===============================================================================
+*/
+
 static void set_cursor(void)
 {
     if (wl.mouse_grabbed) {
@@ -328,6 +337,15 @@ static const struct wl_seat_listener seat_listener = {
     seat_handle_caps,
 };
 
+
+/*
+===============================================================================
+
+SURFACE
+
+===============================================================================
+*/
+
 static void reload_cursor(void)
 {
     if (!wl.shm)
@@ -434,37 +452,14 @@ static const struct wl_surface_listener surface_listener = {
     surface_handle_leave,
 };
 
-static void output_handle_geometry(void *data, struct wl_output *wl_output, int32_t x, int32_t y,
-                                   int32_t physical_width, int32_t physical_height, int32_t subpixel,
-                                   const char *make, const char *model, int32_t transform)
-{
-}
 
-static void output_handle_mode(void *data, struct wl_output *wl_output, uint32_t flags,
-                               int32_t width, int32_t height, int32_t refresh)
-{
-}
+/*
+===============================================================================
 
-static void output_handle_done(void *data, struct wl_output *wl_output)
-{
-    struct output *output = data;
-    if (!wl_list_empty(&output->surf))
-        update_scale();
-}
+FRAME
 
-static void output_handle_scale(void *data, struct wl_output *wl_output, int32_t factor)
-{
-    struct output *output = data;
-    if (factor > 0)
-        output->scale = factor;
-}
-
-static const struct wl_output_listener output_listener = {
-    output_handle_geometry,
-    output_handle_mode,
-    output_handle_done,
-    output_handle_scale,
-};
+===============================================================================
+*/
 
 static void get_default_geometry(int *width, int *height)
 {
@@ -520,9 +515,7 @@ static struct libdecor_frame_interface frame_interface = {
     frame_commit,
 };
 
-static void libdecor_error(struct libdecor *context,
-                           enum libdecor_error error,
-                           const char *message)
+static void libdecor_error(struct libdecor *context, enum libdecor_error error, const char *message)
 {
     Com_EPrintf("libdecor: %s\n", message);
 }
@@ -530,6 +523,56 @@ static void libdecor_error(struct libdecor *context,
 static struct libdecor_interface libdecor_interface = {
     libdecor_error,
 };
+
+
+/*
+===============================================================================
+
+OUTPUTS
+
+===============================================================================
+*/
+
+static void output_handle_geometry(void *data, struct wl_output *wl_output, int32_t x, int32_t y,
+                                   int32_t physical_width, int32_t physical_height, int32_t subpixel,
+                                   const char *make, const char *model, int32_t transform)
+{
+}
+
+static void output_handle_mode(void *data, struct wl_output *wl_output, uint32_t flags,
+                               int32_t width, int32_t height, int32_t refresh)
+{
+}
+
+static void output_handle_done(void *data, struct wl_output *wl_output)
+{
+    struct output *output = data;
+    if (!wl_list_empty(&output->surf))
+        update_scale();
+}
+
+static void output_handle_scale(void *data, struct wl_output *wl_output, int32_t factor)
+{
+    struct output *output = data;
+    if (factor > 0)
+        output->scale = factor;
+}
+
+static const struct wl_output_listener output_listener = {
+    output_handle_geometry,
+    output_handle_mode,
+    output_handle_done,
+    output_handle_scale,
+};
+
+
+/*
+===============================================================================
+
+REGISTRY
+
+===============================================================================
+*/
 
 static void registry_global(void *data, struct wl_registry *wl_registry,
                             uint32_t name, const char *interface, uint32_t version)
@@ -603,6 +646,72 @@ static const struct wl_registry_listener wl_registry_listener = {
     registry_global_remove,
 };
 
+
+/*
+===============================================================================
+
+INIT / SHUTDOWN
+
+===============================================================================
+*/
+
+#define CHECK(cond, stmt)   if (!(cond)) { stmt; goto fail; }
+#define CHECK_ERR(cond, what) CHECK(cond, Com_EPrintf("%s failed: %s\n", what, strerror(errno)))
+#define CHECK_UNK(cond, what) CHECK(cond, Com_EPrintf("%s failed\n", what))
+#define CHECK_EGL(cond, what) CHECK(cond, egl_error(what))
+
+#define DESTROY(x, f)   if (x) f(x)
+
+static void init_clipboard(void);
+
+static void shutdown(void)
+{
+    struct output *output, *next;
+    wl_list_for_each_safe(output, next, &wl.outputs, link) {
+        wl_output_destroy(output->wl_output);
+        Z_Free(output);
+    }
+
+    if (wl.egl_display)
+        eglMakeCurrent(wl.egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+
+    if (wl.egl_context)
+        eglDestroyContext(wl.egl_display, wl.egl_context);
+
+    if (wl.egl_surface)
+        eglDestroySurface(wl.egl_display, wl.egl_surface);
+
+    DESTROY(wl.egl_window, wl_egl_window_destroy);
+    DESTROY(wl.egl_display, eglTerminate);
+    DESTROY(wl.frame, libdecor_frame_unref);
+    DESTROY(wl.libdecor, libdecor_unref);
+    DESTROY(wl.rel_pointer, zwp_relative_pointer_v1_destroy);
+    DESTROY(wl.rel_pointer_manager, zwp_relative_pointer_manager_v1_destroy);
+    DESTROY(wl.locked_pointer, zwp_locked_pointer_v1_destroy);
+    DESTROY(wl.pointer_constraints, zwp_pointer_constraints_v1_destroy);
+    DESTROY(wl.surface, wl_surface_destroy);
+    DESTROY(wl.cursor_surface, wl_surface_destroy);
+    DESTROY(wl.compositor, wl_compositor_destroy);
+    DESTROY(wl.cursor_theme, wl_cursor_theme_destroy);
+    DESTROY(wl.shm, wl_shm_destroy);
+    DESTROY(wl.data_source, wl_data_source_destroy);
+    DESTROY(wl.data_offer, wl_data_offer_destroy);
+    DESTROY(wl.data_device, wl_data_device_destroy);
+    DESTROY(wl.data_device_manager, wl_data_device_manager_destroy);
+    DESTROY(wl.selection_offer, zwp_primary_selection_offer_v1_destroy);
+    DESTROY(wl.selection_device, zwp_primary_selection_device_v1_destroy);
+    DESTROY(wl.selection_device_manager, zwp_primary_selection_device_manager_v1_destroy);
+    DESTROY(wl.pointer, wl_pointer_destroy);
+    DESTROY(wl.keyboard, wl_keyboard_destroy);
+    DESTROY(wl.seat, wl_seat_destroy);
+    DESTROY(wl.registry, wl_registry_destroy);
+    DESTROY(wl.display, wl_display_disconnect);
+
+    Z_Free(wl.clipboard_data);
+
+    memset(&wl, 0, sizeof(wl));
+}
+
 static void egl_error(const char *what)
 {
     Com_EPrintf("%s failed with error %#x\n", what, eglGetError());
@@ -636,14 +745,6 @@ static bool choose_config(r_opengl_config_t *cfg, EGLConfig *config)
 
     return true;
 }
-
-#define CHECK(cond, stmt)     if (!(cond)) { stmt; goto fail; }
-#define CHECK_ERR(cond, what) CHECK(cond, Com_EPrintf("%s failed: %s\n", what, strerror(errno)))
-#define CHECK_UNK(cond, what) CHECK(cond, Com_EPrintf("%s failed\n", what))
-#define CHECK_EGL(cond, what) CHECK(cond, egl_error(what))
-
-static void shutdown(void);
-static void init_clipboard(void);
 
 static bool init(void)
 {
@@ -731,56 +832,6 @@ fail:
     return false;
 }
 
-#define DESTROY(x, f)   if (x) f(x)
-
-static void shutdown(void)
-{
-    struct output *output, *next;
-    wl_list_for_each_safe(output, next, &wl.outputs, link) {
-        wl_output_destroy(output->wl_output);
-        Z_Free(output);
-    }
-
-    if (wl.egl_display)
-        eglMakeCurrent(wl.egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-
-    if (wl.egl_context)
-        eglDestroyContext(wl.egl_display, wl.egl_context);
-
-    if (wl.egl_surface)
-        eglDestroySurface(wl.egl_display, wl.egl_surface);
-
-    DESTROY(wl.egl_window, wl_egl_window_destroy);
-    DESTROY(wl.egl_display, eglTerminate);
-    DESTROY(wl.frame, libdecor_frame_unref);
-    DESTROY(wl.libdecor, libdecor_unref);
-    DESTROY(wl.rel_pointer, zwp_relative_pointer_v1_destroy);
-    DESTROY(wl.rel_pointer_manager, zwp_relative_pointer_manager_v1_destroy);
-    DESTROY(wl.locked_pointer, zwp_locked_pointer_v1_destroy);
-    DESTROY(wl.pointer_constraints, zwp_pointer_constraints_v1_destroy);
-    DESTROY(wl.surface, wl_surface_destroy);
-    DESTROY(wl.cursor_surface, wl_surface_destroy);
-    DESTROY(wl.compositor, wl_compositor_destroy);
-    DESTROY(wl.cursor_theme, wl_cursor_theme_destroy);
-    DESTROY(wl.shm, wl_shm_destroy);
-    DESTROY(wl.data_source, wl_data_source_destroy);
-    DESTROY(wl.data_offer, wl_data_offer_destroy);
-    DESTROY(wl.data_device, wl_data_device_destroy);
-    DESTROY(wl.data_device_manager, wl_data_device_manager_destroy);
-    DESTROY(wl.selection_offer, zwp_primary_selection_offer_v1_destroy);
-    DESTROY(wl.selection_device, zwp_primary_selection_device_v1_destroy);
-    DESTROY(wl.selection_device_manager, zwp_primary_selection_device_manager_v1_destroy);
-    DESTROY(wl.pointer, wl_pointer_destroy);
-    DESTROY(wl.keyboard, wl_keyboard_destroy);
-    DESTROY(wl.seat, wl_seat_destroy);
-    DESTROY(wl.registry, wl_registry_destroy);
-    DESTROY(wl.display, wl_display_disconnect);
-
-    Z_Free(wl.clipboard_data);
-
-    memset(&wl, 0, sizeof(wl));
-}
-
 static void set_mode(void)
 {
     if (vid_fullscreen->integer)
@@ -821,6 +872,15 @@ static void swap_buffers(void)
 {
     eglSwapBuffers(wl.egl_display, wl.egl_surface);
 }
+
+
+/*
+===============================================================================
+
+RELATIVE MOUSE
+
+===============================================================================
+*/
 
 // input-event-codes.h defines this
 #undef KEY_MENU
@@ -901,6 +961,15 @@ static bool get_mouse_motion(int *dx, int *dy)
     wl.rel_mouse_y = 0;
     return true;
 }
+
+
+/*
+===============================================================================
+
+CLIPBOARD
+
+===============================================================================
+*/
 
 static const char *const text_types[] = {
     "text/plain",
@@ -1091,6 +1160,15 @@ static void set_clipboard_data(const char *data)
 
     wl_data_device_set_selection(wl.data_device, wl.data_source, wl.keyboard_enter_serial);
 }
+
+
+/*
+===============================================================================
+
+ENTRY POINT
+
+===============================================================================
+*/
 
 static bool probe(void)
 {
