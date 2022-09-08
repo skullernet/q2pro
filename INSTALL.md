@@ -16,7 +16,7 @@ Ubuntu use the following command:
     apt-get install meson gcc libc6-dev libsdl2-dev libopenal-dev \
                     libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
                     libcurl4-gnutls-dev libx11-dev libxi-dev \
-                    libwayland-dev wayland-protocols
+                    libwayland-dev wayland-protocols libdecor-0-dev
 
 Users of other distributions should look for equivalent development packages
 and install them.

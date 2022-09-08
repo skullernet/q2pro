@@ -20,8 +20,8 @@ endif
 
 wayland_opt = get_option('wayland')
 wayland_deps = [
-  dependency('wayland-client', version: '>= 1.15.0', required: wayland_opt),
-  dependency('wayland-cursor', version: '>= 1.15.0', required: wayland_opt),
+  dependency('wayland-client', version: '>= 1.18', required: wayland_opt),
+  dependency('wayland-cursor', version: '>= 1.18', required: wayland_opt),
   dependency('wayland-egl', version: '>= 9.0.0', required: wayland_opt),
   dependency('wayland-protocols', version: '>= 1.15', required: wayland_opt),
   dependency('libdecor-0', version: '>= 0.1.0', required: wayland_opt),
