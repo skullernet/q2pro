@@ -1119,7 +1119,7 @@ static char *get_clipboard_data(void)
 static void handle_data_source_send(void *data, struct wl_data_source *source, const char *mime_type, int fd)
 {
     if (wl.clipboard_data && find_mime_type(mime_type))
-        write(fd, wl.clipboard_data, strlen(wl.clipboard_data));
+        (void)write(fd, wl.clipboard_data, strlen(wl.clipboard_data));
     close(fd);
 }
 
