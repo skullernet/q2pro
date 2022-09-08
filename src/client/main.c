@@ -499,7 +499,7 @@ void DiscordCallback(void* data, enum EDiscordResult result)
             Com_Printf("%s DiscordResult_PurchaseError\n", __func__);
             break;
         case DiscordResult_TransactionAborted:
-            Com_Printf("%s DiscordResult_TransactionAborted\n", __func__);
+        //    Com_Printf("%s DiscordResult_TransactionAborted\n", __func__);
             break;
         default:
             Com_Printf("%s Unknown error code %i\n", __func__, discord.result);
@@ -734,8 +734,26 @@ void CL_UpdateActivity()
 {
     if (cls.serverAddress.type == NA_UNSPECIFIED)
         return;
-    
-    if (cls.state >= ca_connecting) // Client remote connection
+
+    if (cls.demo.playback)
+    {
+        if (discord.lobby.id) // If not connected, remove the lobby (if any)
+            CL_DeleteDiscordLobby();
+
+        discord.last_activity_time = 0;
+        discord.server_hostname[0] = '\0';
+        sprintf(discord.activity.details, "Watching");
+        discord.activity.state[0] = '\0';
+
+        // Since the user isn't in a map, just use game logo
+        Q_snprintf(discord.activity.assets.large_image, sizeof(discord.activity.assets.large_image), "%s", DISCORD_APP_IMAGE);
+        Q_snprintf(discord.activity.assets.large_text, sizeof(discord.activity.assets.large_text), "%s", DISCORD_APP_TEXT);
+
+        // Reset the small logo because we're using the large logo instead
+        discord.activity.assets.small_image[0] = '\0';
+        discord.activity.assets.small_text[0] = '\0';
+    }
+    else if (cls.state == ca_active) // Client remote connection
     {
         // Get the hostname and player count (local and remote games)
         if (discord.last_activity_time < cls.realtime)
@@ -789,7 +807,7 @@ void CL_UpdateActivity()
 
         CL_DiscordGameInvite(); // Creates a lobby and opens up game invites
     }
-    else if (cls.state <= ca_disconnected) // Main menu
+    else // Main menu
     {
         if (discord.lobby.id) // If not connected, remove the lobby (if any)
             CL_DeleteDiscordLobby();
@@ -1303,10 +1321,10 @@ void CL_ClearDiscordAcivity(void)
 void CL_ShutdownDiscord()
 {
     Com_Printf("==== %s ====\n", __func__);
-    
     CL_ClearDiscordAcivity();
     CL_DeleteDiscordLobby();
 
+    discord.app.core->run_callbacks(discord.app.core);
     discord.app.core->destroy(discord.app.core);
     discord.discord_found = true;
     discord.init = false;
