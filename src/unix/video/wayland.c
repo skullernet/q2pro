@@ -1119,7 +1119,8 @@ static char *get_clipboard_data(void)
 static void handle_data_source_send(void *data, struct wl_data_source *source, const char *mime_type, int fd)
 {
     if (wl.clipboard_data && find_mime_type(mime_type))
-        (void)write(fd, wl.clipboard_data, strlen(wl.clipboard_data));
+        if (write(fd, wl.clipboard_data, strlen(wl.clipboard_data)) < 0)
+            (void)"why should I care?";
     close(fd);
 }
 
