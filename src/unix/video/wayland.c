@@ -228,13 +228,18 @@ static void keyboard_handle_enter(void *data, struct wl_keyboard *wl_keyboard,
                                   uint32_t serial, struct wl_surface *surface,
                                   struct wl_array *keys)
 {
-    wl.keyboard_enter_serial = serial;
-    CL_Activate(ACT_ACTIVATED);
+    if (surface == wl.surface) {
+        wl.keyboard_enter_serial = serial;
+        CL_Activate(ACT_ACTIVATED);
+    }
 }
 
 static void keyboard_handle_leave(void *data, struct wl_keyboard *wl_keyboard,
                                   uint32_t serial, struct wl_surface *surface)
 {
+    if (surface != wl.surface)
+        return;
+
     CL_Activate(ACT_RESTORED);
 
     if (wl.data_offer) {
@@ -254,6 +259,7 @@ static void keyboard_handle_key(void *data, struct wl_keyboard *wl_keyboard,
                                 uint32_t serial, uint32_t time, uint32_t ev_key,
                                 uint32_t state)
 {
+    bool down = state == WL_KEYBOARD_KEY_STATE_PRESSED;
     int key = 0;
 
     if (ev_key < keytable_evdev.count)
@@ -264,7 +270,6 @@ static void keyboard_handle_key(void *data, struct wl_keyboard *wl_keyboard,
         return;
     }
 
-    bool down = state == WL_KEYBOARD_KEY_STATE_PRESSED;
     Key_Event2(key, down, time);
 
     if (down) {
