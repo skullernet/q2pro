@@ -97,6 +97,7 @@ static struct {
     wl_fixed_t abs_mouse_x;
     wl_fixed_t abs_mouse_y;
 
+    bool pointer_focus;
     uint32_t pointer_enter_serial;
     int cursor_hotspot_x;
     int cursor_hotspot_y;
@@ -132,27 +133,38 @@ static void pointer_handle_enter(void *data, struct wl_pointer *pointer,
                                  uint32_t serial, struct wl_surface *surface,
                                  wl_fixed_t sx, wl_fixed_t sy)
 {
-    wl.pointer_enter_serial = serial;
-    set_cursor();
+    if (surface == wl.surface) {
+        wl.pointer_enter_serial = serial;
+        wl.pointer_focus = true;
+        set_cursor();
+    }
 }
 
 static void pointer_handle_leave(void *data, struct wl_pointer *pointer,
                                  uint32_t serial, struct wl_surface *surface)
 {
+    if (surface == wl.surface)
+        wl.pointer_focus = false;
 }
 
 static void pointer_handle_motion(void *data, struct wl_pointer *pointer,
                                   uint32_t time, wl_fixed_t sx, wl_fixed_t sy)
 {
-    UI_MouseEvent(wl_fixed_to_int(sx * wl.scale_factor),
-                  wl_fixed_to_int(sy * wl.scale_factor));
+    if (wl.pointer_focus) {
+        UI_MouseEvent(wl_fixed_to_int(sx * wl.scale_factor),
+                      wl_fixed_to_int(sy * wl.scale_factor));
+    }
 }
 
 static void pointer_handle_button(void *data, struct wl_pointer *wl_pointer,
                                   uint32_t serial, uint32_t time, uint32_t button,
                                   uint32_t state)
 {
+    bool down = state == WL_POINTER_BUTTON_STATE_PRESSED;
     int key;
+
+    if (!wl.pointer_focus && down)
+        return;
 
     switch (button) {
     case BTN_LEFT:    key = K_MOUSE1; break;
@@ -167,12 +179,15 @@ static void pointer_handle_button(void *data, struct wl_pointer *wl_pointer,
         return;
     }
 
-    Key_Event(key, state == WL_POINTER_BUTTON_STATE_PRESSED, time);
+    Key_Event(key, down, time);
 }
 
 static void pointer_handle_axis(void *data, struct wl_pointer *wl_pointer,
                                 uint32_t time, uint32_t axis, wl_fixed_t value)
 {
+    if (!wl.pointer_focus)
+        return;
+
     switch (axis) {
     case WL_POINTER_AXIS_VERTICAL_SCROLL:
         if (value < 0) {
