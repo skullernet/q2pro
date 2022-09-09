@@ -1065,6 +1065,11 @@ static char *get_selection(int fd)
 {
     wl_display_roundtrip(wl.display);
 
+    if (!Sys_SetNonBlock(fd, true)) {
+        close(fd);
+        return NULL;
+    }
+
     struct pollfd pfd = {
         .fd = fd,
         .events = POLLIN,
@@ -1118,7 +1123,7 @@ static char *get_clipboard_data(void)
 
 static void handle_data_source_send(void *data, struct wl_data_source *source, const char *mime_type, int fd)
 {
-    if (wl.clipboard_data && find_mime_type(mime_type))
+    if (wl.clipboard_data && find_mime_type(mime_type) && Sys_SetNonBlock(fd, true))
         if (write(fd, wl.clipboard_data, strlen(wl.clipboard_data)) < 0)
             (void)"why should I care?";
     close(fd);
