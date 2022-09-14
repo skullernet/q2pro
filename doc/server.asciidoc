@@ -302,6 +302,10 @@ allow_download_others::
     Enables downloading of files from any subdirectory other than those listed
     above. Default value is 0.
 
+sv_max_download_size::
+    Maximum size of UDP download in bytes. Value of 0 disables the limit.
+    Default value is 8388608 (8 MiB).
+
 TIP: Q2PRO clients can stream compressed downloads directly from .pkz archives
 on the server. Thus it is advisable to keep all data in .pkz for optimal
 download speeds.
