@@ -44,8 +44,10 @@ void SV_SetConsoleTitle(void);
 int MVD_GetDemoPercent(bool *paused, int *framenum);
 #endif
 
-#if USE_CLIENT
+#if USE_SAVEGAMES
 char *SV_GetSaveInfo(const char *dir);
+#else
+#define SV_GetSaveInfo(dir) NULL
 #endif
 
 #endif // SERVER_H
