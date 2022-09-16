@@ -433,6 +433,10 @@ mvd_wait_percent::
     buffering data to prevent overrun, ignoring ‘mvd_wait_delay’ value.
     Default value is 50.
 
+mvd_buffer_size::
+    Size of delay buffer, in multiplies of MAX_MSGLEN (32 KiB). Default value
+    is 8. You may need to increase this when also increasing ‘mvd_wait_delay’.
+
 mvd_default_map::
     Specifies default map used for the Waiting Room channel. Default value is
     "q2dm1".
