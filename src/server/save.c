@@ -430,18 +430,15 @@ static int read_level_file(void)
     return 0;
 }
 
-static int no_save_games(void)
+static bool no_save_games(void)
 {
-    if (dedicated->integer)
-        return 1;
-
     if (!(g_features->integer & GMF_ENHANCED_SAVEGAMES))
-        return 1;
+        return true;
 
     if (Cvar_VariableInteger("deathmatch"))
-        return 1;
+        return true;
 
-    return 0;
+    return false;
 }
 
 void SV_AutoSaveBegin(mapcmd_t *cmd)
@@ -542,9 +539,6 @@ void SV_CheckForSavegame(mapcmd_t *cmd)
 
 void SV_CheckForEnhancedSavegames(void)
 {
-    if (dedicated->integer)
-        return;
-
     if (Cvar_VariableInteger("deathmatch"))
         return;
 
@@ -575,11 +569,6 @@ static void SV_Loadgame_f(void)
 
     if (Cmd_Argc() != 2) {
         Com_Printf("Usage: %s <directory>\n", Cmd_Argv(0));
-        return;
-    }
-
-    if (dedicated->integer) {
-        Com_Printf("Savegames are for listen servers only.\n");
         return;
     }
 
@@ -621,11 +610,6 @@ static void SV_Savegame_f(void)
 
     if (sv.state != ss_game) {
         Com_Printf("You must be in a game to save.\n");
-        return;
-    }
-
-    if (dedicated->integer) {
-        Com_Printf("Savegames are for listen servers only.\n");
         return;
     }
 
