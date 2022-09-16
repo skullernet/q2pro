@@ -25,6 +25,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SAVE_CURRENT    ".current"
 #define SAVE_AUTO       "save0"
 
+static cvar_t   *sv_noreload;
+
 static int write_server_file(bool autosave)
 {
     char        name[MAX_OSPATH];
@@ -514,6 +516,8 @@ void SV_CheckForSavegame(mapcmd_t *cmd)
 {
     if (no_save_games())
         return;
+    if (sv_noreload->integer)
+        return;
 
     if (read_level_file()) {
         // only warn when loading a regular savegame. autosave without level
@@ -677,5 +681,7 @@ static const cmdreg_t c_savegames[] = {
 
 void SV_RegisterSavegames(void)
 {
+    sv_noreload = Cvar_Get("sv_noreload", "0", 0);
+
     Cmd_Register(c_savegames);
 }
