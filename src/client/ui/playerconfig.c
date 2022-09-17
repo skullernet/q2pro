@@ -17,6 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "ui.h"
+#include "src/baseq2/m_player.h"
 
 
 /*
@@ -28,7 +29,10 @@ PLAYER CONFIG MENU
 */
 
 #define ID_MODEL 103
-#define ID_SKIN    104
+#define ID_SKIN  104
+#define ID_ANIM  105
+
+static cvar_t rot_speed;
 
 typedef struct m_player_s {
     menuFrameWork_t     menu;
@@ -36,12 +40,16 @@ typedef struct m_player_s {
     menuSpinControl_t   model;
     menuSpinControl_t   skin;
     menuSpinControl_t   hand;
+    menuSpinControl_t   anim;
+    menuSlider_t        rotspeed;
 
     refdef_t    refdef;
     entity_t    entities[2];
 
     int        time;
     int        oldTime;
+    int        frame_start;
+    int        num_frames;
 
     char *pmnames[MAX_PLAYERMODELS];
 } m_player_t;
@@ -53,6 +61,27 @@ static const char *handedness[] = {
     "left",
     "center",
     NULL
+};
+
+static const char *anim_names[] = {
+    "stand", "run", "attack", "pain 1", "pain 2", "pain 3",
+    "jump", "flipoff", "salute", "taunt", "wave", "point",
+    "crouch stand", "crouch walk", "crouch attack", "crouch pain", "crouch death",
+    "death 1", "death 2", "death 3", NULL
+};
+
+static const int anim_num_frames[] = {
+    40, 6, 8, 4, 4, 4,
+    6, 12, 11, 17, 11, 12,
+    19, 6, 9, 4, 5,
+    6, 6, 8
+};
+
+static const int anim_frame_start[] = {
+    FRAME_stand01, FRAME_run1, FRAME_attack1, FRAME_pain101, FRAME_pain201, FRAME_pain301,
+    FRAME_jump1, FRAME_flip01, FRAME_salute01, FRAME_taunt01, FRAME_wave01, FRAME_point01,
+    FRAME_crstnd01, FRAME_crwalk1, FRAME_crattak1, FRAME_crpain1, FRAME_crdeath1,
+    FRAME_death101, FRAME_death201, FRAME_death301
 };
 
 static void ReloadMedia(void)
@@ -84,10 +113,31 @@ static void ReloadMedia(void)
     m_player.refdef.num_entities++;
 }
 
+static int oldtime;
+
 static void RunFrame(void)
 {
     int frame;
+    int old_frame;
+    int num_frames;
+    int anim;
+    bool is_death;
     int i;
+    float d_angle;
+    float d_sec;
+    float rotspeed = m_player.rotspeed.curvalue;
+    
+    if (oldtime == 0) oldtime = uis.realtime;
+    d_sec = (uis.realtime - oldtime) / 1000.0f;
+    oldtime = uis.realtime;
+    
+    d_angle = rotspeed * d_sec;
+    
+    m_player.entities[0].angles[1] += d_angle;
+    if (m_player.entities[0].angles[1] > 360.0f)
+        m_player.entities[0].angles[1] -= 360.0f;
+	    	
+    m_player.entities[1].angles[1] = m_player.entities[0].angles[1];
 
     if (m_player.time < uis.realtime) {
         m_player.oldTime = m_player.time;
@@ -96,11 +146,21 @@ static void RunFrame(void)
         if (m_player.time < uis.realtime) {
             m_player.time = uis.realtime;
         }
+        
+        num_frames = m_player.num_frames;
+        anim = m_player.frame_start;
+        is_death = anim == FRAME_crdeath1 || anim == FRAME_death101
+                || anim == FRAME_death201 || anim == FRAME_death301;
 
-        frame = (m_player.time / 120) % 40;
+        if (is_death) num_frames += 20; // Stay on death pose for a bit
+        frame = (m_player.time / 120) % num_frames;
+        if (is_death) clamp(frame, 0, m_player.num_frames-1);
+        frame += anim;
 
         for (i = 0; i < m_player.refdef.num_entities; i++) {
-            m_player.entities[i].oldframe = m_player.entities[i].frame;
+            old_frame = m_player.entities[i].frame;
+            if (is_death && frame == anim) old_frame = FRAME_stand01;
+            m_player.entities[i].oldframe = old_frame;
             m_player.entities[i].frame = frame;
         }
     }
@@ -181,6 +241,14 @@ static void Size(menuFrameWork_t *self)
 
     m_player.hand.generic.x     = x;
     m_player.hand.generic.y     = y;
+    y += MENU_SPACING;
+    
+    m_player.anim.generic.x			= x;
+    m_player.anim.generic.y			= y;
+    y += MENU_SPACING;
+    
+    m_player.rotspeed.generic.x = x;
+    m_player.rotspeed.generic.y = y;
 }
 
 static menuSound_t Change(menuCommon_t *self)
@@ -194,6 +262,10 @@ static menuSound_t Change(menuCommon_t *self)
         // fall through
     case ID_SKIN:
         ReloadMedia();
+        break;
+    case ID_ANIM:
+        m_player.frame_start = anim_frame_start[m_player.anim.curvalue];
+        m_player.num_frames = anim_num_frames[m_player.anim.curvalue];
         break;
     default:
         break;
@@ -269,6 +341,10 @@ static bool Push(menuFrameWork_t *self)
 
     m_player.hand.curvalue = Cvar_VariableInteger("hand");
     clamp(m_player.hand.curvalue, 0, 2);
+    
+    m_player.anim.curvalue = 0;
+    m_player.frame_start = FRAME_stand01;
+    m_player.num_frames = anim_num_frames[0];
 
     m_player.menu.banner = R_RegisterPic("m_banner_plauer_setup");
     if (m_player.menu.banner) {
@@ -342,11 +418,26 @@ void M_Menu_PlayerConfig(void)
     m_player.hand.generic.type = MTYPE_SPINCONTROL;
     m_player.hand.generic.name = "handedness";
     m_player.hand.itemnames = (char **)handedness;
+    
+    m_player.anim.generic.type = MTYPE_SPINCONTROL;
+    m_player.anim.generic.id = ID_ANIM;
+    m_player.anim.generic.name = "animation";
+    m_player.anim.itemnames = (char **)anim_names;
+    m_player.anim.generic.change = Change;
+    
+    m_player.rotspeed.generic.type = MTYPE_SLIDER;
+    m_player.rotspeed.generic.name = "rotation speed";
+    m_player.rotspeed.cvar = &rot_speed;
+    m_player.rotspeed.minvalue = 0.0f;
+    m_player.rotspeed.maxvalue = 90.0f;
+    m_player.rotspeed.step = 90.0f / SLIDER_RANGE;
 
     Menu_AddItem(&m_player.menu, &m_player.name);
     Menu_AddItem(&m_player.menu, &m_player.model);
     Menu_AddItem(&m_player.menu, &m_player.skin);
     Menu_AddItem(&m_player.menu, &m_player.hand);
+    Menu_AddItem(&m_player.menu, &m_player.anim);
+    Menu_AddItem(&m_player.menu, &m_player.rotspeed);
 
     List_Append(&ui_menus, &m_player.menu.entry);
 }
