@@ -25,6 +25,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SAVE_CURRENT    ".current"
 #define SAVE_AUTO       "save0"
 
+static cvar_t   *sv_noreload;
+
 static int write_server_file(bool autosave)
 {
     char        name[MAX_OSPATH];
@@ -430,18 +432,15 @@ static int read_level_file(void)
     return 0;
 }
 
-static int no_save_games(void)
+static bool no_save_games(void)
 {
-    if (dedicated->integer)
-        return 1;
-
     if (!(g_features->integer & GMF_ENHANCED_SAVEGAMES))
-        return 1;
+        return true;
 
     if (Cvar_VariableInteger("deathmatch"))
-        return 1;
+        return true;
 
-    return 0;
+    return false;
 }
 
 void SV_AutoSaveBegin(mapcmd_t *cmd)
@@ -517,6 +516,8 @@ void SV_CheckForSavegame(mapcmd_t *cmd)
 {
     if (no_save_games())
         return;
+    if (sv_noreload->integer)
+        return;
 
     if (read_level_file()) {
         // only warn when loading a regular savegame. autosave without level
@@ -542,9 +543,6 @@ void SV_CheckForSavegame(mapcmd_t *cmd)
 
 void SV_CheckForEnhancedSavegames(void)
 {
-    if (dedicated->integer)
-        return;
-
     if (Cvar_VariableInteger("deathmatch"))
         return;
 
@@ -578,11 +576,6 @@ static void SV_Loadgame_f(void)
         return;
     }
 
-    if (dedicated->integer) {
-        Com_Printf("Savegames are for listen servers only.\n");
-        return;
-    }
-
     dir = Cmd_Argv(1);
     if (!COM_IsPath(dir)) {
         Com_Printf("Bad savedir.\n");
@@ -592,7 +585,7 @@ static void SV_Loadgame_f(void)
     // make sure the server files exist
     if (!FS_FileExistsEx(va("save/%s/server.ssv", dir), FS_TYPE_REAL | FS_PATH_GAME) ||
         !FS_FileExistsEx(va("save/%s/game.ssv", dir), FS_TYPE_REAL | FS_PATH_GAME)) {
-        Com_Printf ("No such savegame: %s\n", dir);
+        Com_Printf("No such savegame: %s\n", dir);
         return;
     }
 
@@ -621,11 +614,6 @@ static void SV_Savegame_f(void)
 
     if (sv.state != ss_game) {
         Com_Printf("You must be in a game to save.\n");
-        return;
-    }
-
-    if (dedicated->integer) {
-        Com_Printf("Savegames are for listen servers only.\n");
         return;
     }
 
@@ -693,5 +681,7 @@ static const cmdreg_t c_savegames[] = {
 
 void SV_RegisterSavegames(void)
 {
+    sv_noreload = Cvar_Get("sv_noreload", "0", 0);
+
     Cmd_Register(c_savegames);
 }

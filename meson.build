@@ -57,7 +57,6 @@ client_src = [
   'src/server/entities.c',
   'src/server/game.c',
   'src/server/init.c',
-  'src/server/save.c',
   'src/server/send.c',
   'src/server/main.c',
   'src/server/user.c',
@@ -351,6 +350,11 @@ if get_option('mvd-client')
     'src/server/mvd/parse.c'
   ]
   config.set10('USE_MVD_CLIENT', true)
+endif
+
+if get_option('save-games')
+  common_src += 'src/server/save.c'
+  config.set10('USE_SAVEGAMES', true)
 endif
 
 if get_option('system-console')
