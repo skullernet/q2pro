@@ -4271,7 +4271,7 @@ static int ref_extra, phys_extra, main_extra;
 static sync_mode_t sync_mode;
 
 #define MIN_PHYS_HZ 10
-#define MAX_PHYS_HZ 125
+#define MAX_PHYS_HZ 250
 #define MIN_REF_HZ MIN_PHYS_HZ
 #define MAX_REF_HZ 1000
 
