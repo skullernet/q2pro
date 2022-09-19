@@ -83,9 +83,11 @@ cvar_t  *info_msg;
 cvar_t  *info_hand;
 cvar_t  *info_gender;
 cvar_t  *info_uf;
+#if USE_CLIENT
 cvar_t  *info_steamid;
 cvar_t  *info_steamcloudappenabled;
 cvar_t  *info_steamclouduserenabled;
+#endif
 cvar_t  *info_version;
 
 #if USE_REF
@@ -3998,9 +4000,11 @@ static void CL_InitLocal(void)
     info_gender = Cvar_Get("gender", "male", CVAR_USERINFO | CVAR_ARCHIVE);
     info_gender->modified = false; // clear this so we know when user sets it manually
     info_uf = Cvar_Get("uf", "", CVAR_USERINFO);
-    info_steamid = Cvar_Get("steamid", "", CVAR_USERINFO);
-    info_steamcloudappenabled = Cvar_Get("steamcloudappenabled", "", CVAR_USERINFO);
-    info_steamclouduserenabled = Cvar_Get("steamclouduserenabled", "", CVAR_USERINFO);
+    #if USE_CLIENT
+        info_steamid = Cvar_Get("steamid", "", CVAR_USERINFO);
+        info_steamcloudappenabled = Cvar_Get("steamcloudappenabled", "", CVAR_USERINFO);
+        info_steamclouduserenabled = Cvar_Get("steamclouduserenabled", "", CVAR_USERINFO);
+    #endif
     info_version = Cvar_Get("version", "", CVAR_USERINFO);
 
 

@@ -515,9 +515,11 @@ extern  cvar_t  *spectator_password;
 extern  cvar_t  *needpass;
 extern  cvar_t  *g_select_empty;
 extern  cvar_t  *dedicated;
+#if USE_CLIENT
 extern  cvar_t  *steamid;
-extern  cvar_t  *info_steamcloudappenabled;
-extern  cvar_t  *info_steamclouduserenabled;
+extern  cvar_t  *steamcloudappenabled;
+extern  cvar_t  *steamclouduserenabled;
+#endif
 
 extern  cvar_t  *filterban;
 
