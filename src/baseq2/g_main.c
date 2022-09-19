@@ -45,8 +45,10 @@ cvar_t  *maxentities;
 cvar_t  *g_select_empty;
 cvar_t  *dedicated;
 cvar_t  *steamid;
+#if USE_CLIENT
 cvar_t  *steamcloudappenabled;
 cvar_t  *steamclouduserenabled;
+#endif
 
 cvar_t  *filterban;
 
@@ -129,9 +131,11 @@ void InitGame(void)
 
     // noset vars
     dedicated = gi.cvar("dedicated", "0", CVAR_NOSET);
-    steamid = gi.cvar("steamid", "0", CVAR_USERINFO | CVAR_NOSET);
-    steamcloudappenabled = gi.cvar("steamcloudappenabled", "", CVAR_USERINFO);
-    steamclouduserenabled = gi.cvar("steamclouduserenabled", "", CVAR_USERINFO);
+    #if USE_CLIENT
+        steamid = gi.cvar("steamid", "0", CVAR_USERINFO | CVAR_NOSET);
+        steamcloudappenabled = gi.cvar("steamcloudappenabled", "", CVAR_USERINFO);
+        steamclouduserenabled = gi.cvar("steamclouduserenabled", "", CVAR_USERINFO);
+    #endif
 
     // latched vars
     sv_cheats = gi.cvar("cheats", "0", CVAR_SERVERINFO | CVAR_LATCH);

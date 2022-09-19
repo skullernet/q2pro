@@ -148,9 +148,11 @@ extern cvar_t  *z_perturb;
 extern cvar_t   *developer;
 #endif
 extern cvar_t   *dedicated;
+#if USE_CLIENT
 extern cvar_t   *steamid;
 extern cvar_t   *steamcloudappenabled;
 extern cvar_t   *steamclouduserenabled;
+#endif
 #if USE_CLIENT
 extern cvar_t   *host_speeds;
 #endif

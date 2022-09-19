@@ -75,9 +75,11 @@ cvar_t  *developer;
 cvar_t  *timescale;
 cvar_t  *fixedtime;
 cvar_t  *dedicated;
+#if USE_CLIENT
 cvar_t  *steamid;
 cvar_t  *steamcloudappenabled;
 cvar_t  *steamclouduserenabled;
+#endif
 cvar_t  *com_version;
 
 cvar_t  *logfile_enable;    // 1 = create new, 2 = append to existing
