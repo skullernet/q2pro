@@ -104,6 +104,9 @@ cvar_t  *sv_allow_unconnected_cmds;
 cvar_t  *sv_lrcon_password;
 
 cvar_t  *g_features;
+cvar_t  *g_view_predict;
+cvar_t  *g_view_low;
+cvar_t  *g_view_high;
 
 static bool     sv_registered;
 
@@ -538,7 +541,7 @@ static void SVC_Info(void)
         return; // ignore in single player
 
     version = atoi(Cmd_Argv(1));
-    if (version < PROTOCOL_VERSION_DEFAULT || version > PROTOCOL_VERSION_Q2PRO)
+    if (version < PROTOCOL_VERSION_DEFAULT || version > PROTOCOL_VERSION_AQTION)
         return; // ignore invalid versions
 
     len = Q_scnprintf(buffer, sizeof(buffer),
@@ -607,7 +610,7 @@ static void SVC_GetChallenge(void)
 
     // send it back
     Netchan_OutOfBand(NS_SERVER, &net_from,
-                      "challenge %u p=34,35,36", challenge);
+                      "challenge %u p=%i,%i,%i,%i", challenge, PROTOCOL_VERSION_DEFAULT, PROTOCOL_VERSION_R1Q2, PROTOCOL_VERSION_Q2PRO, PROTOCOL_VERSION_AQTION);
 }
 
 /*
@@ -648,7 +651,7 @@ static bool parse_basic_params(conn_params_t *p)
 
     // check for invalid protocol version
     if (p->protocol < PROTOCOL_VERSION_OLD ||
-        p->protocol > PROTOCOL_VERSION_Q2PRO)
+        p->protocol > PROTOCOL_VERSION_AQTION)
         return reject("Unsupported protocol version %d.\n", p->protocol);
 
     // check for valid, but outdated protocol version
@@ -810,7 +813,36 @@ static bool parse_enhanced_params(conn_params_t *p)
         } else {
             p->version = PROTOCOL_VERSION_Q2PRO_MINIMUM;
         }
-    }
+	}
+	else if (p->protocol == PROTOCOL_VERSION_AQTION) {
+		// set netchan type
+		s = Cmd_Argv(6);
+		if (*s) {
+			p->nctype = atoi(s);
+			if (p->nctype < NETCHAN_OLD || p->nctype > NETCHAN_NEW)
+				return reject("Invalid netchan type.\n");
+		}
+		else {
+			p->nctype = NETCHAN_NEW;
+		}
+
+		// set zlib
+		s = Cmd_Argv(7);
+		p->has_zlib = !*s || atoi(s);
+
+		// set minor protocol version
+		s = Cmd_Argv(8);
+		if (*s) {
+			p->version = atoi(s);
+			clamp(p->version,
+				PROTOCOL_VERSION_AQTION_MINIMUM,
+				PROTOCOL_VERSION_AQTION_CURRENT);
+		}
+		else {
+			p->version = PROTOCOL_VERSION_AQTION_MINIMUM;
+		}
+	}
+
 
     return true;
 }
@@ -1005,6 +1037,19 @@ static void init_pmove_and_es_flags(client_t *newcl)
         }
         force = 1;
     }
+	else if (newcl->protocol == PROTOCOL_VERSION_AQTION) {
+		if (sv_qwmod->integer) {
+			PmoveEnableQW(&newcl->pmp);
+		}
+		newcl->pmp.flyhack = true;
+		newcl->pmp.flyfriction = 4;
+		newcl->esFlags |= MSG_ES_UMASK;
+		newcl->esFlags |= MSG_ES_LONGSOLID;
+		newcl->esFlags |= MSG_ES_BEAMORIGIN;
+		if (newcl->version >= PROTOCOL_VERSION_Q2PRO_MINIMUM) {
+			force = 1;
+		}
+	}
     newcl->pmp.waterhack = sv_waterjump_hack->integer >= force;
 }
 
@@ -1015,7 +1060,7 @@ static void send_connect_packet(client_t *newcl, int nctype)
     const char *dlstring1   = "";
     const char *dlstring2   = "";
 
-    if (newcl->protocol == PROTOCOL_VERSION_Q2PRO) {
+    if (newcl->protocol == PROTOCOL_VERSION_Q2PRO || newcl->protocol == PROTOCOL_VERSION_AQTION) {
         if (nctype == NETCHAN_NEW)
             ncstring = " nc=1";
         else
@@ -1145,9 +1190,11 @@ static void SVC_DirectConnect(void)
 
     SV_InitClientSend(newcl);
 
-    if (newcl->protocol == PROTOCOL_VERSION_DEFAULT) {
-        newcl->WriteFrame = SV_WriteFrameToClient_Default;
-    } else {
+	if (newcl->protocol == PROTOCOL_VERSION_DEFAULT) {
+		newcl->WriteFrame = SV_WriteFrameToClient_Default;
+	} else if (newcl->protocol == PROTOCOL_VERSION_AQTION) {
+		newcl->WriteFrame = SV_WriteFrameToClient_Aqtion;
+	} else {
         newcl->WriteFrame = SV_WriteFrameToClient_Enhanced;
     }
 
@@ -2247,6 +2294,9 @@ void SV_Init(void)
 
     Cvar_Get("sv_features", va("%d", SV_FEATURES), CVAR_ROM);
     g_features = Cvar_Get("g_features", "0", CVAR_ROM);
+	g_view_predict = Cvar_Get("g_view_predict", "0", CVAR_ROM);
+	g_view_low = Cvar_Get("g_view_low", "0", CVAR_ROM);
+	g_view_high = Cvar_Get("g_view_high", "0", CVAR_ROM);
 
     init_rate_limits();
 

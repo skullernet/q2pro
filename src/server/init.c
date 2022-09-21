@@ -162,6 +162,7 @@ void SV_SpawnServer(mapcmd_t *cmd)
         sv.cm.entitystring = "";
     }
 
+
     //
     // clear physics interaction links
     //

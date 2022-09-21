@@ -65,6 +65,10 @@ static inline vec_t PlaneDiffFast(vec3_t v, cplane_t *p)
     return PlaneDiff(v, p);
 }
 
+void Matrix4x4_CM_Transform4(const float *matrix, const float *vector, float *product);
+void Matrix4x4_CM_Projection2(float *proj, float fovx, float fovy, float neard);
+void Matrix4x4_CM_ModelViewMatrix(float *modelview, const vec3_t viewangles, const vec3_t vieworg);
+void Matrix4_Multiply(const float *a, const float *b, float *out);
 void SetupRotationMatrix(vec3_t matrix[3], const vec3_t dir, float degrees);
 
 #endif // MATH_H

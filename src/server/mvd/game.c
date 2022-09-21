@@ -150,6 +150,7 @@ static void MVD_LayoutChannels(mvd_client_t *client)
     static const char header[] =
         "xv 32 yv 8 picn inventory "
         "xv %d yv 172 string2 " VERSION " "
+        "xv 0 yv 24 cstring \"\020Hold ESC for Main Menu\021\""
         "xv 0 yv 32 cstring \"\020Channel Chooser\021\""
         "xv 64 yv 48 string2 \"Name         Map     S/P\""
         "yv 56 string \"------------ ------- ---\" xv 56 ";
@@ -943,8 +944,8 @@ static void MVD_Say_f(mvd_client_t *client, int argnum)
             continue;
         }
 
-        if (cl->protocol == PROTOCOL_VERSION_Q2PRO &&
-            cl->version >= PROTOCOL_VERSION_Q2PRO_SERVER_STATE) {
+        if ((cl->protocol == PROTOCOL_VERSION_Q2PRO && cl->version >= PROTOCOL_VERSION_Q2PRO_SERVER_STATE) ||
+			(cl->protocol == PROTOCOL_VERSION_AQTION)) {
             SV_ClientPrintf(cl, PRINT_CHAT, "%s\n", text);
         } else {
             SV_ClientPrintf(cl, PRINT_HIGH, "%s\n", hightext);
