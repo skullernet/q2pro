@@ -212,7 +212,6 @@ OBJS_c := \
     src/server/entities.o   \
     src/server/game.o       \
     src/server/init.o       \
-    src/server/save.o       \
     src/server/send.o       \
     src/server/main.o       \
     src/server/user.o       \
@@ -426,6 +425,13 @@ ifdef CONFIG_MVD_CLIENT
     CFLAGS_c += -DUSE_MVD_CLIENT=1
     OBJS_s += src/server/mvd/client.o src/server/mvd/game.o src/server/mvd/parse.o
     OBJS_c += src/server/mvd/client.o src/server/mvd/game.o src/server/mvd/parse.o
+endif
+
+ifndef CONFIG_NO_SAVEGAMES
+    CFLAGS_s += -DUSE_SAVEGAMES=1
+    CFLAGS_c += -DUSE_SAVEGAMES=1
+    OBJS_s += src/server/save.o
+    OBJS_c += src/server/save.o
 endif
 
 ifdef CONFIG_NO_ZLIB

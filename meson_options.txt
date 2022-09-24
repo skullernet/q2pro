@@ -21,6 +21,7 @@ option('openal-dynamic', type: 'boolean', value: false, description: 'link to Op
 option('openal', type: 'feature', value: 'auto', description: 'OpenAL support')
 option('oss', type: 'feature', value: 'disabled', description: 'OSS support')
 option('packetdup-hack', type: 'boolean', value: false, description: 'packet duplication hack')
+option('save-games', type: 'boolean', value: true, description: 'game saving support')
 option('sdl2', type: 'feature', value: 'auto', description: 'SDL2 support')
 option('software-sound', type: 'boolean', value: true, description: 'software sound')
 option('system-console', type: 'boolean', value: true, description: 'system console')

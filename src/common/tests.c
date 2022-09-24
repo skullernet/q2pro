@@ -59,6 +59,11 @@ static void Com_Freeze_f(void)
         ;
 }
 
+static q_noinline uint32_t *null_ptr(void)
+{
+    return (uint32_t *)1024;
+}
+
 // test crash dumps and NX support
 static void Com_Crash_f(void)
 {
@@ -88,17 +93,22 @@ static void Com_Crash_f(void)
         Z_Free(buf3);
         break;
     default:
-        *(uint32_t *)1024 = 0x123456;
+        *null_ptr() = 0x123456;
         break;
     }
+}
+
+static q_noinline void my_free(void *p)
+{
+    free(p);
 }
 
 static void Com_DoubleFree_f(void)
 {
     void *p = malloc(64);
     Com_PageInMemory(p, 64);
-    free(p);
-    free(p);
+    my_free(p);
+    my_free(p);
 }
 
 // use twice normal print buffer size to test for overflows, etc
