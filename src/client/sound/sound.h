@@ -110,6 +110,9 @@ typedef struct {
     sfxcache_t *(*upload_sfx)(sfx_t *s);
     void (*delete_sfx)(sfx_t *s);
     void (*page_in_sfx)(sfx_t *s);
+    void (*raw_samples)(int samples, int rate, int width, int channels, const byte *data, float volume);
+    bool (*need_raw_samples)(void);
+    void (*drop_raw_samples)(void);
     int (*get_begin_ofs)(float timeofs);
     void (*play_channel)(channel_t *ch);
     void (*stop_channel)(channel_t *ch);

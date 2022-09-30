@@ -184,6 +184,10 @@ void S_Init(void)
 
     s_registration_sequence = 1;
 
+    // start the cd track
+    if (cls.state >= ca_precached)
+        OGG_Play();
+
 fail:
     Cvar_SetInteger(s_enable, s_started, FROM_CODE);
     Com_Printf("----------------------\n");
@@ -227,6 +231,7 @@ void S_Shutdown(void)
 
     S_StopAllSounds();
     S_FreeAllSounds();
+    OGG_Stop();
 
     s_api.shutdown();
     memset(&s_api, 0, sizeof(s_api));
@@ -256,9 +261,12 @@ void S_Activate(void)
     if (active == s_active)
         return;
 
+    Com_DDDPrintf("%s: %d\n", __func__, active);
     s_active = active;
 
-    Com_DDDPrintf("%s: %d\n", __func__, s_active);
+    if (!active)
+        s_api.drop_raw_samples();
+
     s_api.activate();
 }
 
@@ -846,6 +854,8 @@ void S_Update(void)
     } else {
         listener_entnum = cl.frame.clientNum + 1;
     }
+
+    OGG_Update();
 
     s_api.update();
 }

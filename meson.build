@@ -304,6 +304,23 @@ client_deps = [jpeg, png, curl, sdl2, openal]
 server_deps = []
 game_deps = [zlib]
 
+ogg = dependency('ogg',
+  required:        get_option('ogg'),
+  allow_fallback:  win32,
+  default_options: fallback_opt,
+)
+vorbisfile = dependency('vorbisfile',
+  required:        get_option('ogg'),
+  allow_fallback:  win32,
+  default_options: fallback_opt,
+)
+if ogg.found() and vorbisfile.found()
+  client_src += 'src/client/sound/ogg.c'
+  client_deps += ogg.partial_dependency(compile_args: true, includes: true)
+  client_deps += vorbisfile
+  config.set10('USE_OGG', true)
+endif
+
 if win32
   subdir('src/windows')
 else

@@ -1318,6 +1318,9 @@ void SCR_BeginLoadingPlaque(void)
         return;
     }
 
+    S_StopAllSounds();
+    OGG_Stop();
+
     if (cls.disable_screen) {
         return;
     }

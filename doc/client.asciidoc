@@ -293,6 +293,23 @@ TIP: Using https://openal-soft.org/[OpenAL Soft] implementation of OpenAL is
 recommended.
 
 
+Ogg Vorbis music
+~~~~~~~~~~~~~~~~
+
+ogg_enable::
+    Enables automatic playback of background music in Ogg Vorbis format.
+    Default value is 1.
+
+ogg_volume::
+    Background music volume, relative to master volume. Default value is 1.
+
+ogg_shuffle::
+    If disabled, play music tracks named ‘music/trackNN.ogg’, where NN is
+    current CD track number (typically in range 02-11).  If enabled, play all
+    files with ‘.ogg’ extension from ‘music’ directory in random order. Default
+    value is 0 (disabled).
+
+
 Graphical Console
 ~~~~~~~~~~~~~~~~~
 
@@ -1408,6 +1425,8 @@ followip [count]::
     (it should be positive integer).  If _count_ is omitted, then the most
     recent IP address is used.
 
+ogginfo::
+    Display information about currently playing background music track.
 
 Incompatibilities
 -----------------
@@ -1470,6 +1489,4 @@ it used to be you know where to look. The following list may be incomplete.
   robustness and portability. Only the ‘baseq2’ game library included in Q2PRO
   distribution has been converted to use the new improved savegame format. Q2PRO
   will refuse to load and save games in old format for security reasons.
-
-- CD music is not supported.
 
