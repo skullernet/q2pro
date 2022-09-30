@@ -302,7 +302,7 @@ endif
 common_deps = [zlib]
 client_deps = [jpeg, png, curl, sdl2, openal]
 server_deps = []
-game_deps = []
+game_deps = [zlib]
 
 if win32
   subdir('src/windows')
