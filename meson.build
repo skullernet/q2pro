@@ -397,6 +397,7 @@ shared_library('game' + cpu, game_src,
   link_args:             dll_link_args,
   install:               system_wide,
   install_dir:           libdir / get_option('base-game'),
+  override_options:      get_option('game-build-options'),
 )
 
 config.set('REVISION',            meson.project_version().substring(1).split('~')[0].to_int())
