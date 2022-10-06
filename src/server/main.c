@@ -86,6 +86,7 @@ cvar_t  *sv_waterjump_hack;
 cvar_t  *sv_packetdup_hack;
 #endif
 cvar_t  *sv_allow_map;
+cvar_t  *sv_cinematics;
 #if !USE_CLIENT
 cvar_t  *sv_recycle;
 #endif
@@ -2216,6 +2217,7 @@ void SV_Init(void)
 #endif
 
     sv_allow_map = Cvar_Get("sv_allow_map", "0", 0);
+    sv_cinematics = Cvar_Get("sv_cinematics", "1", 0);
 
 #if !USE_CLIENT
     sv_recycle = Cvar_Get("sv_recycle", "0", 0);

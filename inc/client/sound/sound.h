@@ -39,6 +39,8 @@ void S_BeginRegistration(void);
 qhandle_t S_RegisterSound(const char *sample);
 void S_EndRegistration(void);
 
+void S_RawSamples(int samples, int rate, int width, int channels, const byte *data);
+
 #if USE_OGG
 void OGG_Play(void);
 void OGG_Stop(void);

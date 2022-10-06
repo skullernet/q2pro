@@ -1278,35 +1278,6 @@ void SCR_Shutdown(void)
 
 //=============================================================================
 
-void SCR_FinishCinematic(void)
-{
-    // tell the server to advance to the next map / cinematic
-    CL_ClientCommand(va("nextserver %i\n", cl.servercount));
-}
-
-void SCR_PlayCinematic(const char *name)
-{
-    // only static pictures are supported
-    if (COM_CompareExtension(name, ".pcx")) {
-        SCR_FinishCinematic();
-        return;
-    }
-
-    cl.image_precache[0] = R_RegisterPic2(name);
-    if (!cl.image_precache[0]) {
-        SCR_FinishCinematic();
-        return;
-    }
-
-    // save picture name for reloading
-    Q_strlcpy(cl.mapname, name, sizeof(cl.mapname));
-
-    cls.state = ca_cinematic;
-
-    SCR_EndLoadingPlaque();     // get rid of loading plaque
-    Con_Close(false);           // get rid of connection screen
-}
-
 /*
 ================
 SCR_BeginLoadingPlaque
@@ -1967,9 +1938,7 @@ static void SCR_DrawActive(void)
     }
 
     if (cls.state == ca_cinematic) {
-        if (R_GetPicSize(NULL, NULL, cl.image_precache[0]))
-            R_DrawFill8(0, 0, r_config.width, r_config.height, 0);
-        R_DrawStretchPic(0, 0, r_config.width, r_config.height, cl.image_precache[0]);
+        SCR_DrawCinematic();
         return;
     }
 

@@ -798,6 +798,12 @@ void S_StopAllSounds(void)
     memset(s_channels, 0, sizeof(s_channels));
 }
 
+void S_RawSamples(int samples, int rate, int width, int channels, const byte *data)
+{
+    if (s_started)
+        s_api.raw_samples(samples, rate, width, channels, data, 1.0f);
+}
+
 // =======================================================================
 // Update sound buffer
 // =======================================================================
