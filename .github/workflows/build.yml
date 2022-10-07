@@ -53,7 +53,7 @@ jobs:
 
       - name: Build
         run: |
-          meson setup ${{ env.MESON_ARGS }} builddir
+          meson setup ${{ env.MESON_ARGS }} -Dvorbis:werror=false builddir
           ninja -C builddir
 
   linux:
@@ -70,7 +70,8 @@ jobs:
           sudo apt-get install -y meson libsdl2-dev libopenal-dev \
           libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
           libcurl4-gnutls-dev libx11-dev libxi-dev \
-          libwayland-dev wayland-protocols libdecor-0-dev
+          libwayland-dev wayland-protocols libdecor-0-dev \
+          libogg-dev libvorbis-dev
 
       - name: Build
         run: |
