@@ -505,6 +505,11 @@ POLYGONS BUILDING
 =============================================================================
 */
 
+#define DotProductDouble(x,y) \
+    ((double)(x)[0]*(y)[0]+\
+     (double)(x)[1]*(y)[1]+\
+     (double)(x)[2]*(y)[2])
+
 static uint32_t color_for_surface(mface_t *surf)
 {
     if (surf->drawflags & SURF_TRANS33)
@@ -583,8 +588,8 @@ static void build_surface_poly(mface_t *surf, vec_t *vbo)
         memcpy(vbo + 3, &color, sizeof(color));
 
         // texture0 coordinates
-        tc[0] = DotProduct(vbo, texinfo->axis[0]) + texinfo->offset[0];
-        tc[1] = DotProduct(vbo, texinfo->axis[1]) + texinfo->offset[1];
+        tc[0] = DotProductDouble(vbo, texinfo->axis[0]) + texinfo->offset[0];
+        tc[1] = DotProductDouble(vbo, texinfo->axis[1]) + texinfo->offset[1];
 
         if (mins[0] > tc[0]) mins[0] = tc[0];
         if (maxs[0] < tc[0]) maxs[0] = tc[0];

@@ -11,7 +11,15 @@ ifdef CONFIG_WINDOWS
     SYS ?= Win32
 else
     ifndef CPU
-        CPU := $(shell uname -m | sed -e s/i.86/i386/ -e s/amd64/x86_64/ -e s/sun4u/sparc64/ -e s/arm.*/arm/ -e s/sa110/arm/ -e s/alpha/axp/)
+        CPU := $(shell uname -m | sed \
+			-e s/i.86/i386/ \
+			-e s/i86pc/i386/ \
+			-e s/amd64/x86_64/ \
+			-e s/sun4u/sparc64/ \
+			-e s/arm.*/arm/ \
+			-e s/sa110/arm/ \
+			-e s/aarch64.*/arm64/ \
+			-e s/alpha/axp/)
     endif
     ifndef SYS
         SYS := $(shell uname -s)
@@ -189,7 +197,6 @@ OBJS_c := \
     src/server/entities.o   \
     src/server/game.o       \
     src/server/init.o       \
-    src/server/save.o       \
     src/server/send.o       \
     src/server/main.o       \
     src/server/user.o       \
@@ -384,6 +391,13 @@ ifdef CONFIG_MVD_CLIENT
     OBJS_c += src/server/mvd/client.o src/server/mvd/game.o src/server/mvd/parse.o
 endif
 
+ifndef CONFIG_NO_SAVEGAMES
+    CFLAGS_s += -DUSE_SAVEGAMES=1
+    CFLAGS_c += -DUSE_SAVEGAMES=1
+    OBJS_s += src/server/save.o
+    OBJS_c += src/server/save.o
+endif
+
 ifdef CONFIG_NO_ZLIB
     CFLAGS_c += -DUSE_ZLIB=0
     CFLAGS_s += -DUSE_ZLIB=0
@@ -466,12 +480,6 @@ else
     CFLAGS_c += -DUSE_SDL=2 $(SDL_CFLAGS)
     LIBS_c += $(SDL_LIBS)
     OBJS_c += src/unix/video/sdl.o
-
-    ifdef CONFIG_X11
-        CFLAGS_c += -DUSE_X11
-        LIBS_c += -lGLX -lXi -lX11
-        OBJS_c += src/unix/video/x11.o
-    endif
 
     ifndef CONFIG_NO_SOFTWARE_SOUND
         OBJS_c += src/unix/sound/sdl.o

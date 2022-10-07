@@ -244,6 +244,16 @@ bool Sys_GetAntiCheatAPI(void)
 }
 #endif
 
+bool Sys_SetNonBlock(int fd, bool nb)
+{
+    int ret = fcntl(fd, F_GETFL, 0);
+    if (ret == -1)
+        return false;
+    if ((bool)(ret & O_NONBLOCK) == nb)
+        return true;
+    return fcntl(fd, F_SETFL, ret ^ O_NONBLOCK) == 0;
+}
+
 static void hup_handler(int signum)
 {
     flush_logs = true;
@@ -472,8 +482,8 @@ void Sys_ListFiles_r(listfiles_t *list, const char *path, int depth)
         }
 
         // pattern search implies recursive search
-        if ((list->flags & FS_SEARCH_BYFILTER) &&
-            S_ISDIR(st.st_mode) && depth < MAX_LISTED_DEPTH) {
+        if ((list->flags & (FS_SEARCH_BYFILTER | FS_SEARCH_RECURSIVE))
+            && S_ISDIR(st.st_mode) && depth < MAX_LISTED_DEPTH) {
             Sys_ListFiles_r(list, fullpath, depth + 1);
 
             // re-check count

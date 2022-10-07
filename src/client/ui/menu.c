@@ -1139,9 +1139,9 @@ static menuSound_t MenuList_Key(menuList_t *l, int key)
 
         return QMS_NOTHANDLED;
     }
-#endif
 
     l->scratchCount = 0;
+#endif
 
     switch (key) {
     case K_LEFTARROW:

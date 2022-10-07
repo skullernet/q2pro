@@ -72,6 +72,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define Q_ERR_EXIST             Q_ERR(EEXIST)
 #define Q_ERR_BADF              Q_ERR(EBADF)
 #define Q_ERR_PERM              Q_ERR(EPERM)
+#define Q_ERR_NOMEM             Q_ERR(ENOMEM)
 
 // This macro converts system errno into quake error value.
 #define Q_ERRNO                 Q_ErrorNumber()

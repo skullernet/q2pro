@@ -90,10 +90,6 @@ static void CL_ParsePacketEntities(server_frame_t *oldframe,
             Com_Error(ERR_DROP, "%s: bad number: %d", __func__, newnum);
         }
 
-        if (msg_read.readcount > msg_read.cursize) {
-            Com_Error(ERR_DROP, "%s: read past end of message", __func__);
-        }
-
         if (!newnum) {
             break;
         }
@@ -287,14 +283,10 @@ static void CL_ParseFrame(int extrabits)
     // read areabits
     length = MSG_ReadByte();
     if (length) {
-        if (length < 0 || msg_read.readcount + length > msg_read.cursize) {
-            Com_Error(ERR_DROP, "%s: read past end of message", __func__);
-        }
         if (length > sizeof(frame.areabits)) {
             Com_Error(ERR_DROP, "%s: invalid areabits length", __func__);
         }
-        memcpy(frame.areabits, msg_read.data + msg_read.readcount, length);
-        msg_read.readcount += length;
+        memcpy(frame.areabits, MSG_ReadData(length), length);
         frame.areabytes = length;
     } else {
         frame.areabytes = 0;
@@ -321,7 +313,14 @@ static void CL_ParseFrame(int extrabits)
         if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO) {
             // parse clientNum
             if (extraflags & EPS_CLIENTNUM) {
-                frame.clientNum = MSG_ReadByte();
+                if (cls.protocolVersion < PROTOCOL_VERSION_Q2PRO_CLIENTNUM_SHORT) {
+                    frame.clientNum = MSG_ReadByte();
+                } else {
+                    frame.clientNum = MSG_ReadShort();
+                }
+                if (!VALIDATE_CLIENTNUM(frame.clientNum)) {
+                    Com_Error(ERR_DROP, "%s: bad clientNum", __func__);
+                }
             } else if (oldframe) {
                 frame.clientNum = oldframe->clientNum;
             }
@@ -459,7 +458,7 @@ static void CL_ParseGamestate(void)
 {
     int        index, bits;
 
-    while (msg_read.readcount < msg_read.cursize) {
+    while (1) {
         index = MSG_ReadShort();
         if (index == MAX_CONFIGSTRINGS) {
             break;
@@ -467,7 +466,7 @@ static void CL_ParseGamestate(void)
         CL_ParseConfigstring(index);
     }
 
-    while (msg_read.readcount < msg_read.cursize) {
+    while (1) {
         index = MSG_ParseEntityBits(&bits);
         if (!index) {
             break;
@@ -480,6 +479,7 @@ static void CL_ParseServerData(void)
 {
     char    levelname[MAX_QPATH];
     int     i, protocol, attractloop q_unused;
+    bool    cinematic;
 
     Cbuf_Execute(&cl_cmdbuf);          // make sure any stuffed commands are done
 
@@ -544,6 +544,7 @@ static void CL_ParseServerData(void)
 
     // setup default server state
     cl.serverstate = ss_game;
+    cinematic = cl.clientNum == -1;
 
     if (cls.serverProtocol == PROTOCOL_VERSION_R1Q2) {
         i = MSG_ReadByte();
@@ -587,6 +588,7 @@ static void CL_ParseServerData(void)
         if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_SERVER_STATE) {
             Com_DPrintf("Q2PRO server state %d\n", i);
             cl.serverstate = i;
+            cinematic = i == ss_pic;
         }
         i = MSG_ReadByte();
         if (i) {
@@ -598,29 +600,24 @@ static void CL_ParseServerData(void)
             Com_DPrintf("Q2PRO QW mode enabled\n");
             PmoveEnableQW(&cl.pmp);
         }
-        cl.esFlags |= MSG_ES_UMASK;
-        if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_LONG_SOLID) {
-            cl.esFlags |= MSG_ES_LONGSOLID;
+        i = MSG_ReadByte();
+        if (i) {
+            Com_DPrintf("Q2PRO waterjump hack enabled\n");
+            cl.pmp.waterhack = true;
         }
+        cl.esFlags |= MSG_ES_UMASK | MSG_ES_LONGSOLID;
         if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_BEAM_ORIGIN) {
             cl.esFlags |= MSG_ES_BEAMORIGIN;
         }
         if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_SHORT_ANGLES) {
             cl.esFlags |= MSG_ES_SHORTANGLES;
         }
-        if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_WATERJUMP_HACK) {
-            i = MSG_ReadByte();
-            if (i) {
-                Com_DPrintf("Q2PRO waterjump hack enabled\n");
-                cl.pmp.waterhack = true;
-            }
-        }
         cl.pmp.speedmult = 2;
         cl.pmp.flyhack = true; // fly hack is unconditionally enabled
         cl.pmp.flyfriction = 4;
     }
 
-    if (cl.clientNum == -1) {
+    if (cinematic) {
         SCR_PlayCinematic(levelname);
     } else {
         // seperate the printfs so the server message can have a color
@@ -634,11 +631,12 @@ static void CL_ParseServerData(void)
         Com_SetColor(COLOR_ALT);
         Com_Printf("%s\n", levelname);
         Com_SetColor(COLOR_NONE);
+    }
 
-        // make sure clientNum is in range
-        if (cl.clientNum < 0 || cl.clientNum >= MAX_CLIENTS) {
-            cl.clientNum = CLIENTNUM_NONE;
-        }
+    // make sure clientNum is in range
+    if (!VALIDATE_CLIENTNUM(cl.clientNum)) {
+        Com_WPrintf("Serverdata has invalid playernum %d\n", cl.clientNum);
+        cl.clientNum = -1;
     }
 }
 
@@ -795,12 +793,8 @@ static void CL_ParseStartSoundPacket(void)
     int flags, channel, entity;
 
     flags = MSG_ReadByte();
-    if ((flags & (SND_ENT | SND_POS)) == 0)
-        Com_Error(ERR_DROP, "%s: neither SND_ENT nor SND_POS set", __func__);
 
     snd.index = MSG_ReadByte();
-    if (snd.index == -1)
-        Com_Error(ERR_DROP, "%s: read past end of message", __func__);
 
     if (flags & SND_VOLUME)
         snd.volume = MSG_ReadByte() / 255.0f;
@@ -892,14 +886,12 @@ static void CL_CheckForIP(const char *s)
 {
     unsigned b1, b2, b3, b4, port;
     netadr_t *a;
-    char *p;
+    int n;
 
     while (*s) {
-        if (sscanf(s, "%3u.%3u.%3u.%3u", &b1, &b2, &b3, &b4) == 4 &&
-            b1 < 256 && b2 < 256 && b3 < 256 && b4 < 256) {
-            p = strchr(s, ':');
-            if (p) {
-                port = strtoul(p + 1, NULL, 10);
+        n = sscanf(s, "%3u.%3u.%3u.%3u:%u", &b1, &b2, &b3, &b4, &port);
+        if (n >= 4 && (b1 | b2 | b3 | b4) < 256) {
+            if (n == 5) {
                 if (port < 1024 || port > 65535) {
                     break; // privileged or invalid port
                 }
@@ -1058,13 +1050,7 @@ static void CL_ParseDownload(int cmd)
         Com_Error(ERR_DROP, "%s: bad size: %d", __func__, size);
     }
 
-    if (msg_read.readcount + size > msg_read.cursize) {
-        Com_Error(ERR_DROP, "%s: read past end of message", __func__);
-    }
-
-    data = msg_read.data + msg_read.readcount;
-    msg_read.readcount += size;
-
+    data = MSG_ReadData(size);
     CL_HandleDownload(data, size, percent, decompressed_size);
 }
 
@@ -1072,7 +1058,7 @@ static void CL_ParseZPacket(void)
 {
 #if USE_ZLIB
     sizebuf_t   temp;
-    byte        buffer[MAX_MSGLEN];
+    byte        buffer[MAX_MSGLEN], *data;
     int         ret, inlen, outlen;
 
     if (msg_read.data != msg_read_buffer) {
@@ -1081,10 +1067,7 @@ static void CL_ParseZPacket(void)
 
     inlen = MSG_ReadWord();
     outlen = MSG_ReadWord();
-
-    if (inlen == -1 || outlen == -1 || msg_read.readcount + inlen > msg_read.cursize) {
-        Com_Error(ERR_DROP, "%s: read past end of message", __func__);
-    }
+    data = MSG_ReadData(inlen);
 
     if (outlen > MAX_MSGLEN) {
         Com_Error(ERR_DROP, "%s: invalid output length", __func__);
@@ -1092,7 +1075,7 @@ static void CL_ParseZPacket(void)
 
     inflateReset(&cls.z);
 
-    cls.z.next_in = msg_read.data + msg_read.readcount;
+    cls.z.next_in = data;
     cls.z.avail_in = (uInt)inlen;
     cls.z.next_out = buffer;
     cls.z.avail_out = (uInt)outlen;
@@ -1100,8 +1083,6 @@ static void CL_ParseZPacket(void)
     if (ret != Z_STREAM_END) {
         Com_Error(ERR_DROP, "%s: inflate() failed with error %d", __func__, ret);
     }
-
-    msg_read.readcount += inlen;
 
     temp = msg_read;
     SZ_Init(&msg_read, buffer, outlen);
@@ -1176,21 +1157,19 @@ void CL_ParseServerMessage(void)
     }
 #endif
 
+    msg_read.allowunderflow = false;
+
 //
 // parse the message
 //
     while (1) {
-        if (msg_read.readcount > msg_read.cursize) {
-            Com_Error(ERR_DROP, "%s: read past end of server message", __func__);
-        }
-
         readcount = msg_read.readcount;
-
-        if ((cmd = MSG_ReadByte()) == -1) {
-            SHOWNET(1, "%3zu:END OF MESSAGE\n", msg_read.readcount - 1);
+        if (readcount == msg_read.cursize) {
+            SHOWNET(1, "%3zu:END OF MESSAGE\n", readcount);
             break;
         }
 
+        cmd = MSG_ReadByte();
         extrabits = cmd >> SVCMD_BITS;
         cmd &= SVCMD_MASK;
 
@@ -1203,7 +1182,7 @@ void CL_ParseServerMessage(void)
         // other commands
         switch (cmd) {
         default:
-badbyte:
+        badbyte:
             Com_Error(ERR_DROP, "%s: illegible server message: %d", __func__, cmd);
             break;
 
@@ -1350,19 +1329,18 @@ void CL_SeekDemoMessage(void)
     }
 #endif
 
+    msg_read.allowunderflow = false;
+
 //
 // parse the message
 //
     while (1) {
-        if (msg_read.readcount > msg_read.cursize) {
-            Com_Error(ERR_DROP, "%s: read past end of server message", __func__);
-        }
-
-        if ((cmd = MSG_ReadByte()) == -1) {
-            SHOWNET(1, "%3zu:END OF MESSAGE\n", msg_read.readcount - 1);
+        if (msg_read.readcount == msg_read.cursize) {
+            SHOWNET(1, "%3zu:END OF MESSAGE\n", msg_read.readcount);
             break;
         }
 
+        cmd = MSG_ReadByte();
         extrabits = cmd >> SVCMD_BITS;
         cmd &= SVCMD_MASK;
 
@@ -1424,7 +1402,6 @@ void CL_SeekDemoMessage(void)
         case svc_layout:
             CL_ParseLayout();
             break;
-
         }
     }
 }

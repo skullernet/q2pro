@@ -90,14 +90,15 @@ static void SV_CreateBaselines(void)
     }
 }
 
-static bool need_flush_msg(size_t size)
+static void maybe_flush_msg(size_t size)
 {
     size += msg_write.cursize;
 #if USE_ZLIB
     if (sv_client->has_zlib)
         size = ZPACKET_HEADER + deflateBound(&svs.z, size);
 #endif
-    return size > sv_client->netchan->maxpacketlen;
+    if (size > sv_client->netchan->maxpacketlen)
+        SV_ClientAddMessage(sv_client, MSG_GAMESTATE);
 }
 
 static void write_configstrings(void)
@@ -112,14 +113,10 @@ static void write_configstrings(void)
         if (!string[0]) {
             continue;
         }
-        length = strlen(string);
-        if (length > MAX_QPATH) {
-            length = MAX_QPATH;
-        }
+        length = Q_strnlen(string, MAX_QPATH);
+
         // check if this configstring will overflow
-        if (need_flush_msg(length + 4)) {
-            SV_ClientAddMessage(sv_client, MSG_GAMESTATE);
-        }
+        maybe_flush_msg(length + 4);
 
         MSG_WriteByte(svc_configstring);
         MSG_WriteShort(i);
@@ -155,9 +152,7 @@ static void write_baselines(void)
         for (j = 0; j < SV_BASELINES_PER_CHUNK; j++) {
             if (base->number) {
                 // check if this baseline will overflow
-                if (need_flush_msg(64)) {
-                    SV_ClientAddMessage(sv_client, MSG_GAMESTATE);
-                }
+                maybe_flush_msg(64);
 
                 MSG_WriteByte(svc_spawnbaseline);
                 write_baseline(base);
@@ -184,11 +179,7 @@ static void write_gamestate(void)
         if (!string[0]) {
             continue;
         }
-        length = strlen(string);
-        if (length > MAX_QPATH) {
-            length = MAX_QPATH;
-        }
-
+        length = Q_strnlen(string, MAX_QPATH);
         MSG_WriteShort(i);
         MSG_WriteData(string, length);
         MSG_WriteByte(0);
@@ -339,13 +330,21 @@ void SV_New_f(void)
         MSG_WriteByte(sv.state);
         MSG_WriteByte(sv_client->pmp.strafehack);
         MSG_WriteByte(sv_client->pmp.qwmode);
-        if (sv_client->version >= PROTOCOL_VERSION_Q2PRO_WATERJUMP_HACK) {
-            MSG_WriteByte(sv_client->pmp.waterhack);
-        }
+        MSG_WriteByte(sv_client->pmp.waterhack);
         break;
     }
 
     SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
+
+    if (sv_client->protocol == PROTOCOL_VERSION_Q2PRO &&
+        sv_client->version < PROTOCOL_VERSION_Q2PRO_CLIENTNUM_SHORT &&
+        sv_client->slot == CLIENTNUM_NONE && oldstate == cs_assigned)
+    {
+        SV_ClientPrintf(sv_client, PRINT_HIGH,
+                        "WARNING: Server has allocated client slot number 255. "
+                        "This is known to be broken in your Q2PRO client version. "
+                        "Please update your client to latest version.\n");
+    }
 
     SV_ClientCommand(sv_client, "\n");
 
@@ -578,11 +577,9 @@ static void SV_BeginDownload_f(void)
     }
 
     maxdownloadsize = MAX_LOADFILE;
-#if 0
-    if (sv_max_download_size->integer) {
+    if (sv_max_download_size->integer > 0) {
         maxdownloadsize = Cvar_ClampInteger(sv_max_download_size, 1, MAX_LOADFILE);
     }
-#endif
 
     if (downloadsize == 0) {
         Com_DPrintf("Refusing empty download of %s to %s\n", name, sv_client->name);
@@ -1186,7 +1183,7 @@ static void SV_NewClientExecuteMove(int c)
                 return;
             }
             cmd = &cmds[i][j];
-            MSG_ReadDeltaUsercmd_Enhanced(lastcmd, cmd, sv_client->version);
+            MSG_ReadDeltaUsercmd_Enhanced(lastcmd, cmd);
             cmd->lightlevel = lightlevel;
             lastcmd = cmd;
         }

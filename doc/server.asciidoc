@@ -302,6 +302,10 @@ allow_download_others::
     Enables downloading of files from any subdirectory other than those listed
     above. Default value is 0.
 
+sv_max_download_size::
+    Maximum size of UDP download in bytes. Value of 0 disables the limit.
+    Default value is 8388608 (8 MiB).
+
 TIP: Q2PRO clients can stream compressed downloads directly from .pkz archives
 on the server. Thus it is advisable to keep all data in .pkz for optimal
 download speeds.
@@ -428,6 +432,10 @@ mvd_wait_percent::
     Maximum inuse percentage of the delay buffer when MVD channel stops
     buffering data to prevent overrun, ignoring ‘mvd_wait_delay’ value.
     Default value is 50.
+
+mvd_buffer_size::
+    Size of delay buffer, in multiplies of MAX_MSGLEN (32 KiB). Default value
+    is 8. You may need to increase this when also increasing ‘mvd_wait_delay’.
 
 mvd_default_map::
     Specifies default map used for the Waiting Room channel. Default value is
@@ -572,19 +580,24 @@ Miscellaneous
 ~~~~~~~~~~~~~
 
 map_override_path::
-    Specifies the prefix used to construct path to the entity string override
-    file. Override file will be loaded from ‘$\{map_override_path}$\{mapname}.ent’.
-    Usually this variable is set to ‘maps/’ (notice the trailing slash), and
-    ‘.ent’ files are placed together with ‘.bsp’ files. Default value is empty
-    (don't try to override entity strings).
+    Specifies the directory from which override files with extensions ‘.ent’ or
+    ‘.bsp.override’ are loaded. Default value is empty (don't try to override
+    entity strings). Typical value for this is ‘maps’, but can be customized
+    per server port.
 
 .Entity overrides
 *****************
-Override files allow the entity string of a map being loaded to be replaced by
-a custom data supplied by server operator. This makes it possible to change the
-layout of entities on the map (thus creating a new version of the map) without
-requiring clients to download anything. Entity string can be dumped from the current
-map using ‘dumpents’ server command and later changed with a text editor.
+Override files with ‘.ent’ extension allow the entity string of the map being
+loaded to be replaced by a custom data supplied by server operator. This makes
+it possible to change the layout of entities on the map (thus creating a new
+version of the map) without requiring clients to download anything. Entity
+string can be dumped from the current map using ‘dumpents’ server command and
+later changed with a text editor.
+
+Override files with ‘.bsp.override’ extension are more complex: they are binary
+files that can replace map entity string or checksum. They can also create an
+alias for the map. How to create such files is out of scope of this manual
+(search the internet for ‘r1q2 map override file generator’).
 *****************
 
 map_visibility_patch::
@@ -634,8 +647,9 @@ printall <text ...>::
     Prints the given raw _text_ to all connected clients.
 
 dumpents [filename]::
-    Dumps the entity string of current map into ‘maps/_filename_.ent’ file. See
-    also ‘map_override_path’ variable description.
+    Dumps the entity string of current map into ‘entdumps/_filename_.ent’ file.
+    Original map entity string is dumped, even if override is in effect.
+    See also ‘map_override_path’ variable description.
 
 pickclient <address:port>::
     Send ‘passive_connect’ packet to the client at specified _address_ and

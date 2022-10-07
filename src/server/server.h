@@ -146,7 +146,7 @@ typedef struct {
     server_state_t  state;      // precache commands are only valid during load
     int             spawncount; // random number generated each server spawn
 
-#if USE_CLIENT
+#if USE_SAVEGAMES
     int         gamedetecthack;
 #endif
 
@@ -163,7 +163,6 @@ typedef struct {
 
     char        name[MAX_QPATH];            // map name, or cinematic name
     cm_t        cm;
-    char        *entitystring;
 
     char        configstrings[MAX_CONFIGSTRINGS][MAX_QPATH];
 
@@ -479,6 +478,8 @@ typedef struct server_static_s {
 
 #if USE_ZLIB
     z_stream        z;  // for compressing messages at once
+    byte            *z_buffer;
+    size_t          z_buffer_size;
 #endif
 
     unsigned        last_heartbeat;
@@ -533,6 +534,7 @@ extern cvar_t       *sv_novis;
 extern cvar_t       *sv_lan_force_rate;
 extern cvar_t       *sv_calcpings_method;
 extern cvar_t       *sv_changemapcmd;
+extern cvar_t       *sv_max_download_size;
 
 extern cvar_t       *sv_strafejump_hack;
 #if USE_PACKETDUP
@@ -553,8 +555,6 @@ extern cvar_t       *sv_uptime;
 extern cvar_t       *sv_allow_unconnected_cmds;
 
 extern cvar_t       *g_features;
-
-extern cvar_t       *map_override_path;
 
 extern cvar_t       *sv_timeout;
 extern cvar_t       *sv_zombietime;
@@ -763,7 +763,7 @@ void PF_Pmove(pmove_t *pm);
 //
 // sv_save.c
 //
-#if USE_CLIENT
+#if USE_SAVEGAMES
 void SV_AutoSaveBegin(mapcmd_t *cmd);
 void SV_AutoSaveEnd(void);
 void SV_CheckForSavegame(mapcmd_t *cmd);

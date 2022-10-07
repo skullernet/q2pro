@@ -28,6 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "client/ui.h"
 #include "refresh/refresh.h"
 #include "system/system.h"
+#include "keytables/keytables.h"
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -39,6 +40,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <poll.h>
 
+#define XA(x)   XInternAtom(x11.dpy, #x, False)
+#define XAs(x)  XGetAtomName(x11.dpy, x)
+
 static struct {
     Display     *dpy;
     int         screen;
@@ -48,11 +52,15 @@ static struct {
     vidFlags_t  flags;
     vrect_t     rc;
     bool        mapped;
+    bool        evdev;
+    char        *clipboard_data;
+    int         dpi_scale;
 
     struct {
         Atom    delete;
         Atom    wm_state;
         Atom    fs;
+        Atom    hidden;
     } atom;
 
     struct {
@@ -129,30 +137,34 @@ static void shutdown(void)
         XCloseDisplay(x11.dpy);
     }
 
+    Z_Free(x11.clipboard_data);
+
     memset(&x11, 0, sizeof(x11));
 }
 
-static Atom *get_prop_atom_list(Window win, Atom atom, int *nitems_p)
+static void *get_prop_list(Window win, Atom atom, Atom req_type, int req_format, int *nitems_p)
 {
     Atom type;
-    int format, result;
+    int format;
     unsigned long nitems;
     unsigned long bytes_left;
     unsigned char *data;
 
-    *nitems_p = 0;
-    result = XGetWindowProperty(x11.dpy, win, atom, 0, 1024, False, XA_ATOM,
-                                &type, &format, &nitems, &bytes_left, &data);
-    if (result != Success)
+    if (nitems_p)
+        *nitems_p = 0;
+
+    if (XGetWindowProperty(x11.dpy, win, atom, 0, 1024, False, req_type,
+                           &type, &format, &nitems, &bytes_left, &data))
         return NULL;
 
-    if (type != XA_ATOM || format != 32 || bytes_left) {
+    if (type != req_type || format != req_format || bytes_left) {
         XFree(data);
         return NULL;
     }
 
-    *nitems_p = nitems;
-    return (Atom *)data;
+    if (nitems_p)
+        *nitems_p = nitems;
+    return data;
 }
 
 static int io_error_handler(Display *dpy)
@@ -276,10 +288,26 @@ static bool init(void)
         goto fail;
     }
 
+    x11.dpi_scale = 1;
+
+    int width = DisplayWidth(x11.dpy, x11.screen);
+    int height = DisplayHeight(x11.dpy, x11.screen);
+    int mm_width = DisplayWidthMM(x11.dpy, x11.screen);
+    int mm_height = DisplayHeightMM(x11.dpy, x11.screen);
+
+    if (mm_width > 0 && mm_height > 0) {
+        float dpi_x = width * 25.4f / mm_width;
+        float dpi_y = height * 25.4f / mm_height;
+        int scale_x = Q_rint(dpi_x / 96.0f);
+        int scale_y = Q_rint(dpi_y / 96.0f);
+        if (scale_x == scale_y)
+            x11.dpi_scale = clamp(scale_x, 1, 10);
+    }
+
     XSizeHints hints = {
         .flags = PMinSize,
-        .min_width = 320,
-        .min_height = 240,
+        .min_width = 320 * x11.dpi_scale,
+        .min_height = 240 * x11.dpi_scale,
     };
 
     XSetWMNormalHints(x11.dpy, x11.win, &hints);
@@ -295,22 +323,21 @@ static bool init(void)
     XStoreName(x11.dpy, x11.win, PRODUCT);
     XSetIconName(x11.dpy, x11.win, PRODUCT);
 
-#define XA(x)   XInternAtom(x11.dpy, #x, False)
-
     x11.atom.delete = XA(WM_DELETE_WINDOW);
     XSetWMProtocols(x11.dpy, x11.win, &x11.atom.delete, 1);
 
     x11.atom.wm_state = XA(_NET_WM_STATE);
 
     int nitems;
-    Atom *list = get_prop_atom_list(x11.root, XA(_NET_SUPPORTED), &nitems);
+    Atom *list = get_prop_list(x11.root, XA(_NET_SUPPORTED), XA_ATOM, 32, &nitems);
     if (list) {
         Atom fs = XA(_NET_WM_STATE_FULLSCREEN);
+        Atom hidden = XA(_NET_WM_STATE_HIDDEN);
         for (int i = 0; i < nitems; i++) {
-            if (list[i] == fs) {
+            if (list[i] == fs)
                 x11.atom.fs = fs;
-                break;
-            }
+            else if (list[i] == hidden)
+                x11.atom.hidden = hidden;
         }
         XFree(list);
     }
@@ -365,6 +392,12 @@ static bool init(void)
         XFreePixmap(x11.dpy, pixmap);
     }
 
+    char *rules = get_prop_list(x11.root, XA(_XKB_RULES_NAMES), XA_STRING, 8, NULL);
+    if (rules) {
+        x11.evdev = !strcmp(rules, "evdev");
+        XFree(rules);
+    }
+
     Bool set;
     XkbSetDetectableAutoRepeat(x11.dpy, True, &set);
     return true;
@@ -416,6 +449,11 @@ static char *get_mode_list(void)
     return Z_CopyString("desktop");
 }
 
+static int get_dpi_scale(void)
+{
+    return x11.dpi_scale;
+}
+
 static void mode_changed(void)
 {
     R_ModeChanged(x11.rc.width, x11.rc.height, x11.flags);
@@ -433,92 +471,17 @@ static void configure_event(XConfigureEvent *event)
     mode_changed();
 }
 
-static const struct {
-    KeySym sym;
-    int key;
-} keytable[] = {
-    { XK_BackSpace, K_BACKSPACE },
-    { XK_Tab,       K_TAB       },
-    { XK_Return,    K_ENTER     },
-    { XK_Pause,     K_PAUSE     },
-    { XK_Escape,    K_ESCAPE    },
-
-    { XK_KP_0,        K_KP_INS        },
-    { XK_KP_1,        K_KP_END        },
-    { XK_KP_2,        K_KP_DOWNARROW  },
-    { XK_KP_3,        K_KP_PGDN       },
-    { XK_KP_4,        K_KP_LEFTARROW  },
-    { XK_KP_5,        K_KP_5          },
-    { XK_KP_6,        K_KP_RIGHTARROW },
-    { XK_KP_7,        K_KP_HOME       },
-    { XK_KP_8,        K_KP_UPARROW    },
-    { XK_KP_9,        K_KP_PGUP       },
-    { XK_KP_Delete,   K_KP_DEL        },
-    { XK_KP_Divide,   K_KP_SLASH      },
-    { XK_KP_Multiply, K_KP_MULTIPLY   },
-    { XK_KP_Subtract, K_KP_MINUS      },
-    { XK_KP_Add,      K_KP_PLUS       },
-    { XK_KP_Enter,    K_KP_ENTER      },
-
-    { XK_Up,        K_UPARROW    },
-    { XK_Down,      K_DOWNARROW  },
-    { XK_Right,     K_RIGHTARROW },
-    { XK_Left,      K_LEFTARROW  },
-    { XK_Insert,    K_INS        },
-    { XK_Home,      K_HOME       },
-    { XK_End,       K_END        },
-    { XK_Page_Up,   K_PGUP       },
-    { XK_Page_Down, K_PGDN       },
-
-    { XK_F1,  K_F1  },
-    { XK_F2,  K_F2  },
-    { XK_F3,  K_F3  },
-    { XK_F4,  K_F4  },
-    { XK_F5,  K_F5  },
-    { XK_F6,  K_F6  },
-    { XK_F7,  K_F7  },
-    { XK_F8,  K_F8  },
-    { XK_F9,  K_F9  },
-    { XK_F10, K_F10 },
-    { XK_F11, K_F11 },
-    { XK_F12, K_F12 },
-
-    { XK_Num_Lock,    K_NUMLOCK   },
-    { XK_Caps_Lock,   K_CAPSLOCK  },
-    { XK_Scroll_Lock, K_SCROLLOCK },
-    { XK_Super_L,     K_LWINKEY   },
-    { XK_Super_R,     K_RWINKEY   },
-    { XK_Menu,        K_MENU      },
-
-    { XK_Shift_L,   K_LSHIFT },
-    { XK_Shift_R,   K_RSHIFT },
-    { XK_Control_L, K_LCTRL  },
-    { XK_Control_R, K_RCTRL  },
-    { XK_Alt_L,     K_LALT   },
-    { XK_Alt_R,     K_RALT   },
-};
-
-static int lookup_key(KeySym sym)
-{
-    for (int i = 0; i < q_countof(keytable); i++)
-        if (keytable[i].sym == sym)
-            return keytable[i].key;
-    return 0;
-}
-
 static void key_event(XKeyEvent *event)
 {
-    KeySym sym = XLookupKeysym(event, 0);
-    if (sym == NoSymbol) {
-        Com_DPrintf("Unknown keycode %d\n", event->keycode);
-        return;
-    }
+    const keytable_t *tab = x11.evdev ? &keytable_evdev : &keytable_at;
+    int code = event->keycode - 8;
+    int key = 0;
 
-    int key;
-    if (Q_isprint(sym)) {
-        key = sym;
-    } else if (!(key = lookup_key(sym))) {
-        Com_DPrintf("Unknown keysym %#lx\n", sym);
+    if (code > 0 && code < tab->count)
+        key = tab->keys[code];
+
+    if (!key) {
+        Com_DPrintf("Unknown keycode %d\n", code);
         return;
     }
 
@@ -553,17 +516,22 @@ static void property_event(XPropertyEvent *event)
     Atom *state;
     int nitems;
 
-    Com_DDPrintf("%s\n", XGetAtomName(x11.dpy, event->atom));
+    Com_DDPrintf("%s\n", XAs(event->atom));
     if (event->atom != x11.atom.wm_state)
         return;
-    if (!(state = get_prop_atom_list(x11.win, event->atom, &nitems)))
+    if (!(state = get_prop_list(x11.win, event->atom, XA_ATOM, 32, &nitems)))
         return;
 
     bool fs = false;
+    bool hidden = false;
     for (int i = 0; i < nitems; i++) {
+        if (state[i] == None)
+            continue;
         if (state[i] == x11.atom.fs)
             fs = true;
-        Com_DDPrintf("  %s\n", XGetAtomName(x11.dpy, state[i]));
+        else if (state[i] == x11.atom.hidden)
+            hidden = true;
+        Com_DDPrintf("  %s\n", XAs(state[i]));
     }
     XFree(state);
 
@@ -578,6 +546,9 @@ static void property_event(XPropertyEvent *event)
 
     if ((bool)vid_fullscreen->integer != fs)
         Cvar_SetInteger(vid_fullscreen, fs, FROM_CODE);
+
+    if (hidden)
+        CL_Activate(ACT_MINIMIZED);
 }
 
 static void raw_motion_event(XIRawEvent *event)
@@ -633,6 +604,36 @@ static void focus_event(XFocusChangeEvent *event)
     x11.mouse.y = 0;
     x11.mouse.grabbed = true;
     x11.mouse.grab_pending = false;
+}
+
+static void selection_request(XSelectionRequestEvent *event)
+{
+    Com_DDPrintf("%#lx %s %s\n", event->requestor, XAs(event->selection), XAs(event->target));
+
+    XEvent reply = {
+        .xselection = {
+            .type = SelectionNotify,
+            .requestor = event->requestor,
+            .selection = event->selection,
+            .target = event->target,
+            .time = event->time,
+        }
+    };
+
+    if (x11.clipboard_data && event->selection == XA(CLIPBOARD) && event->property) {
+        if (event->target == XA(TARGETS)) {
+            Atom target = XA_STRING;
+            XChangeProperty(x11.dpy, event->requestor, event->property, XA_ATOM, 32,
+                            PropModeReplace, (unsigned char *)&target, 1);
+            reply.xselection.property = event->property;
+        } else if (event->target == XA_STRING) {
+            XChangeProperty(x11.dpy, event->requestor, event->property, XA_STRING, 8,
+                            PropModeReplace, (unsigned char *)x11.clipboard_data, strlen(x11.clipboard_data));
+            reply.xselection.property = event->property;
+        }
+    }
+
+    XSendEvent(x11.dpy, event->requestor, False, 0, &reply);
 }
 
 #if USE_DEBUG
@@ -692,6 +693,15 @@ static void pump_events(void)
             break;
         case DestroyNotify:
             Com_Quit(NULL, ERR_DISCONNECT);
+            break;
+        case SelectionRequest:
+            selection_request(&event.xselectionrequest);
+            break;
+        case SelectionClear:
+            if (event.xselectionclear.selection == XA(CLIPBOARD)) {
+                Z_Free(x11.clipboard_data);
+                x11.clipboard_data = NULL;
+            }
             break;
         }
     }
@@ -773,21 +783,23 @@ static bool get_mouse_motion(int *dx, int *dy)
     return true;
 }
 
-static char *get_selection_data(void)
+static char *get_selection(Atom sel)
 {
     Atom type;
-    int format, result;
+    int format;
     unsigned long nitems;
     unsigned long bytes_left;
     unsigned char *data;
 
-    Window sowner = XGetSelectionOwner(x11.dpy, XA_PRIMARY);
+    Window sowner = XGetSelectionOwner(x11.dpy, sel);
     if (sowner == None)
         return NULL;
+    if (sowner == x11.win)
+        return sel == XA(CLIPBOARD) ? Z_CopyString(x11.clipboard_data) : NULL;
 
     Atom property = XA(GETCLIPBOARDDATA_PROP);
 
-    XConvertSelection(x11.dpy, XA_PRIMARY, XA_STRING, property, x11.win, CurrentTime);
+    XConvertSelection(x11.dpy, sel, XA_STRING, property, x11.win, CurrentTime);
 
     unsigned now = Sys_Milliseconds();
     unsigned deadline = now + 50;
@@ -809,14 +821,42 @@ static char *get_selection_data(void)
         now = Sys_Milliseconds();
     }
 
-    result = XGetWindowProperty(x11.dpy, x11.win, property, 0, 1024, True,
-                                AnyPropertyType, &type, &format, &nitems, &bytes_left, &data);
-    if (result != Success)
+    if (XGetWindowProperty(x11.dpy, x11.win, property, 0, 1024, True,
+                           AnyPropertyType, &type, &format, &nitems, &bytes_left, &data))
         return NULL;
+
+    if (format != 8) {
+        XFree(data);
+        return NULL;
+    }
 
     char *copy = Z_CopyString((char *)data);
     XFree(data);
     return copy;
+}
+
+static char *get_selection_data(void)
+{
+    return get_selection(XA_PRIMARY);
+}
+
+static char *get_clipboard_data(void)
+{
+    return get_selection(XA(CLIPBOARD));
+}
+
+static void set_clipboard_data(const char *data)
+{
+    if (!data || !*data)
+        return;
+
+    Z_Free(x11.clipboard_data);
+    x11.clipboard_data = NULL;
+
+    XSetSelectionOwner(x11.dpy, XA(CLIPBOARD), x11.win, CurrentTime);
+
+    if (XGetSelectionOwner(x11.dpy, XA(CLIPBOARD)) == x11.win)
+        x11.clipboard_data = Z_CopyString(data);
 }
 
 static bool probe(void)
@@ -842,12 +882,15 @@ const vid_driver_t vid_x11 = {
 
     .set_mode = set_mode,
     .get_mode_list = get_mode_list,
+    .get_dpi_scale = get_dpi_scale,
 
     .get_proc_addr = get_proc_addr,
     .swap_buffers = swap_buffers,
     .swap_interval = swap_interval,
 
     .get_selection_data = get_selection_data,
+    .get_clipboard_data = get_clipboard_data,
+    .set_clipboard_data = set_clipboard_data,
 
     .init_mouse = init_mouse,
     .shutdown_mouse = shutdown_mouse,

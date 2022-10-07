@@ -545,7 +545,7 @@ IMG_LOAD(TGA)
     }
 
     if (colormap_type) {
-        Com_SetLastError("color mapped images are not supported");
+        Com_SetLastError("color mapped targa images are not supported");
         return Q_ERR_INVALID_FORMAT;
     }
 
@@ -833,9 +833,9 @@ IMG_LOAD(JPG)
 #else
     JSAMPROW row_pointer;
 
-    row_pointer = malloc(sizeof(JSAMPLE) * cinfo.output_width * cinfo.output_components);
+    row_pointer = Z_Malloc(sizeof(JSAMPLE) * cinfo.output_width * cinfo.output_components);
     ret = my_jpeg_finish_decompress(&cinfo, row_pointer, pixels);
-    free(row_pointer);
+    Z_Free(row_pointer);
 #endif
 
     if (ret < 0) {
@@ -889,6 +889,9 @@ static int IMG_SaveJPG(screenshot_t *s)
 
     h = s->height;
     row_pointers = malloc(sizeof(JSAMPROW) * h);
+    if (!row_pointers) {
+        return Q_ERR_NOMEM;
+    }
     for (i = 0; i < h; i++) {
         row_pointers[i] = (JSAMPROW)(s->pixels + (h - i - 1) * s->row_stride);
     }
@@ -1132,6 +1135,10 @@ static int IMG_SavePNG(screenshot_t *s)
 
     h = s->height;
     row_pointers = malloc(sizeof(png_bytep) * h);
+    if (!row_pointers) {
+        ret = Q_ERR_NOMEM;
+        goto fail;
+    }
     for (i = 0; i < h; i++) {
         row_pointers[i] = (png_bytep)(s->pixels + (h - i - 1) * s->row_stride);
     }
@@ -1705,9 +1712,13 @@ static void r_texture_formats_changed(cvar_t *self)
     }
 }
 
-static bool need_override_image(imagetype_t type)
+static bool need_override_image(imagetype_t type, imageformat_t fmt)
 {
-    return r_override_textures->integer && r_texture_overrides->integer & (1 << type);
+    if (r_override_textures->integer < 1)
+        return false;
+    if (r_override_textures->integer == 1 && fmt > IM_WAL)
+        return false;
+    return r_texture_overrides->integer & (1 << type);
 }
 
 #endif // USE_PNG || USE_JPG || USE_TGA
@@ -1807,7 +1818,7 @@ static image_t *find_or_load_image(const char *name, size_t len,
             // not found, change error to invalid path
             ret = Q_ERR_INVALID_PATH;
         }
-    } else if (need_override_image(type)) {
+    } else if (need_override_image(type, fmt)) {
         // forcibly replace the extension
         ret = try_other_formats(IM_MAX, image, &pic);
     } else {

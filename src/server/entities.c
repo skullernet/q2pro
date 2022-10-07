@@ -288,16 +288,12 @@ void SV_WriteFrameToClient_Enhanced(client_t *client)
 
     if (client->protocol == PROTOCOL_VERSION_Q2PRO) {
         // delta encode the clientNum
-        if (client->version < PROTOCOL_VERSION_Q2PRO_CLIENTNUM_FIX) {
-            if (!oldframe || frame->clientNum != oldframe->clientNum) {
-                extraflags |= EPS_CLIENTNUM;
+        if ((oldframe ? oldframe->clientNum : 0) != frame->clientNum) {
+            extraflags |= EPS_CLIENTNUM;
+            if (client->version < PROTOCOL_VERSION_Q2PRO_CLIENTNUM_SHORT) {
                 MSG_WriteByte(frame->clientNum);
-            }
-        } else {
-            int clientNum = oldframe ? oldframe->clientNum : 0;
-            if (clientNum != frame->clientNum) {
-                extraflags |= EPS_CLIENTNUM;
-                MSG_WriteByte(frame->clientNum);
+            } else {
+                MSG_WriteShort(frame->clientNum);
             }
         }
     }
@@ -390,6 +386,7 @@ void SV_BuildClientFrame(client_t *client)
     mleaf_t     *leaf;
     byte        clientphs[VIS_MAX_BYTES];
     byte        clientpvs[VIS_MAX_BYTES];
+    bool        need_clientnum_fix;
 
     clent = client->edict;
     if (!clent->client)
@@ -424,9 +421,19 @@ void SV_BuildClientFrame(client_t *client)
     // grab the current clientNum
     if (g_features->integer & GMF_CLIENTNUM) {
         frame->clientNum = clent->client->clientNum;
+        if (!VALIDATE_CLIENTNUM(frame->clientNum)) {
+            Com_WPrintf("%s: bad clientNum %d for client %d\n",
+                        __func__, frame->clientNum, client->number);
+            frame->clientNum = client->number;
+        }
     } else {
         frame->clientNum = client->number;
     }
+
+    // fix clientNum if out of range for older version of Q2PRO protocol
+    need_clientnum_fix = client->protocol == PROTOCOL_VERSION_Q2PRO
+        && client->version < PROTOCOL_VERSION_Q2PRO_CLIENTNUM_SHORT
+        && frame->clientNum >= CLIENTNUM_NONE;
 
     CM_FatPVS(client->cm, clientpvs, org);
     BSP_ClusterVis(client->cm->cache, clientphs, clientcluster, DVIS_PHS);
@@ -490,16 +497,10 @@ void SV_BuildClientFrame(client_t *client)
                         continue;       // not visible
                 }
 
-                if (!ent->s.modelindex) {
+                if (!ent->s.modelindex)
                     // don't send sounds if they will be attenuated away
-                    vec3_t    delta;
-                    float    len;
-
-                    VectorSubtract(org, ent->s.origin, delta);
-                    len = VectorLength(delta);
-                    if (len > 400)
+                    if (Distance(org, ent->s.origin) > 400)
                         continue;
-                }
             }
         }
 
@@ -527,7 +528,7 @@ void SV_BuildClientFrame(client_t *client)
 
         // hide POV entity from renderer, unless this is player's own entity
         if (e == frame->clientNum + 1 && ent != clent &&
-            (g_features->integer & GMF_CLIENTNUM) && !Q2PRO_OPTIMIZE(client)) {
+            (!Q2PRO_OPTIMIZE(client) || need_clientnum_fix)) {
             state->modelindex = 0;
         }
 
@@ -551,4 +552,7 @@ void SV_BuildClientFrame(client_t *client)
             break;
         }
     }
+
+    if (need_clientnum_fix)
+        frame->clientNum = client->slot;
 }

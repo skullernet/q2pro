@@ -36,18 +36,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define PROTOCOL_VERSION_R1Q2_LONG_SOLID        1905    // b7759
 #define PROTOCOL_VERSION_R1Q2_CURRENT           1905    // b7759
 
-#define PROTOCOL_VERSION_Q2PRO_MINIMUM          1011    // r161
-#define PROTOCOL_VERSION_Q2PRO_UCMD             1012    // r179
-#define PROTOCOL_VERSION_Q2PRO_CLIENTNUM_FIX    1013    // r226
-#define PROTOCOL_VERSION_Q2PRO_LONG_SOLID       1014    // r243
-#define PROTOCOL_VERSION_Q2PRO_WATERJUMP_HACK   1015    // r335
+#define PROTOCOL_VERSION_Q2PRO_MINIMUM          1015    // r335
 #define PROTOCOL_VERSION_Q2PRO_RESERVED         1016    // r364
 #define PROTOCOL_VERSION_Q2PRO_BEAM_ORIGIN      1017    // r1037-8
 #define PROTOCOL_VERSION_Q2PRO_SHORT_ANGLES     1018    // r1037-44
 #define PROTOCOL_VERSION_Q2PRO_SERVER_STATE     1019    // r1302
 #define PROTOCOL_VERSION_Q2PRO_EXTENDED_LAYOUT  1020    // r1354
 #define PROTOCOL_VERSION_Q2PRO_ZLIB_DOWNLOADS   1021    // r1358
-#define PROTOCOL_VERSION_Q2PRO_CURRENT          1021    // r1358
+#define PROTOCOL_VERSION_Q2PRO_CLIENTNUM_SHORT  1022    // r2161
+#define PROTOCOL_VERSION_Q2PRO_CURRENT          1022    // r2161
 
 #define PROTOCOL_VERSION_MVD_MINIMUM            2009    // r168
 #define PROTOCOL_VERSION_MVD_CURRENT            2010    // r177
@@ -63,6 +60,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MVD_SUPPORTED(x) \
     ((x) >= PROTOCOL_VERSION_MVD_MINIMUM && \
      (x) <= PROTOCOL_VERSION_MVD_CURRENT)
+
+#define VALIDATE_CLIENTNUM(x) \
+    ((x) >= -1 && (x) < MAX_EDICTS - 1)
 
 //=========================================
 
@@ -336,8 +336,8 @@ typedef enum {
 
 // ==============================================================
 
-#define CLIENTNUM_NONE        (MAX_CLIENTS - 1)
-#define CLIENTNUM_RESERVED    (MAX_CLIENTS - 1)
+// a client with this number will never be included in MVD stream
+#define CLIENTNUM_NONE      (MAX_CLIENTS - 1)
 
 // a SOLID_BBOX will never create this value
 #define PACKED_BSP      31

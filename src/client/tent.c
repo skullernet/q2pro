@@ -464,7 +464,6 @@ static void CL_ParsePlayerBeam(qhandle_t model)
 // override any beam with the same entity
     for (i = 0, b = cl_playerbeams; i < MAX_BEAMS; i++, b++) {
         if (b->entity == te.entity1) {
-            b->entity = te.entity1;
             b->model = model;
             b->endtime = cl.time + 200;
             VectorCopy(te.pos1, b->start);
@@ -486,7 +485,6 @@ static void CL_ParsePlayerBeam(qhandle_t model)
             return;
         }
     }
-
 }
 
 /*
@@ -1057,12 +1055,6 @@ void CL_ParseTEnt(void)
         S_StartSound(te.pos1, 0, 0, cl_sfx_grenexp, 1, ATTN_NORM, 0);
         break;
 
-    case TE_PLASMA_EXPLOSION:
-        CL_PlainExplosion();
-        CL_ExplosionParticles(te.pos1);
-        S_StartSound(te.pos1, 0, 0, cl_sfx_rockexp, 1, ATTN_NORM, 0);
-        break;
-
     case TE_ROCKET_EXPLOSION:
     case TE_ROCKET_EXPLOSION_WATER:
         ex = CL_PlainExplosion();
@@ -1079,6 +1071,7 @@ void CL_ParseTEnt(void)
         break;
 
     case TE_EXPLOSION1:
+    case TE_PLASMA_EXPLOSION:
         CL_PlainExplosion();
         CL_ExplosionParticles(te.pos1);
         S_StartSound(te.pos1, 0, 0, cl_sfx_rockexp, 1, ATTN_NORM, 0);

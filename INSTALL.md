@@ -16,7 +16,7 @@ Ubuntu use the following command:
     apt-get install meson gcc libc6-dev libsdl2-dev libopenal-dev \
                     libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
                     libcurl4-gnutls-dev libx11-dev libxi-dev \
-                    libwayland-dev wayland-protocols
+                    libwayland-dev wayland-protocols libdecor-0-dev
 
 Users of other distributions should look for equivalent development packages
 and install them.
@@ -60,8 +60,16 @@ Run `sudo ninja -C builddir install` to install Q2PRO system-wide into
 configured prefix (`/usr/local` by default).
 
 Copy `baseq2/pak*.pak` files and `baseq2/players` directory from unpacked
-Quake 2 data into `/usr/local/share/games/q2pro/baseq2` to complete the
+Quake 2 data into `/usr/local/share/q2pro/baseq2` to complete the
 installation.
+
+Alternatively, configure with `-Dsystem-wide=false` to build a ‘portable’
+version that expects to be launched from the root of Quake 2 data tree (this
+is default when building for Windows).
+
+On Windows, Q2PRO automatically sets current directory to the directory Q2PRO
+executable is in. On other platforms current directory must be set before
+launching Q2PRO executable if portable version is built.
 
 
 MinGW-w64

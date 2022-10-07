@@ -88,46 +88,6 @@ static void resolve_masters(void)
 #endif
 }
 
-// optionally load the entity string from external source
-static void override_entity_string(const char *server)
-{
-    char *path = map_override_path->string;
-    char buffer[MAX_QPATH], *str;
-    int ret;
-
-    if (!*path) {
-        return;
-    }
-
-    if (Q_concat(buffer, sizeof(buffer), path, server, ".ent") >= sizeof(buffer)) {
-        ret = Q_ERR_NAMETOOLONG;
-        goto fail1;
-    }
-
-    ret = SV_LoadFile(buffer, (void **)&str);
-    if (!str) {
-        if (ret == Q_ERR_NOENT) {
-            return;
-        }
-        goto fail1;
-    }
-
-    if (ret > MAX_MAP_ENTSTRING) {
-        ret = Q_ERR_FBIG;
-        goto fail2;
-    }
-
-    Com_Printf("Loaded entity string from %s\n", buffer);
-    sv.entitystring = str;
-    return;
-
-fail2:
-    SV_FreeFile(str);
-fail1:
-    Com_EPrintf("Couldn't load entity string from %s: %s\n",
-                buffer, Q_ErrorString(ret));
-}
-
 
 /*
 ================
@@ -141,7 +101,6 @@ void SV_SpawnServer(mapcmd_t *cmd)
 {
     int         i;
     client_t    *client;
-    const char  *entitystring;
 
     SCR_BeginLoadingPlaque();           // for local system
 
@@ -159,7 +118,6 @@ void SV_SpawnServer(mapcmd_t *cmd)
 
     // free current level
     CM_FreeMap(&sv.cm);
-    SV_FreeFile(sv.entitystring);
 
     // wipe the entire per-level structure
     memset(&sv, 0, sizeof(sv));
@@ -190,22 +148,18 @@ void SV_SpawnServer(mapcmd_t *cmd)
     resolve_masters();
 
     if (cmd->state == ss_game) {
-        override_entity_string(cmd->server);
-
         sv.cm = cmd->cm;
-        sprintf(sv.configstrings[CS_MAPCHECKSUM], "%d", (int)sv.cm.cache->checksum);
+        sprintf(sv.configstrings[CS_MAPCHECKSUM], "%d", sv.cm.checksum);
 
         // set inline model names
         Q_concat(sv.configstrings[CS_MODELS + 1], MAX_QPATH, "maps/", cmd->server, ".bsp");
         for (i = 1; i < sv.cm.cache->nummodels; i++) {
             sprintf(sv.configstrings[CS_MODELS + 1 + i], "*%d", i);
         }
-
-        entitystring = sv.entitystring ? sv.entitystring : sv.cm.cache->entitystring;
     } else {
         // no real map
         strcpy(sv.configstrings[CS_MAPCHECKSUM], "0");
-        entitystring = "";
+        sv.cm.entitystring = "";
     }
 
     //
@@ -222,7 +176,7 @@ void SV_SpawnServer(mapcmd_t *cmd)
     sv.state = ss_loading;
 
     // load and spawn all other entities
-    ge->SpawnEntities(sv.name, entitystring, cmd->spawnpoint);
+    ge->SpawnEntities(sv.name, sv.cm.entitystring, cmd->spawnpoint);
 
     // run two frames to allow everything to settle
     ge->RunFrame(); sv.framenum++;
@@ -312,6 +266,7 @@ bool SV_ParseMapCmd(mapcmd_t *cmd)
         }
         cmd->state = ss_pic;
     } else {
+        CM_LoadOverrides(&cmd->cm, cmd->server, sizeof(cmd->server));
         if (Q_concat(expanded, sizeof(expanded), "maps/", s, ".bsp") < sizeof(expanded)) {
             ret = CM_LoadMap(&cmd->cm, expanded);
         }
@@ -320,6 +275,7 @@ bool SV_ParseMapCmd(mapcmd_t *cmd)
 
     if (ret < 0) {
         Com_Printf("Couldn't load %s: %s\n", expanded, BSP_ErrorString(ret));
+        CM_FreeMap(&cmd->cm);   // free entstring if overridden
         return false;
     }
 
@@ -349,7 +305,6 @@ void SV_InitGame(unsigned mvd_spawn)
         SCR_BeginLoadingPlaque();
 
         CM_FreeMap(&sv.cm);
-        SV_FreeFile(sv.entitystring);
         memset(&sv, 0, sizeof(sv));
 
 #if USE_FPS
@@ -393,17 +348,12 @@ void SV_InitGame(unsigned mvd_spawn)
     } else {    // non-deathmatch, non-coop is one player
         Cvar_Set("maxclients", "1");
     }
-    Cvar_ClampInteger(sv_maxclients, 1, CLIENTNUM_RESERVED);
+    Cvar_ClampInteger(sv_maxclients, 1, MAX_CLIENTS);
 
     // enable networking
     if (sv_maxclients->integer > 1) {
         NET_Config(NET_SERVER);
     }
-
-    svs.client_pool = SV_Mallocz(sizeof(client_t) * sv_maxclients->integer);
-
-    svs.num_entities = sv_maxclients->integer * UPDATE_BACKUP * MAX_PACKET_ENTITIES;
-    svs.entities = SV_Mallocz(sizeof(entity_packed_t) * svs.num_entities);
 
     // initialize MVD server
     if (!mvd_spawn) {
@@ -412,6 +362,11 @@ void SV_InitGame(unsigned mvd_spawn)
 
     Cvar_ClampInteger(sv_reserved_slots, 0, sv_maxclients->integer - 1);
 
+    svs.client_pool = SV_Mallocz(sizeof(client_t) * sv_maxclients->integer);
+
+    svs.num_entities = sv_maxclients->integer * UPDATE_BACKUP * MAX_PACKET_ENTITIES;
+    svs.entities = SV_Mallocz(sizeof(entity_packed_t) * svs.num_entities);
+
 #if USE_ZLIB
     svs.z.zalloc = SV_zalloc;
     svs.z.zfree = SV_zfree;
@@ -419,6 +374,8 @@ void SV_InitGame(unsigned mvd_spawn)
                      -MAX_WBITS, 9, Z_DEFAULT_STRATEGY) != Z_OK) {
         Com_Error(ERR_FATAL, "%s: deflateInit2() failed", __func__);
     }
+    svs.z_buffer_size = ZPACKET_HEADER + deflateBound(&svs.z, MAX_MSGLEN);
+    svs.z_buffer = SV_Malloc(svs.z_buffer_size);
 #endif
 
     // init game

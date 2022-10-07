@@ -453,7 +453,7 @@ static void MVD_ParseUnicast(mvd_t *mvd, mvd_ops_t op, int extrabits)
         }
     }
 
-    SHOWNET(1, "%zu:END OF UNICAST\n", msg_read.readcount - 1);
+    SHOWNET(1, "%zu:END OF UNICAST\n", msg_read.readcount);
 
     if (msg_read.readcount > last) {
         MVD_Destroyf(mvd, "%s: read past end of unicast", __func__);
@@ -820,11 +820,11 @@ static void MVD_ParseFrame(mvd_t *mvd)
     if (!mvd->demoseeking)
         CM_SetPortalStates(&mvd->cm, data, length);
 
-    SHOWNET(1, "%3zu:playerinfo\n", msg_read.readcount - 1);
+    SHOWNET(1, "%3zu:playerinfo\n", msg_read.readcount);
     MVD_ParsePacketPlayers(mvd);
-    SHOWNET(1, "%3zu:packetentities\n", msg_read.readcount - 1);
+    SHOWNET(1, "%3zu:packetentities\n", msg_read.readcount);
     MVD_ParsePacketEntities(mvd);
-    SHOWNET(1, "%3zu:frame:%u\n", msg_read.readcount - 1, mvd->framenum);
+    SHOWNET(1, "%3zu:frame:%u\n", msg_read.readcount, mvd->framenum);
     MVD_PlayerToEntityStates(mvd);
 
     // update clients now so that effects datagram that
@@ -919,7 +919,7 @@ static void MVD_ChangeLevel(mvd_t *mvd)
 static void MVD_ParseServerData(mvd_t *mvd, int extrabits)
 {
     int protocol;
-    size_t len, maxlen;
+    size_t maxlen;
     char *string;
     int index;
     int ret;
@@ -1015,12 +1015,9 @@ static void MVD_ParseServerData(mvd_t *mvd, int extrabits)
 
     // parse world model
     string = mvd->configstrings[CS_MODELS + 1];
-    len = strlen(string);
-    if (len <= 9) {
+    if (!Com_ParseMapName(mvd->mapname, string, sizeof(mvd->mapname))) {
         MVD_Destroyf(mvd, "Bad world model: %s", string);
     }
-    memcpy(mvd->mapname, string + 5, len - 9);   // skip "maps/"
-    mvd->mapname[len - 9] = 0; // cut off ".bsp"
 
     // load the world model (we are only interesed in visibility info)
     Com_Printf("[%s] -=- Loading %s...\n", mvd->name, string);
@@ -1098,7 +1095,7 @@ bool MVD_ParseMessage(mvd_t *mvd)
             MVD_Destroyf(mvd, "Read past end of message");
         }
         if (msg_read.readcount == msg_read.cursize) {
-            SHOWNET(1, "%3zu:END OF MESSAGE\n", msg_read.readcount - 1);
+            SHOWNET(1, "%3zu:END OF MESSAGE\n", msg_read.readcount);
             break;
         }
 

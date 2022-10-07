@@ -102,7 +102,7 @@ void    MSG_WriteAngle(float f);
 #if USE_CLIENT
 void    MSG_WriteBits(int value, int bits);
 int     MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *cmd, int version);
-int     MSG_WriteDeltaUsercmd_Enhanced(const usercmd_t *from, const usercmd_t *cmd, int version);
+int     MSG_WriteDeltaUsercmd_Enhanced(const usercmd_t *from, const usercmd_t *cmd);
 #endif
 void    MSG_WriteDir(const vec3_t vector);
 void    MSG_PackEntity(entity_packed_t *out, const entity_state_t *in, bool short_angles);
@@ -139,7 +139,7 @@ void    MSG_ReadDir(vec3_t vector);
 int     MSG_ReadBits(int bits);
 void    MSG_ReadDeltaUsercmd(const usercmd_t *from, usercmd_t *cmd);
 void    MSG_ReadDeltaUsercmd_Hacked(const usercmd_t *from, usercmd_t *to);
-void    MSG_ReadDeltaUsercmd_Enhanced(const usercmd_t *from, usercmd_t *to, int version);
+void    MSG_ReadDeltaUsercmd_Enhanced(const usercmd_t *from, usercmd_t *to);
 int     MSG_ParseEntityBits(int *bits);
 void    MSG_ParseDeltaEntity(const entity_state_t *from, entity_state_t *to, int number, int bits, msgEsFlags_t flags);
 #if USE_CLIENT

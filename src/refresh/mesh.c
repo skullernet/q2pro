@@ -293,13 +293,10 @@ static glCullResult_t cull_lerped_model(model_t *model)
     maliasframe_t *newframe = &model->frames[newframenum];
     maliasframe_t *oldframe = &model->frames[oldframenum];
     vec3_t bounds[2];
-    vec_t radius;
     glCullResult_t cull;
 
     if (glr.entrotated) {
-        radius = newframe->radius > oldframe->radius ?
-                 newframe->radius : oldframe->radius;
-        cull = GL_CullSphere(origin, radius);
+        cull = GL_CullSphere(origin, max(newframe->radius, oldframe->radius));
         if (cull == CULL_OUT) {
             c.spheresCulled++;
             return cull;
@@ -403,7 +400,6 @@ static void setup_color(void)
 static void setup_celshading(void)
 {
     float value = Cvar_ClampValue(gl_celshading, 0, 10);
-    vec3_t dir;
 
     celscale = 0;
 
@@ -416,8 +412,7 @@ static void setup_celshading(void)
     if (!qglPolygonMode)
         return;
 
-    VectorSubtract(origin, glr.fd.vieworg, dir);
-    celscale = 1.0f - VectorLength(dir) / 700.0f;
+    celscale = 1.0f - Distance(origin, glr.fd.vieworg) / 700.0f;
 }
 
 static void draw_celshading(maliasmesh_t *mesh)

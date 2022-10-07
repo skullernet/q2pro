@@ -28,13 +28,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "client/ui.h"
 #include "refresh/refresh.h"
 #include "system/system.h"
+#include "keytables/keytables.h"
 
 #include <wayland-client.h>
 #include <wayland-cursor.h>
 #include <wayland-egl.h>
 
-#include "xdg-shell.h"
-#include "xdg-decoration-unstable-v1.h"
+#include <libdecor.h>
+
 #include "relative-pointer-unstable-v1.h"
 #include "pointer-constraints-unstable-v1.h"
 #include "primary-selection-unstable-v1.h"
@@ -47,19 +48,21 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <unistd.h>
 #include <poll.h>
 
-struct wayland_output {
+struct output {
     struct wl_list link;
-    struct wl_output *output;
+    struct wl_list surf;
+    uint32_t id;
+    int scale;
+    struct wl_output *wl_output;
 };
 
 static struct {
     struct wl_display *display;
     struct wl_registry *registry;
     struct wl_compositor *compositor;
-    struct xdg_wm_base *xdg_wm_base;
     struct wl_surface *surface;
-    struct xdg_surface *xdg_surface;
-    struct xdg_toplevel *xdg_toplevel;
+    struct libdecor *libdecor;
+    struct libdecor_frame *frame;
     struct wl_egl_window *egl_window;
     struct wl_seat *seat;
     struct wl_pointer *pointer;
@@ -67,8 +70,10 @@ static struct {
     struct wl_shm *shm;
     struct wl_cursor_theme *cursor_theme;
     struct wl_surface *cursor_surface;
-    struct zxdg_decoration_manager_v1 *xdg_decoration_manager;
-    struct zxdg_toplevel_decoration_v1 *xdg_toplevel_decoration;
+    struct wl_data_device_manager *data_device_manager;
+    struct wl_data_device *data_device;
+    struct wl_data_offer *data_offer;
+    struct wl_data_source *data_source;
     struct zwp_relative_pointer_manager_v1 *rel_pointer_manager;
     struct zwp_relative_pointer_v1 *rel_pointer;
     struct zwp_pointer_constraints_v1 *pointer_constraints;
@@ -81,9 +86,9 @@ static struct {
     EGLSurface egl_surface;
     EGLContext egl_context;
 
-    int32_t scale_factor;
-    int32_t width;
-    int32_t height;
+    int scale_factor;
+    int width;
+    int height;
     vidFlags_t flags;
 
     bool mouse_grabbed;
@@ -92,18 +97,36 @@ static struct {
     wl_fixed_t abs_mouse_x;
     wl_fixed_t abs_mouse_y;
 
+    bool pointer_focus;
     uint32_t pointer_enter_serial;
     int cursor_hotspot_x;
     int cursor_hotspot_y;
 
+    uint32_t keyboard_enter_serial;
     int32_t keyrepeat_delta;
     int32_t keyrepeat_delay;
     int lastkeydown;
     unsigned keydown_time;
     unsigned keyrepeat_time;
 
-    struct wl_list output_list;
+    char *clipboard_data;
+    const char *data_offer_type;
+    const char *selection_offer_type;
+
+    struct wl_list outputs;
+    struct wl_list surface_outputs;
 } wl;
+
+static const char *proxy_tag = APPLICATION;
+
+
+/*
+===============================================================================
+
+SEAT
+
+===============================================================================
+*/
 
 static void set_cursor(void)
 {
@@ -119,27 +142,40 @@ static void pointer_handle_enter(void *data, struct wl_pointer *pointer,
                                  uint32_t serial, struct wl_surface *surface,
                                  wl_fixed_t sx, wl_fixed_t sy)
 {
-    wl.pointer_enter_serial = serial;
-    set_cursor();
+    if (surface == wl.surface) {
+        wl.pointer_enter_serial = serial;
+        wl.pointer_focus = true;
+        set_cursor();
+        UI_MouseEvent(wl_fixed_to_int(sx * wl.scale_factor),
+                      wl_fixed_to_int(sy * wl.scale_factor));
+    }
 }
 
 static void pointer_handle_leave(void *data, struct wl_pointer *pointer,
                                  uint32_t serial, struct wl_surface *surface)
 {
+    if (surface == wl.surface)
+        wl.pointer_focus = false;
 }
 
 static void pointer_handle_motion(void *data, struct wl_pointer *pointer,
                                   uint32_t time, wl_fixed_t sx, wl_fixed_t sy)
 {
-    UI_MouseEvent(wl_fixed_to_int(sx * wl.scale_factor),
-                  wl_fixed_to_int(sy * wl.scale_factor));
+    if (wl.pointer_focus) {
+        UI_MouseEvent(wl_fixed_to_int(sx * wl.scale_factor),
+                      wl_fixed_to_int(sy * wl.scale_factor));
+    }
 }
 
 static void pointer_handle_button(void *data, struct wl_pointer *wl_pointer,
                                   uint32_t serial, uint32_t time, uint32_t button,
                                   uint32_t state)
 {
+    bool down = state == WL_POINTER_BUTTON_STATE_PRESSED;
     int key;
+
+    if (!wl.pointer_focus && down)
+        return;
 
     switch (button) {
     case BTN_LEFT:    key = K_MOUSE1; break;
@@ -154,12 +190,15 @@ static void pointer_handle_button(void *data, struct wl_pointer *wl_pointer,
         return;
     }
 
-    Key_Event(key, state == WL_POINTER_BUTTON_STATE_PRESSED, time);
+    Key_Event(key, down, time);
 }
 
 static void pointer_handle_axis(void *data, struct wl_pointer *wl_pointer,
                                 uint32_t time, uint32_t axis, wl_fixed_t value)
 {
+    if (!wl.pointer_focus)
+        return;
+
     switch (axis) {
     case WL_POINTER_AXIS_VERTICAL_SCROLL:
         if (value < 0) {
@@ -193,19 +232,31 @@ static const struct wl_pointer_listener pointer_listener = {
 static void keyboard_handle_keymap(void *data, struct wl_keyboard *wl_keyboard,
                                    uint32_t format, int32_t fd, uint32_t size)
 {
+    close(fd);
 }
 
 static void keyboard_handle_enter(void *data, struct wl_keyboard *wl_keyboard,
                                   uint32_t serial, struct wl_surface *surface,
                                   struct wl_array *keys)
 {
-    CL_Activate(ACT_ACTIVATED);
+    if (surface == wl.surface) {
+        wl.keyboard_enter_serial = serial;
+        CL_Activate(ACT_ACTIVATED);
+    }
 }
 
 static void keyboard_handle_leave(void *data, struct wl_keyboard *wl_keyboard,
                                   uint32_t serial, struct wl_surface *surface)
 {
+    if (surface != wl.surface)
+        return;
+
     CL_Activate(ACT_RESTORED);
+
+    if (wl.data_offer) {
+        wl_data_offer_destroy(wl.data_offer);
+        wl.data_offer = NULL;
+    }
 
     if (wl.selection_offer) {
         zwp_primary_selection_offer_v1_destroy(wl.selection_offer);
@@ -219,17 +270,17 @@ static void keyboard_handle_key(void *data, struct wl_keyboard *wl_keyboard,
                                 uint32_t serial, uint32_t time, uint32_t ev_key,
                                 uint32_t state)
 {
-    static const uint8_t keytable[] = {
-        #include "keytable_linux.h"
-    };
+    bool down = state == WL_KEYBOARD_KEY_STATE_PRESSED;
+    int key = 0;
 
-    int key = ev_key < q_countof(keytable) ? keytable[ev_key] : 0;
+    if (ev_key < keytable_evdev.count)
+        key = keytable_evdev.keys[ev_key];
+
     if (!key) {
         Com_DPrintf("Unknown key %d\n", ev_key);
         return;
     }
 
-    bool down = state == WL_KEYBOARD_KEY_STATE_PRESSED;
     Key_Event2(key, down, time);
 
     if (down) {
@@ -286,32 +337,14 @@ static const struct wl_seat_listener seat_listener = {
     seat_handle_caps,
 };
 
-static void output_handle_geometry(void *data, struct wl_output *wl_output, int32_t x, int32_t y,
-                                   int32_t physical_width, int32_t physical_height, int32_t subpixel,
-                                   const char *make, const char *model, int32_t transform)
-{
-}
 
-static void output_handle_mode(void *data, struct wl_output *wl_output, uint32_t flags,
-                               int32_t width, int32_t height, int32_t refresh)
-{
-}
+/*
+===============================================================================
 
-static void output_handle_done(void *data, struct wl_output *wl_output)
-{
-}
+SURFACE
 
-static void output_handle_scale(void *data, struct wl_output *wl_output, int32_t factor)
-{
-    wl_output_set_user_data(wl_output, (void *)(intptr_t)factor);
-}
-
-static const struct wl_output_listener output_listener = {
-    output_handle_geometry,
-    output_handle_mode,
-    output_handle_done,
-    output_handle_scale,
-};
+===============================================================================
+*/
 
 static void reload_cursor(void)
 {
@@ -360,32 +393,58 @@ static void mode_changed(void)
     if (wl.egl_window)
         wl_egl_window_resize(wl.egl_window, width, height, 0, 0);
 
-    if (!(wl.flags & QVF_FULLSCREEN))
-        Cvar_SetByVar(vid_geometry, va("%dx%d", wl.width, wl.height), FROM_CODE);
-
     R_ModeChanged(width, height, wl.flags);
     SCR_ModeChanged();
 }
 
-static void surface_handle_enter(void *data, struct wl_surface *wl_surface,
-                                 struct wl_output *output)
+static void update_scale(void)
 {
-    int32_t factor = (int32_t)(intptr_t)wl_output_get_user_data(output);
-    if (!factor)
-        return;
+    struct output *output;
+    int scale = 1;
 
-    wl_surface_set_buffer_scale(wl.surface, factor);
+    wl_list_for_each(output, &wl.surface_outputs, surf)
+        scale = max(scale, output->scale);
+
+    wl_surface_set_buffer_scale(wl.surface, scale);
     wl_surface_commit(wl.surface);
-    if (wl.scale_factor != factor) {
-        wl.scale_factor = factor;
+    if (wl.scale_factor != scale) {
+        wl.scale_factor = scale;
         reload_cursor();
         mode_changed();
     }
 }
 
-static void surface_handle_leave(void *data, struct wl_surface *wl_surface,
-                                 struct wl_output *output)
+static void surface_handle_enter(void *data, struct wl_surface *wl_surface,
+                                 struct wl_output *wl_output)
 {
+    if (wl_proxy_get_tag((struct wl_proxy *)wl_output) != &proxy_tag)
+        return;
+
+    struct output *output = wl_output_get_user_data(wl_output);
+    if (!output)
+        return;
+    if (!wl_list_empty(&output->surf))
+        return;
+
+    wl_list_insert(&wl.surface_outputs, &output->surf);
+    update_scale();
+}
+
+static void surface_handle_leave(void *data, struct wl_surface *wl_surface,
+                                 struct wl_output *wl_output)
+{
+    if (wl_proxy_get_tag((struct wl_proxy *)wl_output) != &proxy_tag)
+        return;
+
+    struct output *output = wl_output_get_user_data(wl_output);
+    if (!output)
+        return;
+    if (wl_list_empty(&output->surf))
+        return;
+
+    wl_list_remove(&output->surf);
+    wl_list_init(&output->surf);
+    update_scale();
 }
 
 static const struct wl_surface_listener surface_listener = {
@@ -393,78 +452,127 @@ static const struct wl_surface_listener surface_listener = {
     surface_handle_leave,
 };
 
-static void xdg_surface_configure(void *data, struct xdg_surface *xdg_surface, uint32_t serial)
+
+/*
+===============================================================================
+
+FRAME
+
+===============================================================================
+*/
+
+static void get_default_geometry(int *width, int *height)
 {
-    xdg_surface_ack_configure(xdg_surface, serial);
+    vrect_t rc;
+    VID_GetGeometry(&rc);
+    *width = rc.width;
+    *height = rc.height;
 }
 
-static const struct xdg_surface_listener xdg_surface_listener = {
-    xdg_surface_configure,
-};
-
-static void xdg_toplevel_configure(void *data, struct xdg_toplevel *toplevel,
-                                   int32_t width, int32_t height, struct wl_array *states)
+static void frame_configure(struct libdecor_frame *frame,
+                            struct libdecor_configuration *configuration,
+                            void *user_data)
 {
-    if (width == 0 || height == 0) {
-        vrect_t rc;
-        VID_GetGeometry(&rc);
-        width = rc.width;
-        height = rc.height;
-    }
+    int width, height;
+
+    if (!libdecor_configuration_get_content_size(configuration, frame, &width, &height))
+        get_default_geometry(&width, &height);
 
     wl.width = width;
     wl.height = height;
-    wl.flags = 0;
 
-    enum xdg_toplevel_state *state;
-    wl_array_for_each(state, states) {
-        if (*state == XDG_TOPLEVEL_STATE_FULLSCREEN) {
-            wl.flags = QVF_FULLSCREEN;
-            break;
-        }
+    enum libdecor_window_state window_state;
+    if (libdecor_configuration_get_window_state(configuration, &window_state)) {
+        if (window_state & LIBDECOR_WINDOW_STATE_FULLSCREEN)
+            wl.flags |= QVF_FULLSCREEN;
+        else
+            wl.flags &= ~QVF_FULLSCREEN;
     }
+
+    struct libdecor_state *state = libdecor_state_new(width, height);
+    libdecor_frame_commit(frame, state, configuration);
+    libdecor_state_free(state);
+
+    if (libdecor_frame_is_floating(wl.frame))
+        Cvar_SetByVar(vid_geometry, va("%dx%d", width, height), FROM_CODE);
 
     mode_changed();
 }
 
-static void xdg_toplevel_close(void *data, struct xdg_toplevel *xdg_toplevel)
+static void frame_close(struct libdecor_frame *frame, void *user_data)
 {
     Cbuf_AddText(&cmd_buffer, "quit\n");
 }
 
-static const struct xdg_toplevel_listener xdg_toplevel_listener = {
-    xdg_toplevel_configure,
-    xdg_toplevel_close,
-};
-
-static void xdg_wm_base_ping(void *data, struct xdg_wm_base *xdg_wm_base, uint32_t serial)
+static void frame_commit(struct libdecor_frame *frame, void *user_data)
 {
-    xdg_wm_base_pong(xdg_wm_base, serial);
+    wl_surface_commit(wl.surface);
 }
 
-static const struct xdg_wm_base_listener xdg_wm_base_listener = {
-    xdg_wm_base_ping,
+static struct libdecor_frame_interface frame_interface = {
+    frame_configure,
+    frame_close,
+    frame_commit,
 };
 
-static void handle_data_offer(void *data,
-                              struct zwp_primary_selection_device_v1 *zwp_primary_selection_device_v1,
-                              struct zwp_primary_selection_offer_v1 *offer)
+static void libdecor_error(struct libdecor *context, enum libdecor_error error, const char *message)
+{
+    Com_EPrintf("libdecor: %s\n", message);
+}
+
+static struct libdecor_interface libdecor_interface = {
+    libdecor_error,
+};
+
+
+/*
+===============================================================================
+
+OUTPUTS
+
+===============================================================================
+*/
+
+static void output_handle_geometry(void *data, struct wl_output *wl_output, int32_t x, int32_t y,
+                                   int32_t physical_width, int32_t physical_height, int32_t subpixel,
+                                   const char *make, const char *model, int32_t transform)
 {
 }
 
-static void handle_selection(void *data,
-                             struct zwp_primary_selection_device_v1 *zwp_primary_selection_device_v1,
-                             struct zwp_primary_selection_offer_v1 *offer)
+static void output_handle_mode(void *data, struct wl_output *wl_output, uint32_t flags,
+                               int32_t width, int32_t height, int32_t refresh)
 {
-    if (wl.selection_offer)
-        zwp_primary_selection_offer_v1_destroy(wl.selection_offer);
-    wl.selection_offer = offer;
 }
 
-static const struct zwp_primary_selection_device_v1_listener selection_device_listener = {
-    handle_data_offer,
-    handle_selection,
+static void output_handle_done(void *data, struct wl_output *wl_output)
+{
+    struct output *output = data;
+    if (!wl_list_empty(&output->surf))
+        update_scale();
+}
+
+static void output_handle_scale(void *data, struct wl_output *wl_output, int32_t factor)
+{
+    struct output *output = data;
+    if (factor > 0)
+        output->scale = factor;
+}
+
+static const struct wl_output_listener output_listener = {
+    output_handle_geometry,
+    output_handle_mode,
+    output_handle_done,
+    output_handle_scale,
 };
+
+
+/*
+===============================================================================
+
+REGISTRY
+
+===============================================================================
+*/
 
 static void registry_global(void *data, struct wl_registry *wl_registry,
                             uint32_t name, const char *interface, uint32_t version)
@@ -485,22 +593,20 @@ static void registry_global(void *data, struct wl_registry *wl_registry,
         return;
     }
 
-    if (!strcmp(interface, xdg_wm_base_interface.name)) {
-        wl.xdg_wm_base = wl_registry_bind(wl_registry, name, &xdg_wm_base_interface, 1);
-        xdg_wm_base_add_listener(wl.xdg_wm_base, &xdg_wm_base_listener, NULL);
-        return;
-    }
-
     if (!strcmp(interface, wl_output_interface.name)) {
-        struct wayland_output *out = Z_Malloc(sizeof(*out));
-        out->output = wl_registry_bind(wl_registry, name, &wl_output_interface, 2);
-        wl_output_add_listener(out->output, &output_listener, NULL);
-        wl_list_insert(&wl.output_list, &out->link);
+        struct output *output = Z_Malloc(sizeof(*output));
+        output->id = name;
+        output->scale = 1;
+        output->wl_output = wl_registry_bind(wl_registry, name, &wl_output_interface, 2);
+        wl_list_init(&output->surf);
+        wl_proxy_set_tag((struct wl_proxy *)output->wl_output, &proxy_tag);
+        wl_output_add_listener(output->wl_output, &output_listener, output);
+        wl_list_insert(&wl.outputs, &output->link);
         return;
     }
 
-    if (!strcmp(interface, zxdg_decoration_manager_v1_interface.name)) {
-        wl.xdg_decoration_manager = wl_registry_bind(wl_registry, name, &zxdg_decoration_manager_v1_interface, 1);
+    if (!strcmp(interface, wl_data_device_manager_interface.name)) {
+        wl.data_device_manager = wl_registry_bind(wl_registry, name, &wl_data_device_manager_interface, 3);
         return;
     }
 
@@ -522,12 +628,89 @@ static void registry_global(void *data, struct wl_registry *wl_registry,
 
 static void registry_global_remove(void *data, struct wl_registry *wl_registry, uint32_t name)
 {
+    struct output *output;
+
+    wl_list_for_each(output, &wl.outputs, link) {
+        if (output->id == name) {
+            wl_list_remove(&output->link);
+            wl_list_remove(&output->surf);
+            wl_output_destroy(output->wl_output);
+            Z_Free(output);
+            break;
+        }
+    }
 }
 
 static const struct wl_registry_listener wl_registry_listener = {
     registry_global,
     registry_global_remove,
 };
+
+
+/*
+===============================================================================
+
+INIT / SHUTDOWN
+
+===============================================================================
+*/
+
+#define CHECK(cond, stmt)   if (!(cond)) { stmt; goto fail; }
+#define CHECK_ERR(cond, what) CHECK(cond, Com_EPrintf("%s failed: %s\n", what, strerror(errno)))
+#define CHECK_UNK(cond, what) CHECK(cond, Com_EPrintf("%s failed\n", what))
+#define CHECK_EGL(cond, what) CHECK(cond, egl_error(what))
+
+#define DESTROY(x, f)   if (x) f(x)
+
+static void init_clipboard(void);
+
+static void shutdown(void)
+{
+    struct output *output, *next;
+    wl_list_for_each_safe(output, next, &wl.outputs, link) {
+        wl_output_destroy(output->wl_output);
+        Z_Free(output);
+    }
+
+    if (wl.egl_display)
+        eglMakeCurrent(wl.egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+
+    if (wl.egl_context)
+        eglDestroyContext(wl.egl_display, wl.egl_context);
+
+    if (wl.egl_surface)
+        eglDestroySurface(wl.egl_display, wl.egl_surface);
+
+    DESTROY(wl.egl_window, wl_egl_window_destroy);
+    DESTROY(wl.egl_display, eglTerminate);
+    DESTROY(wl.frame, libdecor_frame_unref);
+    DESTROY(wl.libdecor, libdecor_unref);
+    DESTROY(wl.rel_pointer, zwp_relative_pointer_v1_destroy);
+    DESTROY(wl.rel_pointer_manager, zwp_relative_pointer_manager_v1_destroy);
+    DESTROY(wl.locked_pointer, zwp_locked_pointer_v1_destroy);
+    DESTROY(wl.pointer_constraints, zwp_pointer_constraints_v1_destroy);
+    DESTROY(wl.surface, wl_surface_destroy);
+    DESTROY(wl.cursor_surface, wl_surface_destroy);
+    DESTROY(wl.compositor, wl_compositor_destroy);
+    DESTROY(wl.cursor_theme, wl_cursor_theme_destroy);
+    DESTROY(wl.shm, wl_shm_destroy);
+    DESTROY(wl.data_source, wl_data_source_destroy);
+    DESTROY(wl.data_offer, wl_data_offer_destroy);
+    DESTROY(wl.data_device, wl_data_device_destroy);
+    DESTROY(wl.data_device_manager, wl_data_device_manager_destroy);
+    DESTROY(wl.selection_offer, zwp_primary_selection_offer_v1_destroy);
+    DESTROY(wl.selection_device, zwp_primary_selection_device_v1_destroy);
+    DESTROY(wl.selection_device_manager, zwp_primary_selection_device_manager_v1_destroy);
+    DESTROY(wl.pointer, wl_pointer_destroy);
+    DESTROY(wl.keyboard, wl_keyboard_destroy);
+    DESTROY(wl.seat, wl_seat_destroy);
+    DESTROY(wl.registry, wl_registry_destroy);
+    DESTROY(wl.display, wl_display_disconnect);
+
+    Z_Free(wl.clipboard_data);
+
+    memset(&wl, 0, sizeof(wl));
+}
 
 static void egl_error(const char *what)
 {
@@ -563,42 +746,29 @@ static bool choose_config(r_opengl_config_t *cfg, EGLConfig *config)
     return true;
 }
 
-#define CHECK(x, y)                                         \
-    if (!(x)) {                                             \
-        Com_EPrintf("%s failed: %s\n", y, strerror(errno)); \
-        goto fail;                                          \
-    }
-
-#define CHECK_EGL(x, y) \
-    if (!(x)) {         \
-        egl_error(y);   \
-        goto fail;      \
-    }
-
-static void shutdown(void);
-
 static bool init(void)
 {
-    wl_list_init(&wl.output_list);
+    wl_list_init(&wl.outputs);
+    wl_list_init(&wl.surface_outputs);
 
     wl.scale_factor = 1;
-    wl.width = 640;
-    wl.height = 480;
+    get_default_geometry(&wl.width, &wl.height);
 
     wl.keyrepeat_delta = 30;
     wl.keyrepeat_delay = 600;
 
-    CHECK(wl.display = wl_display_connect(NULL), "wl_display_connect");
-    CHECK(wl.registry = wl_display_get_registry(wl.display), "wl_display_get_registry");
+    CHECK_ERR(wl.display = wl_display_connect(NULL), "wl_display_connect");
+    CHECK_ERR(wl.registry = wl_display_get_registry(wl.display), "wl_display_get_registry");
     wl_registry_add_listener(wl.registry, &wl_registry_listener, NULL);
     wl_display_roundtrip(wl.display);
+    wl_display_roundtrip(wl.display);
 
-    if (!wl.compositor || !wl.xdg_wm_base || !wl.seat) {
+    if (!wl.compositor || !wl.seat) {
         Com_EPrintf("Required wayland interfaces missing\n");
         goto fail;
     }
 
-    CHECK(wl.egl_display = eglGetDisplay(wl.display), "eglGetDisplay");
+    CHECK_UNK(wl.egl_display = eglGetDisplay(wl.display), "eglGetDisplay");
 
     EGLint egl_major, egl_minor;
     CHECK_EGL(eglInitialize(wl.egl_display, &egl_major, &egl_minor), "eglInitialize");
@@ -619,31 +789,21 @@ static bool init(void)
             goto fail;
     }
 
-    CHECK(wl.surface = wl_compositor_create_surface(wl.compositor), "wl_compositor_create_surface");
+    struct output *output;
+    wl_list_for_each(output, &wl.outputs, link)
+        wl.scale_factor = max(wl.scale_factor, output->scale);
+
+    CHECK_ERR(wl.surface = wl_compositor_create_surface(wl.compositor), "wl_compositor_create_surface");
     wl_surface_add_listener(wl.surface, &surface_listener, NULL);
+    wl_surface_set_buffer_scale(wl.surface, wl.scale_factor);
 
-    CHECK(wl.xdg_surface = xdg_wm_base_get_xdg_surface(wl.xdg_wm_base, wl.surface), "xdg_wm_base_get_xdg_surface");
-    xdg_surface_add_listener(wl.xdg_surface, &xdg_surface_listener, NULL);
+    CHECK_UNK(wl.libdecor = libdecor_new(wl.display, &libdecor_interface), "libdecor_new");
+    CHECK_UNK(wl.frame = libdecor_decorate(wl.libdecor, wl.surface, &frame_interface, NULL), "libdecor_decorate");
+    libdecor_frame_set_title(wl.frame, PRODUCT);
+    libdecor_frame_set_app_id(wl.frame, APPLICATION);
+    libdecor_frame_set_min_content_size(wl.frame, 320, 240);
 
-    CHECK(wl.xdg_toplevel = xdg_surface_get_toplevel(wl.xdg_surface), "xdg_surface_get_toplevel");
-    xdg_toplevel_add_listener(wl.xdg_toplevel, &xdg_toplevel_listener, NULL);
-    xdg_toplevel_set_title(wl.xdg_toplevel, PRODUCT);
-    xdg_toplevel_set_app_id(wl.xdg_toplevel, APPLICATION);
-    xdg_toplevel_set_min_size(wl.xdg_toplevel, 320, 240);
-
-    if (wl.xdg_decoration_manager) {
-        wl.xdg_toplevel_decoration = zxdg_decoration_manager_v1_get_toplevel_decoration(wl.xdg_decoration_manager, wl.xdg_toplevel);
-        if (wl.xdg_toplevel_decoration)
-            zxdg_toplevel_decoration_v1_set_mode(wl.xdg_toplevel_decoration, ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
-    }
-
-    if (wl.selection_device_manager) {
-        wl.selection_device = zwp_primary_selection_device_manager_v1_get_device(wl.selection_device_manager, wl.seat);
-        if (wl.selection_device)
-            zwp_primary_selection_device_v1_add_listener(wl.selection_device, &selection_device_listener, NULL);
-    }
-
-    CHECK(wl.cursor_surface = wl_compositor_create_surface(wl.compositor), "wl_compositor_create_surface");
+    CHECK_ERR(wl.cursor_surface = wl_compositor_create_surface(wl.compositor), "wl_compositor_create_surface");
     reload_cursor();
 
     EGLint ctx_attr[] = {
@@ -653,12 +813,15 @@ static bool init(void)
     if (egl_major == 1 && egl_minor < 5)
         ctx_attr[0] = EGL_NONE;
 
-    CHECK(wl.egl_window = wl_egl_window_create(wl.surface, wl.width, wl.height), "wl_egl_window_create");
+    CHECK_ERR(wl.egl_window = wl_egl_window_create(wl.surface, wl.width * wl.scale_factor, wl.height * wl.scale_factor), "wl_egl_window_create");
     CHECK_EGL(wl.egl_surface = eglCreateWindowSurface(wl.egl_display, config, wl.egl_window, NULL), "eglCreateWindowSurface");
     CHECK_EGL(wl.egl_context = eglCreateContext(wl.egl_display, config, EGL_NO_CONTEXT, ctx_attr), "eglCreateContext");
     CHECK_EGL(eglMakeCurrent(wl.egl_display, wl.egl_surface, wl.egl_surface, wl.egl_context), "eglMakeCurrent");
+    CHECK_EGL(eglSwapInterval(wl.egl_display, 0), "eglSwapInterval");
 
-    wl_surface_commit(wl.surface);
+    init_clipboard();
+
+    libdecor_frame_map(wl.frame);
     wl_display_roundtrip(wl.display);
 
     CL_Activate(ACT_RESTORED);
@@ -669,59 +832,12 @@ fail:
     return false;
 }
 
-#define DESTROY(x, f)   if (x) f(x)
-
-static void shutdown(void)
-{
-    struct wayland_output *out, *tmp;
-    wl_list_for_each_safe(out, tmp, &wl.output_list, link) {
-        wl_output_destroy(out->output);
-        Z_Free(out);
-    }
-
-    if (wl.egl_display)
-        eglMakeCurrent(wl.egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-
-    if (wl.egl_context)
-        eglDestroyContext(wl.egl_display, wl.egl_context);
-
-    if (wl.egl_surface)
-        eglDestroySurface(wl.egl_display, wl.egl_surface);
-
-    DESTROY(wl.egl_window, wl_egl_window_destroy);
-    DESTROY(wl.egl_display, eglTerminate);
-    DESTROY(wl.xdg_toplevel_decoration, zxdg_toplevel_decoration_v1_destroy);
-    DESTROY(wl.xdg_decoration_manager, zxdg_decoration_manager_v1_destroy);
-    DESTROY(wl.xdg_toplevel, xdg_toplevel_destroy);
-    DESTROY(wl.xdg_surface, xdg_surface_destroy);
-    DESTROY(wl.xdg_wm_base, xdg_wm_base_destroy);
-    DESTROY(wl.rel_pointer, zwp_relative_pointer_v1_destroy);
-    DESTROY(wl.rel_pointer_manager, zwp_relative_pointer_manager_v1_destroy);
-    DESTROY(wl.locked_pointer, zwp_locked_pointer_v1_destroy);
-    DESTROY(wl.pointer_constraints, zwp_pointer_constraints_v1_destroy);
-    DESTROY(wl.surface, wl_surface_destroy);
-    DESTROY(wl.cursor_surface, wl_surface_destroy);
-    DESTROY(wl.compositor, wl_compositor_destroy);
-    DESTROY(wl.cursor_theme, wl_cursor_theme_destroy);
-    DESTROY(wl.shm, wl_shm_destroy);
-    DESTROY(wl.selection_offer, zwp_primary_selection_offer_v1_destroy);
-    DESTROY(wl.selection_device, zwp_primary_selection_device_v1_destroy);
-    DESTROY(wl.selection_device_manager, zwp_primary_selection_device_manager_v1_destroy);
-    DESTROY(wl.pointer, wl_pointer_destroy);
-    DESTROY(wl.keyboard, wl_keyboard_destroy);
-    DESTROY(wl.seat, wl_seat_destroy);
-    DESTROY(wl.registry, wl_registry_destroy);
-    DESTROY(wl.display, wl_display_disconnect);
-
-    memset(&wl, 0, sizeof(wl));
-}
-
 static void set_mode(void)
 {
     if (vid_fullscreen->integer)
-        xdg_toplevel_set_fullscreen(wl.xdg_toplevel, NULL);
+        libdecor_frame_set_fullscreen(wl.frame, NULL);
     else
-        xdg_toplevel_unset_fullscreen(wl.xdg_toplevel);
+        libdecor_frame_unset_fullscreen(wl.frame);
 }
 
 static char *get_mode_list(void)
@@ -729,13 +845,14 @@ static char *get_mode_list(void)
     return Z_CopyString("desktop");
 }
 
+static int get_dpi_scale(void)
+{
+    return wl.scale_factor;
+}
+
 static void pump_events(void)
 {
-    while (wl_display_prepare_read(wl.display))
-        wl_display_dispatch_pending(wl.display);
-    wl_display_flush(wl.display);
-    wl_display_read_events(wl.display);
-    wl_display_dispatch_pending(wl.display);
+    libdecor_dispatch(wl.libdecor, 0);
 
     if (wl.lastkeydown && wl.keyrepeat_delta
         && com_eventTime - wl.keydown_time   > wl.keyrepeat_delay
@@ -756,10 +873,14 @@ static void swap_buffers(void)
     eglSwapBuffers(wl.egl_display, wl.egl_surface);
 }
 
-static void swap_interval(int val)
-{
-    eglSwapInterval(wl.egl_display, val);
-}
+
+/*
+===============================================================================
+
+RELATIVE MOUSE
+
+===============================================================================
+*/
 
 // input-event-codes.h defines this
 #undef KEY_MENU
@@ -841,40 +962,219 @@ static bool get_mouse_motion(int *dx, int *dy)
     return true;
 }
 
+
+/*
+===============================================================================
+
+CLIPBOARD
+
+===============================================================================
+*/
+
+static const char *const text_types[] = {
+    "text/plain",
+    "text/plain;charset=utf-8",
+    "TEXT",
+    "STRING",
+    "UTF8_STRING",
+};
+
+static const char *find_mime_type(const char *mime_type)
+{
+    for (int i = 0; i < q_countof(text_types); i++)
+        if (!strcmp(mime_type, text_types[i]))
+            return text_types[i];
+    return NULL;
+}
+
+static void data_offer_handle_offer(void *data, struct wl_data_offer *offer, const char *mime_type)
+{
+    wl.data_offer_type = find_mime_type(mime_type);
+}
+
+static const struct wl_data_offer_listener data_offer_listener = {
+    .offer = data_offer_handle_offer,
+};
+
+static void data_device_handle_data_offer(void *data, struct wl_data_device *data_device,
+                                          struct wl_data_offer *offer)
+{
+    wl_data_offer_add_listener(offer, &data_offer_listener, NULL);
+}
+
+static void data_device_handle_selection(void *data, struct wl_data_device *data_device,
+                                         struct wl_data_offer *offer)
+{
+    if (wl.data_offer)
+        wl_data_offer_destroy(wl.data_offer);
+    wl.data_offer = offer;
+}
+
+static const struct wl_data_device_listener data_device_listener = {
+    .data_offer = data_device_handle_data_offer,
+    .selection = data_device_handle_selection,
+};
+
+static void selection_offer_handle_offer(void *data, struct zwp_primary_selection_offer_v1 *offer,
+                                         const char *mime_type)
+{
+    wl.selection_offer_type = find_mime_type(mime_type);
+}
+
+static const struct zwp_primary_selection_offer_v1_listener selection_offer_listener = {
+    .offer = selection_offer_handle_offer,
+};
+
+static void selection_device_handle_data_offer(void *data,
+                                               struct zwp_primary_selection_device_v1 *device,
+                                               struct zwp_primary_selection_offer_v1 *offer)
+{
+    zwp_primary_selection_offer_v1_add_listener(offer, &selection_offer_listener, NULL);
+}
+
+static void selection_device_handle_selection(void *data,
+                                              struct zwp_primary_selection_device_v1 *device,
+                                              struct zwp_primary_selection_offer_v1 *offer)
+{
+    if (wl.selection_offer)
+        zwp_primary_selection_offer_v1_destroy(wl.selection_offer);
+    wl.selection_offer = offer;
+}
+
+static const struct zwp_primary_selection_device_v1_listener selection_device_listener = {
+    .data_offer = selection_device_handle_data_offer,
+    .selection = selection_device_handle_selection,
+};
+
+static void init_clipboard(void)
+{
+    if (wl.data_device_manager) {
+        wl.data_device = wl_data_device_manager_get_data_device(wl.data_device_manager, wl.seat);
+        if (wl.data_device)
+            wl_data_device_add_listener(wl.data_device, &data_device_listener, NULL);
+    }
+
+    if (wl.selection_device_manager) {
+        wl.selection_device = zwp_primary_selection_device_manager_v1_get_device(wl.selection_device_manager, wl.seat);
+        if (wl.selection_device)
+            zwp_primary_selection_device_v1_add_listener(wl.selection_device, &selection_device_listener, NULL);
+    }
+}
+
+static char *get_selection(int fd)
+{
+    wl_display_roundtrip(wl.display);
+
+    if (!Sys_SetNonBlock(fd, true)) {
+        close(fd);
+        return NULL;
+    }
+
+    struct pollfd pfd = {
+        .fd = fd,
+        .events = POLLIN,
+    };
+
+    if (poll(&pfd, 1, 50) < 1 || !(pfd.revents & POLLIN)) {
+        close(fd);
+        return NULL;
+    }
+
+    char buf[MAX_STRING_CHARS];
+    int r = read(fd, buf, sizeof(buf) - 1);
+    close(fd);
+
+    if (r < 1)
+        return NULL;
+
+    buf[r] = 0;
+    return Z_CopyString(buf);
+}
+
 static char *get_selection_data(void)
 {
-    if (!wl.selection_offer)
+    if (!wl.selection_offer || !wl.selection_offer_type)
         return NULL;
 
     int fds[2];
     if (pipe2(fds, O_CLOEXEC) < 0)
         return NULL;
 
-    zwp_primary_selection_offer_v1_receive(wl.selection_offer, "text/plain;charset=utf-8", fds[1]);
+    zwp_primary_selection_offer_v1_receive(wl.selection_offer, wl.selection_offer_type, fds[1]);
     close(fds[1]);
 
-    wl_display_roundtrip(wl.display);
+    return get_selection(fds[0]);
+}
 
-    struct pollfd fd = {
-        .fd = fds[0],
-        .events = POLLIN,
-    };
-
-    if (poll(&fd, 1, 50) <= 0) {
-        close(fds[0]);
+static char *get_clipboard_data(void)
+{
+    if (!wl.data_offer || !wl.data_offer_type)
         return NULL;
+
+    int fds[2];
+    if (pipe2(fds, O_CLOEXEC) < 0)
+        return NULL;
+
+    wl_data_offer_receive(wl.data_offer, wl.data_offer_type, fds[1]);
+    close(fds[1]);
+
+    return get_selection(fds[0]);
+}
+
+static void handle_data_source_send(void *data, struct wl_data_source *source, const char *mime_type, int fd)
+{
+    if (wl.clipboard_data && find_mime_type(mime_type) && Sys_SetNonBlock(fd, true))
+        if (write(fd, wl.clipboard_data, strlen(wl.clipboard_data)) < 0)
+            (void)"why should I care?";
+    close(fd);
+}
+
+static void handle_data_source_cancelled(void *data, struct wl_data_source *source)
+{
+    if (wl.data_source) {
+        wl_data_source_destroy(wl.data_source);
+        wl.data_source = NULL;
     }
 
-    char buf[MAX_STRING_CHARS];
-    int r = read(fds[0], buf, sizeof(buf) - 1);
-    close(fds[0]);
-
-    if (r <= 0)
-        return NULL;
-
-    buf[r] = 0;
-    return Z_CopyString(buf);
+    if (wl.clipboard_data) {
+        Z_Free(wl.clipboard_data);
+        wl.clipboard_data = NULL;
+    }
 }
+
+static const struct wl_data_source_listener data_source_listener = {
+    .send = handle_data_source_send,
+    .cancelled = handle_data_source_cancelled,
+};
+
+static void set_clipboard_data(const char *data)
+{
+    if (!data || !*data)
+        return;
+    if (!wl.data_device_manager || !wl.data_device)
+        return;
+
+    Z_Free(wl.clipboard_data);
+    wl.clipboard_data = Z_CopyString(data);
+
+    if (!wl.data_source) {
+        wl.data_source = wl_data_device_manager_create_data_source(wl.data_device_manager);
+        wl_data_source_add_listener(wl.data_source, &data_source_listener, NULL);
+        for (int i = 0; i < q_countof(text_types); i++)
+            wl_data_source_offer(wl.data_source, text_types[i]);
+    }
+
+    wl_data_device_set_selection(wl.data_device, wl.data_source, wl.keyboard_enter_serial);
+}
+
+
+/*
+===============================================================================
+
+ENTRY POINT
+
+===============================================================================
+*/
 
 static bool probe(void)
 {
@@ -899,12 +1199,14 @@ const vid_driver_t vid_wayland = {
 
     .set_mode = set_mode,
     .get_mode_list = get_mode_list,
+    .get_dpi_scale = get_dpi_scale,
 
     .get_proc_addr = get_proc_addr,
     .swap_buffers = swap_buffers,
-    .swap_interval = swap_interval,
 
     .get_selection_data = get_selection_data,
+    .get_clipboard_data = get_clipboard_data,
+    .set_clipboard_data = set_clipboard_data,
 
     .init_mouse = init_mouse,
     .shutdown_mouse = shutdown_mouse,

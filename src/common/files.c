@@ -50,7 +50,6 @@ QUAKE FILESYSTEM
 #define MAX_FILE_HANDLES    32
 
 #if USE_ZLIB
-#define ZIP_MAXFILES    0x8000  // 32k files
 #define ZIP_BUFSIZE     0x10000 // inflate in blocks of 64k
 
 #define ZIP_BUFREADCOMMENT      1024
@@ -2260,10 +2259,6 @@ static pack_t *load_zip_file(const char *packfile)
         Com_Printf("%s has no files\n", packfile);
         goto fail2;
     }
-    if (num_files > ZIP_MAXFILES) {
-        Com_Printf("%s has too many files: %u > %u\n", packfile, num_files, ZIP_MAXFILES);
-        goto fail2;
-    }
 
     central_size = LittleLongMem(&header[12]);
     central_ofs = LittleLongMem(&header[16]);
@@ -3360,6 +3355,18 @@ static void setup_game_paths(void)
     Cvar_FullSet("fs_gamedir", fs_gamedir, CVAR_ROM, FROM_CODE);
 }
 
+static void setup_base_gamedir(void)
+{
+    if (sys_homedir->string[0]) {
+        Q_snprintf(fs_gamedir, sizeof(fs_gamedir), "%s/"BASEGAME, sys_homedir->string);
+    } else {
+        Q_snprintf(fs_gamedir, sizeof(fs_gamedir), "%s/"BASEGAME, sys_basedir->string);
+    }
+#ifdef _WIN32
+    FS_ReplaceSeparators(fs_gamedir, '/');
+#endif
+}
+
 /*
 ================
 FS_Restart
@@ -3378,10 +3385,7 @@ void FS_Restart(bool total)
     } else {
         // just change gamedir
         free_game_paths();
-        Q_snprintf(fs_gamedir, sizeof(fs_gamedir), "%s/"BASEGAME, sys_basedir->string);
-#ifdef _WIN32
-        FS_ReplaceSeparators(fs_gamedir, '/');
-#endif
+        setup_base_gamedir();
     }
 
     setup_game_paths();
@@ -3505,6 +3509,39 @@ static void fs_game_changed(cvar_t *self)
     Com_AddConfigFile(COM_POSTEXEC_CFG, FS_TYPE_REAL);
 }
 
+static void list_dirs(genctx_t *ctx, const char *path)
+{
+    listfiles_t list = {
+        .flags = FS_SEARCH_DIRSONLY,
+    };
+
+    Sys_ListFiles_r(&list, path, 0);
+
+    for (int i = 0; i < list.count; i++) {
+        char *s = list.files[i];
+
+        if (COM_IsPath(s))
+            Prompt_AddMatch(ctx, s);
+
+        Z_Free(s);
+    }
+
+    Z_Free(list.files);
+}
+
+static void fs_game_generator(genctx_t *ctx)
+{
+    ctx->ignoredups = true;
+#ifdef _WIN32
+    ctx->ignorecase = true;
+#endif
+
+    list_dirs(ctx, sys_basedir->string);
+
+    if (sys_homedir->string[0])
+        list_dirs(ctx, sys_homedir->string);
+}
+
 /*
 ================
 FS_Init
@@ -3526,6 +3563,7 @@ void FS_Init(void)
     // get the game cvar and start the filesystem
     fs_game = Cvar_Get("game", DEFGAME, CVAR_LATCH | CVAR_SERVERINFO);
     fs_game->changed = fs_game_changed;
+    fs_game->generator = fs_game_generator;
     fs_game_changed(fs_game);
 
     Com_Printf("-----------------------\n");

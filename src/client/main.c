@@ -818,7 +818,6 @@ static void CL_ServerStatus_f(void)
 {
     char        *s;
     netadr_t    adr;
-    neterr_t    ret;
 
     if (Cmd_Argc() < 2) {
         if (!cls.netchan) {
@@ -838,10 +837,7 @@ static void CL_ServerStatus_f(void)
 
     NET_Config(NET_CLIENT);
 
-    ret = OOB_PRINT(NS_CLIENT, &adr, "status");
-    if (ret == NET_ERROR) {
-        Com_Printf("%s to %s\n", NET_ErrorString(), NET_AdrToString(&adr));
-    }
+    OOB_PRINT(NS_CLIENT, &adr, "status");
 }
 
 /*
@@ -1522,6 +1518,10 @@ CL_PacketEvent
 */
 static void CL_PacketEvent(void)
 {
+    if (msg_read.cursize < 4) {
+        return;
+    }
+
     //
     // remote command packet
     //
@@ -2192,15 +2192,8 @@ static size_t CL_Ups_m(char *buffer, size_t size)
 {
     vec3_t vel;
 
-    if (cl.frame.clientNum == CLIENTNUM_NONE) {
-        if (size) {
-            *buffer = 0;
-        }
-        return 0;
-    }
-
-    if (!cls.demo.playback && cl.frame.clientNum == cl.clientNum &&
-        cl_predict->integer) {
+    if (!cls.demo.playback && cl_predict->integer &&
+        !(cl.frame.ps.pmove.pm_flags & PMF_NO_PREDICTION)) {
         VectorCopy(cl.predicted_velocity, vel);
     } else {
         VectorScale(cl.frame.ps.pmove.velocity, 0.125f, vel);

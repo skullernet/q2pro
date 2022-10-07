@@ -20,7 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/protocol.h"
 #include "common/sizebuf.h"
 
-void SZ_TagInit(sizebuf_t *buf, void *data, size_t size, uint32_t tag)
+void SZ_TagInit(sizebuf_t *buf, void *data, size_t size, const char *tag)
 {
     memset(buf, 0, sizeof(*buf));
     buf->data = data;
@@ -35,6 +35,7 @@ void SZ_Init(sizebuf_t *buf, void *data, size_t size)
     buf->maxsize = size;
     buf->allowoverflow = true;
     buf->allowunderflow = true;
+    buf->tag = "none";
 }
 
 void SZ_Clear(sizebuf_t *buf)
@@ -51,24 +52,24 @@ void *SZ_GetSpace(sizebuf_t *buf, size_t len)
 
     if (buf->cursize > buf->maxsize) {
         Com_Error(ERR_FATAL,
-                  "%s: %#x: already overflowed",
+                  "%s: %s: already overflowed",
                   __func__, buf->tag);
     }
 
     if (len > buf->maxsize - buf->cursize) {
         if (len > buf->maxsize) {
             Com_Error(ERR_FATAL,
-                      "%s: %#x: %zu is > full buffer size %zu",
+                      "%s: %s: %zu is > full buffer size %zu",
                       __func__, buf->tag, len, buf->maxsize);
         }
 
         if (!buf->allowoverflow) {
             Com_Error(ERR_FATAL,
-                      "%s: %#x: overflow without allowoverflow set",
+                      "%s: %s: overflow without allowoverflow set",
                       __func__, buf->tag);
         }
 
-        //Com_DPrintf("%s: %#x: overflow\n", __func__, buf->tag);
+        //Com_DPrintf("%s: %s: overflow\n", __func__, buf->tag);
         SZ_Clear(buf);
         buf->overflowed = true;
     }
@@ -127,3 +128,40 @@ void SZ_WriteString(sizebuf_t *sb, const char *s)
     SZ_Write(sb, s, len + 1);
 }
 #endif
+
+void *SZ_ReadData(sizebuf_t *buf, size_t len)
+{
+    void    *data;
+
+    if (buf->readcount > buf->cursize || len > buf->cursize - buf->readcount) {
+        if (!buf->allowunderflow) {
+            Com_Error(ERR_DROP, "%s: read past end of message", __func__);
+        }
+        buf->readcount = buf->cursize + 1;
+        buf->bitpos = buf->readcount << 3;
+        return NULL;
+    }
+
+    data = buf->data + buf->readcount;
+    buf->readcount += len;
+    buf->bitpos = buf->readcount << 3;
+    return data;
+}
+
+int SZ_ReadByte(sizebuf_t *sb)
+{
+    byte *buf = SZ_ReadData(sb, 1);
+    return buf ? *buf : -1;
+}
+
+int SZ_ReadShort(sizebuf_t *sb)
+{
+    byte *buf = SZ_ReadData(sb, 2);
+    return buf ? (int16_t)LittleShortMem(buf) : -1;
+}
+
+int SZ_ReadLong(sizebuf_t *sb)
+{
+    byte *buf = SZ_ReadData(sb, 4);
+    return buf ? LittleLongMem(buf) : -1;
+}

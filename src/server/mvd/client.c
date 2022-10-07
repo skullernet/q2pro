@@ -584,10 +584,7 @@ static void demo_emit_snapshot(mvd_t *mvd)
         if (!strcmp(from, to))
             continue;
 
-        len = strlen(to);
-        if (len > MAX_QPATH)
-            len = MAX_QPATH;
-
+        len = Q_strnlen(to, MAX_QPATH);
         MSG_WriteByte(mvd_configstring);
         MSG_WriteShort(i);
         MSG_WriteData(to, len);
@@ -1163,7 +1160,7 @@ static void parse_stream_data(gtv_t *gtv)
     if (!mvd) {
         mvd = create_channel(gtv);
 
-        Cvar_ClampInteger(mvd_buffer_size, 2, 10);
+        Cvar_ClampInteger(mvd_buffer_size, 2, 256);
 
         // allocate delay buffer
         size = mvd_buffer_size->integer * MAX_MSGLEN;
@@ -1849,10 +1846,7 @@ static void emit_gamestate(mvd_t *mvd)
         if (!*s)
             continue;
 
-        len = strlen(s);
-        if (len > MAX_QPATH)
-            len = MAX_QPATH;
-
+        len = Q_strnlen(s, MAX_QPATH);
         MSG_WriteShort(i);
         MSG_WriteData(s, len);
         MSG_WriteByte(0);
@@ -2573,8 +2567,8 @@ void MVD_Register(void)
     mvd_wait_delay = Cvar_Get("mvd_wait_delay", "20", 0);
     mvd_wait_delay->changed = mvd_wait_delay_changed;
     mvd_wait_delay->changed(mvd_wait_delay);
-    mvd_wait_percent = Cvar_Get("mvd_wait_percent", "35", 0);
-    mvd_buffer_size = Cvar_Get("mvd_buffer_size", "3", 0);
+    mvd_wait_percent = Cvar_Get("mvd_wait_percent", "50", 0);
+    mvd_buffer_size = Cvar_Get("mvd_buffer_size", "8", 0);
     mvd_username = Cvar_Get("mvd_username", "unnamed", 0);
     mvd_password = Cvar_Get("mvd_password", "", CVAR_PRIVATE);
     mvd_snaps = Cvar_Get("mvd_snaps", "10", 0);

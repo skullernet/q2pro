@@ -13,26 +13,25 @@ foreach dep: x11_deps
 endforeach
 
 if x11_use
-  client_src += files('x11.c')
+  client_src += files('x11.c', 'keytables/evdev.c', 'keytables/at.c')
   client_deps += x11_deps
   config.set10('USE_X11', true)
 endif
 
 wayland_opt = get_option('wayland')
 wayland_deps = [
-  dependency('wayland-client', version: '>= 1.15.0', required: wayland_opt),
-  dependency('wayland-cursor', version: '>= 1.15.0', required: wayland_opt),
+  dependency('wayland-client', version: '>= 1.18', required: wayland_opt),
+  dependency('wayland-cursor', version: '>= 1.18', required: wayland_opt),
   dependency('wayland-egl', version: '>= 9.0.0', required: wayland_opt),
   dependency('wayland-protocols', version: '>= 1.15', required: wayland_opt),
+  dependency('libdecor-0', version: '>= 0.1.0', required: wayland_opt),
   dependency('egl', version: '>= 1.5', required: wayland_opt)
 ]
 
 wayland_protocols = [
-  'stable/xdg-shell/xdg-shell.xml',
   'unstable/pointer-constraints/pointer-constraints-unstable-v1.xml',
   'unstable/primary-selection/primary-selection-unstable-v1.xml',
   'unstable/relative-pointer/relative-pointer-unstable-v1.xml',
-  'unstable/xdg-decoration/xdg-decoration-unstable-v1.xml'
 ]
 
 foreach dep: wayland_deps
@@ -71,6 +70,6 @@ endforeach
 wl_protocols_lib = static_library('wl_protocols', wl_protocols_source + wl_protocols_headers)
 wl_protocols_dep = declare_dependency(link_with: wl_protocols_lib, sources: wl_protocols_headers)
 
-client_src += files('wayland.c')
+client_src += files('wayland.c', 'keytables/evdev.c')
 client_deps += [wayland_deps, wl_protocols_dep]
 config.set10('USE_WAYLAND', true)

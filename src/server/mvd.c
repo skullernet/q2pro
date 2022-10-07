@@ -630,11 +630,7 @@ static void emit_gamestate(void)
         if (!string[0]) {
             continue;
         }
-        length = strlen(string);
-        if (length > MAX_QPATH) {
-            length = MAX_QPATH;
-        }
-
+        length = Q_strnlen(string, MAX_QPATH);
         MSG_WriteShort(i);
         MSG_WriteData(string, length);
         MSG_WriteByte(0);
@@ -1554,11 +1550,7 @@ static void parse_stream_start(gtv_client_t *client)
     }
 
     maxbuf = MSG_ReadShort();
-    if (maxbuf < 10) {
-        maxbuf = 10;
-    }
-
-    client->maxbuf = maxbuf;
+    client->maxbuf = max(maxbuf, 10);
     client->state = cs_spawned;
 
     List_Append(&gtv_active_list, &client->active);
@@ -2061,6 +2053,9 @@ void SV_MvdInit(void)
     if (!sv_mvd_enable->integer) {
         return; // do nothing if disabled
     }
+
+    // reserve CLIENTNUM_NONE slot
+    Cvar_ClampInteger(sv_maxclients, 1, CLIENTNUM_NONE);
 
     // allocate buffers
     SZ_Init(&mvd.message, SV_Malloc(MAX_MSGLEN), MAX_MSGLEN);
