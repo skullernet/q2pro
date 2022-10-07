@@ -1570,7 +1570,6 @@ void CL_BfgParticles(entity_t *ent)
     float       sp, sy, cp, cy;
     vec3_t      forward;
     float       dist;
-    vec3_t      v;
     float       ltime;
 
     ltime = cl.time * 0.001f;
@@ -1600,8 +1599,7 @@ void CL_BfgParticles(entity_t *ent)
         VectorClear(p->vel);
         VectorClear(p->accel);
 
-        VectorSubtract(p->org, ent->origin, v);
-        dist = VectorLength(v) / 90.0f;
+        dist = Distance(p->org, ent->origin) / 90.0f;
         p->color = floor(0xd0 + dist * 7);
 
         p->alpha = 1.0f - dist;

@@ -26,7 +26,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define MOD_Malloc(size)    Hunk_TryAlloc(&model->hunk, size)
 
-#define CHECK(x)    if (!(x)) { ret = Q_ERR(ENOMEM); goto fail; }
+#define CHECK(x)    if (!(x)) { ret = Q_ERR_NOMEM; goto fail; }
 
 // during registration it is possible to have more models than could actually
 // be referenced during gameplay, because we don't want to free anything until
