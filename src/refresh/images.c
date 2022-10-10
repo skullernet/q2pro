@@ -833,9 +833,9 @@ IMG_LOAD(JPG)
 #else
     JSAMPROW row_pointer;
 
-    row_pointer = malloc(sizeof(JSAMPLE) * cinfo.output_width * cinfo.output_components);
+    row_pointer = Z_Malloc(sizeof(JSAMPLE) * cinfo.output_width * cinfo.output_components);
     ret = my_jpeg_finish_decompress(&cinfo, row_pointer, pixels);
-    free(row_pointer);
+    Z_Free(row_pointer);
 #endif
 
     if (ret < 0) {
@@ -889,6 +889,9 @@ static int IMG_SaveJPG(screenshot_t *s)
 
     h = s->height;
     row_pointers = malloc(sizeof(JSAMPROW) * h);
+    if (!row_pointers) {
+        return Q_ERR_NOMEM;
+    }
     for (i = 0; i < h; i++) {
         row_pointers[i] = (JSAMPROW)(s->pixels + (h - i - 1) * s->row_stride);
     }
@@ -1132,6 +1135,10 @@ static int IMG_SavePNG(screenshot_t *s)
 
     h = s->height;
     row_pointers = malloc(sizeof(png_bytep) * h);
+    if (!row_pointers) {
+        ret = Q_ERR_NOMEM;
+        goto fail;
+    }
     for (i = 0; i < h; i++) {
         row_pointers[i] = (png_bytep)(s->pixels + (h - i - 1) * s->row_stride);
     }
