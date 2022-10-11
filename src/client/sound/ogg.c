@@ -21,6 +21,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "sound.h"
 #include <vorbis/vorbisfile.h>
 
+#ifndef USE_BIG_ENDIAN
+#define USE_BIG_ENDIAN 0
+#endif
+
 typedef struct {
     bool initialized;
     OggVorbis_File vf;
@@ -143,10 +147,10 @@ void OGG_Update(void)
         byte    buffer[4096];
         int     samples;
 
-        samples = ov_read(&ogg.vf, (char *)buffer, sizeof(buffer), 0, 2, 1, NULL);
+        samples = ov_read(&ogg.vf, (char *)buffer, sizeof(buffer), USE_BIG_ENDIAN, 2, 1, NULL);
         if (samples == 0) {
             OGG_Play();
-            samples = ov_read(&ogg.vf, (char *)buffer, sizeof(buffer), 0, 2, 1, NULL);
+            samples = ov_read(&ogg.vf, (char *)buffer, sizeof(buffer), USE_BIG_ENDIAN, 2, 1, NULL);
         }
 
         if (samples <= 0)
