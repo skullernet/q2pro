@@ -150,7 +150,8 @@ void OGG_Update(void)
         samples = ov_read(&ogg.vf, (char *)buffer, sizeof(buffer), USE_BIG_ENDIAN, 2, 1, NULL);
         if (samples == 0) {
             OGG_Play();
-            samples = ov_read(&ogg.vf, (char *)buffer, sizeof(buffer), USE_BIG_ENDIAN, 2, 1, NULL);
+            if (ogg.initialized)
+                samples = ov_read(&ogg.vf, (char *)buffer, sizeof(buffer), USE_BIG_ENDIAN, 2, 1, NULL);
         }
 
         if (samples <= 0)
