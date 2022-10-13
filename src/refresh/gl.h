@@ -49,7 +49,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define TAB_COS(x) gl_static.sintab[((x) + 64) & 255]
 
 #define MAX_PROGRAMS    64
-#define NUM_TEXNUMS     6
+#define NUM_TEXNUMS     7
 
 typedef struct {
     const char *name;
@@ -521,6 +521,7 @@ void GL_Blend(void);
 #define TEXNUM_BEAM     gl_static.texnums[3]
 #define TEXNUM_WHITE    gl_static.texnums[4]
 #define TEXNUM_BLACK    gl_static.texnums[5]
+#define TEXNUM_RAW      gl_static.texnums[6]
 
 void Scrap_Upload(void);
 

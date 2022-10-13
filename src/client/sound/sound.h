@@ -31,7 +31,7 @@ typedef struct sfxcache_s {
     int         channels;
     int         size;
 #if USE_OPENAL
-    int         bufnum;
+    unsigned    bufnum;
 #endif
 #if USE_SNDDMA
     byte        data[1];        // variable sized
@@ -75,8 +75,8 @@ typedef struct channel_s {
     bool        fixed_origin;   // use origin instead of fetching entnum's origin
     bool        autosound;      // from an entity->sound, cleared each frame
 #if USE_OPENAL
-    int         autoframe;
-    int         srcnum;
+    unsigned    autoframe;
+    unsigned    srcnum;
 #endif
 } channel_t;
 
@@ -110,6 +110,9 @@ typedef struct {
     sfxcache_t *(*upload_sfx)(sfx_t *s);
     void (*delete_sfx)(sfx_t *s);
     void (*page_in_sfx)(sfx_t *s);
+    void (*raw_samples)(int samples, int rate, int width, int channels, const byte *data, float volume);
+    bool (*need_raw_samples)(void);
+    void (*drop_raw_samples)(void);
     int (*get_begin_ofs)(float timeofs);
     void (*play_channel)(channel_t *ch);
     void (*stop_channel)(channel_t *ch);

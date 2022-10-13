@@ -954,6 +954,12 @@ static void GL_InitBeamTexture(void)
     GL_SetFilterAndRepeat(IT_SPRITE, IF_NONE);
 }
 
+static void GL_InitRawTexture(void)
+{
+    GL_ForceTexture(0, TEXNUM_RAW);
+    GL_SetFilterAndRepeat(IT_PIC, IF_NONE);
+}
+
 static void gl_partshape_changed(cvar_t *self)
 {
     GL_InitParticleTexture();
@@ -1046,6 +1052,7 @@ void GL_InitImages(void)
     GL_InitParticleTexture();
     GL_InitWhiteImage();
     GL_InitBeamTexture();
+    GL_InitRawTexture();
 
     GL_ShowErrors(__func__);
 }

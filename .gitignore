@@ -7,6 +7,7 @@
 /baseq2/
 /game*.so
 /game*.dll
+/subprojects/*/
 /tags
 /TAGS
 /.vs/*

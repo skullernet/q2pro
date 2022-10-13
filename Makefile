@@ -187,6 +187,7 @@ OBJS_c := \
     $(COMMON_OBJS)          \
     src/shared/m_flash.o    \
     src/client/ascii.o      \
+    src/client/cin.o        \
     src/client/console.o    \
     src/client/crc.o        \
     src/client/demo.o       \
