@@ -18,6 +18,7 @@ option('map-checksum', type: 'boolean', value: true, description: 'verify map ch
 option('md3', type: 'boolean', value: true, description: 'MD3 models support')
 option('mvd-client', type: 'boolean', value: true, description: 'MVD client')
 option('mvd-server', type: 'boolean', value: true, description: 'MVD server')
+option('ogg', type: 'feature', value: 'auto', description: 'Ogg Vorbis support')
 option('openal-dynamic', type: 'boolean', value: false, description: 'link to OpenAL dynamically')
 option('openal', type: 'feature', value: 'auto', description: 'OpenAL support')
 option('oss', type: 'feature', value: 'disabled', description: 'OSS support')

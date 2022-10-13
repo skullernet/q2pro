@@ -325,7 +325,7 @@ void SV_New_f(void)
     MSG_WriteLong(sv_client->spawncount);
     MSG_WriteByte(0);   // no attract loop
     MSG_WriteString(sv_client->gamedir);
-    if (sv.state == ss_pic)
+    if (sv.state == ss_pic || sv.state == ss_cinematic)
         MSG_WriteShort(-1);
     else
         MSG_WriteShort(sv_client->slot);
@@ -341,7 +341,10 @@ void SV_New_f(void)
         break;
     case PROTOCOL_VERSION_Q2PRO:
         MSG_WriteShort(sv_client->version);
-        MSG_WriteByte(sv.state);
+        if (sv.state == ss_cinematic && sv_client->version < PROTOCOL_VERSION_Q2PRO_CINEMATICS)
+            MSG_WriteByte(ss_pic);
+        else
+            MSG_WriteByte(sv.state);
         MSG_WriteByte(sv_client->pmp.strafehack);
         MSG_WriteByte(sv_client->pmp.qwmode);
         MSG_WriteByte(sv_client->pmp.waterhack);
@@ -396,7 +399,7 @@ void SV_New_f(void)
 
     memset(&sv_client->lastcmd, 0, sizeof(sv_client->lastcmd));
 
-    if (sv.state == ss_pic)
+    if (sv.state == ss_pic || sv.state == ss_cinematic)
         return;
 
     // send gamestate
@@ -697,24 +700,29 @@ static void SV_StopDownload_f(void)
 
 //============================================================================
 
-// special hack for end game screen in coop mode
+// a cinematic has completed or been aborted by a client, so move to the next server
 static void SV_NextServer_f(void)
 {
-    if (sv.state != ss_pic)
+    if (sv.state != ss_pic && sv.state != ss_cinematic)
         return;     // can't nextserver while playing a normal game
 
-    if (Q_stricmp(sv.name, "victory.pcx"))
-        return;
+    if (sv.state == ss_pic && !Cvar_VariableInteger("coop"))
+        return;     // ss_pic can be nextserver'd in coop mode
 
-    if (Cvar_VariableInteger("deathmatch"))
-        return;
+    if (atoi(Cmd_Argv(1)) != sv.spawncount)
+        return;     // leftover from last server
 
-    sv.name[0] = 0; // make sure another doesn't sneak in
+    sv.spawncount ^= 1;     // make sure another doesn't sneak in
 
-    if (Cvar_VariableInteger("coop"))
-        Cbuf_AddText(&cmd_buffer, "gamemap \"*base1\"\n");
-    else
+    const char *v = Cvar_VariableString("nextserver");
+    if (*v) {
+        Cbuf_AddText(&cmd_buffer, v);
+        Cbuf_AddText(&cmd_buffer, "\n");
+    } else {
         Cbuf_AddText(&cmd_buffer, "killserver\n");
+    }
+
+    Cvar_Set("nextserver", "");
 }
 
 // the client is going to disconnect, so remove the connection immediately
@@ -1003,7 +1011,7 @@ static void SV_ExecuteUserCommand(const char *s)
         return;
     }
 
-    if (sv.state == ss_pic) {
+    if (sv.state == ss_pic || sv.state == ss_cinematic) {
         return;
     }
 

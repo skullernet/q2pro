@@ -908,8 +908,6 @@ void    SCR_UpdateScreen(void);
 void    SCR_SizeUp(void);
 void    SCR_SizeDown(void);
 void    SCR_CenterPrint(const char *str);
-void    SCR_FinishCinematic(void);
-void    SCR_PlayCinematic(const char *name);
 void    SCR_BeginLoadingPlaque(void);
 void    SCR_EndLoadingPlaque(void);
 void    SCR_TouchPics(void);
@@ -928,6 +926,14 @@ void    SCR_AddToChatHUD(const char *text);
 
 void	CL_Clear3DGhudQueue();
 
+//
+// cin.c
+//
+void    SCR_StopCinematic(void);
+void    SCR_FinishCinematic(void);
+void    SCR_RunCinematic(void);
+void    SCR_DrawCinematic(void);
+void    SCR_PlayCinematic(const char *name);
 
 //
 // ascii.c

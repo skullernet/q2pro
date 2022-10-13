@@ -261,6 +261,10 @@ lrcon_password::
     commands on the server. By default no commands are permitted. Permitted
     command prefixes can be added using ‘addlrconcmd’.
 
+sv_cinematics::
+    If set to 0, server will skip cinematics even if they exist. Default value
+    is 1.
+
 Downloads
 ~~~~~~~~~
 

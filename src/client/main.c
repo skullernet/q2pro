@@ -1869,6 +1869,8 @@ CL_ClearState
 void CL_ClearState(void)
 {
     S_StopAllSounds();
+    OGG_Stop();
+    SCR_StopCinematic();
     CL_ClearEffects();
     CL_ClearLightStyles();
     CL_ClearTEnts();
@@ -2251,8 +2253,6 @@ static void CL_Changing_f(void)
 
     if (cls.demo.recording)
         CL_Stop_f();
-
-    S_StopAllSounds();
 
     Com_Printf("Changing map...\n");
 
@@ -3569,11 +3569,12 @@ void CL_RestartFilesystem(bool total)
         CL_LoadState(LOAD_SOUNDS);
         CL_RegisterSounds();
         CL_LoadState(LOAD_NONE);
-    } else if (cls_state == ca_cinematic) {
+    } else if (cls_state == ca_cinematic && !COM_CompareExtension(cl.mapname, ".pcx")) {
         cl.image_precache[0] = R_RegisterPic2(cl.mapname);
     }
 
     CL_LoadDownloadIgnores();
+    OGG_Reload();
 
     // switch back to original state
     cls.state = cls_state;
@@ -3623,7 +3624,7 @@ void CL_RestartRefresh(bool total)
         CL_LoadState(LOAD_MAP);
         CL_PrepRefresh();
         CL_LoadState(LOAD_NONE);
-    } else if (cls_state == ca_cinematic) {
+    } else if (cls_state == ca_cinematic && !COM_CompareExtension(cl.mapname, ".pcx")) {
         cl.image_precache[0] = R_RegisterPic2(cl.mapname);
     }
 
@@ -4443,6 +4444,8 @@ unsigned CL_Frame(unsigned msec)
 
     Con_RunConsole();
 
+    SCR_RunCinematic();
+
     UI_Frame(main_extra);
 
     if (ref_frame) {
@@ -4553,6 +4556,7 @@ void CL_Init(void)
     }
 #endif
 
+    OGG_Init();
     CL_LoadDownloadIgnores();
 
     HTTP_Init();
@@ -4606,6 +4610,7 @@ void CL_Shutdown(void)
 #endif
 
     HTTP_Shutdown();
+    OGG_Shutdown();
     S_Shutdown();
     IN_Shutdown();
     Con_Shutdown();

@@ -39,6 +39,24 @@ void S_BeginRegistration(void);
 qhandle_t S_RegisterSound(const char *sample);
 void S_EndRegistration(void);
 
+void S_RawSamples(int samples, int rate, int width, int channels, const byte *data);
+
+#if USE_OGG
+void OGG_Play(void);
+void OGG_Stop(void);
+void OGG_Update(void);
+void OGG_Reload(void);
+void OGG_Init(void);
+void OGG_Shutdown(void);
+#else
+#define OGG_Play()          (void)0
+#define OGG_Stop()          (void)0
+#define OGG_Update()        (void)0
+#define OGG_Reload()        (void)0
+#define OGG_Init()          (void)0
+#define OGG_Shutdown()      (void)0
+#endif
+
 extern vec3_t   listener_origin;
 extern vec3_t   listener_forward;
 extern vec3_t   listener_right;
