@@ -166,6 +166,134 @@ void OGG_Update(void)
     }
 }
 
+static size_t my_read_sz(void *buf, size_t size, size_t nmemb, void *datasource)
+{
+    sizebuf_t *sz = datasource;
+    size_t bytes;
+
+    if (!size || !nmemb) {
+        errno = 0;
+        return 0;
+    }
+
+    if (size > SIZE_MAX / nmemb) {
+        errno = EINVAL;
+        return 0;
+    }
+
+    bytes = min(size * nmemb, sz->cursize - sz->readcount);
+    if (bytes) {
+        memcpy(buf, sz->data + sz->readcount, bytes);
+        sz->readcount += bytes;
+    }
+
+    errno = 0;
+    return bytes / size;
+}
+
+static int my_seek_sz(void *datasource, ogg_int64_t offset, int whence)
+{
+    sizebuf_t *sz = datasource;
+
+    switch (whence) {
+    case SEEK_SET:
+        sz->readcount = clamp(offset, 0, (ogg_int64_t)sz->cursize);
+        break;
+    case SEEK_CUR:
+        sz->readcount += clamp(offset, -(ogg_int64_t)sz->readcount,
+                               (ogg_int64_t)(sz->cursize - sz->readcount));
+        break;
+    case SEEK_END:
+        sz->readcount = sz->cursize;
+        break;
+    default:
+        errno = EINVAL;
+        return -1;
+    }
+
+    errno = 0;
+    return 0;
+}
+
+static long my_tell_sz(void *datasource)
+{
+    sizebuf_t *sz = datasource;
+    return sz->readcount;
+}
+
+bool OGG_Load(sizebuf_t *sz)
+{
+    ov_callbacks cb = {
+        my_read_sz,
+        my_seek_sz,
+        NULL,
+        my_tell_sz
+    };
+
+    OggVorbis_File vf;
+    int ret = ov_open_callbacks(sz, &vf, NULL, 0, cb);
+    if (ret < 0) {
+        Com_DPrintf("%s does not appear to be an Ogg bitstream (error %d)\n", s_info.name, ret);
+        return false;
+    }
+
+    vorbis_info *vi = ov_info(&vf, 0);
+    if (!vi) {
+        Com_DPrintf("Couldn't get info on %s\n", s_info.name);
+        goto fail;
+    }
+
+    if (vi->channels < 1 || vi->channels > 2) {
+        Com_DPrintf("%s has bad number of channels\n", s_info.name);
+        goto fail;
+    }
+
+    if (vi->rate < 8000 || vi->rate > 48000) {
+        Com_DPrintf("%s has bad rate\n", s_info.name);
+        goto fail;
+    }
+
+    ogg_int64_t samples = ov_pcm_total(&vf, 0);
+    if (samples < 0 || samples > MAX_LOADFILE >> vi->channels) {
+        Com_DPrintf("%s has bad number of samples\n", s_info.name);
+        goto fail;
+    }
+
+    int size = samples << vi->channels;
+    int offset = 0;
+
+    s_info.channels = vi->channels;
+    s_info.rate = vi->rate;
+    s_info.width = 2;
+    s_info.loopstart = -1;
+    s_info.data = FS_AllocTempMem(size);
+
+    while (offset < size) {
+        int bitstream;
+
+        ret = ov_read(&vf, (char *)s_info.data + offset, size - offset, USE_BIG_ENDIAN, 2, 1, &bitstream);
+        if (ret == 0 || bitstream)
+            break;
+
+        if (ret < 0) {
+            Com_DPrintf("Error %d decoding %s\n", ret, s_info.name);
+            FS_FreeTempMem(s_info.data);
+            goto fail;
+        }
+
+        offset += ret;
+    }
+
+    s_info.samples = offset >> s_info.channels;
+
+    ov_clear(&vf);
+    return true;
+
+fail:
+    ov_clear(&vf);
+    return false;
+}
+
 void OGG_Reload(void)
 {
     FS_FreeList(tracklist);
