@@ -29,6 +29,8 @@ typedef struct {
     bool initialized;
     OggVorbis_File vf;
     qhandle_t f;
+    int channels;
+    int rate;
     char path[MAX_QPATH];
 } ogg_state_t;
 
@@ -116,12 +118,31 @@ void OGG_Play(void)
     ret = ov_open_callbacks(&ogg, &ogg.vf, NULL, 0, (ov_callbacks){ my_read });
     if (ret < 0) {
         Com_EPrintf("%s does not appear to be an Ogg bitstream (error %d)\n", ogg.path, ret);
-        ogg_stop();
-        return;
+        goto fail;
+    }
+
+    vorbis_info *vi = ov_info(&ogg.vf, -1);
+    if (!vi) {
+        Com_EPrintf("Couldn't get info on %s\n", ogg.path);
+        ov_clear(&ogg.vf);
+        goto fail;
+    }
+
+    if (vi->channels < 1 || vi->channels > 2) {
+        Com_EPrintf("%s has bad number of channels\n", ogg.path);
+        ov_clear(&ogg.vf);
+        goto fail;
     }
 
     Com_DPrintf("Playing %s\n", ogg.path);
+
     ogg.initialized = true;
+    ogg.channels = vi->channels;
+    ogg.rate = vi->rate;
+    return;
+
+fail:
+    ogg_stop();
 }
 
 void OGG_Stop(void)
@@ -158,8 +179,11 @@ void OGG_Update(void)
             break;
 
         vorbis_info *vi = ov_info(&ogg.vf, -1);
-        if (!vi || vi->channels > 2)
+        if (!vi || vi->channels < 1 || vi->channels > 2)
             break;
+
+        ogg.channels = vi->channels;
+        ogg.rate = vi->rate;
 
         if (!s_api.raw_samples(samples >> vi->channels, vi->rate, 2,
                                vi->channels, buffer, ogg_volume->value)) {
@@ -307,9 +331,9 @@ void OGG_Reload(void)
 static void OGG_Info_f(void)
 {
     if (ogg.initialized) {
-        vorbis_info *vi = ov_info(&ogg.vf, -1);
-        Com_Printf("Playing %s, %ld Hz, %d ch\n", ogg.path,
-                   vi ? vi->rate : -1, vi ? vi->channels : -1);
+        Com_Printf("Playing %s, %d Hz, %d ch\n", ogg.path, ogg.rate, ogg.channels);
+    } else if (ogg.path[0]) {
+        Com_Printf("Would play %s, but it failed to load.\n", ogg.path);
     } else {
         Com_Printf("Playback stopped.\n");
     }
