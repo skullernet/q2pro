@@ -321,7 +321,7 @@ fail:
     return false;
 }
 
-void OGG_Reload(void)
+void OGG_LoadTrackList(void)
 {
     FS_FreeList(tracklist);
     tracklist = FS_ListFiles("music", ".ogg", FS_SEARCH_SAVEPATH, &trackcount);
@@ -363,7 +363,7 @@ void OGG_Init(void)
     ogg_shuffle = Cvar_Get("ogg_shuffle", "0", 0);
     Cmd_AddCommand("ogginfo", OGG_Info_f);
 
-    OGG_Reload();
+    OGG_LoadTrackList();
 }
 
 void OGG_Shutdown(void)
