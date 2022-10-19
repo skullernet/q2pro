@@ -161,8 +161,11 @@ void OGG_Update(void)
         if (!vi || vi->channels > 2)
             break;
 
-        s_api.raw_samples(samples >> vi->channels, vi->rate, 2,
-                          vi->channels, buffer, ogg_volume->value);
+        if (!s_api.raw_samples(samples >> vi->channels, vi->rate, 2,
+                               vi->channels, buffer, ogg_volume->value)) {
+            s_api.drop_raw_samples();
+            break;
+        }
     }
 }
 
