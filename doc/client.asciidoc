@@ -1425,6 +1425,12 @@ followip [count]::
     (it should be positive integer).  If _count_ is omitted, then the most
     recent IP address is used.
 
+oggplay <track>::
+    Start playing background music track ‘music/<track>.ogg’.
+
+oggstop::
+    Stop playing background music track.
+
 ogginfo::
     Display information about currently playing background music track.
 
