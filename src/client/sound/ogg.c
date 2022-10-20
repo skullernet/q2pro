@@ -383,7 +383,7 @@ static void OGG_Info_f(void)
 
 static void ogg_enable_changed(cvar_t *self)
 {
-    if (cls.state < ca_precached)
+    if (cls.state < ca_precached || cls.state > ca_active)
         return;
     if (self->integer)
         OGG_Play();
