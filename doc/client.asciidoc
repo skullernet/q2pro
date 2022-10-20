@@ -973,7 +973,7 @@ cl_rollhack::
 
 cl_adjustfov::
     Specifies if horizontal field of view is automatically adjusted for screens
-    with aspect ratio different from 4/3. Default value is 0 (don't adjust FOV).
+    with aspect ratio different from 4/3. Default value is 1 (enabled).
 
 cl_demosnaps::
     Specifies time interval, in seconds, between saving ‘snapshots’ in memory
@@ -996,7 +996,7 @@ cl_autopause::
 
 ui_open::
     Specifies if menu is automatically opened on startup, instead of full
-    screen console. Default value is 1 (open menu).
+    screen console. Default value is 0 (don't open menu).
 
 ui_background::
     Specifies image to use as menu background. Default value is empty, which
