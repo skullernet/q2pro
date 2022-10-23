@@ -29,6 +29,8 @@ typedef struct {
     bool initialized;
     OggVorbis_File vf;
     qhandle_t f;
+    int channels;
+    int rate;
     char path[MAX_QPATH];
 } ogg_state_t;
 
@@ -75,6 +77,38 @@ static void ogg_stop(void)
     memset(&ogg, 0, sizeof(ogg));
 }
 
+static void ogg_play(void)
+{
+    int ret = ov_open_callbacks(&ogg, &ogg.vf, NULL, 0, (ov_callbacks){ my_read });
+    if (ret < 0) {
+        Com_EPrintf("%s does not appear to be an Ogg bitstream (error %d)\n", ogg.path, ret);
+        goto fail;
+    }
+
+    vorbis_info *vi = ov_info(&ogg.vf, -1);
+    if (!vi) {
+        Com_EPrintf("Couldn't get info on %s\n", ogg.path);
+        ov_clear(&ogg.vf);
+        goto fail;
+    }
+
+    if (vi->channels < 1 || vi->channels > 2) {
+        Com_EPrintf("%s has bad number of channels\n", ogg.path);
+        ov_clear(&ogg.vf);
+        goto fail;
+    }
+
+    Com_DPrintf("Playing %s\n", ogg.path);
+
+    ogg.initialized = true;
+    ogg.channels = vi->channels;
+    ogg.rate = vi->rate;
+    return;
+
+fail:
+    ogg_stop();
+}
+
 static void shuffle(void)
 {
     for (int i = trackcount - 1; i > 0; i--) {
@@ -113,15 +147,7 @@ void OGG_Play(void)
         return;
     }
 
-    ret = ov_open_callbacks(&ogg, &ogg.vf, NULL, 0, (ov_callbacks){ my_read });
-    if (ret < 0) {
-        Com_EPrintf("%s does not appear to be an Ogg bitstream (error %d)\n", ogg.path, ret);
-        ogg_stop();
-        return;
-    }
-
-    Com_DPrintf("Playing %s\n", ogg.path);
-    ogg.initialized = true;
+    ogg_play();
 }
 
 void OGG_Stop(void)
@@ -158,27 +184,198 @@ void OGG_Update(void)
             break;
 
         vorbis_info *vi = ov_info(&ogg.vf, -1);
-        if (!vi || vi->channels > 2)
+        if (!vi || vi->channels < 1 || vi->channels > 2)
             break;
 
-        s_api.raw_samples(samples >> vi->channels, vi->rate, 2,
-                          vi->channels, buffer, ogg_volume->value);
+        ogg.channels = vi->channels;
+        ogg.rate = vi->rate;
+
+        if (!s_api.raw_samples(samples >> vi->channels, vi->rate, 2,
+                               vi->channels, buffer, ogg_volume->value)) {
+            s_api.drop_raw_samples();
+            break;
+        }
     }
 }
 
-void OGG_Reload(void)
+static size_t my_read_sz(void *buf, size_t size, size_t nmemb, void *datasource)
+{
+    sizebuf_t *sz = datasource;
+    size_t bytes;
+
+    if (!size || !nmemb) {
+        errno = 0;
+        return 0;
+    }
+
+    if (size > SIZE_MAX / nmemb) {
+        errno = EINVAL;
+        return 0;
+    }
+
+    bytes = min(size * nmemb, sz->cursize - sz->readcount);
+    if (bytes) {
+        memcpy(buf, sz->data + sz->readcount, bytes);
+        sz->readcount += bytes;
+    }
+
+    errno = 0;
+    return bytes / size;
+}
+
+static int my_seek_sz(void *datasource, ogg_int64_t offset, int whence)
+{
+    sizebuf_t *sz = datasource;
+
+    switch (whence) {
+    case SEEK_SET:
+        sz->readcount = clamp(offset, 0, (ogg_int64_t)sz->cursize);
+        break;
+    case SEEK_CUR:
+        sz->readcount += clamp(offset, -(ogg_int64_t)sz->readcount,
+                               (ogg_int64_t)(sz->cursize - sz->readcount));
+        break;
+    case SEEK_END:
+        sz->readcount = sz->cursize;
+        break;
+    default:
+        errno = EINVAL;
+        return -1;
+    }
+
+    errno = 0;
+    return 0;
+}
+
+static long my_tell_sz(void *datasource)
+{
+    sizebuf_t *sz = datasource;
+    return sz->readcount;
+}
+
+bool OGG_Load(sizebuf_t *sz)
+{
+    ov_callbacks cb = {
+        my_read_sz,
+        my_seek_sz,
+        NULL,
+        my_tell_sz
+    };
+
+    OggVorbis_File vf;
+    int ret = ov_open_callbacks(sz, &vf, NULL, 0, cb);
+    if (ret < 0) {
+        Com_DPrintf("%s does not appear to be an Ogg bitstream (error %d)\n", s_info.name, ret);
+        return false;
+    }
+
+    vorbis_info *vi = ov_info(&vf, 0);
+    if (!vi) {
+        Com_DPrintf("Couldn't get info on %s\n", s_info.name);
+        goto fail;
+    }
+
+    if (vi->channels < 1 || vi->channels > 2) {
+        Com_DPrintf("%s has bad number of channels\n", s_info.name);
+        goto fail;
+    }
+
+    if (vi->rate < 8000 || vi->rate > 48000) {
+        Com_DPrintf("%s has bad rate\n", s_info.name);
+        goto fail;
+    }
+
+    ogg_int64_t samples = ov_pcm_total(&vf, 0);
+    if (samples < 0 || samples > MAX_LOADFILE >> vi->channels) {
+        Com_DPrintf("%s has bad number of samples\n", s_info.name);
+        goto fail;
+    }
+
+    int size = samples << vi->channels;
+    int offset = 0;
+
+    s_info.channels = vi->channels;
+    s_info.rate = vi->rate;
+    s_info.width = 2;
+    s_info.loopstart = -1;
+    s_info.data = FS_AllocTempMem(size);
+
+    while (offset < size) {
+        int bitstream;
+
+        ret = ov_read(&vf, (char *)s_info.data + offset, size - offset, USE_BIG_ENDIAN, 2, 1, &bitstream);
+        if (ret == 0 || bitstream)
+            break;
+
+        if (ret < 0) {
+            Com_DPrintf("Error %d decoding %s\n", ret, s_info.name);
+            FS_FreeTempMem(s_info.data);
+            goto fail;
+        }
+
+        offset += ret;
+    }
+
+    s_info.samples = offset >> s_info.channels;
+
+    ov_clear(&vf);
+    return true;
+
+fail:
+    ov_clear(&vf);
+    return false;
+}
+
+void OGG_LoadTrackList(void)
 {
     FS_FreeList(tracklist);
     tracklist = FS_ListFiles("music", ".ogg", FS_SEARCH_SAVEPATH, &trackcount);
     trackindex = 0;
 }
 
+static void OGG_Play_c(genctx_t *ctx, int state)
+{
+    FS_File_g("music", ".ogg", FS_SEARCH_STRIPEXT, ctx);
+}
+
+static void OGG_Play_f(void)
+{
+    char buffer[MAX_QPATH];
+    qhandle_t f;
+
+    if (Cmd_Argc() < 2) {
+        Com_Printf("Usage: %s <track>\n", Cmd_Argv(0));
+        return;
+    }
+
+    if (!s_started) {
+        Com_Printf("Sound system not started.\n");
+        return;
+    }
+
+    if (cls.state == ca_cinematic) {
+        Com_Printf("Can't play music in cinematic mode.\n");
+        return;
+    }
+
+    f = FS_EasyOpenFile(buffer, sizeof(buffer), FS_MODE_READ,
+                        "music/", Cmd_Argv(1), ".ogg");
+    if (!f)
+        return;
+
+    OGG_Stop();
+
+    Q_strlcpy(ogg.path, buffer, sizeof(ogg.path));
+    ogg.f = f;
+    ogg_play();
+}
+
 static void OGG_Info_f(void)
 {
     if (ogg.initialized) {
-        vorbis_info *vi = ov_info(&ogg.vf, -1);
-        Com_Printf("Playing %s, %ld Hz, %d ch\n", ogg.path,
-                   vi ? vi->rate : -1, vi ? vi->channels : -1);
+        Com_Printf("Playing %s, %d Hz, %d ch\n", ogg.path, ogg.rate, ogg.channels);
+    } else if (ogg.path[0]) {
+        Com_Printf("Would play %s, but it failed to load.\n", ogg.path);
     } else {
         Com_Printf("Playback stopped.\n");
     }
@@ -186,7 +383,7 @@ static void OGG_Info_f(void)
 
 static void ogg_enable_changed(cvar_t *self)
 {
-    if (cls.state < ca_precached)
+    if (cls.state < ca_precached || cls.state > ca_active)
         return;
     if (self->integer)
         OGG_Play();
@@ -199,6 +396,13 @@ static void ogg_volume_changed(cvar_t *self)
     Cvar_ClampValue(self, 0, 1);
 }
 
+static const cmdreg_t c_ogg[] = {
+    { "oggplay", OGG_Play_f, OGG_Play_c },
+    { "oggstop", OGG_Stop },
+    { "ogginfo", OGG_Info_f },
+    { NULL }
+};
+
 void OGG_Init(void)
 {
     ogg_enable = Cvar_Get("ogg_enable", "1", 0);
@@ -206,9 +410,10 @@ void OGG_Init(void)
     ogg_volume = Cvar_Get("ogg_volume", "1", 0);
     ogg_volume->changed = ogg_volume_changed;
     ogg_shuffle = Cvar_Get("ogg_shuffle", "0", 0);
-    Cmd_AddCommand("ogginfo", OGG_Info_f);
 
-    OGG_Reload();
+    Cmd_Register(c_ogg);
+
+    OGG_LoadTrackList();
 }
 
 void OGG_Shutdown(void)

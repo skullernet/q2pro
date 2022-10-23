@@ -933,6 +933,7 @@ void    SCR_StopCinematic(void);
 void    SCR_FinishCinematic(void);
 void    SCR_RunCinematic(void);
 void    SCR_DrawCinematic(void);
+void    SCR_ReloadCinematic(void);
 void    SCR_PlayCinematic(const char *name);
 
 //
