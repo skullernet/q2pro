@@ -27,6 +27,7 @@ static byte     demo_buffer[MAX_PACKETLEN];
 static cvar_t   *cl_demosnaps;
 static cvar_t   *cl_demomsglen;
 static cvar_t   *cl_demowait;
+static cvar_t   *cl_demosuspendtoggle;
 
 // =========================================================================
 
@@ -504,6 +505,12 @@ static void CL_Suspend_f(void)
         return;
     }
 
+    // only resume if cl_demosuspendtoggle is enabled
+    if (!cl_demosuspendtoggle->integer) {
+        Com_Printf("Demo recording is already suspended.\n");
+        return;
+    }
+
     resume_record();
 
     if (!cls.demo.recording)
@@ -513,6 +520,33 @@ static void CL_Suspend_f(void)
     Com_Printf("Resumed demo recording.\n");
 
     cls.demo.paused = false;
+
+    // clear dirty configstrings
+    memset(cl.dcs, 0, sizeof(cl.dcs));
+}
+
+static void CL_Resume_f(void)
+{
+    if (!cls.demo.recording) {
+        Com_Printf("Not recording a demo.\n");
+        return;
+    }
+
+    if (!cls.demo.paused) {
+        Com_Printf("Demo is already recording.\n");
+        return;
+    }
+
+    if (cls.demo.paused) {
+        Com_Printf("Resumed demo recording.\n");
+        cls.demo.paused = false;
+        resume_record();
+        return;
+    }
+
+    if (!cls.demo.recording)
+        // write failed
+        return;
 
     // clear dirty configstrings
     memset(cl.dcs, 0, sizeof(cl.dcs));
@@ -1232,6 +1266,7 @@ static const cmdreg_t c_demo[] = {
     { "record", CL_Record_f, CL_Demo_c },
     { "stop", CL_Stop_f },
     { "suspend", CL_Suspend_f },
+    { "resume", CL_Resume_f },
     { "seek", CL_Seek_f },
 
     { NULL }
@@ -1247,6 +1282,7 @@ void CL_InitDemos(void)
     cl_demosnaps = Cvar_Get("cl_demosnaps", "10", 0);
     cl_demomsglen = Cvar_Get("cl_demomsglen", va("%d", MAX_PACKETLEN_WRITABLE_DEFAULT), 0);
     cl_demowait = Cvar_Get("cl_demowait", "0", 0);
+    cl_demosuspendtoggle = Cvar_Get("cl_demosuspendtoggle", "1", 0);
 
     Cmd_Register(c_demo);
     List_Init(&cls.demo.snapshots);

@@ -990,6 +990,10 @@ cl_demowait::
     Specifies if demo playback is automatically paused at the last frame in
     demo file. Default value is 0 (finish playback).
 
+cl_demosuspendtoggle::
+    Specifies if 'suspend' both pauses and resumes demo recording or just pauses
+    if it was recoring. Default valie is 1 (toggle between pause and resume)
+
 cl_autopause::
     Specifies if single player game or demo playback is automatically paused
     once client console or menu is opened. Default value is 1 (pause game).
@@ -1178,7 +1182,11 @@ stop::
     Stops demo recording and prints some statistics about recorded demo.
 
 suspend::
-    Pauses and resumes demo recording.
+    Pauses and resumes demo recording if cl_demosuspendtoggle is set to 1.
+    Just pauses demo recording if cl_demosuspendtoggle is set to 0.
+
+resume::
+    Resumes demo recording.
 
 .Demo packet sizes
 ******************
