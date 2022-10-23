@@ -1304,9 +1304,6 @@ static void make_screenshot(const char *name, const char *ext,
         return;
     }
 
-    if (async)
-        Com_Printf("Taking async screenshot...\n");
-
     pixels = IMG_ReadPixels(&w, &h, &row_stride);
 
     screenshot_t s = {
@@ -1328,6 +1325,7 @@ static void make_screenshot(const char *name, const char *ext,
             .done_cb = screenshot_done_cb,
             .cb_arg = Z_CopyStruct(&s),
         };
+        Com_Printf("Taking async screenshot...\n");
         Sys_QueueAsyncWork(&work);
     } else {
         screenshot_work_cb(&s);
@@ -1534,21 +1532,30 @@ static void IMG_List_f(void)
 static image_t *alloc_image(void)
 {
     int i;
-    image_t *image;
+    image_t *image, *placeholder = NULL;
 
     // find a free image_t slot
     for (i = 1, image = r_images + 1; i < r_numImages; i++, image++) {
         if (!image->registration_sequence)
-            break;
+            return image;
+        if (!image->upload_width && !image->upload_height && !placeholder)
+            placeholder = image;
     }
 
-    if (i == r_numImages) {
-        if (r_numImages == MAX_RIMAGES)
-            return NULL;
+    // allocate new slot if possible
+    if (r_numImages < MAX_RIMAGES) {
         r_numImages++;
+        return image;
     }
 
-    return image;
+    // reuse placeholder image if available
+    if (placeholder) {
+        List_Remove(&placeholder->entry);
+        memset(placeholder, 0, sizeof(*placeholder));
+        return placeholder;
+    }
+
+    return NULL;
 }
 
 // finds the given image of the given type.

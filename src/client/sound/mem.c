@@ -177,10 +177,19 @@ static int FindChunk(sizebuf_t *sz, uint32_t search)
 
 static bool GetWavinfo(sizebuf_t *sz)
 {
-    int samples, width, chunk_len, next_chunk;
+    int tag, samples, width, chunk_len, next_chunk;
+
+    tag = SZ_ReadLong(sz);
+
+#if USE_OGG
+    if (tag == MakeLittleLong('O','g','g','S') || !COM_CompareExtension(s_info.name, ".ogg")) {
+        sz->readcount = 0;
+        return OGG_Load(sz);
+    }
+#endif
 
 // find "RIFF" chunk
-    if (SZ_ReadLong(sz) != TAG_RIFF) {
+    if (tag != TAG_RIFF) {
         Com_DPrintf("%s has missing/invalid RIFF chunk\n", s_info.name);
         return false;
     }
@@ -221,7 +230,7 @@ static bool GetWavinfo(sizebuf_t *sz)
     }
 
     s_info.rate = SZ_ReadLong(sz);
-    if (s_info.rate < 1000 || s_info.rate > 96000) {
+    if (s_info.rate < 8000 || s_info.rate > 48000) {
         Com_DPrintf("%s has bad rate\n", s_info.name);
         return false;
     }
@@ -381,9 +390,19 @@ sfxcache_t *S_LoadSound(sfx_t *s)
         goto fail;
     }
 
+#if USE_BIG_ENDIAN
+    if (s_info.format == FORMAT_PCM && s_info.width == 2) {
+        uint16_t *data = (uint16_t *)s_info.data;
+        int count = s_info.samples * s_info.channels;
+
+        for (int i = 0; i < count; i++)
+            data[i] = LittleShort(data[i]);
+    }
+#endif
+
     sc = s_api.upload_sfx(s);
 
-    if (s_info.format == FORMAT_ADPCM_MS)
+    if (s_info.format != FORMAT_PCM)
         FS_FreeTempMem(s_info.data);
 
 fail:

@@ -110,7 +110,7 @@ typedef struct {
     sfxcache_t *(*upload_sfx)(sfx_t *s);
     void (*delete_sfx)(sfx_t *s);
     void (*page_in_sfx)(sfx_t *s);
-    void (*raw_samples)(int samples, int rate, int width, int channels, const byte *data, float volume);
+    bool (*raw_samples)(int samples, int rate, int width, int channels, const byte *data, float volume);
     bool (*need_raw_samples)(void);
     void (*drop_raw_samples)(void);
     int (*get_begin_ofs)(float timeofs);
@@ -180,3 +180,7 @@ sfxcache_t *S_LoadSound(sfx_t *s);
 channel_t *S_PickChannel(int entnum, int entchannel);
 void S_IssuePlaysound(playsound_t *ps);
 void S_BuildSoundList(int *sounds);
+
+#if USE_OGG
+bool OGG_Load(sizebuf_t *sz);
+#endif
