@@ -1033,13 +1033,7 @@ void Qcommon_Init(int argc, char **argv)
 
     Com_Printf("====== " PRODUCT " initialized ======\n\n");
     Com_LPrintf(PRINT_NOTICE, APPLICATION " " VERSION ", " __DATE__ "\n");
-
-    #if USE_AQTION
     Com_Printf("https://aqtiongame.com\n\n");
-    #else
-    Com_Printf("https://github.com/skullernet/q2pro\n\n");
-    #endif
-
     time(&com_startTime);
 
     com_eventTime = Sys_Milliseconds();

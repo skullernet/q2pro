@@ -28,8 +28,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 //
 
 #define PRODUCT         "AQtion"
-#define SKULLERCREDIT   "https://github.com/skullernet/q2pro"
-#define CONSOLE_VERSION SKULLERCREDIT " " VERSION
+#define AQTIONCREDIT   "https://github.com/actionquake/q2pro"
+#define CONSOLE_VERSION AQTIONCREDIT " " VERSION
 
 #if USE_CLIENT
 #define APPLICATION     PRODUCT
