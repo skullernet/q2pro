@@ -992,7 +992,7 @@ cl_demowait::
 
 cl_demosuspendtoggle::
     Specifies if 'suspend' both pauses and resumes demo recording or just pauses
-    if it was recoring. Default valie is 1 (toggle between pause and resume)
+    if it was recoring. Default value is 1 (toggle between pause and resume)
 
 cl_autopause::
     Specifies if single player game or demo playback is automatically paused
