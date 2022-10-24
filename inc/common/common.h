@@ -28,7 +28,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 //
 
 #define PRODUCT         "AQtion"
-#define AQTIONCREDIT   "https://github.com/actionquake/q2pro"
+#define AQTIONCREDIT   "https://github.com/actionquake/distrib"
 #define CONSOLE_VERSION AQTIONCREDIT " " VERSION
 
 #if USE_CLIENT
