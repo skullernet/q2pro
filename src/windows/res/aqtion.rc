@@ -13,10 +13,10 @@
 #endif
 
 #ifdef _WIN64
-#define VER_FILEDESCRIPTION_STR     "Q2PRO aqtion game module (64-bit)"
+#define VER_FILEDESCRIPTION_STR     "AQtion game module (64-bit)"
 #define VER_ORIGINALFILENAME_STR    "gamex86_64.dll"
 #else
-#define VER_FILEDESCRIPTION_STR     "Q2PRO aqtion game module"
+#define VER_FILEDESCRIPTION_STR     "AQtion game module"
 #define VER_ORIGINALFILENAME_STR    "gamex86.dll"
 #endif
 
@@ -35,14 +35,14 @@ BEGIN
     BEGIN
         BLOCK "040904B0"
         BEGIN
-            VALUE "Comments", "https://github.com/skullernet/q2pro"
-            VALUE "CompanyName", "skuller.net"
+            VALUE "Comments", "https://github.com/actionquake/q2pro"
+            VALUE "CompanyName", "AQtion"
             VALUE "FileDescription", VER_FILEDESCRIPTION_STR
             VALUE "OriginalFilename", VER_ORIGINALFILENAME_STR
             VALUE "FileVersion", VERSION
             VALUE "InternalName", "aqtion"
-            VALUE "LegalCopyright", "Copyright © 2022 skuller.net"
-            VALUE "ProductName", "Q2PRO"
+            VALUE "LegalCopyright", "Copyright © 2022 AQtion"
+            VALUE "ProductName", "AQtion"
             VALUE "ProductVersion", VERSION
         END
     END
