@@ -16,13 +16,18 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+
+// Using openal-soft from brew uses the AL/xyz.h
+// if using other headers, check path names accordingly
+/*
 #ifdef __APPLE__
 #include <OpenAL/al.h>
 #include <OpenAL/alext.h>
 #else
+*/
 #include <AL/al.h>
 #include <AL/alext.h>
-#endif
+//#endif
 
 #define qalEnable alEnable
 #define qalDisable alDisable

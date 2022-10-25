@@ -23,11 +23,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/files.h"
 #include "dynamic.h"
 
+// Using openal-soft from brew uses the AL/xyz.h
+// if using other headers, check path names accordingly
+/*
 #ifdef __APPLE__
 #include <OpenAL/alc.h>
 #else
+*/
 #include <AL/alc.h>
-#endif
+//#endif
 
 #define QALC_IMP \
     QAL(LPALCCREATECONTEXT, alcCreateContext); \

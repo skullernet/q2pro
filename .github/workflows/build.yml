@@ -15,7 +15,7 @@ env:
     -Dpacketdup-hack=true
     -Dtests=true
     -Dvariable-fps=true
-    -Dwerror=true
+    -Dwerror=false
     -Daqtion-build=true
     -Ddiscord-sdk=true
 
@@ -137,6 +137,32 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: q2pro-lin-arm64
+          path: |
+            builddir/q2pro
+            builddir/q2proded
+
+  macIntel64:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          brew install -y meson libpng jpeg sdl2 openal-soft zlib curl libvorbis
+          brew uninstall libjpeg-turbo --ignore-dependencies
+
+      - name: Build
+        run: |
+          meson setup ${{ env.MESON_ARGS }} builddir
+          ninja -vC builddir
+        env:
+          CC: "gcc"
+          PKG_CONFIG_PATH: "/usr/local/Cellar/openal-soft/1.22.2/lib/pkgconfig/:/usr/local/Cellar/jpeg/9e/lib/pkgconfig/"
+
+      - name: Generate Mac archives
+        uses: actions/upload-artifact@v3
+        with:
+          name: q2pro-mac-intel
           path: |
             builddir/q2pro
             builddir/q2proded
