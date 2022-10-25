@@ -104,6 +104,10 @@ jobs:
         run: |
           patchelf --replace-needed /home/github/actions-runner/_work/q2pro/q2pro/extern/discord/lib/x86_64/discord_game_sdk.so ./discord_game_sdk.so builddir/q2pro
 
+      - name: Set binaries as executable
+        run: |
+          chmod +x builddir/q2pro*
+          
       - name: Generate Linux x64 archives
         uses: actions/upload-artifact@v3
         with:
@@ -133,6 +137,10 @@ jobs:
         env:
           CC: "gcc"
 
+      - name: Set binaries as executable
+        run: |
+          chmod +x builddir/q2pro*
+
       - name: Generate Linux ARM archives
         uses: actions/upload-artifact@v3
         with:
@@ -158,6 +166,10 @@ jobs:
         env:
           CC: "gcc"
           PKG_CONFIG_PATH: "/usr/local/Cellar/openal-soft/1.22.2/lib/pkgconfig/:/usr/local/Cellar/jpeg/9e/lib/pkgconfig/"
+
+      - name: Set binaries as executable
+        run: |
+          chmod +x builddir/q2pro*
 
       - name: Generate Mac archives
         uses: actions/upload-artifact@v3
