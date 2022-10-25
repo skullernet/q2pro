@@ -403,7 +403,7 @@ ifdef CONFIG_PNG
 endif
 
 ifdef CONFIG_JPEG
-    JPG_CFLAGS ?= 
+    JPG_CFLAGS ?= -I/usr/local/opt/jpeg/include
     JPG_LIBS ?= -ljpeg
     CFLAGS_c += -DUSE_JPG=1 $(JPG_CFLAGS)
     LIBS_c += $(JPG_LIBS)
