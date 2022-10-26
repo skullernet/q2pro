@@ -118,6 +118,9 @@ jobs:
 
   linuxARM64:
     runs-on: [self-hosted, ARM64]
+    strategy:
+      matrix:
+        cc: [gcc]
     steps:
       - uses: actions/checkout@v2
 
@@ -135,7 +138,7 @@ jobs:
           meson setup ${{ env.MESON_ARGS }} builddir
           ninja -vC builddir
         env:
-          CC: "gcc"
+          CC: ${{ matrix.cc }}
 
       - name: Set binaries as executable
         run: |
@@ -149,8 +152,11 @@ jobs:
             builddir/q2pro
             builddir/q2proded
 
-  macX86:
+  darwin:
     runs-on: macos-latest
+    strategy:
+      matrix:
+        arch: [x86_64]
     steps:
       - uses: actions/checkout@v2
 
@@ -175,7 +181,7 @@ jobs:
       - name: Generate Mac archives
         uses: actions/upload-artifact@v3
         with:
-          name: q2pro-mac-intel
+          name: q2pro-darwin-${{ matrix.arch }}
           path: |
             builddir/q2pro
             builddir/q2proded
