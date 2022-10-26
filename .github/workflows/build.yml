@@ -13,7 +13,7 @@ env:
     -Dclient-gtv=true
     -Doss=auto
     -Dpacketdup-hack=true
-    -Dtests=falsebrew in
+    -Dtests=false
     -Dvariable-fps=true
     -Dwerror=false
     -Daqtion-build=true
