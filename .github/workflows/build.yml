@@ -185,7 +185,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Setup Homebrew for ARM64
+      - name: Setup Homebrew for ARM64 and dependencies
         run: |
           mkdir -p ~/arm-target/bin
           mkdir -p ~/arm-target/brew-cache
@@ -204,13 +204,8 @@ jobs:
             xargs -n 1 arm-brew install --ignore-dependencies --force-bottle
 
           # Install host version of pkg-config so we can call it in the build system
-          arm-brew install pkg-config
+          arm-brew install pkg-config meson libpng jpeg sdl2 openal-soft zlib curl libvorbis
           ln -s ~/arm-target/arm-homebrew/bin/pkg-config ~/arm-target/bin/arm-pkg-config
-
-      - name: Install dependencies
-        run: |
-          arm-brew install meson libpng jpeg sdl2 openal-soft zlib curl libvorbis
-          arm-brew uninstall libjpeg-turbo --ignore-dependencies
 
       - name: Build
         run: |
