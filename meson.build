@@ -307,6 +307,14 @@ client_deps = [jpeg, png, curl, sdl2, openal]
 server_deps = []
 game_deps = [zlib]
 
+if host_machine.system() == 'darwin'
+  opengl = dependency('opengl',
+    allow_fallback:  win32,
+    default_options: fallback_opt,
+  )
+  client_deps += opengl
+endif
+
 ogg = dependency('ogg',
   required:        get_option('ogg'),
   allow_fallback:  win32,

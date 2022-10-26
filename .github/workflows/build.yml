@@ -13,9 +13,9 @@ env:
     -Dclient-gtv=true
     -Doss=auto
     -Dpacketdup-hack=true
-    -Dtests=true
+    -Dtests=false
     -Dvariable-fps=true
-    -Dwerror=true
+    -Dwerror=false
     -Daqtion-build=true
     -Ddiscord-sdk=true
 
@@ -104,6 +104,10 @@ jobs:
         run: |
           patchelf --replace-needed /home/github/actions-runner/_work/q2pro/q2pro/extern/discord/lib/x86_64/discord_game_sdk.so ./discord_game_sdk.so builddir/q2pro
 
+      - name: Set binaries as executable
+        run: |
+          chmod +x builddir/q2pro*
+          
       - name: Generate Linux x64 archives
         uses: actions/upload-artifact@v3
         with:
@@ -114,6 +118,9 @@ jobs:
 
   linuxARM64:
     runs-on: [self-hosted, ARM64]
+    strategy:
+      matrix:
+        cc: [gcc]
     steps:
       - uses: actions/checkout@v2
 
@@ -131,7 +138,11 @@ jobs:
           meson setup ${{ env.MESON_ARGS }} builddir
           ninja -vC builddir
         env:
-          CC: "gcc"
+          CC: ${{ matrix.cc }}
+
+      - name: Set binaries as executable
+        run: |
+          chmod +x builddir/q2pro*
 
       - name: Generate Linux ARM archives
         uses: actions/upload-artifact@v3
@@ -140,3 +151,68 @@ jobs:
           path: |
             builddir/q2pro
             builddir/q2proded
+
+  darwin:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        arch: [x86_64]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          brew install meson libpng jpeg sdl2 openal-soft zlib curl libvorbis
+          brew uninstall libjpeg-turbo --ignore-dependencies
+
+      - name: Build
+        run: |
+          meson setup ${{ env.MESON_ARGS }} builddir
+          ninja -vC builddir
+        env:
+          CC: "gcc"
+          PKG_CONFIG_PATH: "/usr/local/opt/openal-soft/lib/pkgconfig:/usr/local/opt/jpeg/lib/pkgconfig"
+          CFLAGS: "-mmacosx-version-min=10.7"
+
+      - name: Set binaries as executable
+        run: |
+          chmod +x builddir/q2pro*
+
+      - name: Generate Mac archives
+        uses: actions/upload-artifact@v3
+        with:
+          name: q2pro-darwin-${{ matrix.arch }}
+          path: |
+            builddir/q2pro
+            builddir/q2proded
+
+  # Github does not support Apple Silicon yet
+  # macARM64:
+  #   runs-on: macos-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+
+  #     - name: Setup Homebrew for ARM64 and dependencies
+  #       run: |
+  #         arch -arm64 brew install meson libpng jpeg sdl2 openal-soft zlib curl libvorbis
+
+  #     - name: Build
+  #       run: |
+  #         meson setup ${{ env.MESON_ARGS }} builddir
+  #         ninja -vC builddir
+  #       env:
+  #         CC: "gcc"
+  #         PKG_CONFIG_PATH: "/opt/homebrew/Cellar/openal-soft/1.22.2/lib/pkgconfig/:/opt/homebrew/Cellar/jpeg/9e/lib/pkgconfig/"
+  #         CFLAGS: "-target arm64-apple-macos11"
+
+  #     - name: Set binaries as executable
+  #       run: |
+  #         chmod +x builddir/q2pro*
+
+  #     - name: Generate Mac archives
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: q2pro-mac-arm64
+  #         path: |
+  #           builddir/q2pro
+  #           builddir/q2proded
