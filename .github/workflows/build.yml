@@ -149,8 +149,11 @@ jobs:
             builddir/q2pro
             builddir/q2proded
 
-  macIntel64:
+  mac:
     runs-on: macos-latest
+    strategy:
+      matrix:
+        target: [arm64-apple-macos11, x86_64-apple-macos10.7]
     steps:
       - uses: actions/checkout@v2
 
@@ -166,6 +169,7 @@ jobs:
         env:
           CC: "gcc"
           PKG_CONFIG_PATH: "/usr/local/Cellar/openal-soft/1.22.2/lib/pkgconfig/:/usr/local/Cellar/jpeg/9e/lib/pkgconfig/"
+          CFLAGS: "-target ${{ matrix.target }}"
 
       - name: Set binaries as executable
         run: |
