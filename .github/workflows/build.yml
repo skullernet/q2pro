@@ -187,8 +187,7 @@ jobs:
 
       - name: Setup Homebrew for ARM64 and dependencies
         run: |
-          arch --arm64 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
-          /opt/homebrew/bin/brew install meson libpng jpeg sdl2 openal-soft zlib curl libvorbis
+          arch -arm64 brew install meson libpng jpeg sdl2 openal-soft zlib curl libvorbis
 
       - name: Build
         run: |
