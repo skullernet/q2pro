@@ -359,8 +359,8 @@ uuid = dependency('uuid',
 
 common_deps = [zlib]
 client_deps = [jpeg, png, curl, sdl2, openal]
-server_deps = [uuid]
-game_deps = [zlib]
+server_deps = []
+game_deps = [zlib, uuid]
 
 if host_machine.system() == 'darwin'
   opengl = dependency('opengl',
