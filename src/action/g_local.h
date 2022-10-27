@@ -264,8 +264,6 @@
 #include <ctype.h>
 
 #include "shared/shared.h"
-#include "shared/list.h"
-#include "shared/game.h"
 #include "q_ghud.h"
 #include <stddef.h>
 
