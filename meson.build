@@ -226,7 +226,7 @@ ltk_src = [
   'src/action/acesrc/bot_weapon.c',
   'src/action/acesrc/botchat.c',
   'src/action/acesrc/botnav.c',
-  'src/action/acesrc/botscan.c
+  'src/action/acesrc/botscan.c'
 ]
 
 cc = meson.get_compiler('c')
