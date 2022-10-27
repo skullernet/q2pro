@@ -267,6 +267,7 @@
 #include "shared/list.h"
 #include "shared/game.h"
 #include "q_ghud.h"
+#include <stddef.h>
 
 // define GAME_INCLUDE so that game.h does not define the
 // short, server-visible gclient_t and edict_t structures,
