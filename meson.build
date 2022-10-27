@@ -177,7 +177,6 @@ action_src = [
   'src/action/a_xmenu.c',
   'src/action/a_xvote.c',
   'src/action/cgf_sfx_glass.c',
-  'src/action/e_game.c',
   'src/action/g_chase.c',
   'src/action/g_cmds.c',
   'src/action/g_combat.c',
@@ -195,7 +194,6 @@ action_src = [
   'src/action/g_trigger.c',
   'src/action/g_utils.c',
   'src/action/g_weapon.c',
-  'src/action/lcchack.c',
   'src/action/p_antilag.c',
   'src/action/p_client.c',
   'src/action/p_hud.c',
@@ -353,9 +351,15 @@ if openal.found()
   endif
 endif
 
+uuid = dependency('libuuid',
+  required:        get_option('libuuid'),
+  allow_fallback:  win32,
+  default_options: fallback_opt,
+)
+
 common_deps = [zlib]
 client_deps = [jpeg, png, curl, sdl2, openal]
-server_deps = []
+server_deps = [uuid]
 game_deps = [zlib]
 
 if host_machine.system() == 'darwin'
