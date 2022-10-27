@@ -351,8 +351,8 @@ if openal.found()
   endif
 endif
 
-uuid = dependency('libuuid',
-  required:        get_option('libuuid'),
+uuid = dependency('uuid',
+  required:        get_option('uuid'),
   allow_fallback:  win32,
   default_options: fallback_opt,
 )
