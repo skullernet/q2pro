@@ -263,7 +263,7 @@
 
 #include <ctype.h>
 
-#include "q_shared.h"
+#include "shared/shared.h"
 #include "q_ghud.h"
 
 // define GAME_INCLUDE so that game.h does not define the
