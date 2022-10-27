@@ -79,6 +79,13 @@ jobs:
           workflow: build.yml
           name: q2pro-mingw-x86_64
           skip_unpack: true
+          
+      - name: Download Darwin x86_64 build artifacts
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build.yml
+          name: q2pro-darwin-x86_64
+          skip_unpack: true
 
       - name: Upload dist tarball to release
         uses: softprops/action-gh-release@v1
@@ -93,6 +100,7 @@ jobs:
             q2pro-lin-arm64.zip
             q2pro-lin-gcc.zip
             q2pro-lin-clang.zip
+            q2pro-darwin-x86_64.zip
           # files: |
           #   q2pro-mingw-x86_64.zip
           #   q2pro-mingw-i686.zip
