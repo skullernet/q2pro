@@ -355,7 +355,7 @@ void RadioBroadcast (edict_t * ent, int partner, char *msg)
 	i = found = 0;
 	msg_len = 0;
 
-	Q_strncpyz(filteredmsg, msg, sizeof(filteredmsg));
+	strncpyz(filteredmsg, msg, sizeof(filteredmsg));
 
 	for(i = 0; i < numSnds; i++)
 	{

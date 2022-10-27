@@ -256,7 +256,7 @@ edict_t *LookupPlayer(edict_t *ent, const char *text, qboolean checkNUM, qboolea
 	if (!text[0])
 		return NULL;
 
-	Q_strncpyz(match, text, sizeof(match));
+	strncpyz(match, text, sizeof(match));
 	matchCount = numericMatch = 0;
 
 	m = match;
@@ -350,7 +350,7 @@ char *ClientTeam (edict_t * ent)
 	if (!ent->client)
 		return value;
 
-	Q_strncpyz(value, Info_ValueForKey (ent->client->pers.userinfo, "skin"), sizeof(value));
+	strncpyz(value, Info_ValueForKey (ent->client->pers.userinfo, "skin"), sizeof(value));
 	p = strchr (value, '/');
 	if (!p)
 		return value;
@@ -380,8 +380,8 @@ qboolean OnSameTeam (edict_t * ent1, edict_t * ent2)
 	if (!DMFLAGS( (DF_MODELTEAMS | DF_SKINTEAMS) ))
 		return false;
 
-	Q_strncpyz (ent1Team, ClientTeam(ent1), sizeof(ent1Team));
-	Q_strncpyz (ent2Team, ClientTeam(ent2), sizeof(ent2Team));
+	strncpyz (ent1Team, ClientTeam(ent1), sizeof(ent1Team));
+	strncpyz (ent2Team, ClientTeam(ent2), sizeof(ent2Team));
 
 	if (strcmp (ent1Team, ent2Team) == 0)
 		return true;
@@ -498,7 +498,7 @@ static void Cmd_Give_f (edict_t * ent)
 		return;
 	}
 
-	Q_strncpyz(fixedname, gi.args (), sizeof(fixedname));
+	strncpyz(fixedname, gi.args (), sizeof(fixedname));
 	name = fixedname;
 //  name = gi.args ();
 
@@ -631,7 +631,7 @@ static void Cmd_Give_f (edict_t * ent)
 	it = FindItem (name);
 	if (!it)
 	{
-		Q_strncpyz(fixedname, gi.argv (1), sizeof(fixedname));
+		strncpyz(fixedname, gi.argv (1), sizeof(fixedname));
 		name = fixedname;
 		//      name = gi.argv (1);
 		it = FindItem (name);
@@ -1410,10 +1410,10 @@ void Cmd_Say_f (edict_t * ent, qboolean team, qboolean arg0, qboolean partner_ms
 	{
 		if (arg0)
 		{
-			Q_strncatz(text, gi.argv (0), sizeof(text));
+			strncatz(text, gi.argv (0), sizeof(text));
 			if(*args) {
-				Q_strncatz(text, " ", sizeof(text));
-				Q_strncatz(text, args, sizeof(text));
+				strncatz(text, " ", sizeof(text));
+				strncatz(text, args, sizeof(text));
 			}
 		}
 		else
@@ -1422,7 +1422,7 @@ void Cmd_Say_f (edict_t * ent, qboolean team, qboolean arg0, qboolean partner_ms
 				args++;
 				args[strlen(args) - 1] = 0;
 			}
-			Q_strncatz(text, args, sizeof(text));
+			strncatz(text, args, sizeof(text));
 		}
 	}
 	else			// if meing
@@ -1430,7 +1430,7 @@ void Cmd_Say_f (edict_t * ent, qboolean team, qboolean arg0, qboolean partner_ms
 		if (arg0)
 		{
 			//this one is easy: gi.args() cuts /me off for us!
-			Q_strncatz(text, args, sizeof(text));
+			strncatz(text, args, sizeof(text));
 		}
 		else
 		{
@@ -1438,11 +1438,11 @@ void Cmd_Say_f (edict_t * ent, qboolean team, qboolean arg0, qboolean partner_ms
 			args += meing;
 			if (args[strlen(args) - 1] == '"')
 				args[strlen(args) - 1] = 0;
-			Q_strncatz(text, args, sizeof(text));
+			strncatz(text, args, sizeof(text));
 		}
 		
 		if (team)
-			Q_strncatz(text, ")", sizeof(text));
+			strncatz(text, ")", sizeof(text));
 	}
 	//TempFile - END
 	// don't let text be too long for malicious reasons
@@ -1460,7 +1460,7 @@ void Cmd_Say_f (edict_t * ent, qboolean team, qboolean arg0, qboolean partner_ms
 		}
 	}
 
-	Q_strncatz(text, "\n", sizeof(text));
+	strncatz(text, "\n", sizeof(text));
 
 	if (FloodCheck(ent))
 		return;
@@ -1563,44 +1563,44 @@ static void Cmd_Ent_Count_f (edict_t * ent)
 static void dmflagsSettings( char *s, size_t size, int flags )
 {
 	if (!flags) {
-		Q_strncatz( s, "NONE", size );
+		strncatz( s, "NONE", size );
 		return;
 	}
 	if (flags & DF_NO_HEALTH)
-		Q_strncatz( s, "1 = no health ", size );
+		strncatz( s, "1 = no health ", size );
 	if (flags & DF_NO_ITEMS)
-		Q_strncatz( s, "2 = no items ", size );
+		strncatz( s, "2 = no items ", size );
 	if (flags & DF_WEAPONS_STAY)
-		Q_strncatz( s, "4 = weapons stay ", size );
+		strncatz( s, "4 = weapons stay ", size );
 	if (flags & DF_NO_FALLING)
-		Q_strncatz( s, "8 = no fall damage ", size );
+		strncatz( s, "8 = no fall damage ", size );
 	if (flags & DF_INSTANT_ITEMS)
-		Q_strncatz( s, "16 = instant items ", size );
+		strncatz( s, "16 = instant items ", size );
 	if (flags & DF_SAME_LEVEL)
-		Q_strncatz( s, "32 = same level ", size );
+		strncatz( s, "32 = same level ", size );
 	if (flags & DF_SKINTEAMS)
-		Q_strncatz( s, "64 = skinteams ", size );
+		strncatz( s, "64 = skinteams ", size );
 	if (flags & DF_MODELTEAMS)
-		Q_strncatz( s, "128 = modelteams ", size );
+		strncatz( s, "128 = modelteams ", size );
 	if (flags & DF_NO_FRIENDLY_FIRE)
-		Q_strncatz( s, "256 = no ff ", size );
+		strncatz( s, "256 = no ff ", size );
 	if (flags & DF_SPAWN_FARTHEST)
-		Q_strncatz( s, "512 = spawn fartherst ", size );
+		strncatz( s, "512 = spawn fartherst ", size );
 	if (flags & DF_FORCE_RESPAWN)
-		Q_strncatz( s, "1024 = forse respawn ", size );
+		strncatz( s, "1024 = forse respawn ", size );
 	//if(flags & DF_NO_ARMOR)
-	//	Q_strncatz(s, "2048 = no armor ", size);
+	//	strncatz(s, "2048 = no armor ", size);
 	if (flags & DF_ALLOW_EXIT)
-		Q_strncatz( s, "4096 = allow exit ", size );
+		strncatz( s, "4096 = allow exit ", size );
 	if (flags & DF_INFINITE_AMMO)
-		Q_strncatz( s, "8192 = infinite ammo ", size );
+		strncatz( s, "8192 = infinite ammo ", size );
 	if (flags & DF_QUAD_DROP)
-		Q_strncatz( s, "16384 = quad drop ", size );
+		strncatz( s, "16384 = quad drop ", size );
 	if (flags & DF_FIXED_FOV)
-		Q_strncatz( s, "32768 = fixed fov ", size );
+		strncatz( s, "32768 = fixed fov ", size );
 
 	if (flags & DF_WEAPON_RESPAWN)
-		Q_strncatz( s, "65536 = weapon respawn ", size );
+		strncatz( s, "65536 = weapon respawn ", size );
 }
 
 extern char *menu_itemnames[ITEM_MAX_NUM];
@@ -1610,18 +1610,18 @@ static void wpflagsSettings( char *s, size_t size, int flags )
 	int i, num;
 
 	if (!(flags & WPF_MASK)) {
-		Q_strncatz( s, "No weapons", size );
+		strncatz( s, "No weapons", size );
 		return;
 	}
 	if ((flags & WPF_MASK) == WPF_MASK) {
-		Q_strncatz( s, "All weapons", size );
+		strncatz( s, "All weapons", size );
 		return;
 	}
 
 	for (i = 0; i<WEAPON_COUNT; i++) {
 		num = WEAPON_FIRST + i;
 		if (flags == items[WEAPON_FIRST + i].flag) {
-			Q_strncatz( s, va("%s only", menu_itemnames[num]), size );
+			strncatz( s, va("%s only", menu_itemnames[num]), size );
 			return;
 		}
 	}
@@ -1629,7 +1629,7 @@ static void wpflagsSettings( char *s, size_t size, int flags )
 	for (i = 0; i<WEAPON_COUNT; i++) {
 		num = WEAPON_FIRST + i;
 		if (flags & items[num].flag) {
-			Q_strncatz( s, va("%d = %s ", items[num].flag, menu_itemnames[num]), size );
+			strncatz( s, va("%d = %s ", items[num].flag, menu_itemnames[num]), size );
 		}
 	}
 }
@@ -1639,18 +1639,18 @@ static void itmflagsSettings( char *s, size_t size, int flags )
 	int i, num;
 
 	if (!(flags & ITF_MASK)) {
-		Q_strncatz( s, "No items", size );
+		strncatz( s, "No items", size );
 		return;
 	}
 	if ((flags & ITF_MASK) == ITF_MASK) {
-		Q_strncatz( s, "All items", size );
+		strncatz( s, "All items", size );
 		return;
 	}
 
 	for (i = 0; i<ITEM_COUNT; i++) {
 		num = ITEM_FIRST + i;
 		if (flags == items[num].flag) {
-			Q_strncatz( s, va("%s only", menu_itemnames[num]), size );
+			strncatz( s, va("%s only", menu_itemnames[num]), size );
 			return;
 		}
 	}
@@ -1658,7 +1658,7 @@ static void itmflagsSettings( char *s, size_t size, int flags )
 	for (i = 0; i<ITEM_COUNT; i++) {
 		num = ITEM_FIRST + i;
 		if (flags & items[num].flag) {
-			Q_strncatz( s, va("%d = %s ", items[num].flag, menu_itemnames[num]), size );
+			strncatz( s, va("%d = %s ", items[num].flag, menu_itemnames[num]), size );
 		}
 	}
 }
@@ -1793,7 +1793,7 @@ static void Cmd_VidRef_f (edict_t * ent)
 {
 	if (video_check->value || video_check_lockpvs->value)
 	{
-		Q_strncpyz(ent->client->resp.vidref, gi.argv(1), sizeof(ent->client->resp.vidref));
+		strncpyz(ent->client->resp.vidref, gi.argv(1), sizeof(ent->client->resp.vidref));
 	}
 
 }
@@ -1806,7 +1806,7 @@ static void Cmd_CPSI_f (edict_t * ent)
 		ent->client->resp.gllockpvs = atoi(gi.argv(2));
 		ent->client->resp.glclear = atoi(gi.argv(3));
 		ent->client->resp.gldynamic = atoi(gi.argv(4));
-		Q_strncpyz(ent->client->resp.gldriver, gi.argv (5), sizeof(ent->client->resp.gldriver));
+		strncpyz(ent->client->resp.gldriver, gi.argv (5), sizeof(ent->client->resp.gldriver));
 		//      strncpy(ent->client->resp.vidref,gi.argv(4),sizeof(ent->client->resp.vidref-1));
 		//      ent->client->resp.vidref[15] = 0;
 	}

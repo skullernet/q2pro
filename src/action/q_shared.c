@@ -1035,10 +1035,10 @@ char *Q_stristr( const char *str1, const char *str2 )
 
 /*
 ============
-Q_strncpyz
+strncpyz
 ============
 */
-void Q_strncpyz( char *dest, const char *src, size_t size )
+void strncpyz( char *dest, const char *src, size_t size )
 {
 	if (size)
 	{
@@ -1048,10 +1048,10 @@ void Q_strncpyz( char *dest, const char *src, size_t size )
 }
 /*
 ==============
-Q_strncatz
+strncatz
 ==============
 */
-void Q_strncatz( char *dest, const char *src, size_t size )
+void strncatz( char *dest, const char *src, size_t size )
 {
 	if (size)
 	{

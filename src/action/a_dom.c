@@ -394,7 +394,7 @@ qboolean DomLoadConfig( const char *mapname )
 
 void DomSetupStatusbar( void )
 {
-	Q_strncatz(level.statusbar, 
+	strncatz(level.statusbar, 
 		// Red Team
 		"yb -172 " "if 24 xr -24 pic 24 endif " "xr -92 num 4 26 "
 		// Blue Team
@@ -403,7 +403,7 @@ void DomSetupStatusbar( void )
 	
 	if( teamCount >= 3 )
 	{
-		Q_strncatz(level.statusbar, 
+		strncatz(level.statusbar, 
 			// Green Team
 			"yb -124 " "if 30 xr -24 pic 30 endif " "xr -92 num 4 31 ",
 			sizeof(level.statusbar) );

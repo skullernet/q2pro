@@ -103,12 +103,12 @@ qboolean CTFLoadConfig(char *mapname)
 	ptr = INI_Find(fh, "ctf", "author");
 	if(ptr) {
 		gi.dprintf(" Author    : %s\n", ptr);
-		Q_strncpyz(ctfgame.author, ptr, sizeof(ctfgame.author));
+		strncpyz(ctfgame.author, ptr, sizeof(ctfgame.author));
 	}
 	ptr = INI_Find(fh, "ctf", "comment");
 	if(ptr) {
 		gi.dprintf(" Comment   : %s\n", ptr);
-		Q_strncpyz(ctfgame.comment, ptr, sizeof(ctfgame.comment));
+		strncpyz(ctfgame.comment, ptr, sizeof(ctfgame.comment));
 	}
 
 	ptr = INI_Find(fh, "ctf", "type");

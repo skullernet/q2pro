@@ -621,7 +621,7 @@ ED_ParseEdict (char *data, edict_t * ent)
       if (!data)
 	gi.error ("ED_ParseEntity: EOF without closing brace");
 
-      Q_strncpyz(keyname, com_token, sizeof(keyname));
+      strncpyz(keyname, com_token, sizeof(keyname));
 
       // parse value  
       com_token = COM_Parse (&data);
@@ -723,8 +723,8 @@ static void PrecacheUserSounds(void)
 		if (lenght < 5 || buf[0] == '#' || !strncmp(buf, "//", 2))
 			continue;
 
-		Q_strncpyz(fullpath, PG_SNDPATH, sizeof(fullpath));
-		Q_strncatz(fullpath, buf, sizeof(fullpath));
+		strncpyz(fullpath, PG_SNDPATH, sizeof(fullpath));
+		strncatz(fullpath, buf, sizeof(fullpath));
 		gi.soundindex(fullpath);
 		//gi.dprintf("Sound %s: precache %i",fullpath, gi.soundindex(fullpath)); 
 		count++;
@@ -838,7 +838,7 @@ void G_LoadLocations( void )
 		loc->rx = rx;
 		loc->ry = ry;
 		loc->rz = rz;
-		Q_strncpyz( loc->desc, locationstr, sizeof( loc->desc ) );
+		strncpyz( loc->desc, locationstr, sizeof( loc->desc ) );
 
 		if (ml_count >= MAX_LOCATIONS_IN_BASE) {
 			gi.dprintf( "Cannot read more than %d locations.\n", MAX_LOCATIONS_IN_BASE );
@@ -969,12 +969,12 @@ void SpawnEntities (char *mapname, char *entities, char *spawnpoint)
 			gi.dprintf ("CTF Enabled - Forcing Random weapons and items off\n");
 			gi.cvar_forceset(use_randoms->name, "0");
 		}
-		Q_strncpyz(teams[TEAM1].name, "RED", sizeof(teams[TEAM1].name));
-		Q_strncpyz(teams[TEAM2].name, "BLUE", sizeof(teams[TEAM2].name));
-		Q_strncpyz(teams[TEAM1].skin, "male/ctf_r", sizeof(teams[TEAM1].skin));
-		Q_strncpyz(teams[TEAM2].skin, "male/ctf_b", sizeof(teams[TEAM2].skin));
-		Q_strncpyz(teams[TEAM1].skin_index, "i_ctf1", sizeof(teams[TEAM1].skin_index));
-		Q_strncpyz(teams[TEAM2].skin_index, "i_ctf2", sizeof(teams[TEAM2].skin_index));
+		strncpyz(teams[TEAM1].name, "RED", sizeof(teams[TEAM1].name));
+		strncpyz(teams[TEAM2].name, "BLUE", sizeof(teams[TEAM2].name));
+		strncpyz(teams[TEAM1].skin, "male/ctf_r", sizeof(teams[TEAM1].skin));
+		strncpyz(teams[TEAM2].skin, "male/ctf_b", sizeof(teams[TEAM2].skin));
+		strncpyz(teams[TEAM1].skin_index, "i_ctf1", sizeof(teams[TEAM1].skin_index));
+		strncpyz(teams[TEAM2].skin_index, "i_ctf2", sizeof(teams[TEAM2].skin_index));
 	}
 	else if (dom->value)
 	{
@@ -1000,15 +1000,15 @@ void SpawnEntities (char *mapname, char *entities, char *spawnpoint)
 			gi.dprintf ("Domination Enabled - Forcing Random weapons and items off\n");
 			gi.cvar_forceset(use_randoms->name, "0");
 		}
-		Q_strncpyz(teams[TEAM1].name, "RED", sizeof(teams[TEAM1].name));
-		Q_strncpyz(teams[TEAM2].name, "BLUE", sizeof(teams[TEAM2].name));
-		Q_strncpyz(teams[TEAM3].name, "GREEN", sizeof(teams[TEAM3].name));
-		Q_strncpyz(teams[TEAM1].skin, "male/ctf_r", sizeof(teams[TEAM1].skin));
-		Q_strncpyz(teams[TEAM2].skin, "male/ctf_b", sizeof(teams[TEAM2].skin));
-		Q_strncpyz(teams[TEAM3].skin, "male/commando", sizeof(teams[TEAM3].skin));
-		Q_strncpyz(teams[TEAM1].skin_index, "i_ctf1", sizeof(teams[TEAM1].skin_index));
-		Q_strncpyz(teams[TEAM2].skin_index, "i_ctf2", sizeof(teams[TEAM2].skin_index));
-		Q_strncpyz(teams[TEAM3].skin_index, "i_pack", sizeof(teams[TEAM3].skin_index));
+		strncpyz(teams[TEAM1].name, "RED", sizeof(teams[TEAM1].name));
+		strncpyz(teams[TEAM2].name, "BLUE", sizeof(teams[TEAM2].name));
+		strncpyz(teams[TEAM3].name, "GREEN", sizeof(teams[TEAM3].name));
+		strncpyz(teams[TEAM1].skin, "male/ctf_r", sizeof(teams[TEAM1].skin));
+		strncpyz(teams[TEAM2].skin, "male/ctf_b", sizeof(teams[TEAM2].skin));
+		strncpyz(teams[TEAM3].skin, "male/commando", sizeof(teams[TEAM3].skin));
+		strncpyz(teams[TEAM1].skin_index, "i_ctf1", sizeof(teams[TEAM1].skin_index));
+		strncpyz(teams[TEAM2].skin_index, "i_ctf2", sizeof(teams[TEAM2].skin_index));
+		strncpyz(teams[TEAM3].skin_index, "i_pack", sizeof(teams[TEAM3].skin_index));
 	}
 	else if(teamdm->value)
 	{
@@ -1123,8 +1123,8 @@ void SpawnEntities (char *mapname, char *entities, char *spawnpoint)
 	memset(&level, 0, sizeof (level));
 	memset(g_edicts, 0, game.maxentities * sizeof (g_edicts[0]));
 
-	Q_strncpyz(level.mapname, mapname, sizeof(level.mapname));
-	Q_strncpyz(game.spawnpoint, spawnpoint, sizeof(game.spawnpoint));
+	strncpyz(level.mapname, mapname, sizeof(level.mapname));
+	strncpyz(game.spawnpoint, spawnpoint, sizeof(game.spawnpoint));
 
 	InitTransparentList();
 
@@ -1351,14 +1351,14 @@ void G_SetupStatusbar( void )
 
 	if (!nohud->value)
 	{
-		Q_strncpyz(level.statusbar, STATBAR_COMMON, sizeof(level.statusbar));
+		strncpyz(level.statusbar, STATBAR_COMMON, sizeof(level.statusbar));
 
 		if(!((noscore->value || hud_noscore->value) && teamplay->value)) //  frags
-			Q_strncatz(level.statusbar, "xr -50 yt 2 num 3 14 ", sizeof(level.statusbar));
+			strncatz(level.statusbar, "xr -50 yt 2 num 3 14 ", sizeof(level.statusbar));
 
 		if (ctf->value)
 		{
-			Q_strncatz(level.statusbar, 
+			strncatz(level.statusbar, 
 				// Red Team
 				"yb -164 " "if 24 " "xr -24 " "pic 24 " "endif " "xr -60 " "num 2 26 "
 				// Blue Team
@@ -1373,7 +1373,7 @@ void G_SetupStatusbar( void )
 			strcpy( level.statusbar, jump_statusbar );
 	}
 
-	Q_strncpyz(level.spec_statusbar, level.statusbar, sizeof(level.spec_statusbar));
+	strncpyz(level.spec_statusbar, level.statusbar, sizeof(level.spec_statusbar));
 	level.spec_statusbar_lastupdate = 0;
 }
 
@@ -1385,7 +1385,7 @@ void G_UpdateSpectatorStatusbar( void )
 	gclient_t *cl;
 	edict_t *cl_ent;
 
-	Q_strncpyz(buffer, level.statusbar, sizeof(buffer));
+	strncpyz(buffer, level.statusbar, sizeof(buffer));
 
 	//Team 1
 	count = 0;
@@ -1448,7 +1448,7 @@ void G_UpdateSpectatorStatusbar( void )
 	}
 
 	if (strcmp(level.spec_statusbar, buffer)) {
-		Q_strncpyz(level.spec_statusbar, buffer, sizeof(level.spec_statusbar));
+		strncpyz(level.spec_statusbar, buffer, sizeof(level.spec_statusbar));
 		level.spec_statusbar_lastupdate = level.realFramenum;
 	}
 }
@@ -1530,7 +1530,7 @@ void SP_worldspawn (edict_t * ent)
 
 	if (ent->message && ent->message[0])
 	{
-		Q_strncpyz(level.level_name, ent->message, sizeof(level.level_name));
+		strncpyz(level.level_name, ent->message, sizeof(level.level_name));
 		gi.configstring(CS_NAME, level.level_name);
 	}
 	else {
@@ -1602,15 +1602,15 @@ void SP_worldspawn (edict_t * ent)
 				// If the action.ini file isn't found, set default skins rather than kill the server
 				gi.dprintf("WARNING: No skin was specified for team %i in config file, server either could not find it or is does not exist.\n", i);
 				gi.dprintf("Setting default team names, skins and skin indexes.\n", i);
-				Q_strncpyz(teams[TEAM1].name, "RED", sizeof(teams[TEAM1].name));
-				Q_strncpyz(teams[TEAM2].name, "BLUE", sizeof(teams[TEAM2].name));
-				Q_strncpyz(teams[TEAM3].name, "GREEN", sizeof(teams[TEAM3].name));
-				Q_strncpyz(teams[TEAM1].skin, "male/ctf_r", sizeof(teams[TEAM1].skin));
-				Q_strncpyz(teams[TEAM2].skin, "male/ctf_b", sizeof(teams[TEAM2].skin));
-				Q_strncpyz(teams[TEAM3].skin, "male/commando", sizeof(teams[TEAM3].skin));
-				Q_strncpyz(teams[TEAM1].skin_index, "i_ctf1", sizeof(teams[TEAM1].skin_index));
-				Q_strncpyz(teams[TEAM2].skin_index, "i_ctf2", sizeof(teams[TEAM2].skin_index));
-				Q_strncpyz(teams[TEAM3].skin_index, "i_pack", sizeof(teams[TEAM3].skin_index));
+				strncpyz(teams[TEAM1].name, "RED", sizeof(teams[TEAM1].name));
+				strncpyz(teams[TEAM2].name, "BLUE", sizeof(teams[TEAM2].name));
+				strncpyz(teams[TEAM3].name, "GREEN", sizeof(teams[TEAM3].name));
+				strncpyz(teams[TEAM1].skin, "male/ctf_r", sizeof(teams[TEAM1].skin));
+				strncpyz(teams[TEAM2].skin, "male/ctf_b", sizeof(teams[TEAM2].skin));
+				strncpyz(teams[TEAM3].skin, "male/commando", sizeof(teams[TEAM3].skin));
+				strncpyz(teams[TEAM1].skin_index, "i_ctf1", sizeof(teams[TEAM1].skin_index));
+				strncpyz(teams[TEAM2].skin_index, "i_ctf2", sizeof(teams[TEAM2].skin_index));
+				strncpyz(teams[TEAM3].skin_index, "i_pack", sizeof(teams[TEAM3].skin_index));
 				//exit(1);
 			}
 			level.pic_teamskin[i] = gi.imageindex(teams[i].skin_index);

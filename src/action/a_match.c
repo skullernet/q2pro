@@ -304,10 +304,10 @@ void Cmd_Teamname_f(edict_t * ent)
 		return;
 	}
 
-	Q_strncpyz(temp, gi.argv(1), sizeof(temp));
+	strncpyz(temp, gi.argv(1), sizeof(temp));
 	for (i = 2; i < argc; i++) {
-		Q_strncatz(temp, " ", sizeof(temp));
-		Q_strncatz(temp, gi.argv(i), sizeof(temp));
+		strncatz(temp, " ", sizeof(temp));
+		strncatz(temp, gi.argv(i), sizeof(temp));
 	}
 	temp[18] = 0;
 
@@ -358,14 +358,14 @@ void Cmd_Teamskin_f(edict_t * ent)
 	}
 
 	s = gi.argv(1);
-	Q_strncpyz(newskin, s, sizeof(newskin));
+	strncpyz(newskin, s, sizeof(newskin));
 	if(ctf->value) {
 		s = strchr(newskin, '/');
 		if(s)
 			s[1] = 0;
 		else
 			strcpy(newskin, "male/");
-		Q_strncatz(newskin, teamNum == 1 ? CTF_TEAM1_SKIN : CTF_TEAM2_SKIN, sizeof(newskin));
+		strncatz(newskin, teamNum == 1 ? CTF_TEAM1_SKIN : CTF_TEAM2_SKIN, sizeof(newskin));
 	}
 
 	if (!strcmp(newskin, team->skin)) {
@@ -373,7 +373,7 @@ void Cmd_Teamskin_f(edict_t * ent)
 		return;
 	}
 
-	Q_strncpyz(team->skin, newskin, sizeof(team->skin));
+	strncpyz(team->skin, newskin, sizeof(team->skin));
 
 	Com_sprintf(team->skin_index, sizeof(team->skin_index), "../players/%s_i", team->skin );
 	level.pic_teamskin[teamNum] = gi.imageindex(team->skin_index);

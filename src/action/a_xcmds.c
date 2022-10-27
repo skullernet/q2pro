@@ -85,7 +85,7 @@ void _Cmd_Rules_f (edict_t * self, char *argument)
 
 	strcpy (mbuf, "\n");
 	if (*argument)
-		Q_strncpyz(section, argument, sizeof(section));
+		strncpyz(section, argument, sizeof(section));
 	else
 		strcpy (section, "main");
 
@@ -97,8 +97,8 @@ void _Cmd_Rules_f (edict_t * self, char *argument)
 			p = buf[j++];
 			if (*p == '.')
 				p++;
-			Q_strncatz(mbuf, p, sizeof(mbuf));
-			Q_strncatz(mbuf, "\n", sizeof(mbuf));
+			strncatz(mbuf, p, sizeof(mbuf));
+			strncatz(mbuf, "\n", sizeof(mbuf));
 		}
 		CloseIniFile (&ini);
 	}

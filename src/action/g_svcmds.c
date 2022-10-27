@@ -754,21 +754,21 @@ void SVCmd_stuffcmd_f ()
 	}
 
 	i = gi.argc ();
-	Q_strncpyz (user, gi.argv (2), sizeof (user));
+	strncpyz (user, gi.argv (2), sizeof (user));
 	text[0] = 0;
 
 	for (u = 3; u <= i; u++)
 	{
-		Q_strncpyz (tmp, gi.argv (u), sizeof (tmp));
+		strncpyz (tmp, gi.argv (u), sizeof (tmp));
 		if (tmp[0] == '!')	// Checks for "!" and replaces for "$" to see the user info
 			tmp[0] = '$';
 
 		if(text[0])
-			Q_strncatz (text, " ", sizeof(text)-1);
+			strncatz (text, " ", sizeof(text)-1);
 
-		Q_strncatz (text, tmp, sizeof(text)-1);
+		strncatz (text, tmp, sizeof(text)-1);
 	}
-	Q_strncatz (text, "\n", sizeof(text));
+	strncatz (text, "\n", sizeof(text));
 
 	if (!Q_stricmp(user, "all")) {
 		stuffAll = 1;
@@ -839,7 +839,7 @@ void SVCmd_Softmap_f (void)
 		return;
 	}
 
-	Q_strncpyz(level.nextmap, gi.argv(2), sizeof(level.nextmap));
+	strncpyz(level.nextmap, gi.argv(2), sizeof(level.nextmap));
 	gi.bprintf(PRINT_HIGH, "Console is setting map: %s\n", level.nextmap);
 	dosoft = 1;
 	EndDMLevel();

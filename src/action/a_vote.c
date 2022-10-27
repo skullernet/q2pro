@@ -78,8 +78,8 @@ void _printplayerlist (edict_t * self, char *buf,
 	edict_t *other;
 	char dummy, tmpbuf[32];
 
-	Q_strncatz (buf, " #  Name\n", MAX_STRING_CHARS);
-	Q_strncatz (buf, "------------------------------------\n", MAX_STRING_CHARS);
+	strncatz (buf, " #  Name\n", MAX_STRING_CHARS);
+	strncatz (buf, "------------------------------------\n", MAX_STRING_CHARS);
 	for (i = 0, other = g_edicts + 1; i < game.maxclients; i++, other++)
 	{
 		if (!other->inuse || !other->client || other->client->pers.mvdspec)
@@ -95,11 +95,11 @@ void _printplayerlist (edict_t * self, char *buf,
 		sprintf (tmpbuf, "%2i %c%s\n", i, dummy, other->client->pers.netname);
 		count++;
 
-		Q_strncatz (buf, tmpbuf, MAX_STRING_CHARS);
+		strncatz (buf, tmpbuf, MAX_STRING_CHARS);
 	}
 	if (!count)
-		Q_strncatz (buf, "None\n", MAX_STRING_CHARS);
-	Q_strncatz (buf, "\n", MAX_STRING_CHARS);
+		strncatz (buf, "None\n", MAX_STRING_CHARS);
+	strncatz (buf, "\n", MAX_STRING_CHARS);
 }
 
 
@@ -273,7 +273,7 @@ void Cmd_Maplist_f(edict_t *ent)
 		//Igor[Rock] end
 		if ((chars_on_line + len_mr + 2) > 39)
 		{
-			Q_strncatz (msg_buf, "\n", sizeof(msg_buf));
+			strncatz (msg_buf, "\n", sizeof(msg_buf));
 			lines++;
 			chars_on_line = 0;
 			if (lines > 25)
@@ -281,19 +281,19 @@ void Cmd_Maplist_f(edict_t *ent)
 		}
 
 		Com_sprintf (tmp_buf, sizeof(tmp_buf), "%s (%.2f)  ", search->mapname, p_test);
-		Q_strncatz(msg_buf, tmp_buf, sizeof(msg_buf));
+		strncatz(msg_buf, tmp_buf, sizeof(msg_buf));
 		chars_on_line += len_mr;
 	}
 
 	if (map_votes == NULL)
-		Q_strncatz(msg_buf, "None!", sizeof(msg_buf));
+		strncatz(msg_buf, "None!", sizeof(msg_buf));
 	else if (most != NULL)
 	{
 		Com_sprintf (tmp_buf, sizeof(tmp_buf), "\n\nMost votes: %s (%.2f)", most->mapname, p_most);
-		Q_strncatz(msg_buf, tmp_buf, sizeof(msg_buf));
+		strncatz(msg_buf, tmp_buf, sizeof(msg_buf));
 	}
 
-	Q_strncatz(msg_buf, "\n\n", sizeof(msg_buf));
+	strncatz(msg_buf, "\n\n", sizeof(msg_buf));
 	Com_sprintf (tmp_buf, sizeof(tmp_buf),
 		"%d/%d (%.2f%%) clients voted\n%d client%s minimum (%d%% required)",
 		map_num_votes, map_num_clients,
@@ -302,7 +302,7 @@ void Cmd_Maplist_f(edict_t *ent)
 		(int)mapvote_min->value, (mapvote_min->value > 1 ? "s" : ""),
 		(int)mapvote_need->value);
 
-	Q_strncatz(msg_buf, tmp_buf, sizeof(msg_buf));
+	strncatz(msg_buf, tmp_buf, sizeof(msg_buf));
 
 	gi.centerprintf (ent, "%s", msg_buf);
 
@@ -352,7 +352,7 @@ void _MapExitLevel (char *NextMap)
 	if( _iCheckMapVotes() || ((map_num_votes > 0) && mapvote_next && mapvote_next->value) )
 	{
 		votemap = MapWithMostVotes (NULL);
-		Q_strncpyz (NextMap, votemap->mapname, MAX_QPATH);
+		strncpyz (NextMap, votemap->mapname, MAX_QPATH);
 		gi.bprintf (PRINT_HIGH, "Next map was voted on and is %s.\n", NextMap);
 	}
 
@@ -801,7 +801,7 @@ void ReadMaplistFile (void)
 
 	//Igor[Rock] BEGIN
 	//load the saved values from the last run of the server
-	Q_strncatz(maplistpath, "-votes", sizeof(maplistpath));
+	strncatz(maplistpath, "-votes", sizeof(maplistpath));
 
 	maplist_file = fopen(maplistpath, "r");
 	if (maplist_file != NULL)
@@ -1195,7 +1195,7 @@ void Cmd_Kicklist_f(edict_t *ent)
 	   kickvote_tempban ? "will" : "won't");
   // double percent sign! cprintf will process them as format strings.
 
-  Q_strncatz(buf, tbuf, sizeof(buf));
+  strncatz(buf, tbuf, sizeof(buf));
   gi.cprintf(ent, PRINT_MEDIUM, "%s", buf);
 }
 
@@ -1308,27 +1308,27 @@ void Cmd_Configlist_f(edict_t *ent)
 
 		if ((chars_on_line + len_mr + 2) > 39)
 		{
-			Q_strncatz (msg_buf, "\n", sizeof(msg_buf));
+			strncatz (msg_buf, "\n", sizeof(msg_buf));
 			lines++;
 			chars_on_line = 0;
 			if (lines > 25)
 				break;
 		}
 		sprintf (tmp_buf, "%s (%.2f)  ", search->configname, p_test);
-		Q_strncatz (msg_buf, tmp_buf, sizeof(msg_buf));
+		strncatz (msg_buf, tmp_buf, sizeof(msg_buf));
 		chars_on_line += len_mr;
 	}
 
 	if (config_votes == NULL)
-		Q_strncatz (msg_buf, "None!", sizeof(msg_buf));
+		strncatz (msg_buf, "None!", sizeof(msg_buf));
 	else if (most != NULL)
 	{
 		sprintf (tmp_buf, "\n\nMost votes: %s (%.2f)",
 		most->configname, p_most);
-		Q_strncatz (msg_buf, tmp_buf, sizeof(msg_buf));
+		strncatz (msg_buf, tmp_buf, sizeof(msg_buf));
 	}
 
-	Q_strncatz (msg_buf, "\n\n", sizeof(msg_buf));
+	strncatz (msg_buf, "\n\n", sizeof(msg_buf));
 	Com_sprintf (tmp_buf, sizeof(tmp_buf), 
 		"%d/%d (%.2f%%) clients voted\n%d client%s minimum (%d%% required)",
 		config_num_votes, config_num_clients,
@@ -1337,7 +1337,7 @@ void Cmd_Configlist_f(edict_t *ent)
 		(int) cvote_min->value, (cvote_min->value > 1 ? "s" : ""),
 		(int) cvote_need->value);
 
-	Q_strncatz (msg_buf, tmp_buf, sizeof(msg_buf));
+	strncatz (msg_buf, tmp_buf, sizeof(msg_buf));
 
 	gi.centerprintf (ent, "%s", msg_buf);
 

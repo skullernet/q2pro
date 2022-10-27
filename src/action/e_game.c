@@ -31,12 +31,12 @@ qboolean EspSceneLoadConfig(char *mapname)
 	ptr = INI_Find(fh, "ctf", "author");
 	if(ptr) {
 		gi.dprintf(" Author    : %s\n", ptr);
-		Q_strncpyz(ctfgame.author, ptr, sizeof(ctfgame.author));
+		strncpyz(ctfgame.author, ptr, sizeof(ctfgame.author));
 	}
 	ptr = INI_Find(fh, "ctf", "comment");
 	if(ptr) {
 		gi.dprintf(" Comment   : %s\n", ptr);
-		Q_strncpyz(ctfgame.comment, ptr, sizeof(ctfgame.comment));
+		strncpyz(ctfgame.comment, ptr, sizeof(ctfgame.comment));
 	}
 
 	ptr = INI_Find(fh, "ctf", "type");
@@ -227,7 +227,7 @@ void G_LoadScenes( void )
 		loc->rx = rx;
 		loc->ry = ry;
 		loc->rz = rz;
-		Q_strncpyz( loc->desc, locationstr, sizeof( loc->desc ) );
+		strncpyz( loc->desc, locationstr, sizeof( loc->desc ) );
 
 		if (ml_count >= MAX_LOCATIONS_IN_BASE) {
 			gi.dprintf( "Cannot read more than %d locations.\n", MAX_LOCATIONS_IN_BASE );

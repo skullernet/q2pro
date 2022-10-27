@@ -514,8 +514,8 @@ void Cmd_Statmode_f(edict_t* ent)
 // 		return;
 // 	}
 	
-// 	Q_strncatz(apikeyheader, stat_apikey->string, sizeof(apikeyheader));
-// 	Q_strncpyz(apiurl, stat_url->string, sizeof(apiurl));
+// 	strncatz(apikeyheader, stat_apikey->string, sizeof(apikeyheader));
+// 	strncpyz(apiurl, stat_url->string, sizeof(apiurl));
 	
 // 	va_start (argptr, payload);
 // 	vsnprintf (text, sizeof(text), payload, argptr);
@@ -697,14 +697,14 @@ void LogKill(edict_t *self, edict_t *inflictor, edict_t *attacker)
 			ttk = current_round_length / 10;
 		}
 		
-		Q_strncpyz(v, Info_ValueForKey(self->client->pers.userinfo, "steamid"), sizeof(v));
-		Q_strncpyz(vn, Info_ValueForKey(self->client->pers.userinfo, "name"), sizeof(vn));
-		Q_strncpyz(vip, Info_ValueForKey(self->client->pers.userinfo, "ip"), sizeof(vip));
-		Q_strncpyz(vd, Info_ValueForKey(self->client->pers.userinfo, "cl_discord_id"), sizeof(vd));
-		Q_strncpyz(k, Info_ValueForKey(attacker->client->pers.userinfo, "steamid"), sizeof(k));
-		Q_strncpyz(kn, Info_ValueForKey(attacker->client->pers.userinfo, "name"), sizeof(kn));
-		Q_strncpyz(kip, Info_ValueForKey(attacker->client->pers.userinfo, "ip"), sizeof(kip));
-		Q_strncpyz(kd, Info_ValueForKey(attacker->client->pers.userinfo, "cl_discord_id"), sizeof(kd));
+		strncpyz(v, Info_ValueForKey(self->client->pers.userinfo, "steamid"), sizeof(v));
+		strncpyz(vn, Info_ValueForKey(self->client->pers.userinfo, "name"), sizeof(vn));
+		strncpyz(vip, Info_ValueForKey(self->client->pers.userinfo, "ip"), sizeof(vip));
+		strncpyz(vd, Info_ValueForKey(self->client->pers.userinfo, "cl_discord_id"), sizeof(vd));
+		strncpyz(k, Info_ValueForKey(attacker->client->pers.userinfo, "steamid"), sizeof(k));
+		strncpyz(kn, Info_ValueForKey(attacker->client->pers.userinfo, "name"), sizeof(kn));
+		strncpyz(kip, Info_ValueForKey(attacker->client->pers.userinfo, "ip"), sizeof(kip));
+		strncpyz(kd, Info_ValueForKey(attacker->client->pers.userinfo, "cl_discord_id"), sizeof(kd));
 
 		// Separate IP from Port
 		char* portSeperator = ":";
@@ -803,10 +803,10 @@ void LogWorldKill(edict_t *self)
 			ttk = current_round_length / 10;
 		}
 		
-		Q_strncpyz(v, Info_ValueForKey(self->client->pers.userinfo, "steamid"), sizeof(v));
-		Q_strncpyz(vn, Info_ValueForKey(self->client->pers.userinfo, "name"), sizeof(vn));
-		Q_strncpyz(vip, Info_ValueForKey(self->client->pers.userinfo, "ip"), sizeof(vip));
-		Q_strncpyz(vd, Info_ValueForKey(self->client->pers.userinfo, "cl_discord_id"), sizeof(vd));
+		strncpyz(v, Info_ValueForKey(self->client->pers.userinfo, "steamid"), sizeof(v));
+		strncpyz(vn, Info_ValueForKey(self->client->pers.userinfo, "name"), sizeof(vn));
+		strncpyz(vip, Info_ValueForKey(self->client->pers.userinfo, "ip"), sizeof(vip));
+		strncpyz(vd, Info_ValueForKey(self->client->pers.userinfo, "cl_discord_id"), sizeof(vd));
 
 		// Separate IP from Port
 		char* portSeperator = ":";
@@ -960,8 +960,8 @@ void LogEndMatchStats()
 			else
 				fpm = 0.0;
 				
-		Q_strncpyz(steamid, Info_ValueForKey(cl->pers.userinfo, "steamid"), sizeof(steamid));
-		Q_strncpyz(discordid, Info_ValueForKey(cl->pers.userinfo, "cl_discord_id"), sizeof(discordid));
+		strncpyz(steamid, Info_ValueForKey(cl->pers.userinfo, "steamid"), sizeof(steamid));
+		strncpyz(discordid, Info_ValueForKey(cl->pers.userinfo, "cl_discord_id"), sizeof(discordid));
 
 		Com_sprintf(
 			msg, sizeof(msg),

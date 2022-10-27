@@ -598,7 +598,7 @@ void Cmd_Lens_f(edict_t * ent)
 	nArg = atoi(gi.args());
 
 	if (nArg == 0) {
-		Q_strncpyz(args, gi.args(), sizeof(args));
+		strncpyz(args, gi.args(), sizeof(args));
 		//perhaps in or out? let's see.
 		if (Q_stricmp(args, "in") == 0)
 			_ZoomIn(ent, false);

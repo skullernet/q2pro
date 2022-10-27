@@ -153,7 +153,7 @@ void vShowMenu(edict_t *ent, char *menu)
 	char fixedmenu[128];
 	vote_t *xvote;
 
-	Q_strncpyz(fixedmenu, menu, sizeof(fixedmenu));
+	strncpyz(fixedmenu, menu, sizeof(fixedmenu));
 
 	if (ent->client->layout == LAYOUT_MENU) {
 		PMenu_Close(ent);

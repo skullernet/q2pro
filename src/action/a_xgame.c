@@ -185,7 +185,7 @@ static void GetLastDamagedPlayers(edict_t *self, char *buf)
 	if (self->client->last_damaged_players[0] == '\0')
 		strcpy(buf, "nobody");
 	else
-		Q_strncpyz(buf, self->client->last_damaged_players, PARSE_BUFSIZE);
+		strncpyz(buf, self->client->last_damaged_players, PARSE_BUFSIZE);
 
 	self->client->last_damaged_players[0] = '\0';
 }
@@ -380,11 +380,11 @@ static void GetLastKilledTarget(edict_t *self, char *buf)
 	for (i = 1; i < kills; i++)
 	{
 		if (i == kills - 1)
-			Q_strncatz(buf, " and ", PARSE_BUFSIZE);
+			strncatz(buf, " and ", PARSE_BUFSIZE);
 		else
-			Q_strncatz(buf, ", ", PARSE_BUFSIZE);
+			strncatz(buf, ", ", PARSE_BUFSIZE);
 
-		Q_strncatz(buf, self->client->last_killed_target[i]->client->
+		strncatz(buf, self->client->last_killed_target[i]->client->
 			pers.netname, PARSE_BUFSIZE);
 	}
 

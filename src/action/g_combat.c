@@ -557,8 +557,8 @@ T_Damage (edict_t * targ, edict_t * inflictor, edict_t * attacker, vec3_t dir,
 								if (stat_logs->value) {
 									char steamid[24];
 									char discordid[24];
-									Q_strncpyz(steamid, Info_ValueForKey(attacker->client->pers.userinfo, "steamid"), sizeof(steamid));
-									Q_strncpyz(discordid, Info_ValueForKey(attacker->client->pers.userinfo, "cl_discord_id"), sizeof(discordid));
+									strncpyz(steamid, Info_ValueForKey(attacker->client->pers.userinfo, "steamid"), sizeof(steamid));
+									strncpyz(discordid, Info_ValueForKey(attacker->client->pers.userinfo, "cl_discord_id"), sizeof(discordid));
 									LogAward(steamid, discordid, ACCURACY);
 								}
 								#endif

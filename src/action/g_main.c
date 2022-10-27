@@ -812,7 +812,7 @@ void EndDMLevel (void)
 			int i;
 			ent = G_Spawn();
 			ent->classname = "target_changelevel";
-			Q_strncpyz( level.nextmap, tmp->mapname, sizeof(level.nextmap) );
+			strncpyz( level.nextmap, tmp->mapname, sizeof(level.nextmap) );
 			ent->map = level.nextmap;
 			for( i = 0; i < num_maps; i ++ )
 			{
@@ -823,7 +823,7 @@ void EndDMLevel (void)
 				}
 			}
 			/*
-			Q_strncpyz(level.nextmap, map_votes->mapname, sizeof(level.nextmap));
+			strncpyz(level.nextmap, map_votes->mapname, sizeof(level.nextmap));
 			ent->map = level.nextmap;
 			maptosort = map_votes;
 			map_votes = maptosort->next;
@@ -848,7 +848,7 @@ void EndDMLevel (void)
 				cur_map = 0;
 				rand_map = 1;
 			}
-			Q_strncpyz( level.nextmap, map_rotation[cur_map], sizeof(level.nextmap) );
+			strncpyz( level.nextmap, map_rotation[cur_map], sizeof(level.nextmap) );
 			ent->map = level.nextmap;
 		}
 	//Igor[Rock] End

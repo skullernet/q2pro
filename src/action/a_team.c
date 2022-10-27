@@ -1009,10 +1009,10 @@ void AssignSkin (edict_t * ent, const char *s, qboolean nickChanged)
 		// forcing CTF model
 		if(ctf_model->string[0]) {
 			/* copy at most bytes that the skin name itself fits in with the delimieter and NULL */
-			Q_strncpyz( t, ctf_model->string, MAX_SKINLEN-strlen(CTF_TEAM1_SKIN)-1 );
-			Q_strncatz(t, "/", sizeof(t));
+			strncpyz( t, ctf_model->string, MAX_SKINLEN-strlen(CTF_TEAM1_SKIN)-1 );
+			strncatz(t, "/", sizeof(t));
 		} else {
-			Q_strncpyz(t, s, sizeof(t));
+			strncpyz(t, s, sizeof(t));
 		}
 
 		if ((p = strrchr (t, '/')) != NULL)
@@ -1114,7 +1114,7 @@ void Team_f (edict_t * ent)
 	}
 	//PG BUND - END (Tourney extension)
 	
-	Q_strncpyz(team, gi.args(), sizeof(team));
+	strncpyz(team, gi.args(), sizeof(team));
 	t = team;
 	//  t = gi.args ();
 	if (!*t)
@@ -1444,9 +1444,9 @@ void UpdateJoinMenu( void )
 
 	levelname[0] = '*';
 	if (g_edicts[0].message)
-		Q_strncpyz(levelname + 1, g_edicts[0].message, sizeof(levelname) - 1);
+		strncpyz(levelname + 1, g_edicts[0].message, sizeof(levelname) - 1);
 	else
-		Q_strncpyz(levelname + 1, level.mapname, sizeof(levelname) - 1);
+		strncpyz(levelname + 1, level.mapname, sizeof(levelname) - 1);
 
 	for (i = 0; i < game.maxclients; i++)
 	{
@@ -2607,13 +2607,13 @@ void A_NewScoreboardMessage(edict_t * ent)
 	for (i = TEAM1; i <= teamCount; i++)
 	{
 		Com_sprintf( buf, sizeof( buf ), "xv 44 yv %d string2 \"%3d %-11.11s Frg Tim Png\"", line++ * lineh, teams[i].score, teams[i].name );
-		Q_strncatz( string, buf, sizeof( string ) );
+		strncatz( string, buf, sizeof( string ) );
 
 		Com_sprintf( buf, sizeof( buf ), "xv 44 yv %d string2 \"%s\" ",
 			line++ * lineh,
 			"\x9D\x9E\x9E\x9E\x9E\x9E\x9E\x9E\x9E\x9E\x9E\x9E\x9E\x9E\x9F \x9D\x9E\x9F \x9D\x9E\x9F \x9D\x9E\x9F"
 			);
-		Q_strncatz( string, buf, sizeof( string ) );
+		strncatz( string, buf, sizeof( string ) );
 
 		if (!total[i])
 			continue;
@@ -2640,7 +2640,7 @@ void A_NewScoreboardMessage(edict_t * ent)
 				cl->resp.score,
 				(level.framenum - cl->resp.enterframe) / 600 / FRAMEDIV,
 				min(cl->ping, 999) );
-			Q_strncatz( string, buf, sizeof( string ) );
+			strncatz( string, buf, sizeof( string ) );
 			printCount++;
 			if (printCount >= maxPlayers)
 				break;
@@ -2649,7 +2649,7 @@ void A_NewScoreboardMessage(edict_t * ent)
 		// show the amount of excess players
 		if (total[i] > MAX_PLAYERS_PER_TEAM) {
 			Com_sprintf( buf, sizeof( buf ), "xv 44 yv %d string \"   ..and %d more\"", line++ * lineh, total[i] - MAX_PLAYERS_PER_TEAM + 1 );
-			Q_strncatz( string, buf, sizeof( string ) );
+			strncatz( string, buf, sizeof( string ) );
 		}
 
 		line++;
@@ -2769,14 +2769,14 @@ void A_ScoreboardMessage (edict_t * ent, edict_t * killer)
 
 		//Add team tag img
 		if (!ctf->value) {
-			Q_strncatz(string, "if 22 ", sizeof(string));
+			strncatz(string, "if 22 ", sizeof(string));
 			len = strlen(string);
 			for (i = TEAM1, line_x = base_x + headerOffset; i <= teamCount; i++, line_x += rowWidth)
 			{
 				sprintf(string + len, "xv %i pic 22 ", line_x + 32);
 				len = strlen(string);
 			}
-			Q_strncatz(string, "endif ", sizeof(string));
+			strncatz(string, "endif ", sizeof(string));
 			len = strlen(string);
 		}
 
@@ -2904,7 +2904,7 @@ void A_ScoreboardMessage (edict_t * ent, edict_t * killer)
 						playername[0] = '@';
 						playername[1] = 0;
 					}
-					Q_strncatz(playername, cl->pers.netname, sizeof(playername));
+					strncatz(playername, cl->pers.netname, sizeof(playername));
 					if (showExtra) {
 						sprintf( string + len,
 							"yv %d string%s \"%-15s %3d %3d %3d\" ",
@@ -3019,7 +3019,7 @@ void A_ScoreboardMessage (edict_t * ent, edict_t * killer)
 
 		if (footerLen) {
 			string[MAX_SCOREBOARD_SIZE - 1 - footerLen] = 0;
-			Q_strncatz(string, footer, sizeof(string));
+			strncatz(string, footer, sizeof(string));
 		}
 	}
 	else if (ent->client->layout == LAYOUT_SCORES2)
