@@ -20,6 +20,8 @@
 //-----------------------------------------------------------------------------
 
 #include "shared/shared.h"
+#include "shared/list.h"
+#include "shared/game.h"
 
 vec3_t vec3_origin = { 0, 0, 0 };
 

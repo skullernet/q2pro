@@ -264,6 +264,8 @@
 #include <ctype.h>
 
 #include "shared/shared.h"
+#include "shared/list.h"
+#include "shared/game.h"
 #include "q_ghud.h"
 
 // define GAME_INCLUDE so that game.h does not define the
