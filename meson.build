@@ -208,6 +208,27 @@ action_src = [
   'src/action/tng_stats.c'
 ]
 
+ltk_src = [
+  'src/action/acesrc/acebot_ai.c',
+  'src/action/acesrc/acebot_cmds.c',
+  'src/action/acesrc/acebot_compress.c',
+  'src/action/acesrc/acebot_items.c',
+  'src/action/acesrc/acebot_movement.c',
+  'src/action/acesrc/acebot_nodes.c',
+  'src/action/acesrc/acebot_spawn.c',
+  'src/action/acesrc/bot_ai.c',
+  'src/action/acesrc/bot_collision.c',
+  'src/action/acesrc/bot_combat.c',
+  'src/action/acesrc/bot_env_doors.c',
+  'src/action/acesrc/bot_movement.c',
+  'src/action/acesrc/bot_states.c',
+  'src/action/acesrc/bot_utility.c',
+  'src/action/acesrc/bot_weapon.c',
+  'src/action/acesrc/botchat.c',
+  'src/action/acesrc/botnav.c',
+  'src/action/acesrc/botscan.c
+]
+
 cc = meson.get_compiler('c')
 
 win32 = host_machine.system() == 'windows'
@@ -443,6 +464,7 @@ endif
 if get_option('aqtion-build')
   config.set10('USE_AQTION', true)
   config.set10('AQTION_EXTENSION', true)
+  action_src += ltk_src
 endif
 
 if get_option('discord-sdk')
