@@ -121,9 +121,29 @@ typedef enum {
 # endif
 #endif
 
-#define EF_GREEN_LIGHT   0x04000040
+// zucc some I got from quake devels
+#define EF_BLUE          0x00400000	//a blue light
+#define EF_ROTATEREDSPOT 0x00800000	//fast rotate with a red spot of light at the front
+#define EF_TRANSLIGHT    0x01000000	//transparant with some lighting
+#define EF_PFOUNT        0x02000000	// particle foundtain
+#define EF_DYNDARK       0x04000000	//DYNAMIC darkness the one i was looking for!
+#define EF_YELLOWSHELL   0x08000000	//a yellow shell similar to those found with EF_COLOR_SHELL IIRC
+#define EF_TRANS         0x10000000	//translucency
+#define EF_YELLOWDOT     0x20000000	//yellow lighting with yellow dots under the model
+#define EF_WHITESHELL    0x40000000	//a yellow shell around  the model (like EF_YELLOWSHELL)
+#define EF_FLIES2        0x80000000	//Flies go a buzzin' and the sky grows dim
+#define EF_EDARK         0x84000000	// Extreme Darkness, you won't believe!
+#define EF_BLUE_CRUST    0x08208000	// An odd blue "crust" around the model
+#define EF_QBF           0x90408000	// The best of three worlds, blue shell like a quad, dark, and covered with flies
+#define EF_REDC          0x30050001	// This one is nice, a red light eminating of a red Quad crust
+#define EF_GREENRC       0x35152841	// It's Christmas time!  Red shell and geen light!
+#define EF_REDG          0x22010107	// RedCrust with gib effect trail
+#define EF_PUP           0x86080100	// 'ere's an odd one, a straight, upwards line of particles sprays above the modle
+#define EF_FLYG          0x60507800	// A few flies with a light, greenish yello crust
+#define EF_YELLOW_CRUST  0x10300070	// Yellow crust with a of smoke & yellow particles
+#define EF_BACKRED       0x90900900	// The Usual is black fly maham, but with a red light peeking through.
 
-#define DF_WEAPON_RESPAWN       0x00010000
+#define EF_GREEN_LIGHT   0x04000040
 
 void Q_strncpyz (char *dest, const char *src, size_t size );
 void Q_strncatz (char *dest, const char *src, size_t size );
@@ -1169,7 +1189,7 @@ typedef enum {
 #define STAT_HEALTH             1
 #define STAT_AMMO_ICON          2
 #define STAT_AMMO               3
-#define STAT_ARMOR_ICON         4
+#define STAT_TEAM_ICON          4
 #define STAT_ARMOR              5
 #define STAT_SELECTED_ICON      6
 #define STAT_PICKUP_ICON        7
@@ -1181,8 +1201,22 @@ typedef enum {
 #define STAT_LAYOUTS            13
 #define STAT_FRAGS              14
 #define STAT_FLASHES            15      // cleared each frame, 1 = health, 2 = armor
-#define STAT_CHASE              16
-#define STAT_SPECTATOR          17
+
+// action changes
+//#define STAT_CHASE              16
+//#define STAT_SPECTATOR          17
+
+//zucc more for me
+#define STAT_GRENADE_ICON       28
+#define STAT_GRENADES           29
+
+#define STAT_TEAM3_PIC          30
+#define STAT_TEAM3_SCORE        31
+
+#define STAT_TEAM1_HEADER       30
+#define STAT_TEAM2_HEADER       31
+
+// action end
 
 #define MAX_STATS               32
 
@@ -1206,15 +1240,18 @@ typedef enum {
 #define DF_FIXED_FOV        0x00008000  // 32768
 
 // RAFAEL
-#define DF_QUADFIRE_DROP    0x00010000  // 65536
+// action changes
+//#define DF_QUADFIRE_DROP    0x00010000  // 65536
+#define DF_WEAPON_RESPAWN       0x00010000
 
+/* action changes
 //ROGUE
 #define DF_NO_MINES         0x00020000
 #define DF_NO_STACK_DOUBLE  0x00040000
 #define DF_NO_NUKES         0x00080000
 #define DF_NO_SPHERES       0x00100000
 //ROGUE
-
+*/
 
 #define UF_AUTOSCREENSHOT   1
 #define UF_AUTORECORD       2
