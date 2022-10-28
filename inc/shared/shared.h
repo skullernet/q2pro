@@ -99,6 +99,30 @@ typedef enum {
 #endif
 
 // action functionality
+#ifdef HAVE__STRICMP
+# ifndef Q_stricmp
+#  define Q_stricmp _stricmp
+# endif
+# ifndef Q_strnicmp
+#  define Q_strnicmp _strnicmp
+# endif
+# ifndef strcasecmp
+#  define strcasecmp _stricmp
+# endif
+# ifndef strncasecmp
+#  define strncasecmp _strnicmp
+# endif
+#elif defined(HAVE_STRCASECMP)
+# ifndef Q_stricmp
+#  define Q_stricmp strcasecmp
+# endif
+# ifndef Q_strnicmp
+#  define Q_strnicmp strncasecmp
+# endif
+#endif
+
+#define EF_GREEN_LIGHT   0x04000040
+
 void Q_strncpyz (char *dest, const char *src, size_t size );
 void Q_strncatz (char *dest, const char *src, size_t size );
 
