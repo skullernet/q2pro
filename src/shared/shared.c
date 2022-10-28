@@ -20,14 +20,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 vec3_t vec3_origin = { 0, 0, 0 };
 
-void VectorRotate2( vec3_t v, float degrees )
-{
-	float radians = DEG2RAD(degrees);
-	float x = v[0], y = v[1];
-	v[0] = x * cosf(radians) - y * sinf(radians);
-	v[1] = y * cosf(radians) + x * sinf(radians);
-}
-
 void AngleVectors(vec3_t angles, vec3_t forward, vec3_t right, vec3_t up)
 {
     float        angle;
