@@ -67,6 +67,7 @@
 //-----------------------------------------------------------------------------
 
 #include "g_local.h"
+#include "shared/shared.h"
 
 
 qboolean Pickup_Weapon (edict_t * ent, edict_t * other);
