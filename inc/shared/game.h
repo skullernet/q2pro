@@ -118,9 +118,8 @@ struct edict_s {
 
 // action start
 // making real copies for bot compatibility
-extern void (*real_cprintf) (edict_t * ent, int printlevel, char *fmt, ...);
-extern void (*real_centerprintf) (edict_t * ent, char *fmt, ...);
-// action end
+extern void (*real_cprintf) (struct edict_s * ent, int printlevel, const char *fmt, ...);
+extern void (*real_centerprintf) (struct edict_s * ent, const char *fmt, ...);
 
 //
 // functions provided by the main engine
