@@ -510,10 +510,10 @@ void ClientBegin (edict_t * ent);
 void ClientCommand (edict_t * ent);
 void CheckNeedPass (void);
 void RunEntity (edict_t * ent);
-void WriteGame (char *filename, qboolean autosave);
-void ReadGame (char *filename);
-void WriteLevel (char *filename);
-void ReadLevel (char *filename);
+void WriteGame (const char *filename, qboolean autosave);
+void ReadGame (const char *filename);
+void WriteLevel (const char *filename);
+void ReadLevel (const char *filename);
 void InitGame (void);
 void G_RunFrame (void);
 

@@ -669,18 +669,18 @@ void InitGame( void )
 
 //=========================================================
 
-void WriteGame (char *filename, qboolean autosave)
+void WriteGame (const char *filename, qboolean autosave)
 {
 }
 
-void ReadGame (char *filename)
+void ReadGame (const char *filename)
 {
 }
 
-void WriteLevel (char *filename)
+void WriteLevel (const char *filename)
 {
 }
 
-void ReadLevel (char *filename)
+void ReadLevel (const char *filename)
 {
 }

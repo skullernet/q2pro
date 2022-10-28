@@ -191,8 +191,10 @@ void debug_printf(char *fmt, ...)
 
 }
 
-void (*real_cprintf) (edict_t * ent, int printlevel, char *fmt, ...) = NULL;
-void (*real_centerprintf) (edict_t * ent, char *fmt, ...) = NULL;
+// void (*real_cprintf) (edict_t * ent, int printlevel, char *fmt, ...) = NULL;
+// void (*real_centerprintf) (edict_t * ent, char *fmt, ...) = NULL;
+void (*real_cprintf) (struct edict_s * ent, int printlevel, char *fmt, ...) = NULL;
+void (*real_centerprintf) (struct edict_s * ent, char *fmt, ...) = NULL;
 
 ///////////////////////////////////////////////////////////////////////
 // botsafe cprintf
