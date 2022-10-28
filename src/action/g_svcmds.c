@@ -1170,7 +1170,7 @@ void Kick_Client (edict_t * ent)
 	// We used to kick on names, but people got crafty and figured
 	// out that putting in a space after their name let them get
 	// around the stupid 'kick' function. So now we kick by number.
-	gi.AddCommandString(va("kick %d\n", ent->client - game.clients));
+	gi.AddCommandString(va("kick %ld\n", ent->client - game.clients));
 }
 
 /*

@@ -612,7 +612,6 @@ cvar_t* logfile_name;
 void Write_Stats(const char* msg, ...)
 {
 	va_list	argptr;
-	char	stat_string[1024];
 	char	stat_cpy[1024];
 	char	logpath[MAX_QPATH];
 	FILE* 	f;

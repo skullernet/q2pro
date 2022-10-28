@@ -20,6 +20,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 vec3_t vec3_origin = { 0, 0, 0 };
 
+void VectorRotate2( vec3_t v, float degrees )
+{
+	float radians = DEG2RAD(degrees);
+	float x = v[0], y = v[1];
+	v[0] = x * cosf(radians) - y * sinf(radians);
+	v[1] = y * cosf(radians) + x * sinf(radians);
+}
+
 void AngleVectors(vec3_t angles, vec3_t forward, vec3_t right, vec3_t up)
 {
     float        angle;
@@ -464,6 +472,94 @@ finish:
 
     *data_p = data;
     return s;
+}
+
+/*
+==============
+COM_ParseC
+
+Parse a token out of a string (mutable)
+==============
+*/
+char *COM_ParseC (char **data_p)
+{
+	int		c, len = 0;
+	char	*data;
+	static char	com_token[MAX_TOKEN_CHARS];
+
+	data = *data_p;
+	com_token[0] = 0;
+
+	if (!data)
+	{
+		*data_p = NULL;
+		return "";
+	}
+
+// skip whitespace
+skipwhite:
+	while ((c = *data) <= ' ')
+	{
+		if (c == 0)
+		{
+			*data_p = NULL;
+			return "";
+		}
+		data++;
+	}
+
+// skip // comments
+	if (c == '/' && data[1] == '/')
+	{
+		data += 2;
+		while (*data && *data != '\n')
+			data++;
+		goto skipwhite;
+	}
+
+
+// handle quoted strings specially
+	if (c == '\"')
+	{
+		data++;
+		while (1)
+		{
+			c = *data++;
+			if (c == '\"' || !c)
+			{
+				goto finish;
+			}
+			if (len < MAX_TOKEN_CHARS)
+			{
+				com_token[len] = c;
+				len++;
+			}
+		}
+	}
+
+// parse a regular word
+	do
+	{
+		if (len < MAX_TOKEN_CHARS)
+		{
+			com_token[len] = c;
+			len++;
+		}
+		data++;
+		c = *data;
+	}
+	while (c > 32);
+
+finish:
+	if (len == MAX_TOKEN_CHARS)
+	{
+//              Com_Printf ("Token exceeded %i chars, discarded.\n", MAX_TOKEN_CHARS);
+	len = 0;
+	}
+	com_token[len] = 0;
+
+	*data_p = data;
+	return com_token;
 }
 
 /*
