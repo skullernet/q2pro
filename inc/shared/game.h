@@ -265,3 +265,5 @@ typedef struct {
 } game_export_t;
 
 #endif // GAME_H
+
+int GetBotCount(void);
