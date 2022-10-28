@@ -1382,6 +1382,15 @@ int SV_CountClients(void)
         }
     }
 
+    // Count bots too
+    for (int i = 0; i < num_players; i++)
+    {
+        if (players[i]->is_bot)
+        {
+            count++;
+        }
+    }
+
     return count;
 }
 

@@ -1156,7 +1156,7 @@ void SpawnEntities (const char *mapname, const char *entities, const char *spawn
 	while (1)
 	{
 		// parse the opening brace      
-		com_token = COM_ParseC(&entities);
+		com_token = COM_Parse(&entities);
 		if (!entities)
 			break;
 

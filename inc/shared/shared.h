@@ -583,7 +583,7 @@ bool COM_IsWhite(const char *s);
 
 char *COM_Parse(const char **data_p);
 // data is an in/out parm, returns a parsed out token
-char *COM_ParseC(char **data_p);
+char *COM_ParseC(char *data_p);
 // mutable version of COM_Parse
 size_t COM_Compress(char *data);
 
