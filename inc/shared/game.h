@@ -62,13 +62,6 @@ typedef enum {
 
 #define MAX_ENT_CLUSTERS    16
 
-
-typedef struct edict_s edict_t;
-typedef struct gclient_s gclient_t;
-
-
-#ifndef GAME_INCLUDE
-
 // link_t is only used for entity area links now
 typedef struct link_s
 {
@@ -76,6 +69,11 @@ typedef struct link_s
 }
 link_t;
 
+typedef struct edict_s edict_t;
+typedef struct gclient_s gclient_t;
+
+
+#ifndef GAME_INCLUDE
 
 struct gclient_s {
     player_state_t  ps;     // communicated by server to clients
