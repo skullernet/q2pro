@@ -18,7 +18,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "server.h"
 #include "client/input.h"
-#include "g_local.h"
 
 pmoveParams_t   sv_pmp;
 
