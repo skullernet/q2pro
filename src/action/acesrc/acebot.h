@@ -298,6 +298,7 @@ void     ACESP_RemoveBot(char *name);
 void	 safe_cprintf (struct edict_s * ent, int printlevel, const char *fmt, ...);
 void     safe_centerprintf (struct edict_s * ent, const char *fmt, ...);
 void     debug_printf (char *fmt, ...);
+int 	 GetBotCount(void);
 
 // bot_ai.c protos
 qboolean	BOTAI_NeedToBandage(edict_t *bot);
