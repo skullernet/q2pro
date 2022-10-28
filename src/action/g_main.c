@@ -501,7 +501,7 @@ cvar_t *cl_discord_discriminator;
 cvar_t *cl_discord_username;
 cvar_t *cl_discord_avatar;
 
-void SpawnEntities (char *mapname, char *entities, char *spawnpoint);
+void SpawnEntities (const char *mapname, const char *entities, const char *spawnpoint);
 void ClientThink (edict_t * ent, usercmd_t * cmd);
 qboolean ClientConnect (edict_t * ent, char *userinfo);
 void ClientUserinfoChanged (edict_t * ent, char *userinfo);
