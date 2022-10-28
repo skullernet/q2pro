@@ -69,6 +69,14 @@ int c_yes = 0, c_no = 0;
 
 #define STEPSIZE 18
 
+void VectorRotate2( vec3_t v, float degrees )
+{
+	float radians = DEG2RAD(degrees);
+	float x = v[0], y = v[1];
+	v[0] = x * cosf(radians) - y * sinf(radians);
+	v[1] = y * cosf(radians) + x * sinf(radians);
+}
+
 qboolean M_CheckBottom( edict_t *ent )
 {
 	vec3_t mins = {0,0,0}, maxs = {0,0,0}, start = {0,0,0}, stop = {0,0,0};
