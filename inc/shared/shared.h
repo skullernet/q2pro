@@ -123,6 +123,8 @@ typedef enum {
 
 #define EF_GREEN_LIGHT   0x04000040
 
+#define DF_WEAPON_RESPAWN       0x00010000
+
 void Q_strncpyz (char *dest, const char *src, size_t size );
 void Q_strncatz (char *dest, const char *src, size_t size );
 
