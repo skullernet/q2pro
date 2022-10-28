@@ -2440,7 +2440,6 @@ void PutClientInServer(edict_t * ent)
 	client->grenade_max = 2;
 	client->desired_fov = 90;
 
-
 	// clear entity values
 	ent->groundentity = NULL;
 	ent->client = &game.clients[index];
@@ -2509,7 +2508,8 @@ void PutClientInServer(edict_t * ent)
 	if( ent->is_bot )
 	{
 		ent->classname = "bot";
-		
+		ent->state = 5;  // Count this bot as cs_spawned in clstate_t
+
 		ent->enemy = NULL;
 		ent->movetarget = NULL;
 		if( ! teamplay->value )

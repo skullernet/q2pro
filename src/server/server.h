@@ -394,6 +394,7 @@ typedef struct client_s {
 	short			ghud_updateflags[MAX_GHUDS];
 	short			ghud_forceflags[MAX_GHUDS];
 #endif
+    bool            is_bot; // Flipped to true if bot
 } client_t;
 
 // a client can leave the server in one of four ways:
