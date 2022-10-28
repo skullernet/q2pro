@@ -296,7 +296,7 @@ edict_t *ACESP_SpawnBot (char *team, char *name, char *skin, char *userinfo);
 void     ACESP_ReAddBots();
 void     ACESP_RemoveBot(char *name);
 void	 safe_cprintf (struct edict_s * ent, int printlevel, const char *fmt, ...);
-void     safe_centerprintf struct edict_s * ent, const char *fmt, ...);
+void     safe_centerprintf (struct edict_s * ent, const char *fmt, ...);
 void     debug_printf (char *fmt, ...);
 
 // bot_ai.c protos
