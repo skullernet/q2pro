@@ -199,7 +199,6 @@ action_src = [
   'src/action/p_hud.c',
   'src/action/p_view.c',
   'src/action/p_weapon.c',
-  'src/action/q_shared.c',
   'src/action/tng_balancer.c',
   'src/action/tng_flashlight.c',
   'src/action/tng_ini.c',
