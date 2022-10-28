@@ -332,7 +332,7 @@ edict_t *ACESP_SpawnBotFromConfig( char *inString )
 	Info_SetValueForKey( userinfo, "spectator", "0" ); // NOT a spectator
 	Info_SetValueForKey( userinfo, "gender", gender );
 	
-	Com_sprintf( team_str, 2, "%i", team );
+	Q_snprintf( team_str, 2, "%i", team );
 	
 	bot = ACESP_SpawnBot( team_str, name, modelskin, userinfo );
 	

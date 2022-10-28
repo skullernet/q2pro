@@ -105,17 +105,17 @@ void PMenu_Update (edict_t * ent)
 		else
 			x = 64;
 
-		Com_sprintf (string + len, sizeof(string)-len, "yv %d xv %d ",
+		Q_snprintf (string + len, sizeof(string)-len, "yv %d xv %d ",
 			32 + i * 8, x - ((hnd->cur == i) ? 8 : 0));
 
 		len = strlen(string);
 
 		if (hnd->cur == i)
-			Com_sprintf (string + len, sizeof(string)-len, "string2 \"\x0d%s\" ", t);
+			Q_snprintf (string + len, sizeof(string)-len, "string2 \"\x0d%s\" ", t);
 		else if (alt)
-			Com_sprintf (string + len, sizeof(string)-len, "string2 \"%s\" ", t);
+			Q_snprintf (string + len, sizeof(string)-len, "string2 \"%s\" ", t);
 		else
-			Com_sprintf (string + len, sizeof(string)-len, "string \"%s\" ", t);
+			Q_snprintf (string + len, sizeof(string)-len, "string \"%s\" ", t);
 
 		len = strlen(string);
 

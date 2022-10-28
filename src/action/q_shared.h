@@ -392,12 +392,12 @@ char *Q_strupr( char *s );
  char *Q_stristr( const char *str1, const char *str2 );
 
 // buffer safe operations
-void strncpyz (char *dest, const char *src, size_t size );
-void strncatz (char *dest, const char *src, size_t size );
+void Q_strncpyz (char *dest, const char *src, size_t size );
+void Q_strncatz (char *dest, const char *src, size_t size );
 #ifdef HAVE_SNPRINTF
-# define Com_sprintf snprintf
+# define Q_snprintf snprintf
 #else
- void Com_sprintf(char *dest, size_t size, const char *fmt, ...);
+ void Q_snprintf(char *dest, size_t size, const char *fmt, ...);
 #endif
 
 //=============================================

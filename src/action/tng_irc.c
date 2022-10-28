@@ -113,7 +113,7 @@ IRC_identd (void *unused)
   p = strchr (buf, ',');
   if (p)
     {
-      Com_sprintf (outbuf, sizeof(outbuf), "%d, %d : USERID : UNIX : %s\r\n",
+      Q_snprintf (outbuf, sizeof(outbuf), "%d, %d : USERID : UNIX : %s\r\n",
 	       atoi (buf), atoi (p + 1), irc_data.ircuser);
       outbuf[sizeof (outbuf) - 1] = 0;        /* ensure null termination */
       send (read_sok, outbuf, strlen (outbuf), 0);
@@ -201,10 +201,10 @@ irc_connect ( void )
   strcpy  (ircstatus->string, IRC_ST_CONNECTING);
   irc_data.ircsocket = -1;
   irc_data.ircport   = htons((unsigned short) ircport->value);
-  strncpyz (irc_data.ircserver, ircserver->string, IRC_BUFLEN);
-  strncpyz (irc_data.ircuser, ircuser->string, IRC_BUFLEN);
-  strncpyz (irc_data.ircpasswd, ircpasswd->string, IRC_BUFLEN);
-  strncpyz (irc_data.ircchannel, ircchannel->string, IRC_BUFLEN);
+  Q_strncpyz (irc_data.ircserver, ircserver->string, IRC_BUFLEN);
+  Q_strncpyz (irc_data.ircuser, ircuser->string, IRC_BUFLEN);
+  Q_strncpyz (irc_data.ircpasswd, ircpasswd->string, IRC_BUFLEN);
+  Q_strncpyz (irc_data.ircchannel, ircchannel->string, IRC_BUFLEN);
   
   if ((ipnum.s_addr = inet_addr(irc_data.ircserver)) == -1) {
     /* Maybe it's a FQDN */
@@ -251,7 +251,7 @@ irc_connect ( void )
 	  strcpy (ircstatus->string, IRC_ST_DISABLED);
 	} else {
 #endif
-	  Com_sprintf (outbuf, sizeof(outbuf), "NICK %s\nUSER tng-mbot * * :%s\n", irc_data.ircuser, hostname->string);
+	  Q_snprintf (outbuf, sizeof(outbuf), "NICK %s\nUSER tng-mbot * * :%s\n", irc_data.ircuser, hostname->string);
 	  send (irc_data.ircsocket, outbuf, strlen(outbuf), 0);
 	  if (ircdebug->value)
 	    gi.dprintf("IRC: >> NICK %s\nIRC: >> USER tng-mbot * * :%s\n", irc_data.ircuser, hostname->string);
@@ -302,7 +302,7 @@ irc_parse ( void )
 	    if (*ircop->string) {
 	      if (ircdebug->value)
 		gi.dprintf ("IRC: >> %s\n", ircop->string);
-	      Com_sprintf (outbuf, sizeof(outbuf), "%s\n", ircop->string);
+	      Q_snprintf (outbuf, sizeof(outbuf), "%s\n", ircop->string);
 	      send (irc_data.ircsocket, outbuf, strlen(outbuf), 0);
 	    }
 	  } else {
@@ -312,22 +312,22 @@ irc_parse ( void )
 	  // Maybe Future Extesion
 	}
       } else if (Q_strnicmp (&irc_data.input[pos], "004 ", 4) == 0) {
-	Com_sprintf(outbuf, sizeof(outbuf), "mode %s +i\n", irc_data.ircuser);
+	Q_snprintf(outbuf, sizeof(outbuf), "mode %s +i\n", irc_data.ircuser);
 	if (ircdebug->value)
 	  gi.dprintf("IRC: >> mode %s +i set\n", irc_data.ircuser);
 	send (irc_data.ircsocket, outbuf, strlen(outbuf), 0);
 
 	if (irc_data.ircpasswd[0]) {
-	  Com_sprintf(outbuf, sizeof(outbuf), "join %s %s\n", irc_data.ircchannel, irc_data.ircpasswd);
+	  Q_snprintf(outbuf, sizeof(outbuf), "join %s %s\n", irc_data.ircchannel, irc_data.ircpasswd);
 	  gi.dprintf ("IRC: trying to join channel %s %s\n", irc_data.ircchannel, irc_data.ircpasswd);
 	  send (irc_data.ircsocket, outbuf, strlen(outbuf), 0);
-	  Com_sprintf (outbuf, sizeof(outbuf), "mode %s +mntk %s\n", irc_data.ircchannel, irc_data.ircpasswd);
+	  Q_snprintf (outbuf, sizeof(outbuf), "mode %s +mntk %s\n", irc_data.ircchannel, irc_data.ircpasswd);
 	  send (irc_data.ircsocket, outbuf, strlen(outbuf), 0);
 	} else {
-	  Com_sprintf(outbuf, sizeof(outbuf), "join %s\n", irc_data.ircchannel);
+	  Q_snprintf(outbuf, sizeof(outbuf), "join %s\n", irc_data.ircchannel);
 	  gi.dprintf ("IRC: trying to join channel %s\n", irc_data.ircchannel);
 	  send (irc_data.ircsocket, outbuf, strlen(outbuf), 0);
-	  Com_sprintf (outbuf, sizeof(outbuf), "mode %s +mnt\n", irc_data.ircchannel);
+	  Q_snprintf (outbuf, sizeof(outbuf), "mode %s +mnt\n", irc_data.ircchannel);
 	  send (irc_data.ircsocket, outbuf, strlen(outbuf), 0);
 	}
 	
@@ -353,7 +353,7 @@ irc_parse ( void )
 	      if (strlen(&irc_data.input[pos]) > 225) {
 		irc_data.input[pos+225] = 0;
 	      }
-	      Com_sprintf (outbuf, sizeof(outbuf), "say %s\n", &irc_data.input[pos]);
+	      Q_snprintf (outbuf, sizeof(outbuf), "say %s\n", &irc_data.input[pos]);
 	      gi.AddCommandString (outbuf);
 	      IRC_printf (IRC_T_TALK, "console: %s\n", &irc_data.input[pos]);
 	    }
@@ -368,11 +368,11 @@ irc_parse ( void )
       } else if (strstr (irc_data.input, irc_data.ircuser)) {
 	if (strstr (irc_data.input, " KICK ") || strstr (irc_data.input, "kick")) {
 	  if (irc_data.ircpasswd[0]) {
-	    Com_sprintf(outbuf, sizeof(outbuf), "join %s %s\n", irc_data.ircchannel, irc_data.ircpasswd);
+	    Q_snprintf(outbuf, sizeof(outbuf), "join %s %s\n", irc_data.ircchannel, irc_data.ircpasswd);
 	    gi.dprintf ("IRC: trying to join channel %s %s (got kicked)\n", irc_data.ircchannel, irc_data.ircpasswd);
 	    send (irc_data.ircsocket, outbuf, strlen(outbuf), 0);
 	  } else {
-	    Com_sprintf(outbuf, sizeof(outbuf), "join %s\n", irc_data.ircchannel);
+	    Q_snprintf(outbuf, sizeof(outbuf), "join %s\n", irc_data.ircchannel);
 	    gi.dprintf ("IRC: trying to join channel %s (got kicked)\n", irc_data.ircchannel);
 	    send (irc_data.ircsocket, outbuf, strlen(outbuf), 0);
 	  }
@@ -380,7 +380,7 @@ irc_parse ( void )
       }
     } else if (Q_strnicmp(irc_data.input, "PING :", 6) == 0) {
       /* answer with a pong */
-      Com_sprintf(outbuf, sizeof(outbuf), "PONG %s\n", &irc_data.input[6]);
+      Q_snprintf(outbuf, sizeof(outbuf), "PONG %s\n", &irc_data.input[6]);
       if (ircdebug->value)		
 	gi.dprintf ("IRC: >> %s\n", outbuf);
       send (irc_data.ircsocket, outbuf, strlen(outbuf), 0);
@@ -565,9 +565,9 @@ IRC_printf (int type, char *fmt, ... )
 	  case 'n':
 	    {
 	      s = va_arg(ap, char *);
-	      Com_sprintf (&message[mpos], sizeof(message)-mpos, "%c%d%s", IRC_CMCOLORS, IRC_C_DBLUE, s);
+	      Q_snprintf (&message[mpos], sizeof(message)-mpos, "%c%d%s", IRC_CMCOLORS, IRC_C_DBLUE, s);
 	      mpos += strlen (&message[mpos]);
-	      Com_sprintf (&topic[tpos], sizeof(topic)-tpos, "%s", s);
+	      Q_snprintf (&topic[tpos], sizeof(topic)-tpos, "%s", s);
 	      tpos += strlen (&topic[tpos]);
 	      normal = 0;
 	      break;
@@ -576,9 +576,9 @@ IRC_printf (int type, char *fmt, ... )
 	  case 'w':
 	    {
 	      s = va_arg(ap, char *);
-	      Com_sprintf (&message[mpos], sizeof(message)-mpos, "%c%d%s", IRC_CMCOLORS, IRC_C_BLUE, s);
+	      Q_snprintf (&message[mpos], sizeof(message)-mpos, "%c%d%s", IRC_CMCOLORS, IRC_C_BLUE, s);
 	      mpos += strlen (&message[mpos]);
-	      Com_sprintf (&topic[tpos], sizeof(topic)-tpos, "%s", s);
+	      Q_snprintf (&topic[tpos], sizeof(topic)-tpos, "%s", s);
 	      tpos += strlen (&topic[tpos]);
 	      normal = 0;
 	      break;
@@ -587,9 +587,9 @@ IRC_printf (int type, char *fmt, ... )
 	  case 'v':
 	    {
 	      s = va_arg(ap, char *);
-	      Com_sprintf (&message[mpos], sizeof(message)-mpos, "%c%d%s", IRC_CMCOLORS, IRC_C_DGREEN, s);
+	      Q_snprintf (&message[mpos], sizeof(message)-mpos, "%c%d%s", IRC_CMCOLORS, IRC_C_DGREEN, s);
 	      mpos += strlen (&message[mpos]);
-	      Com_sprintf (&topic[tpos], sizeof(topic)-tpos, "%s", s);
+	      Q_snprintf (&topic[tpos], sizeof(topic)-tpos, "%s", s);
 	      tpos += strlen (&topic[tpos]);
 	      normal = 0;
 	      break;
@@ -598,9 +598,9 @@ IRC_printf (int type, char *fmt, ... )
 	  case 'k':
 	    {
 	      i = va_arg(ap, int);
-	      Com_sprintf (&message[mpos], sizeof(message)-mpos, "%c%d%c", IRC_CBOLD, i, IRC_CBOLD);
+	      Q_snprintf (&message[mpos], sizeof(message)-mpos, "%c%d%c", IRC_CBOLD, i, IRC_CBOLD);
 	      mpos += strlen (&message[mpos]);
-	      Com_sprintf (&topic[tpos], sizeof(topic)-tpos, "%d", i);
+	      Q_snprintf (&topic[tpos], sizeof(topic)-tpos, "%d", i);
 	      tpos += strlen (&topic[tpos]);
 	      normal = 0;
 	      break;
@@ -609,9 +609,9 @@ IRC_printf (int type, char *fmt, ... )
 	  case 's':
 	    {
 	      s = va_arg(ap, char *);
-	      Com_sprintf (&message[mpos], sizeof(message)-mpos, "%s", s);
+	      Q_snprintf (&message[mpos], sizeof(message)-mpos, "%s", s);
 	      mpos += strlen (&message[mpos]);
-	      Com_sprintf (topic+tpos, sizeof(topic)-tpos, "%s", s);
+	      Q_snprintf (topic+tpos, sizeof(topic)-tpos, "%s", s);
 	      tpos += strlen (&topic[tpos]);
 	      normal = 0;
 	      break;
@@ -627,7 +627,7 @@ IRC_printf (int type, char *fmt, ... )
 	} else {
 	  if (!normal) {
 	    message[mpos++] = IRC_CMCOLORS;
-	    Com_sprintf (&message[mpos], sizeof(message)-mpos, "%d", std_col);
+	    Q_snprintf (&message[mpos], sizeof(message)-mpos, "%d", std_col);
 	    mpos += strlen (&message[mpos]);
 	    normal = 1;
 	  }
@@ -640,27 +640,27 @@ IRC_printf (int type, char *fmt, ... )
       topic[tpos] = 0;
       va_end(ap);
       // print it
-      Com_sprintf (outbuf, sizeof(outbuf), "PRIVMSG %s :%s\n", irc_data.ircchannel, message);
+      Q_snprintf (outbuf, sizeof(outbuf), "PRIVMSG %s :%s\n", irc_data.ircchannel, message);
       if (ircdebug->value)
 	gi.dprintf ("IRC: >> %s", outbuf);
       send (irc_data.ircsocket, outbuf, strlen(outbuf), 0);
       if ((type == IRC_T_TOPIC) && (ircmlevel->value >= IRC_T_TOPIC)) {
-	Com_sprintf (outbuf, sizeof(outbuf), "TOPIC %s :%s %s\n", irc_data.ircchannel, irctopic->string, topic);
+	Q_snprintf (outbuf, sizeof(outbuf), "TOPIC %s :%s %s\n", irc_data.ircchannel, irctopic->string, topic);
 	send (irc_data.ircsocket, outbuf, strlen(outbuf), 0);
       }
     }
   } else if (irc_data.ircstatus == IRC_CONNECTED) {
     if (irc_data.ircpasswd[0]) {
-      Com_sprintf(outbuf, sizeof(outbuf), "join %s %s\n", irc_data.ircchannel, irc_data.ircpasswd);
+      Q_snprintf(outbuf, sizeof(outbuf), "join %s %s\n", irc_data.ircchannel, irc_data.ircpasswd);
       gi.dprintf ("IRC: trying to join channel %s %s\n", irc_data.ircchannel, irc_data.ircpasswd);
       send (irc_data.ircsocket, outbuf, strlen(outbuf), 0);
-      Com_sprintf (outbuf, sizeof(outbuf), "mode %s +mntk %s\n", irc_data.ircchannel, irc_data.ircpasswd);
+      Q_snprintf (outbuf, sizeof(outbuf), "mode %s +mntk %s\n", irc_data.ircchannel, irc_data.ircpasswd);
       send (irc_data.ircsocket, outbuf, strlen(outbuf), 0);
     } else {
-      Com_sprintf(outbuf, sizeof(outbuf), "join %s\n", irc_data.ircchannel);
+      Q_snprintf(outbuf, sizeof(outbuf), "join %s\n", irc_data.ircchannel);
       gi.dprintf ("IRC: trying to join channel %s\n", irc_data.ircchannel);
       send (irc_data.ircsocket, outbuf, strlen(outbuf), 0);
-      Com_sprintf (outbuf, sizeof(outbuf), "mode %s +mnt\n", irc_data.ircchannel);
+      Q_snprintf (outbuf, sizeof(outbuf), "mode %s +mnt\n", irc_data.ircchannel);
       send (irc_data.ircsocket, outbuf, strlen(outbuf), 0);
     }
   }

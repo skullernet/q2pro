@@ -1265,3 +1265,38 @@ void Info_Print(const char *infostring)
         Com_Printf("%-20s %s\n", key, value);
     }
 }
+
+// action
+
+/*
+============
+Q_strncpyz
+============
+*/
+void Q_strncpyz( char *dest, const char *src, size_t size )
+{
+	if (size)
+	{
+		while (--size && (*dest++ = *src++));
+		*dest = '\0';
+	}
+}
+/*
+==============
+Q_strncatz
+==============
+*/
+void Q_strncatz( char *dest, const char *src, size_t size )
+{
+	if (size)
+	{
+		while (--size && *dest++);
+		if (size) {
+			dest--; size++;
+			while (--size && (*dest++ = *src++));
+		}
+		*dest = '\0';
+	}
+}
+
+// end action

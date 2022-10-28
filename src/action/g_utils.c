@@ -300,7 +300,7 @@ char *vtos (vec3_t v)
 	s = str[index];
 	index = (index + 1) & 7;
 
-	Com_sprintf (s, 32, "(%i %i %i)", (int) v[0], (int) v[1], (int) v[2]);
+	Q_snprintf (s, 32, "(%i %i %i)", (int) v[0], (int) v[1], (int) v[2]);
 
 	return s;
 }

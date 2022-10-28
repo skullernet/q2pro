@@ -85,7 +85,7 @@ void _Cmd_Rules_f (edict_t * self, char *argument)
 
 	strcpy (mbuf, "\n");
 	if (*argument)
-		strncpyz(section, argument, sizeof(section));
+		Q_strncpyz(section, argument, sizeof(section));
 	else
 		strcpy (section, "main");
 
@@ -97,8 +97,8 @@ void _Cmd_Rules_f (edict_t * self, char *argument)
 			p = buf[j++];
 			if (*p == '.')
 				p++;
-			strncatz(mbuf, p, sizeof(mbuf));
-			strncatz(mbuf, "\n", sizeof(mbuf));
+			Q_strncatz(mbuf, p, sizeof(mbuf));
+			Q_strncatz(mbuf, "\n", sizeof(mbuf));
 		}
 		CloseIniFile (&ini);
 	}
@@ -388,7 +388,7 @@ static char flagpos2[64] = { 0 };
 //sets red flag position - cheats must be enabled!
 void Cmd_SetFlag1_f (edict_t * self)
 {
-	Com_sprintf (flagpos1, sizeof(flagpos1), "<%.2f %.2f %.2f>", self->s.origin[0], self->s.origin[1],
+	Q_snprintf (flagpos1, sizeof(flagpos1), "<%.2f %.2f %.2f>", self->s.origin[0], self->s.origin[1],
 		self->s.origin[2]);
 	gi.cprintf (self, PRINT_MEDIUM, "\nRed Flag added at %s.\n", flagpos1);
 }
@@ -396,7 +396,7 @@ void Cmd_SetFlag1_f (edict_t * self)
 //sets blue flag position - cheats must be enabled!
 void Cmd_SetFlag2_f (edict_t * self)
 {
-	Com_sprintf (flagpos2, sizeof(flagpos2), "<%.2f %.2f %.2f>", self->s.origin[0], self->s.origin[1],
+	Q_snprintf (flagpos2, sizeof(flagpos2), "<%.2f %.2f %.2f>", self->s.origin[0], self->s.origin[1],
 		self->s.origin[2]);
 	gi.cprintf (self, PRINT_MEDIUM, "\nBlue Flag added at %s.\n", flagpos2);
 }

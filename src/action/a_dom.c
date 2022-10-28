@@ -275,7 +275,7 @@ qboolean DomLoadConfig( const char *mapname )
 		dom_team_fx[ TEAM2 ] |= RF_SHELL_BLUE;
 	}
 
-	Com_sprintf( buf, sizeof(buf), "%s/tng/%s.dom", GAMEVERSION, mapname );
+	Q_snprintf( buf, sizeof(buf), "%s/tng/%s.dom", GAMEVERSION, mapname );
 	fh = fopen( buf, "rt" );
 	if( fh )
 	{
@@ -394,7 +394,7 @@ qboolean DomLoadConfig( const char *mapname )
 
 void DomSetupStatusbar( void )
 {
-	strncatz(level.statusbar, 
+	Q_strncatz(level.statusbar, 
 		// Red Team
 		"yb -172 " "if 24 xr -24 pic 24 endif " "xr -92 num 4 26 "
 		// Blue Team
@@ -403,7 +403,7 @@ void DomSetupStatusbar( void )
 	
 	if( teamCount >= 3 )
 	{
-		strncatz(level.statusbar, 
+		Q_strncatz(level.statusbar, 
 			// Green Team
 			"yb -124 " "if 30 xr -24 pic 30 endif " "xr -92 num 4 31 ",
 			sizeof(level.statusbar) );

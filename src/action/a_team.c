@@ -962,7 +962,7 @@ void killPlayer( edict_t *ent, qboolean suicidePunish )
 		if (attacker && attacker != ent && attacker->client)
 		{
 			char deathmsg[128];
-			Com_sprintf( deathmsg, sizeof( deathmsg ), "%s ph34rs %s so much %s committed suicide! :)\n",
+			Q_snprintf( deathmsg, sizeof( deathmsg ), "%s ph34rs %s so much %s committed suicide! :)\n",
 				ent->client->pers.netname, attacker->client->pers.netname,
 				ent->client->pers.gender ? "she" : "he");
 			
@@ -1009,10 +1009,10 @@ void AssignSkin (edict_t * ent, const char *s, qboolean nickChanged)
 		// forcing CTF model
 		if(ctf_model->string[0]) {
 			/* copy at most bytes that the skin name itself fits in with the delimieter and NULL */
-			strncpyz( t, ctf_model->string, MAX_SKINLEN-strlen(CTF_TEAM1_SKIN)-1 );
-			strncatz(t, "/", sizeof(t));
+			Q_strncpyz( t, ctf_model->string, MAX_SKINLEN-strlen(CTF_TEAM1_SKIN)-1 );
+			Q_strncatz(t, "/", sizeof(t));
 		} else {
-			strncpyz(t, s, sizeof(t));
+			Q_strncpyz(t, s, sizeof(t));
 		}
 
 		if ((p = strrchr (t, '/')) != NULL)
@@ -1023,13 +1023,13 @@ void AssignSkin (edict_t * ent, const char *s, qboolean nickChanged)
 		switch (ent->client->resp.team)
 		{
 		case TEAM1:
-			Com_sprintf(skin, sizeof(skin), "%s\\%s%s", ent->client->pers.netname, t, CTF_TEAM1_SKIN);
+			Q_snprintf(skin, sizeof(skin), "%s\\%s%s", ent->client->pers.netname, t, CTF_TEAM1_SKIN);
 			break;
 		case TEAM2:
-			Com_sprintf(skin, sizeof(skin), "%s\\%s%s", ent->client->pers.netname, t, CTF_TEAM2_SKIN);
+			Q_snprintf(skin, sizeof(skin), "%s\\%s%s", ent->client->pers.netname, t, CTF_TEAM2_SKIN);
 			break;
 		default:
-			Com_sprintf(skin, sizeof(skin), "%s\\%s", ent->client->pers.netname, default_skin);
+			Q_snprintf(skin, sizeof(skin), "%s\\%s", ent->client->pers.netname, default_skin);
 			break;
 		}
 	}
@@ -1040,10 +1040,10 @@ void AssignSkin (edict_t * ent, const char *s, qboolean nickChanged)
 		case TEAM1:
 		case TEAM2:
 		case TEAM3:
-			Com_sprintf(skin, sizeof(skin), "%s\\%s", ent->client->pers.netname, teams[ent->client->resp.team].skin);
+			Q_snprintf(skin, sizeof(skin), "%s\\%s", ent->client->pers.netname, teams[ent->client->resp.team].skin);
 			break;
 		default:
-			Com_sprintf(skin, sizeof(skin), "%s\\%s", ent->client->pers.netname, (teamplay->value ? default_skin : s));
+			Q_snprintf(skin, sizeof(skin), "%s\\%s", ent->client->pers.netname, (teamplay->value ? default_skin : s));
 			break;
 		}
 	}
@@ -1114,7 +1114,7 @@ void Team_f (edict_t * ent)
 	}
 	//PG BUND - END (Tourney extension)
 	
-	strncpyz(team, gi.args(), sizeof(team));
+	Q_strncpyz(team, gi.args(), sizeof(team));
 	t = team;
 	//  t = gi.args ();
 	if (!*t)
@@ -1444,9 +1444,9 @@ void UpdateJoinMenu( void )
 
 	levelname[0] = '*';
 	if (g_edicts[0].message)
-		strncpyz(levelname + 1, g_edicts[0].message, sizeof(levelname) - 1);
+		Q_strncpyz(levelname + 1, g_edicts[0].message, sizeof(levelname) - 1);
 	else
-		strncpyz(levelname + 1, level.mapname, sizeof(levelname) - 1);
+		Q_strncpyz(levelname + 1, level.mapname, sizeof(levelname) - 1);
 
 	for (i = 0; i < game.maxclients; i++)
 	{
@@ -2363,7 +2363,7 @@ int CheckTeamRules (void)
 						tnow = time(NULL);
 						now = localtime(&tnow);
 						strftime( ltm, 64, "%Y%m%d-%H%M%S", now );
-						Com_sprintf( mvdstring, sizeof(mvdstring), "mvdrecord %s-%s\n", ltm, level.mapname );
+						Q_snprintf( mvdstring, sizeof(mvdstring), "mvdrecord %s-%s\n", ltm, level.mapname );
 						gi.AddCommandString( mvdstring );
 						gi.bprintf( PRINT_HIGH, "Starting MVD recording to file %s-%s.mvd2\n", ltm, level.mapname );
 					}
@@ -2606,14 +2606,14 @@ void A_NewScoreboardMessage(edict_t * ent)
 	// print teams
 	for (i = TEAM1; i <= teamCount; i++)
 	{
-		Com_sprintf( buf, sizeof( buf ), "xv 44 yv %d string2 \"%3d %-11.11s Frg Tim Png\"", line++ * lineh, teams[i].score, teams[i].name );
-		strncatz( string, buf, sizeof( string ) );
+		Q_snprintf( buf, sizeof( buf ), "xv 44 yv %d string2 \"%3d %-11.11s Frg Tim Png\"", line++ * lineh, teams[i].score, teams[i].name );
+		Q_strncatz( string, buf, sizeof( string ) );
 
-		Com_sprintf( buf, sizeof( buf ), "xv 44 yv %d string2 \"%s\" ",
+		Q_snprintf( buf, sizeof( buf ), "xv 44 yv %d string2 \"%s\" ",
 			line++ * lineh,
 			"\x9D\x9E\x9E\x9E\x9E\x9E\x9E\x9E\x9E\x9E\x9E\x9E\x9E\x9E\x9F \x9D\x9E\x9F \x9D\x9E\x9F \x9D\x9E\x9F"
 			);
-		strncatz( string, buf, sizeof( string ) );
+		Q_strncatz( string, buf, sizeof( string ) );
 
 		if (!total[i])
 			continue;
@@ -2633,14 +2633,14 @@ void A_NewScoreboardMessage(edict_t * ent)
 			cl_ent = g_edicts + 1 + (cl - game.clients);
 			alive = IS_ALIVE(cl_ent);
 
-			Com_sprintf( buf, sizeof( buf ), "xv 44 yv %d string%c \"%-15s %3d %3d %3d\"",
+			Q_snprintf( buf, sizeof( buf ), "xv 44 yv %d string%c \"%-15s %3d %3d %3d\"",
 				line++ * lineh,
 				(alive && dead ? '2' : ' '),
 				cl->pers.netname,
 				cl->resp.score,
 				(level.framenum - cl->resp.enterframe) / 600 / FRAMEDIV,
 				min(cl->ping, 999) );
-			strncatz( string, buf, sizeof( string ) );
+			Q_strncatz( string, buf, sizeof( string ) );
 			printCount++;
 			if (printCount >= maxPlayers)
 				break;
@@ -2648,8 +2648,8 @@ void A_NewScoreboardMessage(edict_t * ent)
 
 		// show the amount of excess players
 		if (total[i] > MAX_PLAYERS_PER_TEAM) {
-			Com_sprintf( buf, sizeof( buf ), "xv 44 yv %d string \"   ..and %d more\"", line++ * lineh, total[i] - MAX_PLAYERS_PER_TEAM + 1 );
-			strncatz( string, buf, sizeof( string ) );
+			Q_snprintf( buf, sizeof( buf ), "xv 44 yv %d string \"   ..and %d more\"", line++ * lineh, total[i] - MAX_PLAYERS_PER_TEAM + 1 );
+			Q_strncatz( string, buf, sizeof( string ) );
 		}
 
 		line++;
@@ -2769,14 +2769,14 @@ void A_ScoreboardMessage (edict_t * ent, edict_t * killer)
 
 		//Add team tag img
 		if (!ctf->value) {
-			strncatz(string, "if 22 ", sizeof(string));
+			Q_strncatz(string, "if 22 ", sizeof(string));
 			len = strlen(string);
 			for (i = TEAM1, line_x = base_x + headerOffset; i <= teamCount; i++, line_x += rowWidth)
 			{
 				sprintf(string + len, "xv %i pic 22 ", line_x + 32);
 				len = strlen(string);
 			}
-			strncatz(string, "endif ", sizeof(string));
+			Q_strncatz(string, "endif ", sizeof(string));
 			len = strlen(string);
 		}
 
@@ -2786,9 +2786,9 @@ void A_ScoreboardMessage (edict_t * ent, edict_t * killer)
 		for (i = TEAM1, line_x = base_x + headerOffset; i <= teamCount; i++, line_x += rowWidth)
 		{
 			if (matchmode->value)
-				Com_sprintf(temp, sizeof(temp), "%4i/%2i/%-2d", totalscore[i], total[i], totalsubs[i]);
+				Q_snprintf(temp, sizeof(temp), "%4i/%2i/%-2d", totalscore[i], total[i], totalsubs[i]);
 			else
-				Com_sprintf(temp, sizeof(temp), "%4i/%2i", totalscore[i], total[i]);
+				Q_snprintf(temp, sizeof(temp), "%4i/%2i", totalscore[i], total[i]);
 
 			sprintf( string + len,
 				"xv %i string \"%s\" ",
@@ -2904,7 +2904,7 @@ void A_ScoreboardMessage (edict_t * ent, edict_t * killer)
 						playername[0] = '@';
 						playername[1] = 0;
 					}
-					strncatz(playername, cl->pers.netname, sizeof(playername));
+					Q_strncatz(playername, cl->pers.netname, sizeof(playername));
 					if (showExtra) {
 						sprintf( string + len,
 							"yv %d string%s \"%-15s %3d %3d %3d\" ",
@@ -3019,7 +3019,7 @@ void A_ScoreboardMessage (edict_t * ent, edict_t * killer)
 
 		if (footerLen) {
 			string[MAX_SCOREBOARD_SIZE - 1 - footerLen] = 0;
-			strncatz(string, footer, sizeof(string));
+			Q_strncatz(string, footer, sizeof(string));
 		}
 	}
 	else if (ent->client->layout == LAYOUT_SCORES2)
@@ -3129,7 +3129,7 @@ void A_ScoreboardMessage (edict_t * ent, edict_t * killer)
 				if( j )
 					strcat( string, " " );
 
-				if(      field == 'F' ) Com_sprintf( buf, sizeof(buf), "%5i", min( 99999, cl->resp.score ) );
+				if(      field == 'F' ) Q_snprintf( buf, sizeof(buf), "%5i", min( 99999, cl->resp.score ) );
 				else if( field == 'T' )
 				{
 					if( matchmode->value )
@@ -3139,21 +3139,21 @@ void A_ScoreboardMessage (edict_t * ent, edict_t * killer)
 							suffix = 'C';
 						else if( cl->resp.subteam )
 							suffix = 'S';
-						Com_sprintf( buf, sizeof(buf), "  %c%c", (cl->resp.team ? (cl->resp.team + '0') : ' '), suffix );
+						Q_snprintf( buf, sizeof(buf), "  %c%c", (cl->resp.team ? (cl->resp.team + '0') : ' '), suffix );
 					}
 					else
-						Com_sprintf( buf, sizeof(buf), "   %c", (cl->resp.team ? (cl->resp.team + '0') : ' ') );
+						Q_snprintf( buf, sizeof(buf), "   %c", (cl->resp.team ? (cl->resp.team + '0') : ' ') );
 				}
-				else if( field == 'N' ) Com_sprintf( buf, sizeof(buf), "%-15s", cl->pers.netname );
+				else if( field == 'N' ) Q_snprintf( buf, sizeof(buf), "%-15s", cl->pers.netname );
 				else if( field == 'M' )
 				{
 					int minutes = (level.framenum - cl->resp.enterframe) / (60 * HZ);
 					if( minutes < 60 )
-						Com_sprintf( buf, sizeof(buf), "%4i", minutes );
+						Q_snprintf( buf, sizeof(buf), "%4i", minutes );
 					else if( minutes < 600 )
-						Com_sprintf( buf, sizeof(buf), "%1i:%02i", minutes / 60, minutes % 60 );
+						Q_snprintf( buf, sizeof(buf), "%1i:%02i", minutes / 60, minutes % 60 );
 					else
-						Com_sprintf( buf, sizeof(buf), "%3ih", min( 999, minutes / 60 ) );
+						Q_snprintf( buf, sizeof(buf), "%3ih", min( 999, minutes / 60 ) );
 				}
 				else if( field == 'P' )
 				{
@@ -3162,14 +3162,14 @@ void A_ScoreboardMessage (edict_t * ent, edict_t * killer)
 						strcpy( buf, " BOT" );
 					else
 #endif
-						Com_sprintf( buf, sizeof(buf), "%4i", min( 9999, cl->ping ) );
+						Q_snprintf( buf, sizeof(buf), "%4i", min( 9999, cl->ping ) );
 				}
-				else if( field == 'C' ) Com_sprintf( buf, sizeof(buf), "%4i", min( 9999, cl->resp.ctf_caps ) );
-				else if( field == 'S' ) Com_sprintf( buf, sizeof(buf), "%5i", min( 99999, cl->resp.score ) );
-				else if( field == 'K' ) Com_sprintf( buf, sizeof(buf), "%5i", min( 99999, cl->resp.kills) );
-				else if( field == 'D' ) Com_sprintf( buf, sizeof(buf), "%6i", min( 999999, cl->resp.deaths) );
-				else if( field == 'I' ) Com_sprintf( buf, sizeof(buf), "%6i", min( 999999, cl->resp.damage_dealt) );
-				else if( field == 'A' ) Com_sprintf( buf, sizeof(buf), "%3.f", cl->resp.shotsTotal ? (double) cl->resp.hitsTotal * 100.0 / (double) cl->resp.shotsTotal : 0. );
+				else if( field == 'C' ) Q_snprintf( buf, sizeof(buf), "%4i", min( 9999, cl->resp.ctf_caps ) );
+				else if( field == 'S' ) Q_snprintf( buf, sizeof(buf), "%5i", min( 99999, cl->resp.score ) );
+				else if( field == 'K' ) Q_snprintf( buf, sizeof(buf), "%5i", min( 99999, cl->resp.kills) );
+				else if( field == 'D' ) Q_snprintf( buf, sizeof(buf), "%6i", min( 999999, cl->resp.deaths) );
+				else if( field == 'I' ) Q_snprintf( buf, sizeof(buf), "%6i", min( 999999, cl->resp.damage_dealt) );
+				else if( field == 'A' ) Q_snprintf( buf, sizeof(buf), "%3.f", cl->resp.shotsTotal ? (double) cl->resp.hitsTotal * 100.0 / (double) cl->resp.shotsTotal : 0. );
 				else sprintf( buf, "%c", sb[ j ] );
 
 				strcat( string, buf );

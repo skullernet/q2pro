@@ -98,6 +98,12 @@ typedef enum {
 #include "shared/ghud.h"
 #endif
 
+// action functionality
+void Q_strncpyz (char *dest, const char *src, size_t size );
+void Q_strncatz (char *dest, const char *src, size_t size );
+
+// end action functionality
+
 void    Com_LPrintf(print_type_t type, const char *fmt, ...)
 q_printf(2, 3);
 void    Com_Error(error_type_t code, const char *fmt, ...)

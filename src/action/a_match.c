@@ -144,7 +144,7 @@ void MM_SetCaptain( int teamNum, edict_t *ent )
 		if (!team_round_going || (gameSettings & GS_ROUNDBASED)) {
 			if (teams[teamNum].ready) {
 				char temp[128];
-				Com_sprintf( temp, sizeof( temp ), "%s is no longer ready to play!", teams[teamNum].name );
+				Q_snprintf( temp, sizeof( temp ), "%s is no longer ready to play!", teams[teamNum].name );
 				CenterPrintAll( temp );
 			}
 			teams[teamNum].ready = 0;
@@ -256,7 +256,7 @@ void Cmd_Ready_f(edict_t * ent)
 	}
 
 	team->ready = !team->ready;
-	Com_sprintf( temp, sizeof( temp ), "%s %s ready to play!", team->name, (team->ready) ? "is" : "is no longer" );
+	Q_snprintf( temp, sizeof( temp ), "%s %s ready to play!", team->name, (team->ready) ? "is" : "is no longer" );
 	CenterPrintAll( temp );
 }
 
@@ -304,10 +304,10 @@ void Cmd_Teamname_f(edict_t * ent)
 		return;
 	}
 
-	strncpyz(temp, gi.argv(1), sizeof(temp));
+	Q_strncpyz(temp, gi.argv(1), sizeof(temp));
 	for (i = 2; i < argc; i++) {
-		strncatz(temp, " ", sizeof(temp));
-		strncatz(temp, gi.argv(i), sizeof(temp));
+		Q_strncatz(temp, " ", sizeof(temp));
+		Q_strncatz(temp, gi.argv(i), sizeof(temp));
 	}
 	temp[18] = 0;
 
@@ -358,14 +358,14 @@ void Cmd_Teamskin_f(edict_t * ent)
 	}
 
 	s = gi.argv(1);
-	strncpyz(newskin, s, sizeof(newskin));
+	Q_strncpyz(newskin, s, sizeof(newskin));
 	if(ctf->value) {
 		s = strchr(newskin, '/');
 		if(s)
 			s[1] = 0;
 		else
 			strcpy(newskin, "male/");
-		strncatz(newskin, teamNum == 1 ? CTF_TEAM1_SKIN : CTF_TEAM2_SKIN, sizeof(newskin));
+		Q_strncatz(newskin, teamNum == 1 ? CTF_TEAM1_SKIN : CTF_TEAM2_SKIN, sizeof(newskin));
 	}
 
 	if (!strcmp(newskin, team->skin)) {
@@ -373,9 +373,9 @@ void Cmd_Teamskin_f(edict_t * ent)
 		return;
 	}
 
-	strncpyz(team->skin, newskin, sizeof(team->skin));
+	Q_strncpyz(team->skin, newskin, sizeof(team->skin));
 
-	Com_sprintf(team->skin_index, sizeof(team->skin_index), "../players/%s_i", team->skin );
+	Q_snprintf(team->skin_index, sizeof(team->skin_index), "../players/%s_i", team->skin );
 	level.pic_teamskin[teamNum] = gi.imageindex(team->skin_index);
 	for (i = 0, e = &g_edicts[1]; i < game.maxclients; i++, e++) { //lets update players skin
 		if (!e->inuse || !e->client)
@@ -451,7 +451,7 @@ void Cmd_TeamLock_f(edict_t *ent, int a_switch)
 	}
 
 	team->locked = a_switch;
-	Com_sprintf( msg, sizeof( msg ), "%s is now %s", team->name, (a_switch) ? "locked" : "unlocked" );
+	Q_snprintf( msg, sizeof( msg ), "%s is now %s", team->name, (a_switch) ? "locked" : "unlocked" );
 	CenterPrintAll(msg);
 }
 

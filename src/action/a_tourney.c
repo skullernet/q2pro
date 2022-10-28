@@ -38,9 +38,9 @@ static void _tourneyparseerror(parse_t *parse, const char *msg, const char *atok
 	char buf[512];
 
 	if (atoken)
-		Com_sprintf(buf, sizeof(buf), msg, atoken);
+		Q_snprintf(buf, sizeof(buf), msg, atoken);
 	else
-		strncpyz(buf, msg, sizeof(buf));
+		Q_strncpyz(buf, msg, sizeof(buf));
 	gi.dprintf("Error in " TOURNEYINI " at line %i: %s.\n", parse->lnumber, buf);
 }
 

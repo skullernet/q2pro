@@ -757,7 +757,7 @@ void EndDMLevel (void)
 	// JBravo: Stop q2pro MVD2 recording
 	if (use_mvd2->value)
 	{
-		Com_sprintf( mvdstring, sizeof(mvdstring), "mvdstop\n" );
+		Q_snprintf( mvdstring, sizeof(mvdstring), "mvdstop\n" );
 		gi.AddCommandString( mvdstring );
 		gi.bprintf( PRINT_HIGH, "Ending MVD recording.\n" );
 	}
@@ -812,7 +812,7 @@ void EndDMLevel (void)
 			int i;
 			ent = G_Spawn();
 			ent->classname = "target_changelevel";
-			strncpyz( level.nextmap, tmp->mapname, sizeof(level.nextmap) );
+			Q_strncpyz( level.nextmap, tmp->mapname, sizeof(level.nextmap) );
 			ent->map = level.nextmap;
 			for( i = 0; i < num_maps; i ++ )
 			{
@@ -823,7 +823,7 @@ void EndDMLevel (void)
 				}
 			}
 			/*
-			strncpyz(level.nextmap, map_votes->mapname, sizeof(level.nextmap));
+			Q_strncpyz(level.nextmap, map_votes->mapname, sizeof(level.nextmap));
 			ent->map = level.nextmap;
 			maptosort = map_votes;
 			map_votes = maptosort->next;
@@ -848,7 +848,7 @@ void EndDMLevel (void)
 				cur_map = 0;
 				rand_map = 1;
 			}
-			strncpyz( level.nextmap, map_rotation[cur_map], sizeof(level.nextmap) );
+			Q_strncpyz( level.nextmap, map_rotation[cur_map], sizeof(level.nextmap) );
 			ent->map = level.nextmap;
 		}
 	//Igor[Rock] End
@@ -1008,7 +1008,7 @@ void CheckDMRules (void)
 			if( empty_exec->string && empty_exec->string[0] )
 			{
 				char buf[ 1000 ] = "";
-				Com_sprintf( buf, sizeof(buf), "exec \"%s\"\n", empty_exec->string );
+				Q_snprintf( buf, sizeof(buf), "exec \"%s\"\n", empty_exec->string );
 				gi.AddCommandString( buf );
 			}
 
@@ -1041,7 +1041,7 @@ void ExitLevel (void)
 
 			stuffcmd (ent, "reconnect\n");
 		}
-		Com_sprintf (command, sizeof (command), "quit\n");
+		Q_snprintf (command, sizeof (command), "quit\n");
 		gi.AddCommandString (command);
 		level.changemap = NULL;
 		level.intermission_exit = 0;
@@ -1051,7 +1051,7 @@ void ExitLevel (void)
 		return;
 	}
 
-	Com_sprintf (command, sizeof (command), "gamemap \"%s\"\n", level.changemap);
+	Q_snprintf (command, sizeof (command), "gamemap \"%s\"\n", level.changemap);
 	gi.AddCommandString (command);
 	level.changemap = NULL;
 	level.intermission_exit = 0;

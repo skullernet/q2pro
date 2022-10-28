@@ -47,7 +47,7 @@ char *INI_Find( FILE *fh, const char *section, const char *key )
 				length --;
 				if( length > MAX_INI_STR_LEN )
 					length = MAX_INI_STR_LEN;
-				strncpyz( cur_section, line+1, length );
+				Q_strncpyz( cur_section, line+1, length );
 			}
 			else
 			{
@@ -61,7 +61,7 @@ char *INI_Find( FILE *fh, const char *section, const char *key )
 
 					if( (Q_stricmp( section, cur_section ) == 0) && (Q_stricmp( line, key ) == 0) )
 					{
-						strncpyz( _ini_ret, value, MAX_INI_STR_LEN );
+						Q_strncpyz( _ini_ret, value, MAX_INI_STR_LEN );
 						return _ini_ret;
 					}
 				}

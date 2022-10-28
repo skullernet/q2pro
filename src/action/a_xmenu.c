@@ -33,7 +33,7 @@ qboolean xMenu_Add (edict_t * ent, char *name,
 	if (x_menu->xmenucount < XMENU_TOTAL_ENTRIES)
 	{
 		if (name)
-			strncpyz(x_menu->xmenuentries[x_menu->xmenucount].name, name, XMENU_TITLE_MAX);
+			Q_strncpyz(x_menu->xmenuentries[x_menu->xmenucount].name, name, XMENU_TITLE_MAX);
 		else
 			x_menu->xmenuentries[x_menu->xmenucount].name[0] = '\0';
 		x_menu->xmenuentries[x_menu->xmenucount].SelectFunc = SelectFunc;
@@ -167,13 +167,13 @@ xMenu_New (edict_t * ent, char *title, char *subtitle,
 	//memset(xmenuentries, 0, sizeof(xmenuentries));
 	strcpy(x_menu->xmenuentries[0].name, "*");
 	if (title)
-		strncatz(x_menu->xmenuentries[0].name, title, XMENU_TITLE_MAX);
+		Q_strncatz(x_menu->xmenuentries[0].name, title, XMENU_TITLE_MAX);
 	else
-		strncatz(x_menu->xmenuentries[0].name, "Menu", XMENU_TITLE_MAX);
+		Q_strncatz(x_menu->xmenuentries[0].name, "Menu", XMENU_TITLE_MAX);
 	if (subtitle)
-		strncpyz(x_menu->xmenuentries[1].name, subtitle, XMENU_TITLE_MAX);
+		Q_strncpyz(x_menu->xmenuentries[1].name, subtitle, XMENU_TITLE_MAX);
 	else
-		strncpyz(x_menu->xmenuentries[1].name, "make your choice", XMENU_TITLE_MAX);
+		Q_strncpyz(x_menu->xmenuentries[1].name, "make your choice", XMENU_TITLE_MAX);
 
 	x_menu->xmenuentries[0].SelectFunc = NULL;
 	x_menu->xmenuentries[1].SelectFunc = NULL;

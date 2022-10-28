@@ -138,7 +138,7 @@ void BOTUT_Cmd_Say_f (edict_t *ent, char *pMsg)
 	if (ent->client->resp.team == NOTEAM)
 		return;
 
-	Com_sprintf (text, sizeof(text), "%s%s: ", 
+	Q_snprintf (text, sizeof(text), "%s%s: ", 
 		(teamplay->value && (ent->solid == SOLID_NOT || ent->deadflag == DEAD_DEAD)) ? "[DEAD] " : "",
 		ent->client->pers.netname);
 

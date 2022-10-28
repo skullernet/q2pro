@@ -598,7 +598,7 @@ void Cmd_Lens_f(edict_t * ent)
 	nArg = atoi(gi.args());
 
 	if (nArg == 0) {
-		strncpyz(args, gi.args(), sizeof(args));
+		Q_strncpyz(args, gi.args(), sizeof(args));
 		//perhaps in or out? let's see.
 		if (Q_stricmp(args, "in") == 0)
 			_ZoomIn(ent, false);
@@ -1149,13 +1149,13 @@ void Cmd_AutoRecord_f(edict_t * ent)
 	if (matchmode->value)
 	{
 		if(teamCount == 3)
-			Com_sprintf(recstr, sizeof(recstr), "%s-%s_vs_%s_vs_%s-%s", rec_date, teams[TEAM1].name, teams[TEAM2].name, teams[TEAM3].name, level.mapname);
+			Q_snprintf(recstr, sizeof(recstr), "%s-%s_vs_%s_vs_%s-%s", rec_date, teams[TEAM1].name, teams[TEAM2].name, teams[TEAM3].name, level.mapname);
 		else
-			Com_sprintf(recstr, sizeof(recstr), "%s-%s_vs_%s-%s", rec_date, teams[TEAM1].name, teams[TEAM2].name, level.mapname);
+			Q_snprintf(recstr, sizeof(recstr), "%s-%s_vs_%s-%s", rec_date, teams[TEAM1].name, teams[TEAM2].name, level.mapname);
 
 		RemoveSpaces(recstr); //Remove spaces -M
 	} else {
-		Com_sprintf(recstr, sizeof(recstr), "%s-%s", rec_date, level.mapname);
+		Q_snprintf(recstr, sizeof(recstr), "%s-%s", rec_date, level.mapname);
 	}
 
 	stuffcmd(ent, va("record \"%s\"\n", recstr));

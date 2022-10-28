@@ -256,7 +256,7 @@ edict_t *LookupPlayer(edict_t *ent, const char *text, qboolean checkNUM, qboolea
 	if (!text[0])
 		return NULL;
 
-	strncpyz(match, text, sizeof(match));
+	Q_strncpyz(match, text, sizeof(match));
 	matchCount = numericMatch = 0;
 
 	m = match;
@@ -350,7 +350,7 @@ char *ClientTeam (edict_t * ent)
 	if (!ent->client)
 		return value;
 
-	strncpyz(value, Info_ValueForKey (ent->client->pers.userinfo, "skin"), sizeof(value));
+	Q_strncpyz(value, Info_ValueForKey (ent->client->pers.userinfo, "skin"), sizeof(value));
 	p = strchr (value, '/');
 	if (!p)
 		return value;
@@ -380,8 +380,8 @@ qboolean OnSameTeam (edict_t * ent1, edict_t * ent2)
 	if (!DMFLAGS( (DF_MODELTEAMS | DF_SKINTEAMS) ))
 		return false;
 
-	strncpyz (ent1Team, ClientTeam(ent1), sizeof(ent1Team));
-	strncpyz (ent2Team, ClientTeam(ent2), sizeof(ent2Team));
+	Q_strncpyz (ent1Team, ClientTeam(ent1), sizeof(ent1Team));
+	Q_strncpyz (ent2Team, ClientTeam(ent2), sizeof(ent2Team));
 
 	if (strcmp (ent1Team, ent2Team) == 0)
 		return true;
@@ -498,7 +498,7 @@ static void Cmd_Give_f (edict_t * ent)
 		return;
 	}
 
-	strncpyz(fixedname, gi.args (), sizeof(fixedname));
+	Q_strncpyz(fixedname, gi.args (), sizeof(fixedname));
 	name = fixedname;
 //  name = gi.args ();
 
@@ -631,7 +631,7 @@ static void Cmd_Give_f (edict_t * ent)
 	it = FindItem (name);
 	if (!it)
 	{
-		strncpyz(fixedname, gi.argv (1), sizeof(fixedname));
+		Q_strncpyz(fixedname, gi.argv (1), sizeof(fixedname));
 		name = fixedname;
 		//      name = gi.argv (1);
 		it = FindItem (name);
@@ -1196,11 +1196,11 @@ static void Cmd_Players_f (edict_t * ent)
 	{
 		cl = sortedClients[i];
 		if (!teamplay->value || !noscore->value)
-			Com_sprintf (small, sizeof (small), "%3i %s\n",
+			Q_snprintf (small, sizeof (small), "%3i %s\n",
 				cl->ps.stats[STAT_FRAGS],
 				cl->pers.netname );
 		else
-			Com_sprintf (small, sizeof (small), "%s\n",
+			Q_snprintf (small, sizeof (small), "%s\n",
 				cl->pers.netname);
 
 		if (strlen(small) + strlen(large) > sizeof (large) - 20)
@@ -1358,12 +1358,12 @@ void Cmd_Say_f (edict_t * ent, qboolean team, qboolean arg0, qboolean partner_ms
 			return;
 		}
 		if (!meing)		// TempFile
-			Com_sprintf (text, sizeof (text), "%s(%s): ",
+			Q_snprintf (text, sizeof (text), "%s(%s): ",
 			(teamplay->value && !IS_ALIVE(ent)) ? "[DEAD] " : "",
 			ent->client->pers.netname);
 		//TempFile - BEGIN
 		else
-			Com_sprintf (text, sizeof (text), "(%s%s ",
+			Q_snprintf (text, sizeof (text), "(%s%s ",
 			(teamplay->value && !IS_ALIVE(ent)) ? "[DEAD] " : "",
 			ent->client->pers.netname);
 		//TempFile - END
@@ -1376,12 +1376,12 @@ void Cmd_Say_f (edict_t * ent, qboolean team, qboolean arg0, qboolean partner_ms
 			return;
 		}
 		if (!meing)		//TempFile
-			Com_sprintf (text, sizeof (text), "[%sPARTNER] %s: ",
+			Q_snprintf (text, sizeof (text), "[%sPARTNER] %s: ",
 			(teamplay->value && !IS_ALIVE(ent)) ? "DEAD " : "",
 			ent->client->pers.netname);
 		//TempFile - BEGIN
 		else
-			Com_sprintf (text, sizeof (text), "%s partner %s ",
+			Q_snprintf (text, sizeof (text), "%s partner %s ",
 			(teamplay->value && !IS_ALIVE(ent)) ? "[DEAD] " : "",
 			ent->client->pers.netname);
 		//TempFile - END
@@ -1391,15 +1391,15 @@ void Cmd_Say_f (edict_t * ent, qboolean team, qboolean arg0, qboolean partner_ms
 		if (!meing)		//TempFile
 		{
 			if (isadmin)
-				Com_sprintf (text, sizeof (text), "[ADMIN] %s: ",
+				Q_snprintf (text, sizeof (text), "[ADMIN] %s: ",
 				ent->client->pers.netname);
 			else
-				Com_sprintf (text, sizeof (text), "%s%s: ",
+				Q_snprintf (text, sizeof (text), "%s%s: ",
 				(teamplay->value && !IS_ALIVE(ent)) ? "[DEAD] " : "",
 				ent->client->pers.netname);
 		}
 		else
-			Com_sprintf (text, sizeof (text), "%s%s ",
+			Q_snprintf (text, sizeof (text), "%s%s ",
 			(teamplay->value && !IS_ALIVE(ent)) ? "[DEAD] " : "",
 			ent->client->pers.netname);
 	}
@@ -1410,10 +1410,10 @@ void Cmd_Say_f (edict_t * ent, qboolean team, qboolean arg0, qboolean partner_ms
 	{
 		if (arg0)
 		{
-			strncatz(text, gi.argv (0), sizeof(text));
+			Q_strncatz(text, gi.argv (0), sizeof(text));
 			if(*args) {
-				strncatz(text, " ", sizeof(text));
-				strncatz(text, args, sizeof(text));
+				Q_strncatz(text, " ", sizeof(text));
+				Q_strncatz(text, args, sizeof(text));
 			}
 		}
 		else
@@ -1422,7 +1422,7 @@ void Cmd_Say_f (edict_t * ent, qboolean team, qboolean arg0, qboolean partner_ms
 				args++;
 				args[strlen(args) - 1] = 0;
 			}
-			strncatz(text, args, sizeof(text));
+			Q_strncatz(text, args, sizeof(text));
 		}
 	}
 	else			// if meing
@@ -1430,7 +1430,7 @@ void Cmd_Say_f (edict_t * ent, qboolean team, qboolean arg0, qboolean partner_ms
 		if (arg0)
 		{
 			//this one is easy: gi.args() cuts /me off for us!
-			strncatz(text, args, sizeof(text));
+			Q_strncatz(text, args, sizeof(text));
 		}
 		else
 		{
@@ -1438,11 +1438,11 @@ void Cmd_Say_f (edict_t * ent, qboolean team, qboolean arg0, qboolean partner_ms
 			args += meing;
 			if (args[strlen(args) - 1] == '"')
 				args[strlen(args) - 1] = 0;
-			strncatz(text, args, sizeof(text));
+			Q_strncatz(text, args, sizeof(text));
 		}
 		
 		if (team)
-			strncatz(text, ")", sizeof(text));
+			Q_strncatz(text, ")", sizeof(text));
 	}
 	//TempFile - END
 	// don't let text be too long for malicious reasons
@@ -1460,7 +1460,7 @@ void Cmd_Say_f (edict_t * ent, qboolean team, qboolean arg0, qboolean partner_ms
 		}
 	}
 
-	strncatz(text, "\n", sizeof(text));
+	Q_strncatz(text, "\n", sizeof(text));
 
 	if (FloodCheck(ent))
 		return;
@@ -1528,11 +1528,11 @@ static void Cmd_PlayerList_f (edict_t * ent)
 			continue;
 
 		if(limchasecam->value)
-			Com_sprintf (st, sizeof (st), "%02d:%02d %4d %3d %s\n", minutes, seconds, e2->client->ping, e2->client->resp.team, e2->client->pers.netname); // This shouldn't show player's being 'spectators' during games with limchasecam set and/or during matchmode
+			Q_snprintf (st, sizeof (st), "%02d:%02d %4d %3d %s\n", minutes, seconds, e2->client->ping, e2->client->resp.team, e2->client->pers.netname); // This shouldn't show player's being 'spectators' during games with limchasecam set and/or during matchmode
 		else if (!teamplay->value || !noscore->value)
-			Com_sprintf (st, sizeof (st), "%02d:%02d %4d %3d %s%s\n", minutes, seconds, e2->client->ping, e2->client->resp.score, e2->client->pers.netname, (e2->solid == SOLID_NOT && e2->deadflag != DEAD_DEAD) ? " (dead)" : ""); // replaced 'spectator' with 'dead'
+			Q_snprintf (st, sizeof (st), "%02d:%02d %4d %3d %s%s\n", minutes, seconds, e2->client->ping, e2->client->resp.score, e2->client->pers.netname, (e2->solid == SOLID_NOT && e2->deadflag != DEAD_DEAD) ? " (dead)" : ""); // replaced 'spectator' with 'dead'
 		else
-			Com_sprintf (st, sizeof (st), "%02d:%02d %4d %s%s\n", minutes, seconds, e2->client->ping, e2->client->pers.netname, (e2->solid == SOLID_NOT && e2->deadflag != DEAD_DEAD) ? " (dead)" : ""); // replaced 'spectator' with 'dead'
+			Q_snprintf (st, sizeof (st), "%02d:%02d %4d %s%s\n", minutes, seconds, e2->client->ping, e2->client->pers.netname, (e2->solid == SOLID_NOT && e2->deadflag != DEAD_DEAD) ? " (dead)" : ""); // replaced 'spectator' with 'dead'
 
 		if (strlen(text) + strlen(st) > sizeof(text) - 6)
 		{
@@ -1563,44 +1563,44 @@ static void Cmd_Ent_Count_f (edict_t * ent)
 static void dmflagsSettings( char *s, size_t size, int flags )
 {
 	if (!flags) {
-		strncatz( s, "NONE", size );
+		Q_strncatz( s, "NONE", size );
 		return;
 	}
 	if (flags & DF_NO_HEALTH)
-		strncatz( s, "1 = no health ", size );
+		Q_strncatz( s, "1 = no health ", size );
 	if (flags & DF_NO_ITEMS)
-		strncatz( s, "2 = no items ", size );
+		Q_strncatz( s, "2 = no items ", size );
 	if (flags & DF_WEAPONS_STAY)
-		strncatz( s, "4 = weapons stay ", size );
+		Q_strncatz( s, "4 = weapons stay ", size );
 	if (flags & DF_NO_FALLING)
-		strncatz( s, "8 = no fall damage ", size );
+		Q_strncatz( s, "8 = no fall damage ", size );
 	if (flags & DF_INSTANT_ITEMS)
-		strncatz( s, "16 = instant items ", size );
+		Q_strncatz( s, "16 = instant items ", size );
 	if (flags & DF_SAME_LEVEL)
-		strncatz( s, "32 = same level ", size );
+		Q_strncatz( s, "32 = same level ", size );
 	if (flags & DF_SKINTEAMS)
-		strncatz( s, "64 = skinteams ", size );
+		Q_strncatz( s, "64 = skinteams ", size );
 	if (flags & DF_MODELTEAMS)
-		strncatz( s, "128 = modelteams ", size );
+		Q_strncatz( s, "128 = modelteams ", size );
 	if (flags & DF_NO_FRIENDLY_FIRE)
-		strncatz( s, "256 = no ff ", size );
+		Q_strncatz( s, "256 = no ff ", size );
 	if (flags & DF_SPAWN_FARTHEST)
-		strncatz( s, "512 = spawn fartherst ", size );
+		Q_strncatz( s, "512 = spawn fartherst ", size );
 	if (flags & DF_FORCE_RESPAWN)
-		strncatz( s, "1024 = forse respawn ", size );
+		Q_strncatz( s, "1024 = forse respawn ", size );
 	//if(flags & DF_NO_ARMOR)
-	//	strncatz(s, "2048 = no armor ", size);
+	//	Q_strncatz(s, "2048 = no armor ", size);
 	if (flags & DF_ALLOW_EXIT)
-		strncatz( s, "4096 = allow exit ", size );
+		Q_strncatz( s, "4096 = allow exit ", size );
 	if (flags & DF_INFINITE_AMMO)
-		strncatz( s, "8192 = infinite ammo ", size );
+		Q_strncatz( s, "8192 = infinite ammo ", size );
 	if (flags & DF_QUAD_DROP)
-		strncatz( s, "16384 = quad drop ", size );
+		Q_strncatz( s, "16384 = quad drop ", size );
 	if (flags & DF_FIXED_FOV)
-		strncatz( s, "32768 = fixed fov ", size );
+		Q_strncatz( s, "32768 = fixed fov ", size );
 
 	if (flags & DF_WEAPON_RESPAWN)
-		strncatz( s, "65536 = weapon respawn ", size );
+		Q_strncatz( s, "65536 = weapon respawn ", size );
 }
 
 extern char *menu_itemnames[ITEM_MAX_NUM];
@@ -1610,18 +1610,18 @@ static void wpflagsSettings( char *s, size_t size, int flags )
 	int i, num;
 
 	if (!(flags & WPF_MASK)) {
-		strncatz( s, "No weapons", size );
+		Q_strncatz( s, "No weapons", size );
 		return;
 	}
 	if ((flags & WPF_MASK) == WPF_MASK) {
-		strncatz( s, "All weapons", size );
+		Q_strncatz( s, "All weapons", size );
 		return;
 	}
 
 	for (i = 0; i<WEAPON_COUNT; i++) {
 		num = WEAPON_FIRST + i;
 		if (flags == items[WEAPON_FIRST + i].flag) {
-			strncatz( s, va("%s only", menu_itemnames[num]), size );
+			Q_strncatz( s, va("%s only", menu_itemnames[num]), size );
 			return;
 		}
 	}
@@ -1629,7 +1629,7 @@ static void wpflagsSettings( char *s, size_t size, int flags )
 	for (i = 0; i<WEAPON_COUNT; i++) {
 		num = WEAPON_FIRST + i;
 		if (flags & items[num].flag) {
-			strncatz( s, va("%d = %s ", items[num].flag, menu_itemnames[num]), size );
+			Q_strncatz( s, va("%d = %s ", items[num].flag, menu_itemnames[num]), size );
 		}
 	}
 }
@@ -1639,18 +1639,18 @@ static void itmflagsSettings( char *s, size_t size, int flags )
 	int i, num;
 
 	if (!(flags & ITF_MASK)) {
-		strncatz( s, "No items", size );
+		Q_strncatz( s, "No items", size );
 		return;
 	}
 	if ((flags & ITF_MASK) == ITF_MASK) {
-		strncatz( s, "All items", size );
+		Q_strncatz( s, "All items", size );
 		return;
 	}
 
 	for (i = 0; i<ITEM_COUNT; i++) {
 		num = ITEM_FIRST + i;
 		if (flags == items[num].flag) {
-			strncatz( s, va("%s only", menu_itemnames[num]), size );
+			Q_strncatz( s, va("%s only", menu_itemnames[num]), size );
 			return;
 		}
 	}
@@ -1658,7 +1658,7 @@ static void itmflagsSettings( char *s, size_t size, int flags )
 	for (i = 0; i<ITEM_COUNT; i++) {
 		num = ITEM_FIRST + i;
 		if (flags & items[num].flag) {
-			strncatz( s, va("%d = %s ", items[num].flag, menu_itemnames[num]), size );
+			Q_strncatz( s, va("%d = %s ", items[num].flag, menu_itemnames[num]), size );
 		}
 	}
 }
@@ -1670,26 +1670,26 @@ static void Cmd_PrintSettings_f( edict_t * ent )
 	size_t length = 0;
 
 	if (game.serverfeatures & GMF_VARIABLE_FPS) {
-		Com_sprintf( text, sizeof( text ), "Server fps = %d\n", game.framerate );
+		Q_snprintf( text, sizeof( text ), "Server fps = %d\n", game.framerate );
 		length = strlen( text );
 	}
 
-        Com_sprintf( text + length, sizeof( text ) - length, "sv_antilag = %d\n", (int)sv_antilag->value );
+        Q_snprintf( text + length, sizeof( text ) - length, "sv_antilag = %d\n", (int)sv_antilag->value );
         length = strlen( text );
 	
-	Com_sprintf( text + length, sizeof( text ) - length, "dmflags %i: ", (int)dmflags->value );
+	Q_snprintf( text + length, sizeof( text ) - length, "dmflags %i: ", (int)dmflags->value );
 	dmflagsSettings( text, sizeof( text ), (int)dmflags->value );
 
 	length = strlen( text );
-	Com_sprintf( text + length, sizeof( text ) - length, "\nwp_flags %i: ", (int)wp_flags->value );
+	Q_snprintf( text + length, sizeof( text ) - length, "\nwp_flags %i: ", (int)wp_flags->value );
 	wpflagsSettings( text, sizeof( text ), (int)wp_flags->value );
 
 	length = strlen( text );
-	Com_sprintf( text + length, sizeof( text ) - length, "\nitm_flags %i: ", (int)itm_flags->value );
+	Q_snprintf( text + length, sizeof( text ) - length, "\nitm_flags %i: ", (int)itm_flags->value );
 	itmflagsSettings( text, sizeof( text ), (int)itm_flags->value );
 
 	length = strlen( text );
-	Com_sprintf( text + length, sizeof( text ) - length, "\n"
+	Q_snprintf( text + length, sizeof( text ) - length, "\n"
 		"timelimit   %2d roundlimit  %2d roundtimelimit %2d\n"
 		"limchasecam %2d tgren       %2d hc_single      %2d\n"
 		"use_punch   %2d use_classic %2d\n",
@@ -1793,7 +1793,7 @@ static void Cmd_VidRef_f (edict_t * ent)
 {
 	if (video_check->value || video_check_lockpvs->value)
 	{
-		strncpyz(ent->client->resp.vidref, gi.argv(1), sizeof(ent->client->resp.vidref));
+		Q_strncpyz(ent->client->resp.vidref, gi.argv(1), sizeof(ent->client->resp.vidref));
 	}
 
 }
@@ -1806,7 +1806,7 @@ static void Cmd_CPSI_f (edict_t * ent)
 		ent->client->resp.gllockpvs = atoi(gi.argv(2));
 		ent->client->resp.glclear = atoi(gi.argv(3));
 		ent->client->resp.gldynamic = atoi(gi.argv(4));
-		strncpyz(ent->client->resp.gldriver, gi.argv (5), sizeof(ent->client->resp.gldriver));
+		Q_strncpyz(ent->client->resp.gldriver, gi.argv (5), sizeof(ent->client->resp.gldriver));
 		//      strncpy(ent->client->resp.vidref,gi.argv(4),sizeof(ent->client->resp.vidref-1));
 		//      ent->client->resp.vidref[15] = 0;
 	}

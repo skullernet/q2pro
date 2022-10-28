@@ -117,7 +117,7 @@ void LTK_Say (edict_t *ent, char *what)
 	edict_t	*other;
 	char	text[2048];
 
-        Com_sprintf (text, sizeof(text), "%s: ", ent->client->pers.netname);
+        Q_snprintf (text, sizeof(text), "%s: ", ent->client->pers.netname);
 
         if (*what == '"')
         {

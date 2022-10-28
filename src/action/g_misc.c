@@ -1447,13 +1447,13 @@ func_clock_format_countdown (edict_t * self)
 {
   if (self->style == 0)
     {
-      Com_sprintf (self->message, CLOCK_MESSAGE_SIZE, "%2i", self->health);
+      Q_snprintf (self->message, CLOCK_MESSAGE_SIZE, "%2i", self->health);
       return;
     }
 
   if (self->style == 1)
     {
-      Com_sprintf (self->message, CLOCK_MESSAGE_SIZE, "%2i:%2i",
+      Q_snprintf (self->message, CLOCK_MESSAGE_SIZE, "%2i:%2i",
 		   self->health / 60, self->health % 60);
       if (self->message[3] == ' ')
 	self->message[3] = '0';
@@ -1462,7 +1462,7 @@ func_clock_format_countdown (edict_t * self)
 
   if (self->style == 2)
     {
-      Com_sprintf (self->message, CLOCK_MESSAGE_SIZE, "%2i:%2i:%2i",
+      Q_snprintf (self->message, CLOCK_MESSAGE_SIZE, "%2i:%2i:%2i",
 		   self->health / 3600,
 		   (self->health - (self->health / 3600) * 3600) / 60,
 		   self->health % 60);
@@ -1501,7 +1501,7 @@ func_clock_think (edict_t * self)
 
       time (&gmtime);
       ltime = localtime (&gmtime);
-      Com_sprintf (self->message, CLOCK_MESSAGE_SIZE, "%2i:%2i:%2i",
+      Q_snprintf (self->message, CLOCK_MESSAGE_SIZE, "%2i:%2i:%2i",
 		   ltime->tm_hour, ltime->tm_min, ltime->tm_sec);
       if (self->message[3] == ' ')
 	self->message[3] = '0';

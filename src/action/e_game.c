@@ -31,12 +31,12 @@ qboolean EspSceneLoadConfig(char *mapname)
 	ptr = INI_Find(fh, "ctf", "author");
 	if(ptr) {
 		gi.dprintf(" Author    : %s\n", ptr);
-		strncpyz(ctfgame.author, ptr, sizeof(ctfgame.author));
+		Q_strncpyz(ctfgame.author, ptr, sizeof(ctfgame.author));
 	}
 	ptr = INI_Find(fh, "ctf", "comment");
 	if(ptr) {
 		gi.dprintf(" Comment   : %s\n", ptr);
-		strncpyz(ctfgame.comment, ptr, sizeof(ctfgame.comment));
+		Q_strncpyz(ctfgame.comment, ptr, sizeof(ctfgame.comment));
 	}
 
 	ptr = INI_Find(fh, "ctf", "type");
@@ -134,15 +134,15 @@ void G_LoadScenes( void )
 	game_cvar = gi.cvar ("game", "action", 0);
 
 	if (!*game_cvar->string)
-		Com_sprintf(scnfile, sizeof(scnfile), "%s/tng/%s.scn", GAMEVERSION, level.mapname);
+		Q_snprintf(scnfile, sizeof(scnfile), "%s/tng/%s.scn", GAMEVERSION, level.mapname);
 	else
-		Com_sprintf(scnfile, sizeof(scnfile), "%s/tng/%s.scn", game_cvar->string, level.mapname);
+		Q_snprintf(scnfile, sizeof(scnfile), "%s/tng/%s.scn", game_cvar->string, level.mapname);
 
 	f = fopen( scnfile, "r" );
 	if (!f) {
 		gi.dprintf( "No scene file for %s\n", level.mapname );
         gi.dprintf( "Attempting to load default scene file %s\n", def_scnfile );
-        Com_sprintf(def_scnfile, sizeof(scnfile), "%s/tng/%s.scn", game_cvar->string, def_scnfilename);
+        Q_snprintf(def_scnfile, sizeof(scnfile), "%s/tng/%s.scn", game_cvar->string, def_scnfilename);
         d = fopen( def_scnfile, "r");
 
         gi.dprintf( "Scene file: %s\n", def_scnfilename );
@@ -227,7 +227,7 @@ void G_LoadScenes( void )
 		loc->rx = rx;
 		loc->ry = ry;
 		loc->rz = rz;
-		strncpyz( loc->desc, locationstr, sizeof( loc->desc ) );
+		Q_strncpyz( loc->desc, locationstr, sizeof( loc->desc ) );
 
 		if (ml_count >= MAX_LOCATIONS_IN_BASE) {
 			gi.dprintf( "Cannot read more than %d locations.\n", MAX_LOCATIONS_IN_BASE );

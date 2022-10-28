@@ -138,21 +138,21 @@ void ReadConfigFile()
 		if (lines_into_section > -1) {
 			if (!strcmp(reading_section, "team1")) {
 				if (lines_into_section == 0) {
-					strncpyz(teams[TEAM1].name, buf, sizeof(teams[TEAM1].name));
+					Q_strncpyz(teams[TEAM1].name, buf, sizeof(teams[TEAM1].name));
 				} else if (lines_into_section == 1) {
-					strncpyz(teams[TEAM1].skin, buf, sizeof(teams[TEAM1].skin));
+					Q_strncpyz(teams[TEAM1].skin, buf, sizeof(teams[TEAM1].skin));
 				}
 			} else if (!strcmp(reading_section, "team2")) {
 				if (lines_into_section == 0) {
-					strncpyz(teams[TEAM2].name, buf, sizeof(teams[TEAM2].name));
+					Q_strncpyz(teams[TEAM2].name, buf, sizeof(teams[TEAM2].name));
 				} else if (lines_into_section == 1) {
-					strncpyz(teams[TEAM2].skin, buf, sizeof(teams[TEAM2].skin));
+					Q_strncpyz(teams[TEAM2].skin, buf, sizeof(teams[TEAM2].skin));
 				}
 			} else if (!strcmp(reading_section, "team3")) {
 				if (lines_into_section == 0) {
-					strncpyz(teams[TEAM3].name, buf, sizeof(teams[TEAM3].name));
+					Q_strncpyz(teams[TEAM3].name, buf, sizeof(teams[TEAM3].name));
 				} else if (lines_into_section == 1) {
-					strncpyz(teams[TEAM3].skin, buf, sizeof(teams[TEAM3].skin));
+					Q_strncpyz(teams[TEAM3].skin, buf, sizeof(teams[TEAM3].skin));
 				}
 			} else if (!strcmp(reading_section, "maplist")) {
 				map_rotation[num_maps] = (char *) gi.TagMalloc(strlen(buf) + 1, TAG_GAME);
@@ -163,9 +163,9 @@ void ReadConfigFile()
 		}
 	}
 
-	Com_sprintf(teams[TEAM1].skin_index, sizeof(teams[TEAM1].skin_index), "../players/%s_i", teams[TEAM1].skin);
-	Com_sprintf(teams[TEAM2].skin_index, sizeof(teams[TEAM2].skin_index), "../players/%s_i", teams[TEAM2].skin);
-	Com_sprintf(teams[TEAM3].skin_index, sizeof(teams[TEAM3].skin_index), "../players/%s_i", teams[TEAM3].skin);
+	Q_snprintf(teams[TEAM1].skin_index, sizeof(teams[TEAM1].skin_index), "../players/%s_i", teams[TEAM1].skin);
+	Q_snprintf(teams[TEAM2].skin_index, sizeof(teams[TEAM2].skin_index), "../players/%s_i", teams[TEAM2].skin);
+	Q_snprintf(teams[TEAM3].skin_index, sizeof(teams[TEAM3].skin_index), "../players/%s_i", teams[TEAM3].skin);
 
 	cur_map = 0;
 	srand(time(NULL));
@@ -234,7 +234,7 @@ void PrintMOTD(edict_t * ent)
 		// This line will show the hostname. If not set, the default name will be "Unnamed TNG Server" (used to be "unnamed")
 		if (hostname->string[0] && strcmp(hostname->string, "Unnamed TNG Server"))
 		{
-			strncatz(msg_buf, hostname->string, strlen(msg_buf)+40);
+			Q_strncatz(msg_buf, hostname->string, strlen(msg_buf)+40);
 			strcat(msg_buf, "\n");
 			lines++;
 		}
@@ -338,7 +338,7 @@ void PrintMOTD(edict_t * ent)
 				/* no comment without author, grr */
 				if(strlen(ctfgame.comment) > 0) {
 					/* max line length is 39 chars + new line */
-					strncatz(msg_buf + strlen(msg_buf), ctfgame.comment, 39);
+					Q_strncatz(msg_buf + strlen(msg_buf), ctfgame.comment, 39);
 					strcat(msg_buf, "\n");
 					lines++;
 				}
@@ -495,29 +495,29 @@ void PrintMOTD(edict_t * ent)
 			{
 				len_mr = strlen(*(map_rotation + mapnum));
 				if ((chars_on_line + len_mr + 2) > 39) {
-					strncatz(msg_buf, "\n", sizeof(msg_buf));
+					Q_strncatz(msg_buf, "\n", sizeof(msg_buf));
 					lines++;
 					if (lines >= max_lines)
 						break;
 					chars_on_line = 0;
 				}
-				strncatz(msg_buf, *(map_rotation + mapnum), sizeof(msg_buf));
+				Q_strncatz(msg_buf, *(map_rotation + mapnum), sizeof(msg_buf));
 				chars_on_line += len_mr;
 				if (mapnum < (num_maps - 1)) {
-					strncatz(msg_buf, ", ", sizeof(msg_buf));
+					Q_strncatz(msg_buf, ", ", sizeof(msg_buf));
 					chars_on_line += 2;
 				}
 			}
 
 			if (lines < max_lines) {
-				strncatz(msg_buf, "\n", sizeof(msg_buf));
+				Q_strncatz(msg_buf, "\n", sizeof(msg_buf));
 				lines++;
 			}
 		}
 
 		//If we're in teamplay, we want to inform people that they can open the menu with TAB
 		if (teamplay->value && lines < max_lines && !auto_menu->value) {
-			strncatz(msg_buf, "\nHit TAB to open the Team selection menu", sizeof(msg_buf));
+			Q_strncatz(msg_buf, "\nHit TAB to open the Team selection menu", sizeof(msg_buf));
 			lines++;
 		}
 	}
@@ -528,14 +528,14 @@ void PrintMOTD(edict_t * ent)
 
 	if (motd_num_lines && lines < max_lines-1)
 	{
-		strncatz(msg_buf, "\n", sizeof(msg_buf));
+		Q_strncatz(msg_buf, "\n", sizeof(msg_buf));
 		lines++;
 		for (i = 0; i < motd_num_lines; i++) {
-			strncatz(msg_buf, motd_lines[i], sizeof(msg_buf));
+			Q_strncatz(msg_buf, motd_lines[i], sizeof(msg_buf));
 			lines++;
 			if (lines >= max_lines)
 				break;
-			strncatz(msg_buf, "\n", sizeof(msg_buf));
+			Q_strncatz(msg_buf, "\n", sizeof(msg_buf));
 		}
 	}
 
@@ -1237,10 +1237,10 @@ void GetNearbyTeammates( edict_t *self, char *buf )
 	for (l = 1; l < nearby_teammates_num; l++)
 	{
 		if (l == nearby_teammates_num - 1)
-			strncatz(buf, " and ", PARSE_BUFSIZE);
+			Q_strncatz(buf, " and ", PARSE_BUFSIZE);
 		else
-			strncatz(buf, ", ", PARSE_BUFSIZE);
+			Q_strncatz(buf, ", ", PARSE_BUFSIZE);
 
-		strncatz( buf, nearby_teammates[l]->client->pers.netname, PARSE_BUFSIZE );
+		Q_strncatz( buf, nearby_teammates[l]->client->pers.netname, PARSE_BUFSIZE );
 	}
 }

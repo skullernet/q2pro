@@ -1035,10 +1035,10 @@ char *Q_stristr( const char *str1, const char *str2 )
 
 /*
 ============
-strncpyz
+Q_strncpyz
 ============
 */
-void strncpyz( char *dest, const char *src, size_t size )
+void Q_strncpyz( char *dest, const char *src, size_t size )
 {
 	if (size)
 	{
@@ -1048,10 +1048,10 @@ void strncpyz( char *dest, const char *src, size_t size )
 }
 /*
 ==============
-strncatz
+Q_strncatz
 ==============
 */
-void strncatz( char *dest, const char *src, size_t size )
+void Q_strncatz( char *dest, const char *src, size_t size )
 {
 	if (size)
 	{
@@ -1065,7 +1065,7 @@ void strncatz( char *dest, const char *src, size_t size )
 }
 
 #ifndef HAVE_SNPRINTF
-void Com_sprintf (char *dest, size_t size, const char *fmt, ...)
+void Q_snprintf (char *dest, size_t size, const char *fmt, ...)
 {
 	va_list		argptr;
 
@@ -1243,7 +1243,7 @@ void Info_SetValueForKey (char *s, const char *key, const char *value)
 	if (!value || !value[0])
 		return;
 
-	Com_sprintf (newi, sizeof(newi), "\\%s\\%s", key, value);
+	Q_snprintf (newi, sizeof(newi), "\\%s\\%s", key, value);
 
 	if (strlen(newi) + strlen(s) > MAX_INFO_STRING)
 	{

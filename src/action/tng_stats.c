@@ -514,8 +514,8 @@ void Cmd_Statmode_f(edict_t* ent)
 // 		return;
 // 	}
 	
-// 	strncatz(apikeyheader, stat_apikey->string, sizeof(apikeyheader));
-// 	strncpyz(apiurl, stat_url->string, sizeof(apiurl));
+// 	Q_strncatz(apikeyheader, stat_apikey->string, sizeof(apikeyheader));
+// 	Q_strncpyz(apiurl, stat_url->string, sizeof(apiurl));
 	
 // 	va_start (argptr, payload);
 // 	vsnprintf (text, sizeof(text), payload, argptr);
@@ -697,14 +697,14 @@ void LogKill(edict_t *self, edict_t *inflictor, edict_t *attacker)
 			ttk = current_round_length / 10;
 		}
 		
-		strncpyz(v, Info_ValueForKey(self->client->pers.userinfo, "steamid"), sizeof(v));
-		strncpyz(vn, Info_ValueForKey(self->client->pers.userinfo, "name"), sizeof(vn));
-		strncpyz(vip, Info_ValueForKey(self->client->pers.userinfo, "ip"), sizeof(vip));
-		strncpyz(vd, Info_ValueForKey(self->client->pers.userinfo, "cl_discord_id"), sizeof(vd));
-		strncpyz(k, Info_ValueForKey(attacker->client->pers.userinfo, "steamid"), sizeof(k));
-		strncpyz(kn, Info_ValueForKey(attacker->client->pers.userinfo, "name"), sizeof(kn));
-		strncpyz(kip, Info_ValueForKey(attacker->client->pers.userinfo, "ip"), sizeof(kip));
-		strncpyz(kd, Info_ValueForKey(attacker->client->pers.userinfo, "cl_discord_id"), sizeof(kd));
+		Q_strncpyz(v, Info_ValueForKey(self->client->pers.userinfo, "steamid"), sizeof(v));
+		Q_strncpyz(vn, Info_ValueForKey(self->client->pers.userinfo, "name"), sizeof(vn));
+		Q_strncpyz(vip, Info_ValueForKey(self->client->pers.userinfo, "ip"), sizeof(vip));
+		Q_strncpyz(vd, Info_ValueForKey(self->client->pers.userinfo, "cl_discord_id"), sizeof(vd));
+		Q_strncpyz(k, Info_ValueForKey(attacker->client->pers.userinfo, "steamid"), sizeof(k));
+		Q_strncpyz(kn, Info_ValueForKey(attacker->client->pers.userinfo, "name"), sizeof(kn));
+		Q_strncpyz(kip, Info_ValueForKey(attacker->client->pers.userinfo, "ip"), sizeof(kip));
+		Q_strncpyz(kd, Info_ValueForKey(attacker->client->pers.userinfo, "cl_discord_id"), sizeof(kd));
 
 		// Separate IP from Port
 		char* portSeperator = ":";
@@ -715,7 +715,7 @@ void LogKill(edict_t *self, edict_t *inflictor, edict_t *attacker)
 		eventtime = (int)time(NULL);
 		roundNum = game.roundNum + 1;
 
-		Com_sprintf(
+		Q_snprintf(
 			msg, sizeof(msg),
 			"{\"frag\":{\"sid\":\"%s\",\"mid\":\"%s\",\"v\":\"%s\",\"vn\":\"%s\",\"vi\":\"%s\",\"vt\":%i,\"vl\":%i,\"k\":\"%s\",\"kn\":\"%s\",\"ki\":\"%s\",\"kt\":%i,\"kl\":%i,\"w\":%i,\"i\":%i,\"l\":%i,\"ks\":%i,\"gm\":%i,\"gmf\":%i,\"ttk\":%d,\"t\":%d,\"gt\":%d,\"m\":\"%s\",\"r\":%i,\"vd\":\"%s\",\"kd\":\"%s\"}}\n",
 			server_id->string,
@@ -803,10 +803,10 @@ void LogWorldKill(edict_t *self)
 			ttk = current_round_length / 10;
 		}
 		
-		strncpyz(v, Info_ValueForKey(self->client->pers.userinfo, "steamid"), sizeof(v));
-		strncpyz(vn, Info_ValueForKey(self->client->pers.userinfo, "name"), sizeof(vn));
-		strncpyz(vip, Info_ValueForKey(self->client->pers.userinfo, "ip"), sizeof(vip));
-		strncpyz(vd, Info_ValueForKey(self->client->pers.userinfo, "cl_discord_id"), sizeof(vd));
+		Q_strncpyz(v, Info_ValueForKey(self->client->pers.userinfo, "steamid"), sizeof(v));
+		Q_strncpyz(vn, Info_ValueForKey(self->client->pers.userinfo, "name"), sizeof(vn));
+		Q_strncpyz(vip, Info_ValueForKey(self->client->pers.userinfo, "ip"), sizeof(vip));
+		Q_strncpyz(vd, Info_ValueForKey(self->client->pers.userinfo, "cl_discord_id"), sizeof(vd));
 
 		// Separate IP from Port
 		char* portSeperator = ":";
@@ -816,7 +816,7 @@ void LogWorldKill(edict_t *self)
 		eventtime = (int)time(NULL);
 		roundNum = game.roundNum + 1;
 
-		Com_sprintf(
+		Q_snprintf(
 			msg, sizeof(msg),
 			"{\"frag\":{\"sid\":\"%s\",\"mid\":\"%s\",\"v\":\"%s\",\"vn\":\"%s\",\"vi\":\"%s\",\"vt\":%i,\"vl\":%i,\"k\":\"%s\",\"kn\":\"%s\",\"ki\":\"%s\",\"kt\":%i,\"kl\":%i,\"w\":%i,\"i\":%i,\"l\":%i,\"ks\":%i,\"gm\":%i,\"gmf\":%i,\"ttk\":%d,\"t\":%d,\"gt\":%d,\"m\":\"%s\",\"r\":%i,\"vd\":\"%s\",\"kd\":\"%s\"}}\n",
 			server_id->string,
@@ -873,7 +873,7 @@ void LogMatch()
 		return;
 	}
 
-	Com_sprintf(
+	Q_snprintf(
 		msg, sizeof(msg),
 		"{\"gamematch\":{\"mid\":\"%s\",\"sid\":\"%s\",\"t\":\"%d\",\"m\":\"%s\",\"gm\":%i,\"gmf\":%i,\"t1\":%i,\"t2\":%i,\"t3\":%i}}\n",
 		game.matchid,
@@ -910,7 +910,7 @@ void LogAward(char* steamid, char* discordid, int award)
 		return;
 	}
 
-	Com_sprintf(
+	Q_snprintf(
 		msg, sizeof(msg),
 		"{\"award\":{\"sid\":\"%s\",\"mid\":\"%s\",\"t\":\"%d\",\"gt\":\"%d\",\"a\":%i,\"k\":\"%s\",\"w\":%i,\"d\":\"%s\"}}\n",
 		server_id->string,
@@ -960,10 +960,10 @@ void LogEndMatchStats()
 			else
 				fpm = 0.0;
 				
-		strncpyz(steamid, Info_ValueForKey(cl->pers.userinfo, "steamid"), sizeof(steamid));
-		strncpyz(discordid, Info_ValueForKey(cl->pers.userinfo, "cl_discord_id"), sizeof(discordid));
+		Q_strncpyz(steamid, Info_ValueForKey(cl->pers.userinfo, "steamid"), sizeof(steamid));
+		Q_strncpyz(discordid, Info_ValueForKey(cl->pers.userinfo, "cl_discord_id"), sizeof(discordid));
 
-		Com_sprintf(
+		Q_snprintf(
 			msg, sizeof(msg),
 			"{\"matchstats\":{\"sid\":\"%s\",\"mid\":\"%s\",\"s\":\"%s\",\"sc\":%i,\"sh\":%i,\"a\":%f,\"f\":%f,\"dd\":%i,\"d\":%i,\"k\":%i,\"ctfc\":%i,\"ctfcs\":%i,\"ht\":%i,\"tk\":%i,\"t\":%i,\"hks\":%i,\"hhs\":%i,\"dis\":\"%s\",\"pt\":%i}}\n",
 			server_id->string,

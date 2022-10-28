@@ -260,7 +260,7 @@ void DeathmatchScoreboardMessage (edict_t * ent, edict_t * killer)
 			tag = NULL;
 		if (tag)
 		{
-			Com_sprintf (entry, sizeof (entry),
+			Q_snprintf (entry, sizeof (entry),
 				"xv %i yv %i picn %s ", x + 32, y, tag);
 			j = strlen (entry);
 			if (stringlength + j > 1023)
@@ -270,7 +270,7 @@ void DeathmatchScoreboardMessage (edict_t * ent, edict_t * killer)
 		}
 
 		// send the layout
-		Com_sprintf (entry, sizeof (entry),
+		Q_snprintf (entry, sizeof (entry),
 			"client %i %i %i %i %i %i ",
 			x, y, (int)(cl - game.clients), cl->resp.score, cl->ping,
 			(level.framenum - cl->resp.enterframe) / 600 / FRAMEDIV);

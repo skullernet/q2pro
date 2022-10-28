@@ -78,8 +78,8 @@ void _printplayerlist (edict_t * self, char *buf,
 	edict_t *other;
 	char dummy, tmpbuf[32];
 
-	strncatz (buf, " #  Name\n", MAX_STRING_CHARS);
-	strncatz (buf, "------------------------------------\n", MAX_STRING_CHARS);
+	Q_strncatz (buf, " #  Name\n", MAX_STRING_CHARS);
+	Q_strncatz (buf, "------------------------------------\n", MAX_STRING_CHARS);
 	for (i = 0, other = g_edicts + 1; i < game.maxclients; i++, other++)
 	{
 		if (!other->inuse || !other->client || other->client->pers.mvdspec)
@@ -95,11 +95,11 @@ void _printplayerlist (edict_t * self, char *buf,
 		sprintf (tmpbuf, "%2i %c%s\n", i, dummy, other->client->pers.netname);
 		count++;
 
-		strncatz (buf, tmpbuf, MAX_STRING_CHARS);
+		Q_strncatz (buf, tmpbuf, MAX_STRING_CHARS);
 	}
 	if (!count)
-		strncatz (buf, "None\n", MAX_STRING_CHARS);
-	strncatz (buf, "\n", MAX_STRING_CHARS);
+		Q_strncatz (buf, "None\n", MAX_STRING_CHARS);
+	Q_strncatz (buf, "\n", MAX_STRING_CHARS);
 }
 
 
@@ -273,28 +273,28 @@ void Cmd_Maplist_f(edict_t *ent)
 		//Igor[Rock] end
 		if ((chars_on_line + len_mr + 2) > 39)
 		{
-			strncatz (msg_buf, "\n", sizeof(msg_buf));
+			Q_strncatz (msg_buf, "\n", sizeof(msg_buf));
 			lines++;
 			chars_on_line = 0;
 			if (lines > 25)
 				break;
 		}
 
-		Com_sprintf (tmp_buf, sizeof(tmp_buf), "%s (%.2f)  ", search->mapname, p_test);
-		strncatz(msg_buf, tmp_buf, sizeof(msg_buf));
+		Q_snprintf (tmp_buf, sizeof(tmp_buf), "%s (%.2f)  ", search->mapname, p_test);
+		Q_strncatz(msg_buf, tmp_buf, sizeof(msg_buf));
 		chars_on_line += len_mr;
 	}
 
 	if (map_votes == NULL)
-		strncatz(msg_buf, "None!", sizeof(msg_buf));
+		Q_strncatz(msg_buf, "None!", sizeof(msg_buf));
 	else if (most != NULL)
 	{
-		Com_sprintf (tmp_buf, sizeof(tmp_buf), "\n\nMost votes: %s (%.2f)", most->mapname, p_most);
-		strncatz(msg_buf, tmp_buf, sizeof(msg_buf));
+		Q_snprintf (tmp_buf, sizeof(tmp_buf), "\n\nMost votes: %s (%.2f)", most->mapname, p_most);
+		Q_strncatz(msg_buf, tmp_buf, sizeof(msg_buf));
 	}
 
-	strncatz(msg_buf, "\n\n", sizeof(msg_buf));
-	Com_sprintf (tmp_buf, sizeof(tmp_buf),
+	Q_strncatz(msg_buf, "\n\n", sizeof(msg_buf));
+	Q_snprintf (tmp_buf, sizeof(tmp_buf),
 		"%d/%d (%.2f%%) clients voted\n%d client%s minimum (%d%% required)",
 		map_num_votes, map_num_clients,
 		(float)( (float)map_num_votes /
@@ -302,7 +302,7 @@ void Cmd_Maplist_f(edict_t *ent)
 		(int)mapvote_min->value, (mapvote_min->value > 1 ? "s" : ""),
 		(int)mapvote_need->value);
 
-	strncatz(msg_buf, tmp_buf, sizeof(msg_buf));
+	Q_strncatz(msg_buf, tmp_buf, sizeof(msg_buf));
 
 	gi.centerprintf (ent, "%s", msg_buf);
 
@@ -352,7 +352,7 @@ void _MapExitLevel (char *NextMap)
 	if( _iCheckMapVotes() || ((map_num_votes > 0) && mapvote_next && mapvote_next->value) )
 	{
 		votemap = MapWithMostVotes (NULL);
-		strncpyz (NextMap, votemap->mapname, MAX_QPATH);
+		Q_strncpyz (NextMap, votemap->mapname, MAX_QPATH);
 		gi.bprintf (PRINT_HIGH, "Next map was voted on and is %s.\n", NextMap);
 	}
 
@@ -461,7 +461,7 @@ void _MapWithMostVotes (void)
 
 	if (_MostVotesStr(sbuf))
 	{
-		Com_sprintf(buf, sizeof(buf), "Most wanted map: %s", sbuf);
+		Q_snprintf(buf, sizeof(buf), "Most wanted map: %s", sbuf);
 		G_HighlightStr(buf, buf, sizeof(buf));
 		gi.bprintf(PRINT_HIGH, "%s\n", buf);
 	}
@@ -704,7 +704,7 @@ void MapVoteMenu (edict_t * ent, pmenu_t * p)
 	sbuf[0] = 0;
 	PMenu_Close(ent);
 	_MostVotesStr(sbuf);
-	Com_sprintf(buf, sizeof(buf), "most: %s", sbuf);
+	Q_snprintf(buf, sizeof(buf), "most: %s", sbuf);
 
 	if (xMenu_New (ent, MAPMENUTITLE, buf, AddMapToMenu) == false)
 		gi.cprintf (ent, PRINT_MEDIUM, "No map to vote for.\n");
@@ -749,9 +749,9 @@ void ReadMaplistFile (void)
 
 	maplistname = gi.cvar ("maplistname", "maplist.ini", 0);
 	if (maplistname->string && *(maplistname->string))
-		Com_sprintf(maplistpath, sizeof(maplistpath), "%s/%s", GAMEVERSION, maplistname->string);
+		Q_snprintf(maplistpath, sizeof(maplistpath), "%s/%s", GAMEVERSION, maplistname->string);
 	else
-		Com_sprintf(maplistpath, sizeof(maplistpath), "%s/%s", GAMEVERSION, "maplist.ini");
+		Q_snprintf(maplistpath, sizeof(maplistpath), "%s/%s", GAMEVERSION, "maplist.ini");
 
 	maplist_file = fopen(maplistpath, "r");
 	//Igor[Rock] End
@@ -801,7 +801,7 @@ void ReadMaplistFile (void)
 
 	//Igor[Rock] BEGIN
 	//load the saved values from the last run of the server
-	strncatz(maplistpath, "-votes", sizeof(maplistpath));
+	Q_strncatz(maplistpath, "-votes", sizeof(maplistpath));
 
 	maplist_file = fopen(maplistpath, "r");
 	if (maplist_file != NULL)
@@ -1182,7 +1182,7 @@ void Cmd_Kicklist_f(edict_t *ent)
   _printplayerlist(ent, buf, _vkMarkThis);
 
   // adding vote settings
-  Com_sprintf (tbuf, sizeof(tbuf), "Vote rules: %i client%s min. (currently %i),\n" \
+  Q_snprintf (tbuf, sizeof(tbuf), "Vote rules: %i client%s min. (currently %i),\n" \
 	   "%.1f%% must have voted overall (currently %.1f%%)\n" \
 	   "and %.1f%% on the same (currently %.1f%% on %s),\n" \
 	   "kicked players %s be temporarily banned.\n\n",
@@ -1195,7 +1195,7 @@ void Cmd_Kicklist_f(edict_t *ent)
 	   kickvote_tempban ? "will" : "won't");
   // double percent sign! cprintf will process them as format strings.
 
-  strncatz(buf, tbuf, sizeof(buf));
+  Q_strncatz(buf, tbuf, sizeof(buf));
   gi.cprintf(ent, PRINT_MEDIUM, "%s", buf);
 }
 
@@ -1308,28 +1308,28 @@ void Cmd_Configlist_f(edict_t *ent)
 
 		if ((chars_on_line + len_mr + 2) > 39)
 		{
-			strncatz (msg_buf, "\n", sizeof(msg_buf));
+			Q_strncatz (msg_buf, "\n", sizeof(msg_buf));
 			lines++;
 			chars_on_line = 0;
 			if (lines > 25)
 				break;
 		}
 		sprintf (tmp_buf, "%s (%.2f)  ", search->configname, p_test);
-		strncatz (msg_buf, tmp_buf, sizeof(msg_buf));
+		Q_strncatz (msg_buf, tmp_buf, sizeof(msg_buf));
 		chars_on_line += len_mr;
 	}
 
 	if (config_votes == NULL)
-		strncatz (msg_buf, "None!", sizeof(msg_buf));
+		Q_strncatz (msg_buf, "None!", sizeof(msg_buf));
 	else if (most != NULL)
 	{
 		sprintf (tmp_buf, "\n\nMost votes: %s (%.2f)",
 		most->configname, p_most);
-		strncatz (msg_buf, tmp_buf, sizeof(msg_buf));
+		Q_strncatz (msg_buf, tmp_buf, sizeof(msg_buf));
 	}
 
-	strncatz (msg_buf, "\n\n", sizeof(msg_buf));
-	Com_sprintf (tmp_buf, sizeof(tmp_buf), 
+	Q_strncatz (msg_buf, "\n\n", sizeof(msg_buf));
+	Q_snprintf (tmp_buf, sizeof(tmp_buf), 
 		"%d/%d (%.2f%%) clients voted\n%d client%s minimum (%d%% required)",
 		config_num_votes, config_num_clients,
 		(float) ((float) config_num_votes / (float) (config_num_clients >
@@ -1337,7 +1337,7 @@ void Cmd_Configlist_f(edict_t *ent)
 		(int) cvote_min->value, (cvote_min->value > 1 ? "s" : ""),
 		(int) cvote_need->value);
 
-	strncatz (msg_buf, tmp_buf, sizeof(msg_buf));
+	Q_strncatz (msg_buf, tmp_buf, sizeof(msg_buf));
 
 	gi.centerprintf (ent, "%s", msg_buf);
 
@@ -1384,7 +1384,7 @@ void _ConfigExitLevel (char *NextMap)
 		voteconfig = ConfigWithMostVotes (NULL);
 		gi.bprintf (PRINT_HIGH, "A new config was voted on and is %s.\n",
 			voteconfig->configname);
-		Com_sprintf (buf, sizeof (buf), "exec \"mode_%s.cfg\"\n",
+		Q_snprintf (buf, sizeof (buf), "exec \"mode_%s.cfg\"\n",
 			voteconfig->configname);
 
 		//clear stats
@@ -1452,7 +1452,7 @@ void _ConfigWithMostVotes (void)
 
 	if (_ConfigMostVotesStr(sbuf))
 	{
-		Com_sprintf(buf, sizeof(buf), "Most wanted config: %s", sbuf);
+		Q_snprintf(buf, sizeof(buf), "Most wanted config: %s", sbuf);
 		G_HighlightStr(buf, buf, sizeof(buf));
 		gi.bprintf(PRINT_HIGH, "%s\n", buf);
 	}
@@ -1637,7 +1637,7 @@ void ConfigVoteMenu (edict_t * ent, pmenu_t * p)
 	sbuf[0] = 0;
 	PMenu_Close(ent);
 	_ConfigMostVotesStr(sbuf);
-	Com_sprintf(buf, sizeof(buf), "most: %s", sbuf);
+	Q_snprintf(buf, sizeof(buf), "most: %s", sbuf);
 	if (xMenu_New(ent, CONFIGMENUTITLE, buf, AddConfigToMenu) == false)
 		gi.cprintf(ent, PRINT_MEDIUM, "No config to vote for.\n");
 }
@@ -1652,9 +1652,9 @@ void ReadConfiglistFile (void)
 
 	configlistname = gi.cvar("configlistname", "configlist.ini", 0);
 	if (configlistname->string && *(configlistname->string))
-		Com_sprintf(configlistpath, sizeof(configlistpath), "%s/%s", GAMEVERSION, configlistname->string);
+		Q_snprintf(configlistpath, sizeof(configlistpath), "%s/%s", GAMEVERSION, configlistname->string);
 	else
-		Com_sprintf(configlistpath, sizeof(configlistpath), "%s/%s", GAMEVERSION, "configlist.ini");
+		Q_snprintf(configlistpath, sizeof(configlistpath), "%s/%s", GAMEVERSION, "configlist.ini");
 
   configlist_file = fopen(configlistpath, "r");
   if (!configlist_file)
@@ -2109,7 +2109,7 @@ void _CheckScrambleVote (void)
 	_CalcScrambleVotes(&playernum, &numvotes, &votes);
 
 	if (numvotes > 0) {
-		Com_sprintf(buf, sizeof(buf), "Scramble: %d votes (%.1f%%), need %.1f%%", numvotes, votes, scramblevote_pass->value);
+		Q_snprintf(buf, sizeof(buf), "Scramble: %d votes (%.1f%%), need %.1f%%", numvotes, votes, scramblevote_pass->value);
 		G_HighlightStr(buf, buf, sizeof(buf));
 		gi.bprintf(PRINT_HIGH, "%s\n", buf);
 	}

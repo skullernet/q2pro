@@ -383,8 +383,8 @@ void Add_Frag(edict_t * ent, int mod)
 				if (stat_logs->value) {
 					char steamid[24];
 					char discordid[24];
-					strncpyz(steamid, Info_ValueForKey(ent->client->pers.userinfo, "steamid"), sizeof(steamid));
-					strncpyz(discordid, Info_ValueForKey(ent->client->pers.userinfo, "cl_discord_id"), sizeof(discordid));
+					Q_strncpyz(steamid, Info_ValueForKey(ent->client->pers.userinfo, "steamid"), sizeof(steamid));
+					Q_strncpyz(discordid, Info_ValueForKey(ent->client->pers.userinfo, "cl_discord_id"), sizeof(discordid));
 					LogAward(steamid, discordid, IMPRESSIVE);
 				}
 				#endif
@@ -406,8 +406,8 @@ void Add_Frag(edict_t * ent, int mod)
 				if (stat_logs->value) {
 					char steamid[24];
 					char discordid[24];
-					strncpyz(steamid, Info_ValueForKey(ent->client->pers.userinfo, "steamid"), sizeof(steamid));
-					strncpyz(discordid, Info_ValueForKey(ent->client->pers.userinfo, "cl_discord_id"), sizeof(discordid));
+					Q_strncpyz(steamid, Info_ValueForKey(ent->client->pers.userinfo, "steamid"), sizeof(steamid));
+					Q_strncpyz(discordid, Info_ValueForKey(ent->client->pers.userinfo, "cl_discord_id"), sizeof(discordid));
 					LogAward(steamid, discordid, EXCELLENT);
 				}
 				#endif
@@ -2827,7 +2827,7 @@ void ClientUserinfoChanged(edict_t *ent, char *userinfo)
 	}
 	// set name
 	s = Info_ValueForKey(userinfo, "name");
-	strncpyz(tnick, s, sizeof(tnick));
+	Q_strncpyz(tnick, s, sizeof(tnick));
 	if(!tnick[0])
 		strcpy(tnick, "unnamed");
 
@@ -2890,7 +2890,7 @@ void ClientUserinfoChanged(edict_t *ent, char *userinfo)
 			client->pers.firing_style = ACTION_FIRING_CLASSIC;
 	}
 	// save off the userinfo in case we want to check something later
-	strncpyz(client->pers.userinfo, userinfo, sizeof(client->pers.userinfo));
+	Q_strncpyz(client->pers.userinfo, userinfo, sizeof(client->pers.userinfo));
 
 	s = Info_ValueForKey( client->pers.userinfo, "gender" );
 	if (s[0] == 'f' || s[0] == 'F') {
@@ -2970,7 +2970,7 @@ qboolean ClientConnect(edict_t * ent, char *userinfo)
 
 	if (strlen(value) > sizeof(ipaddr_buf) - 1)
 		gi.dprintf("ipaddr_buf length exceeded\n");
-	strncpyz(ipaddr_buf, value, sizeof(ipaddr_buf));
+	Q_strncpyz(ipaddr_buf, value, sizeof(ipaddr_buf));
 
 	if (SV_FilterPacket(ipaddr_buf, &tempBan)) {
 		userinfo[0] = '\0';
@@ -2998,8 +2998,8 @@ qboolean ClientConnect(edict_t * ent, char *userinfo)
 
 	memset(ent->client, 0, sizeof(gclient_t));
 
-	strncpyz(ent->client->pers.ip, ipaddr_buf, sizeof(ent->client->pers.ip));
-	strncpyz(ent->client->pers.userinfo, userinfo, sizeof(ent->client->pers.userinfo));
+	Q_strncpyz(ent->client->pers.ip, ipaddr_buf, sizeof(ent->client->pers.ip));
+	Q_strncpyz(ent->client->pers.userinfo, userinfo, sizeof(ent->client->pers.userinfo));
 
 	if (game.serverfeatures & GMF_MVDSPEC) {
 		value = Info_ValueForKey(userinfo, "mvdspec");

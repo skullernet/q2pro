@@ -134,14 +134,14 @@ void PrecacheRadioSounds ()
 	//male
 	for(i = 0; i < numMaleSnds; i++)
 	{
-		Com_sprintf (path, sizeof(path), "%s%s.wav", RADIO_MALE_DIR, male_radio_msgs[i].msg);
+		Q_snprintf (path, sizeof(path), "%s%s.wav", RADIO_MALE_DIR, male_radio_msgs[i].msg);
 		male_radio_msgs[i].sndIndex = gi.soundindex(path);
 	}
 
 	//female
 	for(i = 0; i < numFemaleSnds; i++)
 	{
-		Com_sprintf (path, sizeof(path), "%s%s.wav", RADIO_FEMALE_DIR, female_radio_msgs[i].msg);
+		Q_snprintf (path, sizeof(path), "%s%s.wav", RADIO_FEMALE_DIR, female_radio_msgs[i].msg);
 		female_radio_msgs[i].sndIndex = gi.soundindex(path);
 	}
 }
@@ -355,7 +355,7 @@ void RadioBroadcast (edict_t * ent, int partner, char *msg)
 	i = found = 0;
 	msg_len = 0;
 
-	strncpyz(filteredmsg, msg, sizeof(filteredmsg));
+	Q_strncpyz(filteredmsg, msg, sizeof(filteredmsg));
 
 	for(i = 0; i < numSnds; i++)
 	{
