@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "server.h"
 #include "client/input.h"
+#include "g_local.h"
 
 pmoveParams_t   sv_pmp;
 
@@ -1374,22 +1375,10 @@ static void SV_ConnectionlessPacket(void)
 int SV_CountClients(void)
 {
     client_t *cl;
-    edict_t *ent;
-    edict_t *g_edicts;
     int count = 0;
 
     FOR_EACH_CLIENT(cl) {
         if (cl->state > cs_zombie) {
-            count++;
-        }
-    }
-
-    // Count bots too
-    for (int i = 0; i < sv_maxclients->value; i++)
-    {
-        ent = g_edicts + 1 + i;
-        if (ent->is_bot)
-        {
             count++;
         }
     }
