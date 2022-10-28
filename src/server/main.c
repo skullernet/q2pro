@@ -1375,6 +1375,7 @@ int SV_CountClients(void)
 {
     client_t *cl;
     edict_t *ent;
+    edict_t *g_edicts;
     int count = 0;
 
     FOR_EACH_CLIENT(cl) {
@@ -1384,7 +1385,7 @@ int SV_CountClients(void)
     }
 
     // Count bots too
-    for (int i = 0; i < maxclients->value; i++)
+    for (int i = 0; i < sv_maxclients->value; i++)
     {
         ent = g_edicts + 1 + i;
         if (ent[i]->is_bot)
