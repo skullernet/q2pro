@@ -1241,7 +1241,8 @@ static int64_t open_from_disk(file_t *file, const char *fullpath)
     return file->length;
 
 fail:
-    FS_DPrintf("%s: %s: %s\n", __func__, fullpath, Q_ErrorString(ret));
+    if (ret != Q_ERR_NOENT)
+        FS_DPrintf("%s: %s: %s\n", __func__, fullpath, Q_ErrorString(ret));
     return ret;
 }
 

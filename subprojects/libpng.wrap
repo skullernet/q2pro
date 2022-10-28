@@ -1,11 +1,11 @@
 [wrap-file]
-directory = libpng-1.6.37
-source_url = https://sourceforge.net/projects/libpng/files/libpng16/1.6.37/libpng-1.6.37.tar.xz
-source_filename = libpng-1.6.37.tar.xz
-source_hash = 505e70834d35383537b6491e7ae8641f1a4bed1876dbfe361201fc80868d88ca
-patch_url = https://skuller.net/meson/libpng_1.6.37-1_patch.zip
-patch_filename = libpng_1.6.37-1_patch.zip
-patch_hash = 5e0fb4a0858f8b066a63cb14b0ecc77389c505171b02c61ea97725a318290bdb
+directory = libpng-1.6.38
+source_url = https://sourceforge.net/projects/libpng/files/libpng16/1.6.38/libpng-1.6.38.tar.xz
+source_filename = libpng-1.6.38.tar.xz
+source_hash = b3683e8b8111ebf6f1ac004ebb6b0c975cd310ec469d98364388e9cedbfa68be
+patch_url = https://skuller.net/meson/libpng_1.6.38-1_patch.zip
+patch_filename = libpng_1.6.38-1_patch.zip
+patch_hash = 334fda373d4ae05dd13c5a8f68e35f0bfa903ce09d5b38b47b733610faa79962
 
 [provide]
 libpng = libpng_dep
