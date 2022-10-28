@@ -1374,6 +1374,7 @@ static void SV_ConnectionlessPacket(void)
 int SV_CountClients(void)
 {
     client_t *cl;
+    edict_t *ent;
     int count = 0;
 
     FOR_EACH_CLIENT(cl) {
@@ -1383,9 +1384,10 @@ int SV_CountClients(void)
     }
 
     // Count bots too
-    for (int i = 0; i < game.maxclients; i++)
+    for (int i = 0; i < maxclients->value; i++)
     {
-        if (players[i]->is_bot)
+        ent = g_edicts + 1 + i;
+        if (ent[i]->is_bot)
         {
             count++;
         }
