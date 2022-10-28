@@ -554,7 +554,7 @@ void ShutdownGame (void)
   and global variables
   =================
 */
-game_export_t *GetGameAPI (game_import_t * import)
+q_exported game_export_t *GetGameAPI (game_import_t * import)
 {
 	gi = *import;
 #ifndef NO_BOTS
