@@ -388,7 +388,6 @@ void ACESP_HoldSpawn(edict_t *self)
 ///////////////////////////////////////////////////////////////////////
 void ACESP_PutClientInServer( edict_t *bot, qboolean respawn, int team )
 {
-	client_persistant_t z;
 	bot->is_bot = true;
 	
 	// Use 'think' to pass the value of respawn to PutClientInServer.

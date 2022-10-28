@@ -38,6 +38,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <inttypes.h>
 #include <limits.h>
 #include <time.h>
+//FIREBLADE
+#include <stddef.h>
+//FIREBLADE
 
 #include "shared/platform.h"
 
@@ -99,6 +102,69 @@ typedef enum {
 #endif
 
 // action functionality
+// legacy ABI support for Windows
+#if defined(__GNUC__) && defined(WIN32) && ! defined(WIN64)
+#define		q_gameabi           __attribute__((callee_pop_aggregate_return(0)))
+#else
+#define		q_gameabi
+#endif
+
+//==============================================
+#ifdef _WIN32
+#ifdef _MSC_VER
+// unknown pragmas are SUPPOSED to be ignored, but....
+#pragma warning(disable : 4244)	// MIPS
+#pragma warning(disable : 4136)	// X86
+#pragma warning(disable : 4051)	// ALPHA
+#pragma warning(disable : 4018)	// signed/unsigned mismatch
+#pragma warning(disable : 4305)	// truncation from const double to float
+#pragma warning(disable : 4996)	// deprecated functions
+#pragma warning(disable : 4100)	// unreferenced formal parameter
+#endif
+
+# define HAVE___INLINE
+# define HAVE__SNPRINTF
+# define HAVE__VSNPRINTF
+# define HAVE__STRICMP
+# define HAVE___FASTCALL
+# define HAVE__CDECL
+
+#endif
+//==============================================
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__GNUC__)
+
+# define HAVE_INLINE
+# define HAVE_STRCASECMP
+# define HAVE_SNPRINTF
+# define HAVE_VSNPRINTF
+
+#endif
+//==============================================
+
+#if ! defined(HAVE__CDECL) && ! defined(__cdecl)
+# define __cdecl
+#endif
+
+#if ! defined(HAVE___FASTCALL) && ! defined(__fastcall)
+# define __fastcall
+#endif
+
+#if ! defined(HAVE_INLINE) && ! defined(inline)
+# ifdef HAVE___INLINE
+#  define inline __inline
+# else
+#  define inline
+# endif
+#endif
+
+#if defined(HAVE__SNPRINTF) && ! defined(snprintf)
+# define snprintf _snprintf
+#endif
+
+#if defined(HAVE__VSNPRINTF) && ! defined(vsnprintf)
+# define vsnprintf(dest, size, src, list) _vsnprintf((dest), (size), (src), (list)), (dest)[(size)-1] = 0
+#endif
+
 #ifdef HAVE__STRICMP
 # ifndef Q_stricmp
 #  define Q_stricmp _stricmp
