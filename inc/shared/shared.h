@@ -1274,18 +1274,32 @@ typedef enum {
 #define STAT_FLASHES            15      // cleared each frame, 1 = health, 2 = armor
 
 // action changes
-//#define STAT_CHASE              16
-//#define STAT_SPECTATOR          17
+//zucc need some new ones
+#define STAT_CLIP_ICON                  16
+#define STAT_CLIP                       17
+#define STAT_SNIPER_ICON                18
+#define STAT_ITEMS_ICON                 19
+#define STAT_WEAPONS_ICON               20
+#define STAT_ID_VIEW                    21
+
+//FIREBLADE
+#define STAT_TEAM_HEADER                22
+#define STAT_FLAG_PIC                   23
+#define STAT_TEAM1_PIC                  24
+#define STAT_TEAM2_PIC                  25
+#define STAT_TEAM1_SCORE                26
+#define STAT_TEAM2_SCORE                27
+//FIREBLADE
 
 //zucc more for me
-#define STAT_GRENADE_ICON       28
-#define STAT_GRENADES           29
+#define STAT_GRENADE_ICON               28
+#define STAT_GRENADES                   29
 
-#define STAT_TEAM3_PIC          30
-#define STAT_TEAM3_SCORE        31
+#define STAT_TEAM3_PIC	        		30
+#define STAT_TEAM3_SCORE        		31
 
-#define STAT_TEAM1_HEADER       30
-#define STAT_TEAM2_HEADER       31
+#define STAT_TEAM1_HEADER               30
+#define STAT_TEAM2_HEADER               31
 
 // action end
 
