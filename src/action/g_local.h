@@ -264,7 +264,6 @@
 #include <ctype.h>
 
 #include "shared/shared.h"
-#include "server/server.h"
 #include "q_ghud.h"
 #include <stddef.h>
 
