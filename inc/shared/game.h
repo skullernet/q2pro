@@ -69,6 +69,14 @@ typedef struct gclient_s gclient_t;
 
 #ifndef GAME_INCLUDE
 
+// link_t is only used for entity area links now
+typedef struct link_s
+{
+  struct link_s *prev, *next;
+}
+link_t;
+
+
 struct gclient_s {
     player_state_t  ps;     // communicated by server to clients
     int             ping;
@@ -109,6 +117,12 @@ struct edict_s {
 #endif      // GAME_INCLUDE
 
 //===============================================================
+
+// action start
+// making real copies for bot compatibility
+extern void (*real_cprintf) (edict_t * ent, int printlevel, char *fmt, ...);
+extern void (*real_centerprintf) (edict_t * ent, char *fmt, ...);
+// action end
 
 //
 // functions provided by the main engine
