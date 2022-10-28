@@ -557,7 +557,9 @@ int Q_strcasecmp(const char *s1, const char *s2);
 int Q_strncasecmp(const char *s1, const char *s2, size_t n);
 char *Q_strcasestr(const char *s1, const char *s2);
 
-#define Q_stricmp   Q_strcasecmp
+//Defined above
+//#define Q_stricmp   Q_strcasecmp
+
 #define Q_stricmpn  Q_strncasecmp
 #define Q_stristr   Q_strcasestr
 
