@@ -764,3 +764,18 @@ void	LTKsetBotName( char	*bot_name )
 	}
 }
 
+int GetBotCount(void)
+{
+	int count;
+	edict_t pers;
+    // Count bots 
+    for (int i = 0; i < game.maxclients; i++)
+    {
+        if (pers.is_bot)
+        {
+            count++;
+        }
+    }
+	return count;
+}
+

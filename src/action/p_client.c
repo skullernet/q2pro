@@ -319,8 +319,6 @@
 #include "g_local.h"
 #include "m_player.h"
 #include "cgf_sfx_glass.h"
-#include "server/server.h"
-
 
 static void FreeClientEdicts(gclient_t *client)
 {
@@ -2366,7 +2364,6 @@ void PutClientInServer(edict_t * ent)
 	vec3_t maxs = { 16, 16, 32 };
 	int index, going_observer, i;
 	vec3_t spawn_origin, spawn_angles;
-	client_t *cl;
 	gclient_t *client;
 	client_persistant_t pers;
 	client_respawn_t resp;
@@ -2509,7 +2506,6 @@ void PutClientInServer(edict_t * ent)
 	if( ent->is_bot )
 	{
 		ent->classname = "bot";
-		cl->state = 5;  // Count this bot as cs_spawned in clstate_t
 
 		ent->enemy = NULL;
 		ent->movetarget = NULL;

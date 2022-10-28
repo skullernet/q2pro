@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "server.h"
 #include "client/input.h"
+#include "g_local.h"
 
 pmoveParams_t   sv_pmp;
 
@@ -1381,6 +1382,7 @@ int SV_CountClients(void)
             count++;
         }
     }
+    count = count + GetBotCount();
 
     return count;
 }

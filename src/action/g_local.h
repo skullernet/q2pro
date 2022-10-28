@@ -1887,6 +1887,7 @@ struct gclient_s
 
 	// visiblity mask
 	unsigned int dimension_observe;
+
 };
 
 
