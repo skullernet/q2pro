@@ -537,17 +537,16 @@ static void CL_Resume_f(void)
         return;
     }
 
-    if (cls.demo.paused) {
-        Com_Printf("Resumed demo recording.\n");
-        cls.demo.paused = false;
-        resume_record();
-        return;
-    }
+    resume_record();
 
     if (!cls.demo.recording)
         // write failed
         return;
 
+    Com_Printf("Resumed demo recording.\n");
+
+    cls.demo.paused = false;
+    
     // clear dirty configstrings
     memset(cl.dcs, 0, sizeof(cl.dcs));
 }
