@@ -1381,7 +1381,6 @@ int SV_CountClients(void)
             count++;
         }
     }
-    count = count + GetBotCount();
 
     return count;
 }

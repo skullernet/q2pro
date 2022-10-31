@@ -75,7 +75,6 @@
 void ResetStats(edict_t *ent)
 {
 	int i;
-
 	if(!ent->client)
 		return;
 
