@@ -1,0 +1,8 @@
+[wrap-file]
+directory = util-linux-2.38.1
+source_url = https://mirrors.edge.kernel.org/pub/linux/utils/util-linux/v2.38/util-linux-2.38.1.tar.xz
+source_filename = util-linux-2.38.1.tar.xz
+source_hash = 60492a19b44e6cf9a3ddff68325b333b8b52b6c59ce3ebd6a0ecaa4c5117e84f
+
+[provide]
+libuuid = libuuid_dep

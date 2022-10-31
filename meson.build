@@ -372,16 +372,10 @@ if openal.found()
   endif
 endif
 
-uuid = dependency('uuid',
-  required:        get_option('uuid'),
-  allow_fallback:  win32,
-  default_options: fallback_opt,
-)
-
 common_deps = [zlib]
 client_deps = [jpeg, png, curl, sdl2, openal]
 server_deps = []
-game_deps = [zlib, uuid]
+game_deps = [zlib]
 
 if host_machine.system() == 'darwin'
   opengl = dependency('opengl',
@@ -467,7 +461,18 @@ if get_option('aqtion-build')
   action_src += ltk_src
 
   # Win32 winsock compat
-  dll_link_args += '-lws2_32'
+  if win32
+    dll_link_args += '-lws2_32'
+  endif
+
+  # UUID dependency for AQtion stats
+  uuid = dependency('libuuid',
+  required:        get_option('libuuid'),
+  allow_fallback:  win32,
+  default_options: fallback_opt,
+  )
+  game_deps += 'uuid'
+
 endif
 
 if get_option('discord-sdk')
