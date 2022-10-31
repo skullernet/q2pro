@@ -372,10 +372,16 @@ if openal.found()
   endif
 endif
 
+uuid = dependency('libuuid',
+  required:        get_option('libuuid'),
+  allow_fallback:  win32,
+  default_options: fallback_opt,
+)
+
 common_deps = [zlib]
 client_deps = [jpeg, png, curl, sdl2, openal]
 server_deps = []
-game_deps = [zlib]
+game_deps = [zlib, uuid]
 
 if host_machine.system() == 'darwin'
   opengl = dependency('opengl',
@@ -458,20 +464,14 @@ endif
 if get_option('aqtion-build')
   config.set10('USE_AQTION', true)
   config.set10('AQTION_EXTENSION', true)
+
+  # Combine AQ2 with ltk source files
   action_src += ltk_src
 
   # Win32 winsock compat
   if win32
     dll_link_args += '-lws2_32'
   endif
-
-  # UUID dependency for AQtion stats
-  uuid = dependency('libuuid',
-  required:        get_option('libuuid'),
-  allow_fallback:  win32,
-  default_options: fallback_opt,
-  )
-  game_deps += 'uuid'
 
 endif
 
