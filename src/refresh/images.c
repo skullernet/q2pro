@@ -1493,6 +1493,24 @@ static cvar_t   *r_texture_formats;
 static cvar_t   *r_texture_overrides;
 #endif
 
+static const cmd_option_t o_imagelist[] = {
+    { "f", "fonts", "list fonts" },
+    { "h", "help", "display this help message" },
+    { "m", "skins", "list skins" },
+    { "p", "pics", "list pics" },
+    { "P", "placeholder", "list placeholder images" },
+    { "s", "sprites", "list sprites" },
+    { "w", "walls", "list walls" },
+    { "W:string", "wildcard", "list images matching wildcard" },
+    { "y", "skies", "list skies" },
+    { NULL }
+};
+
+static void IMG_List_c(genctx_t *ctx, int argnum)
+{
+    Cmd_Option_c(o_imagelist, NULL, ctx, argnum);
+}
+
 /*
 ===============
 IMG_List_f
@@ -1501,15 +1519,56 @@ IMG_List_f
 static void IMG_List_f(void)
 {
     static const char types[8] = "PFMSWY??";
-    int        i;
-    image_t    *image;
-    int        texels, count;
+    image_t     *image;
+    const char  *wildcard = NULL;
+    bool        placeholder = false;
+    int         i, c, mask = 0, count;
+    size_t      texels;
+
+    while ((c = Cmd_ParseOptions(o_imagelist)) != -1) {
+        switch (c) {
+        case 'p': mask |= 1 << IT_PIC;      break;
+        case 'f': mask |= 1 << IT_FONT;     break;
+        case 'm': mask |= 1 << IT_SKIN;     break;
+        case 's': mask |= 1 << IT_SPRITE;   break;
+        case 'w': mask |= 1 << IT_WALL;     break;
+        case 'y': mask |= 1 << IT_SKY;      break;
+        case 'W': wildcard = cmd_optarg;    break;
+        case 'P': placeholder = true;       break;
+        case 'h':
+            Cmd_PrintUsage(o_imagelist, NULL);
+            Com_Printf("List registered images.\n");
+            Cmd_PrintHelp(o_imagelist);
+            Com_Printf(
+                "Types legend:\n"
+                "P: pics\n"
+                "F: fonts\n"
+                "M: skins\n"
+                "S: sprites\n"
+                "W: walls\n"
+                "Y: skies\n"
+                "\nFlags legend:\n"
+                "T: transparent\n"
+                "S: scrap\n"
+                "*: permanent\n"
+            );
+            return;
+        default:
+            return;
+        }
+    }
 
     Com_Printf("------------------\n");
     texels = count = 0;
 
     for (i = 1, image = r_images + 1; i < r_numImages; i++, image++) {
         if (!image->registration_sequence)
+            continue;
+        if (mask && !(mask & (1 << image->type)))
+            continue;
+        if (wildcard && !Com_WildCmp(wildcard, image->name))
+            continue;
+        if ((image->width && image->height) == placeholder)
             continue;
 
         Com_Printf("%c%c%c%c %4i %4i %s: %s\n",
@@ -1525,8 +1584,9 @@ static void IMG_List_f(void)
         texels += image->upload_width * image->upload_height;
         count++;
     }
+
     Com_Printf("Total images: %d (out of %d slots)\n", count, r_numImages);
-    Com_Printf("Total texels: %d (not counting mipmaps)\n", texels);
+    Com_Printf("Total texels: %zu (not counting mipmaps)\n", texels);
 }
 
 static image_t *alloc_image(void)
@@ -2077,7 +2137,7 @@ fail:
 }
 
 static const cmdreg_t img_cmd[] = {
-    { "imagelist", IMG_List_f },
+    { "imagelist", IMG_List_f, IMG_List_c },
     { "screenshot", IMG_ScreenShot_f },
 #if USE_TGA
     { "screenshottga", IMG_ScreenShotTGA_f },
