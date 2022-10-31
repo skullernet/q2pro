@@ -372,8 +372,8 @@ if openal.found()
   endif
 endif
 
-uuid = dependency('libuuid',
-  required:        get_option('libuuid'),
+uuid = dependency('uuid',
+  required:        get_option('uuid'),
   allow_fallback:  win32,
   default_options: fallback_opt,
 )
@@ -464,15 +464,12 @@ endif
 if get_option('aqtion-build')
   config.set10('USE_AQTION', true)
   config.set10('AQTION_EXTENSION', true)
-
-  # Combine AQ2 with ltk source files
   action_src += ltk_src
 
   # Win32 winsock compat
   if win32
     dll_link_args += '-lws2_32'
   endif
-
 endif
 
 if get_option('discord-sdk')

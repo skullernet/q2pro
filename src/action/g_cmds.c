@@ -704,7 +704,7 @@ static void Cmd_God_f (edict_t * ent)
 	else
 		msg = "godmode ON\n";
 
-	gi.cprintf (ent, PRINT_HIGH, msg);
+	gi.cprintf (ent, PRINT_HIGH, "%s", msg);
 }
 
 
@@ -727,7 +727,7 @@ static void Cmd_Notarget_f (edict_t * ent)
 	else
 		msg = "notarget ON\n";
 
-	gi.cprintf (ent, PRINT_HIGH, msg);
+	gi.cprintf (ent, PRINT_HIGH, "%s", msg);
 }
 
 
@@ -753,7 +753,7 @@ static void Cmd_Noclip_f (edict_t * ent)
 		msg = "noclip ON\n";
 	}
 
-	gi.cprintf (ent, PRINT_HIGH, msg);
+	gi.cprintf (ent, PRINT_HIGH, "%s", msg);
 }
 
 

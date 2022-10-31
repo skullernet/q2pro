@@ -386,7 +386,7 @@ qboolean ACEND_FollowPath(edict_t *self)
 		{
 			// Failed to find a path
 			if( debug_mode )
-				gi.bprintf(PRINT_HIGH,"%s: Target at(%i) - No Path \n",
+				gi.bprintf(PRINT_HIGH,"%s: Target at(%i) - No Path to %i \n",
 					self->client->pers.netname, self->goal_node, self->next_node);
 			return false;
 		}

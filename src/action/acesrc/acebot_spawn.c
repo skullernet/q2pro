@@ -700,7 +700,7 @@ void ACESP_RemoveBot(char *name)
 	}
 */
 	if(!freed)	
-		gi.bprintf (PRINT_MEDIUM, "No bot removed\n", name);
+		gi.bprintf (PRINT_MEDIUM, "No bot removed\n");
 
 //	ACESP_SaveBots(); // Save them again
 }
