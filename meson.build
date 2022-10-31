@@ -465,6 +465,9 @@ if get_option('aqtion-build')
   config.set10('USE_AQTION', true)
   config.set10('AQTION_EXTENSION', true)
   action_src += ltk_src
+
+  # Win32 winsock compat
+  dll_link_args += '-lws2_32'
 endif
 
 if get_option('discord-sdk')

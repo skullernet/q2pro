@@ -134,10 +134,10 @@
 #include "g_local.h"
 #include <time.h>
 #ifdef WIN32
-#if _MSC_VER >= 1920 && !__INTEL_COMPILER
+//#if _MSC_VER >= 1920 && !__INTEL_COMPILER
 #pragma comment(lib, "rpcrt4.lib")
 #include <rpc.h>
-#endif
+//#endif
 #else
 #include <uuid/uuid.h>
 #endif
