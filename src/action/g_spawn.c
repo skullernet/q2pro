@@ -1601,7 +1601,7 @@ void SP_worldspawn (edict_t * ent)
 			if (teams[i].skin_index[0] == 0) {
 				// If the action.ini file isn't found, set default skins rather than kill the server
 				gi.dprintf("WARNING: No skin was specified for team %i in config file, server either could not find it or is does not exist.\n", i);
-				gi.dprintf("Setting default team names, skins and skin indexes.\n", i);
+				gi.dprintf("Setting default team names, skins and skin indexes.\n");
 				Q_strncpyz(teams[TEAM1].name, "RED", sizeof(teams[TEAM1].name));
 				Q_strncpyz(teams[TEAM2].name, "BLUE", sizeof(teams[TEAM2].name));
 				Q_strncpyz(teams[TEAM3].name, "GREEN", sizeof(teams[TEAM3].name));

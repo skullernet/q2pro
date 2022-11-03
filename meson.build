@@ -464,6 +464,7 @@ endif
 if get_option('aqtion-build')
   config.set10('USE_AQTION', true)
   config.set10('AQTION_EXTENSION', true)
+  config.set10('AQTION_HUD', true)
   action_src += ltk_src
 
   # Win32 winsock compat

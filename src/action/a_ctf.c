@@ -85,7 +85,7 @@ qboolean CTFLoadConfig(char *mapname)
 
 	memset(&ctfgame, 0, sizeof(ctfgame));
 
-	gi.dprintf("Trying to load CTF configuration file\n", mapname);
+	gi.dprintf("Trying to load CTF configuration file for %s\n", mapname);
 
 	/* zero is perfectly acceptable respawn time, but we want to know if it came from the config or not */
 	ctfgame.spawn_red = -1;
