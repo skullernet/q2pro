@@ -13,7 +13,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <io.h>
 #include <winsock2.h>
 #define bzero(a,b) memset(a,0,b)
@@ -49,7 +49,7 @@
 
 tng_irc_t   irc_data;
 
-#ifdef WIN32
+#ifdef _WIN32
 // Windows junk
 int IRCstartWinsock()
 {
@@ -164,7 +164,7 @@ IRC_init ( void )
   // init our internal structure
   irc_data.ircstatus = IRC_DISABLED;
   bzero(irc_data.input, sizeof(irc_data.input));
-#ifdef WIN32
+#ifdef _WIN32
   IRCstartWinsock();
 #endif
 }
@@ -191,7 +191,7 @@ irc_connect ( void )
   struct sockaddr_in hostaddress;
   struct in_addr     ipnum;
   struct hostent     *hostdata;
-#ifndef WIN32
+#ifndef _WIN32
   int                flags;
 #else
   IRC_identd_start ();
@@ -238,7 +238,7 @@ irc_connect ( void )
 	strcpy (ircstatus->string, IRC_ST_DISABLED);
       } else {
 	gi.dprintf ("IRC: connected to %s:%d\n", irc_data.ircserver, ntohs((unsigned short) irc_data.ircport));
-#ifdef WIN32
+#ifdef _WIN32
 	set_nonblocking(irc_data.ircsocket);
 #else
 	flags = fcntl(irc_data.ircsocket, F_GETFL);
@@ -255,7 +255,7 @@ irc_connect ( void )
 	  send (irc_data.ircsocket, outbuf, strlen(outbuf), 0);
 	  if (ircdebug->value)
 	    gi.dprintf("IRC: >> NICK %s\nIRC: >> USER tng-mbot * * :%s\n", irc_data.ircuser, hostname->string);
-#ifndef WIN32
+#ifndef _WIN32
 	}
 #endif
       }
@@ -406,7 +406,7 @@ irc_getinput ( void )
   
   anz_net = recv (irc_data.ircsocket, inbuf, sizeof(inbuf), 0);
   if (anz_net <= 0) {
-#ifdef WIN32
+#ifdef _WIN32
     if ((anz_net == 0) || ((anz_net == -1) && (WSAGetLastError() != WSAEWOULDBLOCK))) {
 #else
     if ((anz_net == 0) || ((anz_net == -1) && (errno != EAGAIN))) {

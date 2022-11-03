@@ -39,7 +39,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #if USE_CLIENT
 
-#define WINDOW_CLASS_NAME   "Quake 2 Pro"
+#define WINDOW_CLASS_NAME   "AQtion"
 
 #define IDI_APP 100
 

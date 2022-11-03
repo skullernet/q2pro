@@ -133,7 +133,7 @@
 
 #include "g_local.h"
 #include <time.h>
-#ifdef WIN32
+#ifdef _WIN32
 #if _MSC_VER >= 1920 && !__INTEL_COMPILER
 #pragma comment(lib, "rpcrt4.lib")
 #include <rpc.h>
@@ -1228,7 +1228,7 @@ void Cmd_Ghost_f(edict_t * ent)
 
 void generate_uuid()
 {
-#ifdef WIN32
+#ifdef _WIN32
 #if _MSC_VER >= 1920 && !__INTEL_COMPILER
      UUID uuid;
      unsigned char* uuidStr;
