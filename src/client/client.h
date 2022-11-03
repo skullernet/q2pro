@@ -451,7 +451,7 @@ typedef struct client_static_s {
         int         last_snapshot;      // number of demo frame the last snapshot was saved
         int64_t     file_size;
         int64_t     file_offset;
-        int         file_percent;
+        float       file_progress;
         sizebuf_t   buffer;
         demosnap_t  **snapshots;
         int         numsnapshots;
