@@ -1611,7 +1611,7 @@ int Cmd_ExecuteFile(const char *path, unsigned flags)
     buf = &cmd_buffer;
 
     // check for exec loop
-    if (++buf->aliasCount > ALIAS_LOOP_COUNT) {
+    if (buf->aliasCount >= ALIAS_LOOP_COUNT) {
         ret = Q_ERR_RUNAWAY_LOOP;
         goto finish;
     }
@@ -1624,7 +1624,10 @@ int Cmd_ExecuteFile(const char *path, unsigned flags)
 
     // everything ok, execute it
     Com_Printf("Execing %s\n", path);
+
+    buf->aliasCount++;
     Cbuf_InsertText(buf, f);
+
     ret = Q_ERR_SUCCESS;
 
 finish:
