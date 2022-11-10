@@ -1250,13 +1250,14 @@ seta <cvar> <value> [...]::
     Sets the specified _cvar_ to _value_, and marks the cvar with ‘archive’
     flag. _Value_ may be composed from multiple tokens.
 
-cvarlist [-achlmnrstuvw:]::
+cvarlist [-achlmnrstuvw:] [wildcard]::
     Display the list of registered cvars and their current values with
     filtering by cvar name or by cvar flags. If no options are given,
-    all cvars are listed. Supported options are reproduced below.
+    all cvars are listed. Optional _wildcard_ argument filters cvars by name.
+    Supported options are reproduced below.
         -a | --archive::: list archived cvars
         -c | --cheat::: list cheat protected cvars
-        -h |--help::: display help message
+        -h | --help::: display help message
         -l | --latched::: list latched cvars
         -m | --modified::: list modified cvars
         -n | --noset::: list command line cvars
@@ -1265,7 +1266,6 @@ cvarlist [-achlmnrstuvw:]::
         -t | --custom::: list user-created cvars
         -u | --userinfo::: list userinfo cvars
         -v | --verbose::: display flags of each cvar
-        -w | --wildcard=<string>::: list cvars matching wildcard _string_
 
 macrolist::
     Display the list of registered macros and their current values.
