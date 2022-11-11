@@ -1440,6 +1440,10 @@ followip [count]::
     (it should be positive integer).  If _count_ is omitted, then the most
     recent IP address is used.
 
+remotemode <address> <password>::
+    Put client console into rcon mode. All commands entered will be forwarded
+    to remove server. Press Ctrl+D or close console to exit this mode.
+
 oggplay <track>::
     Start playing background music track ‘music/<track>.ogg’.
 
