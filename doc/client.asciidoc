@@ -359,6 +359,12 @@ con_timestampsformat::
 con_timestampscolor::
     Text color used for console timestamps. Default value is "#aaa".
 
+con_auto_chat::
+    Specifies how console commands not starting with a slash or backslash
+    are handled while in game. Default value is 0.
+      - 0 — handle as regular commands
+      - 1 — forward as chat
+      - 2 — forward as team chat
 
 Game Screen
 ~~~~~~~~~~~
