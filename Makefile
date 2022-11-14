@@ -290,15 +290,7 @@ endif
 ifdef CONFIG_OPENAL
     CFLAGS_c += -DUSE_OPENAL=1
     OBJS_c += src/client/sound/al.o
-    ifdef CONFIG_FIXED_LIBAL
-        AL_CFLAGS ?= $(shell pkg-config openal --cflags)
-        AL_LIBS ?= $(shell pkg-config openal --libs)
-        CFLAGS_c += -DUSE_FIXED_LIBAL=1 $(AL_CFLAGS)
-        LIBS_c += $(AL_LIBS)
-        OBJS_c += src/client/sound/qal/fixed.o
-    else
-        OBJS_c += src/client/sound/qal/dynamic.o
-    endif
+    OBJS_c += src/client/sound/qal.o
 endif
 
 ifndef CONFIG_NO_MENUS

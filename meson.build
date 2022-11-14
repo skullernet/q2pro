@@ -282,28 +282,21 @@ if sdl2.found()
   config.set('USE_SDL', 'USE_CLIENT')
 endif
 
+common_deps = [zlib]
+client_deps = [jpeg, png, curl, sdl2]
+server_deps = []
+game_deps = [zlib]
+
 openal = dependency('openal',
   required:        get_option('openal'),
   allow_fallback:  win32,
   default_options: fallback_opt,
 )
-
 if openal.found()
-  client_src += 'src/client/sound/al.c'
+  client_src += [ 'src/client/sound/al.c', 'src/client/sound/qal.c' ]
+  client_deps += openal.partial_dependency(compile_args: true, includes: true)
   config.set10('USE_OPENAL', true)
-  if get_option('openal-dynamic') or openal.type_name() == 'internal'
-    client_src += 'src/client/sound/qal/dynamic.c'
-    openal = openal.partial_dependency(compile_args: true, includes: true)
-  else
-    client_src += 'src/client/sound/qal/fixed.c'
-    config.set10('USE_FIXED_LIBAL', true)
-  endif
 endif
-
-common_deps = [zlib]
-client_deps = [jpeg, png, curl, sdl2, openal]
-server_deps = []
-game_deps = [zlib]
 
 ogg = dependency('ogg',
   required:        get_option('ogg'),
