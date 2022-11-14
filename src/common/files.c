@@ -187,6 +187,8 @@ static int          fs_count_strlwr;
 #define FS_COUNT_STRLWR     (void)0
 #endif
 
+static cvar_t       *fs_autoexec;
+
 #if USE_DEBUG
 static cvar_t       *fs_debug;
 #endif
@@ -3472,6 +3474,9 @@ void FS_AddConfigFiles(bool init)
 {
     int flag = init ? FS_PATH_ANY : FS_PATH_GAME;
 
+    if (!init && !fs_autoexec->integer)
+        return;
+
     // default.cfg may come from packfile, but config.cfg and autoexec.cfg
     // must be real files within the game directory.
     Com_AddConfigFile(COM_DEFAULT_CFG, flag);
@@ -3568,6 +3573,8 @@ void FS_Init(void)
     List_Init(&fs_soft_links);
 
     Cmd_Register(c_fs);
+
+    fs_autoexec = Cvar_Get("fs_autoexec", "1", 0);
 
 #if USE_DEBUG
     fs_debug = Cvar_Get("fs_debug", "0", 0);
