@@ -69,6 +69,7 @@ static const alsection_t sections[] = {
             QAL_FN(Enable),
             QAL_FN(GenBuffers),
             QAL_FN(GenSources),
+            QAL_FN(GetEnumValue),
             QAL_FN(GetError),
             QAL_FN(GetProcAddress),
             QAL_FN(GetSourcef),
@@ -85,6 +86,16 @@ static const alsection_t sections[] = {
             QAL_FN(SourceUnqueueBuffers),
             QAL_FN(Sourcef),
             QAL_FN(Sourcei),
+            { NULL }
+        }
+    },
+    {
+        .extension = "ALC_EXT_EFX",
+        .functions = (const alfunction_t []) {
+            QAL_FN(DeleteFilters),
+            QAL_FN(Filterf),
+            QAL_FN(Filteri),
+            QAL_FN(GenFilters),
             { NULL }
         }
     },

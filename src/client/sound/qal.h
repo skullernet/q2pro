@@ -24,9 +24,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifdef __APPLE__
 #include <OpenAL/al.h>
 #include <OpenAL/alext.h>
+#include <OpenAL/efx.h>
 #else
 #include <AL/al.h>
 #include <AL/alext.h>
+#include <AL/efx.h>
 #endif
 
 #ifndef QALAPI
@@ -43,6 +45,7 @@ QALAPI LPALDISTANCEMODEL qalDistanceModel;
 QALAPI LPALENABLE qalEnable;
 QALAPI LPALGENBUFFERS qalGenBuffers;
 QALAPI LPALGENSOURCES qalGenSources;
+QALAPI LPALGETENUMVALUE qalGetEnumValue;
 QALAPI LPALGETERROR qalGetError;
 QALAPI LPALGETPROCADDRESS qalGetProcAddress;
 QALAPI LPALGETSOURCEF qalGetSourcef;
@@ -59,6 +62,12 @@ QALAPI LPALSOURCESTOP qalSourceStop;
 QALAPI LPALSOURCEUNQUEUEBUFFERS qalSourceUnqueueBuffers;
 QALAPI LPALSOURCEF qalSourcef;
 QALAPI LPALSOURCEI qalSourcei;
+
+// ALC_EXT_EFX
+QALAPI LPALDELETEFILTERS qalDeleteFilters;
+QALAPI LPALFILTERF qalFilterf;
+QALAPI LPALFILTERI qalFilteri;
+QALAPI LPALGENFILTERS qalGenFilters;
 
 bool QAL_Init(void);
 void QAL_Shutdown(void);
