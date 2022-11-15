@@ -11,7 +11,6 @@ env:
     --fatal-meson-warnings
     -Danticheat-server=true
     -Dclient-gtv=true
-    -Doss=auto
     -Dpacketdup-hack=true
     -Dtests=true
     -Dvariable-fps=true

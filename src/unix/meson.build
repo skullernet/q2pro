@@ -18,12 +18,6 @@ endif
 
 client_deps += dependency('threads')
 
-if cc.has_header_symbol('sys/soundcard.h', 'SNDCTL_DSP_SETFMT',
-                        required: get_option('oss').require(get_option('software-sound')))
-  client_src += files('sound/oss.c')
-  config.set10('USE_OSS', true)
-endif
-
 if not cc.has_header_symbol('GL/glext.h', 'GL_VERSION_4_3', prefix: '#include <GL/gl.h>')
   warning('OpenGL 4.3 headers not found, client will not be built')
   client_deps += disabler()
