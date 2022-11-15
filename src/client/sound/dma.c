@@ -24,8 +24,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MAX_RAW_SAMPLES     8192
 
 typedef struct {
-    int     left;
-    int     right;
+    float   left;
+    float   right;
 } samplepair_t;
 
 dma_t       dma;
@@ -36,8 +36,7 @@ static cvar_t       *s_testsound;
 static cvar_t       *s_swapstereo;
 static cvar_t       *s_mixahead;
 
-static int      snd_scaletable[32][256];
-static int      snd_vol;
+static float    snd_vol;
 
 static int          s_rawend;
 static samplepair_t s_rawsamples[MAX_RAW_SAMPLES];
@@ -115,7 +114,7 @@ static bool DMA_RawSamples(int samples, int rate, int width, int channels, const
     float stepscale = (float)rate / dma.speed;
     int i, j, k, frac, fracstep = stepscale * 256;
     int outcount = samples / stepscale;
-    int vol = snd_vol * volume;
+    float vol = snd_vol * volume;
 
     if (s_rawend < s_paintedtime)
         s_rawend = s_paintedtime;
@@ -134,7 +133,7 @@ static bool DMA_RawSamples(int samples, int rate, int width, int channels, const
             }
         }
     } else if (width == 1) {
-        vol <<= 8;
+        vol *= 256;
         if (channels == 2) {
             RESAMPLE {
                 s_rawsamples[j].left  = (data[k*2+0] - 128) * vol;
@@ -187,8 +186,8 @@ static void TransferStereo16(samplepair_t *samp, int endtime)
         // write a linear blast of samples
         int16_t *out = (int16_t *)dma.buffer + (lpos << 1);
         for (int i = 0; i < count; i++, samp++, out += 2) {
-            out[0] = clip16(samp->left >> 8);
-            out[1] = clip16(samp->right >> 8);
+            out[0] = clip16(samp->left);
+            out[1] = clip16(samp->right);
         }
 
         ltime += count;
@@ -197,7 +196,7 @@ static void TransferStereo16(samplepair_t *samp, int endtime)
 
 static void TransferStereo(samplepair_t *samp, int endtime)
 {
-    int *p = (int *)samp;
+    float *p = (float *)samp;
     int count = (endtime - s_paintedtime) * dma.channels;
     int out_mask = dma.samples - 1;
     int out_idx = s_paintedtime * dma.channels & out_mask;
@@ -207,7 +206,7 @@ static void TransferStereo(samplepair_t *samp, int endtime)
     if (dma.samplebits == 16) {
         int16_t *out = (int16_t *)dma.buffer;
         while (count--) {
-            val = *p >> 8;
+            val = *p;
             p += step;
             out[out_idx] = clip16(val);
             out_idx = (out_idx + 1) & out_mask;
@@ -215,7 +214,7 @@ static void TransferStereo(samplepair_t *samp, int endtime)
     } else if (dma.samplebits == 8) {
         uint8_t *out = (uint8_t *)dma.buffer;
         while (count--) {
-            val = *p >> 8;
+            val = *p;
             p += step;
             out[out_idx] = (clip16(val) >> 8) + 128;
             out_idx = (out_idx + 1) & out_mask;
@@ -230,13 +229,13 @@ static void TransferPaintBuffer(samplepair_t *samp, int endtime)
     if (s_testsound->integer) {
         // write a fixed sine wave
         for (i = 0; i < endtime - s_paintedtime; i++) {
-            samp[i].left = samp[i].right = sin((s_paintedtime + i) * 0.1f) * 20000 * 256;
+            samp[i].left = samp[i].right = sin((s_paintedtime + i) * 0.1f) * 20000;
         }
     }
 
     if (s_swapstereo->integer) {
         for (i = 0; i < endtime - s_paintedtime; i++) {
-            SWAP(int, samp[i].left, samp[i].right);
+            SWAP(float, samp[i].left, samp[i].right);
         }
     }
 
@@ -292,7 +291,7 @@ static void s_underwater_gain_hf_changed(cvar_t *self)
     a1 /= a0; a2 /= a0; b0 /= a0; b1 /= a0; b2 /= a0;
 }
 
-static void filter_ch(hist_t *hist, int *samp, int count)
+static void filter_ch(hist_t *hist, float *samp, int count)
 {
     float z1 = hist->z1;
     float z2 = hist->z2;
@@ -330,72 +329,73 @@ typedef void (*paintfunc_t)(channel_t *, sfxcache_t *, int, samplepair_t *);
 
 PAINTFUNC(PaintMono8)
 {
-    int *lscale = snd_scaletable[ch->leftvol >> 3];
-    int *rscale = snd_scaletable[ch->rightvol >> 3];
+    float leftvol = ch->leftvol * snd_vol * 256;
+    float rightvol = ch->rightvol * snd_vol * 256;
     uint8_t *sfx = sc->data + ch->pos;
 
     for (int i = 0; i < count; i++, samp++, sfx++) {
-        samp->left += lscale[*sfx];
-        samp->right += rscale[*sfx];
+        samp->left += (*sfx - 128) * leftvol;
+        samp->right += (*sfx - 128) * rightvol;
     }
 }
 
 PAINTFUNC(PaintStereoDmix8)
 {
-    int *lscale = snd_scaletable[ch->leftvol >> 4];
-    int *rscale = snd_scaletable[ch->rightvol >> 4];
+    float leftvol = ch->leftvol * snd_vol * (256 * M_SQRT1_2);
+    float rightvol = ch->rightvol * snd_vol * (256 * M_SQRT1_2);
     uint8_t *sfx = sc->data + ch->pos * 2;
 
     for (int i = 0; i < count; i++, samp++, sfx += 2) {
-        samp->left += lscale[sfx[0]] + lscale[sfx[1]];
-        samp->right += rscale[sfx[0]] + rscale[sfx[1]];
+        int sum = (sfx[0] - 128) + (sfx[1] - 128);
+        samp->left += sum * leftvol;
+        samp->right += sum * rightvol;
     }
 }
 
 PAINTFUNC(PaintStereoFull8)
 {
-    int *scale = snd_scaletable[ch->leftvol >> 3];
+    float vol = ch->leftvol * snd_vol * 256;
     uint8_t *sfx = sc->data + ch->pos * 2;
 
     for (int i = 0; i < count; i++, samp++, sfx += 2) {
-        samp->left += scale[sfx[0]];
-        samp->right += scale[sfx[1]];
+        samp->left += (sfx[0] - 128) * vol;
+        samp->right += (sfx[1] - 128) * vol;
     }
 }
 
 PAINTFUNC(PaintMono16)
 {
-    int leftvol = ch->leftvol * snd_vol;
-    int rightvol = ch->rightvol * snd_vol;
+    float leftvol = ch->leftvol * snd_vol;
+    float rightvol = ch->rightvol * snd_vol;
     int16_t *sfx = (int16_t *)sc->data + ch->pos;
 
     for (int i = 0; i < count; i++, samp++, sfx++) {
-        samp->left += (*sfx * leftvol) >> 8;
-        samp->right += (*sfx * rightvol) >> 8;
+        samp->left += *sfx * leftvol;
+        samp->right += *sfx * rightvol;
     }
 }
 
 PAINTFUNC(PaintStereoDmix16)
 {
-    int leftvol = ch->leftvol * snd_vol;
-    int rightvol = ch->rightvol * snd_vol;
+    float leftvol = ch->leftvol * snd_vol * M_SQRT1_2;
+    float rightvol = ch->rightvol * snd_vol * M_SQRT1_2;
     int16_t *sfx = (int16_t *)sc->data + ch->pos * 2;
 
     for (int i = 0; i < count; i++, samp++, sfx += 2) {
         int sum = sfx[0] + sfx[1];
-        samp->left += (sum * leftvol) >> 9;
-        samp->right += (sum * rightvol) >> 9;
+        samp->left += sum * leftvol;
+        samp->right += sum * rightvol;
     }
 }
 
 PAINTFUNC(PaintStereoFull16)
 {
-    int vol = ch->leftvol * snd_vol;
+    float vol = ch->leftvol * snd_vol;
     int16_t *sfx = (int16_t *)sc->data + ch->pos * 2;
 
     for (int i = 0; i < count; i++, samp++, sfx += 2) {
-        samp->left += (sfx[0] * vol) >> 8;
-        samp->right += (sfx[1] * vol) >> 8;
+        samp->left += sfx[0] * vol;
+        samp->right += sfx[1] * vol;
     }
 }
 
@@ -491,15 +491,9 @@ static void PaintChannels(int endtime)
     }
 }
 
-static void InitScaletable(void)
+static void s_volume_changed(cvar_t *self)
 {
-    snd_vol = Cvar_ClampValue(s_volume, 0, 1) * 256;
-
-    for (int i = 0; i < 32; i++)
-        for (int j = 0; j < 256; j++)
-            snd_scaletable[i][j] = (j - 128) * i * 8 * snd_vol;
-
-    s_volume->modified = false;
+    snd_vol = Cvar_ClampValue(self, 0, 1);
 }
 
 /*
@@ -584,10 +578,11 @@ static bool DMA_Init(void)
     if (ret != SIS_SUCCESS)
         return false;
 
-    InitScaletable();
-
     s_underwater_gain_hf->changed = s_underwater_gain_hf_changed;
     s_underwater_gain_hf_changed(s_underwater_gain_hf);
+
+    s_volume->changed = s_volume_changed;
+    s_volume_changed(s_volume);
 
     s_numchannels = MAX_CHANNELS;
 
@@ -600,7 +595,9 @@ static void DMA_Shutdown(void)
 {
     snddma.shutdown();
     s_numchannels = 0;
+
     s_underwater_gain_hf->changed = NULL;
+    s_volume->changed = NULL;
 }
 
 static void DMA_Activate(void)
@@ -654,7 +651,7 @@ SpatializeOrigin
 Used for spatializing channels and autosounds
 =================
 */
-static void SpatializeOrigin(const vec3_t origin, float master_vol, float dist_mult, int *left_vol, int *right_vol)
+static void SpatializeOrigin(const vec3_t origin, float master_vol, float dist_mult, float *left_vol, float *right_vol)
 {
     vec_t       dot;
     vec_t       dist;
@@ -681,12 +678,12 @@ static void SpatializeOrigin(const vec3_t origin, float master_vol, float dist_m
 
     // add in distance effect
     scale = (1.0f - dist) * rscale;
-    *right_vol = (int)(master_vol * scale);
+    *right_vol = master_vol * scale;
     if (*right_vol < 0)
         *right_vol = 0;
 
     scale = (1.0f - dist) * lscale;
-    *left_vol = (int)(master_vol * scale);
+    *left_vol = master_vol * scale;
     if (*left_vol < 0)
         *left_vol = 0;
 }
@@ -703,8 +700,8 @@ static void DMA_Spatialize(channel_t *ch)
     // anything coming from the view entity will always be full volume
     // no attenuation = no spatialization
     if (S_IsFullVolume(ch)) {
-        ch->leftvol = ch->master_vol * 255;
-        ch->rightvol = ch->master_vol * 255;
+        ch->leftvol = ch->master_vol;
+        ch->rightvol = ch->master_vol;
         return;
     }
 
@@ -714,7 +711,7 @@ static void DMA_Spatialize(channel_t *ch)
         CL_GetEntitySoundOrigin(ch->entnum, origin);
     }
 
-    SpatializeOrigin(origin, ch->master_vol * 255, ch->dist_mult, &ch->leftvol, &ch->rightvol);
+    SpatializeOrigin(origin, ch->master_vol, ch->dist_mult, &ch->leftvol, &ch->rightvol);
 }
 
 /*
@@ -730,7 +727,7 @@ static void AddLoopSounds(void)
 {
     int         i, j;
     int         sounds[MAX_EDICTS];
-    int         left, right, left_total, right_total;
+    float       left, right, left_total, right_total;
     channel_t   *ch;
     sfx_t       *sfx;
     sfxcache_t  *sc;
@@ -759,7 +756,7 @@ static void AddLoopSounds(void)
 
         // find the total contribution of all sounds of this type
         CL_GetEntitySoundOrigin(ent->number, origin);
-        SpatializeOrigin(origin, 255.0f, SOUND_LOOPATTENUATE,
+        SpatializeOrigin(origin, 1.0f, SOUND_LOOPATTENUATE,
                          &left_total, &right_total);
         for (j = i + 1; j < cl.frame.numEntities; j++) {
             if (sounds[j] != sounds[i])
@@ -770,7 +767,7 @@ static void AddLoopSounds(void)
             ent = &cl.entityStates[num];
 
             CL_GetEntitySoundOrigin(ent->number, origin);
-            SpatializeOrigin(origin, 255.0f, SOUND_LOOPATTENUATE,
+            SpatializeOrigin(origin, 1.0f, SOUND_LOOPATTENUATE,
                              &left, &right);
             left_total += left;
             right_total += right;
@@ -784,8 +781,8 @@ static void AddLoopSounds(void)
         if (!ch)
             return;
 
-        ch->leftvol = min(left_total, 255);
-        ch->rightvol = min(right_total, 255);
+        ch->leftvol = min(left_total, 1.0f);
+        ch->rightvol = min(right_total, 1.0f);
         ch->master_vol = 1.0f;
         ch->dist_mult = SOUND_LOOPATTENUATE;    // for S_IsFullVolume()
         ch->autosound = true;   // remove next frame
@@ -823,10 +820,6 @@ static void DMA_Update(void)
     channel_t   *ch;
     int         samples, soundtime, endtime;
 
-    // rebuild scale tables if volume is modified
-    if (s_volume->modified)
-        InitScaletable();
-
     // update spatialization for dynamic sounds
     for (i = 0, ch = s_channels; i < s_numchannels; i++, ch++) {
         if (!ch->sfx)
@@ -853,7 +846,7 @@ static void DMA_Update(void)
         int total = 0;
         for (i = 0, ch = s_channels; i < s_numchannels; i++, ch++) {
             if (ch->sfx && (ch->leftvol || ch->rightvol)) {
-                Com_Printf("%3i %3i %s\n", ch->leftvol, ch->rightvol, ch->sfx->name);
+                Com_Printf("%.3f %.3f %s\n", ch->leftvol, ch->rightvol, ch->sfx->name);
                 total++;
             }
         }

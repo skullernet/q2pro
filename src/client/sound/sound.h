@@ -63,8 +63,8 @@ typedef struct playsound_s {
 
 typedef struct channel_s {
     sfx_t       *sfx;           // sfx number
-    int         leftvol;        // 0-255 volume
-    int         rightvol;       // 0-255 volume
+    float       leftvol;        // 0.0-1.0 volume
+    float       rightvol;       // 0.0-1.0 volume
     int         end;            // end time in global paintsamples
     int         pos;            // sample position in sfx
     int         entnum;         // to allow overriding a specific sound
