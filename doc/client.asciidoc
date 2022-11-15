@@ -734,14 +734,11 @@ and ‘gl_doublelight_entities’. Yet another cvar affecting entity lighting is
 ****************
 
 gl_dynamic::
-    Controls dynamic lightmap updates. Default value is 2.
+    Controls dynamic lightmap updates. Default value is 1.
      - 0 — all dynamic lighting is disabled
      - 1 — all dynamic lighting is enabled
      - 2 — most dynamic lights are disabled, but lightmap updates are still
      allowed for switchable lights to work
-
-NOTE: Dynamic lights may noticeably hurt rendering performance on some video
-cards and drivers, therefore they are disabled by default.
 
 gl_dlight_falloff::
     Makes dynamic lights look a bit smoother, opposed to original jagged Quake
@@ -1488,9 +1485,6 @@ it used to be you know where to look. The following list may be incomplete.
 - Q2PRO supports loading system OpenGL library only. Thus, ‘gl_driver’ cvar has
   been made read-only and exists only for compatibility with tools like
   Q2Admin.
-
-- Default value of ‘gl_dynamic’ variable has been changed from 1 to 2. This means
-  dynamic lights will be disabled by default.
 
 - Changes to ‘gl_modulate’ variable in Q2PRO take effect immediately. To set
   separate modulation factors for world lightmaps and entities please use

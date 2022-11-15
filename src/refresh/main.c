@@ -763,7 +763,7 @@ static void GL_Register(void)
     gl_coloredlightmaps->changed = gl_lightmap_changed;
     gl_brightness = Cvar_Get("gl_brightness", "0", 0);
     gl_brightness->changed = gl_lightmap_changed;
-    gl_dynamic = Cvar_Get("gl_dynamic", "2", 0);
+    gl_dynamic = Cvar_Get("gl_dynamic", "1", 0);
     gl_dynamic->changed = gl_lightmap_changed;
 #if USE_DLIGHTS
     gl_dlight_falloff = Cvar_Get("gl_dlight_falloff", "1", 0);
