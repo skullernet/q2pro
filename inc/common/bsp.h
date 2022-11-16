@@ -96,7 +96,9 @@ typedef struct mface_s {
     int             dlightframe;
     int             dlightbits;
 #endif
-    struct mface_s  *next;
+
+    struct entity_s     *entity;
+    struct mface_s      *next;
 } mface_t;
 #endif
 
