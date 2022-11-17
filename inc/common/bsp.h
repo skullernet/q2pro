@@ -90,11 +90,11 @@ typedef struct mface_s {
     int             light_s, light_t;
     float           stylecache[MAX_LIGHTMAPS];
 
-    int             drawframe;
+    unsigned        drawframe;
 
 #if USE_DLIGHTS
-    int             dlightframe;
-    int             dlightbits;
+    unsigned        dlightframe;
+    unsigned        dlightbits;
 #endif
 
     struct entity_s     *entity;
@@ -109,7 +109,7 @@ typedef struct mnode_s {
     vec3_t              mins;
     vec3_t              maxs;
 
-    int                 visframe;
+    unsigned            visframe;
 #endif
     struct mnode_s      *parent;
     /* <====== */
@@ -131,7 +131,7 @@ typedef struct {
     int                 contents;
     int                 numsides;
     mbrushside_t        *firstbrushside;
-    int                 checkcount;        // to avoid repeated testings
+    unsigned            checkcount;         // to avoid repeated testings
 } mbrush_t;
 
 typedef struct {
@@ -141,7 +141,7 @@ typedef struct {
     vec3_t              mins;
     vec3_t              maxs;
 
-    int                 visframe;
+    unsigned            visframe;
 #endif
     struct mnode_s      *parent;
     /* <====== */
@@ -165,7 +165,7 @@ typedef struct {
 typedef struct {
     int             numareaportals;
     mareaportal_t   *firstareaportal;
-    int             floodvalid;
+    unsigned        floodvalid;
 } marea_t;
 
 typedef struct mmodel_s {
@@ -184,7 +184,7 @@ typedef struct mmodel_s {
     int             numfaces;
     mface_t         *firstface;
 
-    int             drawframe;
+    unsigned        drawframe;
 #endif
 } mmodel_t;
 

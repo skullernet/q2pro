@@ -106,10 +106,10 @@ typedef struct {
     refdef_t        fd;
     vec3_t          viewaxis[3];
     GLfloat         viewmatrix[16];
-    int             visframe;
-    int             drawframe;
+    unsigned        visframe;
+    unsigned        drawframe;
 #if USE_DLIGHTS
-    int             dlightframe;
+    unsigned        dlightframe;
 #endif
     int             viewcluster1;
     int             viewcluster2;
