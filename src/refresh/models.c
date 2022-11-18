@@ -700,7 +700,7 @@ fail:
 }
 #endif
 
-void MOD_Reference(model_t *model)
+static void MOD_Reference(model_t *model)
 {
     int i, j;
 

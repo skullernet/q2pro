@@ -25,8 +25,7 @@ note: this is a clean reimplementation of the original HQ2x filter, which was
 written by Maxim Stepin (MaxSt). it is not 100% identical, but very similar.
 */
 
-#include "shared/shared.h"
-#include "common/cvar.h"
+#include "gl.h"
 
 static const uint8_t hqTable[256] = {
     1, 1, 2,  4, 1, 1, 2,  4, 3,  5,  7,  8, 3,  5, 13, 15,

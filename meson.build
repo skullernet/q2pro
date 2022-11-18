@@ -198,6 +198,7 @@ common_args = ['-DHAVE_CONFIG_H']
 if not win32
   common_args += '-D_GNU_SOURCE'
 endif
+engine_args = []
 
 common_link_args = []
 exe_link_args = []
@@ -212,9 +213,11 @@ if cc.get_argument_syntax() == 'gcc'
     '-Wpointer-arith',
     '-Wformat-security',
     '-Werror=vla',
+    '-Wstrict-prototypes',
   ]
 
   common_args += cc.get_supported_arguments(test_args)
+  engine_args += cc.get_supported_arguments(['-Wmissing-prototypes'])
 
   if win32
     common_args += '-D__USE_MINGW_ANSI_STDIO=1'
@@ -386,7 +389,7 @@ executable('q2pro', common_src, client_src, refresh_src,
   gnu_symbol_visibility: 'hidden',
   win_subsystem:         'windows',
   link_args:             exe_link_args,
-  c_args:                ['-DUSE_CLIENT=1', '-DUSE_REF=1'],
+  c_args:                ['-DUSE_CLIENT=1', '-DUSE_REF=1', engine_args],
   install:               system_wide,
 )
 
@@ -396,7 +399,7 @@ executable('q2proded', common_src, server_src,
   gnu_symbol_visibility: 'hidden',
   win_subsystem:         'console',
   link_args:             exe_link_args,
-  c_args:                ['-DUSE_SERVER=1'],
+  c_args:                ['-DUSE_SERVER=1', engine_args],
   install:               system_wide,
 )
 
