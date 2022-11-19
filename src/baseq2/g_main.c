@@ -474,7 +474,6 @@ void G_RunFrame(void)
     AI_SetSightClient();
 
     // exit intermissions
-
     if (level.exitintermission) {
         ExitLevel();
         return;
@@ -507,6 +506,12 @@ void G_RunFrame(void)
         }
 
         G_RunEntity(ent);
+    }
+
+    // exit intermission right now to avoid annoying fov change
+    if (level.exitintermission) {
+        ExitLevel();
+        return;
     }
 
     // see if it is time to end a deathmatch
