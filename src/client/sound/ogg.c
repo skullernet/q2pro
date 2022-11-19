@@ -283,7 +283,7 @@ bool OGG_Load(sizebuf_t *sz)
     }
 
     ogg_int64_t samples = ov_pcm_total(&vf, 0);
-    if (samples < 0 || samples > MAX_LOADFILE >> vi->channels) {
+    if (samples < 1 || samples > MAX_LOADFILE >> vi->channels) {
         Com_DPrintf("%s has bad number of samples\n", s_info.name);
         goto fail;
     }
