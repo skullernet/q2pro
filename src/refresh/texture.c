@@ -197,10 +197,7 @@ static void IMG_ResampleTexture(const byte *in, int inwidth, int inheight,
     const byte  *pix1, *pix2, *pix3, *pix4;
     float       heightScale;
 
-    if (outwidth > MAX_TEXTURE_SIZE) {
-        Com_Error(ERR_FATAL, "%s: outwidth > %d", __func__, MAX_TEXTURE_SIZE);
-    }
-
+    Q_assert(outwidth <= MAX_TEXTURE_SIZE);
     fracstep = inwidth * 0x10000 / outwidth;
 
     frac = fracstep >> 2;
