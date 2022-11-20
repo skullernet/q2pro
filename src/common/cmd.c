@@ -343,7 +343,7 @@ static void Cmd_UnAlias_f(void)
     while ((c = Cmd_ParseOptions(options)) != -1) {
         switch (c) {
         case 'h':
-            Com_Printf("Usage: %s [-ha] [name]\n", Cmd_Argv(0));
+            Cmd_PrintUsage(options, "[name]");
             Cmd_PrintHelp(options);
             return;
         case 'a':
@@ -363,9 +363,8 @@ static void Cmd_UnAlias_f(void)
     }
 
     if (!cmd_optarg[0]) {
-        Com_Printf("Missing alias name.\n"
-                   "Try %s --help for more information.\n",
-                   Cmd_Argv(0));
+        Com_Printf("Missing alias name.\n");
+        Cmd_PrintHint();
         return;
     }
 
