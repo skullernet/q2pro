@@ -49,6 +49,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <sys/param.h>
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
+#include <poll.h>
 #include <errno.h>
 #ifdef __linux__
 #include <linux/types.h>
@@ -119,8 +120,10 @@ static qsocket_t    tcp6_socket = -1;
 static qhandle_t    net_logFile;
 #endif
 
-static ioentry_t    io_entries[FD_SETSIZE];
-static int          io_numfds;
+#define MAX_POLL_FDS    1024
+
+static struct pollfd    io_entries[MAX_POLL_FDS];
+static int              io_numfds;
 
 // current rate measurement
 static unsigned     net_rate_time;
@@ -648,6 +651,19 @@ const char *NET_ErrorString(void)
     return os_error_string(net_error);
 }
 
+static struct pollfd *NET_GetPollFd(qsocket_t fd)
+{
+    struct pollfd *e;
+    int i;
+
+    for (i = 0, e = io_entries; i < io_numfds; i++, e++)
+        if (e->fd == fd)
+            return e;
+
+    Com_Error(ERR_FATAL, "%s: fd not found", __func__);
+    return NULL;
+}
+
 /*
 =============
 NET_AddFd
@@ -655,11 +671,22 @@ NET_AddFd
 Adds file descriptor to the list of monitored descriptors
 =============
 */
-ioentry_t *NET_AddFd(qsocket_t fd)
+struct pollfd *NET_AddFd(qsocket_t fd)
 {
-    ioentry_t *e = os_add_io(fd);
+    struct pollfd *e;
+    int i;
 
-    e->inuse = true;
+    for (i = 0, e = io_entries; i < io_numfds; i++, e++)
+        if (e->fd == -1)
+            break;
+
+    if (i == io_numfds) {
+        if (io_numfds == MAX_POLL_FDS)
+            Com_Error(ERR_FATAL, "%s: no more space for fd", __func__);
+        io_numfds++;
+    }
+
+    e->fd = fd;
     return e;
 }
 
@@ -672,16 +699,16 @@ Removes file descriptor from the list of monitored descriptors
 */
 void NET_RemoveFd(qsocket_t fd)
 {
-    ioentry_t *e = os_get_io(fd);
+    struct pollfd *e = NET_GetPollFd(fd);
     int i;
 
-    memset(e, 0, sizeof(*e));
+    e->fd = -1;
+    e->events = e->revents = 0;
 
     for (i = io_numfds - 1; i >= 0; i--) {
         e = &io_entries[i];
-        if (e->inuse) {
+        if (e->fd != -1)
             break;
-        }
     }
 
     io_numfds = i + 1;
@@ -691,64 +718,22 @@ void NET_RemoveFd(qsocket_t fd)
 =============
 NET_Sleep
 
-Sleeps msec or until some file descriptor is ready. Implementation is not
-terribly efficient, but that's fine for a small number of descriptors we
-typically have.
+Sleeps msec or until some file descriptor is ready.
 =============
 */
 int NET_Sleep(int msec)
 {
-    struct timeval tv;
-    fd_set rfds, wfds, efds;
-    ioentry_t *e;
-    qsocket_t fd;
-    int i, ret;
+    int ret;
 
     if (!io_numfds) {
-        // don't bother with select()
+        // don't bother with poll()
         Sys_Sleep(msec);
         return 0;
     }
 
-    FD_ZERO(&rfds);
-    FD_ZERO(&wfds);
-    FD_ZERO(&efds);
-
-    for (i = 0, e = io_entries; i < io_numfds; i++, e++) {
-        if (!e->inuse) {
-            continue;
-        }
-        fd = os_get_fd(e);
-        e->canread = false;
-        e->canwrite = false;
-        e->canexcept = false;
-        if (e->wantread) FD_SET(fd, &rfds);
-        if (e->wantwrite) FD_SET(fd, &wfds);
-        if (e->wantexcept) FD_SET(fd, &efds);
-    }
-
-    tv.tv_sec = msec / 1000;
-    tv.tv_usec = (msec % 1000) * 1000;
-
-    ret = os_select(io_numfds, &rfds, &wfds, &efds, &tv);
-    if (ret == -1) {
+    ret = os_poll(io_entries, io_numfds, msec);
+    if (ret == -1)
         Com_EPrintf("%s: %s\n", __func__, NET_ErrorString());
-        return ret;
-    }
-
-    if (ret == 0)
-        return ret;
-
-    for (i = 0; i < io_numfds; i++) {
-        e = &io_entries[i];
-        if (!e->inuse) {
-            continue;
-        }
-        fd = os_get_fd(e);
-        if (FD_ISSET(fd, &rfds)) e->canread = true;
-        if (FD_ISSET(fd, &wfds)) e->canwrite = true;
-        if (FD_ISSET(fd, &efds)) e->canexcept = true;
-    }
 
     return ret;
 }
@@ -764,63 +749,33 @@ Sleeps msec or until some file descriptor from a given subset is ready
 */
 int NET_Sleepv(int msec, ...)
 {
-    va_list argptr;
-    struct timeval tv;
-    fd_set rfds, wfds, efds;
-    ioentry_t *e;
-    qsocket_t fd;
-    int ret;
+    qsocket_t temp[MAX_POLL_FDS];
+    struct pollfd *e;
+    int i, ret;
 
-    FD_ZERO(&rfds);
-    FD_ZERO(&wfds);
-    FD_ZERO(&efds);
+    // save and disable all fds
+    for (i = 0, e = io_entries; i < io_numfds; i++, e++) {
+        temp[i] = e->fd;
+        e->fd = -1;
+    }
 
+    // enable fds from given subset
     va_start(argptr, msec);
     while (1) {
-        fd = va_arg(argptr, qsocket_t);
-        if (fd == -1) {
+        qsocket_t fd = va_arg(argptr, qsocket_t);
+        if (fd == -1)
             break;
-        }
-        e = os_get_io(fd);
-        if (!e->inuse) {
-            continue;
-        }
-        e->canread = false;
-        e->canwrite = false;
-        e->canexcept = false;
-        if (e->wantread) FD_SET(fd, &rfds);
-        if (e->wantwrite) FD_SET(fd, &wfds);
-        if (e->wantexcept) FD_SET(fd, &efds);
+        for (i = 0, e = io_entries; i < io_numfds; i++, e++)
+            if (temp[i] == fd)
+                e->fd = fd;
     }
     va_end(argptr);
 
-    tv.tv_sec = msec / 1000;
-    tv.tv_usec = (msec % 1000) * 1000;
+    ret = NET_Sleep(msec);
 
-    ret = os_select(io_numfds, &rfds, &wfds, &efds, &tv);
-    if (ret == -1) {
-        Com_EPrintf("%s: %s\n", __func__, NET_ErrorString());
-        return ret;
-    }
-
-    if (ret == 0)
-        return ret;
-
-    va_start(argptr, msec);
-    while (1) {
-        fd = va_arg(argptr, qsocket_t);
-        if (fd == -1) {
-            break;
-        }
-        e = os_get_io(fd);
-        if (!e->inuse) {
-            continue;
-        }
-        if (FD_ISSET(fd, &rfds)) e->canread = true;
-        if (FD_ISSET(fd, &wfds)) e->canwrite = true;
-        if (FD_ISSET(fd, &efds)) e->canexcept = true;
-    }
-    va_end(argptr);
+    // restore all fds
+    for (i = 0, e = io_entries; i < io_numfds; i++, e++)
+        e->fd = temp[i];
 
     return ret;
 }
@@ -831,20 +786,20 @@ int NET_Sleepv(int msec, ...)
 
 static void NET_GetUdpPackets(qsocket_t sock, void (*packet_cb)(void))
 {
-    ioentry_t *e;
+    struct pollfd *e;
     int ret;
 
     if (sock == -1)
         return;
 
-    e = os_get_io(sock);
-    if (!e->canread)
+    e = NET_GetPollFd(sock);
+    if (!(e->revents & (POLLIN | POLLERR)))
         return;
 
     while (1) {
         ret = os_udp_recv(sock, msg_read_buffer, MAX_PACKETLEN, &net_from);
         if (ret == NET_AGAIN) {
-            e->canread = false;
+            e->revents = 0;
             break;
         }
 
@@ -1182,7 +1137,6 @@ static qsocket_t TCP_OpenSocket(const char *iface, int port, int family, netsrc_
 static void NET_OpenServer(void)
 {
     static int saved_port;
-    ioentry_t *e;
     qsocket_t s;
 
     if (udp_sockets[NS_SERVER] != -1)
@@ -1192,8 +1146,7 @@ static void NET_OpenServer(void)
     if (s != -1) {
         saved_port = net_port->integer;
         udp_sockets[NS_SERVER] = s;
-        e = NET_AddFd(s);
-        e->wantread = true;
+        NET_AddFd(s)->events |= POLLIN;
         return;
     }
 
@@ -1216,7 +1169,6 @@ static void NET_OpenServer(void)
 
 static void NET_OpenServer6(void)
 {
-    ioentry_t *e;
     qsocket_t s;
 
     if (net_enable_ipv6->integer < 2)
@@ -1230,14 +1182,12 @@ static void NET_OpenServer6(void)
         return;
 
     udp6_sockets[NS_SERVER] = s;
-    e = NET_AddFd(s);
-    e->wantread = true;
+    NET_AddFd(s)->events |= POLLIN;
 }
 
 #if USE_CLIENT
 static void NET_OpenClient(void)
 {
-    ioentry_t *e;
     qsocket_t s;
     netadr_t adr;
 
@@ -1266,13 +1216,11 @@ static void NET_OpenClient(void)
     }
 
     udp_sockets[NS_CLIENT] = s;
-    e = NET_AddFd(s);
-    e->wantread = true;
+    NET_AddFd(s)->events |= POLLIN;
 }
 
 static void NET_OpenClient6(void)
 {
-    ioentry_t *e;
     qsocket_t s;
 
     if (net_enable_ipv6->integer < 1)
@@ -1286,8 +1234,7 @@ static void NET_OpenClient6(void)
         return;
 
     udp6_sockets[NS_CLIENT] = s;
-    e = NET_AddFd(s);
-    e->wantread = true;
+    NET_AddFd(s)->events |= POLLIN;
 }
 #endif
 
@@ -1370,7 +1317,6 @@ void NET_CloseStream(netstream_t *s)
 static neterr_t NET_Listen4(bool arg)
 {
     qsocket_t s;
-    ioentry_t *e;
     neterr_t ret;
 
     if (!arg) {
@@ -1400,8 +1346,7 @@ static neterr_t NET_Listen4(bool arg)
     tcp_socket = s;
 
     // initialize io entry
-    e = NET_AddFd(s);
-    e->wantread = true;
+    NET_AddFd(s)->events |= POLLIN;
 
     return NET_OK;
 }
@@ -1409,7 +1354,6 @@ static neterr_t NET_Listen4(bool arg)
 static neterr_t NET_Listen6(bool arg)
 {
     qsocket_t s;
-    ioentry_t *e;
     neterr_t ret;
 
     if (!arg) {
@@ -1444,8 +1388,7 @@ static neterr_t NET_Listen6(bool arg)
     tcp6_socket = s;
 
     // initialize io entry
-    e = NET_AddFd(s);
-    e->wantread = true;
+    NET_AddFd(s)->events |= POLLIN;
 
     return NET_OK;
 }
@@ -1468,7 +1411,7 @@ neterr_t NET_Listen(bool arg)
 
 static neterr_t NET_AcceptSocket(netstream_t *s, qsocket_t sock)
 {
-    ioentry_t *e;
+    struct pollfd *e;
     qsocket_t newsocket;
     neterr_t ret;
 
@@ -1476,14 +1419,15 @@ static neterr_t NET_AcceptSocket(netstream_t *s, qsocket_t sock)
         return NET_AGAIN;
     }
 
-    e = os_get_io(sock);
-    if (!e->canread) {
+    e = NET_GetPollFd(sock);
+    if (!(e->revents & (POLLIN | POLLERR))) {
         return NET_AGAIN;
     }
 
     ret = os_accept(sock, &newsocket, &net_from);
     if (ret) {
-        e->canread = false;
+        if (ret == NET_AGAIN)
+            e->revents = 0;
         return ret;
     }
 
@@ -1501,9 +1445,7 @@ static neterr_t NET_AcceptSocket(netstream_t *s, qsocket_t sock)
     s->state = NS_CONNECTED;
 
     // initialize io entry
-    e = NET_AddFd(newsocket);
-    //e->wantwrite = true;
-    e->wantread = true;
+    NET_AddFd(newsocket)->events |= POLLIN;
 
     return NET_OK;
 }
@@ -1523,7 +1465,6 @@ neterr_t NET_Accept(netstream_t *s)
 neterr_t NET_Connect(const netadr_t *peer, netstream_t *s)
 {
     qsocket_t socket;
-    ioentry_t *e;
     neterr_t ret;
 
     // always bind to `net_ip' for outgoing TCP connections
@@ -1556,18 +1497,14 @@ neterr_t NET_Connect(const netadr_t *peer, netstream_t *s)
     s->socket = socket;
 
     // initialize io entry
-    e = NET_AddFd(socket);
-    e->wantwrite = true;
-#ifdef _WIN32
-    e->wantexcept = true;
-#endif
+    NET_AddFd(socket)->events |= POLLOUT;
 
     return NET_OK;
 }
 
 neterr_t NET_RunConnect(netstream_t *s)
 {
-    ioentry_t *e;
+    struct pollfd *e;
     neterr_t ret;
     int err;
 
@@ -1575,39 +1512,27 @@ neterr_t NET_RunConnect(netstream_t *s)
         return NET_AGAIN;
     }
 
-    e = os_get_io(s->socket);
-    if (!e->canwrite
-#ifdef _WIN32
-        && !e->canexcept
-#endif
-       ) {
-        return NET_AGAIN;
-    }
+    e = NET_GetPollFd(s->socket);
 
-    ret = os_getsockopt(s->socket, SOL_SOCKET, SO_ERROR, &err);
-    if (ret) {
-        goto fail;
-    }
-    if (err) {
-        net_error = err;
+    if (e->revents & (POLLERR | POLLHUP)) {
+        ret = os_getsockopt(s->socket, SOL_SOCKET, SO_ERROR, &err);
+        if (ret == NET_OK) {
+            net_error = err;
+        }
         goto fail;
     }
 
-    s->state = NS_CONNECTED;
-    e->wantwrite = false;
-    e->wantread = true;
-#ifdef _WIN32
-    e->wantexcept = false;
-#endif
-    return NET_OK;
+    if (e->revents & POLLOUT) {
+        s->state = NS_CONNECTED;
+        e->events = POLLIN;
+        return NET_OK;
+    }
+
+    return NET_AGAIN;
 
 fail:
     s->state = NS_BROKEN;
-    e->wantwrite = false;
-    e->wantread = false;
-#ifdef _WIN32
-    e->wantexcept = false;
-#endif
+    e->events = 0;
     return NET_ERROR;
 }
 
@@ -1615,19 +1540,25 @@ fail:
 void NET_UpdateStream(netstream_t *s)
 {
     size_t len;
-    ioentry_t *e;
+    struct pollfd *e;
 
     if (s->state != NS_CONNECTED) {
         return;
     }
 
-    e = os_get_io(s->socket);
+    e = NET_GetPollFd(s->socket);
 
     FIFO_Reserve(&s->recv, &len);
-    e->wantread = len;
+    if (len)
+        e->events |= POLLIN;
+    else
+        e->events &= ~POLLIN;
 
     FIFO_Peek(&s->send, &len);
-    e->wantwrite = len;
+    if (len)
+        e->events |= POLLOUT;
+    else
+        e->events &= ~POLLOUT;
 }
 
 // returns NET_OK only when there was some data read
@@ -1637,14 +1568,18 @@ neterr_t NET_RunStream(netstream_t *s)
     size_t len;
     void *data;
     neterr_t result = NET_AGAIN;
-    ioentry_t *e;
+    struct pollfd *e;
 
     if (s->state != NS_CONNECTED) {
         return result;
     }
 
-    e = os_get_io(s->socket);
-    if (e->wantread && e->canread) {
+    e = NET_GetPollFd(s->socket);
+    if (e->revents & POLLERR) {
+        goto error;
+    }
+
+    if (e->revents & (POLLIN | POLLHUP)) {
         // read as much as we can
         data = FIFO_Reserve(&s->recv, &len);
         if (len) {
@@ -1656,8 +1591,7 @@ neterr_t NET_RunStream(netstream_t *s)
                 goto error;
             }
             if (ret == NET_AGAIN) {
-                // wouldblock is silent
-                e->canread = false;
+                e->revents &= ~POLLIN;
             } else {
                 FIFO_Commit(&s->recv, ret);
 #if USE_DEBUG
@@ -1673,13 +1607,13 @@ neterr_t NET_RunStream(netstream_t *s)
                 // now see if there's more space to read
                 FIFO_Reserve(&s->recv, &len);
                 if (!len) {
-                    e->wantread = false;
+                    e->events &= ~POLLIN;
                 }
             }
         }
     }
 
-    if (e->wantwrite && e->canwrite) {
+    if (e->revents & POLLOUT) {
         // write as much as we can
         data = FIFO_Peek(&s->send, &len);
         if (len) {
@@ -1691,8 +1625,7 @@ neterr_t NET_RunStream(netstream_t *s)
                 goto error;
             }
             if (ret == NET_AGAIN) {
-                // wouldblock is silent
-                e->canwrite = false;
+                e->revents &= ~POLLOUT;
             } else {
                 FIFO_Decommit(&s->send, ret);
 #if USE_DEBUG
@@ -1708,9 +1641,8 @@ neterr_t NET_RunStream(netstream_t *s)
                 // now see if there's more data to write
                 FIFO_Peek(&s->send, &len);
                 if (!len) {
-                    e->wantwrite = false;
+                    e->events &= ~POLLOUT;
                 }
-
             }
         }
     }
@@ -1719,13 +1651,12 @@ neterr_t NET_RunStream(netstream_t *s)
 
 closed:
     s->state = NS_CLOSED;
-    e->wantread = false;
+    e->events &= ~POLLIN;
     return NET_CLOSED;
 
 error:
     s->state = NS_BROKEN;
-    e->wantread = false;
-    e->wantwrite = false;
+    e->events = 0;
     return NET_ERROR;
 }
 
