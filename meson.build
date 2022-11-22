@@ -198,7 +198,11 @@ common_args = ['-DHAVE_CONFIG_H']
 if not win32
   common_args += '-D_GNU_SOURCE'
 endif
+
 engine_args = []
+if win32
+  engine_args += '-D_WIN32_WINNT=0x0600'
+endif
 
 common_link_args = []
 exe_link_args = []
