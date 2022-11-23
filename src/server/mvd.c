@@ -2070,14 +2070,12 @@ void SV_MvdInit(void)
 
     // open server TCP socket
     if (sv_mvd_enable->integer > 1) {
-        neterr_t ret;
-
-        ret = NET_Listen(true);
+        neterr_t ret = NET_Listen(true);
         if (ret == NET_OK) {
             mvd.clients = SV_Mallocz(sizeof(gtv_client_t) * sv_mvd_maxclients->integer);
         } else {
             if (ret == NET_ERROR)
-                Com_EPrintf("%s while opening server TCP port.\n", NET_ErrorString());
+                Com_EPrintf("Error opening server TCP port.\n");
             else
                 Com_EPrintf("Server TCP port already in use.\n");
             Cvar_Set("sv_mvd_enable", "1");
