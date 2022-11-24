@@ -753,6 +753,8 @@ static void NET_GetUdpPackets(struct pollfd *sock, void (*packet_cb)(void))
     if (!sock)
         return;
 
+    Q_assert(!(sock->revents & POLLNVAL));
+
     if (!(sock->revents & (POLLIN | POLLERR)))
         return;
 
@@ -1381,6 +1383,8 @@ static neterr_t NET_AcceptSocket(netstream_t *s, struct pollfd *sock)
         return NET_AGAIN;
     }
 
+    Q_assert(!(sock->revents & POLLNVAL));
+
     if (!(sock->revents & (POLLIN | POLLERR))) {
         return NET_AGAIN;
     }
@@ -1518,6 +1522,8 @@ neterr_t NET_RunConnect(netstream_t *s)
         return NET_AGAIN;
     }
 
+    Q_assert(!(e->revents & POLLNVAL));
+
 #ifdef _WIN32
     if (windows_connect_hack(e))
         goto fail;
@@ -1580,6 +1586,8 @@ neterr_t NET_RunStream(netstream_t *s)
     if (s->state != NS_CONNECTED) {
         return result;
     }
+
+    Q_assert(!(e->revents & POLLNVAL));
 
     if (e->revents & POLLERR) {
 #ifdef _WIN32
