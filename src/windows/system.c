@@ -625,6 +625,7 @@ static BOOL WINAPI Sys_ConsoleCtrlHandler(DWORD dwCtrlType)
         exit(1);
     }
     shouldExit = true;
+    Sleep(INFINITE);
     return TRUE;
 }
 
