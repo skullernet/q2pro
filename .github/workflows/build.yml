@@ -52,7 +52,7 @@ jobs:
 
       - name: Build
         run: |
-          meson setup ${{ env.MESON_ARGS }} -Dvorbis:werror=false builddir
+          meson setup ${{ env.MESON_ARGS }} -Dvorbis:werror=false -Dwrap_mode=forcefallback builddir
           ninja -C builddir
 
   linux:
