@@ -1117,6 +1117,10 @@ void SV_MvdMulticast(int leafnum, multicast_t to)
     if (!mvd.active) {
         return;
     }
+    if (msg_write.cursize >= 2048) {
+        Com_WPrintf("%s: overflow\n", __func__);
+        return;
+    }
 
     op = mvd_multicast_all + to;
     buf = to < MULTICAST_ALL_R ? &mvd.datagram : &mvd.message;
@@ -1186,6 +1190,11 @@ void SV_MvdUnicast(edict_t *ent, int clientNum, bool reliable)
     }
 
     if (!filter_unicast_data(ent)) {
+        return;
+    }
+
+    if (msg_write.cursize >= 2048) {
+        Com_WPrintf("%s: overflow\n", __func__);
         return;
     }
 
