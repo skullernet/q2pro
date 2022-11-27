@@ -886,11 +886,13 @@ mvdconnect [-hn:u:p:] <address[:port]>::
         -p | --pass=<string>::: specify password as _string_,
         default is to use value of ‘mvd_password’ cvar
 
-mvdisconnect [connection]::
-    Destroy the specified GTV server _connection_ (if there is an associated
-    MVD channel, any buffered data is replayed to spectators, then MVD channel
-    is destroyed). There is no need to specify _connection_ if there is only
-    one active connection.
+mvdisconnect [-ah] [connection]::
+    Destroy the specified GTV server _connection_ or all connections. If there
+    is an associated MVD channel, any buffered data is replayed to spectators,
+    then MVD channel is destroyed. There is no need to specify _connection_ if
+    there is only one active connection.
+        -a | --all::: destroy all connections
+        -h | --help::: display help message
 
 mvdkill [channel]::
     Destroy the specified MVD _channel_ (any parent GTV connection is also
