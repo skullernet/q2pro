@@ -152,9 +152,12 @@ void    MSG_ParseDeltaPlayerstate_Aqtion(const player_state_t *from, player_stat
 void    MSG_ParseDeltaPlayerstate_Packet(const player_state_t *from, player_state_t *to, int flags);
 #ifdef AQTION_EXTENSION
 void	MSG_WriteGhud(ghud_element_t *element, byte flags, short eflags);
-#if USE_CLIENT
-void	MSG_ParseGhud(ghud_element_t *element);
-#endif
+
+//// Fix this later
+// #if USE_CLIENT || USE_MVD_CLIENT
+// void	MSG_ParseGhud(ghud_element_t *element);
+// #endif
+
 #endif
 
 #if USE_DEBUG

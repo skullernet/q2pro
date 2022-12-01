@@ -426,7 +426,7 @@ executable('q2proded', common_src, server_src,
   gnu_symbol_visibility: 'hidden',
   win_subsystem:         'console',
   link_args:             exe_link_args,
-  c_args:                ['-DUSE_SERVER=1', '-DUSE_MVD_CLIENT=0', engine_args],
+  c_args:                ['-DUSE_SERVER=1', engine_args],
   install:               system_wide,
 )
 

@@ -1388,7 +1388,8 @@ void CL_ParseServerMessage(void)
 					break;
 
 				ghud_element_t *element = &(cl.ghud[hud_index]);
-				MSG_ParseGhud(element);
+				//// Fix this later
+                //MSG_ParseGhud(element);
 			}
 #else
 			goto badbyte;
