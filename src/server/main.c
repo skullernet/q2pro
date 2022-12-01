@@ -79,6 +79,7 @@ cvar_t  *sv_max_rate;
 cvar_t  *sv_calcpings_method;
 cvar_t  *sv_changemapcmd;
 cvar_t  *sv_max_download_size;
+cvar_t  *sv_max_packet_entities;
 
 cvar_t  *sv_strafejump_hack;
 cvar_t  *sv_waterjump_hack;
@@ -965,8 +966,8 @@ static client_t *find_client_slot(conn_params_t *params)
     FOR_EACH_CLIENT(cl) {
         if (NET_IsEqualAdr(&net_from, &cl->netchan->remote_address)) {
             if (cl->state == cs_zombie) {
-                strcpy(params->reconnect_var, cl->reconnect_var);
-                strcpy(params->reconnect_val, cl->reconnect_val);
+                Q_strlcpy(params->reconnect_var, cl->reconnect_var, sizeof(params->reconnect_var));
+                Q_strlcpy(params->reconnect_val, cl->reconnect_val, sizeof(params->reconnect_val));
             } else {
                 SV_DropClient(cl, "reconnected");
             }
@@ -1146,8 +1147,8 @@ static void SVC_DirectConnect(void)
     newcl->cm = &sv.cm;
     newcl->spawncount = sv.spawncount;
     newcl->maxclients = sv_maxclients->integer;
-    strcpy(newcl->reconnect_var, params.reconnect_var);
-    strcpy(newcl->reconnect_val, params.reconnect_val);
+    Q_strlcpy(newcl->reconnect_var, params.reconnect_var, sizeof(newcl->reconnect_var));
+    Q_strlcpy(newcl->reconnect_val, params.reconnect_val, sizeof(newcl->reconnect_val));
 #if USE_FPS
     newcl->framediv = sv.framediv;
     newcl->settings[CLS_FPS] = BASE_FRAMERATE;
@@ -1999,9 +2000,7 @@ unsigned SV_Frame(unsigned msec)
 
     if (COM_DEDICATED) {
         // run cmd buffer in dedicated mode
-        if (cmd_buffer.waitCount > 0) {
-            cmd_buffer.waitCount--;
-        }
+        Cbuf_Frame(&cmd_buffer);
     }
 
     // decide how long to sleep next frame
@@ -2255,9 +2254,10 @@ void SV_Init(void)
     sv_calcpings_method = Cvar_Get("sv_calcpings_method", "2", 0);
     sv_changemapcmd = Cvar_Get("sv_changemapcmd", "", 0);
     sv_max_download_size = Cvar_Get("sv_max_download_size", "8388608", 0);
+    sv_max_packet_entities = Cvar_Get("sv_max_packet_entities", STRINGIFY(MAX_PACKET_ENTITIES), 0);
 
     sv_strafejump_hack = Cvar_Get("sv_strafejump_hack", "1", CVAR_LATCH);
-    sv_waterjump_hack = Cvar_Get("sv_waterjump_hack", "0", CVAR_LATCH);
+    sv_waterjump_hack = Cvar_Get("sv_waterjump_hack", "1", CVAR_LATCH);
 
 #if USE_PACKETDUP
     sv_packetdup_hack = Cvar_Get("sv_packetdup_hack", "0", 0);

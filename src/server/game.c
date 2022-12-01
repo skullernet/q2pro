@@ -711,20 +711,13 @@ static qboolean PF_AreasConnected(int area1, int area2)
 
 static void *PF_TagMalloc(unsigned size, unsigned tag)
 {
-    if (tag + TAG_MAX < tag) {
-        Com_Error(ERR_FATAL, "%s: bad tag", __func__);
-    }
-    if (!size) {
-        return NULL;
-    }
-    return memset(Z_TagMalloc(size, tag + TAG_MAX), 0, size);
+    Q_assert(tag <= UINT16_MAX - TAG_MAX);
+    return Z_TagMallocz(size, tag + TAG_MAX);
 }
 
 static void PF_FreeTags(unsigned tag)
 {
-    if (tag + TAG_MAX < tag) {
-        Com_Error(ERR_FATAL, "%s: bad tag", __func__);
-    }
+    Q_assert(tag <= UINT16_MAX - TAG_MAX);
     Z_FreeTags(tag + TAG_MAX);
 }
 
@@ -823,7 +816,7 @@ G_CheckForExtension
 Check for (and return) an extension function by name
 ================
 */
-void* G_CheckForExtension(char *text)
+static void* G_CheckForExtension(char *text)
 {
 	Com_Printf("G_CheckForExtension for %s\n", text);
 	extension_func_t *ext;
@@ -839,7 +832,7 @@ void* G_CheckForExtension(char *text)
 	return NULL;
 }
 
-int G_Ext_Client_GetProtocol(edict_t *ent)
+static int G_Ext_Client_GetProtocol(edict_t *ent)
 {
 	if (!ent->client)
 		return 0;
@@ -855,7 +848,7 @@ int G_Ext_Client_GetProtocol(edict_t *ent)
 	return 0;
 }
 
-int G_Ext_Client_GetVersion(edict_t *ent)
+static int G_Ext_Client_GetVersion(edict_t *ent)
 {
 	if (!ent->client)
 		return 0;
@@ -872,7 +865,7 @@ int G_Ext_Client_GetVersion(edict_t *ent)
 }
 
 
-void G_Ext_Ghud_SendUpdateToClient(edict_t *ent)
+static void G_Ext_Ghud_SendUpdateToClient(edict_t *ent)
 {
 	if (!ent->client)
 		return;
