@@ -48,7 +48,7 @@ void SV_Ghud_SendUpdateToClient(client_t *client)
 }
 
 
-void SV_Ghud_UpdateFlags(int i, int flags)
+static void SV_Ghud_UpdateFlags(int i, int flags)
 {
 	client_t *client;
 	FOR_EACH_CLIENT(client) {

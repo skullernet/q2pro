@@ -190,7 +190,7 @@ static request_t *CL_FindRequest(void)
 
 cvar_t* cl_extern_ip;   // External IP address
 
-size_t CurlWriteCallback(char* buf, size_t size, size_t nmemb, void* up)
+static size_t CurlWriteCallback(char* buf, size_t size, size_t nmemb, void* up)
 {
     if (strlen(buf) <= 16) // Length of an IP address
     {
@@ -199,7 +199,7 @@ size_t CurlWriteCallback(char* buf, size_t size, size_t nmemb, void* up)
     }
     return size * nmemb; // Return how many bytes we read
 }
-void CL_GetExternalIP(void)
+static void CL_GetExternalIP(void)
 {
     CURL* curl = curl_easy_init(); // Init the curl session
     curl_easy_setopt(curl, CURLOPT_URL, "http://icanhazip.com"); // URL to get IP
@@ -224,7 +224,7 @@ void CL_GetExternalIP(void)
 }
 
 // Determine if connection is loopback, private ip, or public ip -- https://en.wikipedia.org/wiki/Private_network
-qboolean CL_IsPrivateNetwork(void)
+static qboolean CL_IsPrivateNetwork(void)
 {
     //--------------------------------------------------------------
     // Loopback
@@ -357,14 +357,14 @@ typedef struct {
 } discord_t;
 discord_t discord;
 
-void     CL_InitDiscord();
+void     CL_InitDiscord(void);
 void     CL_CreateDiscordLobby_f(void);
 void     CL_DeleteDiscordLobby(void);
-void     CL_RunDiscord();
-void     CL_ShutdownDiscord();
+void     CL_RunDiscord(void);
+void     CL_ShutdownDiscord(void);
 
 
-void DiscordCallback(void* data, enum EDiscordResult result)
+static void DiscordCallback(void* data, enum EDiscordResult result)
 {
     //Com_Printf("%s %s\n", __func__, data);
     
@@ -510,7 +510,7 @@ void DiscordCallback(void* data, enum EDiscordResult result)
 }
 
 // Log output - error, warning, information, debug
-void DiscordLogCallback(void* hook_data, enum EDiscordLogLevel level, const char* message)
+static void DiscordLogCallback(void* hook_data, enum EDiscordLogLevel level, const char* message)
 {
     if (level == DiscordLogLevel_Error)
         Com_Printf("%s ERROR: %s\n", __func__, message);
@@ -522,24 +522,25 @@ void DiscordLogCallback(void* hook_data, enum EDiscordLogLevel level, const char
         Com_Printf("%s DEBUG: %s\n", __func__, message);
 }
 
-void OnOAuth2Token(void* data, enum EDiscordResult result, struct DiscordOAuth2Token* token)
-{
-    if (result == DiscordResult_Ok)
-        Com_Printf("%s access token: %s\n", __func__, token->access_token);
-    else
-    {
-        Com_Printf("%s GetOAuth2Token failed with: ", __func__);
-        DiscordCallback(NULL, result);
-    }
-}
+//  Not used anywhere?
+// static void OnOAuth2Token(void* data, enum EDiscordResult result, struct DiscordOAuth2Token* token)
+// {
+//     if (result == DiscordResult_Ok)
+//         Com_Printf("%s access token: %s\n", __func__, token->access_token);
+//     else
+//     {
+//         Com_Printf("%s GetOAuth2Token failed with: ", __func__);
+//         DiscordCallback(NULL, result);
+//     }
+// }
 
 // Filter Discord friends
-bool RelationshipPassFilter(void* data, struct DiscordRelationship* relationship)
+static bool RelationshipPassFilter(void* data, struct DiscordRelationship* relationship)
 {
     return (relationship->type == DiscordRelationshipType_Friend); // Return true if they are a Discord friend
 }
 // List all Discord friends
-void OnRelationshipsRefresh(void* data)
+static void OnRelationshipsRefresh(void* data)
 {
     struct Application* app = (struct Application*)data;
     struct IDiscordRelationshipManager* module = app->relationships;
@@ -558,12 +559,12 @@ void OnRelationshipsRefresh(void* data)
         }
     }
 }
-void OnRelationshipUpdate(void* data, struct DiscordRelationship* relationship)
+static void OnRelationshipUpdate(void* data, struct DiscordRelationship* relationship)
 {
 }
 
 // User event
-void OnUserUpdated(void* data)
+static void OnUserUpdated(void* data)
 {
     struct Application* app = (struct Application*)data;
     struct DiscordUser user;
@@ -580,7 +581,7 @@ void OnUserUpdated(void* data)
 
 // Fires when the user receives a join or spectate invite.
 // We let the user decide what they want to do, instead of forcing them to join; this function is currently here just to log the event
-void OnActivityInvite(void* data, enum EDiscordActivityActionType type, struct DiscordUser *user, struct DiscordActivity *activity)
+static void OnActivityInvite(void* data, enum EDiscordActivityActionType type, struct DiscordUser *user, struct DiscordActivity *activity)
 {   
     if (type == DiscordActivityActionType_Join)
     {
@@ -597,7 +598,7 @@ void OnActivityInvite(void* data, enum EDiscordActivityActionType type, struct D
         //discord.app.activities->accept_invite(discord.app.activities, user->id, "Accepted", DiscordCallback);
     }
 }
-void DiscordLobbyCallBack(void* data, enum EDiscordResult result, struct DiscordLobby* lobby)
+static void DiscordLobbyCallBack(void* data, enum EDiscordResult result, struct DiscordLobby* lobby)
 {
     DiscordCallback("DiscordLobbyCallBack", result); // Check the result
     
@@ -607,7 +608,7 @@ void DiscordLobbyCallBack(void* data, enum EDiscordResult result, struct Discord
 
 // This function runs when a player clicks the join button when invited through Discord
 // The secret received is the concatenation of lobby_id + lobby_secret
-void OnActivityJoin(void* event_data, const char* secret) 
+static void OnActivityJoin(void* event_data, const char* secret) 
 {
     //Com_Printf("%s secret[%s]\n", __func__, secret);
 
@@ -653,13 +654,13 @@ void OnActivityJoin(void* event_data, const char* secret)
         }
     }
 }
-void OnActivitySpectate(void* event_data, const char* secret) 
+static void OnActivitySpectate(void* event_data, const char* secret) 
 {
     //Com_Printf("%s secret[%s]\n", __func__, secret);
 }
 
 // Fires when a user asks to join our game.
-void OnActivityJoinRequest(void* event_data, struct DiscordUser* user) 
+static void OnActivityJoinRequest(void* event_data, struct DiscordUser* user) 
 {
     //Com_Printf("%s %lld %s#%s\n", __func__, (long long)user->id, user->username, user->discriminator);
 
@@ -710,7 +711,7 @@ static void CL_DiscordParseServerStatus(serverStatus_t* status, const char* stri
 
 // Allow players to invite or join a server via Discord
 // A lobby is created when a player joins a server, and deleted when they leave the game
-static void CL_DiscordGameInvite()
+static void CL_DiscordGameInvite(void)
 {   
     // Create a lobby if none exists
     if (discord.lobby.id == 0)
@@ -732,7 +733,7 @@ static void CL_DiscordGameInvite()
     }
 }
 
-void CL_UpdateActivity()
+static void CL_UpdateActivity(void)
 {
     if (cls.serverAddress.type == NA_UNSPECIFIED)
         return;
@@ -836,15 +837,15 @@ void CL_UpdateActivity()
     discord.app.activities->update_activity(discord.app.activities, &discord.activity, "update_activity", DiscordCallback);
 }
 
-void OnLobbyUpdate(void* event_data, int64_t lobby_id) 
+static void OnLobbyUpdate(void* event_data, int64_t lobby_id) 
 {
     //Com_Printf("%s lobbyID[%lld]\n", __func__, (long long)lobby_id);
 }
-void OnLobbyDelete(void* event_data, int64_t lobby_id, uint32_t reason) 
+static void OnLobbyDelete(void* event_data, int64_t lobby_id, uint32_t reason) 
 {
     //Com_Printf("%s lobbyID[%lld] reason[%i]\n", __func__, (long long)lobby_id, reason);
 }
-void OnLobbyConnect(void* data, enum EDiscordResult result, struct DiscordLobby* lobby)
+static void OnLobbyConnect(void* data, enum EDiscordResult result, struct DiscordLobby* lobby)
 {
     if (result == DiscordResult_Ok)
     {
@@ -862,7 +863,7 @@ void OnLobbyConnect(void* data, enum EDiscordResult result, struct DiscordLobby*
         DiscordCallback(NULL, result);
     }
 }
-void OnLobbyMemberConnect(void* event_data, int64_t lobby_id, int64_t user_id)
+static void OnLobbyMemberConnect(void* event_data, int64_t lobby_id, int64_t user_id)
 {
     char addr[32]; // IP + Port
     char msg[256];
@@ -908,15 +909,15 @@ void OnLobbyMemberConnect(void* event_data, int64_t lobby_id, int64_t user_id)
     // Broadcast
     discord.app.lobbies->send_lobby_message(discord.app.lobbies, discord.lobby.id, (uint8_t*)msg, strlen(msg), "OnLobbyMemberConnect", DiscordCallback);
 }
-void OnLobbyMemberUpdate(void* event_data, int64_t lobby_id, int64_t user_id) 
+static void OnLobbyMemberUpdate(void* event_data, int64_t lobby_id, int64_t user_id) 
 {
     //Com_Printf("%s lobby_id[%lld] user_id[%lld]\n", __func__, (long long)lobby_id, (long long)user_id);
 }
-void OnLobbyMemberDisconnect(void* event_data, int64_t lobby_id, int64_t user_id) 
+static void OnLobbyMemberDisconnect(void* event_data, int64_t lobby_id, int64_t user_id) 
 {
     //Com_Printf("%s lobby_id[%lld] user_id[%lld]\n", __func__, (long long)lobby_id, (long long)user_id);
 }
-void OnLobbyMessage(void* event_data, int64_t lobby_id, int64_t user_id, uint8_t* data, uint32_t data_length) 
+static void OnLobbyMessage(void* event_data, int64_t lobby_id, int64_t user_id, uint8_t* data, uint32_t data_length) 
 {
     if (data_length == 0 || data_length > 1024)
         return;
@@ -1051,18 +1052,18 @@ void OnLobbyMessage(void* event_data, int64_t lobby_id, int64_t user_id, uint8_t
         return;
     }
 }
-void OnLobbySpeaking(void* event_data, int64_t lobby_id, int64_t user_id, bool speaking) 
+static void OnLobbySpeaking(void* event_data, int64_t lobby_id, int64_t user_id, bool speaking) 
 {
     //Com_Printf("%s lobby_id[%lld] user_id[%lld] speaking[%i]\n", __func__, (long long)lobby_id, (long long)user_id, speaking);
 }
-void OnLobbyNetworkMessage(void* event_data, int64_t lobby_id, int64_t user_id, uint8_t channel_id, uint8_t* data, uint32_t data_length)
+static void OnLobbyNetworkMessage(void* event_data, int64_t lobby_id, int64_t user_id, uint8_t channel_id, uint8_t* data, uint32_t data_length)
 {
     //Com_Printf("%s lobby_id[%lld] user_id[%lld] channel_id[%i] data[%s] data_length[%i]\n", __func__, (long long)lobby_id, (long long)user_id, channel_id, data, data_length);
 }
 
 // Build a list of lobbies
 // Note: must run a query before using lobby functions (discord.app.lobbies->func)
-void CL_QueryLobby(void)
+static void CL_QueryLobby(void)
 {
     struct IDiscordLobbySearchQuery* query;
     discord.app.lobbies->get_search_query(discord.app.lobbies, &query);
@@ -1169,7 +1170,7 @@ void CL_DeleteDiscordLobby(void)
     }
 }
 
-void CL_InitDiscord()
+void CL_InitDiscord(void)
 {
     Com_Printf("==== %s ====\n", __func__);
 
@@ -1314,7 +1315,7 @@ void CL_RunDiscord() // Run in main loop
     }
 }
 
-void CL_ClearDiscordAcivity(void)
+static void CL_ClearDiscordAcivity(void)
 {
     discord.app.activities->clear_activity(discord.app.activities, "clear_activity", DiscordCallback);
     memset(&discord.activity, 0, sizeof(discord.activity));
@@ -2662,7 +2663,7 @@ static void CL_ConnectionlessPacket(void)
         CL_ClientCommand("new");
         cls.state = ca_connected;
         cls.connect_count = 0;
-        strcpy(cl.mapname, mapname);   // for levelshot screen
+        Q_strlcpy(cl.mapname, mapname, sizeof(cl.mapname)); // for levelshot screen
         return;
     }
 
@@ -4539,9 +4540,7 @@ void CL_Init(void)
     IN_Init();
 
 #if USE_ZLIB
-    if (inflateInit2(&cls.z, -MAX_WBITS) != Z_OK) {
-        Com_Error(ERR_FATAL, "%s: inflateInit2() failed", __func__);
-    }
+    Q_assert(inflateInit2(&cls.z, -MAX_WBITS) == Z_OK);
 #endif
 
     OGG_Init();

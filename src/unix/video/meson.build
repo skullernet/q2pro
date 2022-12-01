@@ -2,7 +2,7 @@ x11_use = true
 x11_deps = [
   dependency('x11', required: get_option('x11')),
   dependency('xi', required: get_option('x11')),
-  dependency('glx', version: '>= 1.3', required: get_option('x11'))
+  dependency('gl', required: get_option('x11'))
 ]
 
 foreach dep: x11_deps

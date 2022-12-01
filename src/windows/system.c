@@ -30,8 +30,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <setjmp.h>
 #endif
 
-#include <versionhelpers.h>
-
 HINSTANCE                       hGlobalInstance;
 
 #if USE_WINSVC
@@ -39,8 +37,8 @@ static SERVICE_STATUS_HANDLE    statusHandle;
 static jmp_buf                  exitBuf;
 #endif
 
-static volatile bool            shouldExit;
-static volatile bool            errorEntered;
+static volatile BOOL            shouldExit;
+static volatile BOOL            errorEntered;
 
 static LARGE_INTEGER            timer_freq;
 
@@ -198,19 +196,6 @@ static void clear_console_window(void)
         SetConsoleCursorPosition(houtput, pos);
     }
     show_console_input();
-}
-
-static void wait_console_key(void)
-{
-    INPUT_RECORD rec;
-    DWORD res;
-
-    while (1) {
-        if (!ReadConsoleInput(hinput, &rec, 1, &res))
-            break;
-        if (rec.EventType == KEY_EVENT && rec.Event.KeyEvent.bKeyDown)
-            break;
-    }
 }
 
 /*
@@ -491,7 +476,7 @@ void Sys_RunConsole(void)
                     f->text[f->cursorPos + 0] = ch;
                     f->text[f->cursorPos + 1] = 0;
                 } else if (f->text[f->cursorPos] == 0 && f->cursorPos + 1 < f->visibleChars) {
-                    write_console_data((char []){ ch }, 1);
+                    write_console_data(&(char){ ch }, 1);
                     f->text[f->cursorPos + 0] = ch;
                     f->text[f->cursorPos + 1] = 0;
                     f->cursorPos++;
@@ -626,7 +611,8 @@ static BOOL WINAPI Sys_ConsoleCtrlHandler(DWORD dwCtrlType)
     if (errorEntered) {
         exit(1);
     }
-    shouldExit = true;
+    shouldExit = TRUE;
+    Sleep(INFINITE);
     return TRUE;
 }
 
@@ -951,8 +937,6 @@ void Sys_Error(const char *error, ...)
     Q_vsnprintf(text, sizeof(text), error, argptr);
     va_end(argptr);
 
-    errorEntered = true;
-
 #if USE_CLIENT
     Win_Shutdown();
 #endif
@@ -970,15 +954,20 @@ void Sys_Error(const char *error, ...)
         longjmp(exitBuf, 1);
 #endif
 
-    if (sys_exitonerror && sys_exitonerror->integer)
+    errorEntered = TRUE;
+
+    if (shouldExit || (sys_exitonerror && sys_exitonerror->integer))
         exit(1);
 
 #if USE_SYSCON
     if (gotConsole) {
+        DWORD list;
+        if (GetConsoleProcessList(&list, 1) > 1)
+            exit(1);
         hide_console_input();
-        Sys_Printf("Press any key to exit.\n");
-        wait_console_key();
-        exit(1);
+        SetConsoleMode(hinput, ENABLE_PROCESSED_INPUT);
+        Sys_Printf("Press Ctrl+C to exit.\n");
+        Sleep(INFINITE);
     }
 #endif
 
@@ -1047,10 +1036,6 @@ Sys_Init
 */
 void Sys_Init(void)
 {
-    // check windows version
-    if (!IsWindowsXPOrGreater())
-        Sys_Error(PRODUCT " requires Windows XP or greater");
-
     if (!QueryPerformanceFrequency(&timer_freq))
         Sys_Error("QueryPerformanceFrequency failed");
 
@@ -1424,7 +1409,7 @@ static int      sys_argc;
 static void WINAPI ServiceHandler(DWORD fdwControl)
 {
     if (fdwControl == SERVICE_CONTROL_STOP) {
-        shouldExit = true;
+        shouldExit = TRUE;
     }
 }
 
