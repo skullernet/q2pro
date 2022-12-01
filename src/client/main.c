@@ -1070,7 +1070,7 @@ static void CL_QueryLobby(void)
     discord.app.lobbies->search(discord.app.lobbies, query, "lobbies->search", DiscordCallback);
 }
 
-static void CL_CreateDiscordLobby_f(void)
+void CL_CreateDiscordLobby_f(void)
 {
     // Call CL_QueryLobby to build a list of lobbies before creating a new lobby
     CL_QueryLobby();
@@ -1099,7 +1099,7 @@ static void CL_CreateDiscordLobby_f(void)
     }
 }
 
-static void CL_DeleteDiscordLobby(void)
+void CL_DeleteDiscordLobby(void)
 {
     if (discord.init && discord.lobby.id)
     {
@@ -1169,7 +1169,7 @@ static void CL_DeleteDiscordLobby(void)
     }
 }
 
-static void CL_InitDiscord(void)
+void CL_InitDiscord(void)
 {
     Com_Printf("==== %s ====\n", __func__);
 
@@ -1268,7 +1268,7 @@ static void CL_InitDiscord(void)
     }
 }
 
-static void CL_RunDiscord() // Run in main loop
+void CL_RunDiscord() // Run in main loop
 {
     // Discord cvar disabled, or not running and connected to the Discord network
     if (cl_discord->value != 1 || discord.discord_found == false)
@@ -1320,7 +1320,7 @@ static void CL_ClearDiscordAcivity(void)
     memset(&discord.activity, 0, sizeof(discord.activity));
 }
 
-static void CL_ShutdownDiscord()
+void CL_ShutdownDiscord()
 {
     Com_Printf("==== %s ====\n", __func__);
     CL_ClearDiscordAcivity();
