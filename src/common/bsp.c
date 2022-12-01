@@ -104,7 +104,7 @@ LOAD(Texinfo)
     mtexinfo_t  *out;
     int         i;
 #if USE_REF
-    int         j, k;
+    int         j;
     int32_t     next;
     mtexinfo_t  *step;
 #endif
@@ -124,10 +124,8 @@ LOAD(Texinfo)
 
 #if USE_REF
         for (j = 0; j < 2; j++) {
-            for (k = 0; k < 3; k++) {
-                out->axis[j][k] = LittleFloat(in->vecs[j][k]);
-            }
-            out->offset[j] = LittleFloat(in->vecs[j][k]);
+            LittleVector(in->vecs[j], out->axis[j]);
+            out->offset[j] = LittleFloat(in->vecs[j][3]);
         }
 
         next = (int32_t)LittleLong(in->nexttexinfo);
@@ -165,7 +163,7 @@ LOAD(Planes)
 {
     dplane_t    *in;
     cplane_t    *out;
-    int         i, j;
+    int         i;
 
     bsp->numplanes = count;
     bsp->planes = ALLOC(sizeof(*out) * count);
@@ -173,9 +171,7 @@ LOAD(Planes)
     in = base;
     out = bsp->planes;
     for (i = 0; i < count; i++, in++, out++) {
-        for (j = 0; j < 3; j++) {
-            out->normal[j] = LittleFloat(in->normal[j]);
-        }
+        LittleVector(in->normal, out->normal);
         out->dist = LittleFloat(in->dist);
         SetPlaneType(out);
         SetPlaneSignbits(out);
@@ -291,7 +287,7 @@ LOAD(Vertices)
 {
     dvertex_t   *in;
     mvertex_t   *out;
-    int         i, j;
+    int         i;
 
     bsp->numvertices = count;
     bsp->vertices = ALLOC(sizeof(*out) * count);
@@ -299,9 +295,7 @@ LOAD(Vertices)
     in = base;
     out = bsp->vertices;
     for (i = 0; i < count; i++, out++, in++) {
-        for (j = 0; j < 3; j++) {
-            out->point[j] = LittleFloat(in->point[j]);
-        }
+        LittleVector(in->point, out->point);
     }
 
     return Q_ERR_SUCCESS;
@@ -825,7 +819,7 @@ static bsp_t *BSP_Find(const char *name)
     return NULL;
 }
 
-static int BSP_SetParent(mnode_t *node, int key)
+static int BSP_SetParent(mnode_t *node, unsigned key)
 {
     mnode_t *child;
 #if USE_REF
@@ -932,9 +926,7 @@ void BSP_Free(bsp_t *bsp)
     if (!bsp) {
         return;
     }
-    if (bsp->refcount <= 0) {
-        Com_Error(ERR_FATAL, "%s: negative refcount", __func__);
-    }
+    Q_assert(bsp->refcount > 0);
     if (--bsp->refcount == 0) {
         Hunk_Free(&bsp->hunk);
         List_Remove(&bsp->entry);
@@ -962,8 +954,8 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
     size_t          lumpcount[HEADER_LUMPS];
     size_t          memsize;
 
-    if (!name || !bsp_p)
-        Com_Error(ERR_FATAL, "%s: NULL", __func__);
+    Q_assert(name);
+    Q_assert(bsp_p);
 
     *bsp_p = NULL;
 

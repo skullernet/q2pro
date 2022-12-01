@@ -52,6 +52,7 @@ cvar_t *gl_modulate_entities;
 cvar_t *gl_doublelight_entities;
 cvar_t *gl_fontshadow;
 cvar_t *gl_shaders;
+cvar_t *gl_waterwarp;
 cvar_t *gl_swapinterval;
 
 // development variables
@@ -82,6 +83,8 @@ cvar_t *gl_polyblend;
 cvar_t *gl_showerrors;
 
 // ==============================================================================
+
+static const vec_t quad_tc[8] = { 0, 1, 0, 0, 1, 1, 1, 0 };
 
 static void GL_SetupFrustum(void)
 {
@@ -266,24 +269,37 @@ void GL_MultMatrix(GLfloat *p, const GLfloat *a, const GLfloat *b)
     }
 }
 
-void GL_RotateForEntity(vec3_t origin)
+void GL_SetEntityAxis(void)
+{
+    if (VectorEmpty(glr.ent->angles)) {
+        glr.entrotated = false;
+        VectorSet(glr.entaxis[0], 1, 0, 0);
+        VectorSet(glr.entaxis[1], 0, 1, 0);
+        VectorSet(glr.entaxis[2], 0, 0, 1);
+    } else {
+        glr.entrotated = true;
+        AnglesToAxis(glr.ent->angles, glr.entaxis);
+    }
+}
+
+void GL_RotateForEntity(void)
 {
     GLfloat matrix[16];
 
     matrix[0] = glr.entaxis[0][0];
     matrix[4] = glr.entaxis[1][0];
     matrix[8] = glr.entaxis[2][0];
-    matrix[12] = origin[0];
+    matrix[12] = glr.ent->origin[0];
 
     matrix[1] = glr.entaxis[0][1];
     matrix[5] = glr.entaxis[1][1];
     matrix[9] = glr.entaxis[2][1];
-    matrix[13] = origin[1];
+    matrix[13] = glr.ent->origin[1];
 
     matrix[2] = glr.entaxis[0][2];
     matrix[6] = glr.entaxis[1][2];
     matrix[10] = glr.entaxis[2][2];
-    matrix[14] = origin[2];
+    matrix[14] = glr.ent->origin[2];
 
     matrix[3] = 0;
     matrix[7] = 0;
@@ -296,7 +312,6 @@ void GL_RotateForEntity(vec3_t origin)
 
 static void GL_DrawSpriteModel(model_t *model)
 {
-    static const vec_t tcoords[8] = { 0, 1, 0, 0, 1, 1, 1, 0 };
     entity_t *e = glr.ent;
     mspriteframe_t *frame = &model->spriteframes[e->frame % model->numframes];
     image_t *image = frame->image;
@@ -333,7 +348,7 @@ static void GL_DrawSpriteModel(model_t *model)
     VectorAdd3(e->origin, down, right, points[2]);
     VectorAdd3(e->origin, up, right, points[3]);
 
-    GL_TexCoordPointer(2, 0, tcoords);
+    GL_TexCoordPointer(2, 0, quad_tc);
     GL_VertexPointer(3, 0, &points[0][0]);
     qglDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
@@ -388,15 +403,7 @@ static void GL_DrawEntities(int mask)
         glr.ent = ent;
 
         // convert angles to axis
-        if (VectorEmpty(ent->angles)) {
-            glr.entrotated = false;
-            VectorSet(glr.entaxis[0], 1, 0, 0);
-            VectorSet(glr.entaxis[1], 0, 1, 0);
-            VectorSet(glr.entaxis[2], 0, 0, 1);
-        } else {
-            glr.entrotated = true;
-            AnglesToAxis(ent->angles, glr.entaxis);
-        }
+        GL_SetEntityAxis();
 
         // inline BSP model
         if (ent->model & 0x80000000) {
@@ -433,7 +440,7 @@ static void GL_DrawEntities(int mask)
         case MOD_EMPTY:
             break;
         default:
-            Com_Error(ERR_FATAL, "%s: bad model type", __func__);
+            Q_assert(!"bad model type");
         }
 
         if (gl_showorigins->integer) {
@@ -503,13 +510,30 @@ bool GL_ShowErrors(const char *func)
     return true;
 }
 
+static void GL_WaterWarp(void)
+{
+    GL_ForceTexture(0, gl_static.warp_texture);
+    GL_StateBits(GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE |
+                 GLS_CULL_DISABLE | GLS_TEXTURE_REPLACE | GLS_WARP_ENABLE);
+    GL_ArrayBits(GLA_VERTEX | GLA_TC);
+
+    vec_t points[8] = {
+        glr.fd.x,                glr.fd.y,
+        glr.fd.x,                glr.fd.y + glr.fd.height,
+        glr.fd.x + glr.fd.width, glr.fd.y,
+        glr.fd.x + glr.fd.width, glr.fd.y + glr.fd.height,
+    };
+
+    GL_TexCoordPointer(2, 0, quad_tc);
+    GL_VertexPointer(2, 0, points);
+    qglDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+}
+
 void R_RenderFrame(refdef_t *fd)
 {
     GL_Flush2D();
 
-    if (!gl_static.world.cache && !(fd->rdflags & RDF_NOWORLDMODEL)) {
-        Com_Error(ERR_FATAL, "%s: NULL worldmodel", __func__);
-    }
+    Q_assert(gl_static.world.cache || (fd->rdflags & RDF_NOWORLDMODEL));
 
     glr.drawframe++;
 
@@ -527,7 +551,22 @@ void R_RenderFrame(refdef_t *fd)
         lm.dirty = false;
     }
 
-    GL_Setup3D();
+    bool waterwarp = (glr.fd.rdflags & RDF_UNDERWATER) && gl_static.use_shaders && gl_waterwarp->integer;
+
+    if (waterwarp) {
+        if (glr.fd.width != glr.framebuffer_width || glr.fd.height != glr.framebuffer_height) {
+            glr.framebuffer_ok = GL_InitWarpTexture();
+            glr.framebuffer_width = glr.fd.width;
+            glr.framebuffer_height = glr.fd.height;
+        }
+        waterwarp = glr.framebuffer_ok;
+    }
+
+    if (waterwarp) {
+        qglBindFramebuffer(GL_FRAMEBUFFER, gl_static.warp_framebuffer);
+    }
+
+    GL_Setup3D(waterwarp);
 
     if (gl_cull_nodes->integer) {
         GL_SetupFrustum();
@@ -549,8 +588,16 @@ void R_RenderFrame(refdef_t *fd)
         GL_DrawAlphaFaces();
     }
 
+    if (waterwarp) {
+        qglBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
     // go back into 2D mode
     GL_Setup2D();
+
+    if (waterwarp) {
+        GL_WaterWarp();
+    }
 
     if (gl_polyblend->integer && glr.fd.blend[3] != 0) {
         GL_Blend();
@@ -719,7 +766,7 @@ static void GL_Register(void)
     gl_coloredlightmaps->changed = gl_lightmap_changed;
     gl_brightness = Cvar_Get("gl_brightness", "0", 0);
     gl_brightness->changed = gl_lightmap_changed;
-    gl_dynamic = Cvar_Get("gl_dynamic", "2", 0);
+    gl_dynamic = Cvar_Get("gl_dynamic", "1", 0);
     gl_dynamic->changed = gl_lightmap_changed;
 #if USE_DLIGHTS
     gl_dlight_falloff = Cvar_Get("gl_dlight_falloff", "1", 0);
@@ -729,6 +776,7 @@ static void GL_Register(void)
     gl_doublelight_entities = Cvar_Get("gl_doublelight_entities", "1", 0);
     gl_fontshadow = Cvar_Get("gl_fontshadow", "0", 0);
     gl_shaders = Cvar_Get("gl_shaders", (gl_config.caps & QGL_CAP_SHADER) ? "1" : "0", CVAR_REFRESH);
+    gl_waterwarp = Cvar_Get("gl_waterwarp", "1", 0);
     gl_swapinterval = Cvar_Get("gl_swapinterval", "1", CVAR_ARCHIVE);
     gl_swapinterval->changed = gl_swapinterval_changed;
 
@@ -749,7 +797,7 @@ static void GL_Register(void)
 #endif
     gl_cull_nodes = Cvar_Get("gl_cull_nodes", "1", 0);
     gl_cull_models = Cvar_Get("gl_cull_models", "1", 0);
-    gl_hash_faces = Cvar_Get("gl_hash_faces", "1", 0);
+    gl_hash_faces = Cvar_Get("gl_hash_faces", "0", 0);
     gl_clear = Cvar_Get("gl_clear", "0", 0);
     gl_finish = Cvar_Get("gl_finish", "0", 0);
     gl_novis = Cvar_Get("gl_novis", "0", 0);

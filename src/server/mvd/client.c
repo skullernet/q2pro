@@ -1510,11 +1510,11 @@ static bool check_reconnect(gtv_t *gtv)
     gtv->last_sent = gtv->last_rcvd = svs.realtime;
 
     if (!NET_StringToAdr(gtv->address, &adr, PORT_SERVER)) {
-        gtv_dropf(gtv, "Unable to lookup %s\n", gtv->address);
+        gtv_dropf(gtv, "Unable to lookup %s", gtv->address);
     }
 
-    if (NET_Connect(&adr, &gtv->stream) == NET_ERROR) {
-        gtv_dropf(gtv, "%s to %s\n", NET_ErrorString(),
+    if (NET_Connect(&adr, &gtv->stream)) {
+        gtv_dropf(gtv, "Unable to connect to %s",
                   NET_AdrToString(&adr));
     }
 
@@ -1540,7 +1540,7 @@ static void gtv_run(gtv_t *gtv)
             return;
         }
         if (ret == NET_OK) {
-        case NS_CONNECTED:
+    case NS_CONNECTED:
             ret = run_stream(gtv);
         }
         break;
@@ -2037,8 +2037,8 @@ static void MVD_Connect_f(void)
     }
 
     // create new socket and start connecting
-    if (NET_Connect(&adr, &stream) == NET_ERROR) {
-        Com_EPrintf("%s to %s\n", NET_ErrorString(),
+    if (NET_Connect(&adr, &stream)) {
+        Com_EPrintf("Unable to connect to %s\n",
                     NET_AdrToString(&adr));
         return;
     }
@@ -2069,11 +2069,51 @@ static void MVD_Connect_f(void)
                gtv->name, NET_AdrToString(&adr));
 }
 
+static const cmd_option_t o_mvdisconnect[] = {
+    { "a", "all", "destroy all connections" },
+    { "h", "help", "display this message" },
+    { NULL }
+};
+
+static void MVD_Disconnect_c(genctx_t *ctx, int argnum)
+{
+    Cmd_Option_c(o_mvdisconnect, NULL, ctx, argnum);
+}
+
 static void MVD_Disconnect_f(void)
 {
-    gtv_t *gtv;
+    gtv_t *gtv, *next;
+    bool all = false;
+    int c;
 
-    gtv = gtv_set_conn(1);
+    while ((c = Cmd_ParseOptions(o_mvdisconnect)) != -1) {
+        switch (c) {
+        case 'h':
+            Cmd_PrintUsage(o_mvdisconnect, "[conn_id]");
+            Com_Printf("Destroy specified MVD/GTV server connection.\n");
+            Cmd_PrintHelp(o_mvdisconnect);
+            return;
+        case 'a':
+            all = true;
+            break;
+        default:
+            return;
+        }
+    }
+
+    if (all) {
+        if (LIST_EMPTY(&mvd_gtv_list)) {
+            Com_Printf("No GTV connections.\n");
+            return;
+        }
+        LIST_FOR_EACH_SAFE(gtv_t, gtv, next, &mvd_gtv_list, entry) {
+            gtv->destroy(gtv);
+        }
+        Com_Printf("Destroyed all GTV connections.\n");
+        return;
+    }
+
+    gtv = gtv_set_conn(cmd_optind);
     if (!gtv) {
         return;
     }
@@ -2583,7 +2623,7 @@ void MVD_Shutdown(void)
 static const cmdreg_t c_mvd[] = {
     { "mvdplay", MVD_Play_f, MVD_Play_c },
     { "mvdconnect", MVD_Connect_f, MVD_Connect_c },
-    { "mvdisconnect", MVD_Disconnect_f },
+    { "mvdisconnect", MVD_Disconnect_f, MVD_Disconnect_c },
     { "mvdkill", MVD_Kill_f },
     { "mvdspawn", MVD_Spawn_f },
     { "mvdchannels", MVD_ListChannels_f },
