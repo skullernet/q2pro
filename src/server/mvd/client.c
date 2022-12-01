@@ -76,7 +76,8 @@ typedef struct gtv_s {
     qhandle_t       demoplayback;
     int             demoloop, demoskip;
     string_entry_t  *demohead, *demoentry;
-    int64_t         demosize, demopos;
+    int64_t         demosize, demoofs;
+    float           demoprogress;
     bool            demowait;
 } gtv_t;
 
@@ -138,12 +139,12 @@ void MVD_StopRecord(mvd_t *mvd)
 
 static void MVD_Free(mvd_t *mvd)
 {
-    mvd_snap_t *snap, *next;
     int i;
 
-    LIST_FOR_EACH_SAFE(mvd_snap_t, snap, next, &mvd->snapshots, entry) {
-        Z_Free(snap);
+    for (i = 0; i < mvd->numsnapshots; i++) {
+        Z_Free(mvd->snapshots[i]);
     }
+    Z_Free(mvd->snapshots);
 
     // stop demo recording
     if (mvd->demorecording) {
@@ -328,7 +329,6 @@ static mvd_t *create_channel(gtv_t *gtv)
     mvd->pool.max_edicts = MAX_EDICTS;
     mvd->pm_type = PM_SPECTATOR;
     mvd->min_packets = mvd_wait_delay->integer;
-    List_Init(&mvd->snapshots);
     List_Init(&mvd->clients);
     List_Init(&mvd->entry);
 
@@ -426,29 +426,30 @@ int MVD_Frame(void)
 }
 
 #if USE_CLIENT
-int MVD_GetDemoPercent(bool *paused, int *framenum)
+bool MVD_GetDemoStatus(float *progress, bool *paused, int *framenum)
 {
     mvd_t *mvd;
     gtv_t *gtv;
 
     if ((mvd = find_local_channel()) == NULL)
-        return -1;
+        return false;
 
     if ((gtv = mvd->gtv) == NULL)
-        return -1;
+        return false;
 
     if (!gtv->demoplayback)
-        return -1;
+        return false;
 
+    if (!gtv->demosize)
+        return false;
+
+    if (progress)
+        *progress = gtv->demoprogress;
     if (paused)
         *paused = mvd->state == MVD_WAITING;
     if (framenum)
         *framenum = mvd->framenum;
-
-    if (!gtv->demosize)
-        return -1;
-
-    return gtv->demopos * 100 / gtv->demosize;
+    return true;
 }
 #endif
 
@@ -544,6 +545,9 @@ static int demo_read_first(qhandle_t f)
     return read ? read : Q_ERR_UNEXPECTED_EOF;
 }
 
+#define MIN_SNAPSHOTS   64
+#define MAX_SNAPSHOTS   250000000
+
 // periodically builds a fake demo packet used to reconstruct delta compression
 // state, configstrings and layouts at the given server frame.
 static void demo_emit_snapshot(mvd_t *mvd)
@@ -561,6 +565,9 @@ static void demo_emit_snapshot(mvd_t *mvd)
     if (mvd->framenum < mvd->last_snapshot + mvd_snaps->integer * 10)
         return;
 
+    if (mvd->numsnapshots >= MAX_SNAPSHOTS)
+        return;
+
     gtv = mvd->gtv;
     if (!gtv)
         return;
@@ -569,7 +576,7 @@ static void demo_emit_snapshot(mvd_t *mvd)
         return;
 
     pos = FS_Tell(gtv->demoplayback);
-    if (pos < gtv->demopos)
+    if (pos < gtv->demoofs)
         return;
 
     // write baseline frame
@@ -598,7 +605,12 @@ static void demo_emit_snapshot(mvd_t *mvd)
     snap->filepos = pos;
     snap->msglen = msg_write.cursize;
     memcpy(snap->data, msg_write.data, msg_write.cursize);
-    List_Append(&mvd->snapshots, &snap->entry);
+
+    if (!mvd->snapshots)
+        mvd->snapshots = MVD_Malloc(sizeof(snap) * MIN_SNAPSHOTS);
+    else
+        mvd->snapshots = Z_Realloc(mvd->snapshots, sizeof(snap) * ALIGN(mvd->numsnapshots + 1, MIN_SNAPSHOTS));
+    mvd->snapshots[mvd->numsnapshots++] = snap;
 
     Com_DPrintf("[%d] snaplen %zu\n", mvd->framenum, msg_write.cursize);
 
@@ -607,28 +619,38 @@ static void demo_emit_snapshot(mvd_t *mvd)
     mvd->last_snapshot = mvd->framenum;
 }
 
-static mvd_snap_t *demo_find_snapshot(mvd_t *mvd, int framenum)
+static mvd_snap_t *demo_find_snapshot(mvd_t *mvd, int64_t dest, bool byte_seek)
 {
-    mvd_snap_t *snap, *prev;
+    int l = 0;
+    int r = mvd->numsnapshots - 1;
 
-    if (LIST_EMPTY(&mvd->snapshots))
+    if (r < 0)
         return NULL;
 
-    prev = LIST_FIRST(mvd_snap_t, &mvd->snapshots, entry);
+    do {
+        int m = (l + r) / 2;
+        mvd_snap_t *snap = mvd->snapshots[m];
+        int64_t pos = byte_seek ? snap->filepos : snap->framenum;
+        if (pos < dest)
+            l = m + 1;
+        else if (pos > dest)
+            r = m - 1;
+        else
+            return snap;
+    } while (l <= r);
 
-    LIST_FOR_EACH(mvd_snap_t, snap, &mvd->snapshots, entry) {
-        if (snap->framenum > framenum)
-            break;
-        prev = snap;
-    }
-
-    return prev;
+    return mvd->snapshots[max(r, 0)];
 }
 
 static void demo_update(gtv_t *gtv)
 {
     if (gtv->demosize) {
-        gtv->demopos = FS_Tell(gtv->demoplayback);
+        int64_t pos = FS_Tell(gtv->demoplayback);
+
+        if (pos > gtv->demoofs)
+            gtv->demoprogress = (float)(pos - gtv->demoofs) / gtv->demosize;
+        else
+            gtv->demoprogress = 0.0f;
     }
 }
 
@@ -691,7 +713,8 @@ next:
 
 static void demo_play_next(gtv_t *gtv, string_entry_t *entry)
 {
-    int64_t len, ret;
+    int64_t len, ofs;
+    int ret;
 
     if (!entry) {
         if (gtv->demoloop) {
@@ -744,10 +767,12 @@ static void demo_play_next(gtv_t *gtv, string_entry_t *entry)
     // set channel address
     Q_strlcpy(gtv->address, COM_SkipPath(entry->string), sizeof(gtv->address));
 
-    gtv->demosize = FS_Length(gtv->demoplayback);
-    gtv->demopos = FS_Tell(gtv->demoplayback);
-    if (gtv->demosize < 0 || gtv->demopos < 0) {
-        gtv->demosize = gtv->demopos = 0;
+    ofs = FS_Tell(gtv->demoplayback);
+    if (ofs > 0 && ofs < len) {
+        gtv->demoofs = ofs;
+        gtv->demosize = len - ofs;
+    } else {
+        gtv->demosize = gtv->demoofs = 0;
     }
 
     demo_emit_snapshot(gtv->mvd);
@@ -1485,11 +1510,11 @@ static bool check_reconnect(gtv_t *gtv)
     gtv->last_sent = gtv->last_rcvd = svs.realtime;
 
     if (!NET_StringToAdr(gtv->address, &adr, PORT_SERVER)) {
-        gtv_dropf(gtv, "Unable to lookup %s\n", gtv->address);
+        gtv_dropf(gtv, "Unable to lookup %s", gtv->address);
     }
 
-    if (NET_Connect(&adr, &gtv->stream) == NET_ERROR) {
-        gtv_dropf(gtv, "%s to %s\n", NET_ErrorString(),
+    if (NET_Connect(&adr, &gtv->stream)) {
+        gtv_dropf(gtv, "Unable to connect to %s",
                   NET_AdrToString(&adr));
     }
 
@@ -1515,7 +1540,7 @@ static void gtv_run(gtv_t *gtv)
             return;
         }
         if (ret == NET_OK) {
-        case NS_CONNECTED:
+    case NS_CONNECTED:
             ret = run_stream(gtv);
         }
         break;
@@ -2012,8 +2037,8 @@ static void MVD_Connect_f(void)
     }
 
     // create new socket and start connecting
-    if (NET_Connect(&adr, &stream) == NET_ERROR) {
-        Com_EPrintf("%s to %s\n", NET_ErrorString(),
+    if (NET_Connect(&adr, &stream)) {
+        Com_EPrintf("Unable to connect to %s\n",
                     NET_AdrToString(&adr));
         return;
     }
@@ -2044,11 +2069,51 @@ static void MVD_Connect_f(void)
                gtv->name, NET_AdrToString(&adr));
 }
 
+static const cmd_option_t o_mvdisconnect[] = {
+    { "a", "all", "destroy all connections" },
+    { "h", "help", "display this message" },
+    { NULL }
+};
+
+static void MVD_Disconnect_c(genctx_t *ctx, int argnum)
+{
+    Cmd_Option_c(o_mvdisconnect, NULL, ctx, argnum);
+}
+
 static void MVD_Disconnect_f(void)
 {
-    gtv_t *gtv;
+    gtv_t *gtv, *next;
+    bool all = false;
+    int c;
 
-    gtv = gtv_set_conn(1);
+    while ((c = Cmd_ParseOptions(o_mvdisconnect)) != -1) {
+        switch (c) {
+        case 'h':
+            Cmd_PrintUsage(o_mvdisconnect, "[conn_id]");
+            Com_Printf("Destroy specified MVD/GTV server connection.\n");
+            Cmd_PrintHelp(o_mvdisconnect);
+            return;
+        case 'a':
+            all = true;
+            break;
+        default:
+            return;
+        }
+    }
+
+    if (all) {
+        if (LIST_EMPTY(&mvd_gtv_list)) {
+            Com_Printf("No GTV connections.\n");
+            return;
+        }
+        LIST_FOR_EACH_SAFE(gtv_t, gtv, next, &mvd_gtv_list, entry) {
+            gtv->destroy(gtv);
+        }
+        Com_Printf("Destroyed all GTV connections.\n");
+        return;
+    }
+
+    gtv = gtv_set_conn(cmd_optind);
     if (!gtv) {
         return;
     }
@@ -2127,13 +2192,14 @@ static void MVD_Seek_f(void)
     mvd_t *mvd;
     gtv_t *gtv;
     mvd_snap_t *snap;
-    int i, j, ret, index, frames, dest;
+    int i, j, ret, index, frames;
+    int64_t dest;
     char *from, *to;
     edict_t *ent;
-    bool gamestate;
+    bool gamestate, back_seek, byte_seek;
 
     if (Cmd_Argc() < 2) {
-        Com_Printf("Usage: %s [+-]<timespec> [chanid]\n", Cmd_Argv(0));
+        Com_Printf("Usage: %s [+-]<timespec|percent>[%%] [chanid]\n", Cmd_Argv(0));
         return;
     }
 
@@ -2156,27 +2222,50 @@ static void MVD_Seek_f(void)
 
     to = Cmd_Argv(1);
 
-    if (*to == '-' || *to == '+') {
-        // relative to current frame
-        if (!Com_ParseTimespec(to + 1, &frames)) {
-            Com_Printf("Invalid relative timespec.\n");
+    if (strchr(to, '%')) {
+        char *suf;
+        float percent = strtof(to, &suf);
+        if (strcmp(suf, "%") || !isfinite(percent)) {
+            Com_Printf("[%s] Invalid percentage.\n", mvd->name);
             return;
         }
-        if (*to == '-')
-            frames = -frames;
-        dest = mvd->framenum + frames;
-    } else {
-        // relative to first frame
-        if (!Com_ParseTimespec(to, &dest)) {
-            Com_Printf("Invalid absolute timespec.\n");
-            return;
-        }
-        frames = dest - mvd->framenum;
-    }
 
-    if (!frames)
-        // already there
-        return;
+        if (!gtv->demosize) {
+            Com_Printf("[%s] Unknown file size, can't seek.\n", mvd->name);
+            return;
+        }
+
+        clamp(percent, 0, 100);
+        dest = gtv->demoofs + gtv->demosize * percent / 100;
+
+        byte_seek = true;
+        back_seek = dest < FS_Tell(gtv->demoplayback);
+    } else {
+        if (*to == '-' || *to == '+') {
+            // relative to current frame
+            if (!Com_ParseTimespec(to + 1, &frames)) {
+                Com_Printf("Invalid relative timespec.\n");
+                return;
+            }
+            if (*to == '-')
+                frames = -frames;
+            dest = mvd->framenum + frames;
+        } else {
+            // relative to first frame
+            if (!Com_ParseTimespec(to, &i)) {
+                Com_Printf("Invalid absolute timespec.\n");
+                return;
+            }
+            dest = i;
+            frames = i - mvd->framenum;
+        }
+
+        if (!frames)
+            return; // already there
+
+        byte_seek = false;
+        back_seek = frames < 0;
+    }
 
     if (setjmp(mvd_jmpbuf))
         return;
@@ -2187,11 +2276,11 @@ static void MVD_Seek_f(void)
     // clear dirty configstrings
     memset(mvd->dcs, 0, sizeof(mvd->dcs));
 
-    Com_DPrintf("[%d] seeking to %d\n", mvd->framenum, dest);
+    Com_DPrintf("[%d] seeking to %"PRId64"\n", mvd->framenum, dest);
 
     // seek to the previous most recent snapshot
-    if (frames < 0 || mvd->last_snapshot > mvd->framenum) {
-        snap = demo_find_snapshot(mvd, dest);
+    if (back_seek || mvd->last_snapshot > mvd->framenum) {
+        snap = demo_find_snapshot(mvd, dest, byte_seek);
 
         if (snap) {
             Com_DPrintf("found snap at %d\n", snap->framenum);
@@ -2224,14 +2313,18 @@ static void MVD_Seek_f(void)
 
             MVD_ParseMessage(mvd);
             mvd->framenum = snap->framenum;
-        } else if (frames < 0) {
+        } else if (back_seek) {
             Com_Printf("[%s] Couldn't seek backwards without snapshots!\n", mvd->name);
             goto done;
         }
     }
 
-    // skip forward to destination frame
-    while (mvd->framenum < dest) {
+    // skip forward to destination frame/position
+    while (1) {
+        int64_t pos = byte_seek ? FS_Tell(gtv->demoplayback) : mvd->framenum;
+        if (pos >= dest)
+            break;
+
         ret = demo_read_message(gtv->demoplayback);
         if (ret <= 0) {
             demo_finish(gtv, ret);
@@ -2530,7 +2623,7 @@ void MVD_Shutdown(void)
 static const cmdreg_t c_mvd[] = {
     { "mvdplay", MVD_Play_f, MVD_Play_c },
     { "mvdconnect", MVD_Connect_f, MVD_Connect_c },
-    { "mvdisconnect", MVD_Disconnect_f },
+    { "mvdisconnect", MVD_Disconnect_f, MVD_Disconnect_c },
     { "mvdkill", MVD_Kill_f },
     { "mvdspawn", MVD_Spawn_f },
     { "mvdchannels", MVD_ListChannels_f },

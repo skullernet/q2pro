@@ -63,8 +63,8 @@ typedef struct playsound_s {
 
 typedef struct channel_s {
     sfx_t       *sfx;           // sfx number
-    int         leftvol;        // 0-255 volume
-    int         rightvol;       // 0-255 volume
+    float       leftvol;        // 0.0-1.0 volume
+    float       rightvol;       // 0.0-1.0 volume
     int         end;            // end time in global paintsamples
     int         pos;            // sample position in sfx
     int         entnum;         // to allow overriding a specific sound
@@ -110,7 +110,7 @@ typedef struct {
     sfxcache_t *(*upload_sfx)(sfx_t *s);
     void (*delete_sfx)(sfx_t *s);
     void (*page_in_sfx)(sfx_t *s);
-    void (*raw_samples)(int samples, int rate, int width, int channels, const byte *data, float volume);
+    bool (*raw_samples)(int samples, int rate, int width, int channels, const byte *data, float volume);
     bool (*need_raw_samples)(void);
     void (*drop_raw_samples)(void);
     int (*get_begin_ofs)(float timeofs);
@@ -162,6 +162,8 @@ extern cvar_t       *s_ambient;
 #if USE_DEBUG
 extern cvar_t       *s_show;
 #endif
+extern cvar_t       *s_underwater;
+extern cvar_t       *s_underwater_gain_hf;
 
 // clip integer to [-0x8000, 0x7FFF] range (stolen from FFmpeg)
 static inline int clip16(int v)
@@ -172,6 +174,9 @@ static inline int clip16(int v)
 #define S_IsFullVolume(ch) \
     ((ch)->entnum == -1 || (ch)->entnum == listener_entnum || (ch)->dist_mult == 0)
 
+#define S_IsUnderWater() \
+    (cls.state == ca_active && cl.frame.ps.rdflags & RDF_UNDERWATER && s_underwater->integer)
+
 #define S_Malloc(x)     Z_TagMalloc(x, TAG_SOUND)
 #define S_CopyString(x) Z_TagCopyString(x, TAG_SOUND)
 
@@ -180,3 +185,7 @@ sfxcache_t *S_LoadSound(sfx_t *s);
 channel_t *S_PickChannel(int entnum, int entchannel);
 void S_IssuePlaysound(playsound_t *ps);
 void S_BuildSoundList(int *sounds);
+
+#if USE_OGG
+bool OGG_Load(sizebuf_t *sz);
+#endif

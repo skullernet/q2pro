@@ -353,6 +353,13 @@ typedef struct {
     char        path[1];
 } dlqueue_t;
 
+typedef struct {
+    int         framenum;
+    int64_t     filepos;
+    size_t      msglen;
+    byte        data[1];
+} demosnap_t;
+
 typedef struct client_static_s {
     connstate_t state;
     keydest_t   key_dest;
@@ -444,9 +451,10 @@ typedef struct client_static_s {
         int         last_snapshot;      // number of demo frame the last snapshot was saved
         int64_t     file_size;
         int64_t     file_offset;
-        int         file_percent;
+        float       file_progress;
         sizebuf_t   buffer;
-        list_t      snapshots;
+        demosnap_t  **snapshots;
+        int         numsnapshots;
         bool        paused;
         bool        seeking;
         bool        eof;
@@ -933,6 +941,7 @@ void    SCR_StopCinematic(void);
 void    SCR_FinishCinematic(void);
 void    SCR_RunCinematic(void);
 void    SCR_DrawCinematic(void);
+void    SCR_ReloadCinematic(void);
 void    SCR_PlayCinematic(const char *name);
 
 //

@@ -17,12 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "sound.h"
-
-#if USE_FIXED_LIBAL
-#include "qal/fixed.h"
-#else
-#include "qal/dynamic.h"
-#endif
+#include "qal.h"
 
 // translates from AL coordinate system to quake
 #define AL_UnpackVector(v)  -v[1],v[2],-v[0]
@@ -38,6 +33,9 @@ static ALboolean    s_loop_points;
 static ALboolean    s_source_spatialize;
 static unsigned     s_framecount;
 
+static ALuint       s_underwater_filter;
+static bool         s_underwater_flag;
+
 static void AL_StreamStop(void);
 
 static void AL_SoundInfo(void)
@@ -47,6 +45,17 @@ static void AL_SoundInfo(void)
     Com_Printf("AL_VERSION: %s\n", qalGetString(AL_VERSION));
     Com_Printf("AL_EXTENSIONS: %s\n", qalGetString(AL_EXTENSIONS));
     Com_Printf("Number of sources: %d\n", s_numchannels);
+}
+
+static void s_underwater_gain_hf_changed(cvar_t *self)
+{
+    if (s_underwater_flag) {
+        for (int i = 0; i < s_numchannels; i++)
+            qalSourcei(s_srcnums[i], AL_DIRECT_FILTER, 0);
+        s_underwater_flag = false;
+    }
+
+    qalFilterf(s_underwater_filter, AL_LOWPASS_GAINHF, Cvar_ClampValue(self, 0, 1));
 }
 
 static bool AL_Init(void)
@@ -93,6 +102,14 @@ static bool AL_Init(void)
     if (s_source_spatialize)
         qalSourcei(s_stream, AL_SOURCE_SPATIALIZE_SOFT, AL_FALSE);
 
+    // init underwater filter
+    if (qalGenFilters && qalGetEnumValue("AL_FILTER_LOWPASS")) {
+        qalGenFilters(1, &s_underwater_filter);
+        qalFilteri(s_underwater_filter, AL_FILTER_TYPE, AL_FILTER_LOWPASS);
+        s_underwater_gain_hf->changed = s_underwater_gain_hf_changed;
+        s_underwater_gain_hf_changed(s_underwater_gain_hf);
+    }
+
     Com_Printf("OpenAL initialized.\n");
     return true;
 
@@ -120,6 +137,14 @@ static void AL_Shutdown(void)
         s_stream = 0;
     }
 
+    if (s_underwater_filter) {
+        qalDeleteFilters(1, &s_underwater_filter);
+        s_underwater_filter = 0;
+    }
+
+    s_underwater_flag = false;
+    s_underwater_gain_hf->changed = NULL;
+
     QAL_Shutdown();
 }
 
@@ -127,20 +152,23 @@ static sfxcache_t *AL_UploadSfx(sfx_t *s)
 {
     ALsizei size = s_info.samples * s_info.width * s_info.channels;
     ALenum format = AL_FORMAT_MONO8 + (s_info.channels - 1) * 2 + (s_info.width - 1);
-    ALuint name;
+    ALuint buffer;
 
     qalGetError();
-    qalGenBuffers(1, &name);
-    qalBufferData(name, format, s_info.data, size, s_info.rate);
-    if (qalGetError() != AL_NO_ERROR) {
-        s->error = Q_ERR_LIBRARY_ERROR;
-        return NULL;
+    qalGenBuffers(1, &buffer);
+    if (qalGetError())
+        goto fail;
+
+    qalBufferData(buffer, format, s_info.data, size, s_info.rate);
+    if (qalGetError()) {
+        qalDeleteBuffers(1, &buffer);
+        goto fail;
     }
 
     // specify OpenAL-Soft style loop points
     if (s_info.loopstart > 0 && s_loop_points) {
         ALint points[2] = { s_info.loopstart, s_info.samples };
-        qalBufferiv(name, AL_LOOP_POINTS_SOFT, points);
+        qalBufferiv(buffer, AL_LOOP_POINTS_SOFT, points);
     }
 
     // allocate placeholder sfxcache
@@ -150,9 +178,13 @@ static sfxcache_t *AL_UploadSfx(sfx_t *s)
     sc->width = s_info.width;
     sc->channels = s_info.channels;
     sc->size = size;
-    sc->bufnum = name;
+    sc->bufnum = buffer;
 
     return sc;
+
+fail:
+    s->error = Q_ERR_LIBRARY_ERROR;
+    return NULL;
 }
 
 static void AL_DeleteSfx(sfx_t *s)
@@ -339,10 +371,10 @@ static void AL_AddLoopSounds(void)
 
 static void AL_StreamUpdate(void)
 {
-    ALint num_buffers;
+    ALint num_buffers = 0;
     qalGetSourcei(s_stream, AL_BUFFERS_PROCESSED, &num_buffers);
     while (num_buffers--) {
-        ALuint buffer;
+        ALuint buffer = 0;
         qalSourceUnqueueBuffers(s_stream, 1, &buffer);
         qalDeleteBuffers(1, &buffer);
         s_stream_buffers--;
@@ -353,33 +385,41 @@ static void AL_StreamStop(void)
 {
     qalSourceStop(s_stream);
     AL_StreamUpdate();
-
-    if (s_stream_buffers)
-        Com_Error(ERR_FATAL, "Unbalanced number of AL buffers");
+    Q_assert(!s_stream_buffers);
 }
 
-static void AL_RawSamples(int samples, int rate, int width, int channels, const byte *data, float volume)
+static bool AL_RawSamples(int samples, int rate, int width, int channels, const byte *data, float volume)
 {
     ALenum format = AL_FORMAT_MONO8 + (channels - 1) * 2 + (width - 1);
     ALuint buffer;
 
-    qalGetError();
-    qalGenBuffers(1, &buffer);
-    qalBufferData(buffer, format, data, samples * width * channels, rate);
-    if (qalGetError() != AL_NO_ERROR)
-        return;
+    if (s_stream_buffers < 16) {
+        qalGetError();
+        qalGenBuffers(1, &buffer);
+        if (qalGetError())
+            return false;
 
-    qalSourceQueueBuffers(s_stream, 1, &buffer);
-    if (qalGetError() != AL_NO_ERROR)
-        return;
-    s_stream_buffers++;
+        qalBufferData(buffer, format, data, samples * width * channels, rate);
+        if (qalGetError()) {
+            qalDeleteBuffers(1, &buffer);
+            return false;
+        }
+
+        qalSourceQueueBuffers(s_stream, 1, &buffer);
+        if (qalGetError()) {
+            qalDeleteBuffers(1, &buffer);
+            return false;
+        }
+        s_stream_buffers++;
+    }
 
     qalSourcef(s_stream, AL_GAIN, volume);
 
-    ALint state;
+    ALint state = AL_PLAYING;
     qalGetSourcei(s_stream, AL_SOURCE_STATE, &state);
     if (state != AL_PLAYING)
         qalSourcePlay(s_stream);
+    return true;
 }
 
 static bool AL_NeedRawSamples(void)
@@ -387,11 +427,31 @@ static bool AL_NeedRawSamples(void)
     return s_stream_buffers < 16;
 }
 
+static void AL_UpdateUnderWater(void)
+{
+    bool underwater = S_IsUnderWater();
+    ALint filter = 0;
+
+    if (!s_underwater_filter)
+        return;
+
+    if (s_underwater_flag == underwater)
+        return;
+
+    if (underwater)
+        filter = s_underwater_filter;
+
+    for (int i = 0; i < s_numchannels; i++)
+        qalSourcei(s_srcnums[i], AL_DIRECT_FILTER, filter);
+
+    s_underwater_flag = underwater;
+}
+
 static void AL_Update(void)
 {
     int         i;
     channel_t   *ch;
-    vec_t       orientation[6];
+    ALfloat     orientation[6];
 
     if (!s_active)
         return;
@@ -406,6 +466,8 @@ static void AL_Update(void)
     qalListenerf(AL_GAIN, s_volume->value);
     qalDistanceModel(AL_LINEAR_DISTANCE_CLAMPED);
 
+    AL_UpdateUnderWater();
+
     // update spatialization for dynamic sounds
     for (i = 0, ch = s_channels; i < s_numchannels; i++, ch++) {
         if (!ch->sfx)
@@ -418,11 +480,9 @@ static void AL_Update(void)
                 continue;
             }
         } else {
-            ALenum state;
-
-            qalGetError();
+            ALenum state = AL_STOPPED;
             qalGetSourcei(ch->srcnum, AL_SOURCE_STATE, &state);
-            if (qalGetError() != AL_NO_ERROR || state == AL_STOPPED) {
+            if (state == AL_STOPPED) {
                 AL_StopChannel(ch);
                 continue;
             }

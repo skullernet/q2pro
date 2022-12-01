@@ -31,11 +31,21 @@ typedef struct {
 } hnode_t;
 
 typedef struct {
+    const char  *name;
+    uint32_t    size;
+    uint16_t    start;
+    uint16_t    crop;
+} crop_t;
+
+typedef struct {
     int         width;
     int         height;
+    int         crop;
     int         s_rate;
     int         s_width;
     int         s_channels;
+
+    qhandle_t   static_pic;
 
     uint32_t    *pic;
     uint32_t    palette[256];
@@ -52,6 +62,15 @@ typedef struct {
 } cinematic_t;
 
 static cinematic_t  cin;
+
+static const crop_t cin_crop[] = {
+    { "ntro.cin",   82836235, 727, 30 },
+    { "end.cin",    19311290,   0, 30 },
+    { "rintro.cin", 38434032,   0, 24 },
+    { "rend.cin",   22580919,   0, 24 },
+    { "xin.cin",    13226649,   0, 32 },
+    { "xout.cin",   11194445,   0, 32 },
+};
 
 /*
 ==================
@@ -76,7 +95,11 @@ Called when either the cinematic completes, or it is aborted
 */
 void SCR_FinishCinematic(void)
 {
-    SCR_StopCinematic();
+    // stop cinematic, but keep static pic
+    if (cin.file) {
+        SCR_StopCinematic();
+        SCR_BeginLoadingPlaque();
+    }
 
     // tell the server to advance to the next map / cinematic
     CL_ClientCommand(va("nextserver %i\n", cl.servercount));
@@ -204,6 +227,28 @@ static bool Huff1Decompress(const byte *data, int size)
 
 /*
 ==================
+GetVerticalCrop
+==================
+*/
+static int GetVerticalCrop(void)
+{
+    const crop_t *c;
+    int i;
+
+    for (i = 0, c = cin_crop; i < q_countof(cin_crop); i++, c++) {
+        if (!Q_stricmp(cl.mapname, c->name) && FS_Length(cin.file) == c->size) {
+            if (cin.frame >= c->start)
+                return c->crop * 2;
+            break;
+        }
+    }
+
+    return 0;
+}
+
+
+/*
+==================
 SCR_ReadNextFrame
 ==================
 */
@@ -266,6 +311,8 @@ static bool SCR_ReadNextFrame(void)
         S_RawSamples(end - start, cin.s_rate, cin.s_width, cin.s_channels, samples);
     }
 
+    cin.crop = GetVerticalCrop();
+
     R_UpdateRawPic(cin.width, cin.height, cin.pic);
     cin.frame++;
     return true;
@@ -314,18 +361,23 @@ SCR_DrawCinematic
 */
 void SCR_DrawCinematic(void)
 {
-    if (cin.pic) {
-        R_DrawStretchRaw(0, 0, r_config.width, r_config.height);
-        return;
+    R_DrawFill8(0, 0, r_config.width, r_config.height, 0);
+
+    if (cin.width > 0 && cin.height > cin.crop) {
+        float scale_w = (float)r_config.width / cin.width;
+        float scale_h = (float)r_config.height / (cin.height - cin.crop);
+        float scale = min(scale_w, scale_h);
+
+        int w = Q_rint(cin.width * scale);
+        int h = Q_rint(cin.height * scale);
+        int x = (r_config.width - w) / 2;
+        int y = (r_config.height - h) / 2;
+
+        if (cin.pic)
+            R_DrawStretchRaw(x, y, w, h);
+        else if (cin.static_pic)
+            R_DrawStretchPic(x, y, w, h, cin.static_pic);
     }
-
-    qhandle_t pic = cl.image_precache[0];
-
-    if (!pic || R_GetPicSize(NULL, NULL, pic))
-        R_DrawFill8(0, 0, r_config.width, r_config.height, 0);
-
-    if (pic)
-        R_DrawStretchPic(0, 0, r_config.width, r_config.height, pic);
 }
 
 /*
@@ -346,7 +398,7 @@ static bool SCR_StartCinematic(const char *name)
 
     ret = FS_FOpenFile(fullname, &cin.file, FS_MODE_READ);
     if (!cin.file) {
-        Com_EPrintf("Couldn't load %s: %s\n", fullname, Q_ErrorString(ret));
+        Com_EPrintf("Couldn't open %s: %s\n", fullname, Q_ErrorString(ret));
         return false;
     }
 
@@ -386,6 +438,21 @@ static bool SCR_StartCinematic(const char *name)
 
 /*
 ==================
+SCR_ReloadCinematic
+==================
+*/
+void SCR_ReloadCinematic(void)
+{
+    if (cin.pic) {
+        R_UpdateRawPic(cin.width, cin.height, cin.pic);
+    } else if (cl.mapname[0]) {
+        cin.static_pic = R_RegisterPic2(cl.mapname);
+        R_GetPicSize(&cin.width, &cin.height, cin.static_pic);
+    }
+}
+
+/*
+==================
 SCR_PlayCinematic
 ==================
 */
@@ -395,9 +462,10 @@ void SCR_PlayCinematic(const char *name)
     OGG_Stop();
 
     if (!COM_CompareExtension(name, ".pcx")) {
-        cl.image_precache[0] = R_RegisterPic2(name);
-        if (!cl.image_precache[0])
+        cin.static_pic = R_RegisterPic2(name);
+        if (!cin.static_pic)
             goto finish;
+        R_GetPicSize(&cin.width, &cin.height, cin.static_pic);
     } else if (!COM_CompareExtension(name, ".cin")) {
         if (!SCR_StartCinematic(name))
             goto finish;

@@ -859,7 +859,6 @@ void    SelectSpawnPoint(edict_t *ent, vec3_t origin, vec3_t angles)
     }
 
     VectorCopy(spot->s.origin, origin);
-    origin[2] += 9;
     VectorCopy(spot->s.angles, angles);
 }
 
@@ -1062,6 +1061,8 @@ void PutClientInServer(edict_t *ent)
     int     i;
     client_persistant_t saved;
     client_respawn_t    resp;
+    vec3_t temp, temp2;
+    trace_t tr;
 
     // find a spawn point
     // do it before setting health back up, so farthest
@@ -1140,10 +1141,6 @@ void PutClientInServer(edict_t *ent)
     // clear playerstate values
     memset(&ent->client->ps, 0, sizeof(client->ps));
 
-    for (i = 0; i < 3; i++) {
-        client->ps.pmove.origin[i] = COORD2SHORT(spawn_origin[i]);
-    }
-
     if (deathmatch->value && ((int)dmflags->value & DF_FIXED_FOV)) {
         client->ps.fov = 90;
     } else {
@@ -1163,22 +1160,39 @@ void PutClientInServer(edict_t *ent)
     // sknum is player num and weapon number
     // weapon number will be added in changeweapon
     ent->s.skinnum = ent - g_edicts - 1;
-
     ent->s.frame = 0;
-    VectorCopy(spawn_origin, ent->s.origin);
-    ent->s.origin[2] += 1;  // make sure off ground
+
+    // try to properly clip to the floor / spawn
+    VectorCopy(spawn_origin, temp);
+    VectorCopy(spawn_origin, temp2);
+    temp[2] -= 64;
+    temp2[2] += 16;
+    tr = gi.trace(temp2, ent->mins, ent->maxs, temp, ent, MASK_PLAYERSOLID);
+    if (!tr.allsolid && !tr.startsolid) {
+        VectorCopy(tr.endpos, ent->s.origin);
+        ent->groundentity = tr.ent;
+    } else {
+        VectorCopy(spawn_origin, ent->s.origin);
+        ent->s.origin[2] += 10; // make sure off ground
+    }
+
     VectorCopy(ent->s.origin, ent->s.old_origin);
+
+    for (i = 0; i < 3; i++) {
+        client->ps.pmove.origin[i] = COORD2SHORT(ent->s.origin[i]);
+    }
+
+    spawn_angles[PITCH] = 0;
+    spawn_angles[ROLL] = 0;
 
     // set the delta angle
     for (i = 0 ; i < 3 ; i++) {
         client->ps.pmove.delta_angles[i] = ANGLE2SHORT(spawn_angles[i] - client->resp.cmd_angles[i]);
     }
 
-    ent->s.angles[PITCH] = 0;
-    ent->s.angles[YAW] = spawn_angles[YAW];
-    ent->s.angles[ROLL] = 0;
-    VectorCopy(ent->s.angles, client->ps.viewangles);
-    VectorCopy(ent->s.angles, client->v_angle);
+    VectorCopy(spawn_angles, ent->s.angles);
+    VectorCopy(spawn_angles, client->ps.viewangles);
+    VectorCopy(spawn_angles, client->v_angle);
 
     // spawn a spectator
     if (client->pers.spectator) {
@@ -1577,10 +1591,6 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         // perform a pmove
         gi.Pmove(&pm);
 
-        // save results of pmove
-        client->ps.pmove = pm.s;
-        client->old_pmove = pm.s;
-
         for (i = 0 ; i < 3 ; i++) {
             ent->s.origin[i] = SHORT2COORD(pm.s.origin[i]);
             ent->velocity[i] = SHORT2COORD(pm.s.velocity[i]);
@@ -1593,10 +1603,14 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         client->resp.cmd_angles[1] = SHORT2ANGLE(ucmd->angles[1]);
         client->resp.cmd_angles[2] = SHORT2ANGLE(ucmd->angles[2]);
 
-        if (ent->groundentity && !pm.groundentity && (pm.cmd.upmove >= 10) && (pm.waterlevel == 0)) {
+        if (~client->ps.pmove.pm_flags & pm.s.pm_flags & PMF_JUMP_HELD && pm.waterlevel == 0) {
             gi.sound(ent, CHAN_VOICE, gi.soundindex("*jump1.wav"), 1, ATTN_NORM, 0);
             PlayerNoise(ent, ent->s.origin, PNOISE_SELF);
         }
+
+        // save results of pmove
+        client->ps.pmove = pm.s;
+        client->old_pmove = pm.s;
 
         ent->viewheight = pm.viewheight;
         ent->waterlevel = pm.waterlevel;

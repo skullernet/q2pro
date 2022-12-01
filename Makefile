@@ -58,6 +58,9 @@ ifdef CONFIG_WINDOWS
     # Workaround for MinGW-w64 < 8.0.0
     CFLAGS += -D__USE_MINGW_ANSI_STDIO=1
 
+    CFLAGS_s += -D_WIN32_WINNT=0x0600
+    CFLAGS_c += -D_WIN32_WINNT=0x0600
+
     LDFLAGS_s += -mconsole
     LDFLAGS_c += -mwindows
     LDFLAGS_g += -mconsole
@@ -326,15 +329,7 @@ endif
 ifdef CONFIG_OPENAL
     CFLAGS_c += -DUSE_OPENAL=1
     OBJS_c += src/client/sound/al.o
-    ifdef CONFIG_FIXED_LIBAL
-        AL_CFLAGS ?= $(shell pkg-config openal --cflags)
-        AL_LIBS ?= $(shell pkg-config openal --libs)
-        CFLAGS_c += -DUSE_FIXED_LIBAL=1 $(AL_CFLAGS)
-        LIBS_c += $(AL_LIBS)
-        OBJS_c += src/client/sound/qal/fixed.o
-    else
-        OBJS_c += src/client/sound/qal/dynamic.o
-    endif
+    OBJS_c += src/client/sound/qal.o
 endif
 
 ifndef CONFIG_NO_MENUS
@@ -520,10 +515,6 @@ else
 
     ifndef CONFIG_NO_SOFTWARE_SOUND
         OBJS_c += src/unix/sound/sdl.o
-        ifdef CONFIG_OSS
-            CFLAGS_c += -DUSE_OSS=1
-            OBJS_c += src/unix/sound/oss.o
-        endif
     endif
 
     OBJS_s += src/unix/hunk.o src/unix/system.o

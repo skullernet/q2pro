@@ -756,7 +756,7 @@ void func_explosive_explode(edict_t *self, edict_t *inflictor, edict_t *attacker
 
 void func_explosive_use(edict_t *self, edict_t *other, edict_t *activator)
 {
-    func_explosive_explode(self, self, other, self->health, vec3_origin);
+    func_explosive_explode(self, self, activator, self->health, vec3_origin);
 }
 
 void func_explosive_spawn(edict_t *self, edict_t *other, edict_t *activator)
@@ -1306,12 +1306,13 @@ void misc_viper_bomb_use(edict_t *self, edict_t *other, edict_t *activator)
     self->prethink = misc_viper_bomb_prethink;
     self->touch = misc_viper_bomb_touch;
     self->activator = activator;
+    self->timestamp = level.framenum;
 
     viper = G_Find(NULL, FOFS(classname), "misc_viper");
-    VectorScale(viper->moveinfo.dir, viper->moveinfo.speed, self->velocity);
-
-    self->timestamp = level.framenum;
-    VectorCopy(viper->moveinfo.dir, self->moveinfo.dir);
+    if (viper) {
+        VectorScale(viper->moveinfo.dir, viper->moveinfo.speed, self->velocity);
+        VectorCopy(viper->moveinfo.dir, self->moveinfo.dir);
+    }
 }
 
 void SP_misc_viper_bomb(edict_t *self)

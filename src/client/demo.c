@@ -22,11 +22,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "client.h"
 
-static byte     demo_buffer[MAX_PACKETLEN];
+static byte     demo_buffer[MAX_MSGLEN];
 
 static cvar_t   *cl_demosnaps;
 static cvar_t   *cl_demomsglen;
 static cvar_t   *cl_demowait;
+static cvar_t   *cl_demosuspendtoggle;
 
 // =========================================================================
 
@@ -326,7 +327,7 @@ static void CL_Record_f(void)
     size_t          size = Cvar_ClampInteger(
                                cl_demomsglen,
                                MIN_PACKETLEN,
-                               MAX_PACKETLEN_WRITABLE);
+                               MAX_MSGLEN);
 
     while ((c = Cmd_ParseOptions(o_record)) != -1) {
         switch (c) {
@@ -491,7 +492,7 @@ static void resume_record(void)
     CL_WriteDemoMessage(&cls.demo.buffer);
 }
 
-static void CL_Suspend_f(void)
+static void CL_Resume_f(void)
 {
     if (!cls.demo.recording) {
         Com_Printf("Not recording a demo.\n");
@@ -499,8 +500,7 @@ static void CL_Suspend_f(void)
     }
 
     if (!cls.demo.paused) {
-        Com_Printf("Suspended demo recording.\n");
-        cls.demo.paused = true;
+        Com_Printf("Demo recording is already resumed.\n");
         return;
     }
 
@@ -516,6 +516,28 @@ static void CL_Suspend_f(void)
 
     // clear dirty configstrings
     memset(cl.dcs, 0, sizeof(cl.dcs));
+}
+
+static void CL_Suspend_f(void)
+{
+    if (!cls.demo.recording) {
+        Com_Printf("Not recording a demo.\n");
+        return;
+    }
+
+    if (!cls.demo.paused) {
+        Com_Printf("Suspended demo recording.\n");
+        cls.demo.paused = true;
+        return;
+    }
+
+    // only resume if cl_demosuspendtoggle is enabled
+    if (!cl_demosuspendtoggle->integer) {
+        Com_Printf("Demo recording is already suspended.\n");
+        return;
+    }
+
+    CL_Resume_f();
 }
 
 static int read_first_message(qhandle_t f)
@@ -613,11 +635,10 @@ static void finish_demo(int ret)
 
     CL_Disconnect(ERR_RECONNECT);
 
-    Cvar_Set("nextserver", "");
-
     Cbuf_AddText(&cmd_buffer, s);
     Cbuf_AddText(&cmd_buffer, "\n");
-    Cbuf_Execute(&cmd_buffer);
+
+    Cvar_Set("nextserver", "");
 }
 
 static void update_status(void)
@@ -626,9 +647,9 @@ static void update_status(void)
         int64_t pos = FS_Tell(cls.demo.playback);
 
         if (pos > cls.demo.file_offset)
-            cls.demo.file_percent = (pos - cls.demo.file_offset) * 100 / cls.demo.file_size;
+            cls.demo.file_progress = (float)(pos - cls.demo.file_offset) / cls.demo.file_size;
         else
-            cls.demo.file_percent = 0;
+            cls.demo.file_progress = 0.0f;
     }
 }
 
@@ -734,13 +755,8 @@ static void CL_Demo_c(genctx_t *ctx, int argnum)
     }
 }
 
-typedef struct {
-    list_t entry;
-    int framenum;
-    int64_t filepos;
-    size_t msglen;
-    byte data[1];
-} demosnap_t;
+#define MIN_SNAPSHOTS   64
+#define MAX_SNAPSHOTS   250000000
 
 /*
 ====================
@@ -763,6 +779,9 @@ void CL_EmitDemoSnapshot(void)
         return;
 
     if (cls.demo.frames_read < cls.demo.last_snapshot + cl_demosnaps->integer * 10)
+        return;
+
+    if (cls.demo.numsnapshots >= MAX_SNAPSHOTS)
         return;
 
     if (!cl.frame.valid)
@@ -816,7 +835,9 @@ void CL_EmitDemoSnapshot(void)
     snap->filepos = pos;
     snap->msglen = msg_write.cursize;
     memcpy(snap->data, msg_write.data, msg_write.cursize);
-    List_Append(&cls.demo.snapshots, &snap->entry);
+
+    cls.demo.snapshots = Z_Realloc(cls.demo.snapshots, sizeof(snap) * ALIGN(cls.demo.numsnapshots + 1, MIN_SNAPSHOTS));
+    cls.demo.snapshots[cls.demo.numsnapshots++] = snap;
 
     Com_DPrintf("[%d] snaplen %zu\n", cls.demo.frames_read, msg_write.cursize);
 
@@ -825,22 +846,27 @@ void CL_EmitDemoSnapshot(void)
     cls.demo.last_snapshot = cls.demo.frames_read;
 }
 
-static demosnap_t *find_snapshot(int framenum)
+static demosnap_t *find_snapshot(int64_t dest, bool byte_seek)
 {
-    demosnap_t *snap, *prev;
+    int l = 0;
+    int r = cls.demo.numsnapshots - 1;
 
-    if (LIST_EMPTY(&cls.demo.snapshots))
+    if (r < 0)
         return NULL;
 
-    prev = LIST_FIRST(demosnap_t, &cls.demo.snapshots, entry);
+    do {
+        int m = (l + r) / 2;
+        demosnap_t *snap = cls.demo.snapshots[m];
+        int64_t pos = byte_seek ? snap->filepos : snap->framenum;
+        if (pos < dest)
+            l = m + 1;
+        else if (pos > dest)
+            r = m - 1;
+        else
+            return snap;
+    } while (l <= r);
 
-    LIST_FOR_EACH(demosnap_t, snap, &cls.demo.snapshots, entry) {
-        if (snap->framenum > framenum)
-            break;
-        prev = snap;
-    }
-
-    return prev;
+    return cls.demo.snapshots[max(r, 0)];
 }
 
 /*
@@ -862,7 +888,7 @@ void CL_FirstDemoFrame(void)
     // obtain file length and offset of the second frame
     len = FS_Length(cls.demo.playback);
     ofs = FS_Tell(cls.demo.playback);
-    if (len > 0 && ofs > 0) {
+    if (ofs > 0 && ofs < len) {
         cls.demo.file_offset = ofs;
         cls.demo.file_size = len - ofs;
     }
@@ -877,14 +903,21 @@ void CL_FirstDemoFrame(void)
     cls.demo.last_snapshot = INT_MIN;
 }
 
+/*
+====================
+CL_Seek_f
+====================
+*/
 static void CL_Seek_f(void)
 {
     demosnap_t *snap;
-    int i, j, ret, index, frames, dest, prev;
+    int i, j, ret, index, frames, prev;
+    int64_t dest;
+    bool byte_seek, back_seek;
     char *from, *to;
 
     if (Cmd_Argc() < 2) {
-        Com_Printf("Usage: %s [+-]<timespec>\n", Cmd_Argv(0));
+        Com_Printf("Usage: %s [+-]<timespec|percent>[%%]\n", Cmd_Argv(0));
         return;
     }
 
@@ -902,31 +935,53 @@ static void CL_Seek_f(void)
 
     to = Cmd_Argv(1);
 
-    if (*to == '-' || *to == '+') {
-        // relative to current frame
-        if (!Com_ParseTimespec(to + 1, &frames)) {
-            Com_Printf("Invalid relative timespec.\n");
+    if (strchr(to, '%')) {
+        char *suf;
+        float percent = strtof(to, &suf);
+        if (strcmp(suf, "%") || !isfinite(percent)) {
+            Com_Printf("Invalid percentage.\n");
             return;
         }
-        if (*to == '-')
-            frames = -frames;
-        dest = cls.demo.frames_read + frames;
+
+        if (!cls.demo.file_size) {
+            Com_Printf("Unknown file size, can't seek.\n");
+            return;
+        }
+
+        clamp(percent, 0, 100);
+        dest = cls.demo.file_offset + cls.demo.file_size * percent / 100;
+
+        byte_seek = true;
+        back_seek = dest < FS_Tell(cls.demo.playback);
     } else {
-        // relative to first frame
-        if (!Com_ParseTimespec(to, &dest)) {
-            Com_Printf("Invalid absolute timespec.\n");
-            return;
+        if (*to == '-' || *to == '+') {
+            // relative to current frame
+            if (!Com_ParseTimespec(to + 1, &frames)) {
+                Com_Printf("Invalid relative timespec.\n");
+                return;
+            }
+            if (*to == '-')
+                frames = -frames;
+            dest = cls.demo.frames_read + frames;
+        } else {
+            // relative to first frame
+            if (!Com_ParseTimespec(to, &i)) {
+                Com_Printf("Invalid absolute timespec.\n");
+                return;
+            }
+            dest = i;
+            frames = i - cls.demo.frames_read;
         }
-        frames = dest - cls.demo.frames_read;
+
+        if (!frames)
+            return; // already there
+
+        byte_seek = false;
+        back_seek = frames < 0;
     }
 
-    if (!frames)
-        // already there
-        return;
-
-    if (frames > 0 && cls.demo.eof && cl_demowait->integer)
-        // already at end
-        return;
+    if (!back_seek && cls.demo.eof && cl_demowait->integer)
+        return; // already at end
 
     // disable effects processing
     cls.demo.seeking = true;
@@ -940,11 +995,11 @@ static void CL_Seek_f(void)
     // save previous server frame number
     prev = cl.frame.number;
 
-    Com_DPrintf("[%d] seeking to %d\n", cls.demo.frames_read, dest);
+    Com_DPrintf("[%d] seeking to %"PRId64"\n", cls.demo.frames_read, dest);
 
     // seek to the previous most recent snapshot
-    if (frames < 0 || cls.demo.last_snapshot > cls.demo.frames_read) {
-        snap = find_snapshot(dest);
+    if (back_seek || cls.demo.last_snapshot > cls.demo.frames_read) {
+        snap = find_snapshot(dest, byte_seek);
 
         if (snap) {
             Com_DPrintf("found snap at %d\n", snap->framenum);
@@ -975,14 +1030,18 @@ static void CL_Seek_f(void)
             CL_SeekDemoMessage();
             cls.demo.frames_read = snap->framenum;
             Com_DPrintf("[%d] after snap parse %d\n", cls.demo.frames_read, cl.frame.number);
-        } else if (frames < 0) {
+        } else if (back_seek) {
             Com_Printf("Couldn't seek backwards without snapshots!\n");
             goto done;
         }
     }
 
-    // skip forward to destination frame
-    while (cls.demo.frames_read < dest) {
+    // skip forward to destination frame/position
+    while (1) {
+        int64_t pos = byte_seek ? FS_Tell(cls.demo.playback) : cls.demo.frames_read;
+        if (pos >= dest)
+            break;
+
         ret = read_next_message(cls.demo.playback);
         if (ret == 0 && cl_demowait->integer) {
             cls.demo.eof = true;
@@ -1150,9 +1209,6 @@ fail:
 
 void CL_CleanupDemos(void)
 {
-    demosnap_t *snap, *next;
-    size_t total;
-
     if (cls.demo.recording) {
         CL_Stop_f();
     }
@@ -1173,18 +1229,11 @@ void CL_CleanupDemos(void)
         }
     }
 
-    total = 0;
-    LIST_FOR_EACH_SAFE(demosnap_t, snap, next, &cls.demo.snapshots, entry) {
-        total += snap->msglen;
-        Z_Free(snap);
-    }
-
-    if (total)
-        Com_DPrintf("Freed %zu bytes of snaps\n", total);
+    for (int i = 0; i < cls.demo.numsnapshots; i++)
+        Z_Free(cls.demo.snapshots[i]);
+    Z_Free(cls.demo.snapshots);
 
     memset(&cls.demo, 0, sizeof(cls.demo));
-
-    List_Init(&cls.demo.snapshots);
 }
 
 /*
@@ -1232,6 +1281,7 @@ static const cmdreg_t c_demo[] = {
     { "record", CL_Record_f, CL_Demo_c },
     { "stop", CL_Stop_f },
     { "suspend", CL_Suspend_f },
+    { "resume", CL_Resume_f },
     { "seek", CL_Seek_f },
 
     { NULL }
@@ -1247,7 +1297,7 @@ void CL_InitDemos(void)
     cl_demosnaps = Cvar_Get("cl_demosnaps", "10", 0);
     cl_demomsglen = Cvar_Get("cl_demomsglen", va("%d", MAX_PACKETLEN_WRITABLE_DEFAULT), 0);
     cl_demowait = Cvar_Get("cl_demowait", "0", 0);
+    cl_demosuspendtoggle = Cvar_Get("cl_demosuspendtoggle", "1", 0);
 
     Cmd_Register(c_demo);
-    List_Init(&cls.demo.snapshots);
 }

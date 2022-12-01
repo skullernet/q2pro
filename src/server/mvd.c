@@ -422,9 +422,7 @@ static void dummy_run(void)
         return;
 
     Cbuf_Execute(&dummy_buffer);
-    if (dummy_buffer.waitCount > 0) {
-        dummy_buffer.waitCount--;
-    }
+    Cbuf_Frame(&dummy_buffer);
 
     // run ClientThink to prevent timeouts, etc
     memset(&cmd, 0, sizeof(cmd));
@@ -1119,6 +1117,10 @@ void SV_MvdMulticast(int leafnum, multicast_t to)
     if (!mvd.active) {
         return;
     }
+    if (msg_write.cursize >= 2048) {
+        Com_WPrintf("%s: overflow\n", __func__);
+        return;
+    }
 
     op = mvd_multicast_all + to;
     buf = to < MULTICAST_ALL_R ? &mvd.datagram : &mvd.message;
@@ -1188,6 +1190,11 @@ void SV_MvdUnicast(edict_t *ent, int clientNum, bool reliable)
     }
 
     if (!filter_unicast_data(ent)) {
+        return;
+    }
+
+    if (msg_write.cursize >= 2048) {
+        Com_WPrintf("%s: overflow\n", __func__);
         return;
     }
 
@@ -1884,8 +1891,8 @@ static void dump_versions(void)
         "num name             version\n"
         "--- ---------------- -----------------------------------------\n");
 
+    count = 0;
     FOR_EACH_GTV(client) {
-        count = 0;
         Com_Printf("%3i %-16.16s %-40.40s\n",
                    count, client->name, client->version);
         count++;
@@ -2072,14 +2079,12 @@ void SV_MvdInit(void)
 
     // open server TCP socket
     if (sv_mvd_enable->integer > 1) {
-        neterr_t ret;
-
-        ret = NET_Listen(true);
+        neterr_t ret = NET_Listen(true);
         if (ret == NET_OK) {
             mvd.clients = SV_Mallocz(sizeof(gtv_client_t) * sv_mvd_maxclients->integer);
         } else {
             if (ret == NET_ERROR)
-                Com_EPrintf("%s while opening server TCP port.\n", NET_ErrorString());
+                Com_EPrintf("Error opening server TCP port.\n");
             else
                 Com_EPrintf("Server TCP port already in use.\n");
             Cvar_Set("sv_mvd_enable", "1");
@@ -2372,7 +2377,7 @@ void SV_MvdRegister(void)
     sv_mvd_maxtime_changed(sv_mvd_maxtime);
     sv_mvd_maxmaps = Cvar_Get("sv_mvd_maxmaps", "1", 0);
     sv_mvd_noblend = Cvar_Get("sv_mvd_noblend", "0", CVAR_LATCH);
-    sv_mvd_nogun = Cvar_Get("sv_mvd_nogun", "1", CVAR_LATCH);
+    sv_mvd_nogun = Cvar_Get("sv_mvd_nogun", "0", CVAR_LATCH);
     sv_mvd_nomsgs = Cvar_Get("sv_mvd_nomsgs", "1", CVAR_LATCH);
     sv_mvd_begincmd = Cvar_Get("sv_mvd_begincmd",
                                "wait 50; putaway; wait 10; help;", 0);

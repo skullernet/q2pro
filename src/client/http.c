@@ -149,7 +149,7 @@ static int debug_func(CURL *c, curl_infotype type, char *data, size_t size, void
 // the entire url...
 static void escape_path(const char *path, char *escaped)
 {
-    static const char allowed[] = ";/?:@&=+$,[]-_.!~*'()";
+    static const char allowed[] = "/-_.~";
     int     c;
     char    *p;
 
@@ -787,8 +787,7 @@ static bool finish_download(void)
         dl = NULL;
         curl = msg->easy_handle;
         curl_easy_getinfo(curl, CURLINFO_PRIVATE, &dl);
-        if (!dl)
-            Com_Error(ERR_FATAL, "Bad libcurl handle for CURLMSG_DONE");
+        Q_assert(dl);
 
         cls.download.current = NULL;
         cls.download.percent = 0;

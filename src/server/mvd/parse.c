@@ -63,71 +63,48 @@ static const char *MVD_ServerCommandString(int cmd)
 
 void MVD_ParseEntityString(mvd_t *mvd, const char *data)
 {
-    const char *p;
-    char key[MAX_STRING_CHARS];
-    char value[MAX_STRING_CHARS];
+    const char *key, *value;
     char classname[MAX_QPATH];
     vec3_t origin;
     vec3_t angles;
 
-    while (data) {
-        p = COM_Parse(&data);
-        if (!p[0]) {
+    while (1) {
+        key = COM_Parse(&data);
+        if (!data) {
             break;
         }
-        if (p[0] != '{') {
-            Com_Error(ERR_DROP, "expected '{', found '%s'", p);
+        if (key[0] != '{') {
+            Com_WPrintf("%s: found %s when expecting {\n", __func__, key);
+            return;
         }
 
         classname[0] = 0;
         VectorClear(origin);
         VectorClear(angles);
         while (1) {
-            p = COM_Parse(&data);
-            if (p[0] == '}') {
+            key = COM_Parse(&data);
+            if (key[0] == '}') {
                 break;
             }
-            if (p[0] == '{') {
-                Com_Error(ERR_DROP, "expected key, found '{'");
-            }
-
-            Q_strlcpy(key, p, sizeof(key));
-
-            p = COM_Parse(&data);
+            value = COM_Parse(&data);
             if (!data) {
-                Com_Error(ERR_DROP, "expected key/value pair, found EOF");
+                Com_WPrintf("%s: EOF without closing brace\n", __func__);
+                return;
             }
-            if (p[0] == '}' || p[0] == '{') {
-                Com_Error(ERR_DROP, "expected value, found '%s'", p);
+            if (value[0] == '}') {
+                Com_WPrintf("%s: closing brace without data\n", __func__);
+                return;
             }
 
             if (!strcmp(key, "classname")) {
-                Q_strlcpy(classname, p, sizeof(classname));
-                continue;
+                Q_strlcpy(classname, value, sizeof(classname));
+            } else if (!strcmp(key, "origin")) {
+                sscanf(value, "%f %f %f", &origin[0], &origin[1], &origin[2]);
+            } else if (!strcmp(key, "angles")) {
+                sscanf(value, "%f %f", &angles[0], &angles[1]);
+            } else if (!strcmp(key, "angle")) {
+                angles[1] = atof(value);
             }
-
-            Q_strlcpy(value, p, sizeof(value));
-
-            p = value;
-            if (!strcmp(key, "origin")) {
-                origin[0] = atof(COM_Parse(&p));
-                origin[1] = atof(COM_Parse(&p));
-                origin[2] = atof(COM_Parse(&p));
-            } else if (!strncmp(key, "angle", 5)) {
-                if (key[5] == 0) {
-                    angles[0] = 0;
-                    angles[1] = atof(COM_Parse(&p));
-                    angles[2] = 0;
-                } else if (key[5] == 's' && key[6] == 0) {
-                    angles[0] = atof(COM_Parse(&p));
-                    angles[1] = atof(COM_Parse(&p));
-                    angles[2] = atof(COM_Parse(&p));
-                }
-            }
-        }
-
-        if (!classname[0]) {
-            Com_Error(ERR_DROP, "entity with no classname");
         }
 
         if (strncmp(classname, "info_player_", 12)) {
@@ -145,7 +122,6 @@ void MVD_ParseEntityString(mvd_t *mvd, const char *data)
             VectorCopy(origin, mvd->spawnOrigin);
             VectorCopy(angles, mvd->spawnAngles);
         }
-
     }
 }
 
@@ -262,7 +238,7 @@ static void MVD_UnicastLayout(mvd_t *mvd, mvd_player_t *player)
 
     // HACK: if we got "match ended" string this frame, save oldscores
     if (match_ended_hack) {
-        strcpy(mvd->oldscores, mvd->layout);
+        Q_strlcpy(mvd->oldscores, mvd->layout, sizeof(mvd->oldscores));
     }
 
     if (mvd->demoseeking)
@@ -839,7 +815,6 @@ static void MVD_ParseFrame(mvd_t *mvd)
 void MVD_ClearState(mvd_t *mvd, bool full)
 {
     mvd_player_t *player;
-    mvd_snap_t *snap, *next;
     int i;
 
     // clear all entities, don't trust num_edicts as it is possible
@@ -860,18 +835,23 @@ void MVD_ClearState(mvd_t *mvd, bool full)
         return;
 
     // free all snapshots
-    LIST_FOR_EACH_SAFE(mvd_snap_t, snap, next, &mvd->snapshots, entry) {
-        Z_Free(snap);
+    for (i = 0; i < mvd->numsnapshots; i++) {
+        Z_Free(mvd->snapshots[i]);
     }
+    mvd->numsnapshots = 0;
 
-    List_Init(&mvd->snapshots);
+    Z_Free(mvd->snapshots);
+    mvd->snapshots = NULL;
 
     // free current map
     CM_FreeMap(&mvd->cm);
 
+    VectorClear(mvd->spawnOrigin);
+    VectorClear(mvd->spawnAngles);
+
     if (mvd->intermission) {
         // save oldscores
-        //strcpy(mvd->oldscores, mvd->layout);
+        //Q_strlcpy(mvd->oldscores, mvd->layout, sizeof(mvd->oldscores));
     }
 
     memset(mvd->configstrings, 0, sizeof(mvd->configstrings));

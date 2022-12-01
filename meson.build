@@ -201,6 +201,11 @@ if not win32
   common_args += '-D_GNU_SOURCE'
 endif
 
+engine_args = []
+if win32
+  engine_args += '-D_WIN32_WINNT=0x0600'
+endif
+
 common_link_args = []
 exe_link_args = []
 dll_link_args = []
@@ -214,9 +219,11 @@ if cc.get_argument_syntax() == 'gcc'
     '-Wpointer-arith',
     '-Wformat-security',
     '-Werror=vla',
+    '-Wstrict-prototypes',
   ]
 
   common_args += cc.get_supported_arguments(test_args)
+  engine_args += cc.get_supported_arguments(['-Wmissing-prototypes'])
 
   if win32
     common_args += '-D__USE_MINGW_ANSI_STDIO=1'
@@ -284,28 +291,21 @@ if sdl2.found()
   config.set('USE_SDL', 'USE_CLIENT')
 endif
 
+common_deps = [zlib]
+client_deps = [jpeg, png, curl, sdl2]
+server_deps = []
+game_deps = [zlib]
+
 openal = dependency('openal',
   required:        get_option('openal'),
   allow_fallback:  win32,
   default_options: fallback_opt,
 )
-
 if openal.found()
-  client_src += 'src/client/sound/al.c'
+  client_src += [ 'src/client/sound/al.c', 'src/client/sound/qal.c' ]
+  client_deps += openal.partial_dependency(compile_args: true, includes: true)
   config.set10('USE_OPENAL', true)
-  if get_option('openal-dynamic') or openal.type_name() == 'internal'
-    client_src += 'src/client/sound/qal/dynamic.c'
-    openal = openal.partial_dependency(compile_args: true, includes: true)
-  else
-    client_src += 'src/client/sound/qal/fixed.c'
-    config.set10('USE_FIXED_LIBAL', true)
-  endif
 endif
-
-common_deps = [zlib]
-client_deps = [jpeg, png, curl, sdl2, openal]
-server_deps = []
-game_deps = [zlib]
 
 ogg = dependency('ogg',
   required:        get_option('ogg'),
@@ -416,7 +416,7 @@ executable('q2pro', common_src, client_src, refresh_src,
   gnu_symbol_visibility: 'hidden',
   win_subsystem:         'windows',
   link_args:             exe_link_args,
-  c_args:                ['-DUSE_CLIENT=1', '-DUSE_REF=1'],
+  c_args:                ['-DUSE_CLIENT=1', '-DUSE_REF=1', engine_args],
   install:               system_wide,
 )
 
@@ -426,7 +426,7 @@ executable('q2proded', common_src, server_src,
   gnu_symbol_visibility: 'hidden',
   win_subsystem:         'console',
   link_args:             exe_link_args,
-  c_args:                ['-DUSE_SERVER=1'],
+  c_args:                ['-DUSE_SERVER=1', engine_args],
   install:               system_wide,
 )
 

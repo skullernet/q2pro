@@ -1304,9 +1304,6 @@ static void make_screenshot(const char *name, const char *ext,
         return;
     }
 
-    if (async)
-        Com_Printf("Taking async screenshot...\n");
-
     pixels = IMG_ReadPixels(&w, &h, &row_stride);
 
     screenshot_t s = {
@@ -1328,6 +1325,7 @@ static void make_screenshot(const char *name, const char *ext,
             .done_cb = screenshot_done_cb,
             .cb_arg = Z_CopyStruct(&s),
         };
+        Com_Printf("Taking async screenshot...\n");
         Sys_QueueAsyncWork(&work);
     } else {
         screenshot_work_cb(&s);
@@ -1495,6 +1493,23 @@ static cvar_t   *r_texture_formats;
 static cvar_t   *r_texture_overrides;
 #endif
 
+static const cmd_option_t o_imagelist[] = {
+    { "f", "fonts", "list fonts" },
+    { "h", "help", "display this help message" },
+    { "m", "skins", "list skins" },
+    { "p", "pics", "list pics" },
+    { "P", "placeholder", "list placeholder images" },
+    { "s", "sprites", "list sprites" },
+    { "w", "walls", "list walls" },
+    { "y", "skies", "list skies" },
+    { NULL }
+};
+
+static void IMG_List_c(genctx_t *ctx, int argnum)
+{
+    Cmd_Option_c(o_imagelist, NULL, ctx, argnum);
+}
+
 /*
 ===============
 IMG_List_f
@@ -1503,15 +1518,58 @@ IMG_List_f
 static void IMG_List_f(void)
 {
     static const char types[8] = "PFMSWY??";
-    int        i;
-    image_t    *image;
-    int        texels, count;
+    image_t     *image;
+    const char  *wildcard = NULL;
+    bool        placeholder = false;
+    int         i, c, mask = 0, count;
+    size_t      texels;
+
+    while ((c = Cmd_ParseOptions(o_imagelist)) != -1) {
+        switch (c) {
+        case 'p': mask |= 1 << IT_PIC;      break;
+        case 'f': mask |= 1 << IT_FONT;     break;
+        case 'm': mask |= 1 << IT_SKIN;     break;
+        case 's': mask |= 1 << IT_SPRITE;   break;
+        case 'w': mask |= 1 << IT_WALL;     break;
+        case 'y': mask |= 1 << IT_SKY;      break;
+        case 'P': placeholder = true;       break;
+        case 'h':
+            Cmd_PrintUsage(o_imagelist, "[wildcard]");
+            Com_Printf("List registered images.\n");
+            Cmd_PrintHelp(o_imagelist);
+            Com_Printf(
+                "Types legend:\n"
+                "P: pics\n"
+                "F: fonts\n"
+                "M: skins\n"
+                "S: sprites\n"
+                "W: walls\n"
+                "Y: skies\n"
+                "\nFlags legend:\n"
+                "T: transparent\n"
+                "S: scrap\n"
+                "*: permanent\n"
+            );
+            return;
+        default:
+            return;
+        }
+    }
+
+    if (cmd_optind < Cmd_Argc())
+        wildcard = Cmd_Argv(cmd_optind);
 
     Com_Printf("------------------\n");
     texels = count = 0;
 
     for (i = 1, image = r_images + 1; i < r_numImages; i++, image++) {
         if (!image->registration_sequence)
+            continue;
+        if (mask && !(mask & (1 << image->type)))
+            continue;
+        if (wildcard && !Com_WildCmp(wildcard, image->name))
+            continue;
+        if ((image->width && image->height) == placeholder)
             continue;
 
         Com_Printf("%c%c%c%c %4i %4i %s: %s\n",
@@ -1527,28 +1585,38 @@ static void IMG_List_f(void)
         texels += image->upload_width * image->upload_height;
         count++;
     }
+
     Com_Printf("Total images: %d (out of %d slots)\n", count, r_numImages);
-    Com_Printf("Total texels: %d (not counting mipmaps)\n", texels);
+    Com_Printf("Total texels: %zu (not counting mipmaps)\n", texels);
 }
 
 static image_t *alloc_image(void)
 {
     int i;
-    image_t *image;
+    image_t *image, *placeholder = NULL;
 
     // find a free image_t slot
     for (i = 1, image = r_images + 1; i < r_numImages; i++, image++) {
         if (!image->registration_sequence)
-            break;
+            return image;
+        if (!image->upload_width && !image->upload_height && !placeholder)
+            placeholder = image;
     }
 
-    if (i == r_numImages) {
-        if (r_numImages == MAX_RIMAGES)
-            return NULL;
+    // allocate new slot if possible
+    if (r_numImages < MAX_RIMAGES) {
         r_numImages++;
+        return image;
     }
 
-    return image;
+    // reuse placeholder image if available
+    if (placeholder) {
+        List_Remove(&placeholder->entry);
+        memset(placeholder, 0, sizeof(*placeholder));
+        return placeholder;
+    }
+
+    return NULL;
 }
 
 // finds the given image of the given type.
@@ -1764,6 +1832,8 @@ static image_t *find_or_load_image(const char *name, size_t len,
     imageformat_t   fmt;
     int             ret;
 
+    Q_assert(len < MAX_QPATH);
+
     // must have an extension and at least 1 char of base name
     if (len <= 4) {
         ret = Q_ERR_NAMETOOSHORT;
@@ -1873,19 +1943,10 @@ fail:
 image_t *IMG_Find(const char *name, imagetype_t type, imageflags_t flags)
 {
     image_t *image;
-    size_t len;
 
-    if (!name) {
-        Com_Error(ERR_FATAL, "%s: NULL", __func__);
-    }
+    Q_assert(name);
 
-    // this should never happen
-    len = strlen(name);
-    if (len >= MAX_QPATH) {
-        Com_Error(ERR_FATAL, "%s: oversize name", __func__);
-    }
-
-    if ((image = find_or_load_image(name, len, type, flags))) {
+    if ((image = find_or_load_image(name, strlen(name), type, flags))) {
         return image;
     }
     return R_NOTEXTURE;
@@ -1898,10 +1959,7 @@ IMG_ForHandle
 */
 image_t *IMG_ForHandle(qhandle_t h)
 {
-    if (h < 0 || h >= r_numImages) {
-        Com_Error(ERR_FATAL, "%s: %d out of range", __func__, h);
-    }
-
+    Q_assert(h >= 0 && h < r_numImages);
     return &r_images[h];
 }
 
@@ -2070,7 +2128,7 @@ fail:
 }
 
 static const cmdreg_t img_cmd[] = {
-    { "imagelist", IMG_List_f },
+    { "imagelist", IMG_List_f, IMG_List_c },
     { "screenshot", IMG_ScreenShot_f },
 #if USE_TGA
     { "screenshottga", IMG_ScreenShotTGA_f },
@@ -2089,10 +2147,7 @@ void IMG_Init(void)
 {
     int i;
 
-    if (r_numImages) {
-        Com_Error(ERR_FATAL, "%s: %d images not freed", __func__, r_numImages);
-    }
-
+    Q_assert(!r_numImages);
 
 #if USE_PNG || USE_JPG || USE_TGA
     r_override_textures = Cvar_Get("r_override_textures", "1", CVAR_FILES);

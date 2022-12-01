@@ -45,14 +45,14 @@ void S_RawSamples(int samples, int rate, int width, int channels, const byte *da
 void OGG_Play(void);
 void OGG_Stop(void);
 void OGG_Update(void);
-void OGG_Reload(void);
+void OGG_LoadTrackList(void);
 void OGG_Init(void);
 void OGG_Shutdown(void);
 #else
 #define OGG_Play()          (void)0
 #define OGG_Stop()          (void)0
 #define OGG_Update()        (void)0
-#define OGG_Reload()        (void)0
+#define OGG_LoadTrackList() (void)0
 #define OGG_Init()          (void)0
 #define OGG_Shutdown()      (void)0
 #endif

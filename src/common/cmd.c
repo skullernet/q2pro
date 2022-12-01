@@ -85,7 +85,8 @@ void Cbuf_AddText(cmdbuf_t *buf, const char *text)
 {
     size_t l = strlen(text);
 
-    if (buf->cursize + l > buf->maxsize) {
+    Q_assert(buf->cursize <= buf->maxsize);
+    if (l > buf->maxsize - buf->cursize) {
         Com_WPrintf("%s: overflow\n", __func__);
         return;
     }
@@ -109,7 +110,8 @@ void Cbuf_InsertText(cmdbuf_t *buf, const char *text)
     if (!l) {
         return;
     }
-    if (buf->cursize + l + 1 > buf->maxsize) {
+    Q_assert(buf->cursize <= buf->maxsize);
+    if (l + 1 > buf->maxsize - buf->cursize) {
         Com_WPrintf("%s: overflow\n", __func__);
         return;
     }
@@ -172,7 +174,18 @@ void Cbuf_Execute(cmdbuf_t *buf)
         cmd_current = buf;
         buf->exec(buf, line);
     }
+}
 
+/*
+============
+Cbuf_Frame
+============
+*/
+void Cbuf_Frame(cmdbuf_t *buf)
+{
+    if (buf->waitCount > 0) {
+        buf->waitCount--;
+    }
     buf->aliasCount = 0;        // don't allow infinite alias loops
 }
 
@@ -332,7 +345,7 @@ static void Cmd_UnAlias_f(void)
     while ((c = Cmd_ParseOptions(options)) != -1) {
         switch (c) {
         case 'h':
-            Com_Printf("Usage: %s [-ha] [name]\n", Cmd_Argv(0));
+            Cmd_PrintUsage(options, "[name]");
             Cmd_PrintHelp(options);
             return;
         case 'a':
@@ -352,9 +365,8 @@ static void Cmd_UnAlias_f(void)
     }
 
     if (!cmd_optarg[0]) {
-        Com_Printf("Missing alias name.\n"
-                   "Try %s --help for more information.\n",
-                   Cmd_Argv(0));
+        Com_Printf("Missing alias name.\n");
+        Cmd_PrintHint();
         return;
     }
 
@@ -1043,7 +1055,16 @@ void Cmd_PrintUsage(const cmd_option_t *opt, const char *suffix)
 
 void Cmd_PrintHelp(const cmd_option_t *opt)
 {
+    const cmd_option_t *o;
     char buffer[32];
+    int width = 0;
+
+    for (o = opt; o->sh; o++) {
+        int len = strlen(o->lo);
+        if (o->sh[1] == ':')
+            len += 3 + strlen(o->sh + 2);
+        width = max(width, min(len, 31));
+    }
 
     Com_Printf("\nAvailable options:\n");
     while (opt->sh) {
@@ -1052,7 +1073,7 @@ void Cmd_PrintHelp(const cmd_option_t *opt)
         } else {
             Q_strlcpy(buffer, opt->lo, sizeof(buffer));
         }
-        Com_Printf("-%c | --%-16.16s | %s\n", opt->sh[0], buffer, opt->help);
+        Com_Printf("-%c | --%*s | %s\n", opt->sh[0], -width, buffer, opt->help);
         opt++;
     }
     Com_Printf("\n");
@@ -1591,7 +1612,7 @@ int Cmd_ExecuteFile(const char *path, unsigned flags)
     buf = &cmd_buffer;
 
     // check for exec loop
-    if (++buf->aliasCount > ALIAS_LOOP_COUNT) {
+    if (buf->aliasCount >= ALIAS_LOOP_COUNT) {
         ret = Q_ERR_RUNAWAY_LOOP;
         goto finish;
     }
@@ -1604,7 +1625,10 @@ int Cmd_ExecuteFile(const char *path, unsigned flags)
 
     // everything ok, execute it
     Com_Printf("Execing %s\n", path);
+
+    buf->aliasCount++;
     Cbuf_InsertText(buf, f);
+
     ret = Q_ERR_SUCCESS;
 
 finish:
@@ -1824,8 +1848,7 @@ static void Cmd_MacroList_f(void)
 
 static void Cmd_Text_f(void)
 {
-    Cbuf_AddText(cmd_current, Cmd_Args());
-    Cbuf_AddText(cmd_current, "\n");
+    Cbuf_InsertText(cmd_current, Cmd_Args());
 }
 
 static void Cmd_Complete_f(void)

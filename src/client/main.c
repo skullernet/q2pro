@@ -1925,12 +1925,6 @@ void CL_Disconnect(error_type_t type)
         EXEC_TRIGGER(cl_disconnectcmd);
     }
 
-#if 0
-    if (cls.ref_initialized) {
-        R_CinematicSetPalette(NULL);
-    }
-#endif
-
     //cls.connect_time = 0;
     //cls.connect_count = 0;
     cls.passive = false;
@@ -2668,7 +2662,7 @@ static void CL_ConnectionlessPacket(void)
         CL_ClientCommand("new");
         cls.state = ca_connected;
         cls.connect_count = 0;
-        strcpy(cl.mapname, mapname);   // for levelshot screen
+        Q_strlcpy(cl.mapname, mapname, sizeof(cl.mapname)); // for levelshot screen
         return;
     }
 
@@ -3419,17 +3413,13 @@ static size_t CL_DemoPos_m(char *buffer, size_t size)
 
     if (cls.demo.playback)
         framenum = cls.demo.frames_read;
-    else
-#if USE_MVD_CLIENT
-        if (MVD_GetDemoPercent(NULL, &framenum) == -1)
-#endif
-            framenum = 0;
+    else if (!MVD_GetDemoStatus(NULL, NULL, &framenum))
+        framenum = 0;
 
     sec = framenum / 10; framenum %= 10;
     min = sec / 60; sec %= 60;
 
-    return Q_scnprintf(buffer, size,
-                       "%d:%02d.%d", min, sec, framenum);
+    return Q_scnprintf(buffer, size, "%d:%02d.%d", min, sec, framenum);
 }
 
 static size_t CL_Fps_m(char *buffer, size_t size)
@@ -3569,12 +3559,12 @@ void CL_RestartFilesystem(bool total)
         CL_LoadState(LOAD_SOUNDS);
         CL_RegisterSounds();
         CL_LoadState(LOAD_NONE);
-    } else if (cls_state == ca_cinematic && !COM_CompareExtension(cl.mapname, ".pcx")) {
-        cl.image_precache[0] = R_RegisterPic2(cl.mapname);
+    } else if (cls_state == ca_cinematic) {
+        SCR_ReloadCinematic();
     }
 
     CL_LoadDownloadIgnores();
-    OGG_Reload();
+    OGG_LoadTrackList();
 
     // switch back to original state
     cls.state = cls_state;
@@ -3624,8 +3614,8 @@ void CL_RestartRefresh(bool total)
         CL_LoadState(LOAD_MAP);
         CL_PrepRefresh();
         CL_LoadState(LOAD_NONE);
-    } else if (cls_state == ca_cinematic && !COM_CompareExtension(cl.mapname, ".pcx")) {
-        cl.image_precache[0] = R_RegisterPic2(cl.mapname);
+    } else if (cls_state == ca_cinematic) {
+        SCR_ReloadCinematic();
     }
 
     // switch back to original state
@@ -4048,11 +4038,9 @@ bool CL_CheatsOK(void)
     if (cls.state > ca_connected && cl.maxclients == 1)
         return true;
 
-#if USE_MVD_CLIENT
     // can cheat when playing MVD
-    if (MVD_GetDemoPercent(NULL, NULL) != -1)
+    if (MVD_GetDemoStatus(NULL, NULL, NULL))
         return true;
-#endif
 
     return false;
 }
@@ -4551,9 +4539,7 @@ void CL_Init(void)
     IN_Init();
 
 #if USE_ZLIB
-    if (inflateInit2(&cls.z, -MAX_WBITS) != Z_OK) {
-        Com_Error(ERR_FATAL, "%s: inflateInit2() failed", __func__);
-    }
+    Q_assert(inflateInit2(&cls.z, -MAX_WBITS) == Z_OK);
 #endif
 
     OGG_Init();
