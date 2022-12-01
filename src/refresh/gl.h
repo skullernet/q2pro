@@ -287,14 +287,14 @@ typedef struct model_s {
     int registration_sequence;
     memhunk_t hunk;
 
-    // alias models
-    int numframes;
-    struct maliasframe_s *frames;
     int nummeshes;
-    struct maliasmesh_s *meshes;
+    int numframes;
 
-    // sprite models
-    struct mspriteframe_s *spriteframes;
+    struct maliasmesh_s *meshes;
+    union {
+        struct maliasframe_s *frames;
+        struct mspriteframe_s *spriteframes;
+    };
 } model_t;
 
 // xyz[3] | color[1]  | st[2]    | lmst[2]
