@@ -153,7 +153,7 @@ void    MSG_ParseDeltaPlayerstate_Packet(const player_state_t *from, player_stat
 #ifdef AQTION_EXTENSION
 void	MSG_WriteGhud(ghud_element_t *element, byte flags, short eflags);
 #if USE_CLIENT
-void	MSG_ParseGhud();
+void	MSG_ParseGhud(ghud_element_t *element);
 #endif
 #endif
 
