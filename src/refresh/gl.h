@@ -240,8 +240,6 @@ bool GL_ShowErrors(const char *func);
  *
  */
 
-#define MAX_ALIAS_SKINS     32
-
 typedef struct maliastc_s {
     float   st[2];
 } maliastc_t;
@@ -262,11 +260,11 @@ typedef struct maliasmesh_s {
     int             numverts;
     int             numtris;
     int             numindices;
+    int             numskins;
     QGL_INDEX_TYPE  *indices;
     maliasvert_t    *verts;
     maliastc_t      *tcoords;
-    image_t         *skins[MAX_ALIAS_SKINS];
-    int             numskins;
+    image_t         **skins;
 } maliasmesh_t;
 
 typedef struct mspriteframe_s {
