@@ -1463,7 +1463,6 @@ ogg <info|play|stop>::
     play <track>::: Start playing background music track ‘music/_track_.ogg’.
     stop::: Stop playing background music track.
 
-
 Incompatibilities
 -----------------
 

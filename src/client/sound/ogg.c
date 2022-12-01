@@ -330,6 +330,11 @@ void OGG_LoadTrackList(void)
     trackindex = 0;
 }
 
+static void OGG_Play_c(genctx_t *ctx, int state)
+{
+    FS_File_g("music", ".ogg", FS_SEARCH_STRIPEXT, ctx);
+}
+
 static void OGG_Play_f(void)
 {
     char buffer[MAX_QPATH];
