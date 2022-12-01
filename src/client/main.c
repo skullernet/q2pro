@@ -190,7 +190,7 @@ static request_t *CL_FindRequest(void)
 
 cvar_t* cl_extern_ip;   // External IP address
 
-size_t CurlWriteCallback(char* buf, size_t size, size_t nmemb, void* up)
+static size_t CurlWriteCallback(char* buf, size_t size, size_t nmemb, void* up)
 {
     if (strlen(buf) <= 16) // Length of an IP address
     {
@@ -522,19 +522,20 @@ static void DiscordLogCallback(void* hook_data, enum EDiscordLogLevel level, con
         Com_Printf("%s DEBUG: %s\n", __func__, message);
 }
 
-static void OnOAuth2Token(void* data, enum EDiscordResult result, struct DiscordOAuth2Token* token)
-{
-    if (result == DiscordResult_Ok)
-        Com_Printf("%s access token: %s\n", __func__, token->access_token);
-    else
-    {
-        Com_Printf("%s GetOAuth2Token failed with: ", __func__);
-        DiscordCallback(NULL, result);
-    }
-}
+//  Not used anywhere?
+// static void OnOAuth2Token(void* data, enum EDiscordResult result, struct DiscordOAuth2Token* token)
+// {
+//     if (result == DiscordResult_Ok)
+//         Com_Printf("%s access token: %s\n", __func__, token->access_token);
+//     else
+//     {
+//         Com_Printf("%s GetOAuth2Token failed with: ", __func__);
+//         DiscordCallback(NULL, result);
+//     }
+// }
 
 // Filter Discord friends
-bool RelationshipPassFilter(void* data, struct DiscordRelationship* relationship)
+static bool RelationshipPassFilter(void* data, struct DiscordRelationship* relationship)
 {
     return (relationship->type == DiscordRelationshipType_Friend); // Return true if they are a Discord friend
 }
@@ -710,7 +711,7 @@ static void CL_DiscordParseServerStatus(serverStatus_t* status, const char* stri
 
 // Allow players to invite or join a server via Discord
 // A lobby is created when a player joins a server, and deleted when they leave the game
-static void CL_DiscordGameInvite()
+static void CL_DiscordGameInvite(void)
 {   
     // Create a lobby if none exists
     if (discord.lobby.id == 0)
