@@ -364,7 +364,7 @@ if get_option('mvd-server')
 endif
 
 if get_option('mvd-client')
-  client_src += [
+  common_src += [
     'src/server/mvd/client.c',
     'src/server/mvd/game.c',
     'src/server/mvd/parse.c'
@@ -426,7 +426,7 @@ executable('q2proded', common_src, server_src,
   gnu_symbol_visibility: 'hidden',
   win_subsystem:         'console',
   link_args:             exe_link_args,
-  c_args:                ['-DUSE_SERVER=1', engine_args],
+  c_args:                ['-DUSE_SERVER=1', '-DUSE_MVD_CLIENT=0', engine_args],
   install:               system_wide,
 )
 
