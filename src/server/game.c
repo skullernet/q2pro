@@ -816,7 +816,7 @@ G_CheckForExtension
 Check for (and return) an extension function by name
 ================
 */
-void* G_CheckForExtension(char *text)
+static void* G_CheckForExtension(char *text)
 {
 	Com_Printf("G_CheckForExtension for %s\n", text);
 	extension_func_t *ext;
@@ -832,7 +832,7 @@ void* G_CheckForExtension(char *text)
 	return NULL;
 }
 
-int G_Ext_Client_GetProtocol(edict_t *ent)
+static int G_Ext_Client_GetProtocol(edict_t *ent)
 {
 	if (!ent->client)
 		return 0;
@@ -848,7 +848,7 @@ int G_Ext_Client_GetProtocol(edict_t *ent)
 	return 0;
 }
 
-int G_Ext_Client_GetVersion(edict_t *ent)
+static int G_Ext_Client_GetVersion(edict_t *ent)
 {
 	if (!ent->client)
 		return 0;
@@ -865,7 +865,7 @@ int G_Ext_Client_GetVersion(edict_t *ent)
 }
 
 
-void G_Ext_Ghud_SendUpdateToClient(edict_t *ent)
+static void G_Ext_Ghud_SendUpdateToClient(edict_t *ent)
 {
 	if (!ent->client)
 		return;
