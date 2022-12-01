@@ -1832,6 +1832,8 @@ static image_t *find_or_load_image(const char *name, size_t len,
     imageformat_t   fmt;
     int             ret;
 
+    Q_assert(len < MAX_QPATH);
+
     // must have an extension and at least 1 char of base name
     if (len <= 4) {
         ret = Q_ERR_NAMETOOSHORT;
@@ -1941,19 +1943,10 @@ fail:
 image_t *IMG_Find(const char *name, imagetype_t type, imageflags_t flags)
 {
     image_t *image;
-    size_t len;
 
-    if (!name) {
-        Com_Error(ERR_FATAL, "%s: NULL", __func__);
-    }
+    Q_assert(name);
 
-    // this should never happen
-    len = strlen(name);
-    if (len >= MAX_QPATH) {
-        Com_Error(ERR_FATAL, "%s: oversize name", __func__);
-    }
-
-    if ((image = find_or_load_image(name, len, type, flags))) {
+    if ((image = find_or_load_image(name, strlen(name), type, flags))) {
         return image;
     }
     return R_NOTEXTURE;
@@ -1966,10 +1959,7 @@ IMG_ForHandle
 */
 image_t *IMG_ForHandle(qhandle_t h)
 {
-    if (h < 0 || h >= r_numImages) {
-        Com_Error(ERR_FATAL, "%s: %d out of range", __func__, h);
-    }
-
+    Q_assert(h >= 0 && h < r_numImages);
     return &r_images[h];
 }
 
@@ -2157,10 +2147,7 @@ void IMG_Init(void)
 {
     int i;
 
-    if (r_numImages) {
-        Com_Error(ERR_FATAL, "%s: %d images not freed", __func__, r_numImages);
-    }
-
+    Q_assert(!r_numImages);
 
 #if USE_PNG || USE_JPG || USE_TGA
     r_override_textures = Cvar_Get("r_override_textures", "1", CVAR_FILES);

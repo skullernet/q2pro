@@ -174,11 +174,8 @@ void OGG_Update(void)
         int     samples;
 
         samples = ov_read(&ogg.vf, (char *)buffer, sizeof(buffer), USE_BIG_ENDIAN, 2, 1, NULL);
-        if (samples == 0) {
-            OGG_Play();
-            if (ogg.initialized)
-                samples = ov_read(&ogg.vf, (char *)buffer, sizeof(buffer), USE_BIG_ENDIAN, 2, 1, NULL);
-        }
+        if (samples == 0 && (OGG_Play(), ogg.initialized))
+            samples = ov_read(&ogg.vf, (char *)buffer, sizeof(buffer), USE_BIG_ENDIAN, 2, 1, NULL);
 
         if (samples <= 0)
             break;
@@ -286,7 +283,7 @@ bool OGG_Load(sizebuf_t *sz)
     }
 
     ogg_int64_t samples = ov_pcm_total(&vf, 0);
-    if (samples < 0 || samples > MAX_LOADFILE >> vi->channels) {
+    if (samples < 1 || samples > MAX_LOADFILE >> vi->channels) {
         Com_DPrintf("%s has bad number of samples\n", s_info.name);
         goto fail;
     }
@@ -333,18 +330,13 @@ void OGG_LoadTrackList(void)
     trackindex = 0;
 }
 
-static void OGG_Play_c(genctx_t *ctx, int state)
-{
-    FS_File_g("music", ".ogg", FS_SEARCH_STRIPEXT, ctx);
-}
-
 static void OGG_Play_f(void)
 {
     char buffer[MAX_QPATH];
     qhandle_t f;
 
-    if (Cmd_Argc() < 2) {
-        Com_Printf("Usage: %s <track>\n", Cmd_Argv(0));
+    if (Cmd_Argc() < 3) {
+        Com_Printf("Usage: %s %s <track>\n", Cmd_Argv(0), Cmd_Argv(1));
         return;
     }
 
@@ -359,7 +351,7 @@ static void OGG_Play_f(void)
     }
 
     f = FS_EasyOpenFile(buffer, sizeof(buffer), FS_MODE_READ,
-                        "music/", Cmd_Argv(1), ".ogg");
+                        "music/", Cmd_Argv(2), ".ogg");
     if (!f)
         return;
 
@@ -381,6 +373,33 @@ static void OGG_Info_f(void)
     }
 }
 
+static void OGG_Cmd_c(genctx_t *ctx, int argnum)
+{
+    if (argnum == 1) {
+        Prompt_AddMatch(ctx, "info");
+        Prompt_AddMatch(ctx, "play");
+        Prompt_AddMatch(ctx, "stop");
+        return;
+    }
+
+    if (argnum == 2 && !strcmp(Cmd_Argv(1), "play"))
+        FS_File_g("music", ".ogg", FS_SEARCH_STRIPEXT, ctx);
+}
+
+static void OGG_Cmd_f(void)
+{
+    const char *cmd = Cmd_Argv(1);
+
+    if (!strcmp(cmd, "info"))
+        OGG_Info_f();
+    else if (!strcmp(cmd, "play"))
+        OGG_Play_f();
+    else if (!strcmp(cmd, "stop"))
+        OGG_Stop();
+    else
+        Com_Printf("Usage: %s <info|play|stop>\n", Cmd_Argv(0));
+}
+
 static void ogg_enable_changed(cvar_t *self)
 {
     if (cls.state < ca_precached || cls.state > ca_active)
@@ -397,9 +416,7 @@ static void ogg_volume_changed(cvar_t *self)
 }
 
 static const cmdreg_t c_ogg[] = {
-    { "oggplay", OGG_Play_f, OGG_Play_c },
-    { "oggstop", OGG_Stop },
-    { "ogginfo", OGG_Info_f },
+    { "ogg", OGG_Cmd_f, OGG_Cmd_c },
     { NULL }
 };
 

@@ -143,7 +143,7 @@ static bool _GL_LightPoint(vec3_t start, vec3_t color)
 }
 
 #if USE_DLIGHTS
-static void GL_MarkLights_r(mnode_t *node, dlight_t *light, int lightbit)
+static void GL_MarkLights_r(mnode_t *node, dlight_t *light, unsigned lightbit)
 {
     vec_t dot;
     int count;
@@ -399,7 +399,7 @@ void GL_DrawBspModel(mmodel_t *model)
 
     GL_TransformLights(model);
 
-    GL_RotateForEntity(ent->origin);
+    GL_RotateForEntity();
 
     GL_BindArrays();
 
@@ -417,12 +417,9 @@ void GL_DrawBspModel(mmodel_t *model)
             continue;
         }
 
-        // alpha faces on transformed inline models are drawn with world GL
-        // matrix. this Q2 bug is not fixed intentionally: some maps exploit it
-        // to hide surfaces that would otherwise be visible.
         if (face->drawflags & SURF_TRANS_MASK) {
             if (model->drawframe != glr.drawframe)
-                GL_AddAlphaFace(face);
+                GL_AddAlphaFace(face, ent);
             continue;
         }
 
@@ -504,7 +501,7 @@ static inline void GL_DrawNode(mnode_t *node)
         }
 
         if (face->drawflags & SURF_TRANS_MASK) {
-            GL_AddAlphaFace(face);
+            GL_AddAlphaFace(face, &gl_world);
             continue;
         }
 
@@ -566,12 +563,14 @@ void GL_DrawWorld(void)
 
     GL_BindArrays();
 
-    GL_ClearSolidFaces();
+    if (gl_hash_faces->integer)
+        GL_ClearSolidFaces();
 
     GL_WorldNode_r(gl_static.world.cache->nodes,
                    gl_cull_nodes->integer ? NODE_CLIPPED : NODE_UNCLIPPED);
 
-    GL_DrawSolidFaces();
+    if (gl_hash_faces->integer)
+        GL_DrawSolidFaces();
 
     GL_Flush3D();
 

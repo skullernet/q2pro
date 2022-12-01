@@ -147,6 +147,9 @@ void GL_Setup2D(void)
         draw.scissor = false;
     }
 
+    if (gl_static.backend.setup_2d)
+        gl_static.backend.setup_2d();
+
     gl_static.backend.load_view_matrix(NULL);
 }
 
@@ -225,13 +228,16 @@ static void GL_RotateForViewer(void)
     GL_ForceMatrix(matrix);
 }
 
-void GL_Setup3D(void)
+void GL_Setup3D(bool waterwarp)
 {
-    qglViewport(glr.fd.x, r_config.height - (glr.fd.y + glr.fd.height),
-                glr.fd.width, glr.fd.height);
+    if (waterwarp)
+        qglViewport(0, 0, glr.fd.width, glr.fd.height);
+    else
+        qglViewport(glr.fd.x, r_config.height - (glr.fd.y + glr.fd.height),
+                    glr.fd.width, glr.fd.height);
 
-    if (gl_static.backend.update)
-        gl_static.backend.update();
+    if (gl_static.backend.setup_3d)
+        gl_static.backend.setup_3d();
 
     GL_Frustum();
 
@@ -246,9 +252,8 @@ void GL_Setup3D(void)
 void GL_DrawOutlines(GLsizei count, QGL_INDEX_TYPE *indices)
 {
     GL_BindTexture(0, TEXNUM_WHITE);
-    GL_StateBits(GLS_DEFAULT);
+    GL_StateBits(GLS_DEPTHMASK_FALSE | GLS_TEXTURE_REPLACE);
     GL_ArrayBits(GLA_VERTEX);
-    GL_Color(1, 1, 1, 1);
     GL_DepthRange(0, 0);
 
     if (qglPolygonMode) {

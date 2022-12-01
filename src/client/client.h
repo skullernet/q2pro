@@ -932,7 +932,7 @@ void    SCR_DrawStringMulti(int x, int y, int flags, size_t maxlen, const char *
 void    SCR_ClearChatHUD_f(void);
 void    SCR_AddToChatHUD(const char *text);
 
-void	CL_Clear3DGhudQueue();
+void	CL_Clear3DGhudQueue(void);
 
 //
 // cin.c

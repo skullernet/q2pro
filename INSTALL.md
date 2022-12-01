@@ -7,6 +7,9 @@ of GCC or Clang.
 Q2PRO client requires either SDL2 or OpenAL for sound output. For video output,
 native X11 and Wayland backends are available, as well as generic SDL2 backend.
 
+Note that SDL2 is optional if using native X11 and Wayland backends and OpenAL,
+which is preferred configuration.
+
 Both client and dedicated server require zlib support for full compatibility at
 network protocol level. The rest of dependencies are optional.
 
