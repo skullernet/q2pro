@@ -364,7 +364,7 @@ if get_option('mvd-server')
 endif
 
 if get_option('mvd-client')
-  common_src += [
+  client_src += [
     'src/server/mvd/client.c',
     'src/server/mvd/game.c',
     'src/server/mvd/parse.c'

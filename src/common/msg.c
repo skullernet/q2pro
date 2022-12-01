@@ -2075,9 +2075,10 @@ void MSG_WriteGhud(ghud_element_t *element, byte flags, short eflags)
 		MSG_WriteShort(element->size[1]);
 	}
 }
+#endif
 
-
-#ifdef USE_CLIENT || USE_MVD_CLIENT
+#ifdef AQTION_EXTENSION
+#if USE_CLIENT || USE_MVD_CLIENT
 void MSG_ParseGhud(ghud_element_t *element)
 {
 	int flags = MSG_ReadByte();
