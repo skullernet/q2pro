@@ -46,7 +46,7 @@ static cvar_t   *cl_testblend;
 static cvar_t   *cl_stats;
 #endif
 
-static cvar_t   *cl_adjustfov;
+cvar_t   *cl_adjustfov;
 
 #if USE_DLIGHTS
 int         r_numdlights;
