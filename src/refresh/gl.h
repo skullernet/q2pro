@@ -240,23 +240,23 @@ bool GL_ShowErrors(const char *func);
  *
  */
 
-typedef struct maliastc_s {
+typedef struct {
     float   st[2];
 } maliastc_t;
 
-typedef struct masliasvert_s {
+typedef struct {
     short   pos[3];
     byte    norm[2]; // lat, lng
 } maliasvert_t;
 
-typedef struct maliasframe_s {
+typedef struct {
     vec3_t  scale;
     vec3_t  translate;
     vec3_t  bounds[2];
     vec_t   radius;
 } maliasframe_t;
 
-typedef struct maliasmesh_s {
+typedef struct {
     int             numverts;
     int             numtris;
     int             numindices;
@@ -267,13 +267,15 @@ typedef struct maliasmesh_s {
     image_t         **skins;
 } maliasmesh_t;
 
-typedef struct mspriteframe_s {
-    int             width, height;
-    int             origin_x, origin_y;
-    struct image_s  *image;
+typedef struct {
+    int             width;
+    int             height;
+    int             origin_x;
+    int             origin_y;
+    image_t         *image;
 } mspriteframe_t;
 
-typedef struct model_s {
+typedef struct {
     enum {
         MOD_FREE,
         MOD_ALIAS,
@@ -288,10 +290,10 @@ typedef struct model_s {
     int nummeshes;
     int numframes;
 
-    struct maliasmesh_s *meshes;
+    maliasmesh_t *meshes;
     union {
-        struct maliasframe_s *frames;
-        struct mspriteframe_s *spriteframes;
+        maliasframe_t *frames;
+        mspriteframe_t *spriteframes;
     };
 } model_t;
 
