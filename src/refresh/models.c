@@ -742,6 +742,8 @@ qhandle_t R_RegisterModel(const char *name)
     int (*load)(model_t *, const void *, size_t);
     int ret;
 
+    Q_assert(name);
+
     // empty names are legal, silently ignore them
     if (!*name)
         return 0;
