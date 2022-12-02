@@ -1702,38 +1702,33 @@ static int try_other_formats(imageformat_t orig, image_t *image, byte **pic)
 static void get_image_dimensions(imageformat_t fmt, image_t *image)
 {
     char        buffer[MAX_QPATH];
-    int         len;
-    miptex_t    mt;
-    dpcx_t      pcx;
     qhandle_t   f;
     unsigned    w, h;
 
     memcpy(buffer, image->name, image->baselen + 1);
+    memcpy(buffer + image->baselen + 1, img_loaders[fmt].ext, 4);
+
+    FS_FOpenFile(buffer, &f, FS_MODE_READ | FS_FLAG_LOADFILE);
+    if (!f) {
+        return;
+    }
 
     w = h = 0;
     if (fmt == IM_WAL) {
-        memcpy(buffer + image->baselen + 1, "wal", 4);
-        FS_FOpenFile(buffer, &f, FS_MODE_READ);
-        if (f) {
-            len = FS_Read(&mt, sizeof(mt), f);
-            if (len == sizeof(mt)) {
-                w = LittleLong(mt.width);
-                h = LittleLong(mt.height);
-            }
-            FS_FCloseFile(f);
+        miptex_t mt;
+        if (FS_Read(&mt, sizeof(mt), f) == sizeof(mt)) {
+            w = LittleLong(mt.width);
+            h = LittleLong(mt.height);
         }
     } else {
-        memcpy(buffer + image->baselen + 1, "pcx", 4);
-        FS_FOpenFile(buffer, &f, FS_MODE_READ);
-        if (f) {
-            len = FS_Read(&pcx, sizeof(pcx), f);
-            if (len == sizeof(pcx)) {
-                w = (LittleShort(pcx.xmax) - LittleShort(pcx.xmin)) + 1;
-                h = (LittleShort(pcx.ymax) - LittleShort(pcx.ymin)) + 1;
-            }
-            FS_FCloseFile(f);
+        dpcx_t pcx;
+        if (FS_Read(&pcx, sizeof(pcx), f) == sizeof(pcx)) {
+            w = (LittleShort(pcx.xmax) - LittleShort(pcx.xmin)) + 1;
+            h = (LittleShort(pcx.ymax) - LittleShort(pcx.ymin)) + 1;
         }
     }
+
+    FS_FCloseFile(f);
 
     if (w < 1 || h < 1 || w > MAX_TEXTURE_SIZE || h > MAX_TEXTURE_SIZE) {
         return;
