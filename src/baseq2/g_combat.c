@@ -394,8 +394,6 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, 
     else
         te_sparks = TE_SPARKS;
 
-    VectorNormalize(dir);
-
 // bonus damage for suprising a monster
     if (!(dflags & DAMAGE_RADIUS) && (targ->svflags & SVF_MONSTER) && (attacker->client) && (!targ->enemy) && (targ->health > 0))
         damage *= 2;
@@ -414,10 +412,12 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, 
             else
                 mass = targ->mass;
 
+            VectorNormalize2(dir, kvel);
+
             if (targ->client  && attacker == targ)
-                VectorScale(dir, 1600.0f * (float)knockback / mass, kvel);  // the rocket jump hack...
+                VectorScale(kvel, 1600.0f * (float)knockback / mass, kvel);  // the rocket jump hack...
             else
-                VectorScale(dir, 500.0f * (float)knockback / mass, kvel);
+                VectorScale(kvel, 500.0f * (float)knockback / mass, kvel);
 
             VectorAdd(targ->velocity, kvel, targ->velocity);
         }
