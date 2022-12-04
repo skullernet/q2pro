@@ -19,7 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "client.h"
 
-static void CL_LogoutEffect(vec3_t org, int type);
+static void CL_LogoutEffect(const vec3_t org, int type);
 
 static vec3_t avelocities[NUMVERTEXNORMALS];
 
@@ -837,7 +837,7 @@ CL_ParticleEffect
 Wall impact puffs
 ===============
 */
-void CL_ParticleEffect(vec3_t org, vec3_t dir, int color, int count)
+void CL_ParticleEffect(const vec3_t org, const vec3_t dir, int color, int count)
 {
     int         i, j;
     cparticle_t *p;
@@ -871,7 +871,7 @@ void CL_ParticleEffect(vec3_t org, vec3_t dir, int color, int count)
 CL_ParticleEffect2
 ===============
 */
-void CL_ParticleEffect2(vec3_t org, vec3_t dir, int color, int count)
+void CL_ParticleEffect2(const vec3_t org, const vec3_t dir, int color, int count)
 {
     int         i, j;
     cparticle_t *p;
@@ -905,7 +905,7 @@ void CL_ParticleEffect2(vec3_t org, vec3_t dir, int color, int count)
 CL_TeleporterParticles
 ===============
 */
-void CL_TeleporterParticles(vec3_t org)
+void CL_TeleporterParticles(const vec3_t org)
 {
     int         i, j;
     cparticle_t *p;
@@ -941,7 +941,7 @@ CL_LogoutEffect
 
 ===============
 */
-static void CL_LogoutEffect(vec3_t org, int type)
+static void CL_LogoutEffect(const vec3_t org, int type)
 {
     int         i, j;
     cparticle_t *p;
@@ -982,7 +982,7 @@ CL_ItemRespawnParticles
 
 ===============
 */
-void CL_ItemRespawnParticles(vec3_t org)
+void CL_ItemRespawnParticles(const vec3_t org)
 {
     int         i, j;
     cparticle_t *p;
@@ -1017,7 +1017,7 @@ void CL_ItemRespawnParticles(vec3_t org)
 CL_ExplosionParticles
 ===============
 */
-void CL_ExplosionParticles(vec3_t org)
+void CL_ExplosionParticles(const vec3_t org)
 {
     int         i, j;
     cparticle_t *p;
@@ -1048,7 +1048,7 @@ void CL_ExplosionParticles(vec3_t org)
 CL_BigTeleportParticles
 ===============
 */
-void CL_BigTeleportParticles(vec3_t org)
+void CL_BigTeleportParticles(const vec3_t org)
 {
     static const byte   colortable[4] = {2 * 8, 13 * 8, 21 * 8, 18 * 8};
     int         i;
@@ -1091,7 +1091,7 @@ CL_BlasterParticles
 Wall impact puffs
 ===============
 */
-void CL_BlasterParticles(vec3_t org, vec3_t dir)
+void CL_BlasterParticles(const vec3_t org, const vec3_t dir)
 {
     int         i, j;
     cparticle_t *p;
@@ -1126,7 +1126,7 @@ CL_BlasterTrail
 
 ===============
 */
-void CL_BlasterTrail(vec3_t start, vec3_t end)
+void CL_BlasterTrail(const vec3_t start, const vec3_t end)
 {
     vec3_t      move;
     vec3_t      vec;
@@ -1172,7 +1172,7 @@ CL_FlagTrail
 
 ===============
 */
-void CL_FlagTrail(vec3_t start, vec3_t end, int color)
+void CL_FlagTrail(const vec3_t start, const vec3_t end, int color)
 {
     vec3_t      move;
     vec3_t      vec;
@@ -1217,7 +1217,7 @@ CL_DiminishingTrail
 
 ===============
 */
-void CL_DiminishingTrail(vec3_t start, vec3_t end, centity_t *old, int flags)
+void CL_DiminishingTrail(const vec3_t start, const vec3_t end, centity_t *old, int flags)
 {
     vec3_t      move;
     vec3_t      vec;
@@ -1303,7 +1303,7 @@ CL_RocketTrail
 
 ===============
 */
-void CL_RocketTrail(vec3_t start, vec3_t end, centity_t *old)
+void CL_RocketTrail(const vec3_t start, const vec3_t end, centity_t *old)
 {
     vec3_t      move;
     vec3_t      vec;
@@ -1434,7 +1434,7 @@ CL_BubbleTrail
 
 ===============
 */
-void CL_BubbleTrail(vec3_t start, vec3_t end)
+void CL_BubbleTrail(const vec3_t start, const vec3_t end)
 {
     vec3_t      move;
     vec3_t      vec;
@@ -1480,7 +1480,7 @@ CL_FlyParticles
 
 #define BEAMLENGTH  16
 
-static void CL_FlyParticles(vec3_t origin, int count)
+static void CL_FlyParticles(const vec3_t origin, int count)
 {
     int         i;
     cparticle_t *p;
@@ -1527,7 +1527,7 @@ static void CL_FlyParticles(vec3_t origin, int count)
     }
 }
 
-void CL_FlyEffect(centity_t *ent, vec3_t origin)
+void CL_FlyEffect(centity_t *ent, const vec3_t origin)
 {
     int     n;
     int     count;
@@ -1612,7 +1612,7 @@ CL_BFGExplosionParticles
 ===============
 */
 //FIXME combined with CL_ExplosionParticles
-void CL_BFGExplosionParticles(vec3_t org)
+void CL_BFGExplosionParticles(const vec3_t org)
 {
     int         i, j;
     cparticle_t *p;
@@ -1645,7 +1645,7 @@ CL_TeleportParticles
 
 ===============
 */
-void CL_TeleportParticles(vec3_t org)
+void CL_TeleportParticles(const vec3_t org)
 {
     int         i, j, k;
     cparticle_t *p;

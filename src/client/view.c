@@ -113,7 +113,7 @@ V_AddLight
 
 =====================
 */
-void V_AddLight(vec3_t org, float intensity, float r, float g, float b)
+void V_AddLight(const vec3_t org, float intensity, float r, float g, float b)
 {
     dlight_t    *dl;
 
