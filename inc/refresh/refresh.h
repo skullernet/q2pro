@@ -196,7 +196,7 @@ void    R_BeginRegistration(const char *map);
 qhandle_t R_RegisterModel(const char *name);
 qhandle_t R_RegisterImage(const char *name, imagetype_t type,
                           imageflags_t flags);
-void    R_SetSky(const char *name, float rotate, vec3_t axis);
+void    R_SetSky(const char *name, float rotate, const vec3_t axis);
 void    R_EndRegistration(void);
 
 #define R_RegisterPic(name)     R_RegisterImage(name, IT_PIC, IF_PERMANENT)
@@ -205,7 +205,7 @@ void    R_EndRegistration(void);
 #define R_RegisterSkin(name)    R_RegisterImage(name, IT_SKIN, IF_NONE)
 
 void    R_RenderFrame(refdef_t *fd);
-void    R_LightPoint(vec3_t origin, vec3_t light);
+void    R_LightPoint(const vec3_t origin, vec3_t light);
 
 void    R_ClearColor(void);
 void    R_SetAlpha(float clpha);
