@@ -1325,7 +1325,6 @@ static void make_screenshot(const char *name, const char *ext,
             .done_cb = screenshot_done_cb,
             .cb_arg = Z_CopyStruct(&s),
         };
-        Com_Printf("Taking async screenshot...\n");
         Sys_QueueAsyncWork(&work);
     } else {
         screenshot_work_cb(&s);
