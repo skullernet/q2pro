@@ -240,6 +240,10 @@ cl_gunalpha::
     Specifies opacity level of the player's own gun model. Default value is 1
     (fully opaque).
 
+cl_gunfov::
+    Specifies custom FOV value for drawing player's own gun model. Default
+    value is 90. Set to 0 to draw with current FOV value.
+
 Sound Subsystem
 ~~~~~~~~~~~~~~~
 
