@@ -219,7 +219,9 @@ MSG_WriteDeltaUsercmd
 */
 int MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *cmd, int version)
 {
-    int     bits, buttons = cmd->buttons & BUTTON_MASK;
+    int     bits, buttons;
+
+    Q_assert(cmd);
 
     if (!from) {
         from = &nullUserCmd;
@@ -248,19 +250,19 @@ int MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *cmd, int versi
 
     MSG_WriteByte(bits);
 
-    if (version >= PROTOCOL_VERSION_R1Q2_UCMD) {
-        if (bits & CM_BUTTONS) {
-            if ((bits & CM_FORWARD) && !(cmd->forwardmove % 5)) {
-                buttons |= BUTTON_FORWARD;
-            }
-            if ((bits & CM_SIDE) && !(cmd->sidemove % 5)) {
-                buttons |= BUTTON_SIDE;
-            }
-            if ((bits & CM_UP) && !(cmd->upmove % 5)) {
-                buttons |= BUTTON_UP;
-            }
-            MSG_WriteByte(buttons);
+    buttons = cmd->buttons & BUTTON_MASK;
+
+    if (version >= PROTOCOL_VERSION_R1Q2_UCMD && (bits & CM_BUTTONS)) {
+        if ((bits & CM_FORWARD) && !(cmd->forwardmove % 5)) {
+            buttons |= BUTTON_FORWARD;
         }
+        if ((bits & CM_SIDE) && !(cmd->sidemove % 5)) {
+            buttons |= BUTTON_SIDE;
+        }
+        if ((bits & CM_UP) && !(cmd->upmove % 5)) {
+            buttons |= BUTTON_UP;
+        }
+        MSG_WriteByte(buttons);
     }
 
     if (bits & CM_ANGLE1)
@@ -292,10 +294,8 @@ int MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *cmd, int versi
         }
     }
 
-    if (version < PROTOCOL_VERSION_R1Q2_UCMD) {
-        if (bits & CM_BUTTONS)
-            MSG_WriteByte(cmd->buttons);
-    }
+    if (version < PROTOCOL_VERSION_R1Q2_UCMD && (bits & CM_BUTTONS))
+        MSG_WriteByte(cmd->buttons);
     if (bits & CM_IMPULSE)
         MSG_WriteByte(cmd->impulse);
 
@@ -314,13 +314,8 @@ void MSG_WriteBits(int value, int bits)
     int i;
     size_t bitpos;
 
-    if (bits == 0 || bits < -31 || bits > 32) {
-        Com_Error(ERR_FATAL, "MSG_WriteBits: bad bits: %d", bits);
-    }
-
-    if (msg_write.maxsize - msg_write.cursize < 4) {
-        Com_Error(ERR_FATAL, "MSG_WriteBits: overflow");
-    }
+    Q_assert(!(bits == 0 || bits < -31 || bits > 32));
+    Q_assert(msg_write.maxsize - msg_write.cursize >= 4);
 
     if (bits < 0) {
         bits = -bits;
@@ -363,6 +358,8 @@ int MSG_WriteDeltaUsercmd_Enhanced(const usercmd_t *from,
                                    const usercmd_t *cmd)
 {
     int     bits, delta;
+
+    Q_assert(cmd);
 
     if (!from) {
         from = &nullUserCmd;
@@ -455,9 +452,7 @@ void MSG_WriteDir(const vec3_t dir)
 void MSG_PackEntity(entity_packed_t *out, const entity_state_t *in, bool short_angles)
 {
     // allow 0 to accomodate empty baselines
-    if (in->number < 0 || in->number >= MAX_EDICTS)
-        Com_Error(ERR_DROP, "%s: bad number: %d", __func__, in->number);
-
+    Q_assert(in->number >= 0 && in->number < MAX_EDICTS);
     out->number = in->number;
     out->origin[0] = COORD2SHORT(in->origin[0]);
     out->origin[1] = COORD2SHORT(in->origin[1]);
@@ -496,11 +491,8 @@ void MSG_WriteDeltaEntity(const entity_packed_t *from,
     uint32_t    bits, mask;
 
     if (!to) {
-        if (!from)
-            Com_Error(ERR_DROP, "%s: NULL", __func__);
-
-        if (from->number < 1 || from->number >= MAX_EDICTS)
-            Com_Error(ERR_DROP, "%s: bad number: %d", __func__, from->number);
+        Q_assert(from);
+        Q_assert(from->number > 0 && from->number < MAX_EDICTS);
 
         bits = U_REMOVE;
         if (from->number & 0xff00)
@@ -518,8 +510,7 @@ void MSG_WriteDeltaEntity(const entity_packed_t *from,
         return; // remove entity
     }
 
-    if (to->number < 1 || to->number >= MAX_EDICTS)
-        Com_Error(ERR_DROP, "%s: bad number: %d", __func__, to->number);
+    Q_assert(to->number > 0 && to->number < MAX_EDICTS);
 
     if (!from)
         from = &nullEntityState;
@@ -790,8 +781,7 @@ void MSG_WriteDeltaPlayerstate_Default(const player_packed_t *from, const player
     int     pflags;
     int     statbits;
 
-    if (!to)
-        Com_Error(ERR_DROP, "%s: NULL", __func__);
+    Q_assert(to);
 
     if (!from)
         from = &nullPlayerState;
@@ -949,168 +939,159 @@ int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
 	player_packed_t    *to,
 	msgPsFlags_t       flags)
 {
-	int     i;
-	int     pflags, eflags;
-	int     statbits;
+    int     i;
+    int     pflags, eflags;
+    int     statbits;
 
-	if (!to)
-		Com_Error(ERR_DROP, "%s: NULL", __func__);
+    Q_assert(to);
 
-	if (!from)
-		from = &nullPlayerState;
+    if (!from)
+        from = &nullPlayerState;
 
-	//
-	// determine what needs to be sent
-	//
-	pflags = 0;
-	eflags = 0;
+    //
+    // determine what needs to be sent
+    //
+    pflags = 0;
+    eflags = 0;
 
-	if (to->pmove.pm_type != from->pmove.pm_type)
-		pflags |= PS_M_TYPE;
+    if (to->pmove.pm_type != from->pmove.pm_type)
+        pflags |= PS_M_TYPE;
 
-	if (to->pmove.origin[0] != from->pmove.origin[0] ||
-		to->pmove.origin[1] != from->pmove.origin[1])
-		pflags |= PS_M_ORIGIN;
+    if (to->pmove.origin[0] != from->pmove.origin[0] ||
+        to->pmove.origin[1] != from->pmove.origin[1])
+        pflags |= PS_M_ORIGIN;
 
-	if (to->pmove.origin[2] != from->pmove.origin[2])
-		eflags |= EPS_M_ORIGIN2;
+    if (to->pmove.origin[2] != from->pmove.origin[2])
+        eflags |= EPS_M_ORIGIN2;
 
-	if (!(flags & MSG_PS_IGNORE_PREDICTION)) {
-		if (to->pmove.velocity[0] != from->pmove.velocity[0] ||
-			to->pmove.velocity[1] != from->pmove.velocity[1])
-			pflags |= PS_M_VELOCITY;
+    if (!(flags & MSG_PS_IGNORE_PREDICTION)) {
+        if (to->pmove.velocity[0] != from->pmove.velocity[0] ||
+            to->pmove.velocity[1] != from->pmove.velocity[1])
+            pflags |= PS_M_VELOCITY;
 
-		if (to->pmove.velocity[2] != from->pmove.velocity[2])
-			eflags |= EPS_M_VELOCITY2;
+        if (to->pmove.velocity[2] != from->pmove.velocity[2])
+            eflags |= EPS_M_VELOCITY2;
 
-		if (to->pmove.pm_time != from->pmove.pm_time)
-			pflags |= PS_M_TIME;
+        if (to->pmove.pm_time != from->pmove.pm_time)
+            pflags |= PS_M_TIME;
 
-		if (to->pmove.pm_flags != from->pmove.pm_flags)
-			pflags |= PS_M_FLAGS;
+        if (to->pmove.pm_flags != from->pmove.pm_flags)
+            pflags |= PS_M_FLAGS;
 
-		if (to->pmove.gravity != from->pmove.gravity)
-			pflags |= PS_M_GRAVITY;
-	}
-	else {
-		// save previous state
-		VectorCopy(from->pmove.velocity, to->pmove.velocity);
-		to->pmove.pm_time = from->pmove.pm_time;
-		to->pmove.pm_flags = from->pmove.pm_flags;
-		to->pmove.gravity = from->pmove.gravity;
-	}
+        if (to->pmove.gravity != from->pmove.gravity)
+            pflags |= PS_M_GRAVITY;
+    } else {
+        // save previous state
+        VectorCopy(from->pmove.velocity, to->pmove.velocity);
+        to->pmove.pm_time = from->pmove.pm_time;
+        to->pmove.pm_flags = from->pmove.pm_flags;
+        to->pmove.gravity = from->pmove.gravity;
+    }
 
-	if (!(flags & MSG_PS_IGNORE_DELTAANGLES)) {
-		if (!VectorCompare(from->pmove.delta_angles, to->pmove.delta_angles))
-			pflags |= PS_M_DELTA_ANGLES;
-	}
-	else {
-		// save previous state
-		VectorCopy(from->pmove.delta_angles, to->pmove.delta_angles);
-	}
+    if (!(flags & MSG_PS_IGNORE_DELTAANGLES)) {
+        if (!VectorCompare(from->pmove.delta_angles, to->pmove.delta_angles))
+            pflags |= PS_M_DELTA_ANGLES;
+    } else {
+        // save previous state
+        VectorCopy(from->pmove.delta_angles, to->pmove.delta_angles);
+    }
 
-	if (!VectorCompare(from->viewoffset, to->viewoffset))
-		pflags |= PS_VIEWOFFSET;
+    if (!VectorCompare(from->viewoffset, to->viewoffset))
+        pflags |= PS_VIEWOFFSET;
 
-	if (!(flags & MSG_PS_IGNORE_VIEWANGLES)) {
-		if (from->viewangles[0] != to->viewangles[0] ||
-			from->viewangles[1] != to->viewangles[1])
-			pflags |= PS_VIEWANGLES;
+    if (!(flags & MSG_PS_IGNORE_VIEWANGLES)) {
+        if (from->viewangles[0] != to->viewangles[0] ||
+            from->viewangles[1] != to->viewangles[1])
+            pflags |= PS_VIEWANGLES;
 
-		if (from->viewangles[2] != to->viewangles[2])
-			eflags |= EPS_VIEWANGLE2;
-	}
-	else {
-		// save previous state
-		VectorCopy(from->viewangles, to->viewangles);
-	}
+        if (from->viewangles[2] != to->viewangles[2])
+            eflags |= EPS_VIEWANGLE2;
+    } else {
+        // save previous state
+        VectorCopy(from->viewangles, to->viewangles);
+    }
 
-	if (!VectorCompare(from->kick_angles, to->kick_angles))
-		pflags |= PS_KICKANGLES;
+    if (!VectorCompare(from->kick_angles, to->kick_angles))
+        pflags |= PS_KICKANGLES;
 
-	if (!(flags & MSG_PS_IGNORE_BLEND)) {
-		if (!Vector4Compare(from->blend, to->blend))
-			pflags |= PS_BLEND;
-	}
-	else {
-		// save previous state
-		Vector4Copy(from->blend, to->blend);
-	}
+    if (!(flags & MSG_PS_IGNORE_BLEND)) {
+        if (!Vector4Compare(from->blend, to->blend))
+            pflags |= PS_BLEND;
+    } else {
+        // save previous state
+        Vector4Copy(from->blend, to->blend);
+    }
 
-	if (from->fov != to->fov)
-		pflags |= PS_FOV;
+    if (from->fov != to->fov)
+        pflags |= PS_FOV;
 
-	if (to->rdflags != from->rdflags)
-		pflags |= PS_RDFLAGS;
+    if (to->rdflags != from->rdflags)
+        pflags |= PS_RDFLAGS;
 
-	if (!(flags & MSG_PS_IGNORE_GUNINDEX)) {
-		if (to->gunindex != from->gunindex)
-			pflags |= PS_WEAPONINDEX;
-	}
-	else {
-		// save previous state
-		to->gunindex = from->gunindex;
-	}
+    if (!(flags & MSG_PS_IGNORE_GUNINDEX)) {
+        if (to->gunindex != from->gunindex)
+            pflags |= PS_WEAPONINDEX;
+    } else {
+        // save previous state
+        to->gunindex = from->gunindex;
+    }
 
-	if (!(flags & MSG_PS_IGNORE_GUNFRAMES)) {
-		if (to->gunframe != from->gunframe)
-			pflags |= PS_WEAPONFRAME;
+    if (!(flags & MSG_PS_IGNORE_GUNFRAMES)) {
+        if (to->gunframe != from->gunframe)
+            pflags |= PS_WEAPONFRAME;
 
-		if (!VectorCompare(from->gunoffset, to->gunoffset))
-			eflags |= EPS_GUNOFFSET;
+        if (!VectorCompare(from->gunoffset, to->gunoffset))
+            eflags |= EPS_GUNOFFSET;
 
-		if (!VectorCompare(from->gunangles, to->gunangles))
-			eflags |= EPS_GUNANGLES;
-	}
-	else {
-		// save previous state
-		to->gunframe = from->gunframe;
-		VectorCopy(from->gunoffset, to->gunoffset);
-		VectorCopy(from->gunangles, to->gunangles);
-	}
+        if (!VectorCompare(from->gunangles, to->gunangles))
+            eflags |= EPS_GUNANGLES;
+    } else {
+        // save previous state
+        to->gunframe = from->gunframe;
+        VectorCopy(from->gunoffset, to->gunoffset);
+        VectorCopy(from->gunangles, to->gunangles);
+    }
 
-	statbits = 0;
-	for (i = 0; i < MAX_STATS; i++)
-		if (to->stats[i] != from->stats[i])
-			statbits |= 1U << i;
+    statbits = 0;
+    for (i = 0; i < MAX_STATS; i++)
+        if (to->stats[i] != from->stats[i])
+            statbits |= 1U << i;
 
-	if (statbits)
-		eflags |= EPS_STATS;
+    if (statbits)
+        eflags |= EPS_STATS;
 
-	//
-	// write it
-	//
-	MSG_WriteShort(pflags);
+    //
+    // write it
+    //
+    MSG_WriteShort(pflags);
 
-	//
-	// write the pmove_state_t
-	//
-	if (pflags & PS_M_TYPE)
-		MSG_WriteByte(to->pmove.pm_type);
+    //
+    // write the pmove_state_t
+    //
+    if (pflags & PS_M_TYPE)
+        MSG_WriteByte(to->pmove.pm_type);
 
-	if (pflags & PS_M_ORIGIN) {
-		MSG_WriteShort(to->pmove.origin[0]);
-		MSG_WriteShort(to->pmove.origin[1]);
-	}
+    if (pflags & PS_M_ORIGIN) {
+        MSG_WriteShort(to->pmove.origin[0]);
+        MSG_WriteShort(to->pmove.origin[1]);
+    }
 
-	if (eflags & EPS_M_ORIGIN2)
-		MSG_WriteShort(to->pmove.origin[2]);
+    if (eflags & EPS_M_ORIGIN2)
+        MSG_WriteShort(to->pmove.origin[2]);
 
-	if (pflags & PS_M_VELOCITY) {
-		MSG_WriteShort(to->pmove.velocity[0]);
-		MSG_WriteShort(to->pmove.velocity[1]);
-	}
+    if (pflags & PS_M_VELOCITY) {
+        MSG_WriteShort(to->pmove.velocity[0]);
+        MSG_WriteShort(to->pmove.velocity[1]);
+    }
 
-	if (eflags & EPS_M_VELOCITY2)
-		MSG_WriteShort(to->pmove.velocity[2]);
+    if (eflags & EPS_M_VELOCITY2)
+        MSG_WriteShort(to->pmove.velocity[2]);
 
-	if (pflags & PS_M_TIME) {
-		MSG_WriteByte(to->pmove.pm_time);
-	}
+    if (pflags & PS_M_TIME)
+        MSG_WriteByte(to->pmove.pm_time);
 
-	if (pflags & PS_M_FLAGS) {
-		MSG_WriteByte(to->pmove.pm_flags);
-	}
+    if (pflags & PS_M_FLAGS)
+        MSG_WriteByte(to->pmove.pm_flags);
 
     if (pflags & PS_M_GRAVITY)
         MSG_WriteShort(to->pmove.gravity);
@@ -1477,6 +1458,7 @@ void MSG_WriteDeltaPlayerstate_Packet(const player_packed_t *from,
     int     pflags;
     int     statbits;
 
+    // this can happen with client GTV
     if (number < 0 || number >= CLIENTNUM_NONE)
         Com_Error(ERR_DROP, "%s: bad number: %d", __func__, number);
 
@@ -1819,6 +1801,8 @@ void MSG_ReadDeltaUsercmd(const usercmd_t *from, usercmd_t *to)
 {
     int bits;
 
+    Q_assert(to);
+
     if (from) {
         memcpy(to, from, sizeof(*to));
     } else {
@@ -1860,6 +1844,8 @@ void MSG_ReadDeltaUsercmd(const usercmd_t *from, usercmd_t *to)
 void MSG_ReadDeltaUsercmd_Hacked(const usercmd_t *from, usercmd_t *to)
 {
     int bits, buttons = 0;
+
+    Q_assert(to);
 
     if (from) {
         memcpy(to, from, sizeof(*to));
@@ -1932,9 +1918,7 @@ int MSG_ReadBits(int bits)
     size_t bitpos;
     bool sgn;
 
-    if (bits == 0 || bits < -31 || bits > 32) {
-        Com_Error(ERR_FATAL, "MSG_ReadBits: bad bits: %d", bits);
-    }
+    Q_assert(!(bits == 0 || bits < -31 || bits > 32));
 
     bitpos = msg_read.bitpos;
     if ((bitpos & 7) == 0) {
@@ -1983,6 +1967,8 @@ int MSG_ReadBits(int bits)
 void MSG_ReadDeltaUsercmd_Enhanced(const usercmd_t *from, usercmd_t *to)
 {
     int bits;
+
+    Q_assert(to);
 
     if (from) {
         memcpy(to, from, sizeof(*to));
@@ -2168,13 +2154,8 @@ void MSG_ParseDeltaEntity(const entity_state_t *from,
                           int            bits,
                           msgEsFlags_t   flags)
 {
-    if (!to) {
-        Com_Error(ERR_DROP, "%s: NULL", __func__);
-    }
-
-    if (number < 1 || number >= MAX_EDICTS) {
-        Com_Error(ERR_DROP, "%s: bad entity number: %d", __func__, number);
-    }
+    Q_assert(to);
+    Q_assert(number > 0 && number < MAX_EDICTS);
 
     // set everything to the state we are delta'ing from
     if (!from) {
@@ -2292,9 +2273,7 @@ void MSG_ParseDeltaPlayerstate_Default(const player_state_t *from,
     int         i;
     int         statbits;
 
-    if (!to) {
-        Com_Error(ERR_DROP, "%s: NULL", __func__);
-    }
+    Q_assert(to);
 
     // clear to old value before delta parsing
     if (!from) {
@@ -2407,9 +2386,7 @@ void MSG_ParseDeltaPlayerstate_Enhanced(const player_state_t    *from,
     int         i;
     int         statbits;
 
-    if (!to) {
-        Com_Error(ERR_DROP, "%s: NULL", __func__);
-    }
+    Q_assert(to);
 
     // clear to old value before delta parsing
     if (!from) {
@@ -2712,9 +2689,7 @@ void MSG_ParseDeltaPlayerstate_Packet(const player_state_t *from,
     int         i;
     int         statbits;
 
-    if (!to) {
-        Com_Error(ERR_DROP, "%s: NULL", __func__);
-    }
+    Q_assert(to);
 
     // clear to old value before delta parsing
     if (!from) {

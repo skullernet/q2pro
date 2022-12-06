@@ -289,10 +289,7 @@ sfx_t *S_SfxForHandle(qhandle_t hSfx)
         return NULL;
     }
 
-    if (hSfx < 1 || hSfx > num_sfx) {
-        Com_Error(ERR_DROP, "S_SfxForHandle: %d out of range", hSfx);
-    }
-
+    Q_assert(hSfx > 0 && hSfx <= num_sfx);
     return &known_sfx[hSfx - 1];
 }
 
@@ -370,6 +367,8 @@ qhandle_t S_RegisterSound(const char *name)
 
     if (!s_started)
         return 0;
+
+    Q_assert(name);
 
     // empty names are legal, silently ignore them
     if (!*name)
@@ -535,9 +534,6 @@ channel_t *S_PickChannel(int entnum, int entchannel)
     int         life_left;
     channel_t   *ch;
 
-    if (entchannel < 0)
-        Com_Error(ERR_DROP, "S_PickChannel: entchannel < 0");
-
 // Check for replacement sound, or find the best one to replace
     first_to_die = -1;
     life_left = 0x7fffffff;
@@ -682,9 +678,6 @@ void S_StartSound(const vec3_t origin, int entnum, int entchannel, qhandle_t hSf
     sfxcache_t  *sc;
     playsound_t *ps, *sort;
     sfx_t       *sfx;
-
-    if (vol < 0 || vol > 1)
-        Com_Error(ERR_DROP, "%s: bad volume", __func__);
 
     if (!s_started)
         return;

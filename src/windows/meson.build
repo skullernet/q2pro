@@ -61,7 +61,7 @@ if get_option('windows-service')
   config.set('USE_WINSVC', 'USE_SERVER')
 endif
 
-if get_option('windows-crash-dumps')
+if get_option('windows-crash-dumps').require(host_machine.cpu_family().startswith('x86')).allowed()
   common_src += files('debug.c')
   config.set10('USE_DBGHELP', true)
 endif
