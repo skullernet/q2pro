@@ -46,7 +46,7 @@ static cvar_t   *cl_testblend;
 static cvar_t   *cl_stats;
 #endif
 
-static cvar_t   *cl_adjustfov;
+cvar_t   *cl_adjustfov;
 
 #if USE_DLIGHTS
 int         r_numdlights;
@@ -113,7 +113,7 @@ V_AddLight
 
 =====================
 */
-void V_AddLight(vec3_t org, float intensity, float r, float g, float b)
+void V_AddLight(const vec3_t org, float intensity, float r, float g, float b)
 {
     dlight_t    *dl;
 
@@ -138,8 +138,7 @@ void V_AddLightStyle(int style, vec4_t value)
 {
     lightstyle_t    *ls;
 
-    if (style < 0 || style >= MAX_LIGHTSTYLES)
-        Com_Error(ERR_DROP, "Bad light style %i", style);
+    Q_assert(style >= 0 && style < MAX_LIGHTSTYLES);
     ls = &r_lightstyles[style];
 
     //ls->white = r+g+b;

@@ -269,13 +269,13 @@ typedef struct {
     float       fraction;
 } lightpoint_t;
 
-void BSP_LightPoint(lightpoint_t *point, vec3_t start, vec3_t end, mnode_t *headnode);
-void BSP_TransformedLightPoint(lightpoint_t *point, vec3_t start, vec3_t end,
-                               mnode_t *headnode, vec3_t origin, vec3_t angles);
+void BSP_LightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end, mnode_t *headnode);
+void BSP_TransformedLightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end,
+                               mnode_t *headnode, const vec3_t origin, const vec3_t angles);
 #endif
 
 byte *BSP_ClusterVis(bsp_t *bsp, byte *mask, int cluster, int vis);
-mleaf_t *BSP_PointLeaf(mnode_t *node, vec3_t p);
+mleaf_t *BSP_PointLeaf(mnode_t *node, const vec3_t p);
 mmodel_t *BSP_InlineModel(bsp_t *bsp, const char *name);
 
 void BSP_Init(void);

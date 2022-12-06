@@ -347,12 +347,6 @@ static void shader_load_proj_matrix(const GLfloat *matrix)
     upload_u_block();
 }
 
-static void shader_reflect(void)
-{
-    gls.u_block.proj[0] = -gls.u_block.proj[0];
-    upload_u_block();
-}
-
 static void shader_setup_2d(void)
 {
     gls.u_block.time = glr.fd.time;
@@ -434,7 +428,6 @@ const glbackend_t backend_shader = {
 
     .load_proj_matrix = shader_load_proj_matrix,
     .load_view_matrix = shader_load_view_matrix,
-    .reflect = shader_reflect,
 
     .state_bits = shader_state_bits,
     .array_bits = shader_array_bits,

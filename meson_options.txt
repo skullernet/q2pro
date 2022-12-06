@@ -33,7 +33,7 @@ option('variable-fps', type: 'boolean', value: false, description: 'variable ser
 option('vid-geometry', type: 'string', value: '640x480', description: 'default window geometry')
 option('vid-modelist', type: 'string', value: '640x480 800x600 1024x768', description: 'default video mode list')
 option('wayland', type: 'feature', value: 'auto', description: 'wayland support')
-option('windows-crash-dumps', type: 'boolean', value: true, description: 'windows crash dumps')
+option('windows-crash-dumps', type: 'feature', value: 'auto', description: 'windows crash dumps')
 option('windows-egl', type: 'boolean', value: true, description: 'windows EGL support')
 option('windows-service', type: 'boolean', value: true, description: 'run as windows service')
 option('x11', type: 'feature', value: 'auto', description: 'X11 support')

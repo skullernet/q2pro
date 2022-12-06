@@ -1097,7 +1097,7 @@ HELPER FUNCTIONS
 
 static lightpoint_t *light_point;
 
-static bool BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, vec3_t p1, vec3_t p2)
+static bool BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, const vec3_t p1, const vec3_t p2)
 {
     vec_t d1, d2, frac, midf;
     vec3_t mid;
@@ -1159,7 +1159,7 @@ static bool BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, vec3_t 
     return false;
 }
 
-void BSP_LightPoint(lightpoint_t *point, vec3_t start, vec3_t end, mnode_t *headnode)
+void BSP_LightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end, mnode_t *headnode)
 {
     light_point = point;
     light_point->surf = NULL;
@@ -1168,8 +1168,8 @@ void BSP_LightPoint(lightpoint_t *point, vec3_t start, vec3_t end, mnode_t *head
     BSP_RecursiveLightPoint(headnode, 0, 1, start, end);
 }
 
-void BSP_TransformedLightPoint(lightpoint_t *point, vec3_t start, vec3_t end,
-                               mnode_t *headnode, vec3_t origin, vec3_t angles)
+void BSP_TransformedLightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end,
+                               mnode_t *headnode, const vec3_t origin, const vec3_t angles)
 {
     vec3_t start_l, end_l;
     vec3_t axis[3];
@@ -1285,7 +1285,7 @@ overrun:
     return mask;
 }
 
-mleaf_t *BSP_PointLeaf(mnode_t *node, vec3_t p)
+mleaf_t *BSP_PointLeaf(mnode_t *node, const vec3_t p)
 {
     float d;
 
@@ -1309,12 +1309,10 @@ mmodel_t *BSP_InlineModel(bsp_t *bsp, const char *name)
 {
     int     num;
 
-    if (!bsp || !name) {
-        Com_Error(ERR_DROP, "%s: NULL", __func__);
-    }
-    if (name[0] != '*') {
-        Com_Error(ERR_DROP, "%s: bad name: %s", __func__, name);
-    }
+    Q_assert(bsp);
+    Q_assert(name);
+    Q_assert(name[0] == '*');
+
     num = atoi(name + 1);
     if (num < 1 || num >= bsp->nummodels) {
         Com_Error(ERR_DROP, "%s: bad number: %d", __func__, num);

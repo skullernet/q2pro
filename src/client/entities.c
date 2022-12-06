@@ -943,12 +943,6 @@ static void CL_AddViewWeapon(void)
                         ps->gunangles[i], CL_KEYLERPFRAC);
     }
 
-    // adjust for high fov
-    if (ps->fov > 90) {
-        vec_t ofs = (90 - ps->fov) * 0.2f;
-        VectorMA(gun.origin, ofs, cl.v_forward, gun.origin);
-    }
-
     VectorCopy(gun.origin, gun.oldorigin);      // don't lerp at all
 
     if (gun_frame) {
@@ -965,9 +959,6 @@ static void CL_AddViewWeapon(void)
     }
 
     gun.flags = RF_MINLIGHT | RF_DEPTHHACK | RF_WEAPONMODEL;
-    if ((info_hand->integer == 1 && cl_gun->integer == 1) || cl_gun->integer == 3) {
-        gun.flags |= RF_LEFTHAND;
-    }
 
     if (cl_gunalpha->value != 1) {
         gun.alpha = Cvar_ClampValue(cl_gunalpha, 0.1f, 1.0f);
@@ -1019,7 +1010,7 @@ static void CL_SetupThirdPersionView(void)
     float fscale, rscale;
     float dist, angle, range;
     trace_t trace;
-    static vec3_t mins = { -4, -4, -4 }, maxs = { 4, 4, 4 };
+    static const vec3_t mins = { -4, -4, -4 }, maxs = { 4, 4, 4 };
 
     // if dead, set a nice view angle
     if (cl.frame.ps.stats[STAT_HEALTH] <= 0) {
@@ -1265,10 +1256,7 @@ void CL_GetEntitySoundOrigin(int entnum, vec3_t org)
     mmodel_t    *cm;
     vec3_t      mid;
 
-    if (entnum < 0 || entnum >= MAX_EDICTS) {
-        Com_Error(ERR_DROP, "%s: bad entnum: %d", __func__, entnum);
-    }
-
+    Q_assert(entnum >= 0 && entnum < MAX_EDICTS);
     if (!entnum || entnum == listener_entnum) {
         // should this ever happen?
         VectorCopy(listener_origin, org);

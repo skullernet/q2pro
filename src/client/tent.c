@@ -196,7 +196,7 @@ static explosion_t *CL_PlainExplosion(void)
 CL_SmokeAndFlash
 =================
 */
-void CL_SmokeAndFlash(vec3_t origin)
+void CL_SmokeAndFlash(const vec3_t origin)
 {
     explosion_t *ex;
 
