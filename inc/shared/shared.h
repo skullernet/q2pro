@@ -261,7 +261,7 @@ static inline void TransposeAxis(vec3_t axis[3])
     SWAP(vec_t, axis[1][2], axis[2][1]);
 }
 
-static inline void RotatePoint(vec3_t point, vec3_t axis[3])
+static inline void RotatePoint(vec3_t point, const vec3_t axis[3])
 {
     vec3_t temp;
 
