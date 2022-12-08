@@ -1922,6 +1922,15 @@ int FS_FPrintf(qhandle_t f, const char *format, ...)
     return FS_Write(string, len, f);
 }
 
+static void pack_free(pack_t *pack)
+{
+    fclose(pack->fp);
+    Z_Free(pack->names);
+    Z_Free(pack->file_hash);
+    Z_Free(pack->files);
+    Z_Free(pack);
+}
+
 // references pack_t instance
 static pack_t *pack_get(pack_t *pack)
 {
@@ -1938,11 +1947,7 @@ static void pack_put(pack_t *pack)
     Q_assert(pack->refcount > 0);
     if (!--pack->refcount) {
         FS_DPrintf("Freeing packfile %s\n", pack->filename);
-        fclose(pack->fp);
-        Z_Free(pack->names);
-        Z_Free(pack->file_hash);
-        Z_Free(pack->files);
-        Z_Free(pack);
+        pack_free(pack);
     }
 }
 
@@ -2327,7 +2332,9 @@ static pack_t *load_zip_file(const char *packfile)
     return pack;
 
 fail1:
-    Z_Free(pack);
+    pack_free(pack);
+    return NULL;
+
 fail2:
     fclose(fp);
     return NULL;
