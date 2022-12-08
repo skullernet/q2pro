@@ -2253,6 +2253,11 @@ static pack_t *load_zip_file(const char *packfile)
         Com_Printf("%s has no files\n", packfile);
         goto fail2;
     }
+    if (num_files == 0xffff) {
+        // this might be unsupported ZIP64 archive
+        Com_Printf("%s has too many files\n", packfile);
+        goto fail2;
+    }
 
     central_size = LittleLongMem(&header[12]);
     central_ofs = LittleLongMem(&header[16]);
