@@ -2253,9 +2253,12 @@ static size_t CL_Ping_m(char *buffer, size_t size)
 
 static size_t CL_Lag_m(char *buffer, size_t size)
 {
-    return Q_scnprintf(buffer, size, "%.2f%%", cls.netchan ?
-                       ((float)cls.netchan->total_dropped /
-                        cls.netchan->total_received) * 100.0f : 0);
+    float f = 0;
+
+    if (cls.netchan && cls.netchan->total_received)
+        f = (float)cls.netchan->total_dropped / cls.netchan->total_received;
+
+    return Q_scnprintf(buffer, size, "%.2f%%", f * 100.0f);
 }
 
 static size_t CL_Health_m(char *buffer, size_t size)
