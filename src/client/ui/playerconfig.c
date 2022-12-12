@@ -268,7 +268,8 @@ static bool Push(menuFrameWork_t *self)
     m_player.skin.itemnames = uis.pmi[currentdirectoryindex].skindisplaynames;
 
     m_player.hand.curvalue = Cvar_VariableInteger("hand");
-    clamp(m_player.hand.curvalue, 0, 2);
+    if (m_player.hand.curvalue < 0 || m_player.hand.curvalue > 2)
+        m_player.hand.curvalue = 0;
 
     m_player.menu.banner = R_RegisterPic("m_banner_plauer_setup");
     if (m_player.menu.banner) {
