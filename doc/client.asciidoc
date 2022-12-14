@@ -240,6 +240,10 @@ cl_gunalpha::
     Specifies opacity level of the player's own gun model. Default value is 1
     (fully opaque).
 
+cl_gunfov::
+    Specifies custom FOV value for drawing player's own gun model. Default
+    value is 90. Set to 0 to draw with current FOV value.
+
 Sound Subsystem
 ~~~~~~~~~~~~~~~
 
@@ -257,6 +261,12 @@ s_ambient::
         flybys, etc)
       - 3 — only ambient sounds from player entity are enabled (railgun hum,
         hand grenade ticks, etc)
+
+s_underwater::
+    Enables lowpass sound filter when underwater. Default value is 1 (enabled).
+
+s_underwater_gain_hf::
+    Specifies HF gain value for lowpass sound filter. Default value is 0.25.
 
 s_auto_focus::
     Specifies the minimum focus level main Q2PRO window should have for sound
@@ -359,6 +369,12 @@ con_timestampsformat::
 con_timestampscolor::
     Text color used for console timestamps. Default value is "#aaa".
 
+con_auto_chat::
+    Specifies how console commands not starting with a slash or backslash
+    are handled while in game. Default value is 0.
+      - 0 — handle as regular commands
+      - 1 — forward as chat
+      - 2 — forward as team chat
 
 Game Screen
 ~~~~~~~~~~~
@@ -622,6 +638,10 @@ gl_drawsky::
     Enable skybox texturing. 0 means to draw sky box in solid black color.
     Default value is 1 (enabled).
 
+gl_waterwarp::
+    Enable screen warping effect when underwater. Only effective when using
+    GLSL backend. Default value is 1 (enabled).
+
 gl_fontshadow::
     Specifies font shadow width, in pixels, ranging from 0 to 2. Default value
     is 0 (no shadow).
@@ -718,14 +738,11 @@ and ‘gl_doublelight_entities’. Yet another cvar affecting entity lighting is
 ****************
 
 gl_dynamic::
-    Controls dynamic lightmap updates. Default value is 2.
+    Controls dynamic lightmap updates. Default value is 1.
      - 0 — all dynamic lighting is disabled
      - 1 — all dynamic lighting is enabled
      - 2 — most dynamic lights are disabled, but lightmap updates are still
      allowed for switchable lights to work
-
-NOTE: Dynamic lights may noticeably hurt rendering performance on some video
-cards and drivers, therefore they are disabled by default.
 
 gl_dlight_falloff::
     Makes dynamic lights look a bit smoother, opposed to original jagged Quake
@@ -1140,11 +1157,12 @@ NOTE: By default, during demo playback, Q2PRO overrides FOV value stored in
 demo file with value of local ‘fov’ variable, unless stored FOV value is less
 than 90. This behavior can be changed with ‘uf’ variable (see above).
 
-seek [+-]<timespec>::
+seek [+-]<timespec|percent>[%]::
     Seeks the given amount of time during demo playback.  Prepend with ‘+’ to
     seek forward relative to current position, prepend with ‘-’ to seek
     backward relative to current position. Without prefix, seeks to an absolute
-    position within the demo file. See below for _timespec_ syntax description.
+    frame position within the demo file.  See below for _timespec_ syntax
+    description.  With ‘%’ suffix, seeks to specified file position percentage.
     Initial forward seek may be slow, so be patient.
 
 NOTE: The ‘seek’ command actually operates on demo frame numbers, not pure
@@ -1191,17 +1209,22 @@ resume::
 
 .Demo packet sizes
 ******************
-Packet size options limit maximum demo message size and thus define
-compatibility level of the recorded demo. Original Quake 2 supports just 1390
-bytes (‘standard’ size), while Q2PRO and R1Q2 support message sizes up to 4086
-bytes (‘extended’ size). When Q2PRO or R1Q2 protocols are in use, demo written
-to disk is automatically downgraded to protocol 34. This can result in dropping
-of large frames that don't fit into standard protocol 34 limit.  Demo packet
-size can be extended to overcome this, but the resulting demo will be playable
-only by Q2PRO and R1Q2 clients and will be incompatible with other Quake 2
-clients or demo editing tools. By default, ‘standard’ packet size is used. This
-default can be changed using ‘cl_demomsglen’ cvar.
+When Q2PRO or R1Q2 protocols are in use, demo written to disk is automatically
+downgraded to protocol 34. This can result in dropping of large frames that
+don't fit into standard protocol 34 limit. Demo packet size can be extended to
+overcome this, but this may render demo unplayable by other Quake 2 clients
+or demo editing tools. See the table below for demo packet sizes supported by
+different clients. By default, ‘standard’ packet size (1390 bytes) is used.
+This default can be changed using ‘cl_demomsglen’ cvar, or can be overridden
+per demo by ‘record’ command options.
 ******************
+
+.Maximum demo packet sizes supported by clients, bytes
+|=================
+| Quake 2 | 1390
+| R1Q2    | 4086
+| Q2PRO   | 32768
+|=================
 
 
 Cvar Operations
@@ -1244,13 +1267,14 @@ seta <cvar> <value> [...]::
     Sets the specified _cvar_ to _value_, and marks the cvar with ‘archive’
     flag. _Value_ may be composed from multiple tokens.
 
-cvarlist [-achlmnrstuvw:]::
+cvarlist [-achlmnrstuvw:] [wildcard]::
     Display the list of registered cvars and their current values with
     filtering by cvar name or by cvar flags. If no options are given,
-    all cvars are listed. Supported options are reproduced below.
+    all cvars are listed. Optional _wildcard_ argument filters cvars by name.
+    Supported options are reproduced below.
         -a | --archive::: list archived cvars
         -c | --cheat::: list cheat protected cvars
-        -h |--help::: display help message
+        -h | --help::: display help message
         -l | --latched::: list latched cvars
         -m | --modified::: list modified cvars
         -n | --noset::: list command line cvars
@@ -1259,7 +1283,6 @@ cvarlist [-achlmnrstuvw:]::
         -t | --custom::: list user-created cvars
         -u | --userinfo::: list userinfo cvars
         -v | --verbose::: display flags of each cvar
-        -w | --wildcard=<string>::: list cvars matching wildcard _string_
 
 macrolist::
     Display the list of registered macros and their current values.
@@ -1434,14 +1457,15 @@ followip [count]::
     (it should be positive integer).  If _count_ is omitted, then the most
     recent IP address is used.
 
-oggplay <track>::
-    Start playing background music track ‘music/<track>.ogg’.
+remotemode <address> <password>::
+    Put client console into rcon mode. All commands entered will be forwarded
+    to remove server. Press Ctrl+D or close console to exit this mode.
 
-oggstop::
-    Stop playing background music track.
-
-ogginfo::
-    Display information about currently playing background music track.
+ogg <info|play|stop>::
+    Execute OGG subcommand. Available subcommands:
+    info::: Display information about currently playing background music track.
+    play <track>::: Start playing background music track ‘music/_track_.ogg’.
+    stop::: Stop playing background music track.
 
 Incompatibilities
 -----------------
@@ -1462,9 +1486,6 @@ it used to be you know where to look. The following list may be incomplete.
 - Q2PRO supports loading system OpenGL library only. Thus, ‘gl_driver’ cvar has
   been made read-only and exists only for compatibility with tools like
   Q2Admin.
-
-- Default value of ‘gl_dynamic’ variable has been changed from 1 to 2. This means
-  dynamic lights will be disabled by default.
 
 - Changes to ‘gl_modulate’ variable in Q2PRO take effect immediately. To set
   separate modulation factors for world lightmaps and entities please use

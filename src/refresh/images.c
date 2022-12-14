@@ -1325,7 +1325,6 @@ static void make_screenshot(const char *name, const char *ext,
             .done_cb = screenshot_done_cb,
             .cb_arg = Z_CopyStruct(&s),
         };
-        Com_Printf("Taking async screenshot...\n");
         Sys_QueueAsyncWork(&work);
     } else {
         screenshot_work_cb(&s);
@@ -1501,7 +1500,6 @@ static const cmd_option_t o_imagelist[] = {
     { "P", "placeholder", "list placeholder images" },
     { "s", "sprites", "list sprites" },
     { "w", "walls", "list walls" },
-    { "W:string", "wildcard", "list images matching wildcard" },
     { "y", "skies", "list skies" },
     { NULL }
 };
@@ -1533,10 +1531,9 @@ static void IMG_List_f(void)
         case 's': mask |= 1 << IT_SPRITE;   break;
         case 'w': mask |= 1 << IT_WALL;     break;
         case 'y': mask |= 1 << IT_SKY;      break;
-        case 'W': wildcard = cmd_optarg;    break;
         case 'P': placeholder = true;       break;
         case 'h':
-            Cmd_PrintUsage(o_imagelist, NULL);
+            Cmd_PrintUsage(o_imagelist, "[wildcard]");
             Com_Printf("List registered images.\n");
             Cmd_PrintHelp(o_imagelist);
             Com_Printf(
@@ -1557,6 +1554,9 @@ static void IMG_List_f(void)
             return;
         }
     }
+
+    if (cmd_optind < Cmd_Argc())
+        wildcard = Cmd_Argv(cmd_optind);
 
     Com_Printf("------------------\n");
     texels = count = 0;
@@ -1701,38 +1701,33 @@ static int try_other_formats(imageformat_t orig, image_t *image, byte **pic)
 static void get_image_dimensions(imageformat_t fmt, image_t *image)
 {
     char        buffer[MAX_QPATH];
-    int         len;
-    miptex_t    mt;
-    dpcx_t      pcx;
     qhandle_t   f;
     unsigned    w, h;
 
     memcpy(buffer, image->name, image->baselen + 1);
+    memcpy(buffer + image->baselen + 1, img_loaders[fmt].ext, 4);
+
+    FS_FOpenFile(buffer, &f, FS_MODE_READ | FS_FLAG_LOADFILE);
+    if (!f) {
+        return;
+    }
 
     w = h = 0;
     if (fmt == IM_WAL) {
-        memcpy(buffer + image->baselen + 1, "wal", 4);
-        FS_FOpenFile(buffer, &f, FS_MODE_READ);
-        if (f) {
-            len = FS_Read(&mt, sizeof(mt), f);
-            if (len == sizeof(mt)) {
-                w = LittleLong(mt.width);
-                h = LittleLong(mt.height);
-            }
-            FS_FCloseFile(f);
+        miptex_t mt;
+        if (FS_Read(&mt, sizeof(mt), f) == sizeof(mt)) {
+            w = LittleLong(mt.width);
+            h = LittleLong(mt.height);
         }
     } else {
-        memcpy(buffer + image->baselen + 1, "pcx", 4);
-        FS_FOpenFile(buffer, &f, FS_MODE_READ);
-        if (f) {
-            len = FS_Read(&pcx, sizeof(pcx), f);
-            if (len == sizeof(pcx)) {
-                w = (LittleShort(pcx.xmax) - LittleShort(pcx.xmin)) + 1;
-                h = (LittleShort(pcx.ymax) - LittleShort(pcx.ymin)) + 1;
-            }
-            FS_FCloseFile(f);
+        dpcx_t pcx;
+        if (FS_Read(&pcx, sizeof(pcx), f) == sizeof(pcx)) {
+            w = (LittleShort(pcx.xmax) - LittleShort(pcx.xmin)) + 1;
+            h = (LittleShort(pcx.ymax) - LittleShort(pcx.ymin)) + 1;
         }
     }
+
+    FS_FCloseFile(f);
 
     if (w < 1 || h < 1 || w > MAX_TEXTURE_SIZE || h > MAX_TEXTURE_SIZE) {
         return;
@@ -1830,6 +1825,8 @@ static image_t *find_or_load_image(const char *name, size_t len,
     unsigned        hash;
     imageformat_t   fmt;
     int             ret;
+
+    Q_assert(len < MAX_QPATH);
 
     // must have an extension and at least 1 char of base name
     if (len <= 4) {
@@ -1940,19 +1937,10 @@ fail:
 image_t *IMG_Find(const char *name, imagetype_t type, imageflags_t flags)
 {
     image_t *image;
-    size_t len;
 
-    if (!name) {
-        Com_Error(ERR_FATAL, "%s: NULL", __func__);
-    }
+    Q_assert(name);
 
-    // this should never happen
-    len = strlen(name);
-    if (len >= MAX_QPATH) {
-        Com_Error(ERR_FATAL, "%s: oversize name", __func__);
-    }
-
-    if ((image = find_or_load_image(name, len, type, flags))) {
+    if ((image = find_or_load_image(name, strlen(name), type, flags))) {
         return image;
     }
     return R_NOTEXTURE;
@@ -1965,10 +1953,7 @@ IMG_ForHandle
 */
 image_t *IMG_ForHandle(qhandle_t h)
 {
-    if (h < 0 || h >= r_numImages) {
-        Com_Error(ERR_FATAL, "%s: %d out of range", __func__, h);
-    }
-
+    Q_assert(h >= 0 && h < r_numImages);
     return &r_images[h];
 }
 
@@ -1982,6 +1967,8 @@ qhandle_t R_RegisterImage(const char *name, imagetype_t type, imageflags_t flags
     image_t     *image;
     char        fullname[MAX_QPATH];
     size_t      len;
+
+    Q_assert(name);
 
     // empty names are legal, silently ignore them
     if (!*name) {
@@ -2156,10 +2143,7 @@ void IMG_Init(void)
 {
     int i;
 
-    if (r_numImages) {
-        Com_Error(ERR_FATAL, "%s: %d images not freed", __func__, r_numImages);
-    }
-
+    Q_assert(!r_numImages);
 
 #if USE_PNG || USE_JPG || USE_TGA
     r_override_textures = Cvar_Get("r_override_textures", "1", CVAR_FILES);

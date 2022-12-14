@@ -22,7 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 char *ClientTeam(edict_t *ent)
 {
     char        *p;
-    static char value[512];
+    static char value[MAX_INFO_STRING];
 
     value[0] = 0;
 
@@ -45,8 +45,8 @@ char *ClientTeam(edict_t *ent)
 
 bool OnSameTeam(edict_t *ent1, edict_t *ent2)
 {
-    char    ent1Team [512];
-    char    ent2Team [512];
+    char    ent1Team[MAX_INFO_STRING];
+    char    ent2Team[MAX_INFO_STRING];
 
     if (!((int)(dmflags->value) & (DF_MODELTEAMS | DF_SKINTEAMS)))
         return false;
@@ -599,7 +599,7 @@ void Cmd_Kill_f(edict_t *ent)
     ent->flags &= ~FL_GODMODE;
     ent->health = 0;
     meansOfDeath = MOD_SUICIDE;
-    player_die(ent, ent, ent, 100000, vec3_origin);
+    player_die(ent, ent, ent, 100000, ent->s.origin);
 }
 
 /*
@@ -780,9 +780,9 @@ void Cmd_Say_f(edict_t *ent, bool team, bool arg0)
         Q_snprintf(text, sizeof(text), "%s: ", ent->client->pers.netname);
 
     if (arg0) {
-        strcat(text, gi.argv(0));
-        strcat(text, " ");
-        strcat(text, gi.args());
+        Q_strlcat(text, gi.argv(0), sizeof(text));
+        Q_strlcat(text, " ", sizeof(text));
+        Q_strlcat(text, gi.args(), sizeof(text));
     } else {
         p = gi.args();
 
@@ -790,14 +790,14 @@ void Cmd_Say_f(edict_t *ent, bool team, bool arg0)
             p++;
             p[strlen(p) - 1] = 0;
         }
-        strcat(text, p);
+        Q_strlcat(text, p, sizeof(text));
     }
 
     // don't let text be too long for malicious reasons
     if (strlen(text) > 150)
         text[150] = 0;
 
-    strcat(text, "\n");
+    Q_strlcat(text, "\n", sizeof(text));
 
     if (dedicated->value)
         gi.cprintf(NULL, PRINT_CHAT, "%s", text);

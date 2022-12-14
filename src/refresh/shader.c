@@ -52,6 +52,8 @@ static void write_block(char *buf)
         GLSL(float u_modulate;)
         GLSL(float u_add;)
         GLSL(float u_intensity;)
+        GLSL(vec2 w_amp;)
+        GLSL(vec2 w_phase;)
     GLSF("};\n");
 }
 
@@ -114,7 +116,7 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
         GLSL(vec2 tc = v_tc;)
 
         if (bits & GLS_WARP_ENABLE)
-            GLSL(tc += 0.0625 * sin(tc.ts * 4.0 + u_time);)
+            GLSL(tc += w_amp * sin(tc.ts * w_phase + u_time);)
 
         GLSL(vec4 diffuse = texture(u_texture, tc);)
 
@@ -328,14 +330,6 @@ static void upload_u_block(void)
     qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_block), &gls.u_block, GL_DYNAMIC_DRAW);
 }
 
-static void shader_update(void)
-{
-    gls.u_block.time = glr.fd.time;
-    gls.u_block.modulate = gl_modulate->value * gl_modulate_world->value;
-    gls.u_block.add = gl_brightness->value;
-    gls.u_block.intensity = gl_intensity->value;
-}
-
 static void shader_load_view_matrix(const GLfloat *matrix)
 {
     static const GLfloat identity[16] = { [0] = 1, [5] = 1, [10] = 1, [15] = 1 };
@@ -353,10 +347,30 @@ static void shader_load_proj_matrix(const GLfloat *matrix)
     upload_u_block();
 }
 
-static void shader_reflect(void)
+static void shader_setup_2d(void)
 {
-    gls.u_block.proj[0] = -gls.u_block.proj[0];
-    upload_u_block();
+    gls.u_block.time = glr.fd.time;
+    gls.u_block.modulate = 1.0f;
+    gls.u_block.add = 0.0f;
+    gls.u_block.intensity = 1.0f;
+
+    gls.u_block.w_amp[0] = 0.00666f;
+    gls.u_block.w_amp[1] = 0.00666f;
+    gls.u_block.w_phase[0] = M_PI * 10;
+    gls.u_block.w_phase[1] = M_PI * 10;
+}
+
+static void shader_setup_3d(void)
+{
+    gls.u_block.time = glr.fd.time;
+    gls.u_block.modulate = gl_modulate->value * gl_modulate_world->value;
+    gls.u_block.add = gl_brightness->value;
+    gls.u_block.intensity = gl_intensity->value;
+
+    gls.u_block.w_amp[0] = 0.0625f;
+    gls.u_block.w_amp[1] = 0.0625f;
+    gls.u_block.w_phase[0] = 4;
+    gls.u_block.w_phase[1] = 4;
 }
 
 static void shader_clear_state(void)
@@ -409,11 +423,11 @@ const glbackend_t backend_shader = {
     .init = shader_init,
     .shutdown = shader_shutdown,
     .clear_state = shader_clear_state,
-    .update = shader_update,
+    .setup_2d = shader_setup_2d,
+    .setup_3d = shader_setup_3d,
 
     .load_proj_matrix = shader_load_proj_matrix,
     .load_view_matrix = shader_load_view_matrix,
-    .reflect = shader_reflect,
 
     .state_bits = shader_state_bits,
     .array_bits = shader_array_bits,

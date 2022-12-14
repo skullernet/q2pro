@@ -65,7 +65,7 @@ static void setup_dotshading(void)
     shadedir[2] = -sp;
 }
 
-static inline vec_t shadedot(const vec_t *normal)
+static inline vec_t shadedot(const vec3_t normal)
 {
     vec_t d = DotProduct(normal, shadedir);
 
@@ -77,7 +77,7 @@ static inline vec_t shadedot(const vec_t *normal)
     return d + 1;
 }
 
-static inline vec_t *get_static_normal(vec_t *normal, const maliasvert_t *vert)
+static inline vec_t *get_static_normal(vec3_t normal, const maliasvert_t *vert)
 {
     unsigned int lat = vert->norm[0];
     unsigned int lng = vert->norm[1];
@@ -91,7 +91,7 @@ static inline vec_t *get_static_normal(vec_t *normal, const maliasvert_t *vert)
 
 static void tess_static_shell(const maliasmesh_t *mesh)
 {
-    maliasvert_t *src_vert = &mesh->verts[newframenum * mesh->numverts];
+    const maliasvert_t *src_vert = &mesh->verts[newframenum * mesh->numverts];
     vec_t *dst_vert = tess.vertices;
     int count = mesh->numverts;
     vec3_t normal;
@@ -113,14 +113,13 @@ static void tess_static_shell(const maliasmesh_t *mesh)
 
 static void tess_static_shade(const maliasmesh_t *mesh)
 {
-    maliasvert_t *src_vert = &mesh->verts[newframenum * mesh->numverts];
+    const maliasvert_t *src_vert = &mesh->verts[newframenum * mesh->numverts];
     vec_t *dst_vert = tess.vertices;
     int count = mesh->numverts;
     vec3_t normal;
-    vec_t d;
 
     while (count--) {
-        d = shadedot(get_static_normal(normal, src_vert));
+        vec_t d = shadedot(get_static_normal(normal, src_vert));
 
         dst_vert[0] = src_vert->pos[0] * newscale[0] + translate[0];
         dst_vert[1] = src_vert->pos[1] * newscale[1] + translate[1];
@@ -137,7 +136,7 @@ static void tess_static_shade(const maliasmesh_t *mesh)
 
 static void tess_static_plain(const maliasmesh_t *mesh)
 {
-    maliasvert_t *src_vert = &mesh->verts[newframenum * mesh->numverts];
+    const maliasvert_t *src_vert = &mesh->verts[newframenum * mesh->numverts];
     vec_t *dst_vert = tess.vertices;
     int count = mesh->numverts;
 
@@ -151,12 +150,12 @@ static void tess_static_plain(const maliasmesh_t *mesh)
     }
 }
 
-static inline vec_t *get_lerped_normal(vec_t *normal,
+static inline vec_t *get_lerped_normal(vec3_t normal,
                                        const maliasvert_t *oldvert,
                                        const maliasvert_t *newvert)
 {
     vec3_t oldnorm, newnorm, tmp;
-    vec_t len;
+    vec_t scale;
 
     get_static_normal(oldnorm, oldvert);
     get_static_normal(newnorm, newvert);
@@ -164,16 +163,16 @@ static inline vec_t *get_lerped_normal(vec_t *normal,
     LerpVector2(oldnorm, newnorm, backlerp, frontlerp, tmp);
 
     // normalize result
-    len = 1 / VectorLength(tmp);
-    VectorScale(tmp, len, normal);
+    scale = 1.0f / VectorLength(tmp);
+    VectorScale(tmp, scale, normal);
 
     return normal;
 }
 
 static void tess_lerped_shell(const maliasmesh_t *mesh)
 {
-    maliasvert_t *src_oldvert = &mesh->verts[oldframenum * mesh->numverts];
-    maliasvert_t *src_newvert = &mesh->verts[newframenum * mesh->numverts];
+    const maliasvert_t *src_oldvert = &mesh->verts[oldframenum * mesh->numverts];
+    const maliasvert_t *src_newvert = &mesh->verts[newframenum * mesh->numverts];
     vec_t *dst_vert = tess.vertices;
     int count = mesh->numverts;
     vec3_t normal;
@@ -199,15 +198,14 @@ static void tess_lerped_shell(const maliasmesh_t *mesh)
 
 static void tess_lerped_shade(const maliasmesh_t *mesh)
 {
-    maliasvert_t *src_oldvert = &mesh->verts[oldframenum * mesh->numverts];
-    maliasvert_t *src_newvert = &mesh->verts[newframenum * mesh->numverts];
+    const maliasvert_t *src_oldvert = &mesh->verts[oldframenum * mesh->numverts];
+    const maliasvert_t *src_newvert = &mesh->verts[newframenum * mesh->numverts];
     vec_t *dst_vert = tess.vertices;
     int count = mesh->numverts;
     vec3_t normal;
-    vec_t d;
 
     while (count--) {
-        d = shadedot(get_lerped_normal(normal, src_oldvert, src_newvert));
+        vec_t d = shadedot(get_lerped_normal(normal, src_oldvert, src_newvert));
 
         dst_vert[0] =
             src_oldvert->pos[0] * oldscale[0] +
@@ -231,8 +229,8 @@ static void tess_lerped_shade(const maliasmesh_t *mesh)
 
 static void tess_lerped_plain(const maliasmesh_t *mesh)
 {
-    maliasvert_t *src_oldvert = &mesh->verts[oldframenum * mesh->numverts];
-    maliasvert_t *src_newvert = &mesh->verts[newframenum * mesh->numverts];
+    const maliasvert_t *src_oldvert = &mesh->verts[oldframenum * mesh->numverts];
+    const maliasvert_t *src_newvert = &mesh->verts[newframenum * mesh->numverts];
     vec_t *dst_vert = tess.vertices;
     int count = mesh->numverts;
 
@@ -253,9 +251,9 @@ static void tess_lerped_plain(const maliasmesh_t *mesh)
     }
 }
 
-static glCullResult_t cull_static_model(model_t *model)
+static glCullResult_t cull_static_model(const model_t *model)
 {
-    maliasframe_t *newframe = &model->frames[newframenum];
+    const maliasframe_t *newframe = &model->frames[newframenum];
     vec3_t bounds[2];
     glCullResult_t cull;
 
@@ -288,10 +286,10 @@ static glCullResult_t cull_static_model(model_t *model)
     return cull;
 }
 
-static glCullResult_t cull_lerped_model(model_t *model)
+static glCullResult_t cull_lerped_model(const model_t *model)
 {
-    maliasframe_t *newframe = &model->frames[newframenum];
-    maliasframe_t *oldframe = &model->frames[oldframenum];
+    const maliasframe_t *newframe = &model->frames[newframenum];
+    const maliasframe_t *oldframe = &model->frames[oldframenum];
     vec3_t bounds[2];
     glCullResult_t cull;
 
@@ -415,7 +413,7 @@ static void setup_celshading(void)
     celscale = 1.0f - Distance(origin, glr.fd.vieworg) / 700.0f;
 }
 
-static void draw_celshading(maliasmesh_t *mesh)
+static void draw_celshading(const maliasmesh_t *mesh)
 {
     if (celscale < 0.01f || celscale > 1)
         return;
@@ -507,7 +505,7 @@ static void setup_shadow(void)
     GL_MultMatrix(shadowmatrix, tmp, matrix);
 }
 
-static void draw_shadow(maliasmesh_t *mesh)
+static void draw_shadow(const maliasmesh_t *mesh)
 {
     if (shadowmatrix[15] < 0.5f)
         return;
@@ -542,9 +540,9 @@ static void draw_shadow(maliasmesh_t *mesh)
     }
 }
 
-static int texnum_for_mesh(maliasmesh_t *mesh)
+static int texnum_for_mesh(const maliasmesh_t *mesh)
 {
-    entity_t *ent = glr.ent;
+    const entity_t *ent = glr.ent;
 
     if (ent->flags & RF_SHELL_MASK)
         return TEXNUM_WHITE;
@@ -566,7 +564,7 @@ static int texnum_for_mesh(maliasmesh_t *mesh)
     return mesh->skins[ent->skinnum]->texnum;
 }
 
-static void draw_alias_mesh(maliasmesh_t *mesh)
+static void draw_alias_mesh(const maliasmesh_t *mesh)
 {
     glStateBits_t state = GLS_INTENSITY_ENABLE;
 
@@ -618,9 +616,41 @@ static void draw_alias_mesh(maliasmesh_t *mesh)
     GL_UnlockArrays();
 }
 
-void GL_DrawAliasModel(model_t *model)
+// extra ugly. this needs to be done on the client, but to avoid complexity of
+// rendering gun model in its own refdef, and to preserve compatibility with
+// existing RF_WEAPONMODEL flag, we do it here.
+static void setup_weaponmodel(void)
 {
-    entity_t *ent = glr.ent;
+    extern cvar_t   *info_hand;
+    extern cvar_t   *cl_adjustfov;
+    extern cvar_t   *cl_gunfov;
+    extern cvar_t   *cl_gun;
+
+    float fov_x = glr.fd.fov_x;
+    float fov_y = glr.fd.fov_y;
+    float reflect_x = 1.0f;
+
+    if (cl_gunfov->value > 0) {
+        fov_x = Cvar_ClampValue(cl_gunfov, 30, 160);
+        if (cl_adjustfov->integer) {
+            fov_y = V_CalcFov(fov_x, 4, 3);
+            fov_x = V_CalcFov(fov_y, glr.fd.height, glr.fd.width);
+        } else {
+            fov_y = V_CalcFov(fov_x, glr.fd.width, glr.fd.height);
+        }
+    }
+
+    if ((info_hand->integer == 1 && cl_gun->integer == 1) || cl_gun->integer == 3) {
+        reflect_x = -1.0f;
+        qglFrontFace(GL_CCW);
+    }
+
+    GL_Frustum(fov_x, fov_y, reflect_x);
+}
+
+void GL_DrawAliasModel(const model_t *model)
+{
+    const entity_t *ent = glr.ent;
     glCullResult_t cull;
     int i;
 
@@ -673,13 +703,10 @@ void GL_DrawAliasModel(model_t *model)
             tess_static_plain : tess_lerped_plain;
     }
 
-    GL_RotateForEntity(origin);
+    GL_RotateForEntity();
 
-    if ((ent->flags & (RF_WEAPONMODEL | RF_LEFTHAND)) ==
-        (RF_WEAPONMODEL | RF_LEFTHAND)) {
-        GL_Reflect();
-        qglFrontFace(GL_CCW);
-    }
+    if (ent->flags & RF_WEAPONMODEL)
+        setup_weaponmodel();
 
     if (ent->flags & RF_DEPTHHACK)
         GL_DepthRange(0, 0.25f);
@@ -691,9 +718,8 @@ void GL_DrawAliasModel(model_t *model)
     if (ent->flags & RF_DEPTHHACK)
         GL_DepthRange(0, 1);
 
-    if ((ent->flags & (RF_WEAPONMODEL | RF_LEFTHAND)) ==
-        (RF_WEAPONMODEL | RF_LEFTHAND)) {
-        GL_Reflect();
+    if (ent->flags & RF_WEAPONMODEL) {
+        GL_Frustum(glr.fd.fov_x, glr.fd.fov_y, 1.0f);
         qglFrontFace(GL_CW);
     }
 }

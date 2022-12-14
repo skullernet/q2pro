@@ -90,13 +90,15 @@ typedef struct mface_s {
     int             light_s, light_t;
     float           stylecache[MAX_LIGHTMAPS];
 
-    int             drawframe;
+    unsigned        drawframe;
 
 #if USE_DLIGHTS
-    int             dlightframe;
-    int             dlightbits;
+    unsigned        dlightframe;
+    unsigned        dlightbits;
 #endif
-    struct mface_s  *next;
+
+    struct entity_s     *entity;
+    struct mface_s      *next;
 } mface_t;
 #endif
 
@@ -107,7 +109,7 @@ typedef struct mnode_s {
     vec3_t              mins;
     vec3_t              maxs;
 
-    int                 visframe;
+    unsigned            visframe;
 #endif
     struct mnode_s      *parent;
     /* <====== */
@@ -129,7 +131,7 @@ typedef struct {
     int                 contents;
     int                 numsides;
     mbrushside_t        *firstbrushside;
-    int                 checkcount;        // to avoid repeated testings
+    unsigned            checkcount;         // to avoid repeated testings
 } mbrush_t;
 
 typedef struct {
@@ -139,7 +141,7 @@ typedef struct {
     vec3_t              mins;
     vec3_t              maxs;
 
-    int                 visframe;
+    unsigned            visframe;
 #endif
     struct mnode_s      *parent;
     /* <====== */
@@ -163,7 +165,7 @@ typedef struct {
 typedef struct {
     int             numareaportals;
     mareaportal_t   *firstareaportal;
-    int             floodvalid;
+    unsigned        floodvalid;
 } marea_t;
 
 typedef struct mmodel_s {
@@ -182,7 +184,7 @@ typedef struct mmodel_s {
     int             numfaces;
     mface_t         *firstface;
 
-    int             drawframe;
+    unsigned        drawframe;
 #endif
 } mmodel_t;
 
@@ -267,13 +269,13 @@ typedef struct {
     float       fraction;
 } lightpoint_t;
 
-void BSP_LightPoint(lightpoint_t *point, vec3_t start, vec3_t end, mnode_t *headnode);
-void BSP_TransformedLightPoint(lightpoint_t *point, vec3_t start, vec3_t end,
-                               mnode_t *headnode, vec3_t origin, vec3_t angles);
+void BSP_LightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end, mnode_t *headnode);
+void BSP_TransformedLightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end,
+                               mnode_t *headnode, const vec3_t origin, const vec3_t angles);
 #endif
 
 byte *BSP_ClusterVis(bsp_t *bsp, byte *mask, int cluster, int vis);
-mleaf_t *BSP_PointLeaf(mnode_t *node, vec3_t p);
+mleaf_t *BSP_PointLeaf(mnode_t *node, const vec3_t p);
 mmodel_t *BSP_InlineModel(bsp_t *bsp, const char *name);
 
 void BSP_Init(void);

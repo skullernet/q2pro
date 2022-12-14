@@ -47,7 +47,7 @@ QUAKE FILESYSTEM
 =============================================================================
 */
 
-#define MAX_FILE_HANDLES    32
+#define MAX_FILE_HANDLES    1024
 
 #if USE_ZLIB
 #define ZIP_BUFSIZE     0x10000 // inflate in blocks of 64k
@@ -81,6 +81,9 @@ QUAKE FILESYSTEM
 #define FOR_EACH_SYMLINK_SAFE(link, next, list) \
     LIST_FOR_EACH_SAFE(symlink_t, link, next, list, entry)
 
+#define IS_UNIQUE(file) \
+    q_unlikely(!((file)->mode & FS_FLAG_LOADFILE))
+
 //
 // in memory
 //
@@ -106,7 +109,6 @@ typedef struct {
 
 typedef struct packfile_s {
     char        *name;
-    unsigned    namelen;
     unsigned    filepos;
     unsigned    filelen;
 #if USE_ZLIB
@@ -114,6 +116,7 @@ typedef struct packfile_s {
     byte        compmtd;    // compression method, 0 (stored) or Z_DEFLATED
     bool        coherent;   // true if local file header has been checked
 #endif
+    byte        namelen;
     struct packfile_s *hash_next;
 } packfile_t;
 
@@ -126,13 +129,13 @@ typedef struct {
     packfile_t  *files;
     packfile_t  **file_hash;
     char        *names;
-    char        *filename;
+    char        filename[1];
 } pack_t;
 
 typedef struct searchpath_s {
     struct searchpath_s *next;
-    unsigned    mode;
     pack_t      *pack;        // only one of filename / pack will be used
+    unsigned    mode;
     char        filename[1];
 } searchpath_t;
 
@@ -145,7 +148,6 @@ typedef struct {
 #endif
     packfile_t  *entry;     // pack entry this handle is tied to
     pack_t      *pack;      // points to the pack entry is from
-    bool        unique;     // if true, then pack must be freed on close
     int         error;      // stream error indicator from read/write operation
     unsigned    rest_out;   // remaining unread length for FS_PAK/FS_ZIP
     int64_t     length;     // total cached file length
@@ -170,6 +172,7 @@ static list_t       fs_hard_links;
 static list_t       fs_soft_links;
 
 static file_t       fs_files[MAX_FILE_HANDLES];
+static int          fs_num_files;
 
 #if USE_DEBUG
 static int          fs_count_read;
@@ -186,6 +189,8 @@ static int          fs_count_strlwr;
 #define FS_COUNT_STRCMP     (void)0
 #define FS_COUNT_STRLWR     (void)0
 #endif
+
+static cvar_t       *fs_autoexec;
 
 #if USE_DEBUG
 static cvar_t       *fs_debug;
@@ -403,29 +408,30 @@ static file_t *alloc_handle(qhandle_t *f)
     file_t *file;
     int i;
 
-    for (i = 0, file = fs_files; i < MAX_FILE_HANDLES; i++, file++) {
-        if (file->type == FS_FREE) {
-            *f = i + 1;
-            return file;
-        }
+    for (i = 0, file = fs_files; i < fs_num_files; i++, file++)
+        if (file->type == FS_FREE)
+            break;
+
+    if (i == fs_num_files) {
+        if (fs_num_files == MAX_FILE_HANDLES)
+            return NULL;
+        fs_num_files++;
     }
 
-    return NULL;
+    *f = i + 1;
+    return file;
 }
 
 static file_t *file_for_handle(qhandle_t f)
 {
     file_t *file;
 
-    if (f < 1 || f > MAX_FILE_HANDLES)
+    if (f < 1 || f > fs_num_files)
         return NULL;
 
     file = &fs_files[f - 1];
     if (file->type == FS_FREE)
         return NULL;
-
-    if (file->type < FS_FREE || file->type >= FS_BAD)
-        Com_Error(ERR_FATAL, "%s: bad file type", __func__);
 
     return file;
 }
@@ -635,7 +641,7 @@ int FS_FCloseFile(qhandle_t f)
             ret = Q_ERRNO;
         break;
     case FS_PAK:
-        if (file->unique) {
+        if (IS_UNIQUE(file)) {
             fclose(file->fp);
             pack_put(file->pack);
         }
@@ -646,7 +652,7 @@ int FS_FCloseFile(qhandle_t f)
             ret = Q_ERR_LIBRARY_ERROR;
         break;
     case FS_ZIP:
-        if (file->unique) {
+        if (IS_UNIQUE(file)) {
             close_zip_file(file);
             pack_put(file->pack);
         }
@@ -791,7 +797,6 @@ static int64_t open_file_write_real(file_t *file, const char *fullpath, const ch
 
     file->type = FS_REAL;
     file->fp = fp;
-    file->unique = true;
     file->error = Q_ERR_SUCCESS;
     return pos;
 
@@ -809,7 +814,6 @@ static int64_t open_file_write_gzip(file_t *file, const char *fullpath, const ch
 
     file->type = FS_GZ;
     file->zfp = zfp;
-    file->unique = true;
     file->error = Q_ERR_SUCCESS;
     return 0;
 #else
@@ -879,7 +883,7 @@ static int64_t open_file_write(file_t *file, const char *name)
         strcpy(mode_str, "r+");
         break;
     default:
-        Com_Error(ERR_FATAL, "%s: bad mode", __func__);
+        Q_assert(!"bad mode");
     }
 
     // open in binary mode by default
@@ -963,7 +967,7 @@ static void open_zip_file(file_t *file)
     zipstream_t *s;
     z_streamp z;
 
-    if (file->unique) {
+    if (IS_UNIQUE(file)) {
         s = FS_Malloc(sizeof(*s));
         memset(&s->stream, 0, sizeof(s->stream));
     } else {
@@ -977,9 +981,7 @@ static void open_zip_file(file_t *file)
     } else {
         z->zalloc = FS_zalloc;
         z->zfree = FS_zfree;
-        if (inflateInit2(z, -MAX_WBITS) != Z_OK) {
-            Com_Error(ERR_FATAL, "%s: inflateInit2() failed", __func__);
-        }
+        Q_assert(inflateInit2(z, -MAX_WBITS) == Z_OK);
     }
 
     z->avail_in = z->avail_out = 0;
@@ -1076,12 +1078,12 @@ static int read_zip_file(file_t *file, void *buf, size_t len)
 #endif
 
 // open a new file on the pakfile
-static int64_t open_from_pak(file_t *file, pack_t *pack, packfile_t *entry, bool unique)
+static int64_t open_from_pak(file_t *file, pack_t *pack, packfile_t *entry)
 {
     FILE *fp;
     int ret;
 
-    if (unique) {
+    if (IS_UNIQUE(file)) {
         fp = fopen(pack->filename, "rb");
         if (!fp) {
             ret = Q_ERRNO;
@@ -1110,7 +1112,6 @@ static int64_t open_from_pak(file_t *file, pack_t *pack, packfile_t *entry, bool
     file->fp = fp;
     file->entry = entry;
     file->pack = pack;
-    file->unique = unique;
     file->error = Q_ERR_SUCCESS;
     file->rest_out = entry->filelen;
     file->length = entry->filelen;
@@ -1131,7 +1132,7 @@ static int64_t open_from_pak(file_t *file, pack_t *pack, packfile_t *entry, bool
     }
 #endif
 
-    if (unique) {
+    if (IS_UNIQUE(file)) {
         // reference source pak
         pack_get(pack);
     }
@@ -1142,7 +1143,7 @@ static int64_t open_from_pak(file_t *file, pack_t *pack, packfile_t *entry, bool
     return file->length;
 
 fail2:
-    if (unique) {
+    if (IS_UNIQUE(file)) {
         fclose(fp);
     }
 fail1:
@@ -1220,7 +1221,6 @@ static int64_t open_from_disk(file_t *file, const char *fullpath)
 
     file->type = FS_REAL;
     file->fp = fp;
-    file->unique = true;
     file->error = Q_ERR_SUCCESS;
     file->length = info.size;
 
@@ -1249,7 +1249,7 @@ fail:
 // Finds the file in the search path.
 // Fills file_t and returns file length.
 // Used for streaming data out of either a pak file or a seperate file.
-static int64_t open_file_read(file_t *file, const char *normalized, size_t namelen, bool unique)
+static int64_t open_file_read(file_t *file, const char *normalized, size_t namelen)
 {
     char            fullpath[MAX_OSPATH];
     searchpath_t    *search;
@@ -1302,7 +1302,7 @@ static int64_t open_file_read(file_t *file, const char *normalized, size_t namel
                 FS_COUNT_STRCMP;
                 if (!FS_pathcmp(entry->name, normalized)) {
                     // found it!
-                    return open_from_pak(file, pak, entry, unique);
+                    return open_from_pak(file, pak, entry);
                 }
             }
         } else {
@@ -1356,7 +1356,7 @@ fail:
 }
 
 // Normalizes quake path, expands symlinks
-static int64_t expand_open_file_read(file_t *file, const char *name, bool unique)
+static int64_t expand_open_file_read(file_t *file, const char *name)
 {
     char        normalized[MAX_OSPATH];
     int64_t     ret;
@@ -1378,14 +1378,14 @@ static int64_t expand_open_file_read(file_t *file, const char *name, bool unique
         return Q_ERR_NAMETOOSHORT;
     }
 
-    ret = open_file_read(file, normalized, namelen, unique);
+    ret = open_file_read(file, normalized, namelen);
     if (ret == Q_ERR_NOENT) {
 // expand soft symlinks
         if (expand_links(&fs_soft_links, normalized, &namelen)) {
             if (namelen >= MAX_OSPATH) {
                 return Q_ERR_NAMETOOLONG;
             }
-            ret = open_file_read(file, normalized, namelen, unique);
+            ret = open_file_read(file, normalized, namelen);
         }
     }
 
@@ -1567,7 +1567,7 @@ int FS_Write(const void *buf, size_t len, qhandle_t f)
         break;
 #endif
     default:
-        Com_Error(ERR_FATAL, "%s: bad file type", __func__);
+        Q_assert(!"bad file type");
     }
 
     return len;
@@ -1584,9 +1584,8 @@ int64_t FS_FOpenFile(const char *name, qhandle_t *f, unsigned mode)
     qhandle_t handle;
     int64_t ret;
 
-    if (!name || !f) {
-        Com_Error(ERR_FATAL, "%s: NULL", __func__);
-    }
+    Q_assert(name);
+    Q_assert(f);
 
     *f = 0;
 
@@ -1603,7 +1602,7 @@ int64_t FS_FOpenFile(const char *name, qhandle_t *f, unsigned mode)
     file->mode = mode;
 
     if ((mode & FS_MODE_MASK) == FS_MODE_READ) {
-        ret = expand_open_file_read(file, name, true);
+        ret = expand_open_file_read(file, name);
     } else {
         ret = open_file_write(file, name);
     }
@@ -1747,9 +1746,7 @@ int FS_LoadFileEx(const char *path, void **buffer, unsigned flags, memtag_t tag)
     int64_t len;
     int read;
 
-    if (!path) {
-        Com_Error(ERR_FATAL, "%s: NULL", __func__);
-    }
+    Q_assert(path);
 
     if (buffer) {
         *buffer = NULL;
@@ -1765,10 +1762,10 @@ int FS_LoadFileEx(const char *path, void **buffer, unsigned flags, memtag_t tag)
         return Q_ERR_MFILE;
     }
 
-    file->mode = (flags & ~FS_MODE_MASK) | FS_MODE_READ;
+    file->mode = (flags & ~FS_MODE_MASK) | FS_MODE_READ | FS_FLAG_LOADFILE;
 
     // look for it in the filesystem or pack files
-    len = expand_open_file_read(file, path, false);
+    len = expand_open_file_read(file, path);
     if (len < 0) {
         return len;
     }
@@ -1938,42 +1935,33 @@ static void pack_put(pack_t *pack)
     if (!pack) {
         return;
     }
-    if (!pack->refcount) {
-        Com_Error(ERR_FATAL, "%s: refcount already zero", __func__);
-    }
+    Q_assert(pack->refcount > 0);
     if (!--pack->refcount) {
         FS_DPrintf("Freeing packfile %s\n", pack->filename);
         fclose(pack->fp);
+        Z_Free(pack->names);
+        Z_Free(pack->file_hash);
+        Z_Free(pack->files);
         Z_Free(pack);
     }
 }
 
-// allocates pack_t instance along with filenames and hashes in one chunk of memory
+// allocates pack_t instance along with filenames and hashes
 static pack_t *pack_alloc(FILE *fp, filetype_t type, const char *name,
                           unsigned num_files, size_t names_len)
 {
     pack_t *pack;
-    unsigned hash_size;
-    size_t len;
 
-    hash_size = npot32(num_files / 3);
-
-    len = strlen(name) + 1;
-    pack = FS_Malloc(sizeof(pack_t) +
-                     num_files * sizeof(packfile_t) +
-                     hash_size * sizeof(packfile_t *) +
-                     len + names_len);
+    pack = FS_Malloc(sizeof(pack_t) + strlen(name));
     pack->type = type;
     pack->refcount = 0;
     pack->fp = fp;
     pack->num_files = num_files;
-    pack->hash_size = hash_size;
-    pack->files = (packfile_t *)(pack + 1);
-    pack->file_hash = (packfile_t **)(pack->files + num_files);
-    pack->filename = (char *)(pack->file_hash + hash_size);
-    pack->names = pack->filename + len;
-    memcpy(pack->filename, name, len);
-    memset(pack->file_hash, 0, hash_size * sizeof(packfile_t *));
+    pack->hash_size = npot32(num_files / 3);
+    pack->files = FS_Malloc(num_files * sizeof(packfile_t));
+    pack->file_hash = FS_Mallocz(pack->hash_size * sizeof(packfile_t *));
+    pack->names = FS_Malloc(names_len);
+    strcpy(pack->filename, name);
 
     return pack;
 }
@@ -2632,7 +2620,8 @@ void **FS_ListFiles(const char *path, const char *filter, unsigned flags, int *c
 
                 // copy name off
                 if (flags & (FS_SEARCH_DIRSONLY | FS_SEARCH_STRIPEXT)) {
-                    s = strcpy(buffer, s);
+                    Q_strlcpy(buffer, s, sizeof(buffer));
+                    s = buffer;
                 }
 
                 // hacky directory search support for pak files
@@ -3107,6 +3096,7 @@ static void FS_Stats_f(void)
         //totalHashSize += pack->hash_size;
     }
 
+    Com_Printf("File slots allocated: %d\n", fs_num_files);
     Com_Printf("Total calls to open_file_read: %d\n", fs_count_read);
     Com_Printf("Total path comparsions: %d\n", fs_count_strcmp);
     Com_Printf("Total calls to open_from_disk: %d\n", fs_count_open);
@@ -3447,12 +3437,13 @@ void FS_Shutdown(void)
     }
 
     // close file handles
-    for (i = 0, file = fs_files; i < MAX_FILE_HANDLES; i++, file++) {
+    for (i = 0, file = fs_files; i < fs_num_files; i++, file++) {
         if (file->type != FS_FREE) {
             Com_WPrintf("%s: closing handle %d\n", __func__, i + 1);
             FS_FCloseFile(i + 1);
         }
     }
+    fs_num_files = 0;
 
     // free symbolic links
     free_all_links(&fs_hard_links);
@@ -3470,6 +3461,33 @@ void FS_Shutdown(void)
     Cmd_Deregister(c_fs);
 }
 
+/*
+================
+FS_AddConfigFiles
+================
+*/
+void FS_AddConfigFiles(bool init)
+{
+    int flag = init ? FS_PATH_ANY : FS_PATH_GAME;
+
+    if (!init && !fs_autoexec->integer)
+        return;
+
+    // default.cfg may come from packfile, but config.cfg and autoexec.cfg
+    // must be real files within the game directory.
+    Com_AddConfigFile(COM_DEFAULT_CFG, flag);
+    Com_AddConfigFile(COM_CONFIG_CFG, FS_TYPE_REAL | flag);
+
+    // autoexec.cfg is executed twice, first from basedir and then from
+    // gamedir. This ensures user settings configured in baseq2/autoexec.cfg
+    // override those in default.cfg and config.cfg.
+    if (*fs_game->string)
+        Com_AddConfigFile(COM_AUTOEXEC_CFG, FS_TYPE_REAL | FS_PATH_BASE);
+    Com_AddConfigFile(COM_AUTOEXEC_CFG, FS_TYPE_REAL | FS_PATH_GAME);
+
+    Com_AddConfigFile(COM_POSTEXEC_CFG, FS_TYPE_REAL);
+}
+
 // this is called when local server starts up and gets it's latched variables,
 // client receives a serverdata packet, or user changes the game by hand while
 // disconnected
@@ -3480,7 +3498,7 @@ static void fs_game_changed(cvar_t *self)
     // validate it
     if (*s) {
         if (!Q_stricmp(s, BASEGAME)) {
-            Cvar_Reset(self);
+            Cvar_SetByVar(self, "", FROM_CODE);
         } else if (!COM_IsPath(s)) {
             Com_Printf("'%s' should contain characters [A-Za-z0-9_-] only.\n", self->name);
             Cvar_Reset(self);
@@ -3502,19 +3520,7 @@ static void fs_game_changed(cvar_t *self)
     // otherwise, restart the filesystem
     CL_RestartFilesystem(false);
 
-    // FIXME: if baseq2/autoexec.cfg exists DO NOT exec default.cfg and config.cfg.
-    // this assumes user prefers to do configuration via autoexec.cfg and doesn't
-    // want settings and binds messed up whenever gamedir changes after startup.
-    if (!FS_FileExistsEx(COM_AUTOEXEC_CFG, FS_TYPE_REAL | FS_PATH_BASE)) {
-        Com_AddConfigFile(COM_DEFAULT_CFG, FS_PATH_GAME);
-        Com_AddConfigFile(COM_CONFIG_CFG, FS_TYPE_REAL | FS_PATH_GAME);
-    }
-
-    // exec autoexec.cfg (must be a real file within the game directory)
-    Com_AddConfigFile(COM_AUTOEXEC_CFG, FS_TYPE_REAL | FS_PATH_GAME);
-
-    // exec postexec.cfg (must be a real file)
-    Com_AddConfigFile(COM_POSTEXEC_CFG, FS_TYPE_REAL);
+    FS_AddConfigFiles(false);
 }
 
 static void list_dirs(genctx_t *ctx, const char *path)
@@ -3564,12 +3570,14 @@ void FS_Init(void)
 
     Cmd_Register(c_fs);
 
+    fs_autoexec = Cvar_Get("fs_autoexec", "1", 0);
+
 #if USE_DEBUG
     fs_debug = Cvar_Get("fs_debug", "0", 0);
 #endif
 
     // get the game cvar and start the filesystem
-    fs_game = Cvar_Get("game", DEFGAME, CVAR_LATCH | CVAR_SERVERINFO);
+    fs_game = Cvar_Get("game", DEFGAME, CVAR_LATCH | CVAR_SERVERINFO | CVAR_NOARCHIVE);
     fs_game->changed = fs_game_changed;
     fs_game->generator = fs_game_generator;
     fs_game_changed(fs_game);

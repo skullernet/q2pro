@@ -147,10 +147,13 @@ void GL_Setup2D(void)
         draw.scissor = false;
     }
 
+    if (gl_static.backend.setup_2d)
+        gl_static.backend.setup_2d();
+
     gl_static.backend.load_view_matrix(NULL);
 }
 
-static void GL_Frustum(void)
+void GL_Frustum(GLfloat fov_x, GLfloat fov_y, GLfloat reflect_x)
 {
     GLfloat xmin, xmax, ymin, ymax, zfar, znear;
     GLfloat width, height, depth;
@@ -163,17 +166,17 @@ static void GL_Frustum(void)
     else
         zfar = gl_static.world.size * 2;
 
-    ymax = znear * tan(glr.fd.fov_y * (M_PI / 360));
-    ymin = -ymax;
-
-    xmax = znear * tan(glr.fd.fov_x * (M_PI / 360));
+    xmax = znear * tan(fov_x * (M_PI / 360));
     xmin = -xmax;
+
+    ymax = znear * tan(fov_y * (M_PI / 360));
+    ymin = -ymax;
 
     width = xmax - xmin;
     height = ymax - ymin;
     depth = zfar - znear;
 
-    matrix[0] = 2 * znear / width;
+    matrix[0] = reflect_x * 2 * znear / width;
     matrix[4] = 0;
     matrix[8] = (xmax + xmin) / width;
     matrix[12] = 0;
@@ -225,15 +228,18 @@ static void GL_RotateForViewer(void)
     GL_ForceMatrix(matrix);
 }
 
-void GL_Setup3D(void)
+void GL_Setup3D(bool waterwarp)
 {
-    qglViewport(glr.fd.x, r_config.height - (glr.fd.y + glr.fd.height),
-                glr.fd.width, glr.fd.height);
+    if (waterwarp)
+        qglViewport(0, 0, glr.fd.width, glr.fd.height);
+    else
+        qglViewport(glr.fd.x, r_config.height - (glr.fd.y + glr.fd.height),
+                    glr.fd.width, glr.fd.height);
 
-    if (gl_static.backend.update)
-        gl_static.backend.update();
+    if (gl_static.backend.setup_3d)
+        gl_static.backend.setup_3d();
 
-    GL_Frustum();
+    GL_Frustum(glr.fd.fov_x, glr.fd.fov_y, 1.0f);
 
     GL_RotateForViewer();
 
@@ -246,9 +252,8 @@ void GL_Setup3D(void)
 void GL_DrawOutlines(GLsizei count, QGL_INDEX_TYPE *indices)
 {
     GL_BindTexture(0, TEXNUM_WHITE);
-    GL_StateBits(GLS_DEFAULT);
+    GL_StateBits(GLS_DEPTHMASK_FALSE | GLS_TEXTURE_REPLACE);
     GL_ArrayBits(GLA_VERTEX);
-    GL_Color(1, 1, 1, 1);
     GL_DepthRange(0, 0);
 
     if (qglPolygonMode) {

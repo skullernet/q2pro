@@ -57,11 +57,11 @@ typedef struct {
     void (*init)(void);
     void (*shutdown)(void);
     void (*clear_state)(void);
-    void (*update)(void);
+    void (*setup_2d)(void);
+    void (*setup_3d)(void);
 
     void (*load_proj_matrix)(const GLfloat *matrix);
     void (*load_view_matrix)(const GLfloat *matrix);
-    void (*reflect)(void);
 
     void (*state_bits)(GLbitfield bits);
     void (*array_bits)(GLbitfield bits);
@@ -85,6 +85,9 @@ typedef struct {
         GLuint      bufnum;
         vec_t       size;
     } world;
+    GLuint          warp_texture;
+    GLuint          warp_renderbuffer;
+    GLuint          warp_framebuffer;
     GLuint          u_bufnum;
     GLuint          programs[MAX_PROGRAMS];
     GLuint          texnums[NUM_TEXNUMS];
@@ -102,10 +105,10 @@ typedef struct {
     refdef_t        fd;
     vec3_t          viewaxis[3];
     GLfloat         viewmatrix[16];
-    int             visframe;
-    int             drawframe;
+    unsigned        visframe;
+    unsigned        drawframe;
 #if USE_DLIGHTS
-    int             dlightframe;
+    unsigned        dlightframe;
 #endif
     int             viewcluster1;
     int             viewcluster2;
@@ -116,6 +119,9 @@ typedef struct {
     GLfloat         entmatrix[16];
     lightpoint_t    lightpoint;
     int             num_beams;
+    int             framebuffer_width;
+    int             framebuffer_height;
+    bool            framebuffer_ok;
 } glRefdef_t;
 
 enum {
@@ -206,6 +212,7 @@ extern cvar_t *gl_lockpvs;
 extern cvar_t *gl_lightmap;
 extern cvar_t *gl_fullbright;
 extern cvar_t *gl_vertexlight;
+extern cvar_t *gl_showerrors;
 
 typedef enum {
     CULL_OUT,
@@ -213,15 +220,16 @@ typedef enum {
     CULL_CLIP
 } glCullResult_t;
 
-glCullResult_t GL_CullBox(vec3_t bounds[2]);
+glCullResult_t GL_CullBox(const vec3_t bounds[2]);
 glCullResult_t GL_CullSphere(const vec3_t origin, float radius);
-glCullResult_t GL_CullLocalBox(const vec3_t origin, vec3_t bounds[2]);
+glCullResult_t GL_CullLocalBox(const vec3_t origin, const vec3_t bounds[2]);
 
 bool GL_AllocBlock(int width, int height, int *inuse,
                    int w, int h, int *s, int *t);
 
 void GL_MultMatrix(GLfloat *out, const GLfloat *a, const GLfloat *b);
-void GL_RotateForEntity(vec3_t origin);
+void GL_SetEntityAxis(void);
+void GL_RotateForEntity(void);
 
 void GL_ClearErrors(void);
 bool GL_ShowErrors(const char *func);
@@ -232,42 +240,42 @@ bool GL_ShowErrors(const char *func);
  *
  */
 
-#define MAX_ALIAS_SKINS     32
-
-typedef struct maliastc_s {
+typedef struct {
     float   st[2];
 } maliastc_t;
 
-typedef struct masliasvert_s {
+typedef struct {
     short   pos[3];
     byte    norm[2]; // lat, lng
 } maliasvert_t;
 
-typedef struct maliasframe_s {
+typedef struct {
     vec3_t  scale;
     vec3_t  translate;
     vec3_t  bounds[2];
     vec_t   radius;
 } maliasframe_t;
 
-typedef struct maliasmesh_s {
+typedef struct {
     int             numverts;
     int             numtris;
     int             numindices;
+    int             numskins;
     QGL_INDEX_TYPE  *indices;
     maliasvert_t    *verts;
     maliastc_t      *tcoords;
-    image_t         *skins[MAX_ALIAS_SKINS];
-    int             numskins;
+    image_t         **skins;
 } maliasmesh_t;
 
-typedef struct mspriteframe_s {
-    int             width, height;
-    int             origin_x, origin_y;
-    struct image_s  *image;
+typedef struct {
+    int             width;
+    int             height;
+    int             origin_x;
+    int             origin_y;
+    image_t         *image;
 } mspriteframe_t;
 
-typedef struct model_s {
+typedef struct {
     enum {
         MOD_FREE,
         MOD_ALIAS,
@@ -279,14 +287,14 @@ typedef struct model_s {
     int registration_sequence;
     memhunk_t hunk;
 
-    // alias models
-    int numframes;
-    struct maliasframe_s *frames;
     int nummeshes;
-    struct maliasmesh_s *meshes;
+    int numframes;
 
-    // sprite models
-    struct mspriteframe_s *spriteframes;
+    maliasmesh_t *meshes;
+    union {
+        maliasframe_t *frames;
+        mspriteframe_t *spriteframes;
+    };
 } model_t;
 
 // xyz[3] | color[1]  | st[2]    | lmst[2]
@@ -384,6 +392,8 @@ typedef struct {
         GLfloat     modulate;
         GLfloat     add;
         GLfloat     intensity;
+        GLfloat     w_amp[2];
+        GLfloat     w_phase[2];
     } u_block;
 } glState_t;
 
@@ -471,15 +481,15 @@ static inline void GL_DepthRange(GLfloat n, GLfloat f)
 #define GL_ColorBytePointer     gl_static.backend.color_byte_pointer
 #define GL_ColorFloatPointer    gl_static.backend.color_float_pointer
 #define GL_Color                gl_static.backend.color
-#define GL_Reflect              gl_static.backend.reflect
 
 void GL_ForceTexture(GLuint tmu, GLuint texnum);
 void GL_BindTexture(GLuint tmu, GLuint texnum);
 void GL_CommonStateBits(GLbitfield bits);
 void GL_DrawOutlines(GLsizei count, QGL_INDEX_TYPE *indices);
 void GL_Ortho(GLfloat xmin, GLfloat xmax, GLfloat ymin, GLfloat ymax, GLfloat znear, GLfloat zfar);
+void GL_Frustum(GLfloat fov_x, GLfloat fov_y, GLfloat reflect_x);
 void GL_Setup2D(void);
-void GL_Setup3D(void);
+void GL_Setup3D(bool waterwarp);
 void GL_ClearState(void);
 void GL_InitState(void);
 void GL_ShutdownState(void);
@@ -500,7 +510,8 @@ typedef struct {
 extern drawStatic_t draw;
 
 #if USE_DEBUG
-void Draw_Stringf(int x, int y, const char *fmt, ...);
+extern qhandle_t r_charset;
+
 void Draw_Stats(void);
 void Draw_Lightmaps(void);
 void Draw_Scrap(void);
@@ -527,6 +538,8 @@ void Scrap_Upload(void);
 
 void GL_InitImages(void);
 void GL_ShutdownImages(void);
+
+bool GL_InitWarpTexture(void);
 
 extern cvar_t *gl_intensity;
 
@@ -558,7 +571,7 @@ void GL_BindArrays(void);
 void GL_Flush3D(void);
 void GL_DrawFace(mface_t *surf);
 
-void GL_AddAlphaFace(mface_t *face);
+void GL_AddAlphaFace(mface_t *face, entity_t *ent);
 void GL_AddSolidFace(mface_t *face);
 void GL_DrawAlphaFaces(void);
 void GL_DrawSolidFaces(void);
@@ -571,7 +584,7 @@ void GL_ClearSolidFaces(void);
 void GL_DrawBspModel(mmodel_t *model);
 void GL_DrawWorld(void);
 void GL_SampleLightPoint(vec3_t color);
-void GL_LightPoint(vec3_t origin, vec3_t color);
+void GL_LightPoint(const vec3_t origin, vec3_t color);
 
 /*
  * gl_sky.c
@@ -580,13 +593,13 @@ void GL_LightPoint(vec3_t origin, vec3_t color);
 void R_AddSkySurface(mface_t *surf);
 void R_ClearSkyBox(void);
 void R_DrawSkyBox(void);
-void R_SetSky(const char *name, float rotate, vec3_t axis);
+void R_SetSky(const char *name, float rotate, const vec3_t axis);
 
 /*
  * gl_mesh.c
  *
  */
-void GL_DrawAliasModel(model_t *model);
+void GL_DrawAliasModel(const model_t *model);
 
 /*
  * hq2x.c

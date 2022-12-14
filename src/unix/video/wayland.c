@@ -351,7 +351,6 @@ static void reload_cursor(void)
     if (!wl.shm)
         return;
 
-    const char *theme = getenv("XCURSOR_THEME");
     const char *size_str = getenv("XCURSOR_SIZE");
     int size = 24;
     if (size_str) {
@@ -364,6 +363,7 @@ static void reload_cursor(void)
     if (wl.cursor_theme)
         wl_cursor_theme_destroy(wl.cursor_theme);
 
+    const char *theme = getenv("XCURSOR_THEME");
     if (!(wl.cursor_theme = wl_cursor_theme_load(theme, size * wl.scale_factor, wl.shm)))
         return;
 

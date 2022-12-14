@@ -654,12 +654,35 @@ static void MVD_UpdateClient(mvd_client_t *client)
     int i;
 
     if (!target) {
+        int contents = 0;
+
         // copy stats of the dummy MVD observer
         if (mvd->dummy) {
             for (i = 0; i < MAX_STATS; i++) {
                 client->ps.stats[i] = mvd->dummy->ps.stats[i];
             }
         }
+
+        // get contents from world
+        if (mvd->cm.cache) {
+            vec3_t vieworg;
+            VectorMA(client->ps.viewoffset, 0.125f, client->ps.pmove.origin, vieworg);
+            contents = CM_PointContents(vieworg, mvd->cm.cache->nodes);
+        }
+
+        if (contents & (CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_WATER))
+            client->ps.rdflags = RDF_UNDERWATER;
+        else
+            client->ps.rdflags = 0;
+
+        if (contents & (CONTENTS_SOLID | CONTENTS_LAVA))
+            Vector4Set(client->ps.blend, 1.0f, 0.3f, 0.0f, 0.6f);
+        else if (contents & CONTENTS_SLIME)
+            Vector4Set(client->ps.blend, 0.0f, 0.1f, 0.05f, 0.6f);
+        else if (contents & CONTENTS_WATER)
+            Vector4Set(client->ps.blend, 0.5f, 0.3f, 0.2f, 0.4f);
+        else
+            Vector4Clear(client->ps.blend);
     } else {
         // copy entire player state
         client->ps = target->ps;
@@ -2013,7 +2036,7 @@ static mvd_player_t *MVD_HitPlayer(mvd_client_t *client)
     return target;
 }
 
-static trace_t q_gameabi MVD_Trace(vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end)
+static trace_t q_gameabi MVD_Trace(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end)
 {
     trace_t trace;
 
@@ -2024,7 +2047,7 @@ static trace_t q_gameabi MVD_Trace(vec3_t start, vec3_t mins, vec3_t maxs, vec3_
     return trace;
 }
 
-static int MVD_PointContents(vec3_t p)
+static int MVD_PointContents(const vec3_t p)
 {
     return 0;
 }
@@ -2103,7 +2126,7 @@ static void MVD_IntermissionStart(mvd_t *mvd)
     // save oldscores
     // FIXME: unfortunately this will also reset oldscores during
     // match timeout with certain mods (OpenTDM should work fine though)
-    strcpy(mvd->oldscores, mvd->layout);
+    Q_strlcpy(mvd->oldscores, mvd->layout, sizeof(mvd->oldscores));
 #endif
 
     // force all clients to switch to the MVD dummy

@@ -27,24 +27,22 @@ static long pagesize;
 void Hunk_Init(void)
 {
     pagesize = sysconf(_SC_PAGESIZE);
-    if (pagesize & (pagesize - 1))
-        Com_Error(ERR_FATAL, "Bad system page size");
+    Q_assert(pagesize && !(pagesize & (pagesize - 1)));
 }
 
 void Hunk_Begin(memhunk_t *hunk, size_t maxsize)
 {
     void *buf;
 
-    if (maxsize > SIZE_MAX - (pagesize - 1))
-        Com_Error(ERR_FATAL, "%s: size > SIZE_MAX", __func__);
+    Q_assert(maxsize <= SIZE_MAX - (pagesize - 1));
 
     // reserve a huge chunk of memory, but don't commit any yet
     hunk->cursize = 0;
     hunk->maxsize = ALIGN(maxsize, pagesize);
     buf = mmap(NULL, hunk->maxsize, PROT_READ | PROT_WRITE,
                MAP_PRIVATE | MAP_ANON, -1, 0);
-    if (buf == NULL || buf == (void *)-1)
-        Com_Error(ERR_FATAL, "%s: unable to reserve %zu bytes: %s",
+    if (buf == MAP_FAILED)
+        Com_Error(ERR_FATAL, "%s: couldn't reserve %zu bytes: %s",
                   __func__, hunk->maxsize, strerror(errno));
     hunk->base = buf;
     hunk->mapped = hunk->maxsize;
@@ -54,15 +52,11 @@ void *Hunk_TryAlloc(memhunk_t *hunk, size_t size)
 {
     void *buf;
 
-    if (size > SIZE_MAX - 63)
-        Com_Error(ERR_FATAL, "%s: size > SIZE_MAX", __func__);
+    Q_assert(size <= SIZE_MAX - 63);
+    Q_assert(hunk->cursize <= hunk->maxsize);
 
     // round to cacheline
     size = ALIGN(size, 64);
-
-    if (hunk->cursize > hunk->maxsize)
-        Com_Error(ERR_FATAL, "%s: cursize > maxsize", __func__);
-
     if (size > hunk->maxsize - hunk->cursize)
         return NULL;
 
@@ -83,9 +77,7 @@ void Hunk_End(memhunk_t *hunk)
 {
     size_t newsize;
 
-    if (hunk->cursize > hunk->maxsize)
-        Com_Error(ERR_FATAL, "%s: cursize > maxsize", __func__);
-
+    Q_assert(hunk->cursize <= hunk->maxsize);
     newsize = ALIGN(hunk->cursize, pagesize);
 
     if (newsize < hunk->maxsize) {
@@ -99,7 +91,7 @@ void Hunk_End(memhunk_t *hunk)
         void *buf = munmap(unmap_base, unmap_len) + (byte *)hunk->base;
 #endif
         if (buf != hunk->base)
-            Com_Error(ERR_FATAL, "%s: could not remap virtual block: %s",
+            Com_Error(ERR_FATAL, "%s: couldn't remap virtual block: %s",
                       __func__, strerror(errno));
     }
 

@@ -263,11 +263,16 @@ static bool init(void)
             goto fail;
     }
 
+    int fbid = -1;
+    if (!glXGetFBConfigAttrib(x11.dpy, fbc, GLX_FBCONFIG_ID, &fbid))
+        Com_DPrintf("Chosen FB config ID %#x\n", fbid);
+
     XVisualInfo *visinfo = glXGetVisualFromFBConfig(x11.dpy, fbc);
     if (!visinfo) {
         Com_EPrintf("Failed to get visual\n");
         goto fail;
     }
+    Com_DPrintf("Chosen visual ID %#lx\n", visinfo->visualid);
 
     unsigned long mask = CWBackPixel | CWBorderPixel | CWColormap | CWEventMask;
     XSetWindowAttributes attr = {
@@ -366,6 +371,9 @@ static bool init(void)
         Com_EPrintf("Failed to create GL context\n");
         goto fail;
     }
+
+    if (!glXIsDirect(x11.dpy, x11.ctx))
+        Com_WPrintf("Indirect GL context obtained\n");
 
     if (!glXMakeCurrent(x11.dpy, x11.win, x11.ctx)) {
         Com_EPrintf("Failed to make GL context current\n");

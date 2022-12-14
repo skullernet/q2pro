@@ -104,7 +104,7 @@ LOAD(Texinfo)
     mtexinfo_t  *out;
     int         i;
 #if USE_REF
-    int         j, k;
+    int         j;
     int32_t     next;
     mtexinfo_t  *step;
 #endif
@@ -124,10 +124,8 @@ LOAD(Texinfo)
 
 #if USE_REF
         for (j = 0; j < 2; j++) {
-            for (k = 0; k < 3; k++) {
-                out->axis[j][k] = LittleFloat(in->vecs[j][k]);
-            }
-            out->offset[j] = LittleFloat(in->vecs[j][k]);
+            LittleVector(in->vecs[j], out->axis[j]);
+            out->offset[j] = LittleFloat(in->vecs[j][3]);
         }
 
         next = (int32_t)LittleLong(in->nexttexinfo);
@@ -165,7 +163,7 @@ LOAD(Planes)
 {
     dplane_t    *in;
     cplane_t    *out;
-    int         i, j;
+    int         i;
 
     bsp->numplanes = count;
     bsp->planes = ALLOC(sizeof(*out) * count);
@@ -173,9 +171,7 @@ LOAD(Planes)
     in = base;
     out = bsp->planes;
     for (i = 0; i < count; i++, in++, out++) {
-        for (j = 0; j < 3; j++) {
-            out->normal[j] = LittleFloat(in->normal[j]);
-        }
+        LittleVector(in->normal, out->normal);
         out->dist = LittleFloat(in->dist);
         SetPlaneType(out);
         SetPlaneSignbits(out);
@@ -291,7 +287,7 @@ LOAD(Vertices)
 {
     dvertex_t   *in;
     mvertex_t   *out;
-    int         i, j;
+    int         i;
 
     bsp->numvertices = count;
     bsp->vertices = ALLOC(sizeof(*out) * count);
@@ -299,9 +295,7 @@ LOAD(Vertices)
     in = base;
     out = bsp->vertices;
     for (i = 0; i < count; i++, out++, in++) {
-        for (j = 0; j < 3; j++) {
-            out->point[j] = LittleFloat(in->point[j]);
-        }
+        LittleVector(in->point, out->point);
     }
 
     return Q_ERR_SUCCESS;
@@ -825,7 +819,7 @@ static bsp_t *BSP_Find(const char *name)
     return NULL;
 }
 
-static int BSP_SetParent(mnode_t *node, int key)
+static int BSP_SetParent(mnode_t *node, unsigned key)
 {
     mnode_t *child;
 #if USE_REF
@@ -932,9 +926,7 @@ void BSP_Free(bsp_t *bsp)
     if (!bsp) {
         return;
     }
-    if (bsp->refcount <= 0) {
-        Com_Error(ERR_FATAL, "%s: negative refcount", __func__);
-    }
+    Q_assert(bsp->refcount > 0);
     if (--bsp->refcount == 0) {
         Hunk_Free(&bsp->hunk);
         List_Remove(&bsp->entry);
@@ -962,8 +954,8 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
     size_t          lumpcount[HEADER_LUMPS];
     size_t          memsize;
 
-    if (!name || !bsp_p)
-        Com_Error(ERR_FATAL, "%s: NULL", __func__);
+    Q_assert(name);
+    Q_assert(bsp_p);
 
     *bsp_p = NULL;
 
@@ -1105,7 +1097,7 @@ HELPER FUNCTIONS
 
 static lightpoint_t *light_point;
 
-static bool BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, vec3_t p1, vec3_t p2)
+static bool BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, const vec3_t p1, const vec3_t p2)
 {
     vec_t d1, d2, frac, midf;
     vec3_t mid;
@@ -1167,7 +1159,7 @@ static bool BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, vec3_t 
     return false;
 }
 
-void BSP_LightPoint(lightpoint_t *point, vec3_t start, vec3_t end, mnode_t *headnode)
+void BSP_LightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end, mnode_t *headnode)
 {
     light_point = point;
     light_point->surf = NULL;
@@ -1176,8 +1168,8 @@ void BSP_LightPoint(lightpoint_t *point, vec3_t start, vec3_t end, mnode_t *head
     BSP_RecursiveLightPoint(headnode, 0, 1, start, end);
 }
 
-void BSP_TransformedLightPoint(lightpoint_t *point, vec3_t start, vec3_t end,
-                               mnode_t *headnode, vec3_t origin, vec3_t angles)
+void BSP_TransformedLightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end,
+                               mnode_t *headnode, const vec3_t origin, const vec3_t angles)
 {
     vec3_t start_l, end_l;
     vec3_t axis[3];
@@ -1293,7 +1285,7 @@ overrun:
     return mask;
 }
 
-mleaf_t *BSP_PointLeaf(mnode_t *node, vec3_t p)
+mleaf_t *BSP_PointLeaf(mnode_t *node, const vec3_t p)
 {
     float d;
 
@@ -1317,12 +1309,10 @@ mmodel_t *BSP_InlineModel(bsp_t *bsp, const char *name)
 {
     int     num;
 
-    if (!bsp || !name) {
-        Com_Error(ERR_DROP, "%s: NULL", __func__);
-    }
-    if (name[0] != '*') {
-        Com_Error(ERR_DROP, "%s: bad name: %s", __func__, name);
-    }
+    Q_assert(bsp);
+    Q_assert(name);
+    Q_assert(name[0] == '*');
+
     num = atoi(name + 1);
     if (num < 1 || num >= bsp->nummodels) {
         Com_Error(ERR_DROP, "%s: bad number: %d", __func__, num);

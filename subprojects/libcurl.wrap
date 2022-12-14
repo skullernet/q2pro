@@ -3,9 +3,9 @@ directory = curl-7.86.0
 source_url = https://curl.haxx.se/download/curl-7.86.0.tar.xz
 source_filename = curl-7.86.0.tar.xz
 source_hash = 2d61116e5f485581f6d59865377df4463f2e788677ac43222b496d4e49fb627b
-patch_url = https://skuller.net/meson/libcurl_7.86.0-1_patch.zip
-patch_filename = libcurl_7.86.0-1_patch.zip
-patch_hash = c7552c4fbd7f52f287035db725d0bd8228dfce009608bdfa14de34c3953462be
+patch_url = https://skuller.net/meson/libcurl_7.86.0-2_patch.zip
+patch_filename = libcurl_7.86.0-2_patch.zip
+patch_hash = 32962b964ef295c75ee87fa5e308b1bfe76a1a3e34ffaf504dabab08ce2588dd
 
 [provide]
 libcurl = libcurl_dep

@@ -243,6 +243,10 @@ static void get_engine_cvar(cvar_t *var, const char *var_value, int flags)
     // some flags are not saved
     var->flags &= ~(CVAR_GAME | CVAR_CUSTOM | CVAR_WEAK);
     var->flags |= flags;
+
+    // clear archive flag if not compatible with other flags
+    if (flags & CVAR_NOARCHIVEMASK)
+        var->flags &= ~CVAR_ARCHIVE;
 }
 
 /*
@@ -259,9 +263,8 @@ cvar_t *Cvar_Get(const char *var_name, const char *var_value, int flags)
     unsigned hash;
     size_t length;
 
-    if (!var_name) {
-        Com_Error(ERR_FATAL, "Cvar_Get: NULL var_name");
-    }
+    Q_assert(var_name);
+
     if (!var_value) {
         return Cvar_FindVar(var_name);
     }
@@ -379,6 +382,11 @@ void Cvar_SetByVar(cvar_t *var, const char *value, from_t from)
             return;
         }
 
+        if (from == FROM_MENU && var == fs_game) {
+            Com_WPrintf("Changing %s from menu is not allowed.\n", var->name);
+            return;
+        }
+
         if ((var->flags & CVAR_LATCH) && sv_running->integer) {
             if (var->latched_string && !strcmp(var->latched_string, value)) {
                 return; // latched string not changed
@@ -444,6 +452,9 @@ cvar_t *Cvar_FullSet(const char *var_name, const char *value, int flags, from_t 
 
     var->flags &= ~CVAR_INFOMASK;
     var->flags |= flags;
+
+    if (flags & CVAR_NOARCHIVEMASK)
+        var->flags &= ~CVAR_ARCHIVE;
 
     return var;
 }
@@ -807,7 +818,6 @@ static const cmd_option_t o_cvarlist[] = {
     { "t", "custom", "list user-created cvars" },
     { "u", "userinfo", "list userinfo cvars" },
     { "v", "verbose", "display flags of each cvar" },
-    { "w:string", "wildcard", "list cvars matching wildcard" },
     { NULL }
 };
 
@@ -835,7 +845,7 @@ static void Cvar_List_f(void)
             mask |= CVAR_CHEAT;
             break;
         case 'h':
-            Cmd_PrintUsage(o_cvarlist, NULL);
+            Cmd_PrintUsage(o_cvarlist, "[wildcard]");
             Com_Printf("List registered console variables.\n");
             Cmd_PrintHelp(o_cvarlist);
             Com_Printf(
@@ -865,7 +875,7 @@ static void Cvar_List_f(void)
             mask |= CVAR_SERVERINFO;
             break;
         case 't':
-            mask |= CVAR_CUSTOM;
+            mask |= CVAR_CUSTOM | CVAR_WEAK;
             break;
         case 'u':
             mask |= CVAR_USERINFO;
@@ -873,13 +883,12 @@ static void Cvar_List_f(void)
         case 'v':
             verbose = true;
             break;
-        case 'w':
-            wildcard = cmd_optarg;
-            break;
         default:
             return;
         }
     }
+    if (cmd_optind < Cmd_Argc())
+        wildcard = Cmd_Argv(cmd_optind);
 
     buffer[sizeof(buffer) - 1] = 0;
     i = 0;
@@ -918,7 +927,7 @@ static void Cvar_List_f(void)
                 buffer[3] = 'N';
             else if (var->flags & CVAR_LATCH)
                 buffer[3] = 'L';
-            else if (var->flags & CVAR_CUSTOM)
+            else if (var->flags & (CVAR_CUSTOM | CVAR_WEAK))
                 buffer[3] = '?';
 
             Com_Printf("%s ", buffer);
