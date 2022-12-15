@@ -190,8 +190,7 @@ void SV_LinkEdict(cm_t *cm, edict_t *ent)
             // but nothing should evern need more than that
             if (ent->areanum && ent->areanum != area) {
                 if (ent->areanum2 && ent->areanum2 != area && sv.state == ss_loading) {
-                    Com_DPrintf("Object touching 3 areas at %f %f %f\n",
-                                ent->absmin[0], ent->absmin[1], ent->absmin[2]);
+                    Com_DPrintf("Object touching 3 areas at %s\n", vtos(ent->absmin));
                 }
                 ent->areanum2 = area;
             } else
@@ -269,6 +268,13 @@ void PF_LinkEdict(edict_t *ent)
         } else {
             ent->s.solid = MSG_PackSolid16(ent->mins, ent->maxs);
             sent->solid32 = MSG_PackSolid32(ent->mins, ent->maxs);
+#if USE_DEBUG
+            if (developer->integer &&
+                (ent->mins[0] !=  ent->mins[1] ||
+                 ent->maxs[0] !=  ent->maxs[1] ||
+                 ent->mins[0] != -ent->maxs[0]))
+                Com_LPrintf(PRINT_DEVELOPER, "%s: bad mins/maxs on entity %d\n", __func__, entnum);
+#endif
         }
         break;
     case SOLID_BSP:
