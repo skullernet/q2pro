@@ -3451,9 +3451,12 @@ static size_t CL_Ping_m(char *buffer, size_t size)
 
 static size_t CL_Lag_m(char *buffer, size_t size)
 {
-    return Q_scnprintf(buffer, size, "%.2f%%", cls.netchan ?
-                       ((float)cls.netchan->total_dropped /
-                        cls.netchan->total_received) * 100.0f : 0);
+    float f = 0;
+
+    if (cls.netchan && cls.netchan->total_received)
+        f = (float)cls.netchan->total_dropped / cls.netchan->total_received;
+
+    return Q_scnprintf(buffer, size, "%.2f%%", f * 100.0f);
 }
 
 static size_t CL_Health_m(char *buffer, size_t size)
@@ -3473,8 +3476,7 @@ static size_t CL_Armor_m(char *buffer, size_t size)
 
 static size_t CL_WeaponModel_m(char *buffer, size_t size)
 {
-    return Q_scnprintf(buffer, size, "%s",
-                       cl.configstrings[cl.frame.ps.gunindex + CS_MODELS]);
+    return Q_strlcpy(buffer, cl.configstrings[CS_MODELS + cl.frame.ps.gunindex], size);
 }
 
 /*
