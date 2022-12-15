@@ -252,8 +252,8 @@ bool SCR_ParseColor(const char *s, color_t *color)
     }
 
     // parse name or index
-    i = Com_ParseColor(s, COLOR_WHITE);
-    if (i == COLOR_NONE) {
+    i = Com_ParseColor(s);
+    if (i >= q_countof(colorTable)) {
         return false;
     }
 
@@ -559,7 +559,7 @@ static void SCR_Color_g(genctx_t *ctx)
 {
     int color;
 
-    for (color = 0; color < 10; color++)
+    for (color = 0; color < COLOR_COUNT; color++)
         Prompt_AddMatch(ctx, colorNames[color]);
 }
 
@@ -1591,18 +1591,19 @@ static void SCR_ExecuteLayoutString(const char *s)
             }
             token = cl.configstrings[CS_IMAGES + value];
             if (token[0]) {
-                // action mod scope scaling
-                image_t *image = IMG_ForHandle(cl.image_precache[value]);
-                if (strncmp(image->name, "pics/scope", 10) == 0) {
-                    x = scr.hud_x + ((scr.hud_width - scr.scope_width) / 2);
-                    y = scr.hud_y + ((scr.hud_height - scr.scope_height) / 2);
-                    R_DrawStretchPic(x + ch_x->integer,
-                                     y + ch_y->integer,
-                                     scr.scope_width,
-                                     scr.scope_height,
-                                     cl.image_precache[value]);
+                qhandle_t pic = cl.image_precache[value];
+                // hack for action mod scope scaling
+                if (x == scr.hud_width  / 2 - 160 &&
+                    y == scr.hud_height / 2 - 120 &&
+                    Com_WildCmp("scope?x", token))
+                {
+                    int w = 320 * ch_scale->value;
+                    int h = 240 * ch_scale->value;
+                    R_DrawStretchPic((scr.hud_width  - w) / 2 + ch_x->integer,
+                                     (scr.hud_height - h) / 2 + ch_y->integer,
+                                     w, h, pic);
                 } else {
-                    R_DrawPic(x, y, cl.image_precache[value]);
+                    R_DrawPic(x, y, pic);
                 }
             }
             continue;

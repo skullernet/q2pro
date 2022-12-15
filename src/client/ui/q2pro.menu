@@ -68,7 +68,7 @@ begin video
     //title "Video Setup"
     banner m_banner_video
     values "video mode" vid_fullscreen windowed $$vid_modelist
-    values "aspect ratio" cl_adjustfov 4:3 auto
+    values "fov scaling" cl_adjustfov vert- hor+
     toggle "vertical sync" gl_swapinterval
     pairs "anti-aliasing" gl_multisamples no 0 "2x MSAA" 2 "4x MSAA" 4 "8x MSAA" 8
     range "texture gamma" vid_gamma 1.3 0.3
@@ -84,6 +84,7 @@ begin video
     pairs "texture intensity" intensity 1x 1 2x 2 3x 3
     range "lightmap saturation" gl_coloredlightmaps 0 1
     range "lightmap brightness" gl_brightness 0 0.3
+    values "rendering backend" gl_shaders legacy shaders
 end
 
 begin options
@@ -109,6 +110,7 @@ begin sound
     range "music volume" ogg_volume 0 1
     toggle "enable music" ogg_enable
     toggle "shuffle tracks" ogg_shuffle
+    toggle "underwater effect" s_underwater
     values "ambient sounds" s_ambient "no" "yes" "only player's own"
     values "chat beep" cl_chat_sound "disabled" "default" "alternative"
 end
@@ -133,6 +135,7 @@ begin effects
     toggle "entity glowing" cl_noglow ~
     toggle "ground shadows" gl_shadows
     toggle "screen blending" gl_polyblend
+    toggle "screen warping" gl_waterwarp
     toggle "grenade explosions" cl_disable_explosions ~0
     toggle "rocket explosions" cl_disable_explosions ~1
     blank
@@ -142,7 +145,7 @@ end
 begin crosshair
     title "Crosshair Setup"
     values "crosshair type" crosshair none cross dot angle
-    pairs "crosshair scale" ch_scale 1x 1 2x 2 4x 4
+    pairs "crosshair scale" ch_scale 0.5x 0.5 1x 1 2x 2
     toggle "color by health" ch_health
     range "red channel" ch_red 0 1
     range "green channel" ch_green 0 1
