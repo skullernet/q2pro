@@ -664,7 +664,7 @@ static void pump_events(void)
 
     while (XPending(x11.dpy)) {
         XNextEvent(x11.dpy, &event);
-        Com_DDDPrintf("%s\n", eventtab[event.type]);
+        Com_DDDPrintf("%s\n", event.type < q_countof(eventtab) ? eventtab[event.type] : "<unknown>");
         switch (event.type) {
         case GenericEvent:
             generic_event(&event.xcookie);
