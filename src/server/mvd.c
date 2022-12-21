@@ -374,7 +374,7 @@ static int dummy_create(void)
     newcl->state = cs_connected;
     newcl->AddMessage = dummy_add_message;
     newcl->edict = EDICT_NUM(number + 1);
-    newcl->netchan = SV_Mallocz(sizeof(netchan_t));
+    newcl->netchan = SV_Mallocz(sizeof(*newcl->netchan));
     newcl->netchan->remote_address.type = NA_LOOPBACK;
 
     List_Init(&newcl->entry);
@@ -560,8 +560,8 @@ static void build_gamestate(void)
     edict_t *ent;
     int i;
 
-    memset(mvd.players, 0, sizeof(player_packed_t) * sv_maxclients->integer);
-    memset(mvd.entities, 0, sizeof(entity_packed_t) * MAX_EDICTS);
+    memset(mvd.players, 0, sizeof(mvd.players[0]) * sv_maxclients->integer);
+    memset(mvd.entities, 0, sizeof(mvd.entities[0]) * MAX_EDICTS);
 
     // set base player states
     for (i = 0; i < sv_maxclients->integer; i++) {
@@ -2067,8 +2067,8 @@ void SV_MvdInit(void)
     // allocate buffers
     SZ_Init(&mvd.message, SV_Malloc(MAX_MSGLEN), MAX_MSGLEN);
     SZ_Init(&mvd.datagram, SV_Malloc(MAX_MSGLEN), MAX_MSGLEN);
-    mvd.players = SV_Malloc(sizeof(player_packed_t) * sv_maxclients->integer);
-    mvd.entities = SV_Malloc(sizeof(entity_packed_t) * MAX_EDICTS);
+    mvd.players = SV_Malloc(sizeof(mvd.players[0]) * sv_maxclients->integer);
+    mvd.entities = SV_Malloc(sizeof(mvd.entities[0]) * MAX_EDICTS);
 
     // reserve the slot for dummy MVD client
     if (!sv_reserved_slots->integer) {
@@ -2081,7 +2081,7 @@ void SV_MvdInit(void)
     if (sv_mvd_enable->integer > 1) {
         neterr_t ret = NET_Listen(true);
         if (ret == NET_OK) {
-            mvd.clients = SV_Mallocz(sizeof(gtv_client_t) * sv_mvd_maxclients->integer);
+            mvd.clients = SV_Mallocz(sizeof(mvd.clients[0]) * sv_mvd_maxclients->integer);
         } else {
             if (ret == NET_ERROR)
                 Com_EPrintf("Error opening server TCP port.\n");

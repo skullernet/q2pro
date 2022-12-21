@@ -261,7 +261,7 @@ void Cmd_AliasSet(const char *name, const char *cmd)
     }
 
     len = strlen(name);
-    a = Cmd_Malloc(sizeof(cmdalias_t) + len);
+    a = Cmd_Malloc(sizeof(*a) + len);
     memcpy(a->name, name, len + 1);
     a->value = Cmd_CopyString(cmd);
 
@@ -733,7 +733,7 @@ void Cmd_AddMacro(const char *name, xmacro_t function)
         return;
     }
 
-    macro = Cmd_Malloc(sizeof(cmd_macro_t));
+    macro = Cmd_Malloc(sizeof(*macro));
     macro->name = name;
     macro->function = function;
     macro->next = cmd_macros;

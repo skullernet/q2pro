@@ -2481,7 +2481,7 @@ static void q_printf(2, 3) add_game_dir(unsigned mode, const char *fmt, ...)
 #endif
 
     // add the directory to the search path
-    search = FS_Malloc(sizeof(searchpath_t) + len);
+    search = FS_Malloc(sizeof(*search) + len);
     search->mode = mode;
     search->pack = NULL;
     memcpy(search->filename, fs_gamedir, len + 1);
@@ -2519,7 +2519,7 @@ static void q_printf(2, 3) add_game_dir(unsigned mode, const char *fmt, ...)
             Com_EPrintf("Couldn't load %s: %s\n", path, Com_GetLastError());
             continue;
         }
-        search = FS_Malloc(sizeof(searchpath_t));
+        search = FS_Malloc(sizeof(*search));
         search->mode = mode;
         search->filename[0] = 0;
         search->pack = pack_get(pack);
