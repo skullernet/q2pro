@@ -1077,8 +1077,6 @@ void SV_ShutdownClientSend(client_t *client)
 {
     free_all_messages(client);
 
-    Z_Free(client->msg_pool);
-    client->msg_pool = NULL;
-
+    Z_Freep(&client->msg_pool);
     List_Init(&client->msg_free_list);
 }
