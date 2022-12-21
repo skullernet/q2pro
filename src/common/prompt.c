@@ -424,9 +424,7 @@ char *Prompt_Action(commandPrompt_t *prompt)
     i = prompt->inputLineNum & HISTORY_MASK;
     j = (prompt->inputLineNum - 1) & HISTORY_MASK;
     if (!prompt->history[j] || strcmp(prompt->history[j], s)) {
-        if (prompt->history[i]) {
-            Z_Free(prompt->history[i]);
-        }
+        Z_Free(prompt->history[i]);
         prompt->history[i] = Z_CopyString(s);
         prompt->inputLineNum++;
     } else {
@@ -455,9 +453,7 @@ void Prompt_HistoryUp(commandPrompt_t *prompt)
     if (prompt->historyLineNum == prompt->inputLineNum) {
         // save current line in history
         i = prompt->inputLineNum & HISTORY_MASK;
-        if (prompt->history[i]) {
-            Z_Free(prompt->history[i]);
-        }
+        Z_Free(prompt->history[i]);
         prompt->history[i] = Z_CopyString(prompt->inputLine.text);
     }
 
@@ -557,9 +553,7 @@ void Prompt_LoadHistory(commandPrompt_t *prompt, const char *filename)
         if ((len = FS_ReadLine(f, buffer, sizeof(buffer))) < 1) {
             break;
         }
-        if (prompt->history[i]) {
-            Z_Free(prompt->history[i]);
-        }
+        Z_Free(prompt->history[i]);
         prompt->history[i] = memcpy(Z_Malloc(len + 1), buffer, len + 1);
     }
 

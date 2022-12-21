@@ -79,10 +79,8 @@ SCR_StopCinematic
 */
 void SCR_StopCinematic(void)
 {
-    if (cin.pic)
-        Z_Free(cin.pic);
-    if (cin.file)
-        FS_FCloseFile(cin.file);
+    Z_Free(cin.pic);
+    FS_FCloseFile(cin.file);
     memset(&cin, 0, sizeof(cin));
 }
 
