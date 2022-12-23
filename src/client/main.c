@@ -771,17 +771,16 @@ static void CL_UpdateActivity(void)
             // The result is cached to discord.server_hostname
             netadr_t    adr;
             neterr_t    ret;
-            if (cls.netchan)
-            {
-                adr = cls.netchan->remote_address;
-                CL_AddRequest(&adr, REQ_STATUS_DISCORD);
 
-                NET_Config(NET_CLIENT);
+            adr = cls.netchan.remote_address;
+            CL_AddRequest(&adr, REQ_STATUS_DISCORD);
 
-                ret = OOB_PRINT(NS_CLIENT, &adr, "status");
-                if (ret == NET_ERROR)
-                    Com_Printf("%s to %s\n", NET_ErrorString(), NET_AdrToString(&adr));
-            }
+            NET_Config(NET_CLIENT);
+
+            ret = OOB_PRINT(NS_CLIENT, &adr, "status");
+            if (ret == NET_ERROR)
+                Com_Printf("%s to %s\n", NET_ErrorString(), NET_AdrToString(&adr));
+
             return; // Wait for server to respond
         }
 
