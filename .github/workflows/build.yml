@@ -29,6 +29,12 @@ env:
     -Dwindows-crash-dumps=disabled
     -Dwrap_mode=nofallback
 
+  MESON_ARGS_MAC: >-
+    -Dwindows-crash-dumps=disabled
+    -Dwrap_mode=nofallback
+    -Dwayland=disabled
+    -Dx11=disabled
+
 jobs:
   mingw:
     runs-on: ubuntu-latest
@@ -191,7 +197,7 @@ jobs:
 
       - name: Build
         run: |
-          meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_LINUX }} builddir
+          meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_MAC }} builddir
           meson compile -vC builddir
         env:
           CC: "gcc"
