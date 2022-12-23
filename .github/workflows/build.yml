@@ -34,6 +34,7 @@ env:
     -Dwrap_mode=nofallback
     -Dwayland=disabled
     -Dx11=disabled
+    -Dicmp-errors=false
 
 jobs:
   mingw:

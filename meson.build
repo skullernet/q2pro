@@ -308,7 +308,6 @@ if openal.found()
 endif
 
 if host_machine.system() == 'darwin'
-  config.set10('USE_ICMP', false)
   opengl = dependency('opengl',
     allow_fallback:  win32,
     default_options: fallback_opt,
