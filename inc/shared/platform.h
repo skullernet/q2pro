@@ -26,13 +26,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifdef _WIN32
 #include <io.h>
 #include <direct.h>
+#else
 #include <unistd.h>
 #endif
 
 #ifdef _WIN32
 #define LIBSUFFIX   ".dll"
-#elif __APPLE__
-#define LIBSUFFIX   ".dylib"
+// TODO: Uncomment this when TNG and Q2Pro are merged
+// #elif __APPLE__
+// #define LIBSUFFIX   ".dylib"
 #else
 #define LIBSUFFIX   ".so"
 #endif
@@ -96,12 +98,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define W_OK    2
 #define R_OK    4
 #endif
-
-#ifdef _WIN32
-#define SOLIB_X_OK R_OK
-#else
-#define SOLIB_X_OK X_OK
-#endif    
 
 #ifdef __GNUC__
 
