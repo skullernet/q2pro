@@ -99,6 +99,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define R_OK    4
 #endif
 
+#ifdef _WIN32
+#define SOLIB_X_OK R_OK
+#else
+#define SOLIB_X_OK X_OK
+#endif   
+
 #ifdef __GNUC__
 
 #if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4)
