@@ -32,18 +32,12 @@ FRAME PARSING
 =========================================================================
 */
 
+// returns true if origin/angles update has been optimized out
 static inline bool entity_is_optimized(const entity_state_t *state)
 {
-    if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO && cls.serverProtocol != PROTOCOL_VERSION_AQTION)
-        return false;
-
-    if (state->number != cl.frame.clientNum + 1)
-        return false;
-
-    if (cl.frame.ps.pmove.pm_type >= PM_DEAD)
-        return false;
-
-    return true;
+    return (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO || cls.serverProtocol == PROTOCOL_VERSION_AQTION)
+        && state->number == cl.frame.clientNum + 1
+        && cl.frame.ps.pmove.pm_type < PM_DEAD;
 }
 
 static inline void
@@ -246,10 +240,7 @@ static void set_active_state(void)
 #endif
 
     cl.frameflags = 0;
-
-    if (cls.netchan) {
-        cl.initialSeq = cls.netchan->outgoing_sequence;
-    }
+    cl.initialSeq = cls.netchan.outgoing_sequence;
 
     if (cls.demo.playback) {
         // init some demo things

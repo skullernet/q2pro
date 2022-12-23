@@ -26,12 +26,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifdef _WIN32
 #include <io.h>
 #include <direct.h>
-#else
 #include <unistd.h>
 #endif
 
 #ifdef _WIN32
 #define LIBSUFFIX   ".dll"
+#elif __APPLE__
+#define LIBSUFFIX   ".dylib"
 #else
 #define LIBSUFFIX   ".so"
 #endif

@@ -79,10 +79,8 @@ SCR_StopCinematic
 */
 void SCR_StopCinematic(void)
 {
-    if (cin.pic)
-        Z_Free(cin.pic);
-    if (cin.file)
-        FS_FCloseFile(cin.file);
+    Z_Free(cin.pic);
+    FS_FCloseFile(cin.file);
     memset(&cin, 0, sizeof(cin));
 }
 
@@ -294,9 +292,10 @@ static bool SCR_ReadNextFrame(void)
     if (cin.s_rate) {
         unsigned start = cin.frame * cin.s_rate / 14;
         unsigned end = (cin.frame + 1) * cin.s_rate / 14;
-        int s_size = (end - start) * cin.s_width * cin.s_channels;
+        unsigned s_size = (end - start) * cin.s_width * cin.s_channels;
         byte samples[22050 / 14 * 4];
 
+        Q_assert(s_size <= sizeof(samples));
         if (FS_Read(samples, s_size, cin.file) != s_size)
             return false;
 
@@ -307,7 +306,6 @@ static bool SCR_ReadNextFrame(void)
                 data[i] = LittleShort(data[i]);
         }
 #endif
-
         S_RawSamples(end - start, cin.s_rate, cin.s_width, cin.s_channels, samples);
     }
 

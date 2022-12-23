@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "shared/shared.h"
 #include "common/mdfour.h"
+#include "common/intreadwrite.h"
 
 /* NOTE: This code makes no attempt to be fast!
 
@@ -75,15 +76,7 @@ static void copy64(uint32_t *M, const uint8_t *in)
     int i;
 
     for (i = 0; i < 16; i++, in += 4)
-        M[i] = LittleLongMem(in);
-}
-
-static void copy4(uint8_t *out, uint32_t x)
-{
-    out[0] = x & 0xFF;
-    out[1] = (x >> 8) & 0xFF;
-    out[2] = (x >> 16) & 0xFF;
-    out[3] = (x >> 24) & 0xFF;
+        M[i] = RL32(in);
 }
 
 void mdfour_begin(struct mdfour *md)
@@ -99,7 +92,7 @@ static void mdfour_tail(struct mdfour *md)
 {
     uint8_t buf[128];
     uint32_t M[16];
-    uint32_t b = md->count * 8;
+    uint64_t b = md->count * 8;
     uint32_t n = md->count & 63;
 
     memset(buf, 0, 128);
@@ -107,11 +100,11 @@ static void mdfour_tail(struct mdfour *md)
     buf[n] = 0x80;
 
     if (n <= 55) {
-        copy4(buf + 56, b);
+        WL64(buf + 56, b);
         copy64(M, buf);
         mdfour64(md, M);
     } else {
-        copy4(buf + 120, b);
+        WL64(buf + 120, b);
         copy64(M, buf);
         mdfour64(md, M);
         copy64(M, buf + 64);
@@ -154,10 +147,10 @@ void mdfour_result(struct mdfour *md, uint8_t *out)
 {
     mdfour_tail(md);
 
-    copy4(out, md->A);
-    copy4(out + 4, md->B);
-    copy4(out + 8, md->C);
-    copy4(out + 12, md->D);
+    WL32(out, md->A);
+    WL32(out + 4, md->B);
+    WL32(out + 8, md->C);
+    WL32(out + 12, md->D);
 }
 
 uint32_t Com_BlockChecksum(const void *buffer, size_t len)

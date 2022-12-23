@@ -25,6 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/common.h"
 #include "common/cvar.h"
 #include "common/files.h"
+#include "common/intreadwrite.h"
 #include "system/system.h"
 #include "format/pcx.h"
 #include "format/wal.h"
@@ -533,8 +534,8 @@ IMG_LOAD(TGA)
     id_length = rawdata[0];
     colormap_type = rawdata[1];
     image_type = rawdata[2];
-    w = LittleShortMem(&rawdata[12]);
-    h = LittleShortMem(&rawdata[14]);
+    w = RL16(&rawdata[12]);
+    h = RL16(&rawdata[14]);
     pixel_size = rawdata[16];
     attributes = rawdata[17];
 

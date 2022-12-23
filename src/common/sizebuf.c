@@ -19,6 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "shared/shared.h"
 #include "common/protocol.h"
 #include "common/sizebuf.h"
+#include "common/intreadwrite.h"
 
 void SZ_TagInit(sizebuf_t *buf, void *data, size_t size, const char *tag)
 {
@@ -157,11 +158,11 @@ int SZ_ReadByte(sizebuf_t *sb)
 int SZ_ReadShort(sizebuf_t *sb)
 {
     byte *buf = SZ_ReadData(sb, 2);
-    return buf ? (int16_t)LittleShortMem(buf) : -1;
+    return buf ? (int16_t)RL16(buf) : -1;
 }
 
 int SZ_ReadLong(sizebuf_t *sb)
 {
     byte *buf = SZ_ReadData(sb, 4);
-    return buf ? LittleLongMem(buf) : -1;
+    return buf ? RL32(buf) : -1;
 }
