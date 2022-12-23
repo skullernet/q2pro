@@ -100,21 +100,21 @@ jobs:
             builddir/q2proded.exe
 
   linux64:
-    #runs-on: ubuntu-22.04
-    runs-on: [self-hosted, x86]
+    runs-on: ubuntu-22.04
+    #runs-on: [self-hosted, x86]
     strategy:
       matrix:
         cc: [gcc, clang]
     steps:
       - uses: actions/checkout@v3
 
-      # - name: Install dependencies
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt-get install -y meson libsdl2-dev libopenal-dev \
-      #     libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
-      #     libcurl4-gnutls-dev libx11-dev libxi-dev \
-      #     libwayland-dev wayland-protocols patchelf
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y meson libsdl2-dev libopenal-dev \
+          libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
+          libcurl4-gnutls-dev libx11-dev libxi-dev \
+          libwayland-dev wayland-protocols libdecor-0-dev patchelf
 
       - name: Build
         run: |
