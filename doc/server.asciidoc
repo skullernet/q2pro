@@ -496,21 +496,18 @@ System
 ~~~~~~
 
 sys_console::
-    On UNIX-like systems, specifies the way system console is used, as well as
-    ‘daemonization’ level of the process. Default value is 2 if both stdin and
-    stdout descriptors refer to a TTY, and 0 otherwise.
-      - 0 — run daemonized, don't output anything on stdout and don't read
-        anything from stdin, handle SIGHUP to reopen log files
-      - 1 — enable ‘dumb’ system console mode: print to stdout and read
-        commands from stdin, but don't assume it is a terminal, don't handle
-        SIGHUP
-      - 2 — enable ‘smart’ system console mode: handle it as a terminal, enable
-        command completion and colored text output, don't handle SIGHUP
+    On UNIX-like systems, specifies how system console is initialized. Default
+    value is 2 if both stdin and stdout descriptors refer to a TTY, 1 if
+    running a dedicated server and 0 otherwise.
+      - 0 — don't write anything to stdout and don't read anything from stdin
+      - 1 — print to stdout and read commands from stdin, but don't assume it
+      is a terminal
+      - 2 — enable command line editing and colored text output
 
 .System console key bindings
 ****************************
 The following key bindings are available in Windows console and in TTY console
-when ‘smart’ mode is enabled:
+when command line editing is enabled:
 
 * HOME, Ctrl+A — move cursor to start of line
 * END, Ctrl+E — move cursor to end of line
