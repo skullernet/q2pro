@@ -1081,7 +1081,7 @@ static void CL_ParseZPacket(void)
     }
 
     temp = msg_read;
-    SZ_Init(&msg_read, buffer, outlen);
+    SZ_Init(&msg_read, buffer, sizeof(buffer));
     msg_read.cursize = outlen;
 
     CL_ParseServerMessage();
