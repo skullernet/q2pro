@@ -1,7 +1,7 @@
 option('anticheat-server', type: 'boolean', value: false, description: 'r1ch.net anticheat server')
 option('aqtion-build', type: 'boolean', value: true, description: 'Build-specific for AQtion enhancements')
 option('auto-reply', type: 'boolean', value: true, description: 'auto reply to !version probes')
-option('base-game', type: 'string', value: '', description: 'base game directory')
+option('base-game', type: 'string', value: 'baseaq', description: 'base game directory')
 option('client-gtv', type: 'boolean', value: false, description: 'client GTV relay')
 option('client-ui', type: 'boolean', value: true, description: 'client UI')
 option('default-game', type: 'string', value: 'action', description: 'default game directory')
