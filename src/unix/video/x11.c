@@ -664,7 +664,7 @@ static void pump_events(void)
 
     while (XPending(x11.dpy)) {
         XNextEvent(x11.dpy, &event);
-        Com_DDDPrintf("%s\n", eventtab[event.type]);
+        Com_DDDPrintf("%s\n", event.type < q_countof(eventtab) ? eventtab[event.type] : "<unknown>");
         switch (event.type) {
         case GenericEvent:
             generic_event(&event.xcookie);
@@ -706,10 +706,8 @@ static void pump_events(void)
             selection_request(&event.xselectionrequest);
             break;
         case SelectionClear:
-            if (event.xselectionclear.selection == XA(CLIPBOARD)) {
-                Z_Free(x11.clipboard_data);
-                x11.clipboard_data = NULL;
-            }
+            if (event.xselectionclear.selection == XA(CLIPBOARD))
+                Z_Freep(&x11.clipboard_data);
             break;
         }
     }
@@ -858,8 +856,7 @@ static void set_clipboard_data(const char *data)
     if (!data || !*data)
         return;
 
-    Z_Free(x11.clipboard_data);
-    x11.clipboard_data = NULL;
+    Z_Freep(&x11.clipboard_data);
 
     XSetSelectionOwner(x11.dpy, XA(CLIPBOARD), x11.win, CurrentTime);
 

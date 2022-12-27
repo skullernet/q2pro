@@ -8,6 +8,7 @@ on:
 
 env:
   MESON_ARGS: >-
+    --auto-features=enabled
     --fatal-meson-warnings
     -Danticheat-server=true
     -Dclient-gtv=true
@@ -18,15 +19,37 @@ env:
     -Daqtion-build=true
     -Ddiscord-sdk=true
 
+  MESON_ARGS_WIN: >-
+    -Dsdl2=disabled
+    -Dwayland=disabled
+    -Dwrap_mode=forcefallback
+    -Dx11=disabled
+
+  MESON_ARGS_LINUX: >-
+    -Dwindows-crash-dumps=disabled
+    -Dwrap_mode=nofallback
+
+  MESON_ARGS_MAC: >-
+    -Dwindows-crash-dumps=disabled
+    -Dwrap_mode=nofallback
+    -Dwayland=disabled
+    -Dx11=disabled
+    -Dicmp-errors=disabled
+
 jobs:
   mingw:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         #arch: ["i686", "x86_64"]
         arch: ["x86_64"]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+
+      - uses: actions/cache@v3
+        with:
+          path: subprojects/packagecache
+          key: ${{ hashFiles('subprojects/*.wrap') }}
 
       - name: Install dependencies
         run: |
@@ -35,8 +58,9 @@ jobs:
 
       - name: Build
         run: |
-          meson setup --cross-file=.ci/${{ matrix.arch }}-w64-mingw32.txt ${{ env.MESON_ARGS }} builddir
-          ninja -vC builddir
+          meson setup --cross-file=.ci/${{ matrix.arch }}-w64-mingw32.txt \
+          ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_WIN }} builddir
+          meson compile -vC builddir
 
       - name: Generate Win Mingw archives
         uses: actions/upload-artifact@v3
@@ -53,19 +77,26 @@ jobs:
         #arch: ["x86", "x64"]
         arch: ["x64"]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-      - uses: ilammy/msvc-dev-cmd@d8610e2b41c6d0f0c3b4c46dad8df0fd826c68e1
+      - uses: actions/cache@v3
+        with:
+          path: subprojects/packagecache
+          key: ${{ hashFiles('subprojects/*.wrap') }}
+
+      - uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: ${{ matrix.arch }}
+
+      - uses: ilammy/setup-nasm@v1
 
       - name: Install dependencies
         run: pip3 install --no-input meson ninja
 
       - name: Build
         run: |
-          meson setup ${{ env.MESON_ARGS }} -Dvorbis:werror=false -Dwrap_mode=forcefallback builddir
-          ninja -vC builddir
+          meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_WIN }} -Dvorbis:werror=false builddir
+          meson compile -vC builddir
 
       - name: Generate Win MSVC archives
         uses: actions/upload-artifact@v3
@@ -76,26 +107,27 @@ jobs:
             builddir/q2proded.exe
 
   linux64:
-    #runs-on: ubuntu-22.04
-    runs-on: [self-hosted, x86]
+    runs-on: ubuntu-22.04
+    #runs-on: [self-hosted, x86]
     strategy:
       matrix:
         cc: [gcc, clang]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-      # - name: Install dependencies
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt-get install -y meson libsdl2-dev libopenal-dev \
-      #     libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
-      #     libcurl4-gnutls-dev libx11-dev libxi-dev \
-      #     libwayland-dev wayland-protocols patchelf
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y meson libsdl2-dev libopenal-dev \
+          libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
+          libcurl4-gnutls-dev libx11-dev libxi-dev \
+          libwayland-dev wayland-protocols libdecor-0-dev \
+          libogg-dev libvorbis-dev patchelf
 
       - name: Build
         run: |
-          meson setup ${{ env.MESON_ARGS }} builddir
-          ninja -vC builddir
+          meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_LINUX }} builddir
+          meson compile -C builddir
         env:
           CC: ${{ matrix.cc }}
 
@@ -134,8 +166,8 @@ jobs:
 
       - name: Build
         run: |
-          meson setup ${{ env.MESON_ARGS }} builddir
-          ninja -vC builddir
+          meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_LINUX }} builddir
+          meson compile -vC builddir
         env:
           CC: ${{ matrix.cc }}
 
@@ -161,13 +193,13 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install meson libpng jpeg sdl2 openal-soft zlib curl libvorbis
+          brew install meson libpng jpeg sdl2 openal-soft zlib curl libvorbis libxi
           brew uninstall libjpeg-turbo --ignore-dependencies
 
       - name: Build
         run: |
-          meson setup ${{ env.MESON_ARGS }} builddir
-          ninja -vC builddir
+          meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_MAC }} builddir
+          meson compile -vC builddir
         env:
           CC: "gcc"
           PKG_CONFIG_PATH: "/usr/local/opt/openal-soft/lib/pkgconfig:/usr/local/opt/jpeg/lib/pkgconfig"

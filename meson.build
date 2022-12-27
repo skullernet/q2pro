@@ -203,7 +203,7 @@ endif
 
 engine_args = []
 if win32
-  engine_args += '-D_WIN32_WINNT=0x0600'
+  engine_args += '-D_WIN32_WINNT=0x0601'
 endif
 
 common_link_args = []

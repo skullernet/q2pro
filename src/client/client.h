@@ -407,7 +407,7 @@ typedef struct client_static_s {
 
     int         quakePort;          // a 16 bit value that allows quake servers
                                     // to work around address translating routers
-    netchan_t   *netchan;
+    netchan_t   netchan;
     int         serverProtocol;     // in case we are doing some kind of version hack
     int         protocolVersion;    // minor version
 
@@ -428,7 +428,7 @@ typedef struct client_static_s {
         int         pending;            // number of non-finished entries in queue
         dlqueue_t   *current;           // path being downloaded
         int         percent;            // how much downloaded
-        int         position;           // how much downloaded (in bytes)
+        int64_t     position;           // how much downloaded (in bytes)
         qhandle_t   file;               // UDP file transfer from server
         char        temp[MAX_QPATH + 4];// account 4 bytes for .tmp suffix
 #if USE_ZLIB

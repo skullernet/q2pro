@@ -1136,10 +1136,7 @@ static void handle_data_source_cancelled(void *data, struct wl_data_source *sour
         wl.data_source = NULL;
     }
 
-    if (wl.clipboard_data) {
-        Z_Free(wl.clipboard_data);
-        wl.clipboard_data = NULL;
-    }
+    Z_Freep(&wl.clipboard_data);
 }
 
 static const struct wl_data_source_listener data_source_listener = {

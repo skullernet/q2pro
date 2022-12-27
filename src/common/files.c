@@ -23,6 +23,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/error.h"
 #include "common/files.h"
 #include "common/prompt.h"
+#include "common/intreadwrite.h"
 #include "system/system.h"
 #include "client/client.h"
 #include "format/pak.h"
@@ -50,15 +51,20 @@ QUAKE FILESYSTEM
 #define MAX_FILE_HANDLES    1024
 
 #if USE_ZLIB
-#define ZIP_BUFSIZE     0x10000 // inflate in blocks of 64k
+#define ZIP_BUFSIZE     (1 << 16)   // inflate in blocks of 64k
+#define ZIP_MAXFILES    (1 << 20)   // 1 million files
 
-#define ZIP_SIZELOCALHEADER     30
-#define ZIP_SIZECENTRALHEADER   22
-#define ZIP_SIZECENTRALDIRITEM  46
+#define ZIP_SIZELOCALHEADER         30
+#define ZIP_SIZECENTRALHEADER       22
+#define ZIP_SIZECENTRALDIRITEM      46
+#define ZIP_SIZECENTRALLOCATOR64    20
+#define ZIP_SIZECENTRALHEADER64     56
 
 #define ZIP_LOCALHEADERMAGIC    0x04034b50
 #define ZIP_CENTRALHEADERMAGIC  0x02014b50
 #define ZIP_ENDHEADERMAGIC      0x06054b50
+#define ZIP_ENDHEADER64MAGIC    0x06064b50
+#define ZIP_LOCATOR64MAGIC      0x07064b50
 #endif
 
 #if USE_DEBUG
@@ -101,21 +107,21 @@ typedef enum {
 #if USE_ZLIB
 typedef struct {
     z_stream    stream;
-    unsigned    rest_in;
+    int64_t     rest_in;
     byte        buffer[ZIP_BUFSIZE];
 } zipstream_t;
 #endif
 
 typedef struct packfile_s {
-    char        *name;
-    unsigned    filepos;
-    unsigned    filelen;
+    int64_t     filepos;
+    int64_t     filelen;
 #if USE_ZLIB
-    unsigned    complen;
-    byte        compmtd;    // compression method, 0 (stored) or Z_DEFLATED
+    int64_t     complen;
+    uint16_t    compmtd;    // compression method, 0 (stored) or Z_DEFLATED
     bool        coherent;   // true if local file header has been checked
 #endif
-    byte        namelen;
+    uint8_t     namelen;
+    uint32_t    nameofs;
     struct packfile_s *hash_next;
 } packfile_t;
 
@@ -148,7 +154,7 @@ typedef struct {
     packfile_t  *entry;     // pack entry this handle is tied to
     pack_t      *pack;      // points to the pack entry is from
     int         error;      // stream error indicator from read/write operation
-    unsigned    rest_out;   // remaining unread length for FS_PAK/FS_ZIP
+    int64_t     rest_out;   // remaining unread length for FS_PAK/FS_ZIP
     int64_t     length;     // total cached file length
 } file_t;
 
@@ -203,7 +209,6 @@ static zipstream_t  fs_zipstream;
 
 static void open_zip_file(file_t *file);
 static void close_zip_file(file_t *file);
-static int tell_zip_file(file_t *file);
 static int read_zip_file(file_t *file, void *buf, size_t len);
 #endif
 
@@ -504,7 +509,7 @@ int64_t FS_Tell(qhandle_t f)
         return file->length - file->rest_out;
 #if USE_ZLIB
     case FS_ZIP:
-        return tell_zip_file(file);
+        return file->length - file->rest_out;
     case FS_GZ:
         ret = gztell(file->zfp);
         if (ret == -1) {
@@ -524,7 +529,10 @@ static int seek_pak_file(file_t *file, int64_t offset)
     if (offset > entry->filelen)
         offset = entry->filelen;
 
-    if (os_fseek(file->fp, entry->filepos + offset, SEEK_SET) == -1)
+    if (entry->filepos > INT64_MAX - offset)
+        return Q_ERR_INVAL;
+
+    if (os_fseek(file->fp, entry->filepos + offset, SEEK_SET))
         return Q_ERRNO;
 
     file->rest_out = entry->filelen - offset;
@@ -551,7 +559,7 @@ int FS_Seek(qhandle_t f, int64_t offset)
 
     switch (file->type) {
     case FS_REAL:
-        if (os_fseek(file->fp, offset, SEEK_SET) == -1) {
+        if (os_fseek(file->fp, offset, SEEK_SET)) {
             return Q_ERRNO;
         }
         return Q_ERR_SUCCESS;
@@ -780,7 +788,7 @@ static int64_t open_file_write_real(file_t *file, const char *fullpath, const ch
     switch (file->mode & FS_MODE_MASK) {
     case FS_MODE_RDWR:
         // seek to the end of file for appending
-        if (os_fseek(fp, 0, SEEK_END) == -1) {
+        if (os_fseek(fp, 0, SEEK_END)) {
             ret = Q_ERRNO;
             goto fail;
         }
@@ -914,37 +922,47 @@ static int check_header_coherency(FILE *fp, packfile_t *entry)
     unsigned ofs, flags, comp_mtd, comp_len, file_len, name_size, xtra_size;
     byte header[ZIP_SIZELOCALHEADER];
 
-    if (os_fseek(fp, entry->filepos, SEEK_SET) == -1)
+    if (entry->coherent)
+        return Q_ERR_SUCCESS;
+
+    if (entry->filelen < 0 || entry->complen < 0 || entry->filepos < 0)
+        return Q_ERR_INVAL;
+    if (entry->compmtd == 0 && entry->filelen != entry->complen)
+        return Q_ERR_INVAL;
+    if (entry->compmtd != 0 && entry->compmtd != Z_DEFLATED)
+        return Q_ERR_BAD_COMPRESSION;
+
+    if (os_fseek(fp, entry->filepos, SEEK_SET))
         return Q_ERRNO;
-    if (fread(header, 1, sizeof(header), fp) != sizeof(header))
+    if (!fread(header, sizeof(header), 1, fp))
         return FS_ERR_READ(fp);
 
     // check the magic
-    if (LittleLongMem(&header[0]) != ZIP_LOCALHEADERMAGIC)
+    if (RL32(&header[0]) != ZIP_LOCALHEADERMAGIC)
         return Q_ERR_NOT_COHERENT;
 
-    flags = LittleShortMem(&header[6]);
-    comp_mtd = LittleShortMem(&header[8]);
-    comp_len = LittleLongMem(&header[18]);
-    file_len = LittleLongMem(&header[22]);
-    name_size = LittleShortMem(&header[26]);
-    xtra_size = LittleShortMem(&header[28]);
+    flags     = RL16(&header[ 6]);
+    comp_mtd  = RL16(&header[ 8]);
+    comp_len  = RL32(&header[18]);
+    file_len  = RL32(&header[22]);
+    name_size = RL16(&header[26]);
+    xtra_size = RL16(&header[28]);
 
     if (comp_mtd != entry->compmtd)
         return Q_ERR_NOT_COHERENT;
 
     // bit 3 tells that file lengths were not known
     // at the time local header was written, so don't check them
-    if ((flags & 8) == 0) {
-        if (comp_len != entry->complen)
+    if (!(flags & 8)) {
+        if (comp_len != UINT32_MAX && comp_len != entry->complen)
             return Q_ERR_NOT_COHERENT;
-        if (file_len != entry->filelen)
+        if (file_len != UINT32_MAX && file_len != entry->filelen)
             return Q_ERR_NOT_COHERENT;
     }
 
     ofs = ZIP_SIZELOCALHEADER + name_size + xtra_size;
-    if (entry->filepos + entry->complen > INT_MAX - ofs)
-        return Q_ERR_NOT_COHERENT;
+    if (entry->filepos > INT64_MAX - ofs)
+        return Q_ERR_INVAL;
 
     entry->filepos += ofs;
     entry->coherent = true;
@@ -1000,13 +1018,6 @@ static void close_zip_file(file_t *file)
     Z_Free(s);
 
     fclose(file->fp);
-}
-
-static int tell_zip_file(file_t *file)
-{
-    zipstream_t *s = file->zfp;
-
-    return s->stream.total_out;
 }
 
 static int read_zip_file(file_t *file, void *buf, size_t len)
@@ -1077,7 +1088,7 @@ static int read_zip_file(file_t *file, void *buf, size_t len)
 #endif
 
 // open a new file on the pakfile
-static int64_t open_from_pak(file_t *file, pack_t *pack, packfile_t *entry)
+static int64_t open_from_pack(file_t *file, pack_t *pack, packfile_t *entry)
 {
     FILE *fp;
     int ret;
@@ -1094,7 +1105,7 @@ static int64_t open_from_pak(file_t *file, pack_t *pack, packfile_t *entry)
     }
 
 #if USE_ZLIB
-    if (pack->type == FS_ZIP && !entry->coherent) {
+    if (pack->type == FS_ZIP) {
         ret = check_header_coherency(fp, entry);
         if (ret) {
             goto fail2;
@@ -1102,7 +1113,7 @@ static int64_t open_from_pak(file_t *file, pack_t *pack, packfile_t *entry)
     }
 #endif
 
-    if (os_fseek(fp, entry->filepos, SEEK_SET) == -1) {
+    if (os_fseek(fp, entry->filepos, SEEK_SET)) {
         ret = Q_ERRNO;
         goto fail2;
     }
@@ -1137,7 +1148,7 @@ static int64_t open_from_pak(file_t *file, pack_t *pack, packfile_t *entry)
     }
 
     FS_DPrintf("%s: %s/%s: %"PRId64" bytes\n",
-               __func__, pack->filename, entry->name, file->length);
+               __func__, pack->filename, pack->names + entry->nameofs, file->length);
 
     return file->length;
 
@@ -1146,7 +1157,7 @@ fail2:
         fclose(fp);
     }
 fail1:
-    FS_DPrintf("%s: %s/%s: %s\n", __func__, pack->filename, entry->name, Q_ErrorString(ret));
+    FS_DPrintf("%s: %s/%s: %s\n", __func__, pack->filename, pack->names + entry->nameofs, Q_ErrorString(ret));
     return ret;
 }
 
@@ -1162,26 +1173,26 @@ static int check_for_gzip(file_t *file, const char *fullpath)
     }
 
     // read magic
-    if (fread(&magic, 1, 4, file->fp) != 4) {
+    if (!fread(&magic, sizeof(magic), 1, file->fp)) {
         return FS_ERR_READ(file->fp);
     }
 
     // check for gzip header
     if ((LittleLong(magic) & 0xe0ffffff) != 0x00088b1f) {
         // rewind back to beginning
-        if (os_fseek(file->fp, 0, SEEK_SET) == -1) {
+        if (os_fseek(file->fp, 0, SEEK_SET)) {
             return Q_ERRNO;
         }
         return 0;
     }
 
     // seek to the trailer
-    if (os_fseek(file->fp, file->length - 4, SEEK_SET) == -1) {
+    if (os_fseek(file->fp, file->length - 4, SEEK_SET)) {
         return Q_ERRNO;
     }
 
     // read uncompressed length
-    if (fread(&length, 1, 4, file->fp) != 4) {
+    if (!fread(&length, sizeof(length), 1, file->fp)) {
         return FS_ERR_READ(file->fp);
     }
 
@@ -1299,9 +1310,9 @@ static int64_t open_file_read(file_t *file, const char *normalized, size_t namel
                 }
 #endif
                 FS_COUNT_STRCMP;
-                if (!FS_pathcmp(entry->name, normalized)) {
+                if (!FS_pathcmp(pak->names + entry->nameofs, normalized)) {
                     // found it!
-                    return open_from_pak(file, pak, entry);
+                    return open_from_pack(file, pak, entry);
                 }
             }
         } else {
@@ -1950,36 +1961,40 @@ static void pack_put(pack_t *pack)
     }
 }
 
-// allocates pack_t instance along with filenames and hashes
+// allocates pack_t instance along with filenames
 static pack_t *pack_alloc(FILE *fp, filetype_t type, const char *name,
                           unsigned num_files, size_t names_len)
 {
     pack_t *pack;
 
-    pack = FS_Malloc(sizeof(pack_t) + strlen(name));
+    pack = FS_Malloc(sizeof(*pack) + strlen(name));
     pack->type = type;
     pack->refcount = 0;
     pack->fp = fp;
     pack->num_files = num_files;
-    pack->hash_size = npot32(num_files / 3);
-    pack->files = FS_Malloc(num_files * sizeof(packfile_t));
-    pack->file_hash = FS_Mallocz(pack->hash_size * sizeof(packfile_t *));
+    pack->files = FS_Malloc(num_files * sizeof(pack->files[0]));
+    pack->hash_size = 0;
+    pack->file_hash = NULL;
     pack->names = FS_Malloc(names_len);
     strcpy(pack->filename, name);
 
     return pack;
 }
 
-// normalizes and inserts the filename into hash table
-static void pack_hash_file(pack_t *pack, packfile_t *file)
+// allocates hash table and inserts all filenames into it
+static void pack_calc_hashes(pack_t *pack)
 {
-    unsigned hash;
+    packfile_t *file;
+    int i;
 
-    file->namelen = FS_NormalizePath(file->name);
+    pack->hash_size = npot32(pack->num_files / 3);
+    pack->file_hash = FS_Mallocz(pack->hash_size * sizeof(pack->file_hash[0]));
 
-    hash = FS_HashPath(file->name, pack->hash_size);
-    file->hash_next = pack->file_hash[hash];
-    pack->file_hash[hash] = file;
+    for (i = 0, file = pack->files; i < pack->num_files; i++, file++) {
+        unsigned hash = FS_HashPath(pack->names + file->nameofs, pack->hash_size);
+        file->hash_next = pack->file_hash[hash];
+        pack->file_hash[hash] = file;
+    }
 }
 
 // Loads the header and directory, adding the files at the beginning
@@ -1998,47 +2013,47 @@ static pack_t *load_pak_file(const char *packfile)
 
     fp = fopen(packfile, "rb");
     if (!fp) {
-        Com_WPrintf("Couldn't open %s: %s\n", packfile, strerror(errno));
+        Com_SetLastError(strerror(errno));
         return NULL;
     }
 
-    if (fread(&header, 1, sizeof(header), fp) != sizeof(header)) {
-        Com_WPrintf("Reading header failed on %s\n", packfile);
+    if (!fread(&header, sizeof(header), 1, fp)) {
+        Com_SetLastError("reading header failed");
         goto fail;
     }
 
     if (LittleLong(header.ident) != IDPAKHEADER) {
-        Com_WPrintf("%s is not a 'PACK' file\n", packfile);
+        Com_SetLastError("bad header ident");
         goto fail;
     }
 
     header.dirlen = LittleLong(header.dirlen);
     if (header.dirlen % sizeof(dpackfile_t)) {
-        Com_WPrintf("%s has bad directory length\n", packfile);
+        Com_SetLastError("bad directory length");
         goto fail;
     }
 
     num_files = header.dirlen / sizeof(dpackfile_t);
     if (num_files < 1) {
-        Com_WPrintf("%s has no files\n", packfile);
+        Com_SetLastError("no files");
         goto fail;
     }
     if (num_files > MAX_FILES_IN_PACK) {
-        Com_WPrintf("%s has too many files: %u > %u\n", packfile, num_files, MAX_FILES_IN_PACK);
+        Com_SetLastError("too many files");
         goto fail;
     }
 
     header.dirofs = LittleLong(header.dirofs);
     if (header.dirofs > INT_MAX) {
-        Com_WPrintf("%s has bad directory offset\n", packfile);
+        Com_SetLastError("bad directory offset");
         goto fail;
     }
     if (os_fseek(fp, header.dirofs, SEEK_SET)) {
-        Com_WPrintf("Seeking to directory failed on %s\n", packfile);
+        Com_SetLastError("seeking to directory failed");
         goto fail;
     }
-    if (fread(info, 1, header.dirlen, fp) != header.dirlen) {
-        Com_WPrintf("Reading directory failed on %s\n", packfile);
+    if (!fread(info, header.dirlen, 1, fp)) {
+        Com_SetLastError("reading directory failed");
         goto fail;
     }
 
@@ -2047,11 +2062,10 @@ static pack_t *load_pak_file(const char *packfile)
         dfile->filepos = LittleLong(dfile->filepos);
         dfile->filelen = LittleLong(dfile->filelen);
         if (dfile->filelen > INT_MAX || dfile->filepos > INT_MAX - dfile->filelen) {
-            Com_WPrintf("%s has bad directory structure\n", packfile);
+            Com_SetLastError("file length or position too big");
             goto fail;
         }
-        dfile->name[sizeof(dfile->name) - 1] = 0;
-        names_len += strlen(dfile->name) + 1;
+        names_len += Q_strnlen(dfile->name, sizeof(dfile->name)) + 1;
     }
 
 // allocate the pack
@@ -2061,20 +2075,25 @@ static pack_t *load_pak_file(const char *packfile)
     file = pack->files;
     name = pack->names;
     for (i = 0, dfile = info; i < num_files; i++, dfile++) {
-        len = strlen(dfile->name) + 1;
+        len = Q_strnlen(dfile->name, sizeof(dfile->name));
+        memcpy(name, dfile->name, len);
+        name[len] = 0;
 
-        file->name = memcpy(name, dfile->name, len);
-        name += len;
+        file->namelen = FS_NormalizePath(name);
+        file->nameofs = name - pack->names;
+        name += file->namelen + 1;
 
         file->filepos = dfile->filepos;
         file->filelen = dfile->filelen;
 #if USE_ZLIB
+        file->complen = file->filelen;
+        file->compmtd = 0;
         file->coherent = true;
 #endif
-
-        pack_hash_file(pack, file);
         file++;
     }
+
+    pack_calc_hashes(pack);
 
     FS_DPrintf("%s: %u files, %u hash\n",
                packfile, pack->num_files, pack->hash_size);
@@ -2088,26 +2107,31 @@ fail:
 
 #if USE_ZLIB
 
-static unsigned search_central_header(FILE *fp)
+static int64_t search_central_header(FILE *fp)
 {
-    unsigned read_size, read_pos;
-    byte buf[ZIP_SIZECENTRALHEADER + 0xffff];
-    uint32_t magic = 0;
-    int64_t ret;
+    byte buf[0xffff];
+    uint32_t magic;
+    int64_t ret, read_pos;
+    int read_size;
 
-    if (os_fseek(fp, 0, SEEK_END) == -1)
+    // fast case (no global comment)
+    if (os_fseek(fp, -ZIP_SIZECENTRALHEADER, SEEK_END))
         return 0;
-
     ret = os_ftell(fp);
-    if (ret < ZIP_SIZECENTRALHEADER || ret > INT_MAX)
+    if (ret < 0)
         return 0;
+    if (!fread(&magic, sizeof(magic), 1, fp))
+        return 0;
+    if (LittleLong(magic) == ZIP_ENDHEADERMAGIC)
+        return ret;
 
+    // slow generic case (global comment of unknown length)
     read_size = min(ret, sizeof(buf));
     read_pos = ret - read_size;
 
-    if (os_fseek(fp, read_pos, SEEK_SET) == -1)
+    if (os_fseek(fp, read_pos, SEEK_SET))
         return 0;
-    if (fread(buf, 1, read_size, fp) != read_size)
+    if (!fread(buf, read_size, 1, fp))
         return 0;
 
     for (int i = read_size - 1; i >= 0; i--) {
@@ -2119,73 +2143,142 @@ static unsigned search_central_header(FILE *fp)
     return 0;
 }
 
-static unsigned get_file_info(FILE *fp, unsigned pos, packfile_t *file, size_t *len, size_t remaining)
+static int64_t search_central_header64(FILE *fp, int64_t header_pos)
+{
+    byte header[ZIP_SIZECENTRALLOCATOR64];
+    uint32_t magic;
+    int64_t pos;
+
+    if (header_pos < sizeof(header))
+        return 0;
+    if (os_fseek(fp, header_pos - sizeof(header), SEEK_SET))
+        return 0;
+    if (!fread(header, sizeof(header), 1, fp))
+        return 0;
+    if (RL32(&header[0]) != ZIP_LOCATOR64MAGIC)
+        return 0;
+    if (RL32(&header[4]) != 0)
+        return 0;
+    if (RL32(&header[16]) != 1)
+        return 0;
+    // FIXME: this won't work if there is prepended data
+    pos = RL64(&header[8]);
+    if (os_fseek(fp, pos, SEEK_SET))
+        return 0;
+    if (!fread(&magic, sizeof(magic), 1, fp))
+        return 0;
+    if (LittleLong(magic) != ZIP_ENDHEADER64MAGIC)
+        return 0;
+    return pos;
+}
+
+static bool parse_zip64_extra_data(packfile_t *file, const byte *buf, int size)
+{
+    int need =
+        (file->filelen == UINT32_MAX) +
+        (file->complen == UINT32_MAX) +
+        (file->filepos == UINT32_MAX);
+
+    if (size < need * 8)
+        return false;
+
+    if (file->filelen == UINT32_MAX)
+        file->filelen = RL64(buf), buf += 8;
+
+    if (file->complen == UINT32_MAX)
+        file->complen = RL64(buf), buf += 8;
+
+    if (file->filepos == UINT32_MAX)
+        file->filepos = RL64(buf), buf += 8;
+
+    return true;
+}
+
+static bool parse_extra_data(pack_t *pack, packfile_t *file, int xtra_size)
+{
+    byte buf[0xffff];
+    int pos = 0;
+
+    if (!fread(buf, xtra_size, 1, pack->fp))
+        return false;
+
+    while (pos + 4 < xtra_size) {
+        int id   = RL16(&buf[pos+0]);
+        int size = RL16(&buf[pos+2]);
+        if (pos + 4 + size > xtra_size)
+            break;
+        if (id == 0x0001)
+            return parse_zip64_extra_data(file, &buf[pos+4], size);
+        pos += 4 + size;
+    }
+
+    return false;
+}
+
+static bool get_file_info(pack_t *pack, packfile_t *file, char *name, size_t *len, bool zip64)
 {
     unsigned comp_mtd, comp_len, file_len, name_size, xtra_size, comm_size, file_pos;
     byte header[ZIP_SIZECENTRALDIRITEM]; // we can't use a struct here because of packing
 
     *len = 0;
 
-    if (pos > INT_MAX)
-        return 0;
-    if (os_fseek(fp, pos, SEEK_SET) == -1)
-        return 0;
-    if (fread(header, 1, sizeof(header), fp) != sizeof(header))
-        return 0;
+    if (!fread(header, sizeof(header), 1, pack->fp)) {
+        Com_SetLastError("reading central directory failed");
+        return false;
+    }
 
     // check the magic
-    if (LittleLongMem(&header[0]) != ZIP_CENTRALHEADERMAGIC)
-        return 0;
+    if (RL32(&header[0]) != ZIP_CENTRALHEADERMAGIC) {
+        Com_SetLastError("bad central directory magic");
+        return false;
+    }
 
-    comp_mtd = LittleShortMem(&header[10]);
-    comp_len = LittleLongMem(&header[20]);
-    file_len = LittleLongMem(&header[24]);
-    name_size = LittleShortMem(&header[28]);
-    xtra_size = LittleShortMem(&header[30]);
-    comm_size = LittleShortMem(&header[32]);
-    file_pos = LittleLongMem(&header[42]);
+    comp_mtd  = RL16(&header[10]);
+    comp_len  = RL32(&header[20]);
+    file_len  = RL32(&header[24]);
+    name_size = RL16(&header[28]);
+    xtra_size = RL16(&header[30]);
+    comm_size = RL16(&header[32]);
+    file_pos  = RL32(&header[42]);
 
-    if (file_len > INT_MAX || comp_len > INT_MAX || file_pos > INT_MAX - comp_len)
-        return 0;
-
-    if (!file_len || !comp_len) {
+    if (!file_len || !comp_len || !name_size || name_size >= MAX_QPATH) {
         goto skip; // skip directories and empty files
-    }
-    if (!comp_mtd) {
-        if (file_len != comp_len) {
-            FS_DPrintf("%s: skipping file stored with file_len != comp_len\n", __func__);
-            goto skip;
-        }
-    } else if (comp_mtd != Z_DEFLATED) {
-        FS_DPrintf("%s: skipping file compressed with unknown method\n", __func__);
-        goto skip;
-    }
-    if (!name_size) {
-        FS_DPrintf("%s: skipping file with empty name\n", __func__);
-        goto skip;
-    }
-    if (name_size >= MAX_QPATH) {
-        FS_DPrintf("%s: skipping file with oversize name\n", __func__);
-        goto skip;
     }
 
     // fill in the info
-    if (file) {
-        if (name_size >= remaining)
-            return 0; // directory changed on disk?
-        file->compmtd = comp_mtd;
-        file->complen = comp_len;
-        file->filelen = file_len;
-        file->filepos = file_pos;
-        if (fread(file->name, 1, name_size, fp) != name_size)
-            return 0;
-        file->name[name_size] = 0;
+    file->compmtd = comp_mtd;
+    file->complen = comp_len;
+    file->filelen = file_len;
+    file->filepos = file_pos;
+    if (!fread(name, name_size, 1, pack->fp)) {
+        Com_SetLastError("reading central directory failed");
+        return false;
+    }
+    name[name_size] = 0;
+    name_size = 0;
+
+    if (file_pos == UINT32_MAX || file_len == UINT32_MAX || comp_len == UINT32_MAX) {
+        if (!zip64) {
+            Com_SetLastError("file length or position too big");
+            return false;
+        }
+        if (!parse_extra_data(pack, file, xtra_size)) {
+            Com_SetLastError("parsing zip64 extra data failed");
+            return false;
+        }
+        xtra_size = 0;
     }
 
-    *len = name_size + 1;
+    file->namelen = FS_NormalizePath(name);
+    *len = file->namelen + 1;
 
 skip:
-    return ZIP_SIZECENTRALDIRITEM + name_size + xtra_size + comm_size;
+    if (os_fseek(pack->fp, name_size + xtra_size + comm_size, SEEK_CUR)) {
+        Com_SetLastError("seeking to central directory failed");
+        return false;
+    }
+
+    return true;
 }
 
 static pack_t *load_zip_file(const char *packfile)
@@ -2193,124 +2286,132 @@ static pack_t *load_zip_file(const char *packfile)
     packfile_t      *file;
     char            *name;
     size_t          len, names_len;
-    unsigned        i, num_disk, num_disk_cd, num_files, num_files_cd;
-    unsigned        header_pos, central_ofs, central_size, central_end;
-    unsigned        extra_bytes, ofs;
+    uint32_t        num_disk, num_disk_cd;
+    uint64_t        num_files, num_files_cd, central_ofs, central_size, central_end;
+    int64_t         header_pos, extra_bytes, zip64;
     pack_t          *pack;
     FILE            *fp;
-    byte            header[ZIP_SIZECENTRALHEADER];
+    byte            header[ZIP_SIZECENTRALHEADER64];
+    int             i, header_size;
 
     fp = fopen(packfile, "rb");
     if (!fp) {
-        Com_WPrintf("Couldn't open %s: %s\n", packfile, strerror(errno));
+        Com_SetLastError(strerror(errno));
         return NULL;
     }
 
     header_pos = search_central_header(fp);
     if (!header_pos) {
-        Com_WPrintf("No central header found in %s\n", packfile);
-        goto fail2;
-    }
-    if (os_fseek(fp, header_pos, SEEK_SET) == -1) {
-        Com_WPrintf("Couldn't seek to central header in %s\n", packfile);
-        goto fail2;
-    }
-    if (fread(header, 1, sizeof(header), fp) != sizeof(header)) {
-        Com_WPrintf("Reading central header failed on %s\n", packfile);
+        Com_SetLastError("no central header found");
         goto fail2;
     }
 
-    num_disk = LittleShortMem(&header[4]);
-    num_disk_cd = LittleShortMem(&header[6]);
-    num_files = LittleShortMem(&header[8]);
-    num_files_cd = LittleShortMem(&header[10]);
+    zip64 = search_central_header64(fp, header_pos);
+    if (zip64) {
+        header_pos = zip64;
+        header_size = ZIP_SIZECENTRALHEADER64;
+    } else {
+        header_size = ZIP_SIZECENTRALHEADER;
+    }
+
+    if (os_fseek(fp, header_pos, SEEK_SET)) {
+        Com_SetLastError("seeking to central header failed");
+        goto fail2;
+    }
+    if (!fread(header, header_size, 1, fp)) {
+        Com_SetLastError("reading central header failed");
+        goto fail2;
+    }
+
+    if (zip64) {
+        num_disk     = RL32(&header[16]);
+        num_disk_cd  = RL32(&header[20]);
+        num_files    = RL64(&header[24]);
+        num_files_cd = RL64(&header[32]);
+        central_size = RL64(&header[40]);
+        central_ofs  = RL64(&header[48]);
+    } else {
+        num_disk     = RL16(&header[ 4]);
+        num_disk_cd  = RL16(&header[ 6]);
+        num_files    = RL16(&header[ 8]);
+        num_files_cd = RL16(&header[10]);
+        central_size = RL32(&header[12]);
+        central_ofs  = RL32(&header[16]);
+    }
+
     if (num_files_cd != num_files || num_disk_cd != 0 || num_disk != 0) {
-        Com_WPrintf("%s is an unsupported multi-part archive\n", packfile);
+        Com_SetLastError("unsupported multi-part archive");
         goto fail2;
     }
-    if (num_files < 1) {
-        Com_WPrintf("%s has no files\n", packfile);
+    if (num_files_cd < 1) {
+        Com_SetLastError("no files");
         goto fail2;
     }
-    if (num_files == 0xffff) {
-        // this might be unsupported ZIP64 archive
-        Com_WPrintf("%s has too many files\n", packfile);
+    if (num_files_cd > ZIP_MAXFILES) {
+        Com_SetLastError("too many files");
         goto fail2;
     }
 
-    central_size = LittleLongMem(&header[12]);
-    central_ofs = LittleLongMem(&header[16]);
     central_end = central_ofs + central_size;
     if (central_end > header_pos || central_end < central_ofs) {
-        Com_WPrintf("%s has bad central directory offset\n", packfile);
+        Com_SetLastError("bad central directory offset");
         goto fail2;
     }
 
 // non-zero for sfx?
     extra_bytes = header_pos - central_end;
     if (extra_bytes) {
-        Com_WPrintf("%s has %d extra bytes at the beginning\n", packfile, extra_bytes);
+        Com_WPrintf("%s has %"PRId64" extra bytes at the beginning\n", packfile, extra_bytes);
     }
 
-// parse the directory
-    num_files = 0;
-    names_len = 0;
-    header_pos = central_ofs + extra_bytes;
-    for (i = 0; i < num_files_cd; i++) {
-        ofs = get_file_info(fp, header_pos, NULL, &len, 0);
-        if (!ofs) {
-            Com_WPrintf("%s has bad central directory structure (pass %d)\n", packfile, 1);
-            goto fail2;
-        }
-        header_pos += ofs;
-
-        if (len) {
-            names_len += len;
-            num_files++;
-        }
-    }
-
-    if (!num_files) {
-        Com_WPrintf("%s has no valid files\n", packfile);
+    if (os_fseek(fp, central_ofs + extra_bytes, SEEK_SET)) {
+        Com_SetLastError("seeking to central directory failed");
         goto fail2;
     }
 
 // allocate the pack
-    pack = pack_alloc(fp, FS_ZIP, packfile, num_files, names_len);
+    pack = pack_alloc(fp, FS_ZIP, packfile, num_files_cd, num_files_cd * MAX_QPATH);
 
 // parse the directory
     file = pack->files;
     name = pack->names;
-    header_pos = central_ofs + extra_bytes;
     for (i = 0; i < num_files_cd; i++) {
-        if (!num_files)
-            break;
-        file->name = name;
-        ofs = get_file_info(fp, header_pos, file, &len, names_len);
-        if (!ofs) {
-            Com_WPrintf("%s has bad central directory structure (pass %d)\n", packfile, 2);
-            goto fail1; // directory changed on disk?
+        if (!get_file_info(pack, file, name, &len, zip64)) {
+            goto fail1;
         }
-        header_pos += ofs;
-
         if (len) {
             // fix absolute position
+            if (file->filepos > INT64_MAX - extra_bytes) {
+                Com_SetLastError("bad file position");
+                goto fail1;
+            }
             file->filepos += extra_bytes;
             file->coherent = false;
+            file->nameofs = name - pack->names;
 
-            pack_hash_file(pack, file);
-
-            // advance pointers, decrement counters
+            // advance pointers
             file++;
-            num_files--;
-
             name += len;
-            names_len -= len;
         }
     }
 
-    FS_DPrintf("%s: %u files, %u skipped, %u hash\n",
-               packfile, pack->num_files, num_files_cd - pack->num_files, pack->hash_size);
+    num_files = file - pack->files;
+    names_len = name - pack->names;
+
+    if (!num_files) {
+        Com_SetLastError("no valid files");
+        goto fail1;
+    }
+
+    pack->num_files = num_files;
+    pack->files = Z_Realloc(pack->files, sizeof(pack->files[0]) * num_files);
+    pack->names = Z_Realloc(pack->names, names_len);
+
+    pack_calc_hashes(pack);
+
+    FS_DPrintf("%s: %u files, %u skipped, %u hash%s\n",
+               packfile, pack->num_files, (int)(num_files_cd - num_files),
+               pack->hash_size, zip64 ? ", zip64" : "");
 
     return pack;
 
@@ -2380,7 +2481,7 @@ static void q_printf(2, 3) add_game_dir(unsigned mode, const char *fmt, ...)
 #endif
 
     // add the directory to the search path
-    search = FS_Malloc(sizeof(searchpath_t) + len);
+    search = FS_Malloc(sizeof(*search) + len);
     search->mode = mode;
     search->pack = NULL;
     memcpy(search->filename, fs_gamedir, len + 1);
@@ -2414,9 +2515,11 @@ static void q_printf(2, 3) add_game_dir(unsigned mode, const char *fmt, ...)
         else
 #endif
             pack = load_pak_file(path);
-        if (!pack)
+        if (!pack) {
+            Com_EPrintf("Couldn't load %s: %s\n", path, Com_GetLastError());
             continue;
-        search = FS_Malloc(sizeof(searchpath_t));
+        }
+        search = FS_Malloc(sizeof(*search));
         search->mode = mode;
         search->filename[0] = 0;
         search->pack = pack_get(pack);
@@ -2526,6 +2629,7 @@ FS_ListFiles
 void **FS_ListFiles(const char *path, const char *filter, unsigned flags, int *count_p)
 {
     searchpath_t    *search;
+    pack_t          *pack;
     packfile_t      *file;
     void            *info;
     int             i, j, total;
@@ -2571,9 +2675,10 @@ void **FS_ListFiles(const char *path, const char *filter, unsigned flags, int *c
                 continue; // don't search in paks
             }
 
-            for (i = 0; i < search->pack->num_files; i++) {
-                file = &search->pack->files[i];
-                s = file->name;
+            pack = search->pack;
+            for (i = 0; i < pack->num_files; i++) {
+                file = &pack->files[i];
+                s = pack->names + file->nameofs;
 
                 // check path
                 if (pathlen) {
@@ -2923,9 +3028,9 @@ recheck:
                 if (entry->namelen != namelen) {
                     continue;
                 }
-                if (!FS_pathcmp(entry->name, normalized)) {
+                if (!FS_pathcmp(pak->names + entry->nameofs, normalized)) {
                     // found it!
-                    Com_Printf("%s/%s (%d bytes)\n", pak->filename,
+                    Com_Printf("%s/%s (%"PRId64" bytes)\n", pak->filename,
                                normalized, entry->filelen);
                     if (!report_all) {
                         return;
@@ -3101,7 +3206,7 @@ static void FS_Stats_f(void)
     if (max) {
         Com_Printf("Dumping longest bucket (%s):\n", maxpack->filename);
         for (file = max; file; file = file->hash_next) {
-            Com_Printf("%s\n", file->name);
+            Com_Printf("%s\n", maxpack->names + file->nameofs);
         }
     }
 }

@@ -449,7 +449,6 @@ char *Q_strcasestr(const char *s1, const char *s2);
 char *Q_strchrnul(const char *s, int c);
 void *Q_memccpy(void *dst, const void *src, int c, size_t size);
 size_t Q_strnlen(const char *s, size_t maxlen);
-void Q_setenv(const char *name, const char *value);
 
 char *COM_SkipPath(const char *pathname);
 size_t COM_StripExtension(char *out, const char *in, size_t size);
@@ -538,9 +537,6 @@ static inline float FloatSwap(float f)
 #else
 #error Unknown byte order
 #endif
-
-#define LittleLongMem(p) (((unsigned)(p)[3]<<24)|((p)[2]<<16)|((p)[1]<<8)|(p)[0])
-#define LittleShortMem(p) (((p)[1]<<8)|(p)[0])
 
 #define MakeLittleLong(b1,b2,b3,b4) (((unsigned)(b4)<<24)|((b3)<<16)|((b2)<<8)|(b1))
 

@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // snd_dma.c -- main control for any streaming sound output device
 
 #include "sound.h"
+#include "common/intreadwrite.h"
 
 #define PAINTBUFFER_SIZE    2048
 
@@ -65,7 +66,7 @@ static sfxcache_t *DMA_UploadSfx(sfx_t *sfx)
     }
 
     int size = outcount * s_info.width * s_info.channels;
-    sfxcache_t *sc = sfx->cache = S_Malloc(sizeof(sfxcache_t) + size - 1);
+    sfxcache_t *sc = sfx->cache = S_Malloc(sizeof(*sc) + size - 1);
 
     sc->length = outcount;
     sc->loopstart = s_info.loopstart == -1 ? -1 : s_info.loopstart / stepscale;
@@ -79,7 +80,7 @@ static sfxcache_t *DMA_UploadSfx(sfx_t *sfx)
     else if (sc->width == 1 && sc->channels == 1)
         RESAMPLE sc->data[i] = s_info.data[j];
     else if (sc->width == 2 && sc->channels == 2)
-        RESAMPLE memcpy(sc->data + i * 4, s_info.data + j * 4, 4);
+        RESAMPLE WL32(sc->data + i * 4, RL32(s_info.data + j * 4));
     else
         RESAMPLE ((uint16_t *)sc->data)[i] = ((uint16_t *)s_info.data)[j];
 
@@ -432,7 +433,7 @@ static void PaintChannels(int endtime)
         }
 
         // clear the paint buffer
-        memset(paintbuffer, 0, (end - s_paintedtime) * sizeof(samplepair_t));
+        memset(paintbuffer, 0, (end - s_paintedtime) * sizeof(paintbuffer[0]));
 
         // paint in the channels.
         for (i = 0, ch = s_channels; i < s_numchannels; i++, ch++) {
