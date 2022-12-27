@@ -712,6 +712,45 @@ static void Com_MdfourTest_f(void)
     Com_Printf("%d failures, %d strings tested\n", errors, tests);
 }
 
+static void Com_MdfourSum_f(void)
+{
+    uint8_t digest[16];
+    struct mdfour md;
+    qhandle_t f;
+    int64_t len;
+
+    if (Cmd_Argc() < 2) {
+        Com_Printf("Usage: %s <file>\n", Cmd_Argv(0));
+        return;
+    }
+
+    len = FS_FOpenFile(Cmd_Argv(1), &f, FS_MODE_READ);
+    if (!f) {
+        Com_Printf("Couldn't open %s: %s\n", Cmd_Argv(1), Q_ErrorString(len));
+        return;
+    }
+
+    mdfour_begin(&md);
+    while (len > 0) {
+        uint8_t buf[1 << 16];
+        int n = min(len, sizeof(buf));
+        if (FS_Read(buf, n, f) != n) {
+            Com_Printf("Read error\n");
+            goto fail;
+        }
+        mdfour_update(&md, buf, n);
+        len -= n;
+    }
+
+    mdfour_result(&md, digest);
+    for (int i = 0; i < 16; i++)
+        Com_Printf("%02x", digest[i]);
+    Com_Printf("\n");
+
+fail:
+    FS_FCloseFile(f);
+}
+
 typedef struct {
     const char *ext;
     const char *name;
@@ -771,5 +810,6 @@ void TST_Init(void)
     Cmd_AddCommand("soundtest", Com_TestSounds_f);
 #endif
     Cmd_AddCommand("mdfourtest", Com_MdfourTest_f);
+    Cmd_AddCommand("mdfoursum", Com_MdfourSum_f);
     Cmd_AddCommand("extcmptest", Com_ExtCmpTest_f);
 }

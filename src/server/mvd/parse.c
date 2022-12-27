@@ -840,8 +840,7 @@ void MVD_ClearState(mvd_t *mvd, bool full)
     }
     mvd->numsnapshots = 0;
 
-    Z_Free(mvd->snapshots);
-    mvd->snapshots = NULL;
+    Z_Freep(&mvd->snapshots);
 
     // free current map
     CM_FreeMap(&mvd->cm);
@@ -969,7 +968,7 @@ static void MVD_ParseServerData(mvd_t *mvd, int extrabits)
         Z_Free(mvd->players);
 
         // allocate new players
-        mvd->players = MVD_Mallocz(sizeof(mvd_player_t) * index);
+        mvd->players = MVD_Mallocz(sizeof(mvd->players[0]) * index);
         mvd->maxclients = index;
 
         // clear chase targets
