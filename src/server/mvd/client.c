@@ -133,8 +133,7 @@ void MVD_StopRecord(mvd_t *mvd)
     FS_FCloseFile(mvd->demorecording);
     mvd->demorecording = 0;
 
-    Z_Free(mvd->demoname);
-    mvd->demoname = NULL;
+    Z_Freep(&mvd->demoname);
 }
 
 static void MVD_Free(mvd_t *mvd)
@@ -219,7 +218,7 @@ static mvd_t *find_local_channel(void)
 
     FOR_EACH_MVD(mvd) {
         FOR_EACH_MVDCL(client, mvd) {
-            if (NET_IsLocalAddress(&client->cl->netchan->remote_address)) {
+            if (NET_IsLocalAddress(&client->cl->netchan.remote_address)) {
                 return mvd;
             }
         }
@@ -2607,11 +2606,8 @@ void MVD_Shutdown(void)
     List_Init(&mvd_gtv_list);
     List_Init(&mvd_channel_list);
 
-    Z_Free(mvd_clients);
-    mvd_clients = NULL;
-
-    Z_Free(mvd_ge.edicts);
-    mvd_ge.edicts = NULL;
+    Z_Freep(&mvd_clients);
+    Z_Freep(&mvd_ge.edicts);
 
     mvd_chanid = 0;
 

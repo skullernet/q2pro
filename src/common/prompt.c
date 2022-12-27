@@ -399,10 +399,7 @@ void Prompt_CompleteHistory(commandPrompt_t *prompt, bool forward)
 void Prompt_ClearState(commandPrompt_t *prompt)
 {
     prompt->tooMany = false;
-    if (prompt->search) {
-        Z_Free(prompt->search);
-        prompt->search = NULL;
-    }
+    Z_Freep(&prompt->search);
 }
 
 /*
@@ -427,9 +424,7 @@ char *Prompt_Action(commandPrompt_t *prompt)
     i = prompt->inputLineNum & HISTORY_MASK;
     j = (prompt->inputLineNum - 1) & HISTORY_MASK;
     if (!prompt->history[j] || strcmp(prompt->history[j], s)) {
-        if (prompt->history[i]) {
-            Z_Free(prompt->history[i]);
-        }
+        Z_Free(prompt->history[i]);
         prompt->history[i] = Z_CopyString(s);
         prompt->inputLineNum++;
     } else {
@@ -458,9 +453,7 @@ void Prompt_HistoryUp(commandPrompt_t *prompt)
     if (prompt->historyLineNum == prompt->inputLineNum) {
         // save current line in history
         i = prompt->inputLineNum & HISTORY_MASK;
-        if (prompt->history[i]) {
-            Z_Free(prompt->history[i]);
-        }
+        Z_Free(prompt->history[i]);
         prompt->history[i] = Z_CopyString(prompt->inputLine.text);
     }
 
@@ -506,10 +499,7 @@ void Prompt_Clear(commandPrompt_t *prompt)
     Prompt_ClearState(prompt);
 
     for (i = 0; i < HISTORY_SIZE; i++) {
-        if (prompt->history[i]) {
-            Z_Free(prompt->history[i]);
-            prompt->history[i] = NULL;
-        }
+        Z_Freep(&prompt->history[i]);
     }
 
     prompt->historyLineNum = 0;
@@ -563,9 +553,7 @@ void Prompt_LoadHistory(commandPrompt_t *prompt, const char *filename)
         if ((len = FS_ReadLine(f, buffer, sizeof(buffer))) < 1) {
             break;
         }
-        if (prompt->history[i]) {
-            Z_Free(prompt->history[i]);
-        }
+        Z_Free(prompt->history[i]);
         prompt->history[i] = memcpy(Z_Malloc(len + 1), buffer, len + 1);
     }
 

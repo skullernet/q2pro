@@ -1,11 +1,11 @@
 [wrap-file]
-directory = curl-7.86.0
-source_url = https://curl.haxx.se/download/curl-7.86.0.tar.xz
-source_filename = curl-7.86.0.tar.xz
-source_hash = 2d61116e5f485581f6d59865377df4463f2e788677ac43222b496d4e49fb627b
-patch_url = https://skuller.net/meson/libcurl_7.86.0-2_patch.zip
-patch_filename = libcurl_7.86.0-2_patch.zip
-patch_hash = 32962b964ef295c75ee87fa5e308b1bfe76a1a3e34ffaf504dabab08ce2588dd
+directory = curl-7.87.0
+source_url = https://curl.haxx.se/download/curl-7.87.0.tar.xz
+source_filename = curl-7.87.0.tar.xz
+source_hash = ee5f1a1955b0ed413435ef79db28b834ea5f0fb7c8cfb1ce47175cc3bee08fff
+patch_url = https://skuller.net/meson/libcurl_7.87.0-1_patch.zip
+patch_filename = libcurl_7.87.0-1_patch.zip
+patch_hash = 4ace7dd7461cf79579ea43678dce33f4041c0af069759a9d6c0677761982dae1
 
 [provide]
 libcurl = libcurl_dep

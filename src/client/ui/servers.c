@@ -1054,10 +1054,7 @@ static bool Push(menuFrameWork_t *self)
 static void Pop(menuFrameWork_t *self)
 {
     ClearServers();
-    if (m_servers.args) {
-        Z_Free(m_servers.args);
-        m_servers.args = NULL;
-    }
+    Z_Freep(&m_servers.args);
 }
 
 static void Expose(menuFrameWork_t *self)

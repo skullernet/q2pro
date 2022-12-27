@@ -294,6 +294,12 @@ static bool NetchanOld_Process(netchan_t *chan)
         }
     }
 
+    if (msg_read.readcount > msg_read.cursize) {
+        SHOWDROP("%s: message too short\n",
+                 NET_AdrToString(&chan->remote_address));
+        return false;
+    }
+
     reliable_message = sequence & 0x80000000;
     reliable_ack = sequence_ack & 0x80000000;
 
@@ -599,6 +605,12 @@ static bool NetchanNew_Process(netchan_t *chan)
         fragment_offset &= 0x7FFF;
     }
 
+    if (msg_read.readcount > msg_read.cursize) {
+        SHOWDROP("%s: message too short\n",
+                 NET_AdrToString(&chan->remote_address));
+        return false;
+    }
+
     SHOWPACKET("recv %4zu : s=%d ack=%d rack=%d",
                msg_read.cursize, sequence, sequence_ack, reliable_ack);
     if (fragmented_message) {
@@ -662,7 +674,7 @@ static bool NetchanNew_Process(netchan_t *chan)
         }
 
         length = msg_read.cursize - msg_read.readcount;
-        if (chan->fragment_in.cursize + length > chan->fragment_in.maxsize) {
+        if (length > chan->fragment_in.maxsize - chan->fragment_in.cursize) {
             SHOWDROP("%s: oversize fragment at %i\n",
                      NET_AdrToString(&chan->remote_address), sequence);
             return false;
@@ -674,7 +686,7 @@ static bool NetchanNew_Process(netchan_t *chan)
         }
 
         // message has been sucessfully assembled
-        SZ_Clear(&msg_read);
+        SZ_Init(&msg_read, msg_read_buffer, sizeof(msg_read_buffer));
         SZ_Write(&msg_read, chan->fragment_in.data, chan->fragment_in.cursize);
         SZ_Clear(&chan->fragment_in);
     }
@@ -719,15 +731,17 @@ static bool NetchanNew_ShouldUpdate(netchan_t *chan)
 Netchan_Setup
 ==============
 */
-netchan_t *Netchan_Setup(netsrc_t sock, netchan_type_t type,
-                         const netadr_t *adr, int qport, size_t maxpacketlen, int protocol)
+void Netchan_Setup(netchan_t *chan, netsrc_t sock, netchan_type_t type,
+                   const netadr_t *adr, int qport, size_t maxpacketlen, int protocol)
 {
-    int tag = sock == NS_SERVER ? TAG_SERVER : TAG_GENERAL;
-    netchan_t *chan;
+    memtag_t tag = sock == NS_SERVER ? TAG_SERVER : TAG_GENERAL;
+
+    Q_assert(chan);
+    Q_assert(!chan->message_buf);
+    Q_assert(adr);
 
     clamp(maxpacketlen, MIN_PACKETLEN, MAX_PACKETLEN_WRITABLE);
 
-    chan = Z_TagMallocz(sizeof(*chan), tag);
     chan->type = type;
     chan->protocol = protocol;
     chan->sock = sock;
@@ -771,9 +785,6 @@ netchan_t *Netchan_Setup(netsrc_t sock, netchan_type_t type,
     default:
         Q_assert(!"bad type");
     }
-
-    return chan;
-
 }
 
 /*
@@ -783,6 +794,7 @@ Netchan_Close
 */
 void Netchan_Close(netchan_t *chan)
 {
+    Q_assert(chan);
     Z_Free(chan->message_buf);
-    Z_Free(chan);
+    memset(chan, 0, sizeof(*chan));
 }
