@@ -1169,11 +1169,7 @@ void CL_ParseServerMessage(void)
         extrabits = cmd >> SVCMD_BITS;
         cmd &= SVCMD_MASK;
 
-#if USE_DEBUG
-        if (cl_shownet->integer > 1) {
-            MSG_ShowSVC(cmd);
-        }
-#endif
+        SHOWNET(1, "%3zu:%s\n", msg_read.readcount - 1, MSG_ServerCommandString(cmd));
 
         // other commands
         switch (cmd) {
@@ -1340,11 +1336,7 @@ void CL_SeekDemoMessage(void)
         extrabits = cmd >> SVCMD_BITS;
         cmd &= SVCMD_MASK;
 
-#if USE_DEBUG
-        if (cl_shownet->integer > 1) {
-            MSG_ShowSVC(cmd);
-        }
-#endif
+        SHOWNET(1, "%3zu:%s\n", msg_read.readcount - 1, MSG_ServerCommandString(cmd));
 
         // other commands
         switch (cmd) {
