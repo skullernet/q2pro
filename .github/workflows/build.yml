@@ -54,7 +54,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-mingw-w64 meson nasm
+          sudo apt-get install -y gcc-mingw-w64 meson nasm uuid-dev
 
       - name: Build
         run: |
@@ -124,7 +124,7 @@ jobs:
           libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
           libcurl4-gnutls-dev libx11-dev libxi-dev \
           libwayland-dev wayland-protocols libdecor-0-dev \
-          libogg-dev libvorbis-dev patchelf
+          libogg-dev libvorbis-dev uuid-dev patchelf
 
       - name: Build
         run: |
