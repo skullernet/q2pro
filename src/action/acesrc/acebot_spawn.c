@@ -71,7 +71,7 @@ void	ACEAI_Cmd_Choose( edict_t *ent, char *s);
 //==============================
 // Get the number of the next team a bot should join
 //==============================
-int GetNextTeamNumber()
+int GetNextTeamNumber(void)
 {
         int i, onteam1 = 0, onteam2 = 0, onteam3 = 0;
         edict_t *e;
@@ -766,7 +766,7 @@ void	LTKsetBotName( char	*bot_name )
 
 int GetBotCount(void)
 {
-	int count;
+	int count = 0;
 	edict_t pers;
     // Count bots 
     for (int i = 0; i < game.maxclients; i++)

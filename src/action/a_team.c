@@ -1498,7 +1498,7 @@ void OpenJoinMenu (edict_t * ent)
 
 void gib_die( edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point );  // g_misc
 
-void CleanLevel ()
+void CleanLevel (void)
 {
 	int i, base;
 	edict_t *ent;
@@ -1642,7 +1642,7 @@ int TeamHasPlayers (int team)
 
 int _numclients( void );  // a_vote.c
 
-qboolean BothTeamsHavePlayers()
+qboolean BothTeamsHavePlayers(void)
 {
 	int players[TEAM_TOP] = { 0 }, i, teamsWithPlayers;
 	edict_t *ent;
@@ -1679,7 +1679,7 @@ qboolean BothTeamsHavePlayers()
 }
 
 // CheckForWinner: Checks for a winner (or not).
-int CheckForWinner()
+int CheckForWinner(void)
 {
 	int players[TEAM_TOP] = { 0 }, i = 0, teamNum = 0, teamsWithPlayers = 0;
 	edict_t *ent;
@@ -1716,7 +1716,7 @@ int CheckForWinner()
 }
 
 // CheckForForcedWinner: A winner is being forced, find who it is.
-int CheckForForcedWinner()
+int CheckForForcedWinner(void)
 {
 	int players[TEAM_TOP] = { 0 };
 	int health[TEAM_TOP] = { 0 };
@@ -1837,7 +1837,7 @@ static void SpawnPlayers(void)
 	}
 }
 
-void RunWarmup ()
+void RunWarmup (void)
 {
 	int i, dead;
 	edict_t *ent;
@@ -1873,7 +1873,7 @@ void RunWarmup ()
 	}
 }
 
-void StartRound ()
+void StartRound (void)
 {
 	team_round_going = 1;
 	current_round_length = 0;
@@ -1923,7 +1923,7 @@ edict_t *FindOverlap (edict_t * ent, edict_t * last_overlap)
 	return NULL;
 }
 
-void ContinueLCA ()
+void ContinueLCA (void)
 {
 	if (use_tourney->value && !tourney_lca->value)
 	{

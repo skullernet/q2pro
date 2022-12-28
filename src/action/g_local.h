@@ -1215,6 +1215,11 @@ extern cvar_t *cl_discord_discriminator;
 extern cvar_t *cl_discord_username;
 extern cvar_t *cl_discord_avatar;
 
+
+// Q2Pro / TNG Merge
+extern void func_explosive_explode(edict_t *, edict_t *, edict_t *, int, vec3_t);
+extern void player_die(edict_t *, edict_t *, edict_t *, int, vec3_t);
+
 #define world   (&g_edicts[0])
 
 // item spawnflags
@@ -1298,9 +1303,9 @@ void Touch_Item (edict_t * ent, edict_t * other, cplane_t * plane,
 // g_utils.c
 //
 qboolean KillBox (edict_t *ent);
-void	G_ProjectSource(vec3_t point, vec3_t distance, vec3_t forward, vec3_t right, vec3_t result);
+void	G_ProjectSource(const vec3_t point, const vec3_t distance, const vec3_t forward, const vec3_t right, vec3_t result);
 edict_t *G_Find(edict_t *from, ptrdiff_t fieldofs, char *match);
-edict_t *findradius(edict_t *from, vec3_t org, float rad);
+edict_t *findradius(edict_t *from, const vec3_t org, float rad);
 edict_t *G_PickTarget(char *targetname);
 void	G_UseTargets(edict_t *ent, edict_t * activator);
 void	G_SetMovedir(vec3_t angles, vec3_t movedir);
@@ -1325,10 +1330,10 @@ qboolean infront( edict_t *self, edict_t *other );
 
 // Re-enabled for bots
 float *tv (float x, float y, float z);
-char *vtos (vec3_t v);
+char *vtos (const vec3_t v);
 
 float vectoyaw (vec3_t vec);
-void vectoangles (vec3_t vec, vec3_t angles);
+void vectoangles (const vec3_t vec, vec3_t angles);
 
 //
 // g_combat.c
@@ -1336,7 +1341,7 @@ void vectoangles (vec3_t vec, vec3_t angles);
 qboolean OnSameTeam (edict_t * ent1, edict_t * ent2);
 qboolean CanDamage (edict_t * targ, edict_t * inflictor);
 void T_Damage (edict_t * targ, edict_t * inflictor, edict_t * attacker,
-	       vec3_t dir, vec3_t point, vec3_t normal, int damage,
+	       const vec3_t dir, vec3_t point, const vec3_t normal, int damage,
 	       int knockback, int dflags, int mod);
 void T_RadiusDamage (edict_t * inflictor, edict_t * attacker, float damage,
 		     edict_t * ignore, float radius, int mod);
@@ -1370,25 +1375,25 @@ void SP_misc_teleporter_dest(edict_t* ent);
 // g_weapon.c
 //
 void ThrowDebris (edict_t * self, char *modelname, float speed,
-		  vec3_t origin);
-void fire_bullet (edict_t * self, vec3_t start, vec3_t aimdir, int damage,
+		  const vec3_t origin);
+void fire_bullet (edict_t * self, const vec3_t start, vec3_t aimdir, int damage,
 		  int kick, int hspread, int vspread, int mod);
-void fire_shotgun (edict_t * self, vec3_t start, vec3_t aimdir, int damage,
+void fire_shotgun (edict_t * self, const vec3_t start, vec3_t aimdir, int damage,
 		   int kick, int hspread, int vspread, int count, int mod);
 //SLIC2 changed argument name hyper to hyperb
-void fire_blaster (edict_t * self, vec3_t start, vec3_t aimdir, int damage,
+void fire_blaster (edict_t * self, const vec3_t start, vec3_t aimdir, int damage,
 		   int speed, int effect, qboolean hyperb);
-void fire_grenade2 (edict_t * self, vec3_t start, vec3_t aimdir, int damage,
+void fire_grenade2 (edict_t * self, const vec3_t start, const vec3_t aimdir, int damage,
 	int speed, int timer, float damage_radius,
 		    qboolean held);
 
 void kick_attack(edict_t *ent);
 void punch_attack(edict_t *ent);
-int knife_attack(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick);
-void knife_throw(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed);
+int knife_attack(edict_t *self, const vec3_t start, vec3_t aimdir, int damage, int kick);
+void knife_throw(edict_t *self, const vec3_t start, vec3_t dir, int damage, int speed);
 void knife_touch(edict_t* ent, edict_t* other, cplane_t* plane, csurface_t* surf);
-void fire_bullet_sparks(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick, int hspread, int vspread, int mod);
-void fire_bullet_sniper(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick, int hspread, int vspread, int mod);
+void fire_bullet_sparks(edict_t *self, const vec3_t start, vec3_t aimdir, int damage, int kick, int hspread, int vspread, int mod);
+void fire_bullet_sniper(edict_t *self, const vec3_t start, vec3_t aimdir, int damage, int kick, int hspread, int vspread, int mod);
 void setFFState(edict_t* ent);
 
 //
@@ -1412,8 +1417,7 @@ void* G_FetchGameExtension(char *name);
 // g_player.c
 //
 void player_pain (edict_t * self, edict_t * other, float kick, int damage);
-void player_die (edict_t * self, edict_t * inflictor, edict_t * attacker,
-		 int damage, vec3_t point);
+void player_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point);
 
 //
 // g_svcmds.c
@@ -1444,7 +1448,7 @@ void DeathmatchScoreboardMessage (edict_t * client, edict_t * killer);
 //
 // g_pweapon.c
 //
-void PlayerNoise (edict_t * who, vec3_t where, int type);
+void PlayerNoise (edict_t * who, const vec3_t where, int type);
 
 //
 // g_phys.c
@@ -1472,12 +1476,12 @@ void GetChaseTarget (edict_t * ent);
 //
 // g_spawn.c
 //
-void ChangePlayerSpawns();
+void ChangePlayerSpawns(void);
 void ED_CallSpawn( edict_t *ent );
 char* ED_NewString(char* string);
 void G_UpdateSpectatorStatusbar( void );
 void G_UpdatePlayerStatusbar( edict_t *ent, int force );
-void generate_uuid();
+void generate_uuid(void);
 
 //
 // p_client.c
@@ -1499,7 +1503,7 @@ void Weapon_Generic( edict_t * ent, int FRAME_ACTIVATE_LAST, int FRAME_FIRE_LAST
 	void( *fire ) (edict_t * ent) );
 void PlayWeaponSound( edict_t *ent );
 
-void P_ProjectSource(gclient_t *client, vec3_t point, vec3_t distance, vec3_t forward, vec3_t right, vec3_t result);
+void P_ProjectSource(gclient_t *client, const vec3_t point, const vec3_t distance, const vec3_t forward, const vec3_t right, vec3_t result);
 void weapon_grenade_fire(edict_t* ent, qboolean held);
 void InitTookDamage(void);
 void ProduceShotgunDamageReport(edict_t*);
@@ -1508,9 +1512,9 @@ void ProduceShotgunDamageReport(edict_t*);
 void StatBotCheck(void);
 void LogKill(edict_t *self, edict_t *inflictor, edict_t *attacker);
 void LogWorldKill(edict_t *self);
-void LogMatch();
+void LogMatch(void);
 void LogAward(char* steamid, char* discordid, int award);
-void LogEndMatchStats();
+void LogEndMatchStats(void);
 
 //============================================================================
 
@@ -2189,7 +2193,7 @@ int G_NotSortedClients( gclient_t **sortedList );
 void A_ScoreboardMessage( edict_t * ent, edict_t * killer );
 
 //local to g_combat but needed in p_view
-void SpawnDamage (int type, vec3_t origin, vec3_t normal, int damage);
+void SpawnDamage (int type, const vec3_t origin, const vec3_t normal, int damage);
 void Killed (edict_t * targ, edict_t * inflictor, edict_t * attacker,
 	     int damage, vec3_t point);
 

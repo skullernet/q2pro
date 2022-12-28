@@ -130,6 +130,6 @@ void SP_misc_ctf_small_banner (edict_t * ent);
 void SP_trigger_teleport (edict_t * ent);
 void SP_info_teleport_destination (edict_t * ent);
 
-void ResetPlayers ();
+void ResetPlayers (void);
 void GetCTFScores(int *t1score, int *t2score);
 void CTFCapReward(edict_t *);

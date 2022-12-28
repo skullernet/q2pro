@@ -329,7 +329,7 @@ void ResetPlayers()
 	}
 }
 
-void CTFSwapTeams()
+void CTFSwapTeams(void)
 {
 	edict_t *ent;
 	int i;

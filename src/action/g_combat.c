@@ -202,8 +202,7 @@ qboolean CanDamage (edict_t * targ, edict_t * inflictor)
   Killed
   ============
 */
-void Killed (edict_t * targ, edict_t * inflictor, edict_t * attacker, int damage,
-	vec3_t point)
+void Killed (edict_t * targ, edict_t * inflictor, edict_t * attacker, int damage, vec3_t point)
 {
 	if (targ->health < -999)
 		targ->health = -999;
@@ -233,7 +232,7 @@ void Killed (edict_t * targ, edict_t * inflictor, edict_t * attacker, int damage
   SpawnDamage
   ================
 */
-void SpawnDamage (int type, vec3_t origin, vec3_t normal, int damage)
+void SpawnDamage (int type, const vec3_t origin, const vec3_t normal, int damage)
 {
 	if (damage > 255)
 		damage = 255;
@@ -284,7 +283,7 @@ void blood_spray_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t
 	ent->nextthink = level.framenum + 1;
 }
 
-void spray_blood(edict_t *self, vec3_t start, vec3_t dir, int damage, int mod)
+void spray_blood(edict_t *self, vec3_t start, const vec3_t dir, int damage, int mod)
 {
 	edict_t *blood;
 	vec3_t	temp;
@@ -343,7 +342,7 @@ void spray_blood(edict_t *self, vec3_t start, vec3_t dir, int damage, int mod)
 }
 
 // zucc based on some code in Action Quake
-void spray_sniper_blood(edict_t *self, vec3_t start, vec3_t dir)
+void spray_sniper_blood(edict_t *self, vec3_t start, const vec3_t dir)
 {
 	vec3_t forward;
 	int mod = MOD_SNIPER;
@@ -397,7 +396,7 @@ void spray_sniper_blood(edict_t *self, vec3_t start, vec3_t dir)
 	spray_blood( self, start, dir, 0, mod );
 }
 
-void VerifyHeadShot(vec3_t point, vec3_t dir, float height, vec3_t newpoint)
+void VerifyHeadShot(vec3_t point, const vec3_t dir, float height, vec3_t newpoint)
 {
 	vec3_t normdir;
 
@@ -413,9 +412,8 @@ void VerifyHeadShot(vec3_t point, vec3_t dir, float height, vec3_t newpoint)
 
 #define HEAD_HEIGHT 12.0f
 
-void
-T_Damage (edict_t * targ, edict_t * inflictor, edict_t * attacker, vec3_t dir,
-	  vec3_t point, vec3_t normal, int damage, int knockback, int dflags,
+void T_Damage (edict_t * targ, edict_t * inflictor, edict_t * attacker, const vec3_t dir,
+	  vec3_t point, const vec3_t normal, int damage, int knockback, int dflags,
 	  int mod)
 {
 	gclient_t *client;

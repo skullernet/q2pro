@@ -16,7 +16,7 @@
 #include "g_local.h"
 
 
-void G_ProjectSource (vec3_t point, vec3_t distance, vec3_t forward, vec3_t right,
+void G_ProjectSource (const vec3_t point, const vec3_t distance, const vec3_t forward, const vec3_t right,
 		 vec3_t result)
 {
 	result[0] = point[0] + forward[0] * distance[0] + right[0] * distance[1];
@@ -70,7 +70,7 @@ Returns entities that have origins within a spherical area
 findradius (origin, radius)
 =================
 */
-edict_t *findradius (edict_t * from, vec3_t org, float rad)
+edict_t *findradius (edict_t * from, const vec3_t org, float rad)
 {
 	vec3_t eorg;
 	int j;
@@ -288,22 +288,25 @@ VectorToString
 
 This is just a convenience function
 for printing vectors
+
+// No longer needed as Q2Pro inc/shared/shared.h provides this
 =============
 */
-char *vtos (vec3_t v)
-{
-	static int index;
-	static char str[8][32];
-	char *s;
 
-	// use an array so that multiple vtos won't collide
-	s = str[index];
-	index = (index + 1) & 7;
+// char *vtos (const vec3_t v)
+// {
+// 	static int index;
+// 	static char str[8][32];
+// 	char *s;
 
-	Q_snprintf (s, 32, "(%i %i %i)", (int) v[0], (int) v[1], (int) v[2]);
+// 	// use an array so that multiple vtos won't collide
+// 	s = str[index];
+// 	index = (index + 1) & 7;
 
-	return s;
-}
+// 	Q_snprintf (s, 32, "(%i %i %i)", (int) v[0], (int) v[1], (int) v[2]);
+
+// 	return s;
+// }
 
 
 vec3_t VEC_UP = { 0, -1, 0 };
@@ -355,7 +358,7 @@ float vectoyaw (vec3_t vec)
 }
 
 
-void vectoangles (vec3_t value1, vec3_t angles)
+void vectoangles (const vec3_t value1, vec3_t angles)
 {
 	float forward;
 	float yaw, pitch;

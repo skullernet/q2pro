@@ -101,8 +101,8 @@
 static qboolean is_quad;
 
 
-void P_ProjectSource(gclient_t* client, vec3_t point, vec3_t distance,
-	vec3_t forward, vec3_t right, vec3_t result)
+void P_ProjectSource(gclient_t* client, const vec3_t point, const vec3_t distance,
+	const vec3_t forward, const vec3_t right, vec3_t result)
 {
 	vec3_t _distance;
 
@@ -126,8 +126,8 @@ void P_ProjectSource(gclient_t* client, vec3_t point, vec3_t distance,
 
 // used for setting up the positions of the guns in shell ejection
 void
-Old_ProjectSource(gclient_t* client, vec3_t point, vec3_t distance,
-	vec3_t forward, vec3_t right, vec3_t result)
+Old_ProjectSource(gclient_t* client, const vec3_t point, const vec3_t distance,
+	const vec3_t forward, const vec3_t right, vec3_t result)
 {
 	vec3_t _distance;
 
@@ -144,8 +144,8 @@ Old_ProjectSource(gclient_t* client, vec3_t point, vec3_t distance,
 
 // this one is the real old project source
 void
-Knife_ProjectSource(gclient_t* client, vec3_t point, vec3_t distance,
-	vec3_t forward, vec3_t right, vec3_t result)
+Knife_ProjectSource(gclient_t* client, const vec3_t point, const vec3_t distance,
+	const vec3_t forward, const vec3_t right, vec3_t result)
 {
 	vec3_t _distance;
 
@@ -171,7 +171,7 @@ PlayerNoise
 		to a noise in hopes of seeing the player from there.
 		===============
 */
-void PlayerNoise(edict_t* who, vec3_t where, int type)
+void PlayerNoise(edict_t* who, const vec3_t where, int type)
 {
 	/*
 	if (type == PNOISE_WEAPON)

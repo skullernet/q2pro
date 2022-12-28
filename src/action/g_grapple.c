@@ -261,7 +261,7 @@ void CTFFireGrapple (edict_t *self, vec3_t start, vec3_t dir, int damage, int sp
 	}
 }	
 
-void CTFGrappleFire (edict_t *ent, vec3_t g_offset, int damage, int effect)
+void CTFGrappleFire (edict_t *ent, const vec3_t g_offset, int damage, int effect)
 {
 	vec3_t	forward, right;
 	vec3_t	start;

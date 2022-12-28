@@ -76,25 +76,25 @@ void A_Scoreboard (edict_t * ent);
 void Team_f (edict_t * ent);
 void AssignSkin (edict_t * ent, const char *s, qboolean nickChanged);
 void TallyEndOfLevelTeamScores (void);
-void SetupTeamSpawnPoints ();
-int CheckTeamSpawnPoints ();
-void GetSpawnPoints ();
-void CleanBodies ();		// from p_client.c, removes all current dead bodies from map
+void SetupTeamSpawnPoints (void);
+int CheckTeamSpawnPoints (void);
+void GetSpawnPoints (void);
+void CleanBodies (void);		// from p_client.c, removes all current dead bodies from map
 
 void LeaveTeam (edict_t *);
 int newrand (int top);
-void InitTransparentList ();
+void InitTransparentList (void);
 void AddToTransparentList (edict_t *);
 void RemoveFromTransparentList (edict_t *);
 qboolean OnTransparentList( const edict_t *ent );
-void PrintTransparentList ();
+void PrintTransparentList (void);
 void CenterPrintAll (const char *msg);
 int TeamHasPlayers( int team );
 
 //TNG:Freud - new spawning system
-void NS_GetSpawnPoints ();
+void NS_GetSpawnPoints (void);
 qboolean NS_SelectFarTeamplaySpawnPoint (int team, qboolean teams_assigned[]);
-void NS_SetupTeamSpawnPoints ();
+void NS_SetupTeamSpawnPoints (void);
 
 typedef struct spawn_distances_s
 {

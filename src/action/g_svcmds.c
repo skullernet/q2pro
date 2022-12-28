@@ -68,7 +68,7 @@
 extern int dosoft;
 extern int softquit;
 
-void SVCmd_ReloadMOTD_f ()
+void SVCmd_ReloadMOTD_f (void)
 {
 	ReadMOTDFile ();
 	gi.cprintf (NULL, PRINT_HIGH, "MOTD reloaded.\n");
@@ -741,7 +741,7 @@ STUFF COMMAND
 This will stuff a certain command to the client.
 =================
 */
-void SVCmd_stuffcmd_f ()
+void SVCmd_stuffcmd_f (void)
 {
 	int i, u, team = -1, stuffAll = 0;
 	char text[256];

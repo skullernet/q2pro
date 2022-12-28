@@ -69,7 +69,7 @@ extern "C"
 // emits glass fragments from aPoint, to show effects of firing thru window
 
   void CGF_SFX_BreakGlass (edict_t * aGlassPane, edict_t * anOther,
-			   edict_t * anAttacker, int aDamage, vec3_t aPoint,
+			   edict_t * anAttacker, int aDamage, const vec3_t aPoint,
 			   vec_t aPaneDestructDelay);
 // breaks glass
 
@@ -452,7 +452,7 @@ knife_and_grenade_handling:
 
 void
 CGF_SFX_BreakGlass (edict_t * aGlassPane, edict_t * anInflictor,
-		    edict_t * anAttacker, int aDamage, vec3_t aPoint,
+		    edict_t * anAttacker, int aDamage, const vec3_t aPoint,
 		    vec_t aPaneDestructDelay)
 {
   // based on func_explode, but with lotsa subtle differences

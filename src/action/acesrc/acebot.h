@@ -234,7 +234,7 @@ void ACEAI_Cmd_Choose_Item_Num( edict_t *ent, int num );
 
 // acebot_cmds.c protos
 qboolean ACECM_Commands(edict_t *ent);
-void     ACECM_Store();
+void     ACECM_Store(void);
 
 // acebot_items.c protos
 void     ACEIT_RebuildPlayerList( void );
@@ -278,14 +278,14 @@ void     ACEND_ShowPath(edict_t *self, int goal_node);
 int      ACEND_AddNode(edict_t *self, int type);
 void     ACEND_UpdateNodeEdge(edict_t *self, int from, int to);
 void     ACEND_RemoveNodeEdge(edict_t *self, int from, int to);
-void     ACEND_ResolveAllPaths();
-void     ACEND_SaveNodes();
-void     ACEND_LoadNodes();
+void     ACEND_ResolveAllPaths(void);
+void     ACEND_SaveNodes(void);
+void     ACEND_LoadNodes(void);
 
 // acebot_spawn.c protos
-void	 ACESP_SaveBots();
-void	 ACESP_LoadBots();
-void	 ACESP_LoadBotConfig();
+void	 ACESP_SaveBots(void);
+void	 ACESP_LoadBots(void);
+void	 ACESP_LoadBotConfig(void);
 edict_t *ACESP_SpawnBotFromConfig( char *inString );
 void     ACESP_HoldSpawn(edict_t *self);
 void     ACESP_PutClientInServer (edict_t *bot, qboolean respawn, int team);
@@ -293,7 +293,7 @@ void     ACESP_Respawn (edict_t *self);
 edict_t *ACESP_FindFreeClient (void);
 void     ACESP_SetName(edict_t *bot, char *name, char *skin, char *team);
 edict_t *ACESP_SpawnBot (char *team, char *name, char *skin, char *userinfo);
-void     ACESP_ReAddBots();
+void     ACESP_ReAddBots(void);
 void     ACESP_RemoveBot(char *name);
 void	 safe_cprintf (struct edict_s * ent, int printlevel, const char *fmt, ...);
 void     safe_centerprintf (struct edict_s * ent, const char *fmt, ...);

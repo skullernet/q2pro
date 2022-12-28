@@ -144,15 +144,13 @@ gib_touch (edict_t * self, edict_t * other, cplane_t * plane,
     }
 }
 
-void
-gib_die (edict_t * self, edict_t * inflictor, edict_t * attacker, int damage,
-	 vec3_t point)
+void gib_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
   G_FreeEdict (self);
 }
 
 void
-ThrowGib (edict_t * self, char *gibname, int damage, int type)
+ThrowGib (edict_t *self, char *gibname, int damage, int type)
 {
   edict_t *gib;
   vec3_t vd;
@@ -304,7 +302,7 @@ debris_die (edict_t * self, edict_t * inflictor, edict_t * attacker,
 }
 
 void
-ThrowDebris (edict_t * self, char *modelname, float speed, vec3_t origin)
+ThrowDebris (edict_t * self, char *modelname, float speed, const vec3_t origin)
 {
   edict_t *chunk;
   vec3_t v;
@@ -725,8 +723,8 @@ SP_func_object (edict_t * self)
 
 /*QUAKED func_explosive (0 .5 .8) ? Trigger_Spawn ANIMATED ANIMATED_FAST
 Any brush that you want to explode or break apart.  If you want an
-ex0plosion, set dmg and it will do a radius explosion of that amount
-at the center of the bursh.
+explosion, set dmg and it will do a radius explosion of that amount
+at the center of the brush.
 
 If targeted it will not be shootable.
 
@@ -736,8 +734,7 @@ mass defaults to 75.  This determines how much debris is emitted when
 it explodes.  You get one large chunk per 100 of mass (up to 8) and
 one small chunk per 25 of mass (up to 16).  So 800 gives the most.
 */
-void
-func_explosive_explode (edict_t * self, edict_t * inflictor,
+void func_explosive_explode (edict_t * self, edict_t * inflictor,
 			edict_t * attacker, int damage, vec3_t point)
 {
   vec3_t origin;
@@ -804,14 +801,12 @@ func_explosive_explode (edict_t * self, edict_t * inflictor,
     G_FreeEdict (self);
 }
 
-void
-func_explosive_use (edict_t * self, edict_t * other, edict_t * activator)
+void func_explosive_use (edict_t * self, edict_t * other, edict_t * activator)
 {
   func_explosive_explode (self, self, other, self->health, vec3_origin);
 }
 
-void
-func_explosive_spawn (edict_t * self, edict_t * other, edict_t * activator)
+void func_explosive_spawn (edict_t * self, edict_t * other, edict_t * activator)
 {
   self->solid = SOLID_BSP;
   self->svflags &= ~SVF_NOCLIENT;

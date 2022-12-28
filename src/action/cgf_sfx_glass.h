@@ -46,17 +46,17 @@
 //
 //
 
-void CGF_SFX_InstallGlassSupport ();
+void CGF_SFX_InstallGlassSupport (void);
 // registers cvar breakableglass (default 0)
 // registers cvar glassfragmentlimit (default 30)
 
 
-void CGF_SFX_RebuildAllBrokenGlass ();
+void CGF_SFX_RebuildAllBrokenGlass (void);
 // upon starting a new team play game, reconstruct any
 // broken glass because we like to break it again
 
 
-int CGF_SFX_IsBreakableGlassEnabled ();
+int CGF_SFX_IsBreakableGlassEnabled (void);
 // returns whether breakable glass is enabled (cvar breakableglass)
 
 
@@ -102,8 +102,8 @@ void CGF_SFX_AttachDecalToGlass (edict_t * aGlassPane, edict_t * aDecal);
    + add #include "cgf_sfx_glass.h"
    + in void CleanLevel()
    add 
-   CGF_SFX_RebuildAllBrokenGlass();
-   as the last statement (thus after CleanBodies();)
+   CGF_SFX_RebuildAllBrokenGlass(void);
+   as the last statement (thus after CleanBodies(void);)
 
    @ file g_misc.c
    + add #include "cgf_sfx_glass.h"
@@ -124,7 +124,7 @@ void CGF_SFX_AttachDecalToGlass (edict_t * aGlassPane, edict_t * aDecal);
    + add #include "cgf_sfx_glass.h"
    + in void InitGame (void)
    add
-   CGF_SFX_InstallGlassSupport();
+   CGF_SFX_InstallGlassSupport(void);
    under (splatlimit = gi.cvar ("splatlimit", "0", 0);)
 
    @ file g_local.h
