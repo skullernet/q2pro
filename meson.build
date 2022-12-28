@@ -382,8 +382,8 @@ if not win32
     required:        get_option('uuid'),
     allow_fallback:  win32,
     default_options: fallback_opt,
-    game_deps += uuid
   )
+  game_deps += uuid
 endif
 
 if host_machine.system() == 'darwin'
