@@ -49,6 +49,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "system/system.h"
 #include "system/hunk.h"
 
+#include "features.h"
+
 #include <setjmp.h>
 
 static jmp_buf  com_abortframe;    // an ERR_DROP occured, exit the entire frame
@@ -989,6 +991,7 @@ void Qcommon_Init(int argc, char **argv)
     Com_Printf("====== " PRODUCT " initialized ======\n\n");
     Com_NPrintf(APPLICATION " " VERSION ", " __DATE__ "\n");
     Com_Printf("https://github.com/skullernet/q2pro\n\n");
+    Com_DPrintf("Compiled features: %s\n", Com_GetFeatures());
 
     time(&com_startTime);
 
