@@ -377,11 +377,13 @@ if openal.found()
   config.set10('USE_OPENAL', true)
 endif
 
-uuid = dependency('uuid',
-  required:        get_option('uuid'),
-  allow_fallback:  win32,
-  default_options: fallback_opt,
-)
+if not win32
+  uuid = dependency('uuid',
+    required:        get_option('uuid'),
+    allow_fallback:  win32,
+    default_options: fallback_opt,
+  )
+endif
 
 if host_machine.system() == 'darwin'
   opengl = dependency('opengl',
