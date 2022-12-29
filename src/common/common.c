@@ -1000,7 +1000,7 @@ void Qcommon_Init(int argc, char **argv)
     Com_AddConfigFile(COM_POSTINIT_CFG, FS_TYPE_REAL);
 
     Com_Printf("====== " PRODUCT " initialized ======\n\n");
-    Com_LPrintf(APPLICATION " " VERSION ", " __DATE__ "\n");
+    Com_NPrintf(APPLICATION " " VERSION ", " __DATE__ "\n");
     Com_Printf("https://aqtiongame.com\n\n");
     Com_DPrintf("Compiled features: %s\n", Com_GetFeatures());
     time(&com_startTime);
