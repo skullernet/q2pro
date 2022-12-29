@@ -476,3 +476,41 @@ config.set10('USE_TGA',           get_option('tga'))
 config.set10('USE_' + host_machine.endian().to_upper() + '_ENDIAN', true)
 
 configure_file(output: 'config.h', configuration: config)
+
+if system_wide
+  summary({'datadir': datadir, 'libdir': libdir, 'homedir': homedir}, section: 'Directories')
+endif
+
+summary({
+  'anticheat-server'   : config.get('USE_AC_SERVER', '') != '',
+  'auto-reply'         : config.get('USE_AUTOREPLY', 0) != 0,
+  'client-gtv'         : config.get('USE_CLIENT_GTV', 0) != 0,
+  'client-ui'          : config.get('USE_UI', 0) != 0,
+  'debug'              : config.get('USE_DEBUG', 0) != 0,
+  'dynamic-lights'     : config.get('USE_DLIGHTS', 0) != 0,
+  'game-abi-hack'      : config.get('USE_GAME_ABI_HACK', 0) != 0,
+  'icmp-errors'        : config.get('USE_ICMP', 0) != 0,
+  'libcurl'            : config.get('USE_CURL', 0) != 0,
+  'libjpeg'            : config.get('USE_JPG', 0) != 0,
+  'libpng'             : config.get('USE_PNG', 0) != 0,
+  'map-checksum'       : config.get('USE_MAPCHECKSUM', 0) != 0,
+  'md3'                : config.get('USE_MD3', 0) != 0,
+  'mvd-client'         : config.get('USE_MVD_CLIENT', 0) != 0,
+  'mvd-server'         : config.get('USE_MVD_SERVER', 0) != 0,
+  'ogg'                : config.get('USE_OGG', 0) != 0,
+  'openal'             : config.get('USE_OPENAL', 0) != 0,
+  'packetdup-hack'     : config.get('USE_PACKETDUP', 0) != 0,
+  'save-games'         : config.get('USE_SAVEGAMES', 0) != 0,
+  'sdl2'               : config.get('USE_SDL', '') != '',
+  'software-sound'     : config.get('USE_SNDDMA', 0) != 0,
+  'system-console'     : config.get('USE_SYSCON', 0) != 0,
+  'tests'              : config.get('USE_TESTS', 0) != 0,
+  'tga'                : config.get('USE_TGA', 0) != 0,
+  'variable-fps'       : config.get('USE_FPS', 0) != 0,
+  'wayland'            : config.get('USE_WAYLAND', 0) != 0,
+  'windows-crash-dumps': config.get('USE_DBGHELP', 0) != 0,
+  'windows-egl'        : config.get('USE_WIN32EGL', 0) != 0,
+  'windows-service'    : config.get('USE_WINSVC', '') != '',
+  'x11'                : config.get('USE_X11', 0) != 0,
+  'zlib'               : config.get('USE_ZLIB', 0) != 0,
+  }, section: 'Features', bool_yn: true)

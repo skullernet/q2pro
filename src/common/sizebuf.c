@@ -43,7 +43,6 @@ void SZ_Clear(sizebuf_t *buf)
 {
     buf->cursize = 0;
     buf->readcount = 0;
-    buf->bitpos = 0;
     buf->overflowed = false;
 }
 
@@ -77,7 +76,6 @@ void *SZ_GetSpace(sizebuf_t *buf, size_t len)
 
     data = buf->data + buf->cursize;
     buf->cursize += len;
-    buf->bitpos = buf->cursize << 3;
     return data;
 }
 
@@ -94,8 +92,7 @@ void SZ_WriteShort(sizebuf_t *sb, int c)
     byte    *buf;
 
     buf = SZ_GetSpace(sb, 2);
-    buf[0] = c & 0xff;
-    buf[1] = c >> 8;
+    WL16(buf, c);
 }
 
 void SZ_WriteLong(sizebuf_t *sb, int c)
@@ -103,13 +100,9 @@ void SZ_WriteLong(sizebuf_t *sb, int c)
     byte    *buf;
 
     buf = SZ_GetSpace(sb, 4);
-    buf[0] = c & 0xff;
-    buf[1] = (c >> 8) & 0xff;
-    buf[2] = (c >> 16) & 0xff;
-    buf[3] = c >> 24;
+    WL32(buf, c);
 }
 
-#if USE_MVD_SERVER
 void SZ_WriteString(sizebuf_t *sb, const char *s)
 {
     size_t len;
@@ -128,7 +121,6 @@ void SZ_WriteString(sizebuf_t *sb, const char *s)
 
     SZ_Write(sb, s, len + 1);
 }
-#endif
 
 void *SZ_ReadData(sizebuf_t *buf, size_t len)
 {
@@ -139,13 +131,11 @@ void *SZ_ReadData(sizebuf_t *buf, size_t len)
             Com_Error(ERR_DROP, "%s: read past end of message", __func__);
         }
         buf->readcount = buf->cursize + 1;
-        buf->bitpos = buf->readcount << 3;
         return NULL;
     }
 
     data = buf->data + buf->readcount;
     buf->readcount += len;
-    buf->bitpos = buf->readcount << 3;
     return data;
 }
 
