@@ -49,6 +49,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "system/system.h"
 #include "system/hunk.h"
 
+#include "features.h"
+
 #include <setjmp.h>
 
 static jmp_buf  com_abortframe;    // an ERR_DROP occured, exit the entire frame
@@ -63,6 +65,7 @@ static int      com_printEntered;
 
 static qhandle_t    com_logFile;
 static bool         com_logNewline;
+static bool         com_conNewline;
 
 static char     **com_argv;
 static int      com_argc;
@@ -86,6 +89,7 @@ cvar_t  *logfile_enable;    // 1 = create new, 2 = append to existing
 cvar_t  *logfile_flush;     // 1 = flush after each print
 cvar_t  *logfile_name;
 cvar_t  *logfile_prefix;
+cvar_t  *console_prefix;
 
 #if USE_CLIENT
 cvar_t  *cl_running;
@@ -234,7 +238,7 @@ static void logfile_open(void)
     }
 
     com_logFile = f;
-    com_logNewline = true;
+    com_logNewline = false;
     Com_Printf("Logging console to %s\n", buffer);
 }
 
@@ -254,104 +258,90 @@ static void logfile_param_changed(cvar_t *self)
     }
 }
 
-size_t Com_FormatLocalTime(char *buffer, size_t size, const char *fmt)
+static size_t prefix_lines(char *buf, size_t size, const char *text, const char *prefix, bool *state)
 {
-    static struct tm cached_tm;
-    static time_t cached_time;
-    time_t now;
-    struct tm *tm;
-    size_t ret;
-
-    if (!size)
-        return 0;
-
-    now = time(NULL);
-    if (now == cached_time) {
-        // avoid calling localtime() too often since it is not that cheap
-        tm = &cached_tm;
-    } else {
-        tm = localtime(&now);
-        if (!tm)
-            goto fail;
-        cached_time = now;
-        cached_tm = *tm;
-    }
-
-    ret = strftime(buffer, size, fmt, tm);
-    Q_assert(ret < size);
-    if (ret)
-        return ret;
-fail:
-    buffer[0] = 0;
-    return 0;
-}
-
-static void logfile_write(print_type_t type, const char *s)
-{
-    char text[MAXPRINTMSG];
-    char buf[MAX_QPATH];
     char *p, *maxp;
-    size_t len;
-    int ret;
+    size_t len = strlen(prefix);
     int c;
 
-    if (logfile_prefix->string[0]) {
-        p = strchr(logfile_prefix->string, '@');
-        if (p) {
-            // expand it in place, hacky
-            switch (type) {
-            case PRINT_TALK:      *p = 'T'; break;
-            case PRINT_DEVELOPER: *p = 'D'; break;
-            case PRINT_WARNING:   *p = 'W'; break;
-            case PRINT_ERROR:     *p = 'E'; break;
-            case PRINT_NOTICE:    *p = 'N'; break;
-            default:              *p = 'A'; break;
-            }
-        }
-        len = Com_FormatLocalTime(buf, sizeof(buf), logfile_prefix->string);
-        if (p) {
-            *p = '@';
-        }
-    } else {
-        len = 0;
-    }
-
-    p = text;
-    maxp = text + sizeof(text) - 1;
-    while (*s) {
-        if (com_logNewline) {
+    p = buf;
+    maxp = buf + size;
+    while (*text) {
+        if (!*state) {
             if (len > 0 && len < maxp - p) {
-                memcpy(p, buf, len);
+                memcpy(p, prefix, len);
                 p += len;
             }
-            com_logNewline = false;
+            *state = true;
         }
 
         if (p == maxp) {
             break;
         }
 
-        c = *s++;
+        c = *text++;
         if (c == '\n') {
-            com_logNewline = true;
+            *state = false;
         } else {
             c = Q_charascii(c);
         }
 
         *p++ = c;
     }
-    *p = 0;
 
-    len = p - text;
-    ret = FS_Write(text, len, com_logFile);
-    if (ret != len) {
-        // zero handle BEFORE doing anything else to avoid recursion
-        qhandle_t tmp = com_logFile;
-        com_logFile = 0;
-        FS_FCloseFile(tmp);
-        Com_EPrintf("Couldn't write console log: %s\n", Q_ErrorString(ret));
-        Cvar_Set("logfile", "0");
+    return p - buf;
+}
+
+static void format_prefix(print_type_t type, char *prefix, size_t size)
+{
+    char *p;
+#ifndef _WIN32
+    if (!strncmp(prefix, "<?>", 3)) {
+        prefix[1] = "657435"[type];
     }
+#endif
+    if ((p = strchr(prefix, '@'))) {
+        *p = "ATDWEN"[type];
+    }
+    if (strchr(prefix, '%')) {
+        char tmp[MAX_QPATH];
+        Com_FormatLocalTime(tmp, sizeof(tmp), prefix);
+        Q_strlcpy(prefix, tmp, size);
+    }
+}
+
+static void logfile_write(print_type_t type, const char *text)
+{
+    char buf[MAXPRINTMSG];
+    char prefix[MAX_QPATH];
+
+    Q_strlcpy(prefix, logfile_prefix->string, sizeof(prefix));
+    format_prefix(type, prefix, sizeof(prefix));
+
+    size_t len = prefix_lines(buf, sizeof(buf), text, prefix, &com_logNewline);
+    int ret = FS_Write(buf, len, com_logFile);
+    if (ret == len) {
+        return;
+    }
+
+    // zero handle BEFORE doing anything else to avoid recursion
+    qhandle_t tmp = com_logFile;
+    com_logFile = 0;
+    FS_FCloseFile(tmp);
+    Com_EPrintf("Couldn't write console log: %s\n", Q_ErrorString(ret));
+    Cvar_Set("logfile", "0");
+}
+
+static void console_write(print_type_t type, const char *text)
+{
+    char buf[MAXPRINTMSG];
+    char prefix[MAX_QPATH];
+
+    Q_strlcpy(prefix, console_prefix->string, sizeof(prefix));
+    format_prefix(type, prefix, sizeof(prefix));
+
+    size_t len = prefix_lines(buf, sizeof(buf), text, prefix, &com_conNewline);
+    Sys_ConsoleOutput(buf, len);
 }
 
 #ifndef _WIN32
@@ -436,6 +426,8 @@ void Com_LPrintf(print_type_t type, const char *fmt, ...)
         Com_Redirect(msg, len);
     } else {
         switch (type) {
+        case PRINT_ALL:
+            break;
         case PRINT_TALK:
             Com_SetColor(COLOR_ALT);
             break;
@@ -452,14 +444,14 @@ void Com_LPrintf(print_type_t type, const char *fmt, ...)
             Com_SetColor(COLOR_CYAN);
             break;
         default:
-            break;
+            Q_assert(!"bad type");
         }
 
         // graphical console
         Con_Print(msg);
 
         // debugging console
-        Sys_ConsoleOutput(msg);
+        console_write(type, msg);
 
         // remote console
         //SV_ConsoleOutput(msg);
@@ -888,6 +880,7 @@ void Qcommon_Init(int argc, char **argv)
     logfile_flush = Cvar_Get("logfile_flush", "0", 0);
     logfile_name = Cvar_Get("logfile_name", "console", 0);
     logfile_prefix = Cvar_Get("logfile_prefix", "[%Y-%m-%d %H:%M] ", 0);
+    console_prefix = Cvar_Get("console_prefix", "", 0);
 #if USE_CLIENT
     dedicated = Cvar_Get("dedicated", "0", CVAR_NOSET);
     steamid = Cvar_Get("steamid", "0", CVAR_NOSET);
@@ -1007,8 +1000,9 @@ void Qcommon_Init(int argc, char **argv)
     Com_AddConfigFile(COM_POSTINIT_CFG, FS_TYPE_REAL);
 
     Com_Printf("====== " PRODUCT " initialized ======\n\n");
-    Com_LPrintf(PRINT_NOTICE, APPLICATION " " VERSION ", " __DATE__ "\n");
+    Com_LPrintf(APPLICATION " " VERSION ", " __DATE__ "\n");
     Com_Printf("https://aqtiongame.com\n\n");
+    Com_DPrintf("Compiled features: %s\n", Com_GetFeatures());
     time(&com_startTime);
 
     com_eventTime = Sys_Milliseconds();

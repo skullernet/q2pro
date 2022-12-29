@@ -78,7 +78,8 @@ MSG_BeginWriting
 void MSG_BeginWriting(void)
 {
     msg_write.cursize = 0;
-    msg_write.bitpos = 0;
+    msg_write.bits_buf = 0;
+    msg_write.bits_left = 32;
     msg_write.overflowed = false;
 }
 
@@ -153,21 +154,7 @@ MSG_WriteString
 */
 void MSG_WriteString(const char *string)
 {
-    size_t length;
-
-    if (!string) {
-        MSG_WriteByte(0);
-        return;
-    }
-
-    length = strlen(string);
-    if (length >= MAX_NET_STRING) {
-        Com_WPrintf("%s: overflow: %zu chars", __func__, length);
-        MSG_WriteByte(0);
-        return;
-    }
-
-    MSG_WriteData(string, length + 1);
+    SZ_WriteString(&msg_write, string);
 }
 
 /*
@@ -308,42 +295,46 @@ MSG_WriteBits
 */
 void MSG_WriteBits(int value, int bits)
 {
-    int i;
-    size_t bitpos;
-
-    Q_assert(!(bits == 0 || bits < -31 || bits > 32));
-    Q_assert(msg_write.maxsize - msg_write.cursize >= 4);
+    Q_assert(!(bits == 0 || bits < -31 || bits > 31));
 
     if (bits < 0) {
         bits = -bits;
     }
 
-    bitpos = msg_write.bitpos;
-    if ((bitpos & 7) == 0) {
-        // optimized case
-        switch (bits) {
-        case 8:
-            MSG_WriteByte(value);
-            return;
-        case 16:
-            MSG_WriteShort(value);
-            return;
-        case 32:
-            MSG_WriteLong(value);
-            return;
-        default:
-            break;
-        }
+    uint32_t bits_buf  = msg_write.bits_buf;
+    uint32_t bits_left = msg_write.bits_left;
+    uint32_t v = value & ((1U << bits) - 1);
+
+    bits_buf |= v << (32 - bits_left);
+    if (bits >= bits_left) {
+        MSG_WriteLong(bits_buf);
+        bits_buf   = v >> bits_left;
+        bits_left += 32;
     }
-    for (i = 0; i < bits; i++, bitpos++) {
-        if ((bitpos & 7) == 0) {
-            msg_write.data[bitpos >> 3] = 0;
-        }
-        msg_write.data[bitpos >> 3] |= (value & 1) << (bitpos & 7);
-        value >>= 1;
+    bits_left -= bits;
+
+    msg_write.bits_buf  = bits_buf;
+    msg_write.bits_left = bits_left;
+}
+
+/*
+=============
+MSG_FlushBits
+=============
+*/
+void MSG_FlushBits(void)
+{
+    uint32_t bits_buf  = msg_write.bits_buf;
+    uint32_t bits_left = msg_write.bits_left;
+
+    while (bits_left < 32) {
+        MSG_WriteByte(bits_buf & 255);
+        bits_buf >>= 8;
+        bits_left += 8;
     }
-    msg_write.bitpos = bitpos;
-    msg_write.cursize = (bitpos + 7) >> 3;
+
+    msg_write.bits_buf  = 0;
+    msg_write.bits_left = 32;
 }
 
 /*
@@ -605,12 +596,8 @@ void MSG_WriteDeltaEntity(const entity_packed_t *from,
         if (!VectorCompare(to->old_origin, from->origin))
             bits |= U_OLDORIGIN;
     } else if (to->renderfx & RF_BEAM) {
-        if (flags & MSG_ES_BEAMORIGIN) {
-            if (!VectorCompare(to->old_origin, from->old_origin))
-                bits |= U_OLDORIGIN;
-        } else {
+        if (!(flags & MSG_ES_BEAMORIGIN) || !VectorCompare(to->old_origin, from->old_origin))
             bits |= U_OLDORIGIN;
-        }
     }
 
     //
@@ -732,12 +719,14 @@ void MSG_WriteDeltaEntity(const entity_packed_t *from,
 
 static inline int OFFSET2CHAR(float x)
 {
-    return clamp(x, -32, 127.0f / 4) * 4;
+    int v = x * 4;
+    return clamp(v, -128, 127);
 }
 
 static inline int BLEND2BYTE(float x)
 {
-    return clamp(x, 0, 1) * 255;
+    int v = x * 255;
+    return clamp(v, 0, 255);
 }
 
 void MSG_PackPlayer(player_packed_t *out, const player_state_t *in)
@@ -745,27 +734,15 @@ void MSG_PackPlayer(player_packed_t *out, const player_state_t *in)
     int i;
 
     out->pmove = in->pmove;
-    out->viewangles[0] = ANGLE2SHORT(in->viewangles[0]);
-    out->viewangles[1] = ANGLE2SHORT(in->viewangles[1]);
-    out->viewangles[2] = ANGLE2SHORT(in->viewangles[2]);
-    out->viewoffset[0] = OFFSET2CHAR(in->viewoffset[0]);
-    out->viewoffset[1] = OFFSET2CHAR(in->viewoffset[1]);
-    out->viewoffset[2] = OFFSET2CHAR(in->viewoffset[2]);
-    out->kick_angles[0] = OFFSET2CHAR(in->kick_angles[0]);
-    out->kick_angles[1] = OFFSET2CHAR(in->kick_angles[1]);
-    out->kick_angles[2] = OFFSET2CHAR(in->kick_angles[2]);
-    out->gunoffset[0] = OFFSET2CHAR(in->gunoffset[0]);
-    out->gunoffset[1] = OFFSET2CHAR(in->gunoffset[1]);
-    out->gunoffset[2] = OFFSET2CHAR(in->gunoffset[2]);
-    out->gunangles[0] = OFFSET2CHAR(in->gunangles[0]);
-    out->gunangles[1] = OFFSET2CHAR(in->gunangles[1]);
-    out->gunangles[2] = OFFSET2CHAR(in->gunangles[2]);
+    for (i = 0; i < 3; i++) out->viewangles[i] = ANGLE2SHORT(in->viewangles[i]);
+    for (i = 0; i < 3; i++) out->viewoffset[i] = OFFSET2CHAR(in->viewoffset[i]);
+    for (i = 0; i < 3; i++) out->kick_angles[i] = OFFSET2CHAR(in->kick_angles[i]);
+    for (i = 0; i < 3; i++) out->gunoffset[i] = OFFSET2CHAR(in->gunoffset[i]);
+    for (i = 0; i < 3; i++) out->gunangles[i] = OFFSET2CHAR(in->gunangles[i]);
     out->gunindex = in->gunindex;
     out->gunframe = in->gunframe;
-    out->blend[0] = BLEND2BYTE(in->blend[0]);
-    out->blend[1] = BLEND2BYTE(in->blend[1]);
-    out->blend[2] = BLEND2BYTE(in->blend[2]);
-    out->blend[3] = BLEND2BYTE(in->blend[3]);
+    for (i = 0; i < 4; i++)
+        out->blend[i] = BLEND2BYTE(in->blend[i]);
     out->fov = (int)in->fov;
     out->rdflags = in->rdflags;
     for (i = 0; i < MAX_STATS; i++)
@@ -1630,7 +1607,8 @@ void MSG_WriteDeltaPlayerstate_Packet(const player_packed_t *from,
 void MSG_BeginReading(void)
 {
     msg_read.readcount = 0;
-    msg_read.bitpos = 0;
+    msg_read.bits_buf  = 0;
+    msg_read.bits_left = 0;
 }
 
 byte *MSG_ReadData(size_t len)
@@ -1911,51 +1889,30 @@ void MSG_ReadDeltaUsercmd_Hacked(const usercmd_t *from, usercmd_t *to)
 
 int MSG_ReadBits(int bits)
 {
-    int i, value;
-    size_t bitpos;
-    bool sgn;
+    bool sgn = false;
 
-    Q_assert(!(bits == 0 || bits < -31 || bits > 32));
+    Q_assert(!(bits == 0 || bits < -25 || bits > 25));
 
-    bitpos = msg_read.bitpos;
-    if ((bitpos & 7) == 0) {
-        // optimized case
-        switch (bits) {
-        case -8:
-            value = MSG_ReadChar();
-            return value;
-        case 8:
-            value = MSG_ReadByte();
-            return value;
-        case -16:
-            value = MSG_ReadShort();
-            return value;
-        case 32:
-            value = MSG_ReadLong();
-            return value;
-        default:
-            break;
-        }
-    }
-
-    sgn = false;
     if (bits < 0) {
         bits = -bits;
         sgn = true;
     }
 
-    value = 0;
-    for (i = 0; i < bits; i++, bitpos++) {
-        unsigned get = (msg_read.data[bitpos >> 3] >> (bitpos & 7)) & 1;
-        value |= get << i;
+    uint32_t bits_buf  = msg_read.bits_buf;
+    uint32_t bits_left = msg_read.bits_left;
+
+    while (bits > bits_left) {
+        bits_buf  |= (uint32_t)MSG_ReadByte() << bits_left;
+        bits_left += 8;
     }
-    msg_read.bitpos = bitpos;
-    msg_read.readcount = (bitpos + 7) >> 3;
+
+    uint32_t value = bits_buf & ((1U << bits) - 1);
+
+    msg_read.bits_buf  = bits_buf >> bits;
+    msg_read.bits_left = bits_left - bits;
 
     if (sgn) {
-        if (value & (1 << (bits - 1))) {
-            value |= -1 ^ ((1U << bits) - 1);
-        }
+        return (int32_t)(value << (32 - bits)) >> (32 - bits);
     }
 
     return value;

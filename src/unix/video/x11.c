@@ -246,13 +246,9 @@ static bool init(void)
 
     r_opengl_config_t *cfg = R_GetGLConfig();
 
-    if (cfg->multisamples) {
-        if (x11.extensions & QGLX_ARB_multisample) {
-            Com_Printf("Enabling GLX_ARB_multisample\n");
-        } else {
-            Com_WPrintf("GLX_ARB_multisample not found\n");
-            cfg->multisamples = 0;
-        }
+    if (cfg->multisamples && !(x11.extensions & QGLX_ARB_multisample)) {
+        Com_WPrintf("GLX_ARB_multisample not found for %d multisamples\n", cfg->multisamples);
+        cfg->multisamples = 0;
     }
 
     GLXFBConfig fbc;
@@ -354,8 +350,6 @@ static bool init(void)
             glXCreateContextAttribsARB = get_proc_addr("glXCreateContextAttribsARB");
 
         if (glXCreateContextAttribsARB) {
-            Com_Printf("Enabling GLX_ARB_create_context\n");
-
             int ctx_attr[] = {
                 GLX_CONTEXT_FLAGS_ARB, GLX_CONTEXT_DEBUG_BIT_ARB,
                 None
@@ -383,14 +377,8 @@ static bool init(void)
     if (x11.extensions & QGLX_EXT_swap_control)
         x11.SwapIntervalEXT = get_proc_addr("glXSwapIntervalEXT");
 
-    if (x11.SwapIntervalEXT) {
-        if (x11.extensions & QGLX_EXT_swap_control_tear)
-            Com_Printf("Enabling GLX_EXT_swap_control_tear\n");
-        else
-            Com_Printf("Enabling GLX_EXT_swap_control\n");
-    } else {
+    if (!x11.SwapIntervalEXT)
         Com_WPrintf("GLX_EXT_swap_control not found\n");
-    }
 
     char data = 0;
     Pixmap pixmap = XCreateBitmapFromData(x11.dpy, x11.win, &data, 1, 1);

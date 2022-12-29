@@ -788,6 +788,7 @@ static bool finish_download(void)
         curl = msg->easy_handle;
         curl_easy_getinfo(curl, CURLINFO_PRIVATE, &dl);
         Q_assert(dl);
+        Q_assert(dl->curl == curl);
 
         cls.download.current = NULL;
         cls.download.percent = 0;
@@ -798,6 +799,11 @@ static bool finish_download(void)
             fclose(dl->file);
             dl->file = NULL;
         }
+
+        //remove the handle and mark it as such
+        Q_assert(dl->multi_added);
+        curl_multi_remove_handle(curl_multi, curl);
+        dl->multi_added = false;
 
         curl_handles--;
 
@@ -831,6 +837,7 @@ static bool finish_download(void)
         case CURLE_COULDNT_RESOLVE_HOST:
         case CURLE_COULDNT_CONNECT:
         case CURLE_COULDNT_RESOLVE_PROXY:
+        case CURLE_PEER_FAILED_VERIFICATION:
             //connection problems are fatal
             err = curl_easy_strerror(result);
             level = PRINT_ERROR;
@@ -854,11 +861,6 @@ fail2:
                 dl->path[0] = 0;
             }
             Z_Freep(&dl->buffer);
-            if (dl->multi_added) {
-                //remove the handle and mark it as such
-                curl_multi_remove_handle(curl_multi, curl);
-                dl->multi_added = false;
-            }
             continue;
         }
 
@@ -872,12 +874,6 @@ fail2:
             sec = 0.001;
         Com_FormatSizeLong(size, sizeof(size), bytes);
         Com_FormatSizeLong(speed, sizeof(speed), bytes / sec);
-
-        if (dl->multi_added) {
-            //remove the handle and mark it as such
-            curl_multi_remove_handle(curl_multi, curl);
-            dl->multi_added = false;
-        }
 
         Com_Printf("[HTTP] %s [%s, %s/sec] [%d remaining file%s]\n",
                    dl->queue->path, size, speed, cls.download.pending,
@@ -970,21 +966,19 @@ void HTTP_RunDownloads(void)
 
     start_next_download();
 
-    do {
-        ret = curl_multi_perform(curl_multi, &new_count);
-        if (new_count < curl_handles) {
-            //hmm, something either finished or errored out.
-            if (!finish_download())
-                return; //aborted
-            curl_handles = new_count;
-        }
-    } while (ret == CURLM_CALL_MULTI_PERFORM);
-
+    ret = curl_multi_perform(curl_multi, &new_count);
     if (ret != CURLM_OK) {
         Com_EPrintf("[HTTP] Error running downloads: %s.\n",
                     curl_multi_strerror(ret));
         abort_downloads();
         return;
+    }
+
+    if (new_count < curl_handles) {
+        //hmm, something either finished or errored out.
+        if (!finish_download())
+            return; //aborted
+        curl_handles = new_count;
     }
 
     start_next_download();

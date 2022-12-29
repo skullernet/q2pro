@@ -1703,6 +1703,7 @@ static const cmd_option_t o_echo[] = {
     { "h", "help", "display this message" },
     { "e", "escapes", "enable interpretation of backslash escapes" },
     { "c:color", "color", "print text in this color" },
+    { "l:level", "level", "print text at this message level" },
     { "n", "no-newline", "do not output the trailing newline" },
     { NULL }
 };
@@ -1756,6 +1757,7 @@ static void Cmd_EchoEx_f(void)
 {
     char buffer[MAX_STRING_CHARS], *s;
     bool escapes = false;
+    print_type_t level = PRINT_ALL;
     color_index_t color = COLOR_NONE;
     const char *newline = "\n";
     int c;
@@ -1773,6 +1775,19 @@ static void Cmd_EchoEx_f(void)
         case 'c':
             color = Com_ParseColor(cmd_optarg);
             break;
+        case 'l':
+            switch (Q_tolower(*cmd_optarg)) {
+            case 'a': level = PRINT_ALL;       break;
+            case 't': level = PRINT_TALK;      break;
+            case 'd': level = PRINT_DEVELOPER; break;
+            case 'w': level = PRINT_WARNING;   break;
+            case 'e': level = PRINT_ERROR;     break;
+            case 'n': level = PRINT_NOTICE;    break;
+            default:
+                Com_Printf("Bad print level: %s\n", cmd_optarg);
+                return;
+            }
+            break;
         case 'n':
             newline = "";
             break;
@@ -1787,7 +1802,7 @@ static void Cmd_EchoEx_f(void)
     }
 
     Com_SetColor(color);
-    Com_Printf("%s%s", s, newline);
+    Com_LPrintf(level, "%s%s", s, newline);
     Com_SetColor(COLOR_NONE);
 }
 
