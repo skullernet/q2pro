@@ -32,9 +32,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #ifdef _WIN32
 #define LIBSUFFIX   ".dll"
-// TODO: Uncomment this when TNG and Q2Pro are merged
-// #elif __APPLE__
-// #define LIBSUFFIX   ".dylib"
+#elif __APPLE__
+#define LIBSUFFIX   ".dylib"
 #else
 #define LIBSUFFIX   ".so"
 #endif
