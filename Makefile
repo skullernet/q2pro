@@ -1,5 +1,10 @@
 ### Q2PRO Makefile ###
 
+$(warning *************************************************************************)
+$(warning Using Makefile for building Q2PRO is deprecated and will be removed soon.)
+$(warning Switch to building with Meson (see INSTALL.md).)
+$(warning *************************************************************************)
+
 ifneq ($(CONFIG_FILE),)
     include $(CONFIG_FILE)
 else
