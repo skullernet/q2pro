@@ -205,7 +205,7 @@ bool QAL_Init(void)
             continue;
         }
 
-        Com_Printf("Loaded extension %s\n", sec->extension);
+        Com_DPrintf("Loaded extension %s\n", sec->extension);
     }
 
     al_driver->flags |= CVAR_SOUND;
