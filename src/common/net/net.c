@@ -456,6 +456,8 @@ static void NET_LogPacket(const netadr_t *address, const char *prefix,
     FS_FPrintf(net_logFile, "\n");
 }
 
+#else
+#define NET_LogPacket(adr, pre, data, len)  (void)0
 #endif
 
 //=============================================================================
@@ -551,11 +553,8 @@ static void NET_GetLoopPackets(netsrc_t sock, void (*packet_cb)(void))
 
         memcpy(msg_read_buffer, loopmsg->data, loopmsg->datalen);
 
-#if USE_DEBUG
-        if (net_log_enable->integer > 1) {
-            NET_LogPacket(&net_from, "LP recv", loopmsg->data, loopmsg->datalen);
-        }
-#endif
+        NET_LogPacket(&net_from, "LP recv", loopmsg->data, loopmsg->datalen);
+
         if (sock == NS_CLIENT) {
             net_rate_rcvd += loopmsg->datalen;
         }
@@ -585,11 +584,8 @@ static bool NET_SendLoopPacket(netsrc_t sock, const void *data,
     memcpy(msg->data, data, len);
     msg->datalen = len;
 
-#if USE_DEBUG
-    if (net_log_enable->integer > 1) {
-        NET_LogPacket(to, "LP send", data, len);
-    }
-#endif
+    NET_LogPacket(to, "LP send", data, len);
+
     if (sock == NS_CLIENT) {
         net_rate_sent += len;
     }
@@ -776,10 +772,7 @@ static void NET_GetUdpPackets(struct pollfd *sock, void (*packet_cb)(void))
             break;
         }
 
-#if USE_DEBUG
-        if (net_log_enable->integer)
-            NET_LogPacket(&net_from, "UDP recv", msg_read_buffer, ret);
-#endif
+        NET_LogPacket(&net_from, "UDP recv", msg_read_buffer, ret);
 
         net_rate_rcvd += ret;
         net_bytes_rcvd += ret;
@@ -874,10 +867,7 @@ bool NET_SendPacket(netsrc_t sock, const void *data,
         Com_WPrintf("%s: short send to %s\n", __func__,
                     NET_AdrToString(to));
 
-#if USE_DEBUG
-    if (net_log_enable->integer)
-        NET_LogPacket(to, "UDP send", data, ret);
-#endif
+    NET_LogPacket(to, "UDP send", data, ret);
 
     net_rate_sent += ret;
     net_bytes_sent += ret;
@@ -1581,11 +1571,9 @@ neterr_t NET_RunStream(netstream_t *s)
                 e->revents &= ~POLLIN;
             } else {
                 FIFO_Commit(&s->recv, ret);
-#if USE_DEBUG
-                if (net_log_enable->integer) {
-                    NET_LogPacket(&s->address, "TCP recv", data, ret);
-                }
-#endif
+
+                NET_LogPacket(&s->address, "TCP recv", data, ret);
+
                 net_rate_rcvd += ret;
                 net_bytes_rcvd += ret;
 
@@ -1615,11 +1603,9 @@ neterr_t NET_RunStream(netstream_t *s)
                 e->revents &= ~POLLOUT;
             } else {
                 FIFO_Decommit(&s->send, ret);
-#if USE_DEBUG
-                if (net_log_enable->integer) {
-                    NET_LogPacket(&s->address, "TCP send", data, ret);
-                }
-#endif
+
+                NET_LogPacket(&s->address, "TCP send", data, ret);
+
                 net_rate_sent += ret;
                 net_bytes_sent += ret;
 
