@@ -688,8 +688,9 @@ static void CL_ParseServerData(void)
 		cl.pmp.speedmult = 2;
 		cl.pmp.flyhack = true; // fly hack is unconditionally enabled
 		cl.pmp.flyfriction = 4;
-	}
-
+    } else {
+        cls.protocolVersion = 0;
+    }
 
     if (cinematic) {
         SCR_PlayCinematic(levelname);
@@ -1156,7 +1157,7 @@ static void CL_ParseZPacket(void)
     }
 
     temp = msg_read;
-    SZ_Init(&msg_read, buffer, outlen);
+    SZ_Init(&msg_read, buffer, sizeof(buffer));
     msg_read.cursize = outlen;
 
     CL_ParseServerMessage();
@@ -1252,14 +1253,7 @@ void CL_ParseServerMessage(void)
         extrabits = cmd >> SVCMD_BITS;
         cmd &= SVCMD_MASK;
 
-		if (cmd == svc_extend)
-			cmd = MSG_ReadByte();
-
-#if USE_DEBUG
-        if (cl_shownet->integer > 1) {
-            MSG_ShowSVC(cmd);
-        }
-#endif
+        SHOWNET(1, "%3zu:%s\n", msg_read.readcount - 1, MSG_ServerCommandString(cmd));
 
         // other commands
 		switch (cmd) {
@@ -1458,14 +1452,7 @@ void CL_SeekDemoMessage(void)
         extrabits = cmd >> SVCMD_BITS;
         cmd &= SVCMD_MASK;
 
-		if (cmd == svc_extend)
-			cmd = MSG_ReadByte();
-		
-#if USE_DEBUG
-        if (cl_shownet->integer > 1) {
-            MSG_ShowSVC(cmd);
-        }
-#endif
+        SHOWNET(1, "%3zu:%s\n", msg_read.readcount - 1, MSG_ServerCommandString(cmd));
 
         // other commands
         switch (cmd) {

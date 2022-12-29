@@ -286,23 +286,19 @@ static bool wgl_init(void)
 
     if (cfg->multisamples) {
         if (fake_extensions & QWGL_ARB_multisample) {
-            if (wgl.ChoosePixelFormatARB) {
-                Com_Printf("Enabling WGL_ARB_multisample\n");
-            } else {
+            if (!wgl.ChoosePixelFormatARB) {
                 Com_WPrintf("Ignoring WGL_ARB_multisample, WGL_ARB_pixel_format not found\n");
                 cfg->multisamples = 0;
             }
         } else {
-            Com_WPrintf("WGL_ARB_multisample not found\n");
+            Com_WPrintf("WGL_ARB_multisample not found for %d multisamples\n", cfg->multisamples);
             cfg->multisamples = 0;
         }
     }
 
-    if (cfg->debug) {
-        if (wgl.CreateContextAttribsARB)
-            Com_Printf("Enabling WGL_ARB_create_context\n");
-        else
-            Com_WPrintf("WGL_ARB_create_context not found\n");
+    if (cfg->debug && !wgl.CreateContextAttribsARB) {
+        Com_WPrintf("WGL_ARB_create_context not found\n");
+        cfg->debug = false;
     }
 
     // create window, choose PFD, setup OpenGL context
@@ -338,14 +334,8 @@ static bool wgl_init(void)
     if (wgl.extensions & QWGL_EXT_swap_control)
         wgl.SwapIntervalEXT = GPA("wglSwapIntervalEXT");
 
-    if (wgl.SwapIntervalEXT) {
-        if (wgl.extensions & QWGL_EXT_swap_control_tear)
-            Com_Printf("Enabling WGL_EXT_swap_control_tear\n");
-        else
-            Com_Printf("Enabling WGL_EXT_swap_control\n");
-    } else {
+    if (!wgl.SwapIntervalEXT)
         Com_WPrintf("WGL_EXT_swap_control not found\n");
-    }
 
     return true;
 }
