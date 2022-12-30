@@ -247,7 +247,6 @@ fallback_opt = ['default_library=static']
 
 zlib = dependency('zlib',
   required:        get_option('zlib'),
-  allow_fallback:  win32,
   default_options: fallback_opt,
 )
 
@@ -257,13 +256,11 @@ endif
 
 jpeg = dependency('libjpeg',
   required:        get_option('libjpeg'),
-  allow_fallback:  win32,
   default_options: fallback_opt,
 )
 
 png = dependency('libpng',
   required:        get_option('libpng'),
-  allow_fallback:  win32,
   default_options: fallback_opt,
 )
 
@@ -274,7 +271,6 @@ config.set10('USE_PNG', png.found())
 curl = dependency('libcurl',
   version:         '>= 7.32.0',
   required:        get_option('libcurl'),
-  allow_fallback:  win32,
   default_options: fallback_opt,
 )
 
@@ -296,7 +292,6 @@ game_deps = [zlib]
 
 openal = dependency('openal',
   required:        get_option('openal'),
-  allow_fallback:  win32,
   default_options: fallback_opt,
 )
 if openal.found()
@@ -307,12 +302,10 @@ endif
 
 ogg = dependency('ogg',
   required:        get_option('ogg'),
-  allow_fallback:  win32,
   default_options: fallback_opt,
 )
 vorbisfile = dependency('vorbisfile',
   required:        get_option('ogg'),
-  allow_fallback:  win32,
   default_options: fallback_opt,
 )
 if ogg.found() and vorbisfile.found()
