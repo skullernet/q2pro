@@ -330,6 +330,7 @@ typedef enum {
 } dltype_t;
 
 typedef enum {
+    DL_FREE,
     DL_PENDING,
     DL_RUNNING,
     DL_DONE
