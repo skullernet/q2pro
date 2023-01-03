@@ -54,6 +54,7 @@ client_src = [
   'src/client/view.c',
   'src/client/sound/main.c',
   'src/client/sound/mem.c',
+  'src/common/async.c',
   'src/server/commands.c',
   'src/server/entities.c',
   'src/server/game.c',

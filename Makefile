@@ -202,6 +202,7 @@ OBJS_c := \
     src/client/view.o       \
     src/client/sound/main.o \
     src/client/sound/mem.o  \
+    src/common/async.o      \
     src/server/commands.o   \
     src/server/entities.o   \
     src/server/game.o       \
@@ -439,6 +440,7 @@ endif
 
 ifdef CONFIG_WINDOWS
     OBJS_c += src/windows/client.o
+    OBJS_c += src/windows/pthread.o
 
     ifndef CONFIG_NO_SOFTWARE_SOUND
         OBJS_c += src/windows/dsound.o
