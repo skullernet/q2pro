@@ -705,7 +705,6 @@ static void my_error_exit(j_common_ptr cinfo)
 static int my_jpeg_start_decompress(j_decompress_ptr cinfo, byte *rawdata, size_t rawlen)
 {
     my_error_ptr jerr = (my_error_ptr)cinfo->err;
-    int expected_components;
 
     if (setjmp(jerr->setjmp_buffer)) {
         return Q_ERR_LIBRARY_ERROR;
@@ -715,26 +714,16 @@ static int my_jpeg_start_decompress(j_decompress_ptr cinfo, byte *rawdata, size_
     jpeg_mem_src(cinfo, rawdata, rawlen);
     jpeg_read_header(cinfo, TRUE);
 
-    switch (cinfo->out_color_space) {
-    case JCS_GRAYSCALE:
-        expected_components = 1;
-        break;
-    case JCS_RGB:
-        expected_components = 3;
-        break;
-    default:
+    if (cinfo->out_color_space != JCS_RGB && cinfo->out_color_space != JCS_GRAYSCALE) {
         Com_SetLastError("invalid image color space");
         return Q_ERR_INVALID_FORMAT;
     }
 
-#ifdef JCS_ALPHA_EXTENSIONS
     cinfo->out_color_space = JCS_EXT_RGBA;
-    expected_components = 4;
-#endif
 
     jpeg_start_decompress(cinfo);
 
-    if (cinfo->output_components != expected_components) {
+    if (cinfo->output_components != 4) {
         Com_SetLastError("invalid number of color components");
         return Q_ERR_INVALID_FORMAT;
     }
@@ -746,8 +735,6 @@ static int my_jpeg_start_decompress(j_decompress_ptr cinfo, byte *rawdata, size_
 
     return 0;
 }
-
-#ifdef JCS_ALPHA_EXTENSIONS
 
 static int my_jpeg_finish_decompress(j_decompress_ptr cinfo, JSAMPARRAY row_pointers)
 {
@@ -763,52 +750,13 @@ static int my_jpeg_finish_decompress(j_decompress_ptr cinfo, JSAMPARRAY row_poin
     return 0;
 }
 
-#else
-
-static int my_jpeg_finish_decompress(j_decompress_ptr cinfo, JSAMPROW row_pointer, byte *out)
-{
-    my_error_ptr jerr = (my_error_ptr)cinfo->err;
-    JSAMPROW in;
-    int i;
-
-    if (setjmp(jerr->setjmp_buffer)) {
-        return Q_ERR_LIBRARY_ERROR;
-    }
-
-    if (cinfo->output_components == 3) {
-        while (cinfo->output_scanline < cinfo->output_height) {
-            jpeg_read_scanlines(cinfo, &row_pointer, 1);
-
-            for (i = 0, in = row_pointer; i < cinfo->output_width; i++, out += 4, in += 3) {
-                out[0] = in[0];
-                out[1] = in[1];
-                out[2] = in[2];
-                out[3] = 255;
-            }
-        }
-    } else {
-        while (cinfo->output_scanline < cinfo->output_height) {
-            jpeg_read_scanlines(cinfo, &row_pointer, 1);
-
-            for (i = 0, in = row_pointer; i < cinfo->output_width; i++, out += 4, in += 1) {
-                out[0] = out[1] = out[2] = in[0];
-                out[3] = 255;
-            }
-        }
-    }
-
-    jpeg_finish_decompress(cinfo);
-    return 0;
-}
-
-#endif
-
 IMG_LOAD(JPG)
 {
+    JSAMPROW row_pointers[MAX_TEXTURE_SIZE];
     struct jpeg_decompress_struct cinfo;
     struct my_error_mgr jerr;
     byte *pixels;
-    int ret;
+    int ret, row, rowbytes;
 
     cinfo.err = jpeg_std_error(&jerr.pub);
     jerr.pub.error_exit = my_error_exit;
@@ -823,23 +771,13 @@ IMG_LOAD(JPG)
     image->upload_height = image->height = cinfo.output_height;
     image->flags |= IF_OPAQUE;
 
-    pixels = IMG_AllocPixels(cinfo.output_height * cinfo.output_width * 4);
+    rowbytes = cinfo.output_width * 4;
+    pixels = IMG_AllocPixels(cinfo.output_height * rowbytes);
 
-#ifdef JCS_ALPHA_EXTENSIONS
-    JSAMPROW row_pointers[MAX_TEXTURE_SIZE];
-
-    for (int row = 0; row < cinfo.output_height; row++)
-        row_pointers[row] = (JSAMPROW)(pixels + row * cinfo.output_width * 4);
+    for (row = 0; row < cinfo.output_height; row++)
+        row_pointers[row] = (JSAMPROW)(pixels + row * rowbytes);
 
     ret = my_jpeg_finish_decompress(&cinfo, row_pointers);
-#else
-    JSAMPROW row_pointer;
-
-    row_pointer = Z_Malloc(sizeof(JSAMPLE) * cinfo.output_width * cinfo.output_components);
-    ret = my_jpeg_finish_decompress(&cinfo, row_pointer, pixels);
-    Z_Free(row_pointer);
-#endif
-
     if (ret < 0) {
         IMG_FreePixels(pixels);
         goto fail;
