@@ -292,10 +292,10 @@ jpeg = dependency('libjpeg',
   default_options: fallback_opt,
 )
 
-if host_machine.system() == 'darwin' # Mac builds use libjpeg9 which does not have JCS_EXT_RGBA
-  client_deps += jpeg
-  config.set10('USE_JPG', true)
-else
+# if host_machine.system() == 'darwin' # Mac builds use libjpeg9 which does not have JCS_EXT_RGBA
+#   client_deps += jpeg
+#   config.set10('USE_JPG', true)
+# else
 if jpeg.type_name() == 'internal'
   has_rgba = true
 else
@@ -308,7 +308,7 @@ if (jpeg.found() and has_rgba)
   client_deps += jpeg
   config.set10('USE_JPG', true)
 endif
-endif
+#endif
 
 openal = dependency('openal',
   required:        get_option('openal'),

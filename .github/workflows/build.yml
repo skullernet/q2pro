@@ -193,8 +193,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install meson libpng jpeg sdl2 openal-soft zlib curl libvorbis libxi
-          brew uninstall libjpeg-turbo --ignore-dependencies
+          brew install meson libpng jpeg sdl2 openal-soft zlib curl libvorbis libxi jpeg-turbo
 
       - name: Build
         run: |
