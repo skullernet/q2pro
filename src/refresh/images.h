@@ -91,6 +91,16 @@ image_t *IMG_ForHandle(qhandle_t h);
 
 void IMG_Unload(image_t *image);
 void IMG_Load(image_t *image, byte *pic);
-byte *IMG_ReadPixels(int *width, int *height, int *rowbytes);
+
+typedef struct screenshot_s {
+    int (*save_cb)(struct screenshot_s *restrict);
+    byte *pixels;
+    FILE *fp;
+    char *filename;
+    int width, height, rowbytes, bpp, status, param;
+    bool async;
+} screenshot_t;
+
+void IMG_ReadPixels(screenshot_t *s);
 
 #endif // IMAGES_H
