@@ -193,7 +193,6 @@ COMMON_OBJS := \
 
 OBJS_c := \
     $(COMMON_OBJS)          \
-    src/shared/m_flash.o    \
     src/client/ascii.o      \
     src/client/cin.o        \
     src/client/console.o    \
@@ -202,6 +201,7 @@ OBJS_c := \
     src/client/download.o   \
     src/client/effects.o    \
     src/client/entities.o   \
+    src/client/ghud.o       \
     src/client/input.o      \
     src/client/keys.o       \
     src/client/locs.o       \
@@ -212,37 +212,33 @@ OBJS_c := \
     src/client/predict.o    \
     src/client/refresh.o    \
     src/client/screen.o     \
-    src/client/tent.o       \
-    src/client/view.o       \
-    src/client/ghud.o       \
     src/client/sound/main.o \
     src/client/sound/mem.o  \
+    src/client/tent.o       \
+    src/client/view.o       \
+    src/common/async.o      \
     src/server/commands.o   \
     src/server/entities.o   \
     src/server/game.o       \
     src/server/init.o       \
-    src/server/send.o       \
     src/server/main.o       \
+    src/server/send.o       \
     src/server/user.o       \
     src/server/world.o      \
-    src/server/ghud.o       \
-
+    src/shared/m_flash.o
 OBJS_s := \
-    $(COMMON_OBJS)  \
     src/client/null.o       \
     src/server/commands.o   \
     src/server/entities.o   \
     src/server/game.o       \
     src/server/init.o       \
-    src/server/send.o       \
     src/server/main.o       \
+    src/server/send.o       \
     src/server/user.o       \
     src/server/world.o      \
     src/server/ghud.o
 
 OBJS_g := \
-    src/shared/shared.o         \
-    src/shared/m_flash.o        \
     src/baseq2/g_ai.o           \
     src/baseq2/g_chase.o        \
     src/baseq2/g_cmds.o         \
@@ -265,9 +261,9 @@ OBJS_g := \
     src/baseq2/m_actor.o        \
     src/baseq2/m_berserk.o      \
     src/baseq2/m_boss2.o        \
+    src/baseq2/m_boss3.o        \
     src/baseq2/m_boss31.o       \
     src/baseq2/m_boss32.o       \
-    src/baseq2/m_boss3.o        \
     src/baseq2/m_brain.o        \
     src/baseq2/m_chick.o        \
     src/baseq2/m_flipper.o      \
@@ -289,7 +285,9 @@ OBJS_g := \
     src/baseq2/p_hud.o          \
     src/baseq2/p_trail.o        \
     src/baseq2/p_view.o         \
-    src/baseq2/p_weapon.o
+    src/baseq2/p_weapon.o       \
+    src/shared/m_flash.o        \
+    src/shared/shared.o
 
 ### Configuration Options ###
 
@@ -475,6 +473,7 @@ endif
 
 ifdef CONFIG_WINDOWS
     OBJS_c += src/windows/client.o
+    OBJS_c += src/windows/pthread.o
 
     ifndef CONFIG_NO_SOFTWARE_SOUND
         OBJS_c += src/windows/dsound.o
