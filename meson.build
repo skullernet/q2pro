@@ -299,7 +299,7 @@ else
     dependencies: jpeg,
     required:     get_option('libjpeg'))
 endif
-if jpeg.found() and has_rgba
+if (jpeg.found() and has_rgba) or host_machine.system() == 'darwin' # Mac builds use libjpeg9 which does not have JCS_EXT_RGBA
   client_deps += jpeg
   config.set10('USE_JPG', true)
 endif

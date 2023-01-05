@@ -206,6 +206,7 @@ OBJS_c := \
     src/client/keys.o       \
     src/client/locs.o       \
     src/client/main.o       \
+    src/shared/m_flash.o    \
     src/client/newfx.o      \
     src/client/parse.o      \
     src/client/precache.o   \
@@ -224,8 +225,8 @@ OBJS_c := \
     src/server/main.o       \
     src/server/send.o       \
     src/server/user.o       \
-    src/server/world.o      \
-    src/shared/m_flash.o
+    src/server/world.o
+
 OBJS_s := \
     src/client/null.o       \
     src/server/commands.o   \
