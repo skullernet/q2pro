@@ -709,7 +709,7 @@ static int my_jpeg_start_decompress(j_decompress_ptr cinfo, byte *rawdata, size_
     // Mac builds use libjpeg9 which does not have JCS_EXT_RGBA
     #ifdef JCS_ALPHA_EXTENSIONS
     #ifdef __APPLE__
-        expected_components = 4;
+        int expected_components = 4;
     #else
         cinfo->out_color_space = JCS_EXT_RGBA;
     #endif
@@ -784,7 +784,7 @@ fail:
 }
 
 static int my_jpeg_compress(j_compress_ptr cinfo, JSAMPARRAY row_pointers, screenshot_t *s)
-{
+{    
     my_error_ptr jerr = (my_error_ptr)cinfo->err;
 
     if (setjmp(jerr->setjmp_buffer)) {
