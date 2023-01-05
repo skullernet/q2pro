@@ -291,6 +291,8 @@ jpeg = dependency('libjpeg',
   required:        get_option('libjpeg'),
   default_options: fallback_opt,
 )
+
+if host_machine.system() != 'darwin' # Mac builds use libjpeg9 which does not have JCS_EXT_RGBA
 if jpeg.type_name() == 'internal'
   has_rgba = true
 else
@@ -299,7 +301,11 @@ else
     dependencies: jpeg,
     required:     get_option('libjpeg'))
 endif
-if (jpeg.found() and has_rgba) or host_machine.system() == 'darwin' # Mac builds use libjpeg9 which does not have JCS_EXT_RGBA
+if (jpeg.found() and has_rgba)
+  client_deps += jpeg
+  config.set10('USE_JPG', true)
+else
+  # Mac builds implictly use jpeg
   client_deps += jpeg
   config.set10('USE_JPG', true)
 endif
