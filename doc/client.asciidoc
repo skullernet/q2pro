@@ -875,6 +875,13 @@ allow_download_players::
 allow_download_textures::
     Enables automatic downloading of map textures. Default value is 1.
 
+.Ignoring downloads
+*******************
+It is possible to specify a list of paths in ‘download-ignores.txt’ file that
+are known to be non-existent and should never be downloaded from server. This
+file accepts wildcard patterns one per line. Empty lines and lines starting
+with ‘#’ or ‘/’ characters are ignored.
+*******************
 
 HTTP Downloads
 ~~~~~~~~~~~~~~
@@ -897,6 +904,15 @@ cl_http_max_connections::
 cl_http_proxy::
     HTTP proxy server to use for downloads. Default value is empty (direct
     connection).
+
+cl_http_default_url::
+    Default download URL to use when server doesn't provide one. Client will
+    fall back to UDP downloading as soon as 404 is returned from default
+    repository. Default value is "".
+
+cl_http_insecure::
+    Disable checking of server certificate when using HTTPS. Default value is
+    0.
 
 
 Locations
