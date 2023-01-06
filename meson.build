@@ -289,17 +289,19 @@ jpeg = dependency('libjpeg',
   required:        get_option('libjpeg'),
   default_options: fallback_opt,
 )
-if jpeg.type_name() == 'internal'
-  has_rgba = true
-else
-  has_rgba = cc.has_header_symbol('jpeglib.h', 'JCS_EXT_RGBA',
-    prefix:       '#include <stdio.h>',
-    dependencies: jpeg,
-    required:     get_option('libjpeg'))
-endif
-if jpeg.found() and has_rgba
-  client_deps += jpeg
-  config.set10('USE_JPG', true)
+if jpeg.found()
+  if jpeg.type_name() == 'internal'
+    has_rgba = true
+  else
+    has_rgba = cc.has_header_symbol('jpeglib.h', 'JCS_EXT_RGBA',
+      prefix:       '#include <stdio.h>',
+      dependencies: jpeg,
+      required:     get_option('libjpeg'))
+  endif
+  if has_rgba
+    client_deps += jpeg
+    config.set10('USE_JPG', true)
+  endif
 endif
 
 openal = dependency('openal',
