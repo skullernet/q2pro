@@ -193,7 +193,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install meson libpng jpeg sdl2 openal-soft zlib curl libvorbis libxi jpeg-turbo
+          brew install meson libpng sdl2 openal-soft zlib curl libvorbis libxi jpeg-turbo
 
       - name: Build
         run: |
@@ -201,7 +201,7 @@ jobs:
           meson compile -vC builddir
         env:
           CC: "gcc"
-          PKG_CONFIG_PATH: "/usr/local/opt/openal-soft/lib/pkgconfig:/usr/local/opt/jpeg/lib/pkgconfig"
+          PKG_CONFIG_PATH: "/usr/local/opt/openal-soft/lib/pkgconfig"
           CFLAGS: "-mmacosx-version-min=10.7"
 
       - name: Set binaries as executable
