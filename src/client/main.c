@@ -59,6 +59,8 @@ cvar_t  *cl_disconnectcmd;
 cvar_t  *cl_changemapcmd;
 cvar_t  *cl_beginmapcmd;
 
+cvar_t  *cl_ignore_stufftext;
+
 cvar_t  *cl_gibs;
 #if USE_FPS
 cvar_t  *cl_updaterate;
@@ -1782,6 +1784,11 @@ void CL_LoadFilterList(string_entry_t **list, const char *name, const char *comm
     FS_FreeFile(raw);
 }
 
+static void CL_LoadStuffTextWhiteList(void)
+{
+    CL_LoadFilterList(&cls.stufftextwhitelist, "stufftext-whitelist.txt", NULL, MAX_STRING_CHARS);
+}
+
 typedef struct {
     list_t entry;
     unsigned hits;
@@ -2345,6 +2352,7 @@ void CL_RestartFilesystem(bool total)
     }
 
     CL_LoadDownloadIgnores();
+    CL_LoadStuffTextWhiteList();
     OGG_LoadTrackList();
 
     // switch back to original state
@@ -2433,6 +2441,17 @@ static void CL_RestartRefresh_f(void)
     CL_RestartRefresh(true);
 }
 
+static bool allow_stufftext(const char *text)
+{
+    string_entry_t *entry;
+
+    for (entry = cls.stufftextwhitelist; entry; entry = entry->next)
+        if (Com_WildCmp(entry->string, text))
+            return true;
+
+    return false;
+}
+
 // execute string in server command buffer
 static void exec_server_string(cmdbuf_t *buf, const char *text)
 {
@@ -2464,6 +2483,22 @@ static void exec_server_string(cmdbuf_t *buf, const char *text)
         if (strcmp(s, "play")) {
             return;
         }
+    }
+
+    // handle commands that are always allowed
+    if (!strcmp(s, "reconnect")) {
+        CL_Reconnect_f();
+        return;
+    }
+    if (!strcmp(s, "cmd")) {
+        CL_ForwardToServer_f();
+        return;
+    }
+
+    if (cl_ignore_stufftext->integer >= 1 && !allow_stufftext(text)) {
+        if (cl_ignore_stufftext->integer >= 2)
+            Com_WPrintf("Ignored stufftext: %s\n", text);
+        return;
     }
 
     // execute regular commands
@@ -2723,6 +2758,8 @@ static void CL_InitLocal(void)
     cl_disconnectcmd = Cvar_Get("cl_disconnectcmd", "", 0);
     cl_changemapcmd = Cvar_Get("cl_changemapcmd", "", 0);
     cl_beginmapcmd = Cvar_Get("cl_beginmapcmd", "", 0);
+
+    cl_ignore_stufftext = Cvar_Get("cl_ignore_stufftext", "0", 0);
 
     cl_protocol = Cvar_Get("cl_protocol", "0", 0);
 
@@ -3298,6 +3335,7 @@ void CL_Init(void)
 
     OGG_Init();
     CL_LoadDownloadIgnores();
+    CL_LoadStuffTextWhiteList();
 
     HTTP_Init();
 
