@@ -569,6 +569,7 @@ const char *CL_Server_g(const char *partial, int argnum, int state);
 void CL_CheckForPause(void);
 void CL_UpdateFrameTimes(void);
 bool CL_CheckForIgnore(const char *s);
+void CL_LoadFilterList(string_entry_t **list, const char *name, const char *comments, size_t maxlen);
 
 void cl_timeout_changed(cvar_t *self);
 
