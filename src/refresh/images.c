@@ -708,11 +708,7 @@ static int my_jpeg_start_decompress(j_decompress_ptr cinfo, byte *rawdata, size_
 
     // Mac builds use libjpeg9 which does not have JCS_EXT_RGBA
     #ifdef JCS_ALPHA_EXTENSIONS
-    #ifdef __APPLE__
-        int expected_components = 4;
-    #else
         cinfo->out_color_space = JCS_EXT_RGBA;
-    #endif
     #endif
 
     jpeg_start_decompress(cinfo);
@@ -797,12 +793,7 @@ static int my_jpeg_compress(j_compress_ptr cinfo, JSAMPARRAY row_pointers, scree
     cinfo->image_width = s->width;
     cinfo->image_height = s->height;
     cinfo->input_components = s->bpp;
-    // Mac builds use libjpeg9 which does not have JCS_EXT_RGBA
-    #ifdef __APPLE__
-    cinfo->in_color_space = s->bpp == 4;
-    #else
     cinfo->in_color_space = s->bpp == 4 ? JCS_EXT_RGBA : JCS_RGB;
-    #endif
 
     jpeg_set_defaults(cinfo);
     jpeg_set_quality(cinfo, clamp(s->param, 0, 100), TRUE);

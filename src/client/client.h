@@ -424,6 +424,8 @@ typedef struct client_static_s {
     netadr_t    recent_addr[RECENT_ADDR];
     int         recent_head;
 
+    string_entry_t  *stufftextwhitelist;
+
     struct {
         list_t      queue;              // queue of paths we need
         int         pending;            // number of non-finished entries in queue
@@ -581,6 +583,7 @@ const char *CL_Server_g(const char *partial, int argnum, int state);
 void CL_CheckForPause(void);
 void CL_UpdateFrameTimes(void);
 bool CL_CheckForIgnore(const char *s);
+void CL_LoadFilterList(string_entry_t **list, const char *name, const char *comments, size_t maxlen);
 
 void cl_timeout_changed(cvar_t *self);
 

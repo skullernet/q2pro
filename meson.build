@@ -292,22 +292,19 @@ jpeg = dependency('libjpeg',
   default_options: fallback_opt,
 )
 
-if host_machine.system() == 'darwin' # Mac builds use libjpeg9 which does not have JCS_EXT_RGBA
-  client_deps += jpeg
-  config.set10('USE_JPG', true)
-else
-if jpeg.type_name() == 'internal'
-  has_rgba = true
-else
-  has_rgba = cc.has_header_symbol('jpeglib.h', 'JCS_EXT_RGBA',
-    prefix:       '#include <stdio.h>',
-    dependencies: jpeg,
-    required:     get_option('libjpeg'))
-endif
-if (jpeg.found() and has_rgba)
-  client_deps += jpeg
-  config.set10('USE_JPG', true)
-endif
+if jpeg.found()
+  if jpeg.type_name() == 'internal'
+    has_rgba = true
+  else
+    has_rgba = cc.has_header_symbol('jpeglib.h', 'JCS_EXT_RGBA',
+      prefix:       '#include <stdio.h>',
+      dependencies: jpeg,
+      required:     get_option('libjpeg'))
+  endif
+  if has_rgba
+    client_deps += jpeg
+    config.set10('USE_JPG', true)
+  endif
 endif
 
 openal = dependency('openal',
