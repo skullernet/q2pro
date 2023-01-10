@@ -934,6 +934,10 @@ static void CL_AddViewWeapon(void)
                         ps->gunangles[i], CL_KEYLERPFRAC);
     }
 
+    VectorMA(gun.origin, cl_gun_y->value, cl.v_forward, gun.origin);
+    VectorMA(gun.origin, cl_gun_x->value, cl.v_right, gun.origin);
+    VectorMA(gun.origin, cl_gun_z->value, cl.v_up, gun.origin);
+
     VectorCopy(gun.origin, gun.oldorigin);      // don't lerp at all
 
     if (gun_frame) {
