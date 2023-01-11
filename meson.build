@@ -50,17 +50,18 @@ client_src = [
   'src/client/predict.c',
   'src/client/refresh.c',
   'src/client/screen.c',
-  'src/client/tent.c',
-  'src/client/view.c',
   'src/client/sound/main.c',
   'src/client/sound/mem.c',
+  'src/client/tent.c',
+  'src/client/view.c',
+  'src/common/async.c',
   'src/server/commands.c',
   'src/server/entities.c',
   'src/server/ghud.c',
   'src/server/game.c',
   'src/server/init.c',
-  'src/server/send.c',
   'src/server/main.c',
+  'src/server/send.c',
   'src/server/user.c',
   'src/server/world.c',
   'src/shared/m_flash.c',
@@ -101,8 +102,8 @@ server_src = [
   'src/server/ghud.c',
   'src/server/game.c',
   'src/server/init.c',
-  'src/server/send.c',
   'src/server/main.c',
+  'src/server/send.c',
   'src/server/user.c',
   'src/server/world.c',
 ]
@@ -319,7 +320,6 @@ fallback_opt = ['default_library=static']
 
 zlib = dependency('zlib',
   required:        get_option('zlib'),
-  allow_fallback:  win32,
   default_options: fallback_opt,
 )
 
@@ -327,26 +327,17 @@ if not zlib.found()
   warning('zlib not found, client will be unable to connect to protocol 35 servers')
 endif
 
-jpeg = dependency('libjpeg',
-  required:        get_option('libjpeg'),
-  allow_fallback:  win32,
-  default_options: fallback_opt,
-)
-
 png = dependency('libpng',
   required:        get_option('libpng'),
-  allow_fallback:  win32,
   default_options: fallback_opt,
 )
 
 config.set10('USE_ZLIB', zlib.found())
-config.set10('USE_JPG', jpeg.found())
 config.set10('USE_PNG', png.found())
 
 curl = dependency('libcurl',
-  version:         '>= 7.32.0',
+  version:         '>= 7.68.0',
   required:        get_option('libcurl'),
-  allow_fallback:  win32,
   default_options: fallback_opt,
 )
 
@@ -362,13 +353,32 @@ if sdl2.found()
 endif
 
 common_deps = [zlib]
-client_deps = [jpeg, png, curl, sdl2]
+client_deps = [png, curl, sdl2]
 server_deps = []
 game_deps = [zlib]
 
+jpeg = dependency('libjpeg',
+  required:        get_option('libjpeg'),
+  default_options: fallback_opt,
+)
+
+if jpeg.found()
+  if jpeg.type_name() == 'internal'
+    has_rgba = true
+  else
+    has_rgba = cc.has_header_symbol('jpeglib.h', 'JCS_EXT_RGBA',
+      prefix:       '#include <stdio.h>',
+      dependencies: jpeg,
+      required:     get_option('libjpeg'))
+  endif
+  if has_rgba
+    client_deps += jpeg
+    config.set10('USE_JPG', true)
+  endif
+endif
+
 openal = dependency('openal',
   required:        get_option('openal'),
-  allow_fallback:  win32,
   default_options: fallback_opt,
 )
 if openal.found()
@@ -396,12 +406,10 @@ endif
 
 ogg = dependency('ogg',
   required:        get_option('ogg'),
-  allow_fallback:  win32,
   default_options: fallback_opt,
 )
 vorbisfile = dependency('vorbisfile',
   required:        get_option('ogg'),
-  allow_fallback:  win32,
   default_options: fallback_opt,
 )
 if ogg.found() and vorbisfile.found()
