@@ -290,10 +290,6 @@ s_driver::
       - sdl — SDL2 audio
       - oss — OSS audio
 
-al_driver::
-    Specifies the name of OpenAL driver to use. Default value is ‘soft_oal’
-    on Windows, and ‘libopenal.so.1’ on Linux.
-
 al_device::
     Specifies the name of OpenAL device to use. Format of this value depends on
     your OpenAL implementation. Default value is empty, which means default
@@ -875,6 +871,13 @@ allow_download_players::
 allow_download_textures::
     Enables automatic downloading of map textures. Default value is 1.
 
+.Ignoring downloads
+*******************
+It is possible to specify a list of paths in ‘download-ignores.txt’ file that
+are known to be non-existent and should never be downloaded from server. This
+file accepts wildcard patterns one per line. Empty lines and lines starting
+with ‘#’ or ‘/’ characters are ignored.
+*******************
 
 HTTP Downloads
 ~~~~~~~~~~~~~~
@@ -897,6 +900,15 @@ cl_http_max_connections::
 cl_http_proxy::
     HTTP proxy server to use for downloads. Default value is empty (direct
     connection).
+
+cl_http_default_url::
+    Default download URL to use when server doesn't provide one. Client will
+    fall back to UDP downloading as soon as 404 is returned from default
+    repository. Default value is "".
+
+cl_http_insecure::
+    Disable checking of server certificate when using HTTPS. Default value is
+    0.
 
 
 Locations
@@ -979,6 +991,17 @@ TIP: With ‘cl_noskins’ set to 2, it is possible to keep just 2 model/skin pa
 This will not affect model-based TDM gameplay, since any male skin will be
 replaced by ‘male/grunt’ and any female skin will be replaced by
 ‘female/athena’.
+
+cl_ignore_stufftext::
+    Enable filtering of commands server is allowed to stuff into client
+    console. List of allowed wildcard patterns can be specified in
+    ‘stufftext-whitelist.txt’ file. ‘cmd’ and some internal client commands are
+    always allowed. When set to 2 and higher also issues a warning when
+    stufftext command is ignored. Default value is 0 (don't filter stufftext
+    commands).
+
+NOTE: Stufftext filtering is advanced feature and may create compatibility
+problems with mods/servers.
 
 cl_rollhack::
     Default OpenGL renderer in Quake 2 contained a bug that caused ‘roll’ angle

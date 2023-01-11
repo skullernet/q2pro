@@ -1290,11 +1290,11 @@ $Cvars will be expanded unless they are in a quoted token
 */
 void Cmd_TokenizeString(const char *text, bool macroExpand)
 {
-    int     i, len;
+    size_t  len;
     char    *data, *dest;
 
 // clear the args from the last string
-    for (i = 0; i < cmd_argc; i++) {
+    for (int i = 0; i < cmd_argc; i++) {
         cmd_argv[i] = NULL;
         cmd_offsets[i] = 0;
     }
@@ -1317,6 +1317,11 @@ void Cmd_TokenizeString(const char *text, bool macroExpand)
         }
     }
 
+// skip any leading whitespace
+    while (*text && *text <= ' ') {
+        text++;
+    }
+
 // strip off any trailing whitespace
     len = strlen(text);
     while (len > 0 && text[len - 1] <= ' ') {
@@ -1324,6 +1329,9 @@ void Cmd_TokenizeString(const char *text, bool macroExpand)
     }
     if (len >= MAX_STRING_CHARS) {
         Com_Printf("Line exceeded %i chars, discarded.\n", MAX_STRING_CHARS);
+        return;
+    }
+    if (!len) {
         return;
     }
 

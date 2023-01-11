@@ -28,19 +28,19 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/cvar.h"
 #include "common/field.h"
 #include "common/files.h"
-#include "common/pmove.h"
 #include "common/math.h"
 #include "common/msg.h"
 #include "common/net/chan.h"
 #include "common/net/net.h"
+#include "common/pmove.h"
 #include "common/prompt.h"
 #include "common/protocol.h"
 #include "common/sizebuf.h"
 #include "common/zone.h"
 
-#include "system/system.h"
 #include "refresh/refresh.h"
 #include "server/server.h"
+#include "system/system.h"
 
 #include "client/client.h"
 #include "client/input.h"
@@ -341,6 +341,7 @@ typedef enum {
 } dltype_t;
 
 typedef enum {
+    DL_FREE,
     DL_PENDING,
     DL_RUNNING,
     DL_DONE
@@ -422,6 +423,8 @@ typedef struct client_static_s {
 
     netadr_t    recent_addr[RECENT_ADDR];
     int         recent_head;
+
+    string_entry_t  *stufftextwhitelist;
 
     struct {
         list_t      queue;              // queue of paths we need
@@ -580,6 +583,7 @@ const char *CL_Server_g(const char *partial, int argnum, int state);
 void CL_CheckForPause(void);
 void CL_UpdateFrameTimes(void);
 bool CL_CheckForIgnore(const char *s);
+void CL_LoadFilterList(string_entry_t **list, const char *name, const char *comments, size_t maxlen);
 
 void cl_timeout_changed(cvar_t *self);
 
