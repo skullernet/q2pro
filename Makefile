@@ -150,7 +150,7 @@ CFLAGS_c += $(BUILD_DEFS) $(VER_DEFS) $(PATH_DEFS) -DUSE_CLIENT=1
 # windres needs special quoting...
 RCFLAGS_s += -DREVISION=$(REV) -DVERSION='\"$(VER)\"'
 RCFLAGS_c += -DREVISION=$(REV) -DVERSION='\"$(VER)\"'
-RCFLAGS_g += -DREVISION=$(REV) -DVERSION='\"$(VER)\"'
+RCFLAGS_g += -DREVISION=$(REV) -DVERSION='\"$(VER)\"' -DCPUSTRING='\"$(CPU)\"'
 
 
 ### Object Files ###

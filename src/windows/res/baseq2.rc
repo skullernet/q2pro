@@ -14,11 +14,11 @@
 
 #ifdef _WIN64
 #define VER_FILEDESCRIPTION_STR     "Q2PRO baseq2 game module (64-bit)"
-#define VER_ORIGINALFILENAME_STR    "gamex86_64.dll"
 #else
 #define VER_FILEDESCRIPTION_STR     "Q2PRO baseq2 game module"
-#define VER_ORIGINALFILENAME_STR    "gamex86.dll"
 #endif
+
+#define VER_ORIGINALFILENAME_STR    "game" CPUSTRING ".dll"
 
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 
