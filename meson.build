@@ -215,6 +215,7 @@ if cc.get_argument_syntax() == 'gcc'
   endif
 
   test_args = [
+    '-fsigned-char',
     '-Wpointer-arith',
     '-Wformat-security',
     '-Werror=vla',
