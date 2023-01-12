@@ -230,7 +230,6 @@ void CL_RegisterBspModels(void)
         Com_Error(ERR_DROP, "Couldn't load %s: %s", name, BSP_ErrorString(ret));
     }
 
-#if USE_MAPCHECKSUM
     if (cl.bsp->checksum != atoi(cl.configstrings[CS_MAPCHECKSUM])) {
         if (cls.demo.playback) {
             Com_WPrintf("Local map version differs from demo: %i != %s\n",
@@ -240,7 +239,6 @@ void CL_RegisterBspModels(void)
                       cl.bsp->checksum, cl.configstrings[CS_MAPCHECKSUM]);
         }
     }
-#endif
 
     for (i = 1; i < MAX_MODELS; i++) {
         name = cl.configstrings[CS_MODELS + i];
