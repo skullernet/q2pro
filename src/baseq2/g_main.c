@@ -309,7 +309,8 @@ edict_t *CreateTargetChangeLevel(char *map)
 
     ent = G_Spawn();
     ent->classname = "target_changelevel";
-    Q_snprintf(level.nextmap, sizeof(level.nextmap), "%s", map);
+    if (map != level.nextmap)
+        Q_strlcpy(level.nextmap, map, sizeof(level.nextmap));
     ent->map = level.nextmap;
     return ent;
 }
@@ -455,7 +456,6 @@ void ExitLevel(void)
     level.changemap = NULL;
     level.exitintermission = 0;
     level.intermission_framenum = 0;
-    ClientEndServerFrames();
 
     // clear some things before going to next level
     for (i = 0 ; i < maxclients->value ; i++) {

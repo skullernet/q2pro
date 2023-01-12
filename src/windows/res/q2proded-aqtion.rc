@@ -41,7 +41,7 @@ BEGIN
             VALUE "OriginalFilename", VER_ORIGINALFILENAME_STR
             VALUE "FileVersion", VERSION
             VALUE "InternalName", "q2proded"
-            VALUE "LegalCopyright", "Copyright © 2022 AQtion"
+            VALUE "LegalCopyright", "Copyright © 2023 AQtion"
             VALUE "ProductName", "AQtion"
             VALUE "ProductVersion", VERSION
         END

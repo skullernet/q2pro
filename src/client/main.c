@@ -29,6 +29,9 @@ cvar_t  *cl_predict_crouch;
 cvar_t  *cl_gun;
 cvar_t  *cl_gunalpha;
 cvar_t  *cl_gunfov;
+cvar_t  *cl_gun_x;
+cvar_t  *cl_gun_y;
+cvar_t  *cl_gun_z;
 cvar_t  *cl_warn_on_fps_rounding;
 cvar_t  *cl_maxfps;
 cvar_t  *cl_async;
@@ -3681,7 +3684,7 @@ static void exec_server_string(cmdbuf_t *buf, const char *text)
         CL_Reconnect_f();
         return;
     }
-    if (!strcmp(s, "cmd")) {
+    if (!strcmp(s, "cmd") && !cls.stufftextwhitelist) {
         CL_ForwardToServer_f();
         return;
     }
@@ -3809,14 +3812,12 @@ static const cmdreg_t c_client[] = {
     { "userinfo", CL_Userinfo_f },
     { "snd_restart", CL_RestartSound_f },
     { "play", CL_PlaySound_f, CL_PlaySound_c },
-    //{ "changing", CL_Changing_f },
     { "disconnect", CL_Disconnect_f },
     { "connect", CL_Connect_f, CL_Connect_c },
     { "followip", CL_FollowIP_f },
     { "passive", CL_PassiveConnect_f },
     { "reconnect", CL_Reconnect_f },
     { "rcon", CL_Rcon_f, CL_Rcon_c },
-    //{ "precache", CL_Precache_f },
     { "serverstatus", CL_ServerStatus_f, CL_ServerStatus_c },
     { "ignoretext", CL_IgnoreText_f },
     { "unignoretext", CL_UnIgnoreText_f },
@@ -3826,7 +3827,6 @@ static const cmdreg_t c_client[] = {
     { "dumpstatusbar", CL_DumpStatusbar_f },
     { "dumplayout", CL_DumpLayout_f },
     { "writeconfig", CL_WriteConfig_f, CL_WriteConfig_c },
-//    { "msgtab", CL_Msgtab_f, CL_Msgtab_g },
     { "vid_restart", CL_RestartRefresh_f },
     { "r_reload", CL_ReloadRefresh_f },
 
@@ -3887,6 +3887,9 @@ static void CL_InitLocal(void)
     cl_gun->changed = cl_gun_changed;
     cl_gunalpha = Cvar_Get("cl_gunalpha", "1", 0);
     cl_gunfov = Cvar_Get("cl_gunfov", "90", 0);
+    cl_gun_x = Cvar_Get("cl_gun_x", "0", 0);
+    cl_gun_y = Cvar_Get("cl_gun_y", "0", 0);
+    cl_gun_z = Cvar_Get("cl_gun_z", "0", 0);
     cl_footsteps = Cvar_Get("cl_footsteps", "1", 0);
     cl_footsteps->changed = cl_footsteps_changed;
     cl_noskins = Cvar_Get("cl_noskins", "0", 0);
