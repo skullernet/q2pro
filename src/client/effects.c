@@ -207,11 +207,6 @@ void CL_RunDLights(void)
             dl->radius = 0;
             return;
         }
-#if 0
-        dl->radius -= cls.frametime * dl->decay;
-        if (dl->radius < 0)
-            dl->radius = 0;
-#endif
     }
 }
 
@@ -266,7 +261,6 @@ void CL_MuzzleFlash(void)
         dl->radius = 100 + (Q_rand() & 31);
     else
         dl->radius = 200 + (Q_rand() & 31);
-    //dl->minlight = 32;
     dl->die = cl.time + 16;
 
     if (mz.silenced)
@@ -436,7 +430,6 @@ void CL_MuzzleFlash2(void)
     dl = CL_AllocDlight(mz.entity);
     VectorCopy(origin,  dl->origin);
     dl->radius = 200 + (Q_rand() & 31);
-    //dl->minlight = 32;
     dl->die = cl.time + 16;
 
     switch (mz.weapon) {
