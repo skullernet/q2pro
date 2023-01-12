@@ -1174,9 +1174,7 @@ void CL_ParseTEnt(void)
         break;
 
     case TE_FLASHLIGHT:
-#if USE_DLIGHTS
         CL_Flashlight(te.entity1, te.pos1);
-#endif
         break;
 
     case TE_FORCEWALL:
@@ -1228,9 +1226,7 @@ void CL_ParseTEnt(void)
         break;
 
     case TE_TRACKER_EXPLOSION:
-#if USE_DLIGHTS
         CL_ColorFlash(te.pos1, 0, 150, -1, -1, -1);
-#endif
         CL_ColorExplosionParticles(te.pos1, 0, 1);
         S_StartSound(te.pos1, 0, 0, cl_sfx_disrexp, 1, ATTN_NORM, 0);
         break;

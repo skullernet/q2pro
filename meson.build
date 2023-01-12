@@ -442,7 +442,6 @@ config.set_quoted('VID_MODELIST', get_option('vid-modelist'))
 
 config.set10('USE_AUTOREPLY',     get_option('auto-reply'))
 config.set10('USE_DEBUG',         get_option('debug'))
-config.set10('USE_DLIGHTS',       get_option('dynamic-lights'))
 config.set10('USE_FPS',           get_option('variable-fps'))
 config.set10('USE_GAME_ABI_HACK', get_option('game-abi-hack').require(x86 and cc.get_id() == 'gcc').allowed())
 config.set10('USE_ICMP',          get_option('icmp-errors').require(win32 or cc.has_header('linux/errqueue.h')).allowed())
@@ -464,7 +463,6 @@ summary({
   'client-gtv'         : config.get('USE_CLIENT_GTV', 0) != 0,
   'client-ui'          : config.get('USE_UI', 0) != 0,
   'debug'              : config.get('USE_DEBUG', 0) != 0,
-  'dynamic-lights'     : config.get('USE_DLIGHTS', 0) != 0,
   'game-abi-hack'      : config.get('USE_GAME_ABI_HACK', 0) != 0,
   'icmp-errors'        : config.get('USE_ICMP', 0) != 0,
   'libcurl'            : config.get('USE_CURL', 0) != 0,

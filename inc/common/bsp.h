@@ -91,11 +91,8 @@ typedef struct mface_s {
     float           stylecache[MAX_LIGHTMAPS];
 
     unsigned        drawframe;
-
-#if USE_DLIGHTS
     unsigned        dlightframe;
     unsigned        dlightbits;
-#endif
 
     struct entity_s     *entity;
     struct mface_s      *next;

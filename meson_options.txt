@@ -4,7 +4,6 @@ option('base-game', type: 'string', value: 'baseq2', description: 'base game dir
 option('client-gtv', type: 'boolean', value: false, description: 'client GTV relay')
 option('client-ui', type: 'boolean', value: true, description: 'client UI')
 option('default-game', type: 'string', value: '', description: 'default game directory')
-option('dynamic-lights', type: 'boolean', value: true, description: 'dynamic lighting')
 option('game-abi-hack', type: 'feature', value: 'disabled', description: 'game ABI compat hack')
 option('game-build-options', type: 'array', value: [], description: 'game build options')
 option('homedir', type: 'string', value: '~/.q2pro', description: 'default home directory')

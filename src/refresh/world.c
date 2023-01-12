@@ -142,7 +142,6 @@ static bool _GL_LightPoint(const vec3_t start, vec3_t color)
     return true;
 }
 
-#if USE_DLIGHTS
 static void GL_MarkLights_r(mnode_t *node, dlight_t *light, unsigned lightbit)
 {
     vec_t dot;
@@ -224,11 +223,6 @@ static void GL_AddLights(const vec3_t origin, vec3_t color)
         }
     }
 }
-#else
-#define GL_MarkLights()             (void)0
-#define GL_TransformLights()        (void)0
-#define GL_AddLights(origin, color) (void)0
-#endif
 
 void GL_LightPoint(const vec3_t origin, vec3_t color)
 {

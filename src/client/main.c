@@ -3253,9 +3253,7 @@ run_fx:
         S_Update();
 
         // advance local effects for next frame
-#if USE_DLIGHTS
         CL_RunDLights();
-#endif
         CL_RunLightStyles();
     } else if (sync_mode == SYNC_SLEEP_10) {
         // force audio and effects update if not rendering

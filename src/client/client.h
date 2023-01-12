@@ -700,11 +700,7 @@ void V_Shutdown(void);
 void V_RenderView(void);
 void V_AddEntity(entity_t *ent);
 void V_AddParticle(particle_t *p);
-#if USE_DLIGHTS
 void V_AddLight(const vec3_t org, float intensity, float r, float g, float b);
-#else
-#define V_AddLight(org, intensity, r, g, b)
-#endif
 void V_AddLightStyle(int style, vec4_t value);
 void CL_UpdateBlendSetting(void);
 
@@ -766,7 +762,6 @@ typedef struct cparticle_s {
     color_t rgba;
 } cparticle_t;
 
-#if USE_DLIGHTS
 typedef struct cdlight_s {
     int     key;        // so entities can reuse same entry
     vec3_t  color;
@@ -776,7 +771,6 @@ typedef struct cdlight_s {
     //float   decay;      // drop this each second
     //float   minlight;   // don't add when contributing less
 } cdlight_t;
-#endif
 
 void CL_BigTeleportParticles(const vec3_t org);
 void CL_RocketTrail(const vec3_t start, const vec3_t end, centity_t *old);
@@ -802,11 +796,9 @@ void CL_ParticleEffect2(const vec3_t org, const vec3_t dir, int color, int count
 cparticle_t *CL_AllocParticle(void);
 void CL_RunParticles(void);
 void CL_AddParticles(void);
-#if USE_DLIGHTS
 cdlight_t *CL_AllocDlight(int key);
 void CL_RunDLights(void);
 void CL_AddDLights(void);
-#endif
 void CL_ClearLightStyles(void);
 void CL_SetLightStyle(int index, const char *s);
 void CL_RunLightStyles(void);
@@ -819,18 +811,14 @@ void CL_AddLightStyles(void);
 void CL_BlasterParticles2(const vec3_t org, const vec3_t dir, unsigned int color);
 void CL_BlasterTrail2(const vec3_t start, const vec3_t end);
 void CL_DebugTrail(const vec3_t start, const vec3_t end);
-#if USE_DLIGHTS
 void CL_Flashlight(int ent, const vec3_t pos);
-#endif
 void CL_ForceWall(const vec3_t start, const vec3_t end, int color);
 void CL_BubbleTrail2(const vec3_t start, const vec3_t end, int dist);
 void CL_Heatbeam(const vec3_t start, const vec3_t end);
 void CL_ParticleSteamEffect(const vec3_t org, const vec3_t dir, int color, int count, int magnitude);
 void CL_TrackerTrail(const vec3_t start, const vec3_t end, int particleColor);
 void CL_TagTrail(const vec3_t start, const vec3_t end, int color);
-#if USE_DLIGHTS
 void CL_ColorFlash(const vec3_t pos, int ent, int intensity, float r, float g, float b);
-#endif
 void CL_Tracker_Shell(const vec3_t origin);
 void CL_MonsterPlasma_Shell(const vec3_t origin);
 void CL_ColorExplosionParticles(const vec3_t org, int color, int run);
