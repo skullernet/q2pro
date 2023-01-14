@@ -697,7 +697,7 @@ void V_RenderView(void);
 void V_AddEntity(entity_t *ent);
 void V_AddParticle(particle_t *p);
 void V_AddLight(const vec3_t org, float intensity, float r, float g, float b);
-void V_AddLightStyle(int style, vec4_t value);
+void V_AddLightStyle(int style, float value);
 void CL_UpdateBlendSetting(void);
 
 
@@ -791,11 +791,8 @@ cparticle_t *CL_AllocParticle(void);
 void CL_RunParticles(void);
 void CL_AddParticles(void);
 cdlight_t *CL_AllocDlight(int key);
-void CL_RunDLights(void);
 void CL_AddDLights(void);
-void CL_ClearLightStyles(void);
 void CL_SetLightStyle(int index, const char *s);
-void CL_RunLightStyles(void);
 void CL_AddLightStyles(void);
 
 //

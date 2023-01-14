@@ -124,18 +124,15 @@ V_AddLightStyle
 
 =====================
 */
-void V_AddLightStyle(int style, vec4_t value)
+void V_AddLightStyle(int style, float value)
 {
     lightstyle_t    *ls;
 
     Q_assert(style >= 0 && style < MAX_LIGHTSTYLES);
     ls = &r_lightstyles[style];
 
-    //ls->white = r+g+b;
-    ls->rgb[0] = value[0];
-    ls->rgb[1] = value[1];
-    ls->rgb[2] = value[2];
-    ls->white = value[3];
+    VectorSet(ls->rgb, value, value, value);
+    ls->white = value;
 }
 
 #if USE_DEBUG

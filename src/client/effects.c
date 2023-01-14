@@ -31,58 +31,23 @@ LIGHT STYLE MANAGEMENT
 ==============================================================
 */
 
-typedef struct clightstyle_s {
-    list_t  entry;
+typedef struct {
     int     length;
-    vec4_t  value;
-    float   map[MAX_QPATH];
+    float   map[MAX_QPATH - 1];
 } clightstyle_t;
 
 static clightstyle_t    cl_lightstyles[MAX_LIGHTSTYLES];
-static LIST_DECL(cl_lightlist);
-static int          cl_lastofs;
 
-void CL_ClearLightStyles(void)
+static void CL_ClearLightStyles(void)
 {
-    int     i;
-    clightstyle_t   *ls;
-
-    for (i = 0, ls = cl_lightstyles; i < MAX_LIGHTSTYLES; i++, ls++) {
-        List_Init(&ls->entry);
-        ls->length = 0;
-        ls->value[0] =
-        ls->value[1] =
-        ls->value[2] =
-        ls->value[3] = 1;
-    }
-
-    List_Init(&cl_lightlist);
-    cl_lastofs = -1;
+    memset(cl_lightstyles, 0, sizeof(cl_lightstyles));
 }
 
 /*
 ================
-CL_RunLightStyles
+CL_SetLightStyle
 ================
 */
-void CL_RunLightStyles(void)
-{
-    int     ofs;
-    clightstyle_t   *ls;
-
-    ofs = cl.time / 100;
-    if (ofs == cl_lastofs)
-        return;
-    cl_lastofs = ofs;
-
-    LIST_FOR_EACH(clightstyle_t, ls, &cl_lightlist, entry) {
-        ls->value[0] =
-        ls->value[1] =
-        ls->value[2] =
-        ls->value[3] = ls->map[ofs % ls->length];
-    }
-}
-
 void CL_SetLightStyle(int index, const char *s)
 {
     int     i;
@@ -92,31 +57,8 @@ void CL_SetLightStyle(int index, const char *s)
     ls->length = strlen(s);
     Q_assert(ls->length < MAX_QPATH);
 
-    for (i = 0; i < ls->length; i++) {
+    for (i = 0; i < ls->length; i++)
         ls->map[i] = (float)(s[i] - 'a') / (float)('m' - 'a');
-    }
-
-    if (ls->entry.prev) {
-        List_Delete(&ls->entry);
-    }
-
-    if (ls->length > 1) {
-        List_Append(&cl_lightlist, &ls->entry);
-        return;
-    }
-
-    if (ls->length == 1) {
-        ls->value[0] =
-        ls->value[1] =
-        ls->value[2] =
-        ls->value[3] = ls->map[0];
-        return;
-    }
-
-    ls->value[0] =
-    ls->value[1] =
-    ls->value[2] =
-    ls->value[3] = 1;
 }
 
 /*
@@ -126,11 +68,13 @@ CL_AddLightStyles
 */
 void CL_AddLightStyles(void)
 {
-    int     i;
+    int     i, ofs = cl.time / 100;
     clightstyle_t   *ls;
 
-    for (i = 0, ls = cl_lightstyles; i < MAX_LIGHTSTYLES; i++, ls++)
-        V_AddLightStyle(i, ls->value);
+    for (i = 0, ls = cl_lightstyles; i < MAX_LIGHTSTYLES; i++, ls++) {
+        float value = ls->length ? ls->map[ofs % ls->length] : 1.0f;
+        V_AddLightStyle(i, value);
+    }
 }
 
 /*
@@ -151,7 +95,6 @@ static void CL_ClearDlights(void)
 /*
 ===============
 CL_AllocDlight
-
 ===============
 */
 cdlight_t *CL_AllocDlight(int key)
@@ -189,31 +132,7 @@ cdlight_t *CL_AllocDlight(int key)
 
 /*
 ===============
-CL_RunDLights
-
-===============
-*/
-void CL_RunDLights(void)
-{
-    int         i;
-    cdlight_t   *dl;
-
-    dl = cl_dlights;
-    for (i = 0; i < MAX_DLIGHTS; i++, dl++) {
-        if (!dl->radius)
-            continue;
-
-        if (dl->die < cl.time) {
-            dl->radius = 0;
-            return;
-        }
-    }
-}
-
-/*
-===============
 CL_AddDLights
-
 ===============
 */
 void CL_AddDLights(void)
@@ -223,7 +142,7 @@ void CL_AddDLights(void)
 
     dl = cl_dlights;
     for (i = 0; i < MAX_DLIGHTS; i++, dl++) {
-        if (!dl->radius)
+        if (dl->die < cl.time)
             continue;
         V_AddLight(dl->origin, dl->radius,
                    dl->color[0], dl->color[1], dl->color[2]);
@@ -1730,6 +1649,7 @@ CL_ClearEffects
 */
 void CL_ClearEffects(void)
 {
+    CL_ClearLightStyles();
     CL_ClearParticles();
     CL_ClearDlights();
 }
@@ -1741,5 +1661,4 @@ void CL_InitEffects(void)
     for (i = 0; i < NUMVERTEXNORMALS; i++)
         for (j = 0; j < 3; j++)
             avelocities[i][j] = (Q_rand() & 255) * 0.01f;
-
 }
