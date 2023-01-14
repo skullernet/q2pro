@@ -387,7 +387,7 @@ static void CL_AddLasers(void)
     }
 }
 
-static void CL_ParseLaser(int colors)
+static void CL_ParseLaser(unsigned colors)
 {
     laser_t *l;
 
