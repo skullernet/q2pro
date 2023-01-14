@@ -750,7 +750,6 @@ static void CL_ParseSteam(void)
     s->magnitude = te.entity2;
     s->endtime = cl.time + te.time;
     s->think = CL_ParticleSteamEffect2;
-    s->thinkinterval = 100;
     s->nextthink = cl.time;
 }
 
@@ -766,7 +765,6 @@ static void CL_ParseWidow(void)
     VectorCopy(te.pos1, s->org);
     s->endtime = cl.time + 2100;
     s->think = CL_Widowbeamout;
-    s->thinkinterval = 1;
     s->nextthink = cl.time;
 }
 
@@ -782,7 +780,6 @@ static void CL_ParseNuke(void)
     VectorCopy(te.pos1, s->org);
     s->endtime = cl.time + 1000;
     s->think = CL_Nukeblast;
-    s->thinkinterval = 1;
     s->nextthink = cl.time;
 }
 
