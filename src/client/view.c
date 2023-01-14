@@ -130,8 +130,6 @@ void V_AddLightStyle(int style, float value)
 
     Q_assert(style >= 0 && style < MAX_LIGHTSTYLES);
     ls = &r_lightstyles[style];
-
-    VectorSet(ls->rgb, value, value, value);
     ls->white = value;
 }
 

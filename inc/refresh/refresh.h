@@ -98,7 +98,6 @@ typedef struct particle_s {
 
 typedef struct lightstyle_s {
     float           white;          // highest of RGB
-    vec3_t          rgb;            // 0.0 - 2.0
 } lightstyle_t;
 
 typedef struct refdef_s {
