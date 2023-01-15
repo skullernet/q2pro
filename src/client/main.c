@@ -38,6 +38,9 @@ cvar_t  *cl_async;
 cvar_t  *r_maxfps;
 cvar_t  *cl_autopause;
 
+//STEPSOUND
+cvar_t   *cl_new_movement_sounds;
+
 cvar_t  *cl_kickangles;
 cvar_t  *cl_rollhack;
 cvar_t  *cl_noglow;
@@ -3909,6 +3912,9 @@ static void CL_InitLocal(void)
     cl_rollhack = Cvar_Get("cl_rollhack", "1", 0);
     cl_noglow = Cvar_Get("cl_noglow", "0", 0);
     cl_nolerp = Cvar_Get("cl_nolerp", "0", 0);
+
+    //STEPSOUND
+    cl_new_movement_sounds = Cvar_Get("cl_new_movement_sounds", "0", 0);
 
 #if USE_DISCORD && USE_CURL //rekkie -- discord -- s
     //rekkie -- external ip -- s

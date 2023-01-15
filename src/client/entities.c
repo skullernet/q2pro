@@ -22,7 +22,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 extern qhandle_t cl_mod_powerscreen;
 extern qhandle_t cl_mod_laser;
 extern qhandle_t cl_mod_dmspot;
-extern qhandle_t cl_sfx_footsteps[4];
+extern qhandle_t cl_sfx_footsteps[12];
+extern qhandle_t cl_sfx_landing[8];
+int cl_laststep;    // used to not let same step sound be used twice in a row
 
 /*
 =========================================================================
@@ -205,11 +207,32 @@ static void parse_entity_event(int number)
         CL_TeleportParticles(cent->current.origin);
         break;
     case EV_FOOTSTEP:
-        if (cl_footsteps->integer)
-            S_StartSound(NULL, number, CHAN_BODY, cl_sfx_footsteps[Q_rand() & 3], 1, ATTN_NORM, 0);
+        //STEPSOUND func
+        if (cl_footsteps->integer){
+            if (strcmp(cl_new_movement_sounds->string, "0") == 0) {
+                int r = Q_rand() & 3;
+                S_StartSound(NULL, number, CHAN_BODY, cl_sfx_footsteps[r], 1, ATTN_NORM, 0);
+            } else {
+                int r = Q_rand() % 12;
+                if ( r == cl_laststep ) {
+                    if ( r < 11) {
+                        r++; //use next step if same as last time was generated
+                    } else {
+                        r = 0; //use first stepsound if 12 where used twice
+                    }
+                }
+                S_StartSound(NULL, number, CHAN_BODY, cl_sfx_footsteps[r], 1, ATTN_NORM, 0);
+                cl_laststep = r;
+            }
+        }
         break;
     case EV_FALLSHORT:
-        S_StartSound(NULL, number, CHAN_AUTO, S_RegisterSound("player/land1.wav"), 1, ATTN_NORM, 0);
+        if (strcmp(cl_new_movement_sounds->string, "0") == 0) {
+            S_StartSound(NULL, number, CHAN_AUTO, cl_sfx_landing[0], 1, ATTN_NORM, 0);
+        } else {
+            int r = Q_rand() % 8;
+            S_StartSound(NULL, number, CHAN_BODY, cl_sfx_landing[r], 1, ATTN_NORM, 0);
+        }
         break;
     case EV_FALL:
         S_StartSound(NULL, number, CHAN_AUTO, S_RegisterSound("*fall2.wav"), 1, ATTN_NORM, 0);
