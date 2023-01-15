@@ -210,8 +210,7 @@ static void parse_entity_event(int number)
         //STEPSOUND func
         if (cl_footsteps->integer){
             if (strcmp(cl_new_movement_sounds->string, "0") == 0) {
-                int r = Q_rand() & 3;
-                S_StartSound(NULL, number, CHAN_BODY, cl_sfx_footsteps[r], 1, ATTN_NORM, 0);
+                S_StartSound(NULL, number, CHAN_BODY, cl_sfx_footsteps[Q_rand() & 3], 1, ATTN_NORM, 0);
             } else {
                 int r = Q_rand() % 12;
                 if ( r == cl_laststep ) {
@@ -230,8 +229,7 @@ static void parse_entity_event(int number)
         if (strcmp(cl_new_movement_sounds->string, "0") == 0) {
             S_StartSound(NULL, number, CHAN_AUTO, cl_sfx_landing[0], 1, ATTN_NORM, 0);
         } else {
-            int r = Q_rand() % 8;
-            S_StartSound(NULL, number, CHAN_BODY, cl_sfx_landing[r], 1, ATTN_NORM, 0);
+            S_StartSound(NULL, number, CHAN_BODY, cl_sfx_landing[Q_rand() % 8], 1, ATTN_NORM, 0);
         }
         break;
     case EV_FALL:
