@@ -207,7 +207,6 @@ static void parse_entity_event(int number)
         CL_TeleportParticles(cent->current.origin);
         break;
     case EV_FOOTSTEP:
-        //STEPSOUND func
         if (cl_footsteps->integer){
             if (strcmp(cl_new_movement_sounds->string, "0") == 0) {
                 S_StartSound(NULL, number, CHAN_BODY, cl_sfx_footsteps[Q_rand() & 3], 1, ATTN_NORM, 0);
