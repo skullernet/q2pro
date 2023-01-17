@@ -30,7 +30,8 @@ qhandle_t   cl_sfx_railg;
 qhandle_t   cl_sfx_rockexp;
 qhandle_t   cl_sfx_grenexp;
 qhandle_t   cl_sfx_watrexp;
-qhandle_t   cl_sfx_footsteps[4];
+qhandle_t   cl_sfx_footsteps[12];
+qhandle_t   cl_sfx_landing[8];
 
 qhandle_t   cl_sfx_lightning;
 qhandle_t   cl_sfx_disrexp;
@@ -72,11 +73,13 @@ void CL_RegisterTEntSounds(void)
     cl_sfx_grenexp = S_RegisterSound("weapons/grenlx1a.wav");
     cl_sfx_watrexp = S_RegisterSound("weapons/xpld_wat.wav");
 
-    S_RegisterSound("player/land1.wav");
+    for (i = 0; i < 8; i++) {
+        Q_snprintf(name, sizeof(name), "player/land%i.wav", i + 1);
+        cl_sfx_landing[i] = S_RegisterSound(name);
+    }
     S_RegisterSound("player/fall2.wav");
     S_RegisterSound("player/fall1.wav");
-
-    for (i = 0; i < 4; i++) {
+    for (i = 0; i < 12; i++) {
         Q_snprintf(name, sizeof(name), "player/step%i.wav", i + 1);
         cl_sfx_footsteps[i] = S_RegisterSound(name);
     }
