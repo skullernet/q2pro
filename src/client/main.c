@@ -90,9 +90,17 @@ cvar_t  *info_hand;
 cvar_t  *info_gender;
 cvar_t  *info_uf;
 #if USE_CLIENT
+#if USE_AQTION
 cvar_t  *info_steamid;
 cvar_t  *info_steamcloudappenabled;
 cvar_t  *info_steamclouduserenabled;
+cvar_t  *cl_mk23_sound;
+cvar_t  *cl_mp5_sound;
+cvar_t  *cl_m4_sound;
+cvar_t  *cl_m3_sound;
+cvar_t  *cl_hc_sound;
+cvar_t  *cl_ssg_sound;
+#endif
 #endif
 cvar_t  *info_version;
 
@@ -3799,6 +3807,82 @@ static void cl_chat_sound_changed(cvar_t *self)
         self->integer = 1;
 }
 
+#if USE_AQTION
+
+static void cl_mk23_sound_changed(cvar_t *self)
+{
+    if (!Q_stricmp(self->string, "weapons/mk23fire0.wav"))
+        self->integer = 0;
+    else if (!Q_stricmp(self->string, "weapons/mk23fire1.wav"))
+        self->integer = 1;
+    else if (!Q_stricmp(self->string, "weapons/mk23fire2.wav"))
+        self->integer = 2;
+    else if (!self->integer && !COM_IsUint(self->string))
+        self->integer = 0;
+}
+
+static void cl_mp5_sound_changed(cvar_t *self)
+{
+    if (!Q_stricmp(self->string, "weapons/mp5fire0.wav"))
+        self->integer = 0;
+    else if (!Q_stricmp(self->string, "weapons/mp5fire1.wav"))
+        self->integer = 1;
+    else if (!Q_stricmp(self->string, "weapons/mp5fire2.wav"))
+        self->integer = 2;
+    else if (!self->integer && !COM_IsUint(self->string))
+        self->integer = 0;
+}
+
+static void cl_m4_sound_changed(cvar_t *self)
+{
+    if (!Q_stricmp(self->string, "weapons/m4a1fire0.wav"))
+        self->integer = 0;
+    else if (!Q_stricmp(self->string, "weapons/m4a1fire1.wav"))
+        self->integer = 1;
+    else if (!Q_stricmp(self->string, "weapons/m4a1fire2.wav"))
+        self->integer = 2;
+    else if (!self->integer && !COM_IsUint(self->string))
+        self->integer = 0;
+}
+
+static void cl_m3_sound_changed(cvar_t *self)
+{
+    if (!Q_stricmp(self->string, "weapons/m3fire0.wav"))
+        self->integer = 0;
+    else if (!Q_stricmp(self->string, "weapons/m3fire1.wav"))
+        self->integer = 1;
+    else if (!Q_stricmp(self->string, "weapons/m3fire2.wav"))
+        self->integer = 2;
+    else if (!self->integer && !COM_IsUint(self->string))
+        self->integer = 0;
+}
+
+static void cl_hc_sound_changed(cvar_t *self)
+{
+    if (!Q_stricmp(self->string, "weapons/hcfire0.wav"))
+        self->integer = 0;
+    else if (!Q_stricmp(self->string, "weapons/hcfire1.wav"))
+        self->integer = 1;
+    else if (!Q_stricmp(self->string, "weapons/hcfire2.wav"))
+        self->integer = 2;
+    else if (!self->integer && !COM_IsUint(self->string))
+        self->integer = 0;
+}
+
+static void cl_ssg_sound_changed(cvar_t *self)
+{
+    if (!Q_stricmp(self->string, "weapons/ssgfire0.wav"))
+        self->integer = 0;
+    else if (!Q_stricmp(self->string, "weapons/ssgfire1.wav"))
+        self->integer = 1;
+    else if (!Q_stricmp(self->string, "weapons/ssgfire2.wav"))
+        self->integer = 2;
+    else if (!self->integer && !COM_IsUint(self->string))
+        self->integer = 0;
+}
+
+#endif
+
 void cl_timeout_changed(cvar_t *self)
 {
     self->integer = 1000 * Cvar_ClampValue(self, 0, 24 * 24 * 60 * 60);
@@ -4006,6 +4090,33 @@ static void CL_InitLocal(void)
         info_steamclouduserenabled = Cvar_Get("steamclouduserenabled", "", CVAR_USERINFO);
     #endif
     info_version = Cvar_Get("version", "", CVAR_USERINFO);
+
+    #if USE_AQTION
+        cl_mk23_sound = Cvar_Get("cl_mk23_sound", "0", 0);
+        cl_mk23_sound->changed = cl_mk23_sound_changed;
+        cl_mk23_sound_changed(cl_mk23_sound);
+
+        cl_mp5_sound = Cvar_Get("cl_mp5_sound", "0", 0);
+        cl_mp5_sound->changed = cl_mp5_sound_changed;
+        cl_mp5_sound_changed(cl_mp5_sound);
+
+        cl_m4_sound = Cvar_Get("cl_m4_sound", "0", 0);
+        cl_m4_sound->changed = cl_m4_sound_changed;
+        cl_m4_sound_changed(cl_m4_sound);
+
+        cl_m3_sound = Cvar_Get("cl_m3_sound", "0", 0);
+        cl_m3_sound->changed = cl_m3_sound_changed;
+        cl_m3_sound_changed(cl_m3_sound);
+
+        cl_hc_sound = Cvar_Get("cl_hc_sound", "0", 0);
+        cl_hc_sound->changed = cl_hc_sound_changed;
+        cl_hc_sound_changed(cl_hc_sound);
+
+        cl_ssg_sound = Cvar_Get("cl_ssg_sound", "0", 0);
+        cl_ssg_sound->changed = cl_ssg_sound_changed;
+        cl_ssg_sound_changed(cl_ssg_sound);
+
+    #endif
 
 
     //
