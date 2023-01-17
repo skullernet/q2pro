@@ -1503,7 +1503,16 @@ void SV_ExecuteClientMessage(client_t *client)
         if (c == -1)
             break;
 
-        switch (c & SVCMD_MASK) {
+        if (client->protocol == PROTOCOL_VERSION_Q2PRO) {
+            switch (c & SVCMD_MASK) {
+            case clc_move_nodelta:
+            case clc_move_batched:
+                SV_NewClientExecuteMove(c);
+                goto nextcmd;
+            }
+        }
+
+        switch (c) {
         default:
 badbyte:
             SV_DropClient(client, "unknown command byte");
@@ -1531,14 +1540,6 @@ badbyte:
             SV_ParseClientSetting();
             break;
 
-        case clc_move_nodelta:
-        case clc_move_batched:
-            if (client->protocol != PROTOCOL_VERSION_Q2PRO)
-                goto badbyte;
-
-            SV_NewClientExecuteMove(c);
-            break;
-
         case clc_userinfo_delta:
             if (client->protocol != PROTOCOL_VERSION_Q2PRO)
                 goto badbyte;
@@ -1547,6 +1548,7 @@ badbyte:
             break;
         }
 
+nextcmd:
         if (client->state <= cs_zombie)
             break;    // disconnect command
     }
