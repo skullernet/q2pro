@@ -290,37 +290,40 @@ void CL_MuzzleFlash(void)
     else
         volume = 1;
 
+    DL_COLOR(1, 1, 0);
     switch (mz.weapon) {
     case MZ_BLASTER:  // MK23
-        DL_COLOR(1, 1, 0);
         mk23snd = cl_mk23_sound->value;
         Q_snprintf(soundname, sizeof(soundname), "weapons/mk23fire%i.wav", mk23snd);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_NORM, 0);
-
-		
-        //S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/mk23fire.wav"), volume, ATTN_NORM, 0);
         break;
 	case MZ_MACHINEGUN: // MP5/10 Submachinegun
-		DL_COLOR(1, 1, 0);
-		S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/mp5fire1.wav"), volume, ATTN_NORM, 0);
+		mp5snd = cl_mp5_sound->value;
+        Q_snprintf(soundname, sizeof(soundname), "weapons/mp5fire%i.wav", mp5snd);
         break;
 	case MZ_ROCKET: // M4 Assault Rifle
-		DL_COLOR(1, 1, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/m4a1fire.wav"), volume, ATTN_NORM, 0);
+		m4snd = cl_m4_sound->value;
+        Q_snprintf(soundname, sizeof(soundname), "weapons/m4a1fire%i.wav", m4snd);
         break;
 	case MZ_SHOTGUN: // M3 Shotgun
-		DL_COLOR(1, 1, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/shotgf1b.wav"), volume, ATTN_NORM, 0);
+		m3snd = cl_m3_sound->value;
+        Q_snprintf(soundname, sizeof(soundname), "weapons/shotgf1b%i.wav", m3snd);
         break;
 	case MZ_SSHOTGUN: // Handcannon -- needs adjustment for single barrel vs double
-		DL_COLOR(1, 1, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/cannon_fire.wav"), volume, ATTN_NORM, 0);
+		hcsnd = cl_hc_sound->value;
+        Q_snprintf(soundname, sizeof(soundname), "weapons/cannon_fire%i.wav", hcsnd);
         break;
 	case MZ_HYPERBLASTER: // SSG 3000 Sniper Rifle
-		DL_COLOR(1, 1, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/ssgfire.wav"), volume, ATTN_NORM, 0);
+		ssgsnd = cl_ssg_sound->value;
+        Q_snprintf(soundname, sizeof(soundname), "weapons/ssgfire%i.wav", ssgsnd);
         break;
 	}
+    // Play the sound defined in the case statement above
+    // Normal attenuation for all guns except handcannon
+    if (mz.weapon != MZ_SSHOTGUN) {
+        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_NORM, 0);
+    } else {
+        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_LOUD, 0);
+    }
 }
 
 
