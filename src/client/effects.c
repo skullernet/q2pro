@@ -293,8 +293,8 @@ void CL_MuzzleFlash(void)
     switch (mz.weapon) {
     case MZ_BLASTER:  // MK23
         DL_COLOR(1, 1, 0);
-        mk23snd = Cvar_Get("cl_mk23_sound", "0", 0);
-        Q_snprintf(soundname, sizeof(soundname), "weapons/mk23fire%i.wav", (mk23snd));
+        mk23snd = cl_mk23_sound->value;
+        Q_snprintf(soundname, sizeof(soundname), "weapons/mk23fire%i.wav", mk23snd);
         S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_NORM, 0);
 
 		
