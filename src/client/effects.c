@@ -294,26 +294,44 @@ void CL_MuzzleFlash(void)
     switch (mz.weapon) {
     case MZ_BLASTER:  // MK23
         mk23snd = cl_mk23_sound->value;
+        if (mk23snd > MAX_WEAPON_SOUND) {
+            mk23snd = MAX_WEAPON_SOUND
+        }
         Q_snprintf(soundname, sizeof(soundname), "weapons/mk23fire%i.wav", mk23snd);
         break;
 	case MZ_MACHINEGUN: // MP5/10 Submachinegun
 		mp5snd = cl_mp5_sound->value;
+        if (mp5snd > MAX_WEAPON_SOUND) {
+            mp5snd = MAX_WEAPON_SOUND
+        }
         Q_snprintf(soundname, sizeof(soundname), "weapons/mp5fire%i.wav", mp5snd);
         break;
 	case MZ_ROCKET: // M4 Assault Rifle
 		m4snd = cl_m4_sound->value;
+        if (m4snd > MAX_WEAPON_SOUND) {
+            m4snd = MAX_WEAPON_SOUND
+        }
         Q_snprintf(soundname, sizeof(soundname), "weapons/m4a1fire%i.wav", m4snd);
         break;
 	case MZ_SHOTGUN: // M3 Shotgun
 		m3snd = cl_m3_sound->value;
+        if (m3snd > MAX_WEAPON_SOUND) {
+            m3snd = MAX_WEAPON_SOUND
+        }
         Q_snprintf(soundname, sizeof(soundname), "weapons/shotgf1b%i.wav", m3snd);
         break;
 	case MZ_SSHOTGUN: // Handcannon -- needs adjustment for single barrel vs double
 		hcsnd = cl_hc_sound->value;
+        if (hcsnd > MAX_WEAPON_SOUND) {
+            hcsnd = MAX_WEAPON_SOUND
+        }
         Q_snprintf(soundname, sizeof(soundname), "weapons/cannon_fire%i.wav", hcsnd);
         break;
 	case MZ_HYPERBLASTER: // SSG 3000 Sniper Rifle
 		ssgsnd = cl_ssg_sound->value;
+        if (ssgsnd > MAX_WEAPON_SOUND) {
+            ssgsnd = MAX_WEAPON_SOUND
+        }
         Q_snprintf(soundname, sizeof(soundname), "weapons/ssgfire%i.wav", ssgsnd);
         break;
 	}
