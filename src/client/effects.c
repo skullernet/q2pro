@@ -254,7 +254,8 @@ void CL_MuzzleFlash(void)
 #endif
     centity_t   *pl;
     float       volume;
-    char        soundname[MAX_QPATH];
+    // Uncomment when we go with client-adjustable sounds
+    //char        soundname[MAX_QPATH];
 
 #if USE_DEBUG
     if (developer->integer)
@@ -297,30 +298,28 @@ void CL_MuzzleFlash(void)
         // S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_NORM, 0);
 
 		DL_COLOR(1, 1, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/mk23fire.wav"), volume, ATTN_LOUD, 0);
+        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/mk23fire.wav"), volume, ATTN_NORM, 0);
         break;
 	case MZ_MACHINEGUN: // MP5/10 Submachinegun
 		DL_COLOR(1, 1, 0);
-		S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/mp5fire1.wav"), volume, ATTN_LOUD, 0);
+		S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/mp5fire1.wav"), volume, ATTN_NORM, 0);
         break;
 	case MZ_ROCKET: // M4 Assault Rifle
 		DL_COLOR(1, 1, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/m4a1fire.wav"), volume, ATTN_LOUD, 0);
+        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/m4a1fire.wav"), volume, ATTN_NORM, 0);
         break;
 	case MZ_SHOTGUN: // M3 Shotgun
 		DL_COLOR(1, 1, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/shotgf1b.wav"), volume, ATTN_LOUD, 0);
+        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/shotgf1b.wav"), volume, ATTN_NORM, 0);
         break;
 	case MZ_SSHOTGUN: // Handcannon -- needs adjustment for single barrel vs double
 		DL_COLOR(1, 1, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/cannon_fire.wav"), volume, ATTN_LOUD, 0);
+        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/cannon_fire.wav"), volume, ATTN_NORM, 0);
         break;
 	case MZ_HYPERBLASTER: // SSG 3000 Sniper Rifle
 		DL_COLOR(1, 1, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/ssgfire.wav"), volume, ATTN_LOUD, 0);
+        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/ssgfire.wav"), volume, ATTN_NORM, 0);
         break;
-	default:
-		MuzzleFlash(ent, ent->client->weapon_sound);
 	}
 }
 
