@@ -254,8 +254,8 @@ void CL_MuzzleFlash(void)
 #endif
     centity_t   *pl;
     float       volume;
-    // Uncomment when we go with client-adjustable sounds
-    //char        soundname[MAX_QPATH];
+    char        soundname[MAX_QPATH];
+    int         mk23snd,mp5snd,m4snd,m3snd,hcsnd,ssgsnd;
 
 #if USE_DEBUG
     if (developer->integer)
@@ -292,13 +292,13 @@ void CL_MuzzleFlash(void)
 
     switch (mz.weapon) {
     case MZ_BLASTER:  // MK23
+        DL_COLOR(1, 1, 0);
+        mk23snd = Cvar_Get("cl_mk23_sound", "0", 0);
+        Q_snprintf(soundname, sizeof(soundname), "weapons/mk23fire%i.wav", (mk23snd));
+        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_NORM, 0);
 
-        // int cl_weapsound_mk23 = 1;
-        // Q_snprintf(soundname, sizeof(soundname), "weapons/machgf%ib.wav", (cl_weapsound_mk23));
-        // S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_NORM, 0);
-
-		DL_COLOR(1, 1, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/mk23fire.wav"), volume, ATTN_NORM, 0);
+		
+        //S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/mk23fire.wav"), volume, ATTN_NORM, 0);
         break;
 	case MZ_MACHINEGUN: // MP5/10 Submachinegun
 		DL_COLOR(1, 1, 0);
