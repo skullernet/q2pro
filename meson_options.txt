@@ -11,7 +11,6 @@ option('icmp-errors', type: 'feature', value: 'auto', description: 'handle ICMP 
 option('libcurl', type: 'feature', value: 'auto', description: 'libcurl support')
 option('libjpeg', type: 'feature', value: 'auto', description: 'libjpeg support')
 option('libpng', type: 'feature', value: 'auto', description: 'libpng support')
-option('map-checksum', type: 'boolean', value: true, description: 'verify map checksums')
 option('md3', type: 'boolean', value: true, description: 'MD3 models support')
 option('mvd-client', type: 'boolean', value: true, description: 'MVD client')
 option('mvd-server', type: 'boolean', value: true, description: 'MVD server')
