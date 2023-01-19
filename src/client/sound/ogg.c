@@ -68,12 +68,8 @@ static size_t my_read(void *buf, size_t size, size_t nmemb, void *stream)
 
 static void ogg_stop(void)
 {
-    if (ogg.initialized)
-        ov_clear(&ogg.vf);
-
-    if (ogg.f)
-        FS_FCloseFile(ogg.f);
-
+    ov_clear(&ogg.vf);
+    FS_FCloseFile(ogg.f);
     memset(&ogg, 0, sizeof(ogg));
 }
 
@@ -88,13 +84,11 @@ static void ogg_play(void)
     vorbis_info *vi = ov_info(&ogg.vf, -1);
     if (!vi) {
         Com_EPrintf("Couldn't get info on %s\n", ogg.path);
-        ov_clear(&ogg.vf);
         goto fail;
     }
 
     if (vi->channels < 1 || vi->channels > 2) {
         Com_EPrintf("%s has bad number of channels\n", ogg.path);
-        ov_clear(&ogg.vf);
         goto fail;
     }
 
