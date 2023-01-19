@@ -220,16 +220,20 @@ static int my_seek_sz(void *datasource, ogg_int64_t offset, int whence)
 
     switch (whence) {
     case SEEK_SET:
-        sz->readcount = clamp(offset, 0, (ogg_int64_t)sz->cursize);
+        if (offset < 0)
+            goto fail;
+        sz->readcount = min(offset, sz->cursize);
         break;
     case SEEK_CUR:
-        sz->readcount += clamp(offset, -(ogg_int64_t)sz->readcount,
-                               (ogg_int64_t)(sz->cursize - sz->readcount));
+        if (offset < -(ogg_int64_t)sz->readcount)
+            goto fail;
+        sz->readcount += min(offset, (ogg_int64_t)(sz->cursize - sz->readcount));
         break;
     case SEEK_END:
         sz->readcount = sz->cursize;
         break;
     default:
+    fail:
         errno = EINVAL;
         return -1;
     }
