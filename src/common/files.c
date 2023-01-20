@@ -179,6 +179,8 @@ static list_t       fs_soft_links;
 static file_t       fs_files[MAX_FILE_HANDLES];
 static int          fs_num_files;
 
+static bool         fs_non_uniq_open;
+
 #if USE_DEBUG
 static int          fs_count_read;
 static int          fs_count_open;
@@ -639,6 +641,8 @@ int FS_FCloseFile(qhandle_t f)
         if (IS_UNIQUE(file)) {
             fclose(file->fp);
             pack_put(file->pack);
+        } else {
+            fs_non_uniq_open = false;
         }
         break;
 #if USE_ZLIB
@@ -650,6 +654,8 @@ int FS_FCloseFile(qhandle_t f)
         if (IS_UNIQUE(file)) {
             close_zip_file(file);
             pack_put(file->pack);
+        } else {
+            fs_non_uniq_open = false;
         }
         break;
 #endif
@@ -1082,6 +1088,10 @@ static int64_t open_from_pack(file_t *file, pack_t *pack, packfile_t *entry)
             goto fail1;
         }
     } else {
+        if (fs_non_uniq_open) {
+            ret = Q_ERR(EBUSY);
+            goto fail1;
+        }
         fp = pack->fp;
         clearerr(fp);
     }
@@ -1126,6 +1136,8 @@ static int64_t open_from_pack(file_t *file, pack_t *pack, packfile_t *entry)
     if (IS_UNIQUE(file)) {
         // reference source pak
         pack_get(pack);
+    } else {
+        fs_non_uniq_open = true;
     }
 
     FS_DPrintf("%s: %s/%s: %"PRId64" bytes\n",
