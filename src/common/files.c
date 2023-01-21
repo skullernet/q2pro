@@ -26,6 +26,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/intreadwrite.h"
 #include "system/system.h"
 #include "client/client.h"
+#include "server/server.h"
 #include "format/pak.h"
 
 #include <fcntl.h>
@@ -3513,6 +3514,8 @@ void FS_Restart(bool total)
     }
 
     setup_game_paths();
+
+    SV_RestartFilesystem();
 
     FS_Path_f();
 
