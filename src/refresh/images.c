@@ -187,15 +187,15 @@ static int _IMG_LoadPCX(byte *rawdata, size_t rawlen, byte *pixels,
         for (y = 0; y < h; y++, pixels += w) {
             for (x = 0; x < scan;) {
                 if (raw >= end)
-                    return Q_ERR_BAD_RLE_PACKET;
+                    return Q_ERR_OVERRUN;
                 dataByte = *raw++;
 
                 if ((dataByte & 0xC0) == 0xC0) {
                     runLength = dataByte & 0x3F;
                     if (x + runLength > scan)
-                        return Q_ERR_BAD_RLE_PACKET;
+                        return Q_ERR_OVERRUN;
                     if (raw >= end)
-                        return Q_ERR_BAD_RLE_PACKET;
+                        return Q_ERR_OVERRUN;
                     dataByte = *raw++;
                 } else {
                     runLength = 1;
@@ -404,7 +404,7 @@ TGA_DECODE(bgr_rle)
             if (packet_header & 0x80) {
                 // run-length packet
                 if (max_in - in < 3) {
-                    return Q_ERR_BAD_RLE_PACKET;
+                    return Q_ERR_OVERRUN;
                 }
                 color = MakeColor(in[2], in[1], in[0], 255);
                 in += 3;
@@ -423,7 +423,7 @@ TGA_DECODE(bgr_rle)
             } else {
                 // non run-length packet
                 if (max_in - in < 3 * packet_size) {
-                    return Q_ERR_BAD_RLE_PACKET;
+                    return Q_ERR_OVERRUN;
                 }
                 for (j = 0; j < packet_size; j++) {
                     out_row[0] = in[2];
@@ -466,7 +466,7 @@ TGA_DECODE(bgra_rle)
             if (packet_header & 0x80) {
                 // run-length packet
                 if (max_in - in < 4) {
-                    return Q_ERR_BAD_RLE_PACKET;
+                    return Q_ERR_OVERRUN;
                 }
                 color = MakeColor(in[2], in[1], in[0], in[3]);
                 in += 4;
@@ -485,7 +485,7 @@ TGA_DECODE(bgra_rle)
             } else {
                 // non run-length packet
                 if (max_in - in < 4 * packet_size) {
-                    return Q_ERR_BAD_RLE_PACKET;
+                    return Q_ERR_OVERRUN;
                 }
                 for (j = 0; j < packet_size; j++) {
                     out_row[0] = in[2];

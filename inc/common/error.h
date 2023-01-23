@@ -44,7 +44,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define Q_ERR_UNEXPECTED_EOF    _Q_ERR(9)   // Unexpected end of file
 #define Q_ERR_FILE_TOO_SMALL    _Q_ERR(10)  // File too small
 #define Q_ERR_FILE_NOT_REGULAR  _Q_ERR(11)  // Not a regular file
-#define Q_ERR_BAD_RLE_PACKET    _Q_ERR(12)  // Bad run length packet
+#define Q_ERR_OVERRUN           _Q_ERR(12)  // Decompression overrun
 #define Q_ERR_STRING_TRUNCATED  _Q_ERR(13)  // String truncation avoided
 #define Q_ERR_INFINITE_LOOP     _Q_ERR(14)  // Infinite loop avoided
 #define Q_ERR_LIBRARY_ERROR     _Q_ERR(15)  // Library error
