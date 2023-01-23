@@ -16,8 +16,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef ZONE_H
-#define ZONE_H
+#pragma once
 
 #define Z_Malloc(size)          Z_TagMalloc(size, TAG_GENERAL)
 #define Z_Mallocz(size)         Z_TagMallocz(size, TAG_GENERAL)
@@ -58,5 +57,3 @@ void    Z_Stats_f(void);
 
 // may return pointer to static memory
 char    *Z_CvarCopyString(const char *in);
-
-#endif // ZONE_H

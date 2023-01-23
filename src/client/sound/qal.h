@@ -16,8 +16,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef QAL_H
-#define QAL_H
+#pragma once
 
 #define AL_NO_PROTOTYPES
 
@@ -71,5 +70,3 @@ QALAPI LPALGENFILTERS qalGenFilters;
 
 bool QAL_Init(void);
 void QAL_Shutdown(void);
-
-#endif  // QAL_H

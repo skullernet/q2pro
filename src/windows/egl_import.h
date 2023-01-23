@@ -16,8 +16,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef EGL_IMPORT_H
-#define EGL_IMPORT_H
+#pragma once
 
 #define QEGL_IMP \
     QEGL(PFNEGLBINDAPIPROC, eglBindAPI); \
@@ -68,5 +67,3 @@ fail:
     egl_shutdown_import();
     return false;
 }
-
-#endif

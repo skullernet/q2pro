@@ -17,8 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef BSP_H
-#define BSP_H
+#pragma once
 
 #include "shared/list.h"
 #include "common/error.h"
@@ -276,5 +275,3 @@ mleaf_t *BSP_PointLeaf(mnode_t *node, const vec3_t p);
 mmodel_t *BSP_InlineModel(bsp_t *bsp, const char *name);
 
 void BSP_Init(void);
-
-#endif // BSP_H
