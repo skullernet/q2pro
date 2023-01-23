@@ -69,7 +69,7 @@ static size_t my_read(void *buf, size_t size, size_t nmemb, void *stream)
 static void ogg_stop(void)
 {
     ov_clear(&ogg.vf);
-    FS_FCloseFile(ogg.f);
+    FS_CloseFile(ogg.f);
     memset(&ogg, 0, sizeof(ogg));
 }
 
@@ -134,7 +134,7 @@ void OGG_Play(void)
         Q_snprintf(ogg.path, sizeof(ogg.path), "music/track%02d.ogg", track);
     }
 
-    int ret = FS_FOpenFile(ogg.path, &ogg.f, FS_MODE_READ);
+    int ret = FS_OpenFile(ogg.path, &ogg.f, FS_MODE_READ);
     if (!ogg.f) {
         if (ret != Q_ERR(ENOENT))
             Com_EPrintf("Couldn't open %s: %s\n", ogg.path, Q_ErrorString(ret));

@@ -284,7 +284,7 @@ void CL_Stop_f(void)
     format_demo_size(buffer, sizeof(buffer));
 
 // close demofile
-    FS_FCloseFile(cls.demo.recording);
+    FS_CloseFile(cls.demo.recording);
     cls.demo.recording = 0;
     cls.demo.paused = false;
     cls.demo.frames_written = 0;
@@ -712,7 +712,7 @@ static void CL_PlayDemo_f(void)
     type = read_first_message(f);
     if (type < 0) {
         Com_Printf("Couldn't read %s: %s\n", name, Q_ErrorString(type));
-        FS_FCloseFile(f);
+        FS_CloseFile(f);
         return;
     }
 
@@ -722,7 +722,7 @@ static void CL_PlayDemo_f(void)
 #else
         Com_Printf("MVD support was not compiled in.\n");
 #endif
-        FS_FCloseFile(f);
+        FS_CloseFile(f);
         return;
     }
 
@@ -1127,7 +1127,7 @@ demoInfo_t *CL_GetDemoInfo(const char *path, demoInfo_t *info)
     char string[MAX_QPATH];
     int clientNum, type;
 
-    FS_FOpenFile(path, &f, FS_MODE_READ | FS_FLAG_GZIP);
+    FS_OpenFile(path, &f, FS_MODE_READ | FS_FLAG_GZIP);
     if (!f) {
         return NULL;
     }
@@ -1197,11 +1197,11 @@ demoInfo_t *CL_GetDemoInfo(const char *path, demoInfo_t *info)
         info->mvd = true;
     }
 
-    FS_FCloseFile(f);
+    FS_CloseFile(f);
     return info;
 
 fail:
-    FS_FCloseFile(f);
+    FS_CloseFile(f);
     return NULL;
 
 }
@@ -1215,7 +1215,7 @@ void CL_CleanupDemos(void)
     }
 
     if (cls.demo.playback) {
-        FS_FCloseFile(cls.demo.playback);
+        FS_CloseFile(cls.demo.playback);
 
         if (com_timedemo->integer && cls.demo.time_frames) {
             unsigned msec = Sys_Milliseconds();

@@ -806,8 +806,8 @@ static const game_import_t game_import = {
 static const game_import_ex_t game_import_ex = {
     .apiversion = GAME_API_VERSION_EX,
 
-    .OpenFile = FS_FOpenFile,
-    .CloseFile = FS_FCloseFile,
+    .OpenFile = FS_OpenFile,
+    .CloseFile = FS_CloseFile,
     .LoadFile = PF_LoadFile,
 
     .ReadFile = FS_Read,

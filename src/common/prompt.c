@@ -514,7 +514,7 @@ void Prompt_SaveHistory(commandPrompt_t *prompt, const char *filename, int lines
     char *s;
     int i;
 
-    FS_FOpenFile(filename, &f, FS_MODE_WRITE | FS_PATH_BASE);
+    FS_OpenFile(filename, &f, FS_MODE_WRITE | FS_PATH_BASE);
     if (!f) {
         return;
     }
@@ -534,7 +534,7 @@ void Prompt_SaveHistory(commandPrompt_t *prompt, const char *filename, int lines
         }
     }
 
-    FS_FCloseFile(f);
+    FS_CloseFile(f);
 }
 
 void Prompt_LoadHistory(commandPrompt_t *prompt, const char *filename)
@@ -543,7 +543,7 @@ void Prompt_LoadHistory(commandPrompt_t *prompt, const char *filename)
     qhandle_t f;
     int i;
 
-    FS_FOpenFile(filename, &f, FS_MODE_READ | FS_TYPE_REAL | FS_PATH_BASE);
+    FS_OpenFile(filename, &f, FS_MODE_READ | FS_TYPE_REAL | FS_PATH_BASE);
     if (!f) {
         return;
     }
@@ -563,7 +563,7 @@ void Prompt_LoadHistory(commandPrompt_t *prompt, const char *filename)
     }
 
 out:
-    FS_FCloseFile(f);
+    FS_CloseFile(f);
 
     prompt->historyLineNum = i;
     prompt->inputLineNum = i;

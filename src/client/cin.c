@@ -80,7 +80,7 @@ SCR_StopCinematic
 void SCR_StopCinematic(void)
 {
     Z_Free(cin.pic);
-    FS_FCloseFile(cin.file);
+    FS_CloseFile(cin.file);
     memset(&cin, 0, sizeof(cin));
 }
 
@@ -394,7 +394,7 @@ static bool SCR_StartCinematic(const char *name)
         return false;
     }
 
-    ret = FS_FOpenFile(fullname, &cin.file, FS_MODE_READ);
+    ret = FS_OpenFile(fullname, &cin.file, FS_MODE_READ);
     if (!cin.file) {
         Com_EPrintf("Couldn't open %s: %s\n", fullname, Q_ErrorString(ret));
         return false;

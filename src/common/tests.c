@@ -724,7 +724,7 @@ static void Com_MdfourSum_f(void)
         return;
     }
 
-    len = FS_FOpenFile(Cmd_Argv(1), &f, FS_MODE_READ);
+    len = FS_OpenFile(Cmd_Argv(1), &f, FS_MODE_READ);
     if (!f) {
         Com_Printf("Couldn't open %s: %s\n", Cmd_Argv(1), Q_ErrorString(len));
         return;
@@ -748,7 +748,7 @@ static void Com_MdfourSum_f(void)
     Com_Printf("\n");
 
 fail:
-    FS_FCloseFile(f);
+    FS_CloseFile(f);
 }
 
 typedef struct {

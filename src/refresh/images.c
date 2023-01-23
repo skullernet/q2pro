@@ -1626,7 +1626,7 @@ static void get_image_dimensions(imageformat_t fmt, image_t *image)
     memcpy(buffer, image->name, image->baselen + 1);
     memcpy(buffer + image->baselen + 1, img_loaders[fmt].ext, 4);
 
-    FS_FOpenFile(buffer, &f, FS_MODE_READ | FS_FLAG_LOADFILE);
+    FS_OpenFile(buffer, &f, FS_MODE_READ | FS_FLAG_LOADFILE);
     if (!f) {
         return;
     }
@@ -1646,7 +1646,7 @@ static void get_image_dimensions(imageformat_t fmt, image_t *image)
         }
     }
 
-    FS_FCloseFile(f);
+    FS_CloseFile(f);
 
     if (w < 1 || h < 1 || w > MAX_TEXTURE_SIZE || h > MAX_TEXTURE_SIZE) {
         return;
