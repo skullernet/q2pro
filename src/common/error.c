@@ -44,8 +44,6 @@ static const char *const error_table[] = {
     "Bad compression method",
 };
 
-static const int num_errors = q_countof(error_table);
-
 const char *Q_ErrorString(int error)
 {
     int e;
@@ -63,7 +61,10 @@ const char *Q_ErrorString(int error)
         return strerror(e);
     }
 
-    e = _Q_ERR(error);
+    e = Q_ERR_(error);
+    if (e >= q_countof(error_table)) {
+        e = 0;
+    }
 
-    return error_table[e >= num_errors ? 0 : e];
+    return error_table[e];
 }
