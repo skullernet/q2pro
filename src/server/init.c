@@ -217,7 +217,7 @@ static bool check_server(mapcmd_t *cmd, const char *server, bool nextserver)
 {
     char        expanded[MAX_QPATH];
     char        *s, *ch;
-    int         ret = Q_ERR_NAMETOOLONG;
+    int         ret = Q_ERR(ENAMETOOLONG);
 
     // copy it off to keep original mapcmd intact
     Q_strlcpy(cmd->server, server, sizeof(cmd->server));
@@ -242,7 +242,7 @@ static bool check_server(mapcmd_t *cmd, const char *server, bool nextserver)
         if (!sv_cinematics->integer && nextserver)
             return false;   // skip it
         if (Q_concat(expanded, sizeof(expanded), "video/", s) < sizeof(expanded)) {
-            if (COM_DEDICATED || (ret = FS_LoadFile(expanded, NULL)) == Q_ERR_FBIG)
+            if (COM_DEDICATED || (ret = FS_LoadFile(expanded, NULL)) == Q_ERR(EFBIG))
                 ret = Q_ERR_SUCCESS;
         }
         cmd->state = ss_cinematic;

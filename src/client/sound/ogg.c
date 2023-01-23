@@ -136,7 +136,7 @@ void OGG_Play(void)
 
     int ret = FS_FOpenFile(ogg.path, &ogg.f, FS_MODE_READ);
     if (!ogg.f) {
-        if (ret != Q_ERR_NOENT)
+        if (ret != Q_ERR(ENOENT))
             Com_EPrintf("Couldn't open %s: %s\n", ogg.path, Q_ErrorString(ret));
         return;
     }

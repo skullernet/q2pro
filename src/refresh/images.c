@@ -619,7 +619,7 @@ static int IMG_SaveTGA(screenshot_t *restrict s)
 
     byte *row = malloc(s->width * 3);
     if (!row) {
-        return Q_ERR_NOMEM;
+        return Q_ERR(ENOMEM);
     }
 
     int ret = Q_ERR_SUCCESS;
@@ -816,7 +816,7 @@ static int IMG_SaveJPG(screenshot_t *restrict s)
 
     row_pointers = malloc(sizeof(JSAMPROW) * s->height);
     if (!row_pointers) {
-        return Q_ERR_NOMEM;
+        return Q_ERR(ENOMEM);
     }
     for (i = 0; i < s->height; i++) {
         row_pointers[i] = (JSAMPROW)(s->pixels + (s->height - i - 1) * s->rowbytes);
@@ -1061,7 +1061,7 @@ static int IMG_SavePNG(screenshot_t *restrict s)
 
     row_pointers = malloc(sizeof(png_bytep) * s->height);
     if (!row_pointers) {
-        ret = Q_ERR_NOMEM;
+        ret = Q_ERR(ENOMEM);
         goto fail;
     }
     for (i = 0; i < s->height; i++) {
@@ -1603,7 +1603,7 @@ static int try_other_formats(imageformat_t orig, image_t *image, byte **pic)
         }
 
         ret = try_image_format(fmt, image, pic);
-        if (ret != Q_ERR_NOENT) {
+        if (ret != Q_ERR(ENOENT)) {
             return ret; // found something
         }
     }
@@ -1611,7 +1611,7 @@ static int try_other_formats(imageformat_t orig, image_t *image, byte **pic)
     // fall back to 8-bit formats
     fmt = (image->type == IT_WALL) ? IM_WAL : IM_PCX;
     if (fmt == orig) {
-        return Q_ERR_NOENT; // don't retry twice
+        return Q_ERR(ENOENT); // don't retry twice
     }
 
     return try_image_format(fmt, image, pic);
@@ -1714,7 +1714,7 @@ static void print_error(const char *name, imageflags_t flags, int err)
     case Q_ERR_LIBRARY_ERROR:
         msg = Com_GetLastError();
         break;
-    case Q_ERR_NOENT:
+    case Q_ERR(ENOENT):
         if (flags & IF_PERMANENT) {
             // ugly hack for console code
             if (strcmp(name, "pics/conchars.pcx"))
@@ -1797,7 +1797,7 @@ static image_t *find_or_load_image(const char *name, size_t len,
     if (fmt == IM_MAX) {
         // unknown extension, but give it a chance to load anyway
         ret = try_other_formats(IM_MAX, image, &pic);
-        if (ret == Q_ERR_NOENT) {
+        if (ret == Q_ERR(ENOENT)) {
             // not found, change error to invalid path
             ret = Q_ERR_INVALID_PATH;
         }
@@ -1807,7 +1807,7 @@ static image_t *find_or_load_image(const char *name, size_t len,
     } else {
         // first try with original extension
         ret = _try_image_format(fmt, image, &pic);
-        if (ret == Q_ERR_NOENT) {
+        if (ret == Q_ERR(ENOENT)) {
             // retry with remaining extensions
             ret = try_other_formats(fmt, image, &pic);
         }
@@ -1912,7 +1912,7 @@ qhandle_t R_RegisterImage(const char *name, imagetype_t type, imageflags_t flags
     }
 
     if (len >= sizeof(fullname)) {
-        print_error(fullname, flags, Q_ERR_NAMETOOLONG);
+        print_error(fullname, flags, Q_ERR(ENAMETOOLONG));
         return 0;
     }
 

@@ -1743,7 +1743,7 @@ void CL_LoadFilterList(string_entry_t **list, const char *name, const char *comm
     // load new list
     len = FS_LoadFileEx(name, (void **)&raw, FS_TYPE_REAL, TAG_FILESYSTEM);
     if (!raw) {
-        if (len != Q_ERR_NOENT)
+        if (len != Q_ERR(ENOENT))
             Com_EPrintf("Couldn't load %s: %s\n", name, Q_ErrorString(len));
         return;
     }
