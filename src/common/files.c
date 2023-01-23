@@ -498,7 +498,8 @@ int64_t FS_Tell(qhandle_t f)
         return ret;
 #endif
     default:
-        return Q_ERR(ENOSYS);
+        Q_assert(!"bad file type");
+        return 0;
     }
 }
 
@@ -570,7 +571,8 @@ int FS_Seek(qhandle_t f, int64_t offset, int whence)
         return Q_ERR_SUCCESS;
 #endif
     default:
-        return Q_ERR(ENOSYS);
+        Q_assert(!"bad file type");
+        return 0;
     }
 }
 
@@ -667,8 +669,7 @@ int FS_FCloseFile(qhandle_t f)
         break;
 #endif
     default:
-        ret = Q_ERR(ENOSYS);
-        break;
+        Q_assert(!"bad file type");
     }
 
     memset(file, 0, sizeof(*file));
@@ -1510,7 +1511,8 @@ int FS_Read(void *buf, size_t len, qhandle_t f)
         return read_zip_file(file, buf, len);
 #endif
     default:
-        return Q_ERR(ENOSYS);
+        Q_assert(!"bad file type");
+        return 0;
     }
 }
 
