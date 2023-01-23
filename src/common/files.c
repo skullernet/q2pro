@@ -459,10 +459,10 @@ int64_t FS_Length(qhandle_t f)
     if (!file)
         return Q_ERR(EBADF);
 
-    if ((file->mode & FS_MODE_MASK) == FS_MODE_READ)
-        return file->length;
+    if ((file->mode & FS_MODE_MASK) != FS_MODE_READ)
+        return Q_ERR(EBADF);
 
-    return Q_ERR(ENOSYS);
+    return file->length;
 }
 
 /*
@@ -1482,7 +1482,7 @@ int FS_Read(void *buf, size_t len, qhandle_t f)
         return Q_ERR(EBADF);
 
     if ((file->mode & FS_MODE_MASK) != FS_MODE_READ)
-        return Q_ERR(EINVAL);
+        return Q_ERR(EBADF);
 
     // can't continue after error
     if (file->error)
@@ -1524,7 +1524,7 @@ int FS_ReadLine(qhandle_t f, char *buffer, size_t size)
         return Q_ERR(EBADF);
 
     if ((file->mode & FS_MODE_MASK) != FS_MODE_READ)
-        return Q_ERR(EINVAL);
+        return Q_ERR(EBADF);
 
     if (file->type != FS_REAL)
         return Q_ERR(ENOSYS);
@@ -1583,7 +1583,7 @@ int FS_Write(const void *buf, size_t len, qhandle_t f)
         return Q_ERR(EBADF);
 
     if ((file->mode & FS_MODE_MASK) == FS_MODE_READ)
-        return Q_ERR(EINVAL);
+        return Q_ERR(EBADF);
 
     // can't continue after error
     if (file->error)
