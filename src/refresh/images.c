@@ -1748,11 +1748,7 @@ static image_t *find_or_load_image(const char *name, size_t len,
     Q_assert(len < MAX_QPATH);
 
     // must have an extension and at least 1 char of base name
-    if (len <= 4) {
-        ret = Q_ERR_NAMETOOSHORT;
-        goto fail;
-    }
-    if (name[len - 4] != '.') {
+    if (len <= 4 || name[len - 4] != '.') {
         ret = Q_ERR_INVALID_PATH;
         goto fail;
     }

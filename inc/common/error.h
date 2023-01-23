@@ -41,20 +41,19 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define Q_ERR_TOO_FEW           _Q_ERR(6)   // Too few elements
 #define Q_ERR_BAD_INDEX         _Q_ERR(7)   // Index out of range
 #define Q_ERR_INVALID_PATH      _Q_ERR(8)   // Invalid quake path
-#define Q_ERR_NAMETOOSHORT      _Q_ERR(9)   // File name too short
-#define Q_ERR_UNEXPECTED_EOF    _Q_ERR(10)  // Unexpected end of file
-#define Q_ERR_FILE_TOO_SMALL    _Q_ERR(11)  // File too small
-#define Q_ERR_FILE_NOT_REGULAR  _Q_ERR(12)  // Not a regular file
-#define Q_ERR_BAD_RLE_PACKET    _Q_ERR(13)  // Bad run length packet
-#define Q_ERR_STRING_TRUNCATED  _Q_ERR(14)  // String truncation avoided
-#define Q_ERR_INFINITE_LOOP     _Q_ERR(15)  // Infinite loop avoided
-#define Q_ERR_LIBRARY_ERROR     _Q_ERR(16)  // Library error
-#define Q_ERR_OUT_OF_SLOTS      _Q_ERR(17)  // Out of slots
-#define Q_ERR_BAD_ALIGN         _Q_ERR(18)  // Bad lump alignment
-#define Q_ERR_INFLATE_FAILED    _Q_ERR(19)  // Inflate failed
-#define Q_ERR_DEFLATE_FAILED    _Q_ERR(20)  // Deflate failed
-#define Q_ERR_NOT_COHERENT      _Q_ERR(21)  // Coherency check failed
-#define Q_ERR_BAD_COMPRESSION   _Q_ERR(22)  // Bad compression method
+#define Q_ERR_UNEXPECTED_EOF    _Q_ERR(9)   // Unexpected end of file
+#define Q_ERR_FILE_TOO_SMALL    _Q_ERR(10)  // File too small
+#define Q_ERR_FILE_NOT_REGULAR  _Q_ERR(11)  // Not a regular file
+#define Q_ERR_BAD_RLE_PACKET    _Q_ERR(12)  // Bad run length packet
+#define Q_ERR_STRING_TRUNCATED  _Q_ERR(13)  // String truncation avoided
+#define Q_ERR_INFINITE_LOOP     _Q_ERR(14)  // Infinite loop avoided
+#define Q_ERR_LIBRARY_ERROR     _Q_ERR(15)  // Library error
+#define Q_ERR_OUT_OF_SLOTS      _Q_ERR(16)  // Out of slots
+#define Q_ERR_BAD_ALIGN         _Q_ERR(17)  // Bad lump alignment
+#define Q_ERR_INFLATE_FAILED    _Q_ERR(18)  // Inflate failed
+#define Q_ERR_DEFLATE_FAILED    _Q_ERR(19)  // Deflate failed
+#define Q_ERR_NOT_COHERENT      _Q_ERR(20)  // Coherency check failed
+#define Q_ERR_BAD_COMPRESSION   _Q_ERR(21)  // Bad compression method
 
 // This macro converts system errno into quake error value.
 #define Q_ERRNO                 Q_ErrorNumber()
