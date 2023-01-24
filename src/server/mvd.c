@@ -1055,9 +1055,8 @@ void SV_MvdEndFrame(void)
     }
 
     // build message header
-    total = mvd.message.cursize + msg_write.cursize + mvd.datagram.cursize + 1;
-    header[0] = total & 255;
-    header[1] = (total >> 8) & 255;
+    total = mvd.message.cursize + msg_write.cursize + mvd.datagram.cursize;
+    WL16(header, total + 1);
     header[2] = GTS_STREAM_DATA;
 
     // send frame to clients
@@ -1076,7 +1075,7 @@ void SV_MvdEndFrame(void)
 
     // write frame to demofile
     if (mvd.recording) {
-        rec_frame(total - 1);
+        rec_frame(total);
     }
 
     // clear frame
@@ -1419,10 +1418,8 @@ static void write_stream(gtv_client_t *client, void *data, size_t len)
 static void write_message(gtv_client_t *client, gtv_serverop_t op)
 {
     byte header[3];
-    size_t len = msg_write.cursize + 1;
 
-    header[0] = len & 255;
-    header[1] = (len >> 8) & 255;
+    WL16(header, msg_write.cursize + 1);
     header[2] = op;
     write_stream(client, header, sizeof(header));
 
