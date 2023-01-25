@@ -1355,20 +1355,20 @@ void TossItemsOnDeath(edict_t * ent)
 	else
 		quad = (ent->client->quad_framenum > (level.framenum + HZ));
 
-	if (quad) {
-		edict_t *drop;
-		float spread;
+	// if (quad) {
+	// 	edict_t *drop;
+	// 	float spread;
 
-		spread = 300.0 * crandom();
-		ent->client->v_angle[YAW] += spread;
-		drop = Drop_Item(ent, FindItemByClassname("item_quad"));
-		ent->client->v_angle[YAW] -= spread;
-		drop->spawnflags |= DROPPED_PLAYER_ITEM;
+	// 	spread = 300.0 * crandom();
+	// 	ent->client->v_angle[YAW] += spread;
+	// 	drop = Drop_Item(ent, FindItemByClassname("item_quad"));
+	// 	ent->client->v_angle[YAW] -= spread;
+	// 	drop->spawnflags |= DROPPED_PLAYER_ITEM;
 
-		drop->touch = Touch_Item;
-		drop->nextthink = ent->client->quad_framenum;
-		drop->think = G_FreeEdict;
-	}
+	// 	drop->touch = Touch_Item;
+	// 	drop->nextthink = ent->client->quad_framenum;
+	// 	drop->think = G_FreeEdict;
+	// }
 }
 
 void TossClientWeapon(edict_t * self)
@@ -1401,16 +1401,16 @@ void TossClientWeapon(edict_t * self)
 		drop->spawnflags = DROPPED_PLAYER_ITEM;
 	}
 
-	if (quad) {
-		self->client->v_angle[YAW] += spread;
-		drop = Drop_Item(self, FindItemByClassname("item_quad"));
-		self->client->v_angle[YAW] -= spread;
-		drop->spawnflags |= DROPPED_PLAYER_ITEM;
+	// if (quad) {
+	// 	self->client->v_angle[YAW] += spread;
+	// 	drop = Drop_Item(self, FindItemByClassname("item_quad"));
+	// 	self->client->v_angle[YAW] -= spread;
+	// 	drop->spawnflags |= DROPPED_PLAYER_ITEM;
 
-		drop->touch = Touch_Item;
-		drop->nextthink = self->client->quad_framenum;
-		drop->think = G_FreeEdict;
-	}
+	// 	drop->touch = Touch_Item;
+	// 	drop->nextthink = self->client->quad_framenum;
+	// 	drop->think = G_FreeEdict;
+	// }
 }
 
 /*

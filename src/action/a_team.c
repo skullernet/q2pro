@@ -2170,6 +2170,7 @@ int WonGame (int winner)
 				player->client->pers.netname);
 				TourneyWinner (player);
 			}
+			game.roundNum++;
 		}
 		else
 		{
@@ -2179,7 +2180,6 @@ int WonGame (int winner)
 			if(use_warnings->value)
 				gi.sound(&g_edicts[0], CHAN_VOICE | CHAN_NO_PHS_ADD, level.snd_teamwins[winner], 1.0, ATTN_NONE, 0.0);
 			// end of changing sound dir
-			game.roundNum++;
 			teams[winner].score++;
 
 			#ifdef AQTION_EXTENSION
@@ -2220,6 +2220,8 @@ int WonGame (int winner)
 					Cmd_Stats_f(cl_ent, arg);
 		}
 	}
+	// Increment roundNum for tracking
+	game.roundNum++;
 
 	return 0;
 }
@@ -3218,7 +3220,8 @@ void TallyEndOfLevelTeamScores (void)
 	// Stats begin
 	#if USE_AQTION
 		if (stat_logs->value && !matchmode->value) {
-			LogMatch();  // Generates end of match logs
+			LogMatch(); // Generates end of game stats
+			LogEndMatchStats(); // Generates end of match logs
 		}
 	#endif
 	// Stats: Reset roundNum

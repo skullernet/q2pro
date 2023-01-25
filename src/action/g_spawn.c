@@ -233,9 +233,6 @@ void SP_point_combat (edict_t * self);
 void SP_misc_explobox (edict_t * self);
 void SP_misc_banner (edict_t * self);
 void SP_misc_satellite_dish (edict_t * self);
-void SP_misc_gib_arm (edict_t * self);
-void SP_misc_gib_leg (edict_t * self);
-void SP_misc_gib_head (edict_t * self);
 void SP_misc_deadsoldier (edict_t * self);
 void SP_misc_viper (edict_t * self);
 void SP_misc_viper_bomb (edict_t * self);
@@ -244,10 +241,6 @@ void SP_misc_strogg_ship (edict_t * self);
 void SP_misc_teleporter (edict_t * self);
 void SP_misc_teleporter_dest (edict_t * self);
 void SP_misc_blackhole (edict_t * self);
-void SP_misc_eastertank (edict_t * self);
-void SP_misc_easterchick (edict_t * self);
-void SP_misc_easterchick2 (edict_t * self);
-
 
 //zucc - item replacement function
 void CheckItem (edict_t * ent);
@@ -267,14 +260,11 @@ static const spawn_t spawns[] = {
   {"item_health_small", SP_item_health_small},
   {"item_health_large", SP_item_health_large},
   {"item_health_mega", SP_item_health_mega},
-
   {"info_player_start", SP_info_player_start},
   {"info_player_deathmatch", SP_info_player_deathmatch},
   {"info_player_intermission", SP_info_player_intermission},
-
   {"info_player_team1", SP_info_player_team1},
   {"info_player_team2", SP_info_player_team2},
-
   {"func_plat", SP_func_plat},
   {"func_button", SP_func_button},
   {"func_door", SP_func_door},
@@ -291,7 +281,6 @@ static const spawn_t spawns[] = {
   {"func_timer", SP_func_timer},
   {"func_explosive", SP_func_explosive},
   {"func_killbox", SP_func_killbox},
-
   {"trigger_always", SP_trigger_always},
   {"trigger_once", SP_trigger_once},
   {"trigger_multiple", SP_trigger_multiple},
@@ -303,51 +292,34 @@ static const spawn_t spawns[] = {
   {"trigger_elevator", SP_trigger_elevator},
   {"trigger_gravity", SP_trigger_gravity},
   {"trigger_monsterjump", SP_trigger_monsterjump},
-
   {"target_temp_entity", SP_target_temp_entity},
   {"target_speaker", SP_target_speaker},
   {"target_explosion", SP_target_explosion},
   {"target_changelevel", SP_target_changelevel},
-//  {"target_secret", SP_target_secret},
-//  {"target_goal", SP_target_goal},
   {"target_splash", SP_target_splash},
   {"target_spawner", SP_target_spawner},
   {"target_blaster", SP_target_blaster},
   {"target_crosslevel_trigger", SP_target_crosslevel_trigger},
   {"target_crosslevel_target", SP_target_crosslevel_target},
   {"target_laser", SP_target_laser},
-//  {"target_help", SP_target_help},
-// monster      {"target_actor", SP_target_actor},
-//  {"target_lightramp", SP_target_lightramp},
   {"target_earthquake", SP_target_earthquake},
   {"target_character", SP_target_character},
   {"target_string", SP_target_string},
-
   {"worldspawn", SP_worldspawn},
   {"viewthing", SP_viewthing},
-
-//  {"light", SP_light},
   {"light_mine1", SP_light_mine1},
   {"light_mine2", SP_light_mine2},
   {"info_null", SP_info_null},
   {"func_group", SP_info_null},
   {"info_notnull", SP_info_notnull},
   {"path_corner", SP_path_corner},
-//  {"point_combat", SP_point_combat},
-
-//  {"misc_explobox", SP_misc_explobox},
   {"misc_banner", SP_misc_banner},
-
   {"misc_ctf_banner", SP_misc_ctf_banner},
   {"misc_ctf_small_banner", SP_misc_ctf_small_banner},
-
   {"misc_satellite_dish", SP_misc_satellite_dish},
-  // monster {"misc_actor", SP_misc_actor},
   {"misc_gib_arm", SP_misc_gib_arm},
   {"misc_gib_leg", SP_misc_gib_leg},
   {"misc_gib_head", SP_misc_gib_head},
-  // monster {"misc_insane", SP_misc_insane},
-  //{"misc_deadsoldier", SP_misc_deadsoldier},
   {"misc_viper", SP_misc_viper},
   {"misc_viper_bomb", SP_misc_viper_bomb},
   {"misc_bigviper", SP_misc_bigviper},
@@ -850,6 +822,46 @@ void G_LoadLocations( void )
 	gi.dprintf( "Found %d locations.\n", ml_count );
 }
 
+int Gamemode(void) // These are distinct game modes; you cannot have a teamdm tourney mode, for example
+{
+	int gamemode = 0;
+	if (teamdm->value) {
+		gamemode = GM_TEAMDM;
+	} else if (ctf->value) {
+		gamemode = GM_CTF;
+	} else if (use_tourney->value) {
+		gamemode = GM_TOURNEY;
+	} else if (teamplay->value) {
+		gamemode = GM_TEAMPLAY;
+	} else if (dom->value) {
+		gamemode = GM_DOMINATION;
+	} else if (deathmatch->value) {
+		gamemode = GM_DEATHMATCH;
+	}
+	return gamemode;
+}
+
+int Gamemodeflag(void)
+// These are gamemode flags that change the rules of gamemodes.
+// For example, you can have a darkmatch matchmode 3team teamplay server
+{
+	int gamemodeflag = 0;
+	char gmfstr[16];
+
+	if (use_3teams->value) {
+		gamemodeflag += GMF_3TEAMS;
+	}
+	if (darkmatch->value) {
+		gamemodeflag += GMF_DARKMATCH;
+	}
+	if (matchmode->value) {
+		gamemodeflag += GMF_MATCHMODE;
+	}
+	sprintf(gmfstr, "%d", gamemodeflag);
+	gi.cvar_forceset("gmf", gmfstr);
+	return gamemodeflag;
+}
+
 /*
 ==============
 SpawnEntities
@@ -1031,6 +1043,7 @@ void SpawnEntities (const char *mapname, const char *entities, const char *spawn
 	}
 	else if (use_3teams->value)
 	{
+		gi.cvar_forceset(gm->name, "tp");
 		gameSettings |= (GS_ROUNDBASED | GS_WEAPONCHOOSE);
 
 		if (!teamplay->value)
@@ -1106,7 +1119,12 @@ void SpawnEntities (const char *mapname, const char *entities, const char *spawn
 
 	gi.FreeTags(TAG_LEVEL);
 
+	// Set serverinfo correctly for gamemodeflags
+	Gamemodeflag();
+
+	#if USE_AQTION
 	generate_uuid();  // Run this once every time a map loads to generate a unique id for stats (game.matchid)
+	#endif
 
 #ifndef NO_BOTS
 	// Disconnect bots before we wipe entity data and lose track of is_bot.
@@ -1734,12 +1752,8 @@ void SP_worldspawn (edict_t * ent)
 	gi.soundindex("infantry/inflies1.wav");
 
 	sm_meat_index = gi.modelindex("models/objects/gibs/sm_meat/tris.md2");
-	gi.modelindex("models/objects/gibs/arm/tris.md2");
-	gi.modelindex("models/objects/gibs/bone/tris.md2");
-	gi.modelindex("models/objects/gibs/bone2/tris.md2");
-	gi.modelindex("models/objects/gibs/chest/tris.md2");
 	gi.modelindex("models/objects/gibs/skull/tris.md2");
-	gi.modelindex("models/objects/gibs/head2/tris.md2");
+	gi.modelindex("models/objects/gibs/head2/tris.m`d2");
 
 
 //

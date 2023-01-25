@@ -543,46 +543,6 @@ void Cmd_Statmode_f(edict_t* ent)
 // 	curl_global_cleanup();
 // }
 
-int Gamemode(void) // These are distinct game modes; you cannot have a teamdm tourney mode, for example
-{
-	int gamemode = 0;
-	if (teamdm->value) {
-		gamemode = GM_TEAMDM;
-	} else if (ctf->value) {
-		gamemode = GM_CTF;
-	} else if (use_tourney->value) {
-		gamemode = GM_TOURNEY;
-	} else if (teamplay->value) {
-		gamemode = GM_TEAMPLAY;  
-	} else if (dom->value) {
-		gamemode = GM_DOMINATION;
-	} else if (deathmatch->value) {
-		gamemode = GM_DEATHMATCH;
-	}
-	return gamemode;
-}
-
-int Gamemodeflag(void) 
-// These are gamemode flags that change the rules of gamemodes.
-// For example, you can have a darkmatch matchmode 3team teamplay server
-{
-	int gamemodeflag = 0;
-	char gmfstr[16];
-
-	if (use_3teams->value) {
-		gamemodeflag += GMF_3TEAMS;
-	}
-	if (darkmatch->value) {
-		gamemodeflag += GMF_DARKMATCH;
-	}
-	if (matchmode->value) {
-		gamemodeflag += GMF_MATCHMODE;
-	}
-	sprintf(gmfstr, "%d", gamemodeflag);
-	gi.cvar_forceset("gmf", gmfstr);
-	return gamemodeflag;
-}
-
 #ifndef NO_BOTS
 /*
 =================
@@ -655,11 +615,13 @@ void LogKill(edict_t *self, edict_t *inflictor, edict_t *attacker)
 	char vip[24]; // Victim's IP:port
 	char vd[24]; // Victim's Discord ID
 	char *vi; // Victim's IP (without port)
+	char vloc[18]; // Victim's location
 	char k[24]; // Killer's Steam ID
 	char kn[128]; // Killer's name
 	char kip[24]; // Killer's IP:port
 	char kd[24]; // Killer's Discord ID
 	char *ki; // Killer's IP (without port)
+	char kloc[18]; // Killer's location
 
 	// Check if there's an AI bot in the game, if so, do nothing
 	if (game.ai_ent_found) {
@@ -713,9 +675,13 @@ void LogKill(edict_t *self, edict_t *inflictor, edict_t *attacker)
 		eventtime = (int)time(NULL);
 		roundNum = game.roundNum + 1;
 
+		// Location data
+		sprintf(vloc, "%5.0f,%5.0f,%5.0f", self->s.origin[0], self->s.origin[1], self->s.origin[2]);
+		sprintf(kloc, "%5.0f,%5.0f,%5.0f", attacker->s.origin[0], attacker->s.origin[1], attacker->s.origin[2]);
+
 		Q_snprintf(
 			msg, sizeof(msg),
-			"{\"frag\":{\"sid\":\"%s\",\"mid\":\"%s\",\"v\":\"%s\",\"vn\":\"%s\",\"vi\":\"%s\",\"vt\":%i,\"vl\":%i,\"k\":\"%s\",\"kn\":\"%s\",\"ki\":\"%s\",\"kt\":%i,\"kl\":%i,\"w\":%i,\"i\":%i,\"l\":%i,\"ks\":%i,\"gm\":%i,\"gmf\":%i,\"ttk\":%d,\"t\":%d,\"gt\":%d,\"m\":\"%s\",\"r\":%i,\"vd\":\"%s\",\"kd\":\"%s\"}}\n",
+			"{\"frag\":{\"sid\":\"%s\",\"mid\":\"%s\",\"v\":\"%s\",\"vn\":\"%s\",\"vi\":\"%s\",\"vt\":%i,\"vl\":%i,\"k\":\"%s\",\"kn\":\"%s\",\"ki\":\"%s\",\"kt\":%i,\"kl\":%i,\"w\":%i,\"i\":%i,\"l\":%i,\"ks\":%i,\"gm\":%i,\"gmf\":%i,\"ttk\":%d,\"t\":%d,\"gt\":%d,\"m\":\"%s\",\"r\":%i,\"vd\":\"%s\",\"kd\":\"%s\",\"vloc\":\"%s\",\"kloc\":\"%s\"}}\n",
 			server_id->string,
 			game.matchid,
 			v,
@@ -740,7 +706,9 @@ void LogKill(edict_t *self, edict_t *inflictor, edict_t *attacker)
 			level.mapname,
 			roundNum,
 			vd,
-			kd
+			kd,
+			vloc,
+			kloc
 		);
 		Write_Stats(msg);
 	}
@@ -767,6 +735,7 @@ void LogWorldKill(edict_t *self)
 	char vip[24];
 	char vd[24];
 	char *vi;
+	char vloc[18];
 
 	// Check if there's an AI bot in the game, if so, do nothing
 	if (game.ai_ent_found) {
@@ -814,9 +783,12 @@ void LogWorldKill(edict_t *self)
 		eventtime = (int)time(NULL);
 		roundNum = game.roundNum + 1;
 
+		// Location data
+		sprintf(vloc, "%5.0f,%5.0f,%5.0f", self->s.origin[0], self->s.origin[1], self->s.origin[2]);
+
 		Q_snprintf(
 			msg, sizeof(msg),
-			"{\"frag\":{\"sid\":\"%s\",\"mid\":\"%s\",\"v\":\"%s\",\"vn\":\"%s\",\"vi\":\"%s\",\"vt\":%i,\"vl\":%i,\"k\":\"%s\",\"kn\":\"%s\",\"ki\":\"%s\",\"kt\":%i,\"kl\":%i,\"w\":%i,\"i\":%i,\"l\":%i,\"ks\":%i,\"gm\":%i,\"gmf\":%i,\"ttk\":%d,\"t\":%d,\"gt\":%d,\"m\":\"%s\",\"r\":%i,\"vd\":\"%s\",\"kd\":\"%s\"}}\n",
+			"{\"frag\":{\"sid\":\"%s\",\"mid\":\"%s\",\"v\":\"%s\",\"vn\":\"%s\",\"vi\":\"%s\",\"vt\":%i,\"vl\":%i,\"k\":\"%s\",\"kn\":\"%s\",\"ki\":\"%s\",\"kt\":%i,\"kl\":%i,\"w\":%i,\"i\":%i,\"l\":%i,\"ks\":%i,\"gm\":%i,\"gmf\":%i,\"ttk\":%d,\"t\":%d,\"gt\":%d,\"m\":\"%s\",\"r\":%i,\"vd\":\"%s\",\"kd\":\"%s\",\"vloc\":\"%s\",\"kloc\":\"%s\"}}\n",
 			server_id->string,
 			game.matchid,
 			v,
@@ -841,7 +813,9 @@ void LogWorldKill(edict_t *self)
 			level.mapname,
 			roundNum,
 			vd,
-			vd
+			vd,
+			vloc,
+			vloc
 		);
 		Write_Stats(msg);
 	}
@@ -866,8 +840,8 @@ void LogMatch()
 		return;
 	}
 
-	// Don't log a scoreless match, nothing happened
-	if (t1 == 0 && t2 == 0 && t3 == 0) {
+	// Check for scoreless teamplay, don't log if so
+	if ((t1 == 0 && t2 == 0 && t3 == 0) && (teamplay->value)) {
 		return;
 	}
 

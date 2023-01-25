@@ -429,8 +429,8 @@ void InitGame( void )
 	rrot = gi.cvar( "rrot", "0", 0 );
 	empty_rotate = gi.cvar( "empty_rotate", "0", 0 );
 	empty_exec = gi.cvar( "empty_exec", "", 0 );
-	llsound = gi.cvar( "llsound", "0", 0 );
-	loud_guns = gi.cvar( "loud_guns", "1", 0 );
+	llsound = gi.cvar( "llsound", "1", 0 );
+	loud_guns = gi.cvar( "loud_guns", "0", 0 );
 	sync_guns = gi.cvar( "sync_guns", "1", 0 );
 	silentwalk = gi.cvar( "silentwalk", "0", 0 );
 	slopefix = gi.cvar( "slopefix", "1", 0 );
