@@ -62,6 +62,12 @@ typedef enum {
 
 #define MAX_ENT_CLUSTERS    16
 
+// link_t is only used for entity area links now
+typedef struct link_s
+{
+  struct link_s *prev, *next;
+}
+link_t;
 
 typedef struct edict_s edict_t;
 typedef struct gclient_s gclient_t;
@@ -109,6 +115,11 @@ struct edict_s {
 #endif      // GAME_INCLUDE
 
 //===============================================================
+
+// action start
+// making real copies for bot compatibility
+extern void (*real_cprintf) (struct edict_s * ent, int printlevel, const char *fmt, ...);
+extern void (*real_centerprintf) (struct edict_s * ent, const char *fmt, ...);
 
 //
 // functions provided by the main engine
