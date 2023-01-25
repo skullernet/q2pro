@@ -560,11 +560,9 @@ config.set_quoted('VID_MODELIST', get_option('vid-modelist'))
 
 config.set10('USE_AUTOREPLY',     get_option('auto-reply'))
 config.set10('USE_DEBUG',         get_option('debug'))
-config.set10('USE_DLIGHTS',       get_option('dynamic-lights'))
 config.set10('USE_FPS',           get_option('variable-fps'))
 config.set10('USE_GAME_ABI_HACK', get_option('game-abi-hack').require(x86 and cc.get_id() == 'gcc').allowed())
 config.set10('USE_ICMP',          get_option('icmp-errors').require(win32 or cc.has_header('linux/errqueue.h')).allowed())
-config.set10('USE_MAPCHECKSUM',   get_option('map-checksum'))
 config.set10('USE_MD3',           get_option('md3'))
 config.set10('USE_PACKETDUP',     get_option('packetdup-hack'))
 config.set10('USE_TGA',           get_option('tga'))
@@ -582,13 +580,11 @@ summary({
   'client-gtv'         : config.get('USE_CLIENT_GTV', 0) != 0,
   'client-ui'          : config.get('USE_UI', 0) != 0,
   'debug'              : config.get('USE_DEBUG', 0) != 0,
-  'dynamic-lights'     : config.get('USE_DLIGHTS', 0) != 0,
   'game-abi-hack'      : config.get('USE_GAME_ABI_HACK', 0) != 0,
   'icmp-errors'        : config.get('USE_ICMP', 0) != 0,
   'libcurl'            : config.get('USE_CURL', 0) != 0,
   'libjpeg'            : config.get('USE_JPG', 0) != 0,
   'libpng'             : config.get('USE_PNG', 0) != 0,
-  'map-checksum'       : config.get('USE_MAPCHECKSUM', 0) != 0,
   'md3'                : config.get('USE_MD3', 0) != 0,
   'mvd-client'         : config.get('USE_MVD_CLIENT', 0) != 0,
   'mvd-server'         : config.get('USE_MVD_SERVER', 0) != 0,

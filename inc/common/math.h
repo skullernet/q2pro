@@ -16,8 +16,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef MATH_H
-#define MATH_H
+#pragma once
 
 #define NUMVERTEXNORMALS    162
 
@@ -70,5 +69,3 @@ void Matrix4x4_CM_Projection2(float *proj, float fovx, float fovy, float neard);
 void Matrix4x4_CM_ModelViewMatrix(float *modelview, const vec3_t viewangles, const vec3_t vieworg);
 void Matrix4_Multiply(const float *a, const float *b, float *out);
 void SetupRotationMatrix(vec3_t matrix[3], const vec3_t dir, float degrees);
-
-#endif // MATH_H

@@ -125,7 +125,6 @@ static void put_blocklights(byte *out, int smax, int tmax, int stride)
     }
 }
 
-#if USE_DLIGHTS
 static void add_dynamic_lights(mface_t *surf)
 {
     dlight_t    *light;
@@ -186,7 +185,6 @@ static void add_dynamic_lights(mface_t *surf)
         }
     }
 }
-#endif
 
 static void add_light_styles(mface_t *surf, int size)
 {
@@ -207,20 +205,16 @@ static void add_light_styles(mface_t *surf, int size)
     src = surf->lightmap;
     bl = blocklights;
     if (style->white == 1) {
-        for (j = 0; j < size; j++) {
+        for (j = 0; j < size; j++, bl += 3, src += 3) {
             bl[0] = src[0];
             bl[1] = src[1];
             bl[2] = src[2];
-
-            bl += 3; src += 3;
         }
     } else {
-        for (j = 0; j < size; j++) {
-            bl[0] = src[0] * style->rgb[0];
-            bl[1] = src[1] * style->rgb[1];
-            bl[2] = src[2] * style->rgb[2];
-
-            bl += 3; src += 3;
+        for (j = 0; j < size; j++, bl += 3, src += 3) {
+            bl[0] = src[0] * style->white;
+            bl[1] = src[1] * style->white;
+            bl[2] = src[2] * style->white;
         }
     }
 
@@ -231,12 +225,10 @@ static void add_light_styles(mface_t *surf, int size)
         style = LIGHT_STYLE(surf, i);
 
         bl = blocklights;
-        for (j = 0; j < size; j++) {
-            bl[0] += src[0] * style->rgb[0];
-            bl[1] += src[1] * style->rgb[1];
-            bl[2] += src[2] * style->rgb[2];
-
-            bl += 3; src += 3;
+        for (j = 0; j < size; j++, bl += 3, src += 3) {
+            bl[0] += src[0] * style->white;
+            bl[1] += src[1] * style->white;
+            bl[2] += src[2] * style->white;
         }
 
         surf->stylecache[i] = style->white;
@@ -255,14 +247,12 @@ static void update_dynamic_lightmap(mface_t *surf)
     // add all the lightmaps
     add_light_styles(surf, size);
 
-#if USE_DLIGHTS
     // add all the dynamic lights
     if (surf->dlightframe == glr.dlightframe) {
         add_dynamic_lights(surf);
     } else {
         surf->dlightframe = 0;
     }
-#endif
 
     // put into texture format
     put_blocklights(temp, smax, tmax, smax * 4);
@@ -291,13 +281,11 @@ void GL_PushLights(mface_t *surf)
         return;
     }
 
-#if USE_DLIGHTS
     // dynamic this frame or dynamic previously
     if (surf->dlightframe) {
         update_dynamic_lightmap(surf);
         return;
     }
-#endif
 
     // check for light style updates
     for (i = 0; i < surf->numstyles; i++) {
@@ -346,7 +334,7 @@ static void LM_UploadBlock(void)
 
 static void build_style_map(int dynamic)
 {
-    static lightstyle_t fake = { 1, { 1, 1, 1 } };
+    static lightstyle_t fake = { 1 };
     int i;
 
     if (!dynamic) {
@@ -407,9 +395,7 @@ static void build_primary_lightmap(mface_t *surf)
     // add all the lightmaps
     add_light_styles(surf, size);
 
-#if USE_DLIGHTS
     surf->dlightframe = 0;
-#endif
 
     // put into texture format
     put_blocklights(lm.buffer + surf->light_t * LM_BLOCK_WIDTH * 4 + surf->light_s * 4,

@@ -26,7 +26,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define MOD_Malloc(size)    Hunk_TryAlloc(&model->hunk, size)
 
-#define CHECK(x)    if (!(x)) { ret = Q_ERR_NOMEM; goto fail; }
+#define CHECK(x)    if (!(x)) { ret = Q_ERR(ENOMEM); goto fail; }
 
 // during registration it is possible to have more models than could actually
 // be referenced during gameplay, because we don't want to free anything until
@@ -759,7 +759,7 @@ qhandle_t R_RegisterModel(const char *name)
 
     // this should never happen
     if (namelen >= MAX_QPATH) {
-        ret = Q_ERR_NAMETOOLONG;
+        ret = Q_ERR(ENAMETOOLONG);
         goto fail1;
     }
 
@@ -779,7 +779,7 @@ qhandle_t R_RegisterModel(const char *name)
     filelen = FS_LoadFile(normalized, (void **)&rawdata);
     if (!rawdata) {
         // don't spam about missing models
-        if (filelen == Q_ERR_NOENT) {
+        if (filelen == Q_ERR(ENOENT)) {
             return 0;
         }
 

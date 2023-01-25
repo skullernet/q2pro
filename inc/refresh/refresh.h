@@ -16,8 +16,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef REFRESH_H
-#define REFRESH_H
+#pragma once
 
 #include "common/cvar.h"
 #include "common/error.h"
@@ -98,7 +97,6 @@ typedef struct particle_s {
 
 typedef struct lightstyle_s {
     float           white;          // highest of RGB
-    vec3_t          rgb;            // 0.0 - 2.0
 } lightstyle_t;
 
 typedef struct refdef_s {
@@ -231,5 +229,3 @@ void    R_EndFrame(void);
 void    R_ModeChanged(int width, int height, int flags);
 
 r_opengl_config_t *R_GetGLConfig(void);
-
-#endif // REFRESH_H

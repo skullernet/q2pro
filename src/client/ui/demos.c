@@ -123,7 +123,7 @@ static void BuildName(const file_info_t *info, char **cache)
 
     // format date
     len = 0;
-    if ((tm = localtime(&info->mtime)) != NULL) {
+    if ((tm = localtime(&(time_t){info->mtime})) != NULL) {
         if (tm->tm_year == m_demos.year) {
             len = strftime(date, sizeof(date), "%b %d %H:%M", tm);
         } else {
@@ -214,7 +214,7 @@ static void WriteCache(void)
     if (Q_concat(buffer, sizeof(buffer), m_demos.browse, "/" COM_DEMOCACHE_NAME) >= sizeof(buffer)) {
         return;
     }
-    FS_FOpenFile(buffer, &f, FS_MODE_WRITE);
+    FS_OpenFile(buffer, &f, FS_MODE_WRITE);
     if (!f) {
         return;
     }
@@ -230,7 +230,7 @@ static void WriteCache(void)
         pov = UI_GetColumn(e->name, COL_POV);
         FS_FPrintf(f, "%s\\%s\\", map, pov);
     }
-    FS_FCloseFile(f);
+    FS_CloseFile(f);
 }
 
 static void CalcHash(void **list)

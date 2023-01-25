@@ -24,31 +24,25 @@ static const char *const error_table[] = {
     "Unknown file format",
     "Invalid file format",
     "Bad lump extent",
+    "Bad lump alignment",
     "Odd lump size",
     "Too many elements",
     "Too few elements",
     "Index out of range",
     "Invalid quake path",
-    "File name too short",
     "Unexpected end of file",
     "File too small",
     "Not a regular file",
-    "Bad run length packet",
+    "Decompression overrun",
     "String truncation avoided",
-    "Runaway loop avoided",
     "Infinite loop avoided",
     "Library error",
     "Out of slots",
-    "Bad lump alignment",
-#if USE_ZLIB
     "Inflate failed",
     "Deflate failed",
     "Coherency check failed",
     "Bad compression method",
-#endif
 };
-
-static const int num_errors = q_countof(error_table);
 
 const char *Q_ErrorString(int error)
 {
@@ -67,7 +61,10 @@ const char *Q_ErrorString(int error)
         return strerror(e);
     }
 
-    e = _Q_ERR(error);
+    e = Q_ERR_(error);
+    if (e >= q_countof(error_table)) {
+        e = 0;
+    }
 
-    return error_table[e >= num_errors ? 0 : e];
+    return error_table[e];
 }

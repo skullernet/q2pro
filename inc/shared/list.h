@@ -16,8 +16,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef LIST_H
-#define LIST_H
+#pragma once
 
 //
 // list.h
@@ -42,6 +41,12 @@ static inline void List_Unlink(list_t *prev, list_t *next)
 {
     prev->next = next;
     next->prev = prev;
+}
+
+static inline void List_Relink(list_t *elem)
+{
+    elem->prev->next = elem;
+    elem->next->prev = elem;
 }
 
 static inline void List_Init(list_t *list)
@@ -153,5 +158,3 @@ static inline void *List_Index(list_t *list, size_t offset, int index)
 
 #define LIST_INDEX(type, index, list, member) \
     ((type *)List_Index(list, q_offsetof(type, member), index))
-
-#endif // LIST_H

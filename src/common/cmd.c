@@ -1611,7 +1611,7 @@ int Cmd_ExecuteFile(const char *path, unsigned flags)
     // sanity check file size after stripping off comments
     len = COM_Compress(f);
     if (len > CMD_BUFFER_SIZE) {
-        ret = Q_ERR_FBIG;
+        ret = Q_ERR(EFBIG);
         goto finish;
     }
 
@@ -1621,7 +1621,7 @@ int Cmd_ExecuteFile(const char *path, unsigned flags)
 
     // check for exec loop
     if (buf->aliasCount >= ALIAS_LOOP_COUNT) {
-        ret = Q_ERR_RUNAWAY_LOOP;
+        ret = Q_ERR_INFINITE_LOOP;
         goto finish;
     }
 
@@ -1660,19 +1660,14 @@ static void Cmd_Exec_f(void)
     }
 
     if (FS_NormalizePathBuffer(buffer, Cmd_Argv(1), sizeof(buffer)) >= sizeof(buffer)) {
-        ret = Q_ERR_NAMETOOLONG;
-        goto fail;
-    }
-
-    if (buffer[0] == 0) {
-        ret = Q_ERR_NAMETOOSHORT;
+        ret = Q_ERR(ENAMETOOLONG);
         goto fail;
     }
 
     ret = Cmd_ExecuteFile(buffer, 0);
 
     // try with .cfg extension
-    if (ret == Q_ERR_NOENT && COM_CompareExtension(buffer, ".cfg") && strlen(buffer) < sizeof(buffer) - 4) {
+    if (ret == Q_ERR(ENOENT) && COM_CompareExtension(buffer, ".cfg") && strlen(buffer) < sizeof(buffer) - 4) {
         strcat(buffer, ".cfg");
         ret = Cmd_ExecuteFile(buffer, 0);
     }

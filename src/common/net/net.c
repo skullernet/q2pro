@@ -367,7 +367,7 @@ static void logfile_close(void)
 
     Com_Printf("Closing network log.\n");
 
-    FS_FCloseFile(net_logFile);
+    FS_CloseFile(net_logFile);
     net_logFile = 0;
 }
 

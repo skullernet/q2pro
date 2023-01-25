@@ -16,66 +16,16 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef FILES_H
-#define FILES_H
+#pragma once
 
 #include "common/cmd.h"
 #include "common/error.h"
 #include "common/zone.h"
+#include "shared/files.h"
 
 #define MIN_LISTED_FILES    1024
 #define MAX_LISTED_FILES    250000000
 #define MAX_LISTED_DEPTH    8
-
-typedef struct file_info_s {
-    int64_t size;
-    time_t  ctime;
-    time_t  mtime;
-    char    name[1];
-} file_info_t;
-
-// bits 0 - 1, enum
-#define FS_MODE_APPEND          0x00000000
-#define FS_MODE_READ            0x00000001
-#define FS_MODE_WRITE           0x00000002
-#define FS_MODE_RDWR            0x00000003
-#define FS_MODE_MASK            0x00000003
-
-// bits 2 - 3, enum
-#define FS_BUF_DEFAULT          0x00000000
-#define FS_BUF_FULL             0x00000004
-#define FS_BUF_LINE             0x00000008
-#define FS_BUF_NONE             0x0000000c
-#define FS_BUF_MASK             0x0000000c
-
-// bits 4 - 5, enum
-#define FS_TYPE_ANY             0x00000000
-#define FS_TYPE_REAL            0x00000010
-#define FS_TYPE_PAK             0x00000020
-#define FS_TYPE_RESERVED        0x00000030
-#define FS_TYPE_MASK            0x00000030
-
-// bits 6 - 7, flag
-#define FS_PATH_ANY             0x00000000
-#define FS_PATH_BASE            0x00000040
-#define FS_PATH_GAME            0x00000080
-#define FS_PATH_MASK            0x000000c0
-
-// bits 8 - 13, flag
-#define FS_SEARCH_BYFILTER      0x00000100
-#define FS_SEARCH_SAVEPATH      0x00000200
-#define FS_SEARCH_EXTRAINFO     0x00000400
-#define FS_SEARCH_STRIPEXT      0x00000800
-#define FS_SEARCH_DIRSONLY      0x00001000
-#define FS_SEARCH_RECURSIVE     0x00002000
-#define FS_SEARCH_MASK          0x00003f00
-
-// bits 8 - 12, flag
-#define FS_FLAG_GZIP            0x00000100  // transparently (de)compress with gzip
-#define FS_FLAG_EXCL            0x00000200  // create the file, fail if already exists
-#define FS_FLAG_TEXT            0x00000400  // open in text mode if from disk
-#define FS_FLAG_DEFLATE         0x00000800  // if compressed in .pkz, read raw deflate data, fail otherwise
-#define FS_FLAG_LOADFILE        0x00001000  // open non-unique handle, must be closed very quickly
 
 #define MAX_LOADFILE            0x4001000   // 64 MiB + some slop
 
@@ -109,13 +59,13 @@ int FS_CreatePath(char *path);
 
 char    *FS_CopyExtraInfo(const char *name, const file_info_t *info);
 
-int64_t FS_FOpenFile(const char *filename, qhandle_t *f, unsigned mode);
-int     FS_FCloseFile(qhandle_t f);
+int64_t FS_OpenFile(const char *filename, qhandle_t *f, unsigned mode);
+int     FS_CloseFile(qhandle_t f);
 qhandle_t FS_EasyOpenFile(char *buf, size_t size, unsigned mode,
                           const char *dir, const char *name, const char *ext);
 
 #define FS_FileExistsEx(path, flags) \
-    (FS_LoadFileEx(path, NULL, flags, TAG_FREE) != Q_ERR_NOENT)
+    (FS_LoadFileEx(path, NULL, flags, TAG_FREE) != Q_ERR(ENOENT))
 #define FS_FileExists(path) \
     FS_FileExistsEx(path, 0)
 
@@ -136,10 +86,10 @@ int FS_Write(const void *buffer, size_t len, qhandle_t f);
 int FS_FPrintf(qhandle_t f, const char *format, ...) q_printf(2, 3);
 int FS_ReadLine(qhandle_t f, char *buffer, size_t size);
 
-void    FS_Flush(qhandle_t f);
+int FS_Flush(qhandle_t f);
 
 int64_t FS_Tell(qhandle_t f);
-int FS_Seek(qhandle_t f, int64_t offset);
+int FS_Seek(qhandle_t f, int64_t offset, int whence);
 
 int64_t FS_Length(qhandle_t f);
 
@@ -175,5 +125,3 @@ FILE *Q_fopen(const char *path, const char *mode);
 extern cvar_t   *fs_game;
 
 extern char     fs_gamedir[];
-
-#endif // FILES_H
