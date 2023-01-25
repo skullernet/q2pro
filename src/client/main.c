@@ -29,6 +29,9 @@ cvar_t  *cl_predict_crouch;
 cvar_t  *cl_gun;
 cvar_t  *cl_gunalpha;
 cvar_t  *cl_gunfov;
+cvar_t  *cl_gun_x;
+cvar_t  *cl_gun_y;
+cvar_t  *cl_gun_z;
 cvar_t  *cl_warn_on_fps_rounding;
 cvar_t  *cl_maxfps;
 cvar_t  *cl_async;
@@ -59,6 +62,8 @@ cvar_t  *cl_chat_filter;
 cvar_t  *cl_disconnectcmd;
 cvar_t  *cl_changemapcmd;
 cvar_t  *cl_beginmapcmd;
+
+cvar_t  *cl_ignore_stufftext;
 
 cvar_t  *cl_gibs;
 #if USE_FPS
@@ -1647,13 +1652,6 @@ static void CL_Connect_c(genctx_t *ctx, int argnum)
     if (argnum == 1) {
         CL_RecentIP_g(ctx);
         Com_Address_g(ctx);
-    } else if (argnum == 2) {
-        if (!ctx->partial[0] || (ctx->partial[0] == '3' && !ctx->partial[1])) {
-            Prompt_AddMatch(ctx, "34");
-            Prompt_AddMatch(ctx, "35");
-            Prompt_AddMatch(ctx, "36");
-			Prompt_AddMatch(ctx, "38");
-        }
     }
 }
 
@@ -1667,31 +1665,15 @@ static void CL_Connect_f(void)
 {
     char    *server, *p;
     netadr_t    address;
-    int protocol;
-    int argc = Cmd_Argc();
 
-    if (argc < 2) {
-usage:
-        Com_Printf("Usage: %s <server> [34|35|36]\n", Cmd_Argv(0));
+    if (Cmd_Argc() < 2) {
+        Com_Printf("Usage: %s <server>\n", Cmd_Argv(0));
         return;
     }
 
-    if (argc > 2) {
-        protocol = atoi(Cmd_Argv(2));
-        if (protocol < PROTOCOL_VERSION_DEFAULT ||
-            protocol > PROTOCOL_VERSION_AQTION ||
-			protocol == PROTOCOL_VERSION_MVD) {
-            goto usage;
-        }
-    } else {
-        protocol = cl_protocol->integer;
-        if (!protocol) {
-			#ifdef AQTION_EXTENSION
-			protocol = PROTOCOL_VERSION_AQTION;
-			#else
-			protocol = PROTOCOL_VERSION_Q2PRO;
-			#endif
-        }
+    if (Cmd_Argc() > 2) {
+        Com_Printf("Second argument to `%s' is now ignored. "
+                   "Set protocol via `cl_protocol' variable.\n", Cmd_Argv(0));
     }
 
     server = Cmd_Argv(1);
@@ -1720,8 +1702,7 @@ usage:
     CL_Disconnect(ERR_RECONNECT);
 
     cls.serverAddress = address;
-    cls.serverProtocol = protocol;
-    cls.protocolVersion = 0;
+    cls.serverProtocol = cl_protocol->integer;
     cls.passive = false;
     cls.state = ca_challenging;
     cls.connect_time -= CONNECT_FAST;
@@ -2216,16 +2197,18 @@ The server is changing levels
 */
 static void CL_Reconnect_f(void)
 {
-    if (cls.state >= ca_precached) {
+    if (cls.demo.playback) {
+        Com_Printf("No server to reconnect to.\n");
+        return;
+    }
+
+    if (cls.state >= ca_precached || Cmd_From() != FROM_STUFFTEXT) {
         CL_Disconnect(ERR_RECONNECT);
     }
 
     if (cls.state >= ca_connected) {
         cls.state = ca_connected;
 
-        if (cls.demo.playback) {
-            return;
-        }
         if (cls.download.file) {
             return; // if we are downloading, we don't change!
         }
@@ -2241,13 +2224,14 @@ static void CL_Reconnect_f(void)
         Com_Printf("No server to reconnect to.\n");
         return;
     }
-    if (cls.serverAddress.type == NA_LOOPBACK) {
+    if (cls.serverAddress.type == NA_LOOPBACK && !sv_running->integer) {
         Com_Printf("Can not reconnect to loopback.\n");
         return;
     }
 
     Com_Printf("Reconnecting...\n");
 
+    cls.serverProtocol = cl_protocol->integer;
     cls.state = ca_challenging;
     cls.connect_time -= CONNECT_FAST;
     cls.connect_count = 0;
@@ -2328,7 +2312,7 @@ static void CL_Skins_f(void)
     char *s;
     clientinfo_t *ci;
 
-    if (cls.state < ca_loading) {
+    if (cls.state < ca_precached) {
         Com_Printf("Must be in a level to load skins.\n");
         return;
     }
@@ -2355,7 +2339,7 @@ static void cl_noskins_changed(cvar_t *self)
     char *s;
     clientinfo_t *ci;
 
-    if (cls.state < ca_loading) {
+    if (cls.state < ca_precached) {
         return;
     }
 
@@ -2370,7 +2354,7 @@ static void cl_noskins_changed(cvar_t *self)
 
 static void cl_vwep_changed(cvar_t *self)
 {
-    if (cls.state < ca_loading) {
+    if (cls.state < ca_precached) {
         return;
     }
 
@@ -2383,7 +2367,7 @@ static void CL_Name_g(genctx_t *ctx)
     int i;
     char buffer[MAX_CLIENT_NAME];
 
-    if (cls.state < ca_loading) {
+    if (cls.state < ca_precached) {
         return;
     }
 
@@ -2466,6 +2450,10 @@ static void CL_ConnectionlessPacket(void)
                     s++;
                 }
             }
+        }
+
+        if (!cls.serverProtocol) {
+            cls.serverProtocol = PROTOCOL_VERSION_Q2PRO;
         }
 
         // choose supported protocol
@@ -2928,6 +2916,71 @@ static void CL_Precache_f(void)
     if (cls.state != ca_precached) {
         cls.state = ca_connected;
     }
+}
+
+void CL_LoadFilterList(string_entry_t **list, const char *name, const char *comments, size_t maxlen)
+{
+    string_entry_t *entry, *next;
+    char *raw, *data, *p;
+    int len, count, line;
+
+    // free previous entries
+    for (entry = *list; entry; entry = next) {
+        next = entry->next;
+        Z_Free(entry);
+    }
+
+    *list = NULL;
+
+    // load new list
+    len = FS_LoadFileEx(name, (void **)&raw, FS_TYPE_REAL, TAG_FILESYSTEM);
+    if (!raw) {
+        if (len != Q_ERR_NOENT)
+            Com_EPrintf("Couldn't load %s: %s\n", name, Q_ErrorString(len));
+        return;
+    }
+
+    count = 0;
+    line = 1;
+    data = raw;
+
+    while (*data) {
+        p = strchr(data, '\n');
+        if (p) {
+            if (p > data && *(p - 1) == '\r')
+                *(p - 1) = 0;
+            *p = 0;
+        }
+
+        // ignore empty lines and comments
+        if (*data && (!comments || !strchr(comments, *data))) {
+            len = strlen(data);
+            if (len < maxlen) {
+                entry = Z_Malloc(sizeof(*entry) + len);
+                memcpy(entry->string, data, len + 1);
+                entry->next = *list;
+                *list = entry;
+                count++;
+            } else {
+                Com_WPrintf("Oversize filter on line %d in %s\n", line, name);
+            }
+        }
+
+        if (!p)
+            break;
+
+        data = p + 1;
+        line++;
+    }
+
+    Com_DPrintf("Loaded %d filters from %s\n", count, name);
+
+    FS_FreeFile(raw);
+}
+
+static void CL_LoadStuffTextWhiteList(void)
+{
+    CL_LoadFilterList(&cls.stufftextwhitelist, "stufftext-whitelist.txt", NULL, MAX_STRING_CHARS);
 }
 
 typedef struct {
@@ -3493,6 +3546,7 @@ void CL_RestartFilesystem(bool total)
     }
 
     CL_LoadDownloadIgnores();
+    CL_LoadStuffTextWhiteList();
     OGG_LoadTrackList();
 
     // switch back to original state
@@ -3581,6 +3635,17 @@ static void CL_RestartRefresh_f(void)
     CL_RestartRefresh(true);
 }
 
+static bool allow_stufftext(const char *text)
+{
+    string_entry_t *entry;
+
+    for (entry = cls.stufftextwhitelist; entry; entry = entry->next)
+        if (Com_WildCmp(entry->string, text))
+            return true;
+
+    return false;
+}
+
 // execute string in server command buffer
 static void exec_server_string(cmdbuf_t *buf, const char *text)
 {
@@ -3612,6 +3677,22 @@ static void exec_server_string(cmdbuf_t *buf, const char *text)
         if (strcmp(s, "play")) {
             return;
         }
+    }
+
+    // handle commands that are always allowed
+    if (!strcmp(s, "reconnect")) {
+        CL_Reconnect_f();
+        return;
+    }
+    if (!strcmp(s, "cmd") && !cls.stufftextwhitelist) {
+        CL_ForwardToServer_f();
+        return;
+    }
+
+    if (cl_ignore_stufftext->integer >= 1 && !allow_stufftext(text)) {
+        if (cl_ignore_stufftext->integer >= 2)
+            Com_WPrintf("Ignored stufftext: %s\n", text);
+        return;
     }
 
     // execute regular commands
@@ -3731,14 +3812,12 @@ static const cmdreg_t c_client[] = {
     { "userinfo", CL_Userinfo_f },
     { "snd_restart", CL_RestartSound_f },
     { "play", CL_PlaySound_f, CL_PlaySound_c },
-    //{ "changing", CL_Changing_f },
     { "disconnect", CL_Disconnect_f },
     { "connect", CL_Connect_f, CL_Connect_c },
     { "followip", CL_FollowIP_f },
     { "passive", CL_PassiveConnect_f },
     { "reconnect", CL_Reconnect_f },
     { "rcon", CL_Rcon_f, CL_Rcon_c },
-    //{ "precache", CL_Precache_f },
     { "serverstatus", CL_ServerStatus_f, CL_ServerStatus_c },
     { "ignoretext", CL_IgnoreText_f },
     { "unignoretext", CL_UnIgnoreText_f },
@@ -3748,7 +3827,6 @@ static const cmdreg_t c_client[] = {
     { "dumpstatusbar", CL_DumpStatusbar_f },
     { "dumplayout", CL_DumpLayout_f },
     { "writeconfig", CL_WriteConfig_f, CL_WriteConfig_c },
-//    { "msgtab", CL_Msgtab_f, CL_Msgtab_g },
     { "vid_restart", CL_RestartRefresh_f },
     { "r_reload", CL_ReloadRefresh_f },
 
@@ -3809,6 +3887,9 @@ static void CL_InitLocal(void)
     cl_gun->changed = cl_gun_changed;
     cl_gunalpha = Cvar_Get("cl_gunalpha", "1", 0);
     cl_gunfov = Cvar_Get("cl_gunfov", "90", 0);
+    cl_gun_x = Cvar_Get("cl_gun_x", "0", 0);
+    cl_gun_y = Cvar_Get("cl_gun_y", "0", 0);
+    cl_gun_z = Cvar_Get("cl_gun_z", "0", 0);
     cl_footsteps = Cvar_Get("cl_footsteps", "1", 0);
     cl_footsteps->changed = cl_footsteps_changed;
     cl_noskins = Cvar_Get("cl_noskins", "0", 0);
@@ -3891,6 +3972,8 @@ static void CL_InitLocal(void)
     cl_disconnectcmd = Cvar_Get("cl_disconnectcmd", "", 0);
     cl_changemapcmd = Cvar_Get("cl_changemapcmd", "", 0);
     cl_beginmapcmd = Cvar_Get("cl_beginmapcmd", "", 0);
+
+    cl_ignore_stufftext = Cvar_Get("cl_ignore_stufftext", "0", 0);
 
     cl_protocol = Cvar_Get("cl_protocol", "0", 0);
 
@@ -4476,6 +4559,7 @@ void CL_Init(void)
 
     OGG_Init();
     CL_LoadDownloadIgnores();
+    CL_LoadStuffTextWhiteList();
 
     HTTP_Init();
 

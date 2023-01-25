@@ -101,6 +101,7 @@ void    MSG_WriteString(const char *s);
 void    MSG_WritePos(const vec3_t pos);
 void    MSG_WriteAngle(float f);
 #if USE_CLIENT
+void    MSG_FlushBits(void);
 void    MSG_WriteBits(int value, int bits);
 int     MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *cmd, int version);
 int     MSG_WriteDeltaUsercmd_Enhanced(const usercmd_t *from, const usercmd_t *cmd);
@@ -168,9 +169,6 @@ void    MSG_ShowDeltaUsercmdBits_Enhanced(int bits);
 void    MSG_ShowDeltaEntityBits(int bits);
 void    MSG_ShowDeltaPlayerstateBits_Packet(int flags);
 const char *MSG_ServerCommandString(int cmd);
-#define MSG_ShowSVC(cmd) \
-    Com_LPrintf(PRINT_DEVELOPER, "%3zu:%s\n", msg_read.readcount - 1, \
-        MSG_ServerCommandString(cmd))
 #endif // USE_CLIENT || USE_MVD_CLIENT
 #endif // USE_DEBUG
 

@@ -101,7 +101,6 @@ static const alsection_t sections[] = {
     },
 };
 
-static cvar_t   *al_driver;
 static cvar_t   *al_device;
 
 static void *handle;
@@ -133,11 +132,17 @@ void QAL_Shutdown(void)
         handle = NULL;
     }
 
-    if (al_driver)
-        al_driver->flags &= ~CVAR_SOUND;
     if (al_device)
         al_device->flags &= ~CVAR_SOUND;
 }
+
+static const char *const al_drivers[] = {
+#ifdef _WIN32
+    "soft_oal", "openal32"
+#else
+    "libopenal.so.1", "libopenal.so"
+#endif
+};
 
 bool QAL_Init(void)
 {
@@ -145,13 +150,13 @@ bool QAL_Init(void)
     const alfunction_t *func;
     int i;
 
-    al_driver = Cvar_Get("al_driver", LIBAL, 0);
     al_device = Cvar_Get("al_device", "", 0);
 
-    // don't allow absolute or relative paths
-    FS_SanitizeFilenameVariable(al_driver);
-
-    Sys_LoadLibrary(al_driver->string, NULL, &handle);
+    for (i = 0; i < q_countof(al_drivers); i++) {
+        Sys_LoadLibrary(al_drivers[i], NULL, &handle);
+        if (handle)
+            break;
+    }
     if (!handle)
         return false;
 
@@ -205,10 +210,9 @@ bool QAL_Init(void)
             continue;
         }
 
-        Com_Printf("Loaded extension %s\n", sec->extension);
+        Com_DPrintf("Loaded extension %s\n", sec->extension);
     }
 
-    al_driver->flags |= CVAR_SOUND;
     al_device->flags |= CVAR_SOUND;
 
     return true;

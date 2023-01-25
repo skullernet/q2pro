@@ -22,6 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 //
 
 #include "shared/shared.h"
+#include "common/async.h"
 #include "common/common.h"
 #include "common/cvar.h"
 #include "common/files.h"
@@ -47,15 +48,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define IMG_LOAD(x) \
     static int IMG_Load##x(byte *rawdata, size_t rawlen, \
         image_t *image, byte **pic)
-
-typedef struct screenshot_s {
-    int (*save_cb)(struct screenshot_s *);
-    byte *pixels;
-    FILE *fp;
-    char *filename;
-    int width, height, row_stride, status, param;
-    bool async;
-} screenshot_t;
 
 /*
 ====================================================================
@@ -612,45 +604,41 @@ IMG_LOAD(TGA)
     return Q_ERR_SUCCESS;
 }
 
-static int IMG_SaveTGA(screenshot_t *s)
+static int IMG_SaveTGA(screenshot_t *restrict s)
 {
-    byte header[TARGA_HEADER_SIZE], *p;
-    int i, j;
+    byte header[TARGA_HEADER_SIZE] = { 0 };
 
-    memset(&header, 0, sizeof(header));
-    header[ 2] = 2;        // uncompressed type
-    header[12] = s->width & 255;
-    header[13] = s->width >> 8;
-    header[14] = s->height & 255;
-    header[15] = s->height >> 8;
-    header[16] = 24;     // pixel size
+    header[ 2] = 2;     // uncompressed type
+    WL16(&header[12], s->width);
+    WL16(&header[14], s->height);
+    header[16] = 24;    // pixel size
 
     if (!fwrite(&header, sizeof(header), 1, s->fp)) {
         return Q_ERR_FAILURE;
     }
 
-    // swap RGB to BGR
-    for (i = 0; i < s->height; i++) {
-        p = s->pixels + i * s->row_stride;
-        for (j = 0; j < s->width; j++) {
-            SWAP(byte, p[0], p[2]);
-            p += 3;
+    byte *row = malloc(s->width * 3);
+    if (!row) {
+        return Q_ERR_NOMEM;
+    }
+
+    int ret = Q_ERR_SUCCESS;
+    for (int i = 0; i < s->height; i++) {
+        byte *src = s->pixels + i * s->rowbytes;
+        byte *dst = row;
+        for (int j = 0; j < s->width; j++, src += s->bpp, dst += 3) {
+            dst[0] = src[2];
+            dst[1] = src[1];
+            dst[2] = src[0];
+        }
+        if (!fwrite(row, s->width * 3, 1, s->fp)) {
+            ret = Q_ERR_FAILURE;
+            break;
         }
     }
 
-    if (s->row_stride == s->width * 3) {
-        if (!fwrite(s->pixels, s->width * s->height * 3, 1, s->fp)) {
-            return Q_ERR_FAILURE;
-        }
-    } else {
-        for (i = 0; i < s->height; i++) {
-            if (!fwrite(s->pixels + i * s->row_stride, s->width * 3, 1, s->fp)) {
-                return Q_ERR_FAILURE;
-            }
-        }
-    }
-
-    return 0;
+    free(row);
+    return ret;
 }
 
 #endif // USE_TGA
@@ -704,7 +692,6 @@ static void my_error_exit(j_common_ptr cinfo)
 static int my_jpeg_start_decompress(j_decompress_ptr cinfo, byte *rawdata, size_t rawlen)
 {
     my_error_ptr jerr = (my_error_ptr)cinfo->err;
-    int expected_components;
 
     if (setjmp(jerr->setjmp_buffer)) {
         return Q_ERR_LIBRARY_ERROR;
@@ -714,26 +701,19 @@ static int my_jpeg_start_decompress(j_decompress_ptr cinfo, byte *rawdata, size_
     jpeg_mem_src(cinfo, rawdata, rawlen);
     jpeg_read_header(cinfo, TRUE);
 
-    switch (cinfo->out_color_space) {
-    case JCS_GRAYSCALE:
-        expected_components = 1;
-        break;
-    case JCS_RGB:
-        expected_components = 3;
-        break;
-    default:
+    if (cinfo->out_color_space != JCS_RGB && cinfo->out_color_space != JCS_GRAYSCALE) {
         Com_SetLastError("invalid image color space");
         return Q_ERR_INVALID_FORMAT;
     }
 
-#ifdef JCS_ALPHA_EXTENSIONS
-    cinfo->out_color_space = JCS_EXT_RGBA;
-    expected_components = 4;
-#endif
+    // Mac builds use libjpeg9 which does not have JCS_EXT_RGBA
+    #ifdef JCS_ALPHA_EXTENSIONS
+        cinfo->out_color_space = JCS_EXT_RGBA;
+    #endif
 
     jpeg_start_decompress(cinfo);
 
-    if (cinfo->output_components != expected_components) {
+    if (cinfo->output_components != 4) {
         Com_SetLastError("invalid number of color components");
         return Q_ERR_INVALID_FORMAT;
     }
@@ -745,8 +725,6 @@ static int my_jpeg_start_decompress(j_decompress_ptr cinfo, byte *rawdata, size_
 
     return 0;
 }
-
-#ifdef JCS_ALPHA_EXTENSIONS
 
 static int my_jpeg_finish_decompress(j_decompress_ptr cinfo, JSAMPARRAY row_pointers)
 {
@@ -762,52 +740,13 @@ static int my_jpeg_finish_decompress(j_decompress_ptr cinfo, JSAMPARRAY row_poin
     return 0;
 }
 
-#else
-
-static int my_jpeg_finish_decompress(j_decompress_ptr cinfo, JSAMPROW row_pointer, byte *out)
-{
-    my_error_ptr jerr = (my_error_ptr)cinfo->err;
-    JSAMPROW in;
-    int i;
-
-    if (setjmp(jerr->setjmp_buffer)) {
-        return Q_ERR_LIBRARY_ERROR;
-    }
-
-    if (cinfo->output_components == 3) {
-        while (cinfo->output_scanline < cinfo->output_height) {
-            jpeg_read_scanlines(cinfo, &row_pointer, 1);
-
-            for (i = 0, in = row_pointer; i < cinfo->output_width; i++, out += 4, in += 3) {
-                out[0] = in[0];
-                out[1] = in[1];
-                out[2] = in[2];
-                out[3] = 255;
-            }
-        }
-    } else {
-        while (cinfo->output_scanline < cinfo->output_height) {
-            jpeg_read_scanlines(cinfo, &row_pointer, 1);
-
-            for (i = 0, in = row_pointer; i < cinfo->output_width; i++, out += 4, in += 1) {
-                out[0] = out[1] = out[2] = in[0];
-                out[3] = 255;
-            }
-        }
-    }
-
-    jpeg_finish_decompress(cinfo);
-    return 0;
-}
-
-#endif
-
 IMG_LOAD(JPG)
 {
+    JSAMPROW row_pointers[MAX_TEXTURE_SIZE];
     struct jpeg_decompress_struct cinfo;
     struct my_error_mgr jerr;
     byte *pixels;
-    int ret;
+    int ret, row, rowbytes;
 
     cinfo.err = jpeg_std_error(&jerr.pub);
     jerr.pub.error_exit = my_error_exit;
@@ -822,23 +761,13 @@ IMG_LOAD(JPG)
     image->upload_height = image->height = cinfo.output_height;
     image->flags |= IF_OPAQUE;
 
-    pixels = IMG_AllocPixels(cinfo.output_height * cinfo.output_width * 4);
+    rowbytes = cinfo.output_width * 4;
+    pixels = IMG_AllocPixels(cinfo.output_height * rowbytes);
 
-#ifdef JCS_ALPHA_EXTENSIONS
-    JSAMPROW row_pointers[MAX_TEXTURE_SIZE];
-
-    for (int row = 0; row < cinfo.output_height; row++)
-        row_pointers[row] = (JSAMPROW)(pixels + row * cinfo.output_width * 4);
+    for (row = 0; row < cinfo.output_height; row++)
+        row_pointers[row] = (JSAMPROW)(pixels + row * rowbytes);
 
     ret = my_jpeg_finish_decompress(&cinfo, row_pointers);
-#else
-    JSAMPROW row_pointer;
-
-    row_pointer = Z_Malloc(sizeof(JSAMPLE) * cinfo.output_width * cinfo.output_components);
-    ret = my_jpeg_finish_decompress(&cinfo, row_pointer, pixels);
-    Z_Free(row_pointer);
-#endif
-
     if (ret < 0) {
         IMG_FreePixels(pixels);
         goto fail;
@@ -851,7 +780,7 @@ fail:
 }
 
 static int my_jpeg_compress(j_compress_ptr cinfo, JSAMPARRAY row_pointers, screenshot_t *s)
-{
+{    
     my_error_ptr jerr = (my_error_ptr)cinfo->err;
 
     if (setjmp(jerr->setjmp_buffer)) {
@@ -861,10 +790,10 @@ static int my_jpeg_compress(j_compress_ptr cinfo, JSAMPARRAY row_pointers, scree
     jpeg_create_compress(cinfo);
     jpeg_stdio_dest(cinfo, s->fp);
 
-    cinfo->image_width = s->width;      // image width and height, in pixels
+    cinfo->image_width = s->width;
     cinfo->image_height = s->height;
-    cinfo->input_components = 3;     // # of color components per pixel
-    cinfo->in_color_space = JCS_RGB; // colorspace of input image
+    cinfo->input_components = s->bpp;
+    cinfo->in_color_space = s->bpp == 4 ? JCS_EXT_RGBA : JCS_RGB;
 
     jpeg_set_defaults(cinfo);
     jpeg_set_quality(cinfo, clamp(s->param, 0, 100), TRUE);
@@ -876,25 +805,24 @@ static int my_jpeg_compress(j_compress_ptr cinfo, JSAMPARRAY row_pointers, scree
     return 0;
 }
 
-static int IMG_SaveJPG(screenshot_t *s)
+static int IMG_SaveJPG(screenshot_t *restrict s)
 {
     struct jpeg_compress_struct cinfo;
     struct my_error_mgr jerr;
     JSAMPARRAY row_pointers;
-    int i, h, ret;
+    int i, ret;
 
     cinfo.err = jpeg_std_error(&jerr.pub);
     jerr.pub.error_exit = my_error_exit;
     jerr.pub.output_message = my_output_message;
     jerr.filename = s->async ? NULL : s->filename;
 
-    h = s->height;
-    row_pointers = malloc(sizeof(JSAMPROW) * h);
+    row_pointers = malloc(sizeof(JSAMPROW) * s->height);
     if (!row_pointers) {
         return Q_ERR_NOMEM;
     }
-    for (i = 0; i < h; i++) {
-        row_pointers[i] = (JSAMPROW)(s->pixels + (h - i - 1) * s->row_stride);
+    for (i = 0; i < s->height; i++) {
+        row_pointers[i] = (JSAMPROW)(s->pixels + (s->height - i - 1) * s->rowbytes);
     }
 
     ret = my_jpeg_compress(&cinfo, row_pointers, s);
@@ -1107,17 +1035,17 @@ static int my_png_write_image(png_structp png_ptr, png_infop info_ptr,
                  PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
     png_set_compression_level(png_ptr, clamp(s->param, 0, 9));
     png_set_rows(png_ptr, info_ptr, row_pointers);
-    png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
+    png_write_png(png_ptr, info_ptr, s->bpp == 4 ? PNG_TRANSFORM_STRIP_FILLER_AFTER : 0, NULL);
     return 0;
 }
 
-static int IMG_SavePNG(screenshot_t *s)
+static int IMG_SavePNG(screenshot_t *restrict s)
 {
     png_structp png_ptr;
     png_infop info_ptr;
     png_bytepp row_pointers;
     my_png_error my_err;
-    int i, h, ret;
+    int i, ret;
 
     my_err.filename = s->async ? NULL : s->filename;
     png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING,
@@ -1134,14 +1062,13 @@ static int IMG_SavePNG(screenshot_t *s)
         goto fail;
     }
 
-    h = s->height;
-    row_pointers = malloc(sizeof(png_bytep) * h);
+    row_pointers = malloc(sizeof(png_bytep) * s->height);
     if (!row_pointers) {
         ret = Q_ERR_NOMEM;
         goto fail;
     }
-    for (i = 0; i < h; i++) {
-        row_pointers[i] = (png_bytep)(s->pixels + (h - i - 1) * s->row_stride);
+    for (i = 0; i < s->height; i++) {
+        row_pointers[i] = (png_bytep)(s->pixels + (s->height - i - 1) * s->rowbytes);
     }
 
     ret = my_png_write_image(png_ptr, info_ptr, row_pointers, s);
@@ -1291,13 +1218,11 @@ static void screenshot_done_cb(void *arg)
 }
 
 static void make_screenshot(const char *name, const char *ext,
-                            int (*save_cb)(struct screenshot_s *),
-                            bool async, int param)
+                            save_cb_t save_cb, bool async, int param)
 {
     char        buffer[MAX_OSPATH];
-    byte        *pixels;
     FILE        *fp;
-    int         w, h, ret, row_stride;
+    int         ret;
 
     ret = create_screenshot(buffer, sizeof(buffer), &fp, name, ext);
     if (ret < 0) {
@@ -1305,20 +1230,16 @@ static void make_screenshot(const char *name, const char *ext,
         return;
     }
 
-    pixels = IMG_ReadPixels(&w, &h, &row_stride);
-
     screenshot_t s = {
         .save_cb = save_cb,
-        .pixels = pixels,
         .fp = fp,
         .filename = async ? Z_CopyString(buffer) : buffer,
-        .width = w,
-        .height = h,
-        .row_stride = row_stride,
         .status = -1,
         .param = param,
         .async = async,
     };
+
+    IMG_ReadPixels(&s);
 
     if (async) {
         asyncwork_t work = {
@@ -1326,7 +1247,7 @@ static void make_screenshot(const char *name, const char *ext,
             .done_cb = screenshot_done_cb,
             .cb_arg = Z_CopyStruct(&s),
         };
-        Sys_QueueAsyncWork(&work);
+        Com_QueueAsyncWork(&work);
     } else {
         screenshot_work_cb(&s);
         screenshot_done_cb(&s);

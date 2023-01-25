@@ -50,17 +50,18 @@ client_src = [
   'src/client/predict.c',
   'src/client/refresh.c',
   'src/client/screen.c',
-  'src/client/tent.c',
-  'src/client/view.c',
   'src/client/sound/main.c',
   'src/client/sound/mem.c',
+  'src/client/tent.c',
+  'src/client/view.c',
+  'src/common/async.c',
   'src/server/commands.c',
   'src/server/entities.c',
   'src/server/ghud.c',
   'src/server/game.c',
   'src/server/init.c',
-  'src/server/send.c',
   'src/server/main.c',
+  'src/server/send.c',
   'src/server/user.c',
   'src/server/world.c',
   'src/shared/m_flash.c',
@@ -101,8 +102,8 @@ server_src = [
   'src/server/ghud.c',
   'src/server/game.c',
   'src/server/init.c',
-  'src/server/send.c',
   'src/server/main.c',
+  'src/server/send.c',
   'src/server/user.c',
   'src/server/world.c',
 ]
@@ -286,6 +287,7 @@ if cc.get_argument_syntax() == 'gcc'
   endif
 
   test_args = [
+    '-fsigned-char',
     '-Wpointer-arith',
     '-Wformat-security',
     '-Werror=vla',
@@ -319,7 +321,6 @@ fallback_opt = ['default_library=static']
 
 zlib = dependency('zlib',
   required:        get_option('zlib'),
-  allow_fallback:  win32,
   default_options: fallback_opt,
 )
 
@@ -327,26 +328,17 @@ if not zlib.found()
   warning('zlib not found, client will be unable to connect to protocol 35 servers')
 endif
 
-jpeg = dependency('libjpeg',
-  required:        get_option('libjpeg'),
-  allow_fallback:  win32,
-  default_options: fallback_opt,
-)
-
 png = dependency('libpng',
   required:        get_option('libpng'),
-  allow_fallback:  win32,
   default_options: fallback_opt,
 )
 
 config.set10('USE_ZLIB', zlib.found())
-config.set10('USE_JPG', jpeg.found())
 config.set10('USE_PNG', png.found())
 
 curl = dependency('libcurl',
-  version:         '>= 7.32.0',
+  version:         '>= 7.68.0',
   required:        get_option('libcurl'),
-  allow_fallback:  win32,
   default_options: fallback_opt,
 )
 
@@ -362,13 +354,32 @@ if sdl2.found()
 endif
 
 common_deps = [zlib]
-client_deps = [jpeg, png, curl, sdl2]
+client_deps = [png, curl, sdl2]
 server_deps = []
 game_deps = [zlib]
 
+jpeg = dependency('libjpeg',
+  required:        get_option('libjpeg'),
+  default_options: fallback_opt,
+)
+
+if jpeg.found()
+  if jpeg.type_name() == 'internal'
+    has_rgba = true
+  else
+    has_rgba = cc.has_header_symbol('jpeglib.h', 'JCS_EXT_RGBA',
+      prefix:       '#include <stdio.h>',
+      dependencies: jpeg,
+      required:     get_option('libjpeg'))
+  endif
+  if has_rgba
+    client_deps += jpeg
+    config.set10('USE_JPG', true)
+  endif
+endif
+
 openal = dependency('openal',
   required:        get_option('openal'),
-  allow_fallback:  win32,
   default_options: fallback_opt,
 )
 if openal.found()
@@ -396,12 +407,10 @@ endif
 
 ogg = dependency('ogg',
   required:        get_option('ogg'),
-  allow_fallback:  win32,
   default_options: fallback_opt,
 )
 vorbisfile = dependency('vorbisfile',
   required:        get_option('ogg'),
-  allow_fallback:  win32,
   default_options: fallback_opt,
 )
 if ogg.found() and vorbisfile.found()
@@ -562,3 +571,41 @@ config.set10('USE_TGA',           get_option('tga'))
 config.set10('USE_' + host_machine.endian().to_upper() + '_ENDIAN', true)
 
 configure_file(output: 'config.h', configuration: config)
+
+if system_wide
+  summary({'datadir': datadir, 'libdir': libdir, 'homedir': homedir}, section: 'Directories')
+endif
+
+summary({
+  'anticheat-server'   : config.get('USE_AC_SERVER', '') != '',
+  'auto-reply'         : config.get('USE_AUTOREPLY', 0) != 0,
+  'client-gtv'         : config.get('USE_CLIENT_GTV', 0) != 0,
+  'client-ui'          : config.get('USE_UI', 0) != 0,
+  'debug'              : config.get('USE_DEBUG', 0) != 0,
+  'dynamic-lights'     : config.get('USE_DLIGHTS', 0) != 0,
+  'game-abi-hack'      : config.get('USE_GAME_ABI_HACK', 0) != 0,
+  'icmp-errors'        : config.get('USE_ICMP', 0) != 0,
+  'libcurl'            : config.get('USE_CURL', 0) != 0,
+  'libjpeg'            : config.get('USE_JPG', 0) != 0,
+  'libpng'             : config.get('USE_PNG', 0) != 0,
+  'map-checksum'       : config.get('USE_MAPCHECKSUM', 0) != 0,
+  'md3'                : config.get('USE_MD3', 0) != 0,
+  'mvd-client'         : config.get('USE_MVD_CLIENT', 0) != 0,
+  'mvd-server'         : config.get('USE_MVD_SERVER', 0) != 0,
+  'ogg'                : config.get('USE_OGG', 0) != 0,
+  'openal'             : config.get('USE_OPENAL', 0) != 0,
+  'packetdup-hack'     : config.get('USE_PACKETDUP', 0) != 0,
+  'save-games'         : config.get('USE_SAVEGAMES', 0) != 0,
+  'sdl2'               : config.get('USE_SDL', '') != '',
+  'software-sound'     : config.get('USE_SNDDMA', 0) != 0,
+  'system-console'     : config.get('USE_SYSCON', 0) != 0,
+  'tests'              : config.get('USE_TESTS', 0) != 0,
+  'tga'                : config.get('USE_TGA', 0) != 0,
+  'variable-fps'       : config.get('USE_FPS', 0) != 0,
+  'wayland'            : config.get('USE_WAYLAND', 0) != 0,
+  'windows-crash-dumps': config.get('USE_DBGHELP', 0) != 0,
+  'windows-egl'        : config.get('USE_WIN32EGL', 0) != 0,
+  'windows-service'    : config.get('USE_WINSVC', '') != '',
+  'x11'                : config.get('USE_X11', 0) != 0,
+  'zlib'               : config.get('USE_ZLIB', 0) != 0,
+  }, section: 'Features', bool_yn: true)

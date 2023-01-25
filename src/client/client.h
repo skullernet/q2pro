@@ -28,19 +28,19 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/cvar.h"
 #include "common/field.h"
 #include "common/files.h"
-#include "common/pmove.h"
 #include "common/math.h"
 #include "common/msg.h"
 #include "common/net/chan.h"
 #include "common/net/net.h"
+#include "common/pmove.h"
 #include "common/prompt.h"
 #include "common/protocol.h"
 #include "common/sizebuf.h"
 #include "common/zone.h"
 
-#include "system/system.h"
 #include "refresh/refresh.h"
 #include "server/server.h"
+#include "system/system.h"
 
 #include "client/client.h"
 #include "client/input.h"
@@ -294,7 +294,7 @@ typedef struct client_state_s {
     int     numWeaponModels;
 } client_state_t;
 
-extern    client_state_t    cl;
+extern client_state_t   cl;
 
 /*
 ==================================================================
@@ -341,6 +341,7 @@ typedef enum {
 } dltype_t;
 
 typedef enum {
+    DL_FREE,
     DL_PENDING,
     DL_RUNNING,
     DL_DONE
@@ -423,6 +424,8 @@ typedef struct client_static_s {
     netadr_t    recent_addr[RECENT_ADDR];
     int         recent_head;
 
+    string_entry_t  *stufftextwhitelist;
+
     struct {
         list_t      queue;              // queue of paths we need
         int         pending;            // number of non-finished entries in queue
@@ -475,10 +478,10 @@ typedef struct client_static_s {
 #endif
 } client_static_t;
 
-extern client_static_t    cls;
+extern client_static_t      cls;
 
-extern cmdbuf_t    cl_cmdbuf;
-extern char        cl_cmdbuf_text[MAX_STRING_CHARS];
+extern cmdbuf_t     cl_cmdbuf;
+extern char         cl_cmdbuf_text[MAX_STRING_CHARS];
 
 //=============================================================================
 
@@ -494,16 +497,19 @@ extern char        cl_cmdbuf_text[MAX_STRING_CHARS];
 //
 // cvars
 //
-extern cvar_t    *cl_gun;
-extern cvar_t    *cl_gunalpha;
-extern cvar_t    *cl_predict;
-extern cvar_t    *cl_predict_crouch;
-extern cvar_t    *cl_footsteps;
-extern cvar_t    *cl_noskins;
-extern cvar_t    *cl_kickangles;
-extern cvar_t    *cl_rollhack;
-extern cvar_t    *cl_noglow;
-extern cvar_t    *cl_nolerp;
+extern cvar_t   *cl_gun;
+extern cvar_t   *cl_gunalpha;
+extern cvar_t   *cl_gun_x;
+extern cvar_t   *cl_gun_y;
+extern cvar_t   *cl_gun_z;
+extern cvar_t   *cl_predict;
+extern cvar_t   *cl_predict_crouch;
+extern cvar_t   *cl_footsteps;
+extern cvar_t   *cl_noskins;
+extern cvar_t   *cl_kickangles;
+extern cvar_t   *cl_rollhack;
+extern cvar_t   *cl_noglow;
+extern cvar_t   *cl_nolerp;
 
 #if USE_DEBUG
 #define SHOWNET(level, ...) \
@@ -515,49 +521,49 @@ extern cvar_t    *cl_nolerp;
 #define SHOWMISS(...) \
     if (cl_showmiss->integer) \
         Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__)
-extern cvar_t    *cl_shownet;
-extern cvar_t    *cl_showmiss;
-extern cvar_t    *cl_showclamp;
+extern cvar_t   *cl_shownet;
+extern cvar_t   *cl_showmiss;
+extern cvar_t   *cl_showclamp;
 #else
 #define SHOWNET(...)
 #define SHOWCLAMP(...)
 #define SHOWMISS(...)
 #endif
 
-extern cvar_t    *cl_vwep;
+extern cvar_t   *cl_vwep;
 
-extern cvar_t    *cl_disable_particles;
-extern cvar_t    *cl_disable_explosions;
+extern cvar_t   *cl_disable_particles;
+extern cvar_t   *cl_disable_explosions;
 
-extern cvar_t    *cl_chat_notify;
-extern cvar_t    *cl_chat_sound;
-extern cvar_t    *cl_chat_filter;
+extern cvar_t   *cl_chat_notify;
+extern cvar_t   *cl_chat_sound;
+extern cvar_t   *cl_chat_filter;
 
-extern cvar_t    *cl_disconnectcmd;
-extern cvar_t    *cl_changemapcmd;
-extern cvar_t    *cl_beginmapcmd;
+extern cvar_t   *cl_disconnectcmd;
+extern cvar_t   *cl_changemapcmd;
+extern cvar_t   *cl_beginmapcmd;
 
-extern cvar_t    *cl_gibs;
+extern cvar_t   *cl_gibs;
 
-extern cvar_t    *cl_thirdperson;
-extern cvar_t    *cl_thirdperson_angle;
-extern cvar_t    *cl_thirdperson_range;
+extern cvar_t   *cl_thirdperson;
+extern cvar_t   *cl_thirdperson_angle;
+extern cvar_t   *cl_thirdperson_range;
 
-extern cvar_t    *cl_async;
+extern cvar_t   *cl_async;
 
 //
 // userinfo
 //
-extern cvar_t    *info_password;
-extern cvar_t    *info_spectator;
-extern cvar_t    *info_name;
-extern cvar_t    *info_skin;
-extern cvar_t    *info_rate;
-extern cvar_t    *info_fov;
-extern cvar_t    *info_msg;
-extern cvar_t    *info_hand;
-extern cvar_t    *info_gender;
-extern cvar_t    *info_uf;
+extern cvar_t   *info_password;
+extern cvar_t   *info_spectator;
+extern cvar_t   *info_name;
+extern cvar_t   *info_skin;
+extern cvar_t   *info_rate;
+extern cvar_t   *info_fov;
+extern cvar_t   *info_msg;
+extern cvar_t   *info_hand;
+extern cvar_t   *info_gender;
+extern cvar_t   *info_uf;
 
 //=============================================================================
 
@@ -580,6 +586,7 @@ const char *CL_Server_g(const char *partial, int argnum, int state);
 void CL_CheckForPause(void);
 void CL_UpdateFrameTimes(void);
 bool CL_CheckForIgnore(const char *s);
+void CL_LoadFilterList(string_entry_t **list, const char *name, const char *comments, size_t maxlen);
 
 void cl_timeout_changed(cvar_t *self);
 
@@ -697,8 +704,8 @@ void CL_GetEntitySoundOrigin(int ent, vec3_t org);
 //
 // view.c
 //
-extern    int       gun_frame;
-extern    qhandle_t gun_model;
+extern int          gun_frame;
+extern qhandle_t    gun_model;
 
 void V_Init(void);
 void V_Shutdown(void);

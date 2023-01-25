@@ -496,15 +496,15 @@ static void q_unused winch_handler(int signum)
     tty_prompt.inputLine.visibleChars = 0;  // force refresh
 }
 
-bool tty_init_input(void)
+void tty_init_input(void)
 {
     bool is_tty = isatty(STDIN_FILENO) && isatty(STDOUT_FILENO);
+    const char *def = is_tty ? "2" : COM_DEDICATED ? "1" : "0";
 
-    // we want TTY support enabled if started from terminal, but don't want any
-    // output by default if launched without one (from X session for example)
-    sys_console = Cvar_Get("sys_console", is_tty ? "2" : "0", CVAR_NOSET);
+    // hide client stdout by default if not launched from TTY
+    sys_console = Cvar_Get("sys_console", def, CVAR_NOSET);
     if (sys_console->integer == 0)
-        return false;
+        return;
 
     // change stdin/stdout to non-blocking
     Sys_SetNonBlock(STDIN_FILENO, true);
@@ -516,7 +516,7 @@ bool tty_init_input(void)
     tty_input->events = POLLIN;
 
     if (sys_console->integer == 1)
-        return true;
+        return;
 
     // init optional TTY support
     if (!is_tty)
@@ -552,12 +552,11 @@ bool tty_init_input(void)
 
     // display command prompt
     tty_stdout_write("]", 1);
-    return true;
+    return;
 
 no_tty:
     Com_Printf("Couldn't initialize TTY support.\n");
     Cvar_Set("sys_console", "1");
-    return true;
 }
 
 static void tty_kill_stdin(void)
@@ -624,34 +623,18 @@ void Sys_RunConsole(void)
     tty_parse_input(text);
 }
 
-static void tty_write_output(const char *text)
-{
-    char    buf[MAXPRINTMSG];
-    size_t  len;
-
-    for (len = 0; len < MAXPRINTMSG; len++) {
-        int c = *text++;
-        if (!c) {
-            break;
-        }
-        buf[len] = Q_charascii(c);
-    }
-
-    tty_stdout_write(buf, len);
-}
-
-void Sys_ConsoleOutput(const char *text)
+void Sys_ConsoleOutput(const char *text, size_t len)
 {
     if (!sys_console || !sys_console->integer) {
         return;
     }
 
-    if (!*text) {
+    if (!len) {
         return;
     }
 
     if (!tty_enabled) {
-        tty_write_output(text);
+        tty_stdout_write(text, len);
     } else {
         static bool hack = false;
 
@@ -660,9 +643,9 @@ void Sys_ConsoleOutput(const char *text)
             hack = true;
         }
 
-        tty_write_output(text);
+        tty_stdout_write(text, len);
 
-        if (text[strlen(text) - 1] == '\n') {
+        if (text[len - 1] == '\n') {
             tty_show_input();
             hack = false;
         }
@@ -748,10 +731,11 @@ void Sys_Printf(const char *fmt, ...)
 {
     va_list     argptr;
     char        msg[MAXPRINTMSG];
+    size_t      len;
 
     va_start(argptr, fmt);
-    Q_vsnprintf(msg, sizeof(msg), fmt, argptr);
+    len = Q_vscnprintf(msg, sizeof(msg), fmt, argptr);
     va_end(argptr);
 
-    Sys_ConsoleOutput(msg);
+    Sys_ConsoleOutput(msg, len);
 }

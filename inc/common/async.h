@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2012 Andrey Nazarov
+Copyright (C) 2023 Andrey Nazarov
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -16,15 +16,25 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef TTY_H
-#define TTY_H
+#pragma once
 
-#if USE_SYSCON
-void        tty_init_input(void);
-void        tty_shutdown_input(void);
+#if USE_CLIENT
+
+typedef struct asyncwork_s {
+    void (*work_cb)(void *);
+    void (*done_cb)(void *);
+    void *cb_arg;
+    struct asyncwork_s *next;
+} asyncwork_t;
+
+void Com_QueueAsyncWork(asyncwork_t *work);
+void Com_CompleteAsyncWork(void);
+void Com_ShutdownAsyncWork(void);
+
 #else
-#define     tty_init_input()        (void)0
-#define     tty_shutdown_input()    (void)0
-#endif
 
-#endif // TTY_H
+#define Com_QueueAsyncWork(work)    (void)0
+#define Com_CompleteAsyncWork()     (void)0
+#define Com_ShutdownAsyncWork()     (void)0
+
+#endif

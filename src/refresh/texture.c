@@ -753,24 +753,21 @@ void IMG_Unload(image_t *image)
 }
 
 // for screenshots
-byte *IMG_ReadPixels(int *width, int *height, int *rowbytes)
+void IMG_ReadPixels(screenshot_t *s)
 {
+    int format = gl_config.ver_es ? GL_RGBA : GL_RGB;
     int align = 4;
-    int pitch;
-    byte *pixels;
 
     qglGetIntegerv(GL_PACK_ALIGNMENT, &align);
-    pitch = ALIGN(r_config.width * 3, align);
-    pixels = Z_Malloc(pitch * r_config.height);
+
+    s->bpp = format == GL_RGBA ? 4 : 3;
+    s->rowbytes = ALIGN(r_config.width * s->bpp, align);
+    s->pixels = Z_Malloc(s->rowbytes * r_config.height);
+    s->width = r_config.width;
+    s->height = r_config.height;
 
     qglReadPixels(0, 0, r_config.width, r_config.height,
-                  GL_RGB, GL_UNSIGNED_BYTE, pixels);
-
-    *width = r_config.width;
-    *height = r_config.height;
-    *rowbytes = pitch;
-
-    return pixels;
+                  format, GL_UNSIGNED_BYTE, s->pixels);
 }
 
 static void GL_BuildIntensityTable(void)

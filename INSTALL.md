@@ -13,6 +13,9 @@ which is preferred configuration.
 Both client and dedicated server require zlib support for full compatibility at
 network protocol level. The rest of dependencies are optional.
 
+For JPEG support libjpeg-turbo is required, plain libjpeg will not work. Most
+Linux distributions already provide libjpeg-turbo in place of libjpeg.
+
 To install the *full* set of dependencies for building Q2PRO on Debian or
 Ubuntu use the following command:
 

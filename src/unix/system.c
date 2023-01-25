@@ -38,10 +38,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <dlfcn.h>
 #include <errno.h>
 
-#if USE_CLIENT
-#include <pthread.h>
-#endif
-
 #if USE_SDL
 #include <SDL.h>
 #endif
@@ -51,118 +47,10 @@ cvar_t  *sys_libdir;
 cvar_t  *sys_homedir;
 cvar_t  *sys_forcegamelib;
 
+extern cvar_t   *console_prefix;
+
 static bool terminate;
 static bool flush_logs;
-
-/*
-===============================================================================
-
-ASYNC WORK QUEUE
-
-===============================================================================
-*/
-
-#if USE_CLIENT
-
-static bool work_initialized;
-static bool work_terminate;
-static pthread_mutex_t work_lock;
-static pthread_cond_t work_cond;
-static pthread_t work_thread;
-static asyncwork_t *pend_head;
-static asyncwork_t *done_head;
-
-static void append_work(asyncwork_t **head, asyncwork_t *work)
-{
-    asyncwork_t *c, **p;
-    for (p = head, c = *head; c; p = &c->next, c = c->next);
-    work->next = NULL;
-    *p = work;
-}
-
-static void complete_work(void)
-{
-    asyncwork_t *work, *next;
-
-    if (!work_initialized)
-        return;
-    if (pthread_mutex_trylock(&work_lock))
-        return;
-    if (q_unlikely(done_head)) {
-        for (work = done_head; work; work = next) {
-            next = work->next;
-            if (work->done_cb)
-                work->done_cb(work->cb_arg);
-            Z_Free(work);
-        }
-        done_head = NULL;
-    }
-    pthread_mutex_unlock(&work_lock);
-}
-
-static void *thread_func(void *arg)
-{
-    pthread_mutex_lock(&work_lock);
-    while (1) {
-        while (!pend_head && !work_terminate)
-            pthread_cond_wait(&work_cond, &work_lock);
-
-        asyncwork_t *work = pend_head;
-        if (!work)
-            break;
-        pend_head = work->next;
-
-        pthread_mutex_unlock(&work_lock);
-        work->work_cb(work->cb_arg);
-        pthread_mutex_lock(&work_lock);
-
-        append_work(&done_head, work);
-    }
-    pthread_mutex_unlock(&work_lock);
-
-    return NULL;
-}
-
-static void shutdown_work(void)
-{
-    if (!work_initialized)
-        return;
-
-    pthread_mutex_lock(&work_lock);
-    work_terminate = true;
-    pthread_mutex_unlock(&work_lock);
-
-    pthread_cond_signal(&work_cond);
-
-    pthread_join(work_thread, NULL);
-    complete_work();
-
-    pthread_mutex_destroy(&work_lock);
-    pthread_cond_destroy(&work_cond);
-    work_initialized = false;
-}
-
-void Sys_QueueAsyncWork(asyncwork_t *work)
-{
-    if (!work_initialized) {
-        pthread_mutex_init(&work_lock, NULL);
-        pthread_cond_init(&work_cond, NULL);
-        if (pthread_create(&work_thread, NULL, thread_func, NULL))
-            Sys_Error("Couldn't create async work thread");
-        work_initialized = true;
-    }
-
-    pthread_mutex_lock(&work_lock);
-    append_work(&pend_head, Z_CopyStruct(work));
-    pthread_mutex_unlock(&work_lock);
-
-    pthread_cond_signal(&work_cond);
-}
-
-#else
-#define shutdown_work() (void)0
-#define complete_work() (void)0
-#endif
 
 /*
 ===============================================================================
@@ -193,7 +81,6 @@ This function never returns.
 */
 void Sys_Quit(void)
 {
-    shutdown_work();
     tty_shutdown_input();
 #if USE_SDL
     SDL_Quit();
@@ -256,7 +143,7 @@ bool Sys_SetNonBlock(int fd, bool nb)
     return fcntl(fd, F_SETFL, ret ^ O_NONBLOCK) == 0;
 }
 
-static void hup_handler(int signum)
+static void usr1_handler(int signum)
 {
     flush_logs = true;
 }
@@ -297,7 +184,8 @@ void Sys_Init(void)
     signal(SIGTTIN, SIG_IGN);
     signal(SIGTTOU, SIG_IGN);
     signal(SIGPIPE, SIG_IGN);
-    signal(SIGUSR1, hup_handler);
+    signal(SIGHUP, term_handler);
+    signal(SIGUSR1, usr1_handler);
 
     #ifdef __APPLE__
       #ifdef CONFIG_MAC_STANDALONE
@@ -338,13 +226,6 @@ void Sys_Init(void)
     sys_homedir = Cvar_Get("homedir", homedir, CVAR_NOSET);
     sys_libdir = Cvar_Get("libdir", LIBDIR, CVAR_NOSET);
     sys_forcegamelib = Cvar_Get("sys_forcegamelib", "", CVAR_NOSET);
-
-    if (tty_init_input()) {
-        signal(SIGHUP, term_handler);
-    } else if (COM_DEDICATED) {
-        signal(SIGHUP, hup_handler);
-    }
-
     sys_parachute = Cvar_Get("sys_parachute", "1", CVAR_NOSET);
 
     if (sys_parachute->integer) {
@@ -354,6 +235,8 @@ void Sys_Init(void)
         signal(SIGFPE, kill_handler);
         signal(SIGTRAP, kill_handler);
     }
+
+    tty_init_input();
 }
 
 /*
@@ -365,6 +248,7 @@ void Sys_Error(const char *error, ...)
 {
     va_list     argptr;
     char        text[MAXERRORMSG];
+    const char  *pre = "";
 
     tty_shutdown_input();
 
@@ -377,10 +261,13 @@ void Sys_Error(const char *error, ...)
     Q_vsnprintf(text, sizeof(text), error, argptr);
     va_end(argptr);
 
+    if (console_prefix && !strncmp(console_prefix->string, "<?>", 3))
+        pre = "<3>";
+
     fprintf(stderr,
-            "********************\n"
-            "FATAL: %s\n"
-            "********************\n", text);
+            "%s********************\n"
+            "%sFATAL: %s\n"
+            "%s********************\n", pre, pre, text, pre);
     exit(EXIT_FAILURE);
 }
 
@@ -599,7 +486,6 @@ int main(int argc, char **argv)
 
     Qcommon_Init(argc, argv);
     while (!terminate) {
-        complete_work();
         if (flush_logs) {
             Com_FlushLogs();
             flush_logs = false;
