@@ -317,9 +317,6 @@ static const spawn_t spawns[] = {
   {"misc_ctf_banner", SP_misc_ctf_banner},
   {"misc_ctf_small_banner", SP_misc_ctf_small_banner},
   {"misc_satellite_dish", SP_misc_satellite_dish},
-  {"misc_gib_arm", SP_misc_gib_arm},
-  {"misc_gib_leg", SP_misc_gib_leg},
-  {"misc_gib_head", SP_misc_gib_head},
   {"misc_viper", SP_misc_viper},
   {"misc_viper_bomb", SP_misc_viper_bomb},
   {"misc_bigviper", SP_misc_bigviper},
@@ -329,9 +326,6 @@ static const spawn_t spawns[] = {
   {"trigger_teleport", SP_trigger_teleport},
   {"info_teleport_destination", SP_info_teleport_destination},
   {"misc_blackhole", SP_misc_blackhole},
-  {"misc_eastertank", SP_misc_eastertank},
-  {"misc_easterchick", SP_misc_easterchick},
-  {"misc_easterchick2", SP_misc_easterchick2},
 
   {NULL, NULL}
 };
