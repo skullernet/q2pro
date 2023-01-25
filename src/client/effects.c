@@ -182,7 +182,7 @@ void CL_MuzzleFlash(void)
 
     volume = 1.0f - 0.8f * mz.silenced;
 
-    DL_COLOR(1, 1, 0);
+    VectorSet(dl->color, 1, 1, 0);
     switch (mz.weapon) {
     case MZ_BLASTER:  // MK23
         mk23snd = cl_mk23_sound->value;
