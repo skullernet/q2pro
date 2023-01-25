@@ -22,6 +22,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/net/net.h"
 #include "common/utils.h"
 
+#ifdef AQTION_EXTENSION
+#include "shared/ghud.h"
+#endif
+
 #define CHAR_WIDTH  8
 #define CHAR_HEIGHT 8
 

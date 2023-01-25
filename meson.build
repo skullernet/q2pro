@@ -57,6 +57,7 @@ client_src = [
   'src/common/async.c',
   'src/server/commands.c',
   'src/server/entities.c',
+  'src/server/ghud.c',
   'src/server/game.c',
   'src/server/init.c',
   'src/server/main.c',
@@ -98,6 +99,7 @@ server_src = [
   'src/client/null.c',
   'src/server/commands.c',
   'src/server/entities.c',
+  'src/server/ghud.c',
   'src/server/game.c',
   'src/server/init.c',
   'src/server/main.c',
@@ -156,6 +158,76 @@ game_src = [
   'src/baseq2/p_weapon.c',
   'src/shared/m_flash.c',
   'src/shared/shared.c',
+]
+
+action_src = [
+  'src/action/a_cmds.c',
+  'src/action/a_ctf.c',
+  'src/action/a_dom.c',
+  'src/action/a_doorkick.c',
+  'src/action/a_game.c',
+  'src/action/a_items.c',
+  'src/action/a_match.c',
+  'src/action/a_menu.c',
+  'src/action/a_radio.c',
+  'src/action/a_team.c',
+  'src/action/a_tourney.c',
+  'src/action/a_vote.c',
+  'src/action/a_xcmds.c',
+  'src/action/a_xgame.c',
+  'src/action/a_xmenu.c',
+  'src/action/a_xvote.c',
+  'src/action/cgf_sfx_glass.c',
+  'src/action/g_chase.c',
+  'src/action/g_cmds.c',
+  'src/action/g_combat.c',
+  'src/action/g_ext.c',
+  'src/action/g_func.c',
+  'src/action/g_grapple.c',
+  'src/action/g_items.c',
+  'src/action/g_main.c',
+  'src/action/g_misc.c',
+  'src/action/g_phys.c',
+  'src/action/g_save.c',
+  'src/action/g_spawn.c',
+  'src/action/g_svcmds.c',
+  'src/action/g_target.c',
+  'src/action/g_trigger.c',
+  'src/action/g_utils.c',
+  'src/action/g_weapon.c',
+  'src/action/p_antilag.c',
+  'src/action/p_client.c',
+  'src/action/p_hud.c',
+  'src/action/p_view.c',
+  'src/action/p_weapon.c',
+  'src/action/tng_balancer.c',
+  'src/action/tng_flashlight.c',
+  'src/action/tng_ini.c',
+  'src/action/tng_irc.c',
+  'src/action/tng_jump.c',
+  'src/action/tng_stats.c',
+  'src/shared/shared.c'
+]
+
+ltk_src = [
+  'src/action/acesrc/acebot_ai.c',
+  'src/action/acesrc/acebot_cmds.c',
+  'src/action/acesrc/acebot_compress.c',
+  'src/action/acesrc/acebot_items.c',
+  'src/action/acesrc/acebot_movement.c',
+  'src/action/acesrc/acebot_nodes.c',
+  'src/action/acesrc/acebot_spawn.c',
+  'src/action/acesrc/bot_ai.c',
+  'src/action/acesrc/bot_collision.c',
+  'src/action/acesrc/bot_combat.c',
+  'src/action/acesrc/bot_env_doors.c',
+  'src/action/acesrc/bot_movement.c',
+  'src/action/acesrc/bot_states.c',
+  'src/action/acesrc/bot_utility.c',
+  'src/action/acesrc/bot_weapon.c',
+  'src/action/acesrc/botchat.c',
+  'src/action/acesrc/botnav.c',
+  'src/action/acesrc/botscan.c'
 ]
 
 cc = meson.get_compiler('c')
@@ -290,6 +362,7 @@ jpeg = dependency('libjpeg',
   required:        get_option('libjpeg'),
   default_options: fallback_opt,
 )
+
 if jpeg.found()
   if jpeg.type_name() == 'internal'
     has_rgba = true
@@ -313,6 +386,23 @@ if openal.found()
   client_src += [ 'src/client/sound/al.c', 'src/client/sound/qal.c' ]
   client_deps += openal.partial_dependency(compile_args: true, includes: true)
   config.set10('USE_OPENAL', true)
+endif
+
+if not win32
+  uuid = dependency('uuid',
+    required:        get_option('uuid'),
+    allow_fallback:  win32,
+    default_options: fallback_opt,
+  )
+  game_deps += uuid
+endif
+
+if host_machine.system() == 'darwin'
+  opengl = dependency('opengl',
+    allow_fallback:  win32,
+    default_options: fallback_opt,
+  )
+  client_deps += opengl
 endif
 
 ogg = dependency('ogg',
@@ -383,6 +473,34 @@ if get_option('save-games')
   config.set10('USE_SAVEGAMES', true)
 endif
 
+if get_option('aqtion-build')
+  config.set10('USE_AQTION', true)
+  config.set10('AQTION_EXTENSION', true)
+  config.set10('AQTION_HUD', true)
+  action_src += ltk_src
+
+  # Win32 winsock compat
+  if win32
+    dll_link_args += '-lws2_32'
+  endif
+endif
+
+if get_option('discord-sdk')
+  #if host_machine.system() == 'linux'
+  if host_machine.cpu_family() == 'aarch64' # I am Linux ARM 64-bit
+    # Discord does not have an SDK for this platform yet, setting USE_DISCORD to false
+    config.set10('USE_DISCORD', false)
+  else
+    config.set10('USE_DISCORD', true)
+    discord_inc_path = join_paths('extern/discord/lib/', host_machine.cpu_family())
+    dis_inc = include_directories(discord_inc_path)
+    discord_dep_path = join_paths(meson.current_source_dir(), discord_inc_path)
+    discord_dep = cc.find_library('discord_game_sdk', dirs : discord_dep_path)
+    client_deps += discord_dep
+  endif
+  #endif
+endif
+
 if get_option('system-console')
   if not win32
     common_src += 'src/unix/tty.c'
@@ -415,7 +533,7 @@ executable('q2proded', common_src, server_src,
   install:               system_wide,
 )
 
-shared_library('game' + cpu, game_src,
+shared_library('game' + cpu, action_src,
   name_prefix:           '',
   dependencies:          game_deps,
   include_directories:   'inc',

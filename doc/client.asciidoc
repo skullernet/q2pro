@@ -969,6 +969,13 @@ m_filter::
 Miscellaneous
 ~~~~~~~~~~~~~
 
+cl_new_movement_sounds::
+    Specifies whether to play the original four step sounds (step1.wav ... 
+    step4.wav) and landing sound (land1.wav). Or new improved twelve step
+    sounds and eight landing sounds.
+     - 0 - default behaviour with four step and one landing sounds
+     - 1 - new behaviour with twelve step and eight landing sounds
+
 cl_chat_notify::
     Specifies whether to display chat lines in the notify area. Default value
     is 1 (enabled).

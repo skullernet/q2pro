@@ -13,10 +13,10 @@
 #endif
 
 #ifdef _WIN64
-#define VER_FILEDESCRIPTION_STR     "Q2PRO client (64-bit)"
+#define VER_FILEDESCRIPTION_STR     "AQtion client (64-bit)"
 #define VER_ORIGINALFILENAME_STR    "q2pro64.exe"
 #else
-#define VER_FILEDESCRIPTION_STR     "Q2PRO client"
+#define VER_FILEDESCRIPTION_STR     "AQtion client"
 #define VER_ORIGINALFILENAME_STR    "q2pro.exe"
 #endif
 
@@ -35,14 +35,14 @@ BEGIN
     BEGIN
         BLOCK "040904B0"
         BEGIN
-            VALUE "Comments", "https://github.com/skullernet/q2pro"
-            VALUE "CompanyName", "skuller.net"
+            VALUE "Comments", "https://github.com/actionquake/q2pro"
+            VALUE "CompanyName", "AQtion"
             VALUE "FileDescription", VER_FILEDESCRIPTION_STR
             VALUE "OriginalFilename", VER_ORIGINALFILENAME_STR
             VALUE "FileVersion", VERSION
             VALUE "InternalName", "q2pro"
-            VALUE "LegalCopyright", "Copyright © 2023 skuller.net"
-            VALUE "ProductName", "Q2PRO"
+            VALUE "LegalCopyright", "Copyright © 2023 AQtion"
+            VALUE "ProductName", "AQtion"
             VALUE "ProductVersion", VERSION
         END
     END

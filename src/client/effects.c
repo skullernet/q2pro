@@ -163,6 +163,7 @@ void CL_MuzzleFlash(void)
     centity_t   *pl;
     float       volume;
     char        soundname[MAX_QPATH];
+    int         mk23snd,mp5snd,m4snd,m3snd,hcsnd,ssgsnd;
 
 #if USE_DEBUG
     if (developer->integer)
@@ -181,139 +182,57 @@ void CL_MuzzleFlash(void)
 
     volume = 1.0f - 0.8f * mz.silenced;
 
+    DL_COLOR(1, 1, 0);
     switch (mz.weapon) {
-    case MZ_BLASTER:
-        VectorSet(dl->color, 1, 1, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/blastf1a.wav"), volume, ATTN_NORM, 0);
+    case MZ_BLASTER:  // MK23
+        mk23snd = cl_mk23_sound->value;
+        if (mk23snd > MAX_WEAPON_SOUND) {
+            mk23snd = MAX_WEAPON_SOUND;
+        }
+        Q_snprintf(soundname, sizeof(soundname), "weapons/mk23fire%i.wav", mk23snd);
         break;
-    case MZ_BLUEHYPERBLASTER:
-        VectorSet(dl->color, 0, 0, 1);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/hyprbf1a.wav"), volume, ATTN_NORM, 0);
+	case MZ_MACHINEGUN: // MP5/10 Submachinegun
+		mp5snd = cl_mp5_sound->value;
+        if (mp5snd > MAX_WEAPON_SOUND) {
+            mp5snd = MAX_WEAPON_SOUND;
+        }
+        Q_snprintf(soundname, sizeof(soundname), "weapons/mp5fire%i.wav", mp5snd);
         break;
-    case MZ_HYPERBLASTER:
-        VectorSet(dl->color, 1, 1, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/hyprbf1a.wav"), volume, ATTN_NORM, 0);
+	case MZ_ROCKET: // M4 Assault Rifle
+		m4snd = cl_m4_sound->value;
+        if (m4snd > MAX_WEAPON_SOUND) {
+            m4snd = MAX_WEAPON_SOUND;
+        }
+        Q_snprintf(soundname, sizeof(soundname), "weapons/m4a1fire%i.wav", m4snd);
         break;
-    case MZ_MACHINEGUN:
-        VectorSet(dl->color, 1, 1, 0);
-        Q_snprintf(soundname, sizeof(soundname), "weapons/machgf%ib.wav", (Q_rand() % 5) + 1);
+	case MZ_SHOTGUN: // M3 Shotgun
+		m3snd = cl_m3_sound->value;
+        if (m3snd > MAX_WEAPON_SOUND) {
+            m3snd = MAX_WEAPON_SOUND;
+        }
+        Q_snprintf(soundname, sizeof(soundname), "weapons/shotgf1b%i.wav", m3snd);
+        break;
+	case MZ_SSHOTGUN: // Handcannon -- needs adjustment for single barrel vs double
+		hcsnd = cl_hc_sound->value;
+        if (hcsnd > MAX_WEAPON_SOUND) {
+            hcsnd = MAX_WEAPON_SOUND;
+        }
+        Q_snprintf(soundname, sizeof(soundname), "weapons/cannon_fire%i.wav", hcsnd);
+        break;
+	case MZ_HYPERBLASTER: // SSG 3000 Sniper Rifle
+		ssgsnd = cl_ssg_sound->value;
+        if (ssgsnd > MAX_WEAPON_SOUND) {
+            ssgsnd = MAX_WEAPON_SOUND;
+        }
+        Q_snprintf(soundname, sizeof(soundname), "weapons/ssgfire%i.wav", ssgsnd);
+        break;
+	}
+    // Play the sound defined in the case statement above
+    // Normal attenuation for all guns except handcannon
+    if (mz.weapon != MZ_SSHOTGUN) {
         S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_NORM, 0);
-        break;
-    case MZ_SHOTGUN:
-        VectorSet(dl->color, 1, 1, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/shotgf1b.wav"), volume, ATTN_NORM, 0);
-        S_StartSound(NULL, mz.entity, CHAN_AUTO,   S_RegisterSound("weapons/shotgr1b.wav"), volume, ATTN_NORM, 0.1f);
-        break;
-    case MZ_SSHOTGUN:
-        VectorSet(dl->color, 1, 1, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/sshotf1b.wav"), volume, ATTN_NORM, 0);
-        break;
-    case MZ_CHAINGUN1:
-        dl->radius = 200 + (Q_rand() & 31);
-        VectorSet(dl->color, 1, 0.25f, 0);
-        Q_snprintf(soundname, sizeof(soundname), "weapons/machgf%ib.wav", (Q_rand() % 5) + 1);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_NORM, 0);
-        break;
-    case MZ_CHAINGUN2:
-        dl->radius = 225 + (Q_rand() & 31);
-        VectorSet(dl->color, 1, 0.5f, 0);
-        Q_snprintf(soundname, sizeof(soundname), "weapons/machgf%ib.wav", (Q_rand() % 5) + 1);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_NORM, 0);
-        Q_snprintf(soundname, sizeof(soundname), "weapons/machgf%ib.wav", (Q_rand() % 5) + 1);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_NORM, 0.05f);
-        break;
-    case MZ_CHAINGUN3:
-        dl->radius = 250 + (Q_rand() & 31);
-        VectorSet(dl->color, 1, 1, 0);
-        Q_snprintf(soundname, sizeof(soundname), "weapons/machgf%ib.wav", (Q_rand() % 5) + 1);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_NORM, 0);
-        Q_snprintf(soundname, sizeof(soundname), "weapons/machgf%ib.wav", (Q_rand() % 5) + 1);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_NORM, 0.033f);
-        Q_snprintf(soundname, sizeof(soundname), "weapons/machgf%ib.wav", (Q_rand() % 5) + 1);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_NORM, 0.066f);
-        break;
-    case MZ_RAILGUN:
-        VectorSet(dl->color, 0.5f, 0.5f, 1.0f);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/railgf1a.wav"), volume, ATTN_NORM, 0);
-        break;
-    case MZ_ROCKET:
-        VectorSet(dl->color, 1, 0.5f, 0.2f);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/rocklf1a.wav"), volume, ATTN_NORM, 0);
-        S_StartSound(NULL, mz.entity, CHAN_AUTO,   S_RegisterSound("weapons/rocklr1b.wav"), volume, ATTN_NORM, 0.1f);
-        break;
-    case MZ_GRENADE:
-        VectorSet(dl->color, 1, 0.5f, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/grenlf1a.wav"), volume, ATTN_NORM, 0);
-        S_StartSound(NULL, mz.entity, CHAN_AUTO,   S_RegisterSound("weapons/grenlr1b.wav"), volume, ATTN_NORM, 0.1f);
-        break;
-    case MZ_BFG:
-        VectorSet(dl->color, 0, 1, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/bfg__f1y.wav"), volume, ATTN_NORM, 0);
-        break;
-
-    case MZ_LOGIN:
-        VectorSet(dl->color, 0, 1, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/grenlf1a.wav"), 1, ATTN_NORM, 0);
-        CL_LogoutEffect(pl->current.origin, mz.weapon);
-        break;
-    case MZ_LOGOUT:
-        VectorSet(dl->color, 1, 0, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/grenlf1a.wav"), 1, ATTN_NORM, 0);
-        CL_LogoutEffect(pl->current.origin, mz.weapon);
-        break;
-    case MZ_RESPAWN:
-        VectorSet(dl->color, 1, 1, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/grenlf1a.wav"), 1, ATTN_NORM, 0);
-        CL_LogoutEffect(pl->current.origin, mz.weapon);
-        break;
-    case MZ_PHALANX:
-        VectorSet(dl->color, 1, 0.5f, 0.5f);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/plasshot.wav"), volume, ATTN_NORM, 0);
-        break;
-    case MZ_IONRIPPER:
-        VectorSet(dl->color, 1, 0.5f, 0.5f);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/rippfire.wav"), volume, ATTN_NORM, 0);
-        break;
-
-    case MZ_ETF_RIFLE:
-        VectorSet(dl->color, 0.9f, 0.7f, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/nail1.wav"), volume, ATTN_NORM, 0);
-        break;
-    case MZ_SHOTGUN2:
-        VectorSet(dl->color, 1, 1, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/shotg2.wav"), volume, ATTN_NORM, 0);
-        break;
-    case MZ_HEATBEAM:
-        VectorSet(dl->color, 1, 1, 0);
-        dl->die = cl.time + 100;
-//      S_StartSound (NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/bfg__l1a.wav"), volume, ATTN_NORM, 0);
-        break;
-    case MZ_BLASTER2:
-        VectorSet(dl->color, 0, 1, 0);
-        // FIXME - different sound for blaster2 ??
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/blastf1a.wav"), volume, ATTN_NORM, 0);
-        break;
-    case MZ_TRACKER:
-        // negative flashes handled the same in gl/soft until CL_AddDLights
-        VectorSet(dl->color, -1, -1, -1);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/disint2.wav"), volume, ATTN_NORM, 0);
-        break;
-    case MZ_NUKE1:
-        VectorSet(dl->color, 1, 0, 0);
-        dl->die = cl.time + 100;
-        break;
-    case MZ_NUKE2:
-        VectorSet(dl->color, 1, 1, 0);
-        dl->die = cl.time + 100;
-        break;
-    case MZ_NUKE4:
-        VectorSet(dl->color, 0, 0, 1);
-        dl->die = cl.time + 100;
-        break;
-    case MZ_NUKE8:
-        VectorSet(dl->color, 0, 1, 1);
-        dl->die = cl.time + 100;
-        break;
+    } else {
+        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_LOUD, 0);
     }
 }
 

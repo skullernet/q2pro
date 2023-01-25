@@ -305,6 +305,20 @@ void SV_New_f(void)
     // create baselines for this client
     SV_CreateBaselines();
 
+
+#ifdef AQTION_EXTENSION
+	// make sure we send initial hud elements that were created before connection
+
+	int i;
+	for (i = 0; i < MAX_GHUDS; i++)
+	{
+		if (!(svs.ghud[i].flags & GHF_INUSE))
+			break;
+
+		sv_client->ghud_updateflags[i] = 0xFF;
+	}
+#endif
+
     // send the serverdata
     MSG_WriteByte(svc_serverdata);
     MSG_WriteLong(sv_client->protocol);
@@ -335,6 +349,13 @@ void SV_New_f(void)
         MSG_WriteByte(sv_client->pmp.qwmode);
         MSG_WriteByte(sv_client->pmp.waterhack);
         break;
+	case PROTOCOL_VERSION_AQTION:
+		MSG_WriteShort(sv_client->version);
+		MSG_WriteByte(sv.state);
+		MSG_WriteByte(sv_client->pmp.strafehack);
+		MSG_WriteByte(sv_client->pmp.qwmode);
+		MSG_WriteByte(sv_client->pmp.waterhack);
+		break;
     }
 
     SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
@@ -391,6 +412,20 @@ void SV_New_f(void)
 
     // send next command
     SV_ClientCommand(sv_client, "precache %i\n", sv_client->spawncount);
+
+
+	if ((sv_client->protocol == PROTOCOL_VERSION_Q2PRO || sv_client->protocol == PROTOCOL_VERSION_AQTION) && g_view_predict->integer)
+	{
+		MSG_WriteByte(svc_setting);
+		MSG_WriteLong(SVS_VIEW_LOW);
+		MSG_WriteLong(g_view_low->integer);
+
+		MSG_WriteByte(svc_setting);
+		MSG_WriteLong(SVS_VIEW_HIGH);
+		MSG_WriteLong(g_view_high->integer);
+
+		SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
+	}
 }
 
 /*
@@ -554,8 +589,8 @@ static void SV_BeginDownload_f(void)
 
 #if USE_ZLIB
     // prefer raw deflate stream from .pkz if supported
-    if (sv_client->protocol == PROTOCOL_VERSION_Q2PRO &&
-        sv_client->version >= PROTOCOL_VERSION_Q2PRO_ZLIB_DOWNLOADS &&
+    if (((sv_client->protocol == PROTOCOL_VERSION_Q2PRO && sv_client->version >= PROTOCOL_VERSION_Q2PRO_ZLIB_DOWNLOADS)
+		|| (sv_client->protocol == PROTOCOL_VERSION_AQTION)) &&
         sv_client->has_zlib && offset == 0) {
         downloadsize = FS_OpenFile(name, &f, FS_MODE_READ | FS_FLAG_DEFLATE);
         if (f) {
@@ -1448,7 +1483,7 @@ static void SV_ParseClientSetting(void)
     sv_client->settings[idx] = value;
 
 #if USE_FPS
-    if (idx == CLS_FPS && sv_client->protocol == PROTOCOL_VERSION_Q2PRO)
+    if (idx == CLS_FPS && (sv_client->protocol == PROTOCOL_VERSION_Q2PRO || sv_client->protocol == PROTOCOL_VERSION_AQTION))
         set_client_fps(value);
 #endif
 }
@@ -1540,8 +1575,16 @@ badbyte:
             SV_ParseClientSetting();
             break;
 
+        case clc_move_nodelta:
+        case clc_move_batched:
+            if (client->protocol != PROTOCOL_VERSION_Q2PRO && client->protocol != PROTOCOL_VERSION_AQTION)
+                goto badbyte;
+
+            SV_NewClientExecuteMove(c);
+            break;
+
         case clc_userinfo_delta:
-            if (client->protocol != PROTOCOL_VERSION_Q2PRO)
+            if (client->protocol != PROTOCOL_VERSION_Q2PRO && client->protocol != PROTOCOL_VERSION_AQTION)
                 goto badbyte;
 
             SV_ParseDeltaUserinfo();

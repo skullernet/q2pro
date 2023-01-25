@@ -10,3 +10,6 @@
 /subprojects/*/
 /tags
 /TAGS
+/.vs/*
+/debug/*
+/.vscode

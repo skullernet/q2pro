@@ -79,6 +79,11 @@ cvar_t  *developer;
 cvar_t  *timescale;
 cvar_t  *fixedtime;
 cvar_t  *dedicated;
+#if USE_CLIENT
+cvar_t  *steamid;
+cvar_t  *steamcloudappenabled;
+cvar_t  *steamclouduserenabled;
+#endif
 cvar_t  *com_version;
 
 cvar_t  *logfile_enable;    // 1 = create new, 2 = append to existing
@@ -857,6 +862,9 @@ void Qcommon_Init(int argc, char **argv)
     Key_Init();
     Prompt_Init();
     Con_Init();
+#ifdef AQTION_EXTENSION
+	G_InitializeExtensions();
+#endif
 
     //
     // init commands and vars
@@ -877,6 +885,9 @@ void Qcommon_Init(int argc, char **argv)
     console_prefix = Cvar_Get("console_prefix", "", 0);
 #if USE_CLIENT
     dedicated = Cvar_Get("dedicated", "0", CVAR_NOSET);
+    steamid = Cvar_Get("steamid", "0", CVAR_NOSET);
+    steamcloudappenabled = Cvar_Get("steamcloudappenabled", "0", CVAR_NOSET);
+    steamclouduserenabled = Cvar_Get("steamclouduserenabled", "0", CVAR_NOSET);
     cl_running = Cvar_Get("cl_running", "0", CVAR_ROM);
     cl_paused = Cvar_Get("cl_paused", "0", CVAR_ROM);
 #else
@@ -895,7 +906,7 @@ void Qcommon_Init(int argc, char **argv)
     com_debug_break = Cvar_Get("com_debug_break", "0", 0);
 #endif
     com_fatal_error = Cvar_Get("com_fatal_error", "0", 0);
-    com_version = Cvar_Get("version", com_version_string, CVAR_SERVERINFO | CVAR_ROM);
+    com_version = Cvar_Get("version", com_version_string, CVAR_USERINFO | CVAR_SERVERINFO | CVAR_ROM);
 
     allow_download = Cvar_Get("allow_download", COM_DEDICATED ? "0" : "1", CVAR_ARCHIVE);
     allow_download_players = Cvar_Get("allow_download_players", "1", CVAR_ARCHIVE);
@@ -992,9 +1003,8 @@ void Qcommon_Init(int argc, char **argv)
 
     Com_Printf("====== " PRODUCT " initialized ======\n\n");
     Com_NPrintf(APPLICATION " " VERSION ", " __DATE__ "\n");
-    Com_Printf("https://github.com/skullernet/q2pro\n\n");
+    Com_Printf("https://aqtiongame.com\n\n");
     Com_DPrintf("Compiled features: %s\n", Com_GetFeatures());
-
     time(&com_startTime);
 
     com_eventTime = Sys_Milliseconds();

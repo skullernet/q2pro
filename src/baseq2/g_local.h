@@ -30,7 +30,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define G_FEATURES  (GMF_PROPERINUSE|GMF_WANT_ALL_DISCONNECTS|GMF_ENHANCED_SAVEGAMES)
 
 // the "gameversion" client command will print this plus compile date
-#define GAMEVERSION "baseq2"
+#define GAMEVERSION "action"
 
 // protocol bytes that can be directly added to messages
 #define svc_muzzleflash     1
@@ -515,6 +515,11 @@ extern  cvar_t  *spectator_password;
 extern  cvar_t  *needpass;
 extern  cvar_t  *g_select_empty;
 extern  cvar_t  *dedicated;
+#if USE_CLIENT
+extern  cvar_t  *steamid;
+extern  cvar_t  *steamcloudappenabled;
+extern  cvar_t  *steamclouduserenabled;
+#endif
 
 extern  cvar_t  *filterban;
 

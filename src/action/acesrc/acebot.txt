@@ -1,0 +1,98 @@
+///////////////////////////////////////////////////////////////////////
+//
+//  ACE - Quake II Bot Base Code
+//
+//  Version 1.0 - \/ \/ \/ \/ \/ READ BELOW \/ \/ \/ \/ \/
+//
+//  This file is Copyright(c), Steve Yeager 1998, All Rights Reserved
+//
+//
+//	All other files are Copyright(c) Id Software, Inc.
+//
+//	Please see license.txt in the source directory for the copyright
+//	information regarding those files belonging to Id Software, Inc.
+//	
+//	Should you decide to release a modified version of ACE, you MUST
+//	include the following text (minus the BEGIN and END lines) in the 
+//	documentation for your modification.
+//
+//	--- BEGIN ---
+//
+//	The ACE Bot is a product of Steve Yeager, and is available from
+//	the ACE Bot homepage, at http://www.axionfx.com/ace.
+//
+//	This program is a modification of the ACE Bot, and is therefore
+//	in NO WAY supported by Steve Yeager.
+//
+//	This program MUST NOT be sold in ANY form. If you have paid for 
+//	this product, you should contact Steve Yeager immediately, via
+//	the ACE Bot homepage.
+//
+//	--- END ---
+//
+//	I, Steve Yeager, hold no responsibility for any harm caused by the
+//	use of this source code, especially to small children and animals.
+//      It is provided as-is with no implied warranty or support.
+//
+//      I also wish to thank and acknowledge the great work of others
+//      that has helped me to develop this code.
+//
+//      John Cricket    - For ideas and swapping code.
+//      Ryan Feltrin    - For ideas and swapping code.
+//      SABIN           - For showing how to do true client based movement.
+//      BotEpidemic     - For keeping us up to date.
+//      Telefragged.com - For giving ACE a home.
+//      Microsoft       - For giving us such a wonderful crash free OS.
+//      id              - Need I say more.
+//  
+//  And to all the other testers, pathers, and players and people
+//  who I can't remember who the heck they were, but helped out.
+//
+///////////////////////////////////////////////////////////////////////
+
+
+ACEBOT II BASE
+-----------------------------------------------------------------------
+
+  I decided to release the base code for ACEBOT II for further study.
+Hopefully it will provide a simple base on which to build future bots.
+I think I have solved most of the basic problems associated with bots and
+by using this source as a starting point, much more advanced bots can be
+created. My time now is quite limited and I am not sure what I will be
+doing with this source in the future. I do have plans for some interesting
+"additions" to this bot, but time may not make it possible for these
+to be realized. 
+
+  A number of the basic routines have been "dumbed" down from the 
+original ACE sourcecode and some are only put there just to make the bot
+function. Even so, it still plays a pretty good game.
+
+  I hope my comments in the source code are easy enough to read and I will
+answer questions about the source as long as they are well thought out. I
+will not respond to stupid or obvious questions. So if you are new to
+C, I ain't gonna spend my time teaching you the basics. I've also 
+simplified my C usage and some routines are written for readability vs. 
+performance. 
+
+  If you wish to add to the base code and think others would benifit from
+your addition, please email me and we can discuss it.
+  
+  All code was written and compiled using MS Visual C++ 6.0+SP1. To install
+the source, create a directory named "ace" under <drive>:\quake2 (c:\quake2\ace).
+Unzip the source to \quake2\ace and it will create a src directory for the
+source code and a \quake2\nav directory for the node files.
+
+  I would also like to see the work that others create using this base.
+So if you create the next "killer" mod, please let me know about it.
+
+  Good luck and happy coding!
+
+   Steve Yeager
+   www.axionfx.com
+   syeager@axionfx.com
+
+  
+
+
+
+

@@ -16,15 +16,15 @@ ifdef CONFIG_WINDOWS
     SYS ?= Win32
 else
     ifndef CPU
-        CPU := $(shell uname -m | sed \
-			-e s/i.86/i386/ \
-			-e s/i86pc/i386/ \
-			-e s/amd64/x86_64/ \
-			-e s/sun4u/sparc64/ \
-			-e s/arm.*/arm/ \
-			-e s/sa110/arm/ \
-			-e s/aarch64.*/arm64/ \
-			-e s/alpha/axp/)
+    CPU := $(shell uname -m | sed \
+			-e 's/i.86/i386/' \
+			-e 's/i86pc/i386/' \
+			-e 's/amd64/x86_64/' \
+			-e 's/sun4u/sparc64/' \
+			-e 's/arm.*/arm/' \
+			-e 's/sa110/arm/' \
+			-e 's/aarch64.*/arm64/' \
+			-e 's/alpha/axp/')
     endif
     ifndef SYS
         SYS := $(shell uname -s)
@@ -138,10 +138,24 @@ PATH_DEFS += -DDEFGAME='"$(CONFIG_GAME_DEFAULT)"'
 ifndef CONFIG_WINDOWS
     CONFIG_PATH_DATA ?= .
     CONFIG_PATH_LIB ?= .
-    CONFIG_PATH_HOME ?=
+    CONFIG_PATH_HOME =
     PATH_DEFS += -DDATADIR='"$(CONFIG_PATH_DATA)"'
     PATH_DEFS += -DLIBDIR='"$(CONFIG_PATH_LIB)"'
     PATH_DEFS += -DHOMEDIR='"$(CONFIG_PATH_HOME)"'
+endif
+# All builds can have a CONFIG_PATH_HOME defined
+#PATH_DEFS += -DHOMEDIR='"$(CONFIG_PATH_HOME)"'
+
+ifdef LIN_32BIT
+CFLAGS_s += -m32
+CFLAGS_c += -m32
+LDFLAGS_s += -m32
+LDFLAGS_c += -m32
+endif
+
+ifdef USE_AQTION
+CFLAGS_c += -DAQTION_EXTENSION=1 -DUSE_AQTION=1
+CFLAGS_s += -DAQTION_EXTENSION=1 -DUSE_AQTION=1
 endif
 
 CFLAGS_s += $(BUILD_DEFS) $(VER_DEFS) $(PATH_DEFS) -DUSE_SERVER=1
@@ -187,10 +201,12 @@ OBJS_c := \
     src/client/download.o   \
     src/client/effects.o    \
     src/client/entities.o   \
+    src/client/ghud.o       \
     src/client/input.o      \
     src/client/keys.o       \
     src/client/locs.o       \
     src/client/main.o       \
+    src/shared/m_flash.o    \
     src/client/newfx.o      \
     src/client/parse.o      \
     src/client/precache.o   \
@@ -209,11 +225,9 @@ OBJS_c := \
     src/server/main.o       \
     src/server/send.o       \
     src/server/user.o       \
-    src/server/world.o      \
-    src/shared/m_flash.o
+    src/server/world.o
 
 OBJS_s := \
-    $(COMMON_OBJS)  \
     src/client/null.o       \
     src/server/commands.o   \
     src/server/entities.o   \
@@ -222,7 +236,8 @@ OBJS_s := \
     src/server/main.o       \
     src/server/send.o       \
     src/server/user.o       \
-    src/server/world.o
+    src/server/world.o      \
+    src/server/ghud.o
 
 OBJS_g := \
     src/baseq2/g_ai.o           \
@@ -275,8 +290,27 @@ OBJS_g := \
     src/shared/m_flash.o        \
     src/shared/shared.o
 
-
 ### Configuration Options ###
+
+# This makefile is only used for Mac builds for now
+
+ifdef CONFIG_DISCORD
+    ifeq ($(SYS),Linux)
+      ifeq ($(CPU),aarch64) # We're Linux arm64 (Discord does not support)
+        LIBS_c ?=
+      endif
+    endif
+
+    ifeq ($(SYS),Darwin)
+      CFLAGS_c += -DUSE_DISCORD=1 -I extern/discord/c/discord_game_sdk.h
+      ifeq ($(CPU),arm) # We're Apple Silicon
+        LIBS_c += extern/discord/lib/aarch64/discord_game_sdk.dylib
+      endif
+      ifeq ($(CPU),x86_64) # We're Apple Intel
+        LIBS_c += extern/discord/lib/x86_64/discord_game_sdk.dylib
+      endif
+    endif
+endif
 
 ifdef CONFIG_HTTP
     CURL_CFLAGS ?= $(shell pkg-config libcurl --cflags)
@@ -360,7 +394,7 @@ ifdef CONFIG_PNG
 endif
 
 ifdef CONFIG_JPEG
-    JPG_CFLAGS ?=
+    JPG_CFLAGS ?= -I/usr/local/opt/jpeg/include
     JPG_LIBS ?= -ljpeg
     CFLAGS_c += -DUSE_JPG=1 $(JPG_CFLAGS)
     LIBS_c += $(JPG_LIBS)
@@ -534,6 +568,12 @@ else
 endif
 
 all: $(TARG_s) $(TARG_c) $(TARG_g)
+
+server: $(TARG_s)
+
+client: $(TARG_c)
+
+game: $(TARG_g)
 
 default: all
 
