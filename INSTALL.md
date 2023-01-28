@@ -51,9 +51,9 @@ E.g. to install to different prefix:
 
 Finally, invoke build command:
 
-    ninja -C builddir
+    meson compile -C builddir
 
-To enable verbose output during the build, use `ninja -C builddir -v`.
+To enable verbose output during the build, use `meson compile -C builddir -v`.
 
 
 Installation
@@ -77,12 +77,19 @@ On Windows, Q2PRO automatically sets current directory to the directory Q2PRO
 executable is in. On other platforms current directory must be set before
 launching Q2PRO executable if portable version is built.
 
+
+Music support
+-------------
+
 Q2PRO supports playback of background music ripped off original CD in Ogg
 Vorbis format. Music files should be placed in `music` subdirectory of the game
 directory in format `music/trackNN.ogg`, where `NN` corresponds to CD track
 number. `NN` should be typically in range 02-11 (track 01 is data track on
 original CD and should never be used). Placing music in packfile will also
 work.
+
+Note that so-called ‘GOG’ naming convention where music tracks are named
+‘Track01’ to ‘Track21’ is not supported.
 
 
 MinGW-w64
@@ -109,11 +116,11 @@ repository, but not source tarball).
 
 Setup build directory:
 
-    meson setup --cross-file .ci/x86_64-w64-mingw32.txt builddir
+    meson setup --cross-file .ci/x86_64-w64-mingw32.txt -Dwrap_mode=forcefallback builddir
 
 Build:
 
-    ninja -C builddir
+    meson compile -C builddir
 
 
 Visual Studio
@@ -131,8 +138,8 @@ shell, e.g. `x64 Native Tools Command Prompt`.
 
 Change to Q2PRO source directory, then setup build directory:
 
-    meson setup builddir
+    meson setup -Dwrap_mode=forcefallback builddir
 
 Build:
 
-    ninja -C builddir
+    meson compile -C builddir
