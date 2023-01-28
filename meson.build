@@ -166,7 +166,6 @@ x86 = host_machine.cpu_family() == 'x86'
 cpuremap = {
   'x86': win32 ? 'x86' : 'i386',
   'aarch64': 'arm64',
-  'alpha': 'axp',
 }
 
 cpu = host_machine.cpu_family()
