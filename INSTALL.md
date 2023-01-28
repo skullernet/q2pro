@@ -32,8 +32,7 @@ and install them.
 Building
 --------
 
-Q2PRO uses Meson build system for its build process. Legacy Makefile-based
-build system is also available, but deprecated.
+Q2PRO uses Meson build system for its build process.
 
 Setup build directory (arbitrary name can be used instead of `builddir`):
 
