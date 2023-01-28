@@ -1,7 +1,7 @@
 project('q2pro', 'c',
   license: 'GPL-2.0-or-later',
   version: run_command(find_program('python3'), 'version.py', check: true).stdout().strip(),
-  meson_version: '>= 0.61.1',
+  meson_version: '>= 0.59.0',
   default_options: [
     'c_std=gnu99',
     'buildtype=debugoptimized',
