@@ -68,12 +68,8 @@ static size_t my_read(void *buf, size_t size, size_t nmemb, void *stream)
 
 static void ogg_stop(void)
 {
-    if (ogg.initialized)
-        ov_clear(&ogg.vf);
-
-    if (ogg.f)
-        FS_FCloseFile(ogg.f);
-
+    ov_clear(&ogg.vf);
+    FS_CloseFile(ogg.f);
     memset(&ogg, 0, sizeof(ogg));
 }
 
@@ -88,13 +84,11 @@ static void ogg_play(void)
     vorbis_info *vi = ov_info(&ogg.vf, -1);
     if (!vi) {
         Com_EPrintf("Couldn't get info on %s\n", ogg.path);
-        ov_clear(&ogg.vf);
         goto fail;
     }
 
     if (vi->channels < 1 || vi->channels > 2) {
         Com_EPrintf("%s has bad number of channels\n", ogg.path);
-        ov_clear(&ogg.vf);
         goto fail;
     }
 
@@ -140,9 +134,9 @@ void OGG_Play(void)
         Q_snprintf(ogg.path, sizeof(ogg.path), "music/track%02d.ogg", track);
     }
 
-    int ret = FS_FOpenFile(ogg.path, &ogg.f, FS_MODE_READ);
+    int ret = FS_OpenFile(ogg.path, &ogg.f, FS_MODE_READ);
     if (!ogg.f) {
-        if (ret != Q_ERR_NOENT)
+        if (ret != Q_ERR(ENOENT))
             Com_EPrintf("Couldn't open %s: %s\n", ogg.path, Q_ErrorString(ret));
         return;
     }
@@ -226,16 +220,20 @@ static int my_seek_sz(void *datasource, ogg_int64_t offset, int whence)
 
     switch (whence) {
     case SEEK_SET:
-        sz->readcount = clamp(offset, 0, (ogg_int64_t)sz->cursize);
+        if (offset < 0)
+            goto fail;
+        sz->readcount = min(offset, sz->cursize);
         break;
     case SEEK_CUR:
-        sz->readcount += clamp(offset, -(ogg_int64_t)sz->readcount,
-                               (ogg_int64_t)(sz->cursize - sz->readcount));
+        if (offset < -(ogg_int64_t)sz->readcount)
+            goto fail;
+        sz->readcount += min(offset, (ogg_int64_t)(sz->cursize - sz->readcount));
         break;
     case SEEK_END:
         sz->readcount = sz->cursize;
         break;
     default:
+    fail:
         errno = EINVAL;
         return -1;
     }

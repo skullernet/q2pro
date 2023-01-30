@@ -17,8 +17,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifndef KEYTABLES_H
-#define KEYTABLES_H
+#pragma once
 
 typedef struct {
     const uint8_t *keys;
@@ -27,5 +26,3 @@ typedef struct {
 
 extern const keytable_t keytable_evdev;
 extern const keytable_t keytable_at;
-
-#endif

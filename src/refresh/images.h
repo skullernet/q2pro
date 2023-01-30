@@ -17,8 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef IMAGES_H
-#define IMAGES_H
+#pragma once
 
 //
 // images.h -- common image manager
@@ -106,5 +105,3 @@ typedef struct screenshot_s {
 } screenshot_t;
 
 void IMG_ReadPixels(screenshot_t *s);
-
-#endif // IMAGES_H

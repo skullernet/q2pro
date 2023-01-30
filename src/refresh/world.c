@@ -64,9 +64,9 @@ void GL_SampleLightPoint(vec3_t color)
 
         style = LIGHT_STYLE(surf, i);
 
-        color[0] += temp[0] * style->rgb[0];
-        color[1] += temp[1] * style->rgb[1];
-        color[2] += temp[2] * style->rgb[2];
+        color[0] += temp[0] * style->white;
+        color[1] += temp[1] * style->white;
+        color[2] += temp[2] * style->white;
 
         lightmap += size;
     }
@@ -142,7 +142,6 @@ static bool _GL_LightPoint(const vec3_t start, vec3_t color)
     return true;
 }
 
-#if USE_DLIGHTS
 static void GL_MarkLights_r(mnode_t *node, dlight_t *light, unsigned lightbit)
 {
     vec_t dot;
@@ -224,11 +223,6 @@ static void GL_AddLights(const vec3_t origin, vec3_t color)
         }
     }
 }
-#else
-#define GL_MarkLights()             (void)0
-#define GL_TransformLights()        (void)0
-#define GL_AddLights(origin, color) (void)0
-#endif
 
 void GL_LightPoint(const vec3_t origin, vec3_t color)
 {

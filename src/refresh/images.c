@@ -187,15 +187,15 @@ static int _IMG_LoadPCX(byte *rawdata, size_t rawlen, byte *pixels,
         for (y = 0; y < h; y++, pixels += w) {
             for (x = 0; x < scan;) {
                 if (raw >= end)
-                    return Q_ERR_BAD_RLE_PACKET;
+                    return Q_ERR_OVERRUN;
                 dataByte = *raw++;
 
                 if ((dataByte & 0xC0) == 0xC0) {
                     runLength = dataByte & 0x3F;
                     if (x + runLength > scan)
-                        return Q_ERR_BAD_RLE_PACKET;
+                        return Q_ERR_OVERRUN;
                     if (raw >= end)
-                        return Q_ERR_BAD_RLE_PACKET;
+                        return Q_ERR_OVERRUN;
                     dataByte = *raw++;
                 } else {
                     runLength = 1;
@@ -404,7 +404,7 @@ TGA_DECODE(bgr_rle)
             if (packet_header & 0x80) {
                 // run-length packet
                 if (max_in - in < 3) {
-                    return Q_ERR_BAD_RLE_PACKET;
+                    return Q_ERR_OVERRUN;
                 }
                 color = MakeColor(in[2], in[1], in[0], 255);
                 in += 3;
@@ -423,7 +423,7 @@ TGA_DECODE(bgr_rle)
             } else {
                 // non run-length packet
                 if (max_in - in < 3 * packet_size) {
-                    return Q_ERR_BAD_RLE_PACKET;
+                    return Q_ERR_OVERRUN;
                 }
                 for (j = 0; j < packet_size; j++) {
                     out_row[0] = in[2];
@@ -466,7 +466,7 @@ TGA_DECODE(bgra_rle)
             if (packet_header & 0x80) {
                 // run-length packet
                 if (max_in - in < 4) {
-                    return Q_ERR_BAD_RLE_PACKET;
+                    return Q_ERR_OVERRUN;
                 }
                 color = MakeColor(in[2], in[1], in[0], in[3]);
                 in += 4;
@@ -485,7 +485,7 @@ TGA_DECODE(bgra_rle)
             } else {
                 // non run-length packet
                 if (max_in - in < 4 * packet_size) {
-                    return Q_ERR_BAD_RLE_PACKET;
+                    return Q_ERR_OVERRUN;
                 }
                 for (j = 0; j < packet_size; j++) {
                     out_row[0] = in[2];
@@ -619,7 +619,7 @@ static int IMG_SaveTGA(screenshot_t *restrict s)
 
     byte *row = malloc(s->width * 3);
     if (!row) {
-        return Q_ERR_NOMEM;
+        return Q_ERR(ENOMEM);
     }
 
     int ret = Q_ERR_SUCCESS;
@@ -819,7 +819,7 @@ static int IMG_SaveJPG(screenshot_t *restrict s)
 
     row_pointers = malloc(sizeof(JSAMPROW) * s->height);
     if (!row_pointers) {
-        return Q_ERR_NOMEM;
+        return Q_ERR(ENOMEM);
     }
     for (i = 0; i < s->height; i++) {
         row_pointers[i] = (JSAMPROW)(s->pixels + (s->height - i - 1) * s->rowbytes);
@@ -1064,7 +1064,7 @@ static int IMG_SavePNG(screenshot_t *restrict s)
 
     row_pointers = malloc(sizeof(png_bytep) * s->height);
     if (!row_pointers) {
-        ret = Q_ERR_NOMEM;
+        ret = Q_ERR(ENOMEM);
         goto fail;
     }
     for (i = 0; i < s->height; i++) {
@@ -1606,7 +1606,7 @@ static int try_other_formats(imageformat_t orig, image_t *image, byte **pic)
         }
 
         ret = try_image_format(fmt, image, pic);
-        if (ret != Q_ERR_NOENT) {
+        if (ret != Q_ERR(ENOENT)) {
             return ret; // found something
         }
     }
@@ -1614,7 +1614,7 @@ static int try_other_formats(imageformat_t orig, image_t *image, byte **pic)
     // fall back to 8-bit formats
     fmt = (image->type == IT_WALL) ? IM_WAL : IM_PCX;
     if (fmt == orig) {
-        return Q_ERR_NOENT; // don't retry twice
+        return Q_ERR(ENOENT); // don't retry twice
     }
 
     return try_image_format(fmt, image, pic);
@@ -1629,7 +1629,7 @@ static void get_image_dimensions(imageformat_t fmt, image_t *image)
     memcpy(buffer, image->name, image->baselen + 1);
     memcpy(buffer + image->baselen + 1, img_loaders[fmt].ext, 4);
 
-    FS_FOpenFile(buffer, &f, FS_MODE_READ | FS_FLAG_LOADFILE);
+    FS_OpenFile(buffer, &f, FS_MODE_READ | FS_FLAG_LOADFILE);
     if (!f) {
         return;
     }
@@ -1649,7 +1649,7 @@ static void get_image_dimensions(imageformat_t fmt, image_t *image)
         }
     }
 
-    FS_FCloseFile(f);
+    FS_CloseFile(f);
 
     if (w < 1 || h < 1 || w > MAX_TEXTURE_SIZE || h > MAX_TEXTURE_SIZE) {
         return;
@@ -1717,7 +1717,7 @@ static void print_error(const char *name, imageflags_t flags, int err)
     case Q_ERR_LIBRARY_ERROR:
         msg = Com_GetLastError();
         break;
-    case Q_ERR_NOENT:
+    case Q_ERR(ENOENT):
         if (flags & IF_PERMANENT) {
             // ugly hack for console code
             if (strcmp(name, "pics/conchars.pcx"))
@@ -1751,11 +1751,7 @@ static image_t *find_or_load_image(const char *name, size_t len,
     Q_assert(len < MAX_QPATH);
 
     // must have an extension and at least 1 char of base name
-    if (len <= 4) {
-        ret = Q_ERR_NAMETOOSHORT;
-        goto fail;
-    }
-    if (name[len - 4] != '.') {
+    if (len <= 4 || name[len - 4] != '.') {
         ret = Q_ERR_INVALID_PATH;
         goto fail;
     }
@@ -1800,7 +1796,7 @@ static image_t *find_or_load_image(const char *name, size_t len,
     if (fmt == IM_MAX) {
         // unknown extension, but give it a chance to load anyway
         ret = try_other_formats(IM_MAX, image, &pic);
-        if (ret == Q_ERR_NOENT) {
+        if (ret == Q_ERR(ENOENT)) {
             // not found, change error to invalid path
             ret = Q_ERR_INVALID_PATH;
         }
@@ -1810,7 +1806,7 @@ static image_t *find_or_load_image(const char *name, size_t len,
     } else {
         // first try with original extension
         ret = _try_image_format(fmt, image, &pic);
-        if (ret == Q_ERR_NOENT) {
+        if (ret == Q_ERR(ENOENT)) {
             // retry with remaining extensions
             ret = try_other_formats(fmt, image, &pic);
         }
@@ -1915,7 +1911,7 @@ qhandle_t R_RegisterImage(const char *name, imagetype_t type, imageflags_t flags
     }
 
     if (len >= sizeof(fullname)) {
-        print_error(fullname, flags, Q_ERR_NAMETOOLONG);
+        print_error(fullname, flags, Q_ERR(ENAMETOOLONG));
         return 0;
     }
 

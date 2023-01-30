@@ -347,16 +347,8 @@ ifndef CONFIG_NO_MENUS
     OBJS_c += src/client/ui/ui.o
 endif
 
-ifndef CONFIG_NO_DYNAMIC_LIGHTS
-    CFLAGS_c += -DUSE_DLIGHTS=1
-endif
-
 ifndef CONFIG_NO_AUTOREPLY
     CFLAGS_c += -DUSE_AUTOREPLY=1
-endif
-
-ifndef CONFIG_NO_MAPCHECKSUM
-    CFLAGS_c += -DUSE_MAPCHECKSUM=1
 endif
 
 ifndef CONFIG_NO_REFRESH

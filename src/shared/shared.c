@@ -483,6 +483,94 @@ finish:
 
 /*
 ==============
+COM_ParseC
+
+Parse a token out of a string (mutable)
+==============
+*/
+char *COM_ParseC (char **data_p)
+{
+	int		c, len = 0;
+	char	*data;
+	static char	com_token[MAX_TOKEN_CHARS];
+
+	data = *data_p;
+	com_token[0] = 0;
+
+	if (!data)
+	{
+		*data_p = NULL;
+		return "";
+	}
+
+// skip whitespace
+skipwhite:
+	while ((c = *data) <= ' ')
+	{
+		if (c == 0)
+		{
+			*data_p = NULL;
+			return "";
+		}
+		data++;
+	}
+
+// skip // comments
+	if (c == '/' && data[1] == '/')
+	{
+		data += 2;
+		while (*data && *data != '\n')
+			data++;
+		goto skipwhite;
+	}
+
+
+// handle quoted strings specially
+	if (c == '\"')
+	{
+		data++;
+		while (1)
+		{
+			c = *data++;
+			if (c == '\"' || !c)
+			{
+				goto finish;
+			}
+			if (len < MAX_TOKEN_CHARS)
+			{
+				com_token[len] = c;
+				len++;
+			}
+		}
+	}
+
+// parse a regular word
+	do
+	{
+		if (len < MAX_TOKEN_CHARS)
+		{
+			com_token[len] = c;
+			len++;
+		}
+		data++;
+		c = *data;
+	}
+	while (c > 32);
+
+finish:
+	if (len == MAX_TOKEN_CHARS)
+	{
+//              Com_Printf ("Token exceeded %i chars, discarded.\n", MAX_TOKEN_CHARS);
+	len = 0;
+	}
+	com_token[len] = 0;
+
+	*data_p = data;
+	return com_token;
+}
+
+/*
+==============
 COM_Compress
 
 Operates in place, removing excess whitespace and comments.
@@ -1255,3 +1343,66 @@ void Info_Print(const char *infostring)
         Com_Printf("%-20s %s\n", key, value);
     }
 }
+
+// action
+
+/*
+============
+Q_strncpyz
+============
+*/
+void Q_strncpyz( char *dest, const char *src, size_t size )
+{
+	if (size)
+	{
+		while (--size && (*dest++ = *src++));
+		*dest = '\0';
+	}
+}
+/*
+==============
+Q_strncatz
+==============
+*/
+void Q_strncatz( char *dest, const char *src, size_t size )
+{
+	if (size)
+	{
+		while (--size && *dest++);
+		if (size) {
+			dest--; size++;
+			while (--size && (*dest++ = *src++));
+		}
+		*dest = '\0';
+	}
+}
+
+#ifndef Q_strnicmp
+int Q_strnicmp (const char *s1, const char *s2, size_t size)
+{
+	int		c1, c2;
+	
+	do
+	{
+		c1 = *s1++;
+		c2 = *s2++;
+
+		if (!size--)
+			return 0;		// strings are equal until end point
+		
+		if (c1 != c2)
+		{
+			if (c1 >= 'a' && c1 <= 'z')
+				c1 -= ('a' - 'A');
+			if (c2 >= 'a' && c2 <= 'z')
+				c2 -= ('a' - 'A');
+			if (c1 != c2)
+				return -1;		// strings not equal
+		}
+	} while (c1);
+	
+	return 0;		// strings are equal
+}
+#endif
+
+// end action

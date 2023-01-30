@@ -826,23 +826,19 @@ static void CL_AddPacketEntities(void)
             } else if (effects & EF_BFG) {
                 if (effects & EF_ANIM_ALLFAST) {
                     CL_BfgParticles(&ent);
-#if USE_DLIGHTS
                     i = 200;
                 } else {
                     static const int bfg_lightramp[6] = {300, 400, 600, 300, 150, 75};
-
-                    i = s1->frame; clamp(i, 0, 5);
+                    i = s1->frame;
+                    clamp(i, 0, 5);
                     i = bfg_lightramp[i];
-#endif
                 }
                 V_AddLight(ent.origin, i, 0, 1, 0);
             } else if (effects & EF_TRAP) {
                 ent.origin[2] += 32;
                 CL_TrapParticles(cent, ent.origin);
-#if USE_DLIGHTS
                 i = (Q_rand() % 100) + 100;
                 V_AddLight(ent.origin, i, 1, 0.8f, 0.1f);
-#endif
             } else if (effects & EF_FLAG1) {
                 CL_FlagTrail(cent->lerp_origin, ent.origin, 242);
                 V_AddLight(ent.origin, 225, 1, 0.1f, 0.1f);
@@ -854,12 +850,8 @@ static void CL_AddPacketEntities(void)
                 V_AddLight(ent.origin, 225, 1.0f, 1.0f, 0.0f);
             } else if (effects & EF_TRACKERTRAIL) {
                 if (effects & EF_TRACKER) {
-#if USE_DLIGHTS
-                    float intensity;
-
-                    intensity = 50 + (500 * (sin(cl.time / 500.0f) + 1.0f));
+                    float intensity = 50 + (500 * (sin(cl.time / 500.0f) + 1.0f));
                     V_AddLight(ent.origin, intensity, -1.0f, -1.0f, -1.0f);
-#endif
                 } else {
                     CL_Tracker_Shell(cent->lerp_origin);
                     V_AddLight(ent.origin, 155, -1.0f, -1.0f, -1.0f);
@@ -1083,17 +1075,6 @@ first:
     CL_SetupFirstPersonView();
 }
 
-#if USE_SMOOTH_DELTA_ANGLES
-static inline float LerpShort(int a2, int a1, float frac)
-{
-    if (a1 - a2 > 32768)
-        a1 &= 65536;
-    if (a2 - a1 > 32768)
-        a1 &= 65536;
-    return a2 + frac * (a1 - a2);
-}
-#endif
-
 static inline float lerp_client_fov(float ofov, float nfov, float lerp)
 {
     if (cls.demo.playback) {
@@ -1198,12 +1179,6 @@ void CL_CalcViewValues(void)
         LerpAngles(ops->viewangles, ps->viewangles, lerp, cl.refdef.viewangles);
     }
 
-#if USE_SMOOTH_DELTA_ANGLES
-    cl.delta_angles[0] = LerpShort(ops->pmove.delta_angles[0], ps->pmove.delta_angles[0], lerp);
-    cl.delta_angles[1] = LerpShort(ops->pmove.delta_angles[1], ps->pmove.delta_angles[1], lerp);
-    cl.delta_angles[2] = LerpShort(ops->pmove.delta_angles[2], ps->pmove.delta_angles[2], lerp);
-#endif
-
     // don't interpolate blend color
     Vector4Copy(ps->blend, cl.refdef.blend);
 
@@ -1251,9 +1226,7 @@ void CL_AddEntities(void)
     CL_AddPacketEntities();
     CL_AddTEnts();
     CL_AddParticles();
-#if USE_DLIGHTS
     CL_AddDLights();
-#endif
     CL_AddLightStyles();
     LOC_AddLocationsToScene();
 }

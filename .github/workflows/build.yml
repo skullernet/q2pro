@@ -54,7 +54,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-mingw-w64 meson nasm
+          sudo apt-get install -y gcc-mingw-w64 meson nasm uuid-dev
 
       - name: Build
         run: |
@@ -69,6 +69,7 @@ jobs:
           path: |
             builddir/q2pro.exe
             builddir/q2proded.exe
+            builddir/gamex86_64.dll
 
   msvc:
     runs-on: windows-latest
@@ -105,6 +106,7 @@ jobs:
           path: |
             builddir/q2pro.exe
             builddir/q2proded.exe
+            builddir/gamex86_64.dll
 
   linux64:
     runs-on: ubuntu-22.04
@@ -122,7 +124,7 @@ jobs:
           libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
           libcurl4-gnutls-dev libx11-dev libxi-dev \
           libwayland-dev wayland-protocols libdecor-0-dev \
-          libogg-dev libvorbis-dev patchelf
+          libogg-dev libvorbis-dev uuid-dev patchelf
 
       - name: Build
         run: |
@@ -146,6 +148,7 @@ jobs:
           path: |
             builddir/q2pro
             builddir/q2proded
+            builddir/gamex86_64.so
 
   linuxARM64:
     runs-on: [self-hosted, ARM64]
@@ -182,6 +185,7 @@ jobs:
           path: |
             builddir/q2pro
             builddir/q2proded
+            builddir/gamearm.so
 
   darwin:
     runs-on: macos-latest
@@ -215,6 +219,7 @@ jobs:
           path: |
             builddir/q2pro
             builddir/q2proded
+            builddir/gamex86_64.dylib
 
   # Github does not support Apple Silicon yet
   # macARM64:

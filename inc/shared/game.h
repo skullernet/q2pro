@@ -16,8 +16,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef GAME_H
-#define GAME_H
+#pragma once
 
 #include "shared/list.h"
 
@@ -62,6 +61,12 @@ typedef enum {
 
 #define MAX_ENT_CLUSTERS    16
 
+// link_t is only used for entity area links now
+typedef struct link_s
+{
+  struct link_s *prev, *next;
+}
+link_t;
 
 typedef struct edict_s edict_t;
 typedef struct gclient_s gclient_t;
@@ -109,6 +114,11 @@ struct edict_s {
 #endif      // GAME_INCLUDE
 
 //===============================================================
+
+// action start
+// making real copies for bot compatibility
+extern void (*real_cprintf) (struct edict_s * ent, int printlevel, const char *fmt, ...);
+extern void (*real_centerprintf) (struct edict_s * ent, const char *fmt, ...);
 
 //
 // functions provided by the main engine
@@ -253,4 +263,49 @@ typedef struct {
     int         max_edicts;
 } game_export_t;
 
-#endif // GAME_H
+typedef game_export_t *(*game_entry_t)(game_import_t *);
+
+//===============================================================
+
+/*
+ * GetExtendedGameAPI() is guaranteed to be called after GetGameAPI() and
+ * before ge->Init().
+ *
+ * Unlike GetGameAPI(), passed game_import_ex_t * is valid as long as game
+ * library is loaded. Pointed to structure should be considered unknown length
+ * and must not be copied locally.
+ *
+ * New fields can be safely added at the end of game_import_ex_t and
+ * game_export_ex_t structures, provided GAME_API_VERSION_EX is also bumped.
+ */
+
+#define GAME_API_VERSION_EX     1
+
+typedef struct {
+    int     apiversion;
+
+    int64_t (*OpenFile)(const char *path, qhandle_t *f, unsigned mode); // returns file length
+    int     (*CloseFile)(qhandle_t f);
+    int     (*LoadFile)(const char *path, void **buffer, unsigned flags, unsigned tag);
+
+    int     (*ReadFile)(void *buffer, size_t len, qhandle_t f);
+    int     (*WriteFile)(const void *buffer, size_t len, qhandle_t f);
+    int     (*FlushFile)(qhandle_t f);
+    int64_t (*TellFile)(qhandle_t f);
+    int     (*SeekFile)(qhandle_t f, int64_t offset, int whence);
+    int     (*ReadLine)(qhandle_t f, char *buffer, size_t size);
+
+    void    **(*ListFiles)(const char *path, const char *filter, unsigned flags, int *count_p);
+    void    (*FreeFileList)(void **list);
+
+    const char *(*ErrorString)(int error);
+    void    *(*TagRealloc)(void *ptr, size_t size);
+} game_import_ex_t;
+
+typedef struct {
+    int     apiversion;
+
+    void    (*RestartFilesystem)(void); // called when fs_restart is issued
+} game_export_ex_t;
+
+typedef const game_export_ex_t *(*game_entry_ex_t)(const game_import_ex_t *);

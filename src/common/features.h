@@ -34,9 +34,6 @@ static const char *Com_GetFeatures(void)
 #if USE_DEBUG
     "debug "
 #endif
-#if USE_DLIGHTS
-    "dynamic-lights "
-#endif
 #if USE_GAME_ABI_HACK
     "game-abi-hack "
 #endif
@@ -51,9 +48,6 @@ static const char *Com_GetFeatures(void)
 #endif
 #if USE_PNG
     "libpng "
-#endif
-#if USE_MAPCHECKSUM
-    "map-checksum "
 #endif
 #if USE_MD3
     "md3 "

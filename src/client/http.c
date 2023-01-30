@@ -21,14 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client.h"
 #include <curl/curl.h>
 
-#ifdef _MSC_VER
-typedef volatile int atomic_int;
-#define atomic_load(p)      (*(p))
-#define atomic_store(p, v)  (*(p) = (v))
-#else
-#include <stdatomic.h>
-#endif
-
+#include "shared/atomic.h"
 #include "system/pthread.h"
 
 static cvar_t  *cl_http_downloads;
@@ -154,73 +147,49 @@ static size_t recv_func(void *ptr, size_t size, size_t nmemb, void *stream)
     return bytes;
 }
 
-// Properly escapes a path with HTTP %encoding. libcurl's function
-// seems to treat '/' and such as illegal chars and encodes almost
-// the entire url...
-static void escape_path(const char *path, char *escaped)
+// Escapes most reserved characters defined by RFC 3986.
+// Similar to curl_easy_escape(), but doesn't escape '/'.
+static void escape_path(char *escaped, const char *path)
 {
-    static const char allowed[] = "/-_.~";
-    int     c;
-    char    *p;
-
-    p = escaped;
     while (*path) {
-        c = *path++;
-        if (!Q_isalnum(c) && !strchr(allowed, c)) {
-            sprintf(p, "%%%02x", c);
-            p += 3;
+        int c = *path++;
+        if (!Q_isalnum(c) && !strchr("/-_.~", c)) {
+            sprintf(escaped, "%%%02x", c);
+            escaped += 3;
         } else {
-            *p++ = c;
+            *escaped++ = c;
         }
     }
-    *p = 0;
+    *escaped = 0;
 }
 
 // curl doesn't provide a way to convert HTTP response code to string...
-static const char *http_strerror(int response)
+static const char *http_strerror(long response)
 {
     static char buffer[32];
     const char *str;
 
     //common codes
     switch (response) {
-    case 200:
-        return "200 OK";
-    case 401:
-        return "401 Unauthorized";
-    case 403:
-        return "403 Forbidden";
-    case 404:
-        return "404 Not Found";
-    case 500:
-        return "500 Internal Server Error";
-    case 503:
-        return "503 Service Unavailable";
+        case 200: return "200 OK";
+        case 401: return "401 Unauthorized";
+        case 403: return "403 Forbidden";
+        case 404: return "404 Not Found";
+        case 500: return "500 Internal Server Error";
+        case 503: return "503 Service Unavailable";
     }
 
     //generic classes
     switch (response / 100) {
-    case 1:
-        str = "Informational";
-        break;
-    case 2:
-        str = "Success";
-        break;
-    case 3:
-        str = "Redirection";
-        break;
-    case 4:
-        str = "Client Error";
-        break;
-    case 5:
-        str = "Server Error";
-        break;
-    default:
-        str = "<bad code>";
-        break;
+        case 1:  str = "Informational"; break;
+        case 2:  str = "Success";       break;
+        case 3:  str = "Redirection";   break;
+        case 4:  str = "Client Error";  break;
+        case 5:  str = "Server Error";  break;
+        default: str = "<bad code>";    break;
     }
 
-    Q_snprintf(buffer, sizeof(buffer), "%d %s", response, str);
+    Q_snprintf(buffer, sizeof(buffer), "%ld %s", response, str);
     return buffer;
 }
 
@@ -256,7 +225,7 @@ static bool start_download(dlqueue_t *entry, dlhandle_t *dl)
         dl->file = NULL;
         dl->path[0] = 0;
         //filelist paths are absolute
-        escape_path(entry->path, escaped);
+        escape_path(escaped, entry->path);
     } else {
         len = Q_snprintf(dl->path, sizeof(dl->path), "%s/%s.tmp", fs_gamedir, entry->path);
         if (len >= sizeof(dl->path)) {
@@ -270,7 +239,7 @@ static bool start_download(dlqueue_t *entry, dlhandle_t *dl)
             Com_EPrintf("[HTTP] Refusing oversize server file path.\n");
             goto fail;
         }
-        escape_path(temp, escaped);
+        escape_path(escaped, temp);
 
         err = FS_CreatePath(dl->path);
         if (err < 0) {
@@ -582,7 +551,7 @@ void HTTP_SetServer(const char *url)
 HTTP_QueueDownload
 
 Called from the precache check to queue a download. Return value of
-Q_ERR_NOSYS will cause standard UDP downloading to be used instead.
+Q_ERR(ENOSYS) will cause standard UDP downloading to be used instead.
 ===============
 */
 int HTTP_QueueDownload(const char *path, dltype_t type)
@@ -594,7 +563,7 @@ int HTTP_QueueDownload(const char *path, dltype_t type)
 
     // no http server (or we got booted)
     if (!curl_multi)
-        return Q_ERR_NOSYS;
+        return Q_ERR(ENOSYS);
 
     // first download queued, so we want the mod filelist
     need_list = LIST_EMPTY(&cls.download.queue);
@@ -683,9 +652,6 @@ static void check_and_queue_download(char *path)
     }
 
     len = FS_NormalizePath(path);
-    if (len == 0)
-        return;
-
     valid = FS_ValidatePath(path);
 
     if (valid == PATH_INVALID ||

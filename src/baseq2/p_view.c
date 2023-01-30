@@ -73,9 +73,9 @@ void P_DamageFeedback(edict_t *player)
     float   realcount, count, kick;
     vec3_t  v;
     int     r, l;
-    static  vec3_t  power_color = {0.0, 1.0, 0.0};
-    static  vec3_t  acolor = {1.0, 1.0, 1.0};
-    static  vec3_t  bcolor = {1.0, 0.0, 0.0};
+    static  vec3_t  power_color = {0, 1, 0};
+    static  vec3_t  acolor = {1, 1, 1};
+    static  vec3_t  bcolor = {1, 0, 0};
 
     client = player->client;
 
@@ -939,6 +939,8 @@ void ClientEndServerFrame(edict_t *ent)
             bobmove = 0.125f;
         else
             bobmove = 0.0625f;
+    } else {
+        bobmove = 0;
     }
 
     bobtime = (current_client->bobtime += bobmove);

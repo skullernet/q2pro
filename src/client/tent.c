@@ -364,18 +364,13 @@ static void CL_AddLasers(void)
 
     for (i = 0, l = cl_lasers; i < MAX_LASERS; i++, l++) {
         time = l->lifetime - (cl.time - l->starttime);
-        if (time < 0) {
+        if (time <= 0) {
             continue;
         }
 
         if (l->color == -1) {
-            float f = (float)time / (float)l->lifetime;
-
-            ent.rgba.u8[0] = l->rgba.u8[0];
-            ent.rgba.u8[1] = l->rgba.u8[1];
-            ent.rgba.u8[2] = l->rgba.u8[2];
-            ent.rgba.u8[3] = l->rgba.u8[3] * f;
-            ent.alpha = f;
+            ent.rgba = l->rgba;
+            ent.alpha = (float)time / (float)l->lifetime;
         } else {
             ent.alpha = 0.30f;
         }
@@ -390,7 +385,7 @@ static void CL_AddLasers(void)
     }
 }
 
-static void CL_ParseLaser(int colors)
+static void CL_ParseLaser(unsigned colors)
 {
     laser_t *l;
 
@@ -758,7 +753,6 @@ static void CL_ParseSteam(void)
     s->magnitude = te.entity2;
     s->endtime = cl.time + te.time;
     s->think = CL_ParticleSteamEffect2;
-    s->thinkinterval = 100;
     s->nextthink = cl.time;
 }
 
@@ -774,7 +768,6 @@ static void CL_ParseWidow(void)
     VectorCopy(te.pos1, s->org);
     s->endtime = cl.time + 2100;
     s->think = CL_Widowbeamout;
-    s->thinkinterval = 1;
     s->nextthink = cl.time;
 }
 
@@ -790,7 +783,6 @@ static void CL_ParseNuke(void)
     VectorCopy(te.pos1, s->org);
     s->endtime = cl.time + 1000;
     s->think = CL_Nukeblast;
-    s->thinkinterval = 1;
     s->nextthink = cl.time;
 }
 
@@ -837,7 +829,7 @@ static void CL_RailCore(void)
     l->color = -1;
     l->lifetime = cl_railtrail_time->integer;
     l->width = cl_railcore_width->integer;
-    l->rgba.u32 = railcore_color.u32;
+    l->rgba = railcore_color;
 }
 
 static void CL_RailSpiral(void)
@@ -876,7 +868,7 @@ static void CL_RailSpiral(void)
         p->alpha = 1.0f;
         p->alphavel = -1.0f / (cl_railtrail_time->value + frand() * 0.2f);
         p->color = -1;
-        p->rgba.u32 = railspiral_color.u32;
+        p->rgba = railspiral_color;
         for (j = 0; j < 3; j++) {
             p->org[j] = move[j] + dir[j] * cl_railspiral_radius->value;
             p->vel[j] = dir[j] * 6;
@@ -1016,9 +1008,7 @@ void CL_ParseTEnt(void)
         case TE_FLECHETTE:
             CL_BlasterParticles2(te.pos1, te.dir, 0x6f);  // 75
             ex->ent.skinnum = 2;
-            ex->lightcolor[0] = 0.19f;
-            ex->lightcolor[1] = 0.41f;
-            ex->lightcolor[2] = 0.75f;
+            VectorSet(ex->lightcolor, 0.19f, 0.41f, 0.75f);
             break;
         }
         ex->start = cl.servertime - CL_FRAMETIME;
@@ -1098,9 +1088,7 @@ void CL_ParseTEnt(void)
         ex->ent.flags = RF_FULLBRIGHT;
         ex->start = cl.servertime - CL_FRAMETIME;
         ex->light = 350;
-        ex->lightcolor[0] = 0.0f;
-        ex->lightcolor[1] = 1.0f;
-        ex->lightcolor[2] = 0.0f;
+        VectorSet(ex->lightcolor, 0.0f, 1.0f, 0.0f);
         ex->ent.model = cl_mod_bfg_explo;
         ex->ent.flags |= RF_TRANSLUCENT;
         ex->ent.alpha = 0.30f;
@@ -1147,9 +1135,7 @@ void CL_ParseTEnt(void)
         ex->ent.flags = RF_BEAM;
         ex->start = cl.servertime - CL_FRAMETIME;
         ex->light = 100 + (Q_rand() % 75);
-        ex->lightcolor[0] = 1.0f;
-        ex->lightcolor[1] = 1.0f;
-        ex->lightcolor[2] = 0.3f;
+        VectorSet(ex->lightcolor, 1.0f, 1.0f, 0.3f);
         ex->ent.model = cl_mod_flash;
         ex->frames = 2;
         break;
@@ -1177,9 +1163,7 @@ void CL_ParseTEnt(void)
         break;
 
     case TE_FLASHLIGHT:
-#if USE_DLIGHTS
         CL_Flashlight(te.entity1, te.pos1);
-#endif
         break;
 
     case TE_FORCEWALL:
@@ -1231,9 +1215,7 @@ void CL_ParseTEnt(void)
         break;
 
     case TE_TRACKER_EXPLOSION:
-#if USE_DLIGHTS
         CL_ColorFlash(te.pos1, 0, 150, -1, -1, -1);
-#endif
         CL_ColorExplosionParticles(te.pos1, 0, 1);
         S_StartSound(te.pos1, 0, 0, cl_sfx_disrexp, 1, ATTN_NORM, 0);
         break;

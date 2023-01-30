@@ -57,19 +57,19 @@ static void load_entstring_override(cm_t *cm, const char *server)
     int ret;
 
     if (Q_snprintf(buffer, sizeof(buffer), "%s/%s.ent", map_override_path->string, server) >= sizeof(buffer)) {
-        ret = Q_ERR_NAMETOOLONG;
+        ret = Q_ERR(ENAMETOOLONG);
         goto fail;
     }
 
     ret = FS_LoadFileEx(buffer, (void **)&data, 0, TAG_CMODEL);
     if (!data) {
-        if (ret == Q_ERR_NOENT)
+        if (ret == Q_ERR(ENOENT))
             return;
         goto fail;
     }
 
     if (ret >= MAX_MAP_ENTSTRING) {
-        ret = Q_ERR_FBIG;
+        ret = Q_ERR(EFBIG);
         goto fail;
     }
 
@@ -92,13 +92,13 @@ static void load_binary_override(cm_t *cm, char *server, size_t server_size)
     char *buf, name_buf[MAX_QPATH];
 
     if (Q_snprintf(buffer, sizeof(buffer), "%s/%s.bsp.override", map_override_path->string, server) >= sizeof(buffer)) {
-        ret = Q_ERR_NAMETOOLONG;
+        ret = Q_ERR(ENAMETOOLONG);
         goto fail;
     }
 
     ret = FS_LoadFile(buffer, (void **)&data);
     if (!data) {
-        if (ret == Q_ERR_NOENT)
+        if (ret == Q_ERR(ENOENT))
             return;
         goto fail;
     }

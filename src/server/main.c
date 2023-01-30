@@ -18,7 +18,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "server.h"
 #include "client/input.h"
-#include "common/intreadwrite.h"
 
 pmoveParams_t   sv_pmp;
 
@@ -2085,6 +2084,12 @@ void SV_UserinfoChanged(client_t *cl)
 
 
 //============================================================================
+
+void SV_RestartFilesystem(void)
+{
+    if (gex && gex->RestartFilesystem)
+        gex->RestartFilesystem();
+}
 
 #if USE_SYSCON
 void SV_SetConsoleTitle(void)

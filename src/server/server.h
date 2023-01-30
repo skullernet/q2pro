@@ -30,6 +30,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/cvar.h"
 #include "common/error.h"
 #include "common/files.h"
+#include "common/intreadwrite.h"
 #include "common/msg.h"
 #include "common/net/chan.h"
 #include "common/net/net.h"
@@ -770,7 +771,8 @@ void SV_WriteFrameToClient_Aqtion(client_t *client);
 //
 // sv_game.c
 //
-extern    game_export_t    *ge;
+extern const game_export_t      *ge;
+extern const game_export_ex_t   *gex;
 
 void SV_InitGameProgs(void);
 void SV_ShutdownGameProgs(void);

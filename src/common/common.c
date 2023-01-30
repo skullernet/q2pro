@@ -212,7 +212,7 @@ static void logfile_close(void)
 
     Com_Printf("Closing console log.\n");
 
-    FS_FCloseFile(com_logFile);
+    FS_CloseFile(com_logFile);
     com_logFile = 0;
 }
 
@@ -328,7 +328,7 @@ static void logfile_write(print_type_t type, const char *text)
     // zero handle BEFORE doing anything else to avoid recursion
     qhandle_t tmp = com_logFile;
     com_logFile = 0;
-    FS_FCloseFile(tmp);
+    FS_CloseFile(tmp);
     Com_EPrintf("Couldn't write console log: %s\n", Q_ErrorString(ret));
     Cvar_Set("logfile", "0");
 }
@@ -831,7 +831,7 @@ void Com_AddConfigFile(const char *name, unsigned flags)
     ret = Cmd_ExecuteFile(name, flags);
     if (ret == Q_ERR_SUCCESS) {
         Cbuf_Execute(&cmd_buffer);
-    } else if (ret != Q_ERR_NOENT) {
+    } else if (ret != Q_ERR(ENOENT)) {
         Com_WPrintf("Couldn't exec %s: %s\n", name, Q_ErrorString(ret));
     }
 }
