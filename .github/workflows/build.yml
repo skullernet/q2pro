@@ -133,7 +133,7 @@ jobs:
 
       - name: patchelf path to discord_game_sdk.so
         run: |
-          patchelf --replace-needed /home/github/actions-runner/_work/q2pro/q2pro/extern/discord/lib/x86_64/discord_game_sdk.so ./discord_game_sdk.so builddir/q2pro
+          patchelf --replace-needed /home/runner/work/q2pro/q2pro/extern/discord/lib/x86_64/discord_game_sdk.so ./discord_game_sdk.so builddir/q2pro
 
       - name: Set binaries as executable
         run: |
