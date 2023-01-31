@@ -1538,7 +1538,7 @@ void SV_ExecuteClientMessage(client_t *client)
         if (c == -1)
             break;
 
-        if (client->protocol == PROTOCOL_VERSION_Q2PRO) {
+        if (client->protocol == PROTOCOL_VERSION_Q2PRO || client->protocol == PROTOCOL_VERSION_AQTION) {
             switch (c & SVCMD_MASK) {
             case clc_move_nodelta:
             case clc_move_batched:
