@@ -54,6 +54,8 @@ cvar_t  *cl_thirdperson_range;
 
 cvar_t  *cl_disable_particles;
 cvar_t  *cl_disable_explosions;
+cvar_t  *cl_dlight_hacks;
+
 cvar_t  *cl_chat_notify;
 cvar_t  *cl_chat_sound;
 cvar_t  *cl_chat_filter;
@@ -2743,6 +2745,8 @@ static void CL_InitLocal(void)
 
     cl_disable_particles = Cvar_Get("cl_disable_particles", "0", 0);
     cl_disable_explosions = Cvar_Get("cl_disable_explosions", "0", 0);
+    cl_dlight_hacks = Cvar_Get("cl_dlight_hacks", "0", 0);
+
     cl_gibs = Cvar_Get("cl_gibs", "1", 0);
     cl_gibs->changed = cl_gibs_changed;
 
