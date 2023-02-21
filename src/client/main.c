@@ -365,7 +365,7 @@ typedef struct {
     int last_discord_runtime;           // Last time (in msec) discord was updated
     int last_activity_time;             // Last time (in msec) activity was updated
     
-    char server_hostname[32];           // Cache hostname
+    char server_hostname[64];           // Cache hostname
     char mapname[MAX_QPATH];            // Cache map
     byte curr_players;                  // How many players currently connected to the server
     byte prev_players;                  // How many players previously connected to the server
