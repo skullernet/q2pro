@@ -197,7 +197,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install meson libpng sdl2 openal-soft zlib curl libvorbis jpeg-turbo
+          brew install pkg-config meson libpng sdl2 openal-soft zlib curl libvorbis jpeg-turbo
 
       - name: Build
         run: |
