@@ -1143,8 +1143,13 @@ void CL_CalcViewValues(void)
 
 		if (cl_predict_crouch->integer == 2 || (cl_predict_crouch->integer && cl.view_predict))
 		{
+#if USE_FPS
+			viewoffset[2] = cl.predicted_viewheight[1];
+			viewoffset[2] -= (cl.predicted_viewheight[1] - cl.predicted_viewheight[0]) * cl.keylerpfrac;
+#else
 			viewoffset[2] = cl.predicted_viewheight[1];
 			viewoffset[2] -= (cl.predicted_viewheight[1] - cl.predicted_viewheight[0]) * lerp;
+#endif
 		}
 
     } else {
