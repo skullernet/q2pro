@@ -504,6 +504,10 @@ typedef struct server_static_s {
 
 #ifdef AQTION_EXTENSION
 	ghud_element_t ghud[MAX_GHUDS];
+
+	// Reki: cvar sync entries
+	cvarsync_t	cvarsync_list[CVARSYNC_MAX];
+	byte		cvarsync_length;
 #endif
 } server_static_t;
 
@@ -820,6 +824,7 @@ void SV_Ghud_SetSize(int i, int x, int y);
 
 #ifdef AQTION_EXTENSION
 extern int(*GE_customizeentityforclient)(edict_t *client, edict_t *ent, entity_state_t *state); // 0 don't send, 1 send normally
+extern void(*GE_CvarSync_Updated)(int index, edict_t *clent);
 #endif
 
 //============================================================

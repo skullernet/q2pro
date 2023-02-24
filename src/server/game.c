@@ -851,6 +851,7 @@ void SV_ShutdownGameProgs(void)
 	
 #ifdef AQTION_EXTENSION
 	GE_customizeentityforclient = NULL;
+	GE_CvarSync_Updated = NULL;
 #endif
 
 }
@@ -908,6 +909,7 @@ extension_func_t *g_extension_funcs;
 				} while (0);
 
 int(*GE_customizeentityforclient)(edict_t *client, edict_t *ent, entity_state_t *state);
+void(*GE_CvarSync_Updated)(int index, edict_t *clent);
 
 /*
 ================
@@ -980,13 +982,29 @@ static void G_Ext_Ghud_SendUpdateToClient(edict_t *ent)
 	}
 }
 
+static void SV_CvarSync_Clear(void)
+{
+	svs.cvarsync_length = 0;
+	memset(svs.cvarsync_list, 0, sizeof(svs.cvarsync_list));
+}
+
+static void G_Ext_CvarSync_Set(int index, const char *name, const char *val)
+{
+	cvarsync_t *var = &svs.cvarsync_list[index];
+
+	strcpy_s(var->name, CVARSYNC_MAXSIZE, name);
+	strcpy_s(var->value, CVARSYNC_MAXSIZE, val);
+
+	svs.cvarsync_length = index + 1;
+
+	Com_Printf("Adding cvarsync: %s, d%s\n", var->name, var->value);
+}
 
 void G_InitializeExtensions(void)
 {
 	// client networking info
 	g_addextension("Client_GetVersion", G_Ext_Client_GetVersion);
 	g_addextension("Client_GetProtocol", G_Ext_Client_GetProtocol);
-
 
 	// gamedll hud stuff
 	g_addextension("Ghud_SendUpdates", G_Ext_Ghud_SendUpdateToClient);
@@ -999,6 +1017,9 @@ void G_InitializeExtensions(void)
 	g_addextension("Ghud_SetAnchor",	SV_Ghud_SetAnchor);
 	g_addextension("Ghud_SetColor",		SV_Ghud_SetColor);
 	g_addextension("Ghud_SetSize",		SV_Ghud_SetSize);
+
+	// cvar sync
+	g_addextension("CvarSync_Set", G_Ext_CvarSync_Set);
 }
 
 
@@ -1022,6 +1043,7 @@ void SV_InitGameProgs(void)
 
 #ifdef AQTION_EXTENSION
 	SV_Ghud_Clear();
+	SV_CvarSync_Clear();
 #endif
 
     // for debugging or `proxy' mods
@@ -1085,5 +1107,6 @@ void SV_InitGameProgs(void)
 
 #ifdef AQTION_EXTENSION
 	GE_customizeentityforclient = ge->FetchGameExtension("customizeentityforclient");
+	GE_CvarSync_Updated = ge->FetchGameExtension("CvarSync_Updated");
 #endif
 }

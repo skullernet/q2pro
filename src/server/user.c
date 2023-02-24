@@ -426,6 +426,42 @@ void SV_New_f(void)
 
 		SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
 	}
+
+#ifdef AQTION_EXTENSION
+	if (svs.cvarsync_length && sv_client->protocol == PROTOCOL_VERSION_AQTION && sv_client->version >= PROTOCOL_VERSION_AQTION_CVARSYNC)
+	{
+		MSG_WriteByte(svc_extend);
+		MSG_WriteByte(svc_cvarsync);
+		MSG_WriteByte(svs.cvarsync_length);
+		for (int i = 0; i < svs.cvarsync_length; i++)
+		{
+			cvarsync_t *var = &svs.cvarsync_list[i];
+			MSG_WriteString(var->name);
+			MSG_WriteString(var->value);
+
+			if (sv_client->edict)
+			{
+				strcpy(sv_client->edict->client->cl_cvar[i], var->value);
+
+				if (GE_CvarSync_Updated) // poke game dll to tell it a cvar was updated
+					GE_CvarSync_Updated(i, sv_client->edict);
+			}
+		}
+
+		SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
+	}
+	else if (sv_client->edict)
+	{
+		for (int i = 0; i < svs.cvarsync_length; i++)
+		{
+			cvarsync_t *var = &svs.cvarsync_list[i];
+			strcpy(sv_client->edict->client->cl_cvar[i], var->value);
+
+			if (GE_CvarSync_Updated) // poke game dll to tell it a cvar was updated
+				GE_CvarSync_Updated(i, sv_client->edict);
+		}
+	}
+#endif
 }
 
 /*
@@ -1519,6 +1555,7 @@ The current net_message is parsed for the given client
 void SV_ExecuteClientMessage(client_t *client)
 {
     int c;
+	int index;
 
     sv_client = client;
     sv_player = sv_client->edict;
@@ -1589,6 +1626,20 @@ badbyte:
 
             SV_ParseDeltaUserinfo();
             break;
+
+		case clc_cvarsync:
+			if (client->protocol != PROTOCOL_VERSION_AQTION)
+				goto badbyte;
+#ifdef AQTION_EXTENSION
+			index = MSG_ReadByte();
+			MSG_ReadString(sv_player->client->cl_cvar[index], CVARSYNC_MAXSIZE);
+
+			if (GE_CvarSync_Updated) // poke game dll to tell it a cvar was updated
+				GE_CvarSync_Updated(index, sv_player);
+#else
+			goto badbyte;
+#endif
+			break;
         }
 
 nextcmd:

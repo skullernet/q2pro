@@ -56,7 +56,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define PROTOCOL_VERSION_AQTION_CURRENT         3011
 #else
 #define PROTOCOL_VERSION_AQTION_GHUD			3012	// game dll defined hud elements
-#define PROTOCOL_VERSION_AQTION_CURRENT         3012
+#define PROTOCOL_VERSION_AQTION_CVARSYNC		3013
+#define PROTOCOL_VERSION_AQTION_CURRENT         3013
 #endif
 
 
@@ -160,6 +161,7 @@ typedef enum {
 
 	svc_extend = 30,
 	svc_userstatistic,
+	svc_cvarsync,
 
     svc_num_types
 } svc_ops_t;
@@ -205,19 +207,22 @@ typedef enum {
 // client to server
 //
 typedef enum {
-    clc_bad,
-    clc_nop,
-    clc_move,               // [usercmd_t]
-    clc_userinfo,           // [userinfo string]
-    clc_stringcmd,          // [string] message
+	clc_bad,
+	clc_nop,
+	clc_move,               // [usercmd_t]
+	clc_userinfo,           // [userinfo string]
+	clc_stringcmd,          // [string] message
 
-    // r1q2 specific operations
-    clc_setting,
+	// r1q2 specific operations
+	clc_setting,
 
-    // q2pro specific operations
-    clc_move_nodelta = 10,
-    clc_move_batched,
-    clc_userinfo_delta
+	// q2pro specific operations
+	clc_move_nodelta = 10,
+	clc_move_batched,
+	clc_userinfo_delta,
+
+	// AQtion specific operations
+	clc_cvarsync = 50,
 } clc_ops_t;
 
 //==============================================
