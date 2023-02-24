@@ -835,6 +835,32 @@ static void SV_PacketdupHack_f(void)
 }
 #endif
 
+static void SV_CvarSync_f(void)
+{
+	if (!sv_client->edict->client)
+		return;
+
+	if (Cmd_Argc() > 2) {
+		char varname[CVARSYNC_MAX];
+		strcpy_s(varname, CVARSYNC_MAX, Cmd_Argv(1));
+		varname[CVARSYNC_MAX - 1] = 0;
+
+		for (int i = 0; i < svs.cvarsync_length; i++)
+		{
+			cvarsync_t *var = &svs.cvarsync_list[i];
+			if (strcmp(var->name, varname))
+				continue;
+
+			strcpy(sv_client->edict->client->cl_cvar[i], Cmd_Argv(2));
+
+			if (GE_CvarSync_Updated) // poke game dll to tell it a cvar was updated
+				GE_CvarSync_Updated(i, sv_client->edict);
+
+			SV_ClientPrintf(sv_client, PRINT_HIGH, "cvarsync: set %s to %s\n", varname, sv_client->edict->client->cl_cvar[i]);
+		}
+	}
+}
+
 static bool match_cvar_val(const char *s, const char *v)
 {
     switch (*s++) {
@@ -982,6 +1008,9 @@ static const ucmd_t ucmds[] = {
 #endif
     { "aclist", SV_AC_List_f },
     { "acinfo", SV_AC_Info_f },
+#ifdef AQTION_EXTENSION
+	{ "cvarsync", SV_CvarSync_f },
+#endif
 
     { NULL, NULL }
 };
