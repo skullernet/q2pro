@@ -966,22 +966,6 @@ static int G_Ext_Client_GetVersion(edict_t *ent)
 	return 0;
 }
 
-
-static void G_Ext_Ghud_SendUpdateToClient(edict_t *ent)
-{
-	if (!ent->client)
-		return;
-
-	client_t *client;
-	FOR_EACH_CLIENT(client) {
-		if (client->edict != ent)
-			continue;
-
-		SV_Ghud_SendUpdateToClient(client);
-		return;
-	}
-}
-
 static void SV_CvarSync_Clear(void)
 {
 	svs.cvarsync_length = 0;
@@ -1007,10 +991,10 @@ void G_InitializeExtensions(void)
 	g_addextension("Client_GetProtocol", G_Ext_Client_GetProtocol);
 
 	// gamedll hud stuff
-	g_addextension("Ghud_SendUpdates", G_Ext_Ghud_SendUpdateToClient);
+	g_addextension("Ghud_ClearForClient", SV_Ghud_ClearForClient);
 	g_addextension("Ghud_NewElement",	SV_Ghud_NewElement);
+	g_addextension("Ghud_RemoveElement",SV_Ghud_RemoveElement);
 	g_addextension("Ghud_SetFlags",		SV_Ghud_SetFlags);
-	g_addextension("Ghud_UnicastSetFlags", SV_Ghud_UnicastSetFlags);
 	g_addextension("Ghud_SetText",		SV_Ghud_SetText);
 	g_addextension("Ghud_SetInt",		SV_Ghud_SetInt);
 	g_addextension("Ghud_SetPosition",	SV_Ghud_SetPosition);

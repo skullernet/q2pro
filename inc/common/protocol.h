@@ -57,7 +57,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #else
 #define PROTOCOL_VERSION_AQTION_GHUD			3012	// game dll defined hud elements
 #define PROTOCOL_VERSION_AQTION_CVARSYNC		3013
-#define PROTOCOL_VERSION_AQTION_CURRENT         3013
+#define PROTOCOL_VERSION_AQTION_GHUD2			3014
+#define PROTOCOL_VERSION_AQTION_CURRENT         3014
 #endif
 
 

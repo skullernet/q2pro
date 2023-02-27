@@ -1241,6 +1241,7 @@ static void CL_ParseCvarSync(void)
 	int amt;
 	cvar_t *var;
 	cvarsync_t nullCvar;
+	memset(&nullCvar, 0, sizeof(nullCvar));
 
 	for (int i = 0; i < CVARSYNC_MAX; i++)
 		cl.cvarsync[i] = nullCvar;
@@ -1264,8 +1265,6 @@ static void CL_ParseCvarSync(void)
 		MSG_ReadString(cl.cvarsync[i].name, CVARSYNC_MAXSIZE);	// read cvar name
 		MSG_ReadString(cl.cvarsync[i].value, CVARSYNC_MAXSIZE); // read default cvar value
 
-		Com_Printf("CL adding cvarsync: %s, %s\n", cl.cvarsync[i].name, cl.cvarsync[i].value);
-
 		var = Cvar_FindVar(cl.cvarsync[i].name);
 		if (!var)
 			var = Cvar_Get(cl.cvarsync[i].name, cl.cvarsync[i].value, 0);
@@ -1273,6 +1272,8 @@ static void CL_ParseCvarSync(void)
 		var->sync_index = i;
 		var->flags |= CVAR_SYNC;
 		var->changed = CL_SendCvarSync;
+
+		Com_Printf("CL adding cvarsync: %s, %s\n", cl.cvarsync[i].name, var->string);
 
 		if (strcmp(cl.cvarsync[i].value, var->string)) // if value is not default, sync the value
 			CL_SendCvarSync(var);

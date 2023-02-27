@@ -305,20 +305,6 @@ void SV_New_f(void)
     // create baselines for this client
     SV_CreateBaselines();
 
-
-#ifdef AQTION_EXTENSION
-	// make sure we send initial hud elements that were created before connection
-
-	int i;
-	for (i = 0; i < MAX_GHUDS; i++)
-	{
-		if (!(svs.ghud[i].flags & GHF_INUSE))
-			break;
-
-		sv_client->ghud_updateflags[i] = 0xFF;
-	}
-#endif
-
     // send the serverdata
     MSG_WriteByte(svc_serverdata);
     MSG_WriteLong(sv_client->protocol);
@@ -857,6 +843,29 @@ static void SV_CvarSync_f(void)
 				GE_CvarSync_Updated(i, sv_client->edict);
 
 			SV_ClientPrintf(sv_client, PRINT_HIGH, "cvarsync: set %s to %s\n", varname, sv_client->edict->client->cl_cvar[i]);
+		}
+	}
+	else if (Cmd_Argc() == 2)
+	{
+		char varname[CVARSYNC_MAX];
+		strcpy_s(varname, CVARSYNC_MAX, Cmd_Argv(1));
+		varname[CVARSYNC_MAX - 1] = 0;
+
+		for (int i = 0; i < svs.cvarsync_length; i++)
+		{
+			cvarsync_t *var = &svs.cvarsync_list[i];
+			if (strcmp(var->name, varname))
+				continue;
+
+			SV_ClientPrintf(sv_client, PRINT_HIGH, "cvarsync: %s is currently set to %s\n", varname, sv_client->edict->client->cl_cvar[i]);
+		}
+	}
+	else
+	{
+		for (int i = 0; i < svs.cvarsync_length; i++)
+		{
+			cvarsync_t *var = &svs.cvarsync_list[i];
+			SV_ClientPrintf(sv_client, PRINT_HIGH, "cvarsync: %s = %s\n", var->name, sv_client->edict->client->cl_cvar[i]);
 		}
 	}
 }

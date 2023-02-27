@@ -1,6 +1,6 @@
 
 #ifndef MAX_GHUDS
-#define MAX_GHUDS	64
+#define MAX_GHUDS	200
 
 #define GHT_IMG		0
 #define GHT_FILL	1
@@ -20,6 +20,8 @@
 #define GHU_POS		0x0010
 #define GHU_COLOR	0x0020
 #define GHU_SIZE	0x0040
+#define GHU_EXTRAF	0x0080
+#define GHU_BLANK	0x0100
 #define GHU_FORCE	0x1000
 
 typedef struct
