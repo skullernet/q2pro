@@ -1227,7 +1227,7 @@ AQTION Protocol CVAR Sync
 void CL_SendCvarSync(cvar_t *var)
 {
 	char val_str[CVARSYNC_MAXSIZE];
-	strcpy_s(val_str, CVARSYNC_MAXSIZE, var->string);
+	Q_strlcpy(val_str, var->string, CVARSYNC_MAXSIZE);
 	val_str[CVARSYNC_MAXSIZE - 1] = 0;
 
 	MSG_WriteByte(clc_cvarsync);

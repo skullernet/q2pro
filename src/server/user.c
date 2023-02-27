@@ -828,7 +828,7 @@ static void SV_CvarSync_f(void)
 
 	if (Cmd_Argc() > 2) {
 		char varname[CVARSYNC_MAX];
-		strcpy_s(varname, CVARSYNC_MAX, Cmd_Argv(1));
+		Q_strlcpy(varname, Cmd_Argv(1), CVARSYNC_MAX);
 		varname[CVARSYNC_MAX - 1] = 0;
 
 		for (int i = 0; i < svs.cvarsync_length; i++)
@@ -848,7 +848,7 @@ static void SV_CvarSync_f(void)
 	else if (Cmd_Argc() == 2)
 	{
 		char varname[CVARSYNC_MAX];
-		strcpy_s(varname, CVARSYNC_MAX, Cmd_Argv(1));
+		Q_strlcpy(varname, Cmd_Argv(1), CVARSYNC_MAX);
 		varname[CVARSYNC_MAX - 1] = 0;
 
 		for (int i = 0; i < svs.cvarsync_length; i++)

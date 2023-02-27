@@ -975,9 +975,9 @@ static void SV_CvarSync_Clear(void)
 static void G_Ext_CvarSync_Set(int index, const char *name, const char *val)
 {
 	cvarsync_t *var = &svs.cvarsync_list[index];
-
-	strcpy_s(var->name, CVARSYNC_MAXSIZE, name);
-	strcpy_s(var->value, CVARSYNC_MAXSIZE, val);
+	
+	Q_strlcpy(var->name, name, CVARSYNC_MAXSIZE);
+	Q_strlcpy(var->value, val, CVARSYNC_MAXSIZE);
 
 	svs.cvarsync_length = index + 1;
 
