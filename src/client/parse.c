@@ -1218,6 +1218,68 @@ static void CL_ParseSetting(void)
     }
 }
 
+
+/*
+============
+AQTION Protocol CVAR Sync
+============
+*/
+void CL_SendCvarSync(cvar_t *var)
+{
+	char val_str[CVARSYNC_MAXSIZE];
+	Q_strlcpy(val_str, var->string, CVARSYNC_MAXSIZE);
+	val_str[CVARSYNC_MAXSIZE - 1] = 0;
+
+	MSG_WriteByte(clc_cvarsync);
+	MSG_WriteByte(var->sync_index);
+	MSG_WriteString(val_str);
+	MSG_FlushTo(&cls.netchan.message);
+}
+
+static void CL_ParseCvarSync(void)
+{
+	int amt;
+	cvar_t *var;
+	cvarsync_t nullCvar;
+	memset(&nullCvar, 0, sizeof(nullCvar));
+
+	for (int i = 0; i < CVARSYNC_MAX; i++)
+		cl.cvarsync[i] = nullCvar;
+
+	for (var = cvar_vars; var; var = var->next) {
+		if (!(var->flags & CVAR_SYNC))
+			continue;
+
+		var->changed = NULL;
+	}
+
+	amt = MSG_ReadByte(); // amount of cvar syncs
+	if (amt > CVARSYNC_MAX)
+	{
+		Com_Error(ERR_DROP, "%s: cvar sync amount greater than maximum %i > %i", __func__, amt, CVARSYNC_MAX);
+		return;
+	}
+
+	for (int i = 0; i < amt; i++)
+	{
+		MSG_ReadString(cl.cvarsync[i].name, CVARSYNC_MAXSIZE);	// read cvar name
+		MSG_ReadString(cl.cvarsync[i].value, CVARSYNC_MAXSIZE); // read default cvar value
+
+		var = Cvar_FindVar(cl.cvarsync[i].name);
+		if (!var)
+			var = Cvar_Get(cl.cvarsync[i].name, cl.cvarsync[i].value, 0);
+
+		var->sync_index = i;
+		var->flags |= CVAR_SYNC;
+		var->changed = CL_SendCvarSync;
+
+		Com_Printf("CL adding cvarsync: %s, %s\n", cl.cvarsync[i].name, var->string);
+
+		if (strcmp(cl.cvarsync[i].value, var->string)) // if value is not default, sync the value
+			CL_SendCvarSync(var);
+	}
+}
+
 /*
 =====================
 CL_ParseServerMessage
@@ -1255,6 +1317,9 @@ void CL_ParseServerMessage(void)
 
         extrabits = cmd >> SVCMD_BITS;
         cmd &= SVCMD_MASK;
+
+		if (cmd == svc_extend)
+			cmd = MSG_ReadByte();
 
         SHOWNET(1, "%3zu:%s\n", msg_read.readcount - 1, MSG_ServerCommandString(cmd));
 
@@ -1396,6 +1461,13 @@ void CL_ParseServerMessage(void)
 			MSG_ReadString(key, sizeof(key));
 			MSG_ReadLong(); // Reki - unused for now, can be used to network end of game statistics to players
 			
+			continue;
+
+		case svc_cvarsync:
+			if (cls.serverProtocol < PROTOCOL_VERSION_AQTION) {
+				goto badbyte;
+			}
+			CL_ParseCvarSync();
 			continue;
         }
 

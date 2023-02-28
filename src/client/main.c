@@ -2462,7 +2462,7 @@ static void CL_ConnectionlessPacket(void)
         }
 
         if (!cls.serverProtocol) {
-            cls.serverProtocol = PROTOCOL_VERSION_Q2PRO;
+            cls.serverProtocol = PROTOCOL_VERSION_AQTION;
         }
 
         // choose supported protocol

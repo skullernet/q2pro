@@ -109,6 +109,9 @@ typedef struct {
     byte        areabits[MAX_MAP_AREA_BYTES];  // portalarea visibility bits
     unsigned    sentTime;                   // for ping calculations
     int         latency;
+#ifdef AQTION_EXTENSION
+	ghud_element_t ghud[MAX_GHUDS];
+#endif
 } client_frame_t;
 
 typedef struct {
@@ -392,8 +395,7 @@ typedef struct client_s {
 #endif
 
 #ifdef AQTION_EXTENSION
-	short			ghud_updateflags[MAX_GHUDS];
-	short			ghud_forceflags[MAX_GHUDS];
+	ghud_element_t	ghud[MAX_GHUDS];
 #endif
 } client_t;
 
@@ -503,7 +505,9 @@ typedef struct server_static_s {
     challenge_t     challenges[MAX_CHALLENGES]; // to prevent invalid IPs from connecting
 
 #ifdef AQTION_EXTENSION
-	ghud_element_t ghud[MAX_GHUDS];
+	// Reki: cvar sync entries
+	cvarsync_t	cvarsync_list[CVARSYNC_MAX];
+	byte		cvarsync_length;
 #endif
 } server_static_t;
 
@@ -806,20 +810,21 @@ void SV_RegisterSavegames(void);
 // sv_ghud.c
 //
 void SV_Ghud_Clear(void);
-void SV_Ghud_SendUpdateToClient(client_t *client);
-int  SV_Ghud_NewElement(int type);
-void SV_Ghud_SetFlags(int i, int val);
-void SV_Ghud_UnicastSetFlags(edict_t *ent, int i, int flags);
-void SV_Ghud_SetInt(int i, int val);
-void SV_Ghud_SetText(int i, char *text);
-void SV_Ghud_SetPosition(int i, int x, int y, int z);
-void SV_Ghud_SetAnchor(int i, float x, float y);
-void SV_Ghud_SetColor(int i, int r, int g, int b, int a);
-void SV_Ghud_SetSize(int i, int x, int y);
+void SV_Ghud_ClearForClient(edict_t *ent);
+int  SV_Ghud_NewElement(edict_t *ent, int type);
+void SV_Ghud_RemoveElement(edict_t *ent, int i);
+void SV_Ghud_SetFlags(edict_t *ent, int i, int val);
+void SV_Ghud_SetInt(edict_t *ent, int i, int val);
+void SV_Ghud_SetText(edict_t *ent, int i, char *text);
+void SV_Ghud_SetPosition(edict_t *ent, int i, int x, int y, int z);
+void SV_Ghud_SetAnchor(edict_t *ent, int i, float x, float y);
+void SV_Ghud_SetColor(edict_t *ent, int i, int r, int g, int b, int a);
+void SV_Ghud_SetSize(edict_t *ent, int i, int x, int y);
 #endif
 
 #ifdef AQTION_EXTENSION
 extern int(*GE_customizeentityforclient)(edict_t *client, edict_t *ent, entity_state_t *state); // 0 don't send, 1 send normally
+extern void(*GE_CvarSync_Updated)(int index, edict_t *clent);
 #endif
 
 //============================================================

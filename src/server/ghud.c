@@ -1,109 +1,82 @@
 #include "server.h"
-
 #ifdef AQTION_EXTENSION
 
 
 void SV_Ghud_Clear()
 {
-	memset(&svs.ghud, 0, sizeof(svs.ghud));
-}
-
-
-void SV_Ghud_SendUpdateToClient(client_t *client)
-{
-	if (client->protocol == PROTOCOL_VERSION_AQTION && client->version >= PROTOCOL_VERSION_AQTION_GHUD)
-	{
-		MSG_WriteByte(svc_ghudupdate);
-		qboolean written = false;
-		int i;
-		for (i = 0; i < MAX_GHUDS; i++)
-		{
-			if (!client->ghud_updateflags[i])
-				continue;
-
-			ghud_element_t *element = &svs.ghud[i];
-			int eflags = element->flags | client->ghud_forceflags[i];
-
-			if (eflags & GHF_HIDE && !(client->ghud_updateflags[i] & GHU_FORCE))
-				continue;
-
-			written = true;
-
-			MSG_WriteByte(i);
-			MSG_WriteGhud(element, client->ghud_updateflags[i], eflags);
-
-			client->ghud_updateflags[i] = 0;
-		}
-
-		if (written)
-		{
-			MSG_WriteByte(255);
-			SV_ClientAddMessage(client, MSG_RELIABLE);
-		}
-		else
-			msg_write.cursize--;
-
-		SZ_Clear(&msg_write);
+	client_t *cl;
+	FOR_EACH_CLIENT(cl) {
+		memset(cl->ghud, 0, sizeof(cl->ghud));
 	}
 }
 
-
-static void SV_Ghud_UpdateFlags(int i, int flags)
+void SV_Ghud_ClearForClient(edict_t *ent)
 {
-	client_t *client;
-	FOR_EACH_CLIENT(client) {
-		client->ghud_updateflags[i] |= flags;
+	client_t    *cl;
+	int         clientNum;
+	clientNum = NUM_FOR_EDICT(ent) - 1;
+	if (clientNum < 0 || clientNum >= sv_maxclients->integer) {
+		Com_WPrintf("%s to a non-client %d\n", __func__, clientNum);
 	}
+	cl = svs.client_pool + clientNum;
+
+	memset(cl->ghud, 0, sizeof(cl->ghud));
 }
 
-
-void SV_Ghud_UnicastSetFlags(edict_t *ent, int i, int flags)
+int SV_Ghud_NewElement(edict_t *ent, int type)
 {
-	client_t *client;
-	FOR_EACH_CLIENT(client) {
-		
-		if (client->edict != ent)
-			continue;
-
-		if (client->ghud_forceflags[i] == flags)
-			continue;
-
-		if ((client->ghud_forceflags[i] & GHF_HIDE && !(flags & GHF_HIDE)) || (!(client->ghud_forceflags[i] & GHF_HIDE) && flags & GHF_HIDE))
-			client->ghud_updateflags[i] |= GHU_FORCE;
-
-		client->ghud_forceflags[i] = flags;
-		client->ghud_updateflags[i] |= GHU_FLAGS;
+	client_t    *cl;
+	int         clientNum;
+	clientNum = NUM_FOR_EDICT(ent) - 1;
+	if (clientNum < 0 || clientNum >= sv_maxclients->integer) {
+		Com_WPrintf("%s to a non-client %d\n", __func__, clientNum);
 	}
-}
+	cl = svs.client_pool + clientNum;
 
-
-int SV_Ghud_NewElement(int type)
-{
 	int i;
 	for (i = 0; i < MAX_GHUDS; i++)
 	{
-		if (svs.ghud[i].flags & GHF_INUSE)
+		if (cl->ghud[i].flags & GHF_INUSE)
 			continue;
 
 		break;
 	}
 
 
-	svs.ghud[i].flags = GHF_INUSE;
-	svs.ghud[i].type = type;
+	cl->ghud[i].flags = GHF_INUSE;
+	cl->ghud[i].type = type;
 
-	SV_Ghud_SetColor(i, 255, 255, 255, 255);
-	SV_Ghud_UpdateFlags(i, (GHU_FLAGS | GHU_TYPE));
+	SV_Ghud_SetColor(ent, i, 255, 255, 255, 255);
+	//SV_Ghud_UpdateFlags(ent, i, (GHU_FLAGS | GHU_TYPE));
 
 	return i;
 }
 
-
-
-
-void SV_Ghud_SetFlags(int i, int val)
+void SV_Ghud_RemoveElement(edict_t *ent, int i)
 {
-	ghud_element_t *element = &svs.ghud[i];
+	client_t    *cl;
+	int         clientNum;
+	clientNum = NUM_FOR_EDICT(ent) - 1;
+	if (clientNum < 0 || clientNum >= sv_maxclients->integer) {
+		Com_WPrintf("%s to a non-client %d\n", __func__, clientNum);
+	}
+	cl = svs.client_pool + clientNum;
+
+	cl->ghud[i].flags = 0;
+}
+
+
+void SV_Ghud_SetFlags(edict_t *ent, int i, int val)
+{
+	client_t    *cl;
+	int         clientNum;
+	clientNum = NUM_FOR_EDICT(ent) - 1;
+	if (clientNum < 0 || clientNum >= sv_maxclients->integer) {
+		Com_WPrintf("%s to a non-client %d\n", __func__, clientNum);
+	}
+	cl = svs.client_pool + clientNum;
+
+	ghud_element_t *element = &cl->ghud[i];
 
 	if (!(element->flags & GHF_INUSE))
 		return;
@@ -111,17 +84,25 @@ void SV_Ghud_SetFlags(int i, int val)
 	if ((val & ~GHF_INUSE) == (element->flags & ~GHF_INUSE))
 		return;
 
-	if ((element->flags & GHF_HIDE && ~val & GHF_HIDE) || (~element->flags & GHF_HIDE && val & GHF_HIDE))
-		val |= GHU_FORCE;
+	//if ((element->flags & GHF_HIDE && ~val & GHF_HIDE) || (~element->flags & GHF_HIDE && val & GHF_HIDE))
+	//	val |= GHU_FORCE;
 
 	element->flags = val | GHF_INUSE;
 
-	SV_Ghud_UpdateFlags(i, GHU_FLAGS);
+	//SV_Ghud_UpdateFlags(i, GHU_FLAGS);
 }
 
-void SV_Ghud_SetText(int i, char *text)
+void SV_Ghud_SetText(edict_t *ent, int i, char *text)
 {
-	ghud_element_t *element = &svs.ghud[i];
+	client_t    *cl;
+	int         clientNum;
+	clientNum = NUM_FOR_EDICT(ent) - 1;
+	if (clientNum < 0 || clientNum >= sv_maxclients->integer) {
+		Com_WPrintf("%s to a non-client %d\n", __func__, clientNum);
+	}
+	cl = svs.client_pool + clientNum;
+
+	ghud_element_t *element = &cl->ghud[i];
 
 
 	if (!(element->flags & GHF_INUSE))
@@ -132,12 +113,20 @@ void SV_Ghud_SetText(int i, char *text)
 
 	strcpy(element->text, text);
 	
-	SV_Ghud_UpdateFlags(i, GHU_TEXT);
+	//SV_Ghud_UpdateFlags(i, GHU_TEXT);
 }
 
-void SV_Ghud_SetInt(int i, int val)
+void SV_Ghud_SetInt(edict_t *ent, int i, int val)
 {
-	ghud_element_t *element = &svs.ghud[i];
+	client_t    *cl;
+	int         clientNum;
+	clientNum = NUM_FOR_EDICT(ent) - 1;
+	if (clientNum < 0 || clientNum >= sv_maxclients->integer) {
+		Com_WPrintf("%s to a non-client %d\n", __func__, clientNum);
+	}
+	cl = svs.client_pool + clientNum;
+
+	ghud_element_t *element = &cl->ghud[i];
 
 	if (!(element->flags & GHF_INUSE))
 		return;
@@ -147,12 +136,20 @@ void SV_Ghud_SetInt(int i, int val)
 
 	element->val = val;
 	
-	SV_Ghud_UpdateFlags(i, GHU_INT);
+	//SV_Ghud_UpdateFlags(i, GHU_INT);
 }
 
-void SV_Ghud_SetPosition(int i, int x, int y, int z)
+void SV_Ghud_SetPosition(edict_t *ent, int i, int x, int y, int z)
 {
-	ghud_element_t *element = &svs.ghud[i];
+	client_t    *cl;
+	int         clientNum;
+	clientNum = NUM_FOR_EDICT(ent) - 1;
+	if (clientNum < 0 || clientNum >= sv_maxclients->integer) {
+		Com_WPrintf("%s to a non-client %d\n", __func__, clientNum);
+	}
+	cl = svs.client_pool + clientNum;
+
+	ghud_element_t *element = &cl->ghud[i];
 
 	if (!(element->flags & GHF_INUSE))
 		return;
@@ -164,12 +161,20 @@ void SV_Ghud_SetPosition(int i, int x, int y, int z)
 	element->pos[1] = y;
 	element->pos[2] = z;
 	
-	SV_Ghud_UpdateFlags(i, GHU_POS);
+	//SV_Ghud_UpdateFlags(i, GHU_POS);
 }
 
-void SV_Ghud_SetAnchor(int i, float x, float y)
+void SV_Ghud_SetAnchor(edict_t *ent, int i, float x, float y)
 {
-	ghud_element_t *element = &svs.ghud[i];
+	client_t    *cl;
+	int         clientNum;
+	clientNum = NUM_FOR_EDICT(ent) - 1;
+	if (clientNum < 0 || clientNum >= sv_maxclients->integer) {
+		Com_WPrintf("%s to a non-client %d\n", __func__, clientNum);
+	}
+	cl = svs.client_pool + clientNum;
+
+	ghud_element_t *element = &cl->ghud[i];
 
 	if (!(element->flags & GHF_INUSE))
 		return;
@@ -180,12 +185,20 @@ void SV_Ghud_SetAnchor(int i, float x, float y)
 	element->anchor[0] = x;
 	element->anchor[1] = y;
 	
-	SV_Ghud_UpdateFlags(i, GHU_POS);
+	//SV_Ghud_UpdateFlags(i, GHU_POS);
 }
 
-void SV_Ghud_SetSize(int i, int x, int y)
+void SV_Ghud_SetSize(edict_t *ent, int i, int x, int y)
 {
-	ghud_element_t *element = &svs.ghud[i];
+	client_t    *cl;
+	int         clientNum;
+	clientNum = NUM_FOR_EDICT(ent) - 1;
+	if (clientNum < 0 || clientNum >= sv_maxclients->integer) {
+		Com_WPrintf("%s to a non-client %d\n", __func__, clientNum);
+	}
+	cl = svs.client_pool + clientNum;
+
+	ghud_element_t *element = &cl->ghud[i];
 
 	if (!(element->flags & GHF_INUSE))
 		return;
@@ -196,12 +209,20 @@ void SV_Ghud_SetSize(int i, int x, int y)
 	element->size[0] = x;
 	element->size[1] = y;
 
-	SV_Ghud_UpdateFlags(i, GHU_SIZE);
+	//SV_Ghud_UpdateFlags(i, GHU_SIZE);
 }
 
-void SV_Ghud_SetColor(int i, int r, int g, int b, int a)
+void SV_Ghud_SetColor(edict_t *ent, int i, int r, int g, int b, int a)
 {
-	ghud_element_t *element = &svs.ghud[i];
+	client_t    *cl;
+	int         clientNum;
+	clientNum = NUM_FOR_EDICT(ent) - 1;
+	if (clientNum < 0 || clientNum >= sv_maxclients->integer) {
+		Com_WPrintf("%s to a non-client %d\n", __func__, clientNum);
+	}
+	cl = svs.client_pool + clientNum;
+
+	ghud_element_t *element = &cl->ghud[i];
 
 	if (!(element->flags & GHF_INUSE))
 		return;
@@ -211,7 +232,7 @@ void SV_Ghud_SetColor(int i, int r, int g, int b, int a)
 	element->color[2] = b;
 	element->color[3] = a;
 	
-	SV_Ghud_UpdateFlags(i, GHU_COLOR);
+	//SV_Ghud_UpdateFlags(i, GHU_COLOR);
 }
 
 #endif

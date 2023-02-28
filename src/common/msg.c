@@ -2009,14 +2009,54 @@ void MSG_ReadDeltaUsercmd_Enhanced(const usercmd_t *from, usercmd_t *to)
 
 #ifdef AQTION_EXTENSION
 
-void MSG_WriteGhud(ghud_element_t *element, byte flags, short eflags)
+int MSG_DeltaGhud(ghud_element_t *from, ghud_element_t *to, int protocolmask)
+{
+	int flags;
+	flags = 0;
+
+	if (protocolmask & 1)
+	{
+		if (!(to->flags & GHF_INUSE)) // if element is empty, just mark it as blank for optimization
+			return GHU_BLANK | GHU_EXTRAF;
+	}
+
+	if (from->type != to->type)
+		flags |= GHU_TYPE;
+	if (from->flags != to->flags)
+		flags |= GHU_FLAGS;
+	if (from->val != to->val)
+		flags |= GHU_INT;
+	if (strcmp(from->text, to->text))
+		flags |= GHU_TEXT;
+	if (from->color[0] != to->color[0] || from->color[1] != to->color[1] || from->color[2] != to->color[2] || from->color[3] != to->color[3])
+		flags |= GHU_COLOR;
+	if (from->pos[0] != to->pos[0] || from->pos[1] != to->pos[1] || from->pos[2] != to->pos[2] || from->anchor[0] != to->anchor[0] || from->anchor[1] != to->anchor[1])
+		flags |= GHU_POS;
+	if (from->size[0] != to->size[0] || from->size[1] != to->size[1])
+		flags |= GHU_SIZE;
+
+	if (protocolmask & 1)
+	{
+		if (flags > GHU_EXTRAF)
+			flags |= GHU_EXTRAF;
+	}
+
+	return flags;
+}
+
+void MSG_WriteGhud(ghud_element_t *element, int flags)
 {
 	MSG_WriteByte(flags);
+	if (flags & GHU_EXTRAF)
+		MSG_WriteByte(flags >> 8);
+	
+	if (flags & GHU_BLANK) // blank element means we have no other info to write
+		return;
 
 	if (flags & GHU_TYPE)
 		MSG_WriteByte(element->type);
 	if (flags & GHU_FLAGS)
-		MSG_WriteShort(eflags);
+		MSG_WriteShort(element->flags);
 	if (flags & GHU_INT)
 		MSG_WriteShort(element->val);
 	if (flags & GHU_TEXT)
@@ -2047,6 +2087,14 @@ void MSG_WriteGhud(ghud_element_t *element, byte flags, short eflags)
 void MSG_ParseGhud(ghud_element_t *element)
 {
 	int flags = MSG_ReadByte();
+	if (flags & GHU_EXTRAF)
+		flags |= MSG_ReadByte() << 8;
+
+	if (flags & GHU_BLANK)
+	{
+		memset(element, 0, sizeof(ghud_element_t));
+		return;
+	}
 
 	if (flags & GHU_TYPE)
 		element->type = MSG_ReadByte();

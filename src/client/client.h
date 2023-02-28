@@ -288,6 +288,8 @@ typedef struct client_state_s {
 
     char    weaponModels[MAX_CLIENTWEAPONMODELS][MAX_QPATH];
     int     numWeaponModels;
+
+	cvarsync_t cvarsync[CVARSYNC_MAX];
 } client_state_t;
 
 extern client_state_t   cl;
