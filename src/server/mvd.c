@@ -704,6 +704,7 @@ static void emit_frame(void)
 {
     player_packed_t *oldps, newps;
     entity_packed_t *oldes, newes;
+	entity_state_t ent_state;
     edict_t *ent;
     int flags, portalbytes;
     byte portalbits[MAX_MAP_PORTAL_BYTES];
@@ -795,8 +796,16 @@ static void emit_frame(void)
             flags |= MSG_ES_FORCE | MSG_ES_NEWENTITY;
         }
 
+		ent_state = ent->s;
+
+#ifdef AQTION_EXTENSION
+		if (GE_customizeentityforclient)
+			if (!GE_customizeentityforclient(NULL, ent, &ent_state))
+				continue;
+#endif
+
         // quantize
-        MSG_PackEntity(&newes, &ent->s, false);
+        MSG_PackEntity(&newes, &ent_state, false);
 
         MSG_WriteDeltaEntity(oldes, &newes, flags);
 
