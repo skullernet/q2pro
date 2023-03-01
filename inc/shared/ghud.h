@@ -12,6 +12,7 @@
 #define GHF_BLINK	0x0004
 #define GHF_3DPOS	0x0008
 #define GHF_HIDE	0x0010
+#define GHF_FORCE	0x8000
 
 #define GHU_TYPE	0x0001
 #define GHU_FLAGS	0x0002

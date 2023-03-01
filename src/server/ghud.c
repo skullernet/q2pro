@@ -6,7 +6,7 @@ void SV_Ghud_Clear()
 {
 	client_t *cl;
 	FOR_EACH_CLIENT(cl) {
-		memset(cl->ghud, 0, sizeof(cl->ghud));
+		memset(cl->ghud, 0, sizeof(ghud_element_t) * MAX_GHUDS);
 	}
 }
 
@@ -20,7 +20,7 @@ void SV_Ghud_ClearForClient(edict_t *ent)
 	}
 	cl = svs.client_pool + clientNum;
 
-	memset(cl->ghud, 0, sizeof(cl->ghud));
+	memset(cl->ghud, 0, sizeof(ghud_element_t) * MAX_GHUDS);
 }
 
 int SV_Ghud_NewElement(edict_t *ent, int type)
@@ -43,7 +43,7 @@ int SV_Ghud_NewElement(edict_t *ent, int type)
 	}
 
 
-	cl->ghud[i].flags = GHF_INUSE;
+	cl->ghud[i].flags = GHF_INUSE | GHF_FORCE;
 	cl->ghud[i].type = type;
 
 	SV_Ghud_SetColor(ent, i, 255, 255, 255, 255);
@@ -84,12 +84,8 @@ void SV_Ghud_SetFlags(edict_t *ent, int i, int val)
 	if ((val & ~GHF_INUSE) == (element->flags & ~GHF_INUSE))
 		return;
 
-	//if ((element->flags & GHF_HIDE && ~val & GHF_HIDE) || (~element->flags & GHF_HIDE && val & GHF_HIDE))
-	//	val |= GHU_FORCE;
-
+	val |= element->flags & GHF_FORCE; // keep force flag
 	element->flags = val | GHF_INUSE;
-
-	//SV_Ghud_UpdateFlags(i, GHU_FLAGS);
 }
 
 void SV_Ghud_SetText(edict_t *ent, int i, char *text)

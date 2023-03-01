@@ -56,6 +56,11 @@ static void SV_CreateBaselines(void)
         memset(base, 0, sizeof(*base) * SV_BASELINES_PER_CHUNK);
     }
 
+#ifdef AQTION_EXTENSION
+	// clear ghud from previous level
+	memset(sv_client->ghud, 0, sizeof(ghud_element_t) * MAX_GHUDS);
+#endif
+
     for (i = 1; i < sv_client->pool->num_edicts; i++) {
         ent = EDICT_POOL(sv_client, i);
 
