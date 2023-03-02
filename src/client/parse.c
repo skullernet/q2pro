@@ -1230,6 +1230,10 @@ void CL_SendCvarSync(cvar_t *var)
 	Q_strlcpy(val_str, var->string, CVARSYNC_MAXSIZE);
 	val_str[CVARSYNC_MAXSIZE - 1] = 0;
 
+	if (!cls.netchan.protocol) {
+		return;
+	}
+
 	MSG_WriteByte(clc_cvarsync);
 	MSG_WriteByte(var->sync_index);
 	MSG_WriteString(val_str);

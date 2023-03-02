@@ -343,6 +343,8 @@ static void SV_Ghud_SendUpdateToClient(client_t *client, client_frame_t *oldfram
 			int uflags;
 
 			uflags = MSG_DeltaGhud(&oldframe->ghud[i], element, protocolflags);
+			if (oldframe->ghud[i].flags & GHF_FORCE || element->flags & GHF_FORCE)
+				uflags |= 0x7F;
 
 			if (!uflags)
 				continue;
@@ -359,7 +361,8 @@ static void SV_Ghud_SendUpdateToClient(client_t *client, client_frame_t *oldfram
 			}
 
 			written = true;
-			memcpy(&frame->ghud[i], &client->ghud[i], sizeof(ghud_element_t)); // update the ghud since it made it into the frame
+			memcpy(&frame->ghud[i], element, sizeof(ghud_element_t)); // update the ghud since it made it into the frame
+			element->flags &= ~GHF_FORCE;
 		}
 
 		if (written)
