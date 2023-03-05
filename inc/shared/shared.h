@@ -1029,6 +1029,9 @@ typedef struct {
 #define RDF_UVGOGGLES       8
 //ROGUE
 
+#define RF_INDICATOR			(RF_TRANSLUCENT | RF_FULLBRIGHT | RF_DEPTHHACK)
+#define IS_INDICATOR(rflags)	((rflags & RF_INDICATOR) == RF_INDICATOR)
+
 //
 // muzzle flashes / player effects
 //
