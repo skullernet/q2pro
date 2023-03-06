@@ -1951,6 +1951,8 @@ static void SCR_DrawGhudElement(ghud_element_t *element, float alpha_base, color
 
 		HUD_DrawNumber(x, y, 0, numsize, element->val);
 		break;
+    case GHT_FILL:;
+		R_DrawFill32(x, y, element->size[0], element->size[1], color_base.u32);
 	}
 }
 
