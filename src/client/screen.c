@@ -1593,12 +1593,9 @@ static void SCR_ExecuteLayoutString(const char *s)
             if (token[0]) {
                 qhandle_t pic = cl.image_precache[value];
                 // hack for action mod scope scaling
-                if (x == (scr_hudborder_x->integer / 2 + scr.hud_width)  / 2 - scr.scope_width  / 2 &&
-                    y == (scr_hudborder_y->integer / 2 + scr.hud_height) / 2 - scr.scope_height / 2 &&
-                    Com_WildCmp("scope?x", token))
-                {
-                    int w = scr.scope_width  * ch_scale->value;
-                    int h = scr.scope_height * ch_scale->value;
+                if (Com_WildCmp("scope?x", token)) {
+                    int w = scr.scope_width;
+                    int h = scr.scope_height;
                     R_DrawStretchPic((scr_hudborder_x->integer / 2 + scr.hud_width  - w) / 2 + ch_x->integer,
                                      (scr_hudborder_y->integer / 2 + scr.hud_height - h) / 2 + ch_y->integer,
                                      w, h, pic);
@@ -1954,7 +1951,7 @@ static void SCR_DrawGhudElement(ghud_element_t *element, float alpha_base, color
 
 		HUD_DrawNumber(x, y, 0, numsize, element->val);
 		break;
-	case GHT_FILL:;
+    case GHT_FILL:;
 		R_DrawFill32(x, y, element->size[0], element->size[1], color_base.u32);
 	}
 }
