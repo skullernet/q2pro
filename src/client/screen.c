@@ -1594,10 +1594,13 @@ static void SCR_ExecuteLayoutString(const char *s)
                 qhandle_t pic = cl.image_precache[value];
                 // hack for action mod scope scaling
                 if (Com_WildCmp("scope?x", token)) {
+                    int x = scr.hud_x + (scr.hud_width - scr.scope_width) / 2;
+                    int y = scr.hud_y + (scr.hud_height - scr.scope_height) / 2;
+
                     int w = scr.scope_width;
                     int h = scr.scope_height;
-                    R_DrawStretchPic((scr_hudborder_x->integer / 2 + scr.hud_width  - w) / 2 + ch_x->integer,
-                                     (scr_hudborder_y->integer / 2 + scr.hud_height - h) / 2 + ch_y->integer,
+                    R_DrawStretchPic(x + ch_x->integer,
+                                     y + ch_y->integer,
                                      w, h, pic);
                 } else {
                     R_DrawPic(x, y, pic);
