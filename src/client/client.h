@@ -562,6 +562,9 @@ extern cvar_t    *cl_hc_sound;
 extern cvar_t    *cl_ssg_sound;
 #endif
 
+// enable/disable drawing of team indicators (assuming they are present)
+extern cvar_t   *cl_indicators;
+
 //
 // userinfo
 //

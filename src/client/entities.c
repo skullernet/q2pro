@@ -585,6 +585,12 @@ static void CL_AddPacketEntities(void)
             goto skip;
         }
 
+#if USE_AQTION
+		if (IS_INDICATOR(renderfx) && !cl_indicators->integer && cls.demo.playback) {
+			goto skip;
+		}
+#endif
+
         // create a new entity
 
         // tweak the color of beams

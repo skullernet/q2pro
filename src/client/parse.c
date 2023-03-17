@@ -1224,6 +1224,7 @@ static void CL_ParseSetting(void)
 AQTION Protocol CVAR Sync
 ============
 */
+#ifdef PROTOCOL_VERSION_AQTION_CVARSYNC
 void CL_SendCvarSync(cvar_t *var)
 {
 	char val_str[CVARSYNC_MAXSIZE];
@@ -1233,6 +1234,9 @@ void CL_SendCvarSync(cvar_t *var)
 	if (!cls.netchan.protocol) {
 		return;
 	}
+
+	if (cls.serverProtocol != PROTOCOL_VERSION_AQTION || cls.protocolVersion < PROTOCOL_VERSION_AQTION_CVARSYNC)
+		return;
 
 	MSG_WriteByte(clc_cvarsync);
 	MSG_WriteByte(var->sync_index);
@@ -1283,6 +1287,7 @@ static void CL_ParseCvarSync(void)
 			CL_SendCvarSync(var);
 	}
 }
+#endif
 
 /*
 =====================
@@ -1471,7 +1476,11 @@ void CL_ParseServerMessage(void)
 			if (cls.serverProtocol < PROTOCOL_VERSION_AQTION) {
 				goto badbyte;
 			}
+#ifdef PROTOCOL_VERSION_AQTION_CVARSYNC
 			CL_ParseCvarSync();
+#else
+			goto badbyte;
+#endif
 			continue;
         }
 
