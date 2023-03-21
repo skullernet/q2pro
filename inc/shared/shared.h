@@ -1262,7 +1262,7 @@ typedef enum {
 #define ATTN_STATIC             3	// diminish very rapidly with distance
 
 // adjustable weapon sounds
-#define MIN_WEAPON_SOUND        1
+#define MIN_WEAPON_SOUND        0
 #define MAX_WEAPON_SOUND        8
 
 // player_state->stats[] indexes
