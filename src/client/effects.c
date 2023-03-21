@@ -252,7 +252,7 @@ void CL_MuzzleFlash(void)
     } else {
         S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_LOUD, 0);
     }
-    gi.dprintf("I played sound %s\n", soundname);
+    Com_DPrintf("I played sound %s\n", soundname);
 
 }
 
