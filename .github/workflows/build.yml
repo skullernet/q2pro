@@ -129,7 +129,7 @@ jobs:
           libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
           libcurl4-gnutls-dev libx11-dev libxi-dev \
           libogg-dev libvorbis-dev uuid-dev patchelf
-          pip3 install meson
+          pip3 install meson ninja
 
       - name: Build
         run: |
