@@ -25,8 +25,13 @@ env:
     -Dwrap_mode=forcefallback
     -Dx11=disabled
 
-  MESON_ARGS_LINUX: >-
+  MESON_ARGS_LINUX_WAYLAND: >-
     -Dwindows-crash-dumps=disabled
+    -Dwrap_mode=nofallback
+
+  MESON_ARGS_LINUX_NONWAYLAND: >-
+    -Dwindows-crash-dumps=disabled
+    -Dwayland=disabled
     -Dwrap_mode=nofallback
 
   MESON_ARGS_MAC: >-
@@ -108,8 +113,49 @@ jobs:
             builddir/q2proded.exe
             builddir/gamex86_64.dll
 
-  linux64:
+  linux64-nonwayland:
     runs-on: ubuntu-20.04
+    #runs-on: [self-hosted, x86]
+    strategy:
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y meson libsdl2-dev libopenal-dev \
+          libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
+          libcurl4-gnutls-dev libx11-dev libxi-dev \
+          libogg-dev libvorbis-dev uuid-dev patchelf
+
+      - name: Build
+        run: |
+          meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_LINUX_NONWAYLAND }} builddir
+          meson compile -C builddir
+        env:
+          CC: ${{ matrix.cc }}
+
+      - name: patchelf path to discord_game_sdk.so
+        run: |
+          patchelf --replace-needed /home/runner/work/q2pro/q2pro/extern/discord/lib/x86_64/discord_game_sdk.so ./discord_game_sdk.so builddir/q2pro
+
+      - name: Set binaries as executable
+        run: |
+          chmod +x builddir/q2pro*
+          
+      - name: Generate Linux x64 archives
+        uses: actions/upload-artifact@v3
+        with:
+          name: q2pro-lin-${{ matrix.cc }}
+          path: |
+            builddir/q2pro
+            builddir/q2proded
+            builddir/gamex86_64.so
+
+  linux64-wayland:
+    runs-on: ubuntu-22.04
     #runs-on: [self-hosted, x86]
     strategy:
       matrix:
@@ -128,7 +174,7 @@ jobs:
 
       - name: Build
         run: |
-          meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_LINUX }} builddir
+          meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_LINUX_WAYLAND }} builddir
           meson compile -C builddir
         env:
           CC: ${{ matrix.cc }}
@@ -144,7 +190,7 @@ jobs:
       - name: Generate Linux x64 archives
         uses: actions/upload-artifact@v3
         with:
-          name: q2pro-lin-${{ matrix.cc }}
+          name: q2pro-lin-wayland-${{ matrix.cc }}
           path: |
             builddir/q2pro
             builddir/q2proded
