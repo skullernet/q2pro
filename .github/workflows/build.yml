@@ -125,10 +125,11 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y meson libsdl2-dev libopenal-dev \
+          sudo apt-get install -y python3 python3-pip libsdl2-dev libopenal-dev \
           libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
           libcurl4-gnutls-dev libx11-dev libxi-dev \
           libogg-dev libvorbis-dev uuid-dev patchelf
+          pip3 install meson
 
       - name: Build
         run: |
