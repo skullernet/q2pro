@@ -192,7 +192,7 @@ static uint32_t ColorForStatus(const serverStatus_t *status, unsigned ping)
     ui_colorpingmax = Cvar_Get("ui_colorpingmax", "50", 0);
     
     if (atoi(Info_ValueForKey(status->infostring, "needpass")) >= 1)
-        return uis.color.disabled.u32;
+        return U32_RED;
 
     if (atoi(Info_ValueForKey(status->infostring, "anticheat")) >= 2)
         return uis.color.disabled.u32;
@@ -206,7 +206,7 @@ static uint32_t ColorForStatus(const serverStatus_t *status, unsigned ping)
     if (ping > (ui_colorpingmax->value * 3))
         return U32_YELLOW;
 
-    if (ping < ui_colorpingmax->value)
+    if (ping <= ui_colorpingmax->value)
         return U32_GREEN;
 
      if (atoi(Info_ValueForKey(status->infostring, "sv_antilag")) > 0)
@@ -232,9 +232,7 @@ void UI_StatusEvent(const serverStatus_t *status)
     char key[MAX_INFO_STRING];
     char value[MAX_INFO_STRING];
     int i;
-    int am = 0;
-    int ambci = 0;
-    int playerCount = 0;
+    int playerCount = status->numPlayers;
 
     // ignore unless menu is up
     if (!m_servers.args) {
@@ -258,6 +256,20 @@ void UI_StatusEvent(const serverStatus_t *status)
         FreeSlot(slot);
     }
 
+    #ifdef USE_AQTION
+    const char *am;
+    int ambci = 0;
+
+    if (atoi(Info_ValueForKey(status->infostring, "am")) > 0) {
+        ambci = atoi(Info_ValueForKey(status->infostring, "am_botcount"));
+        am = "Yes";
+        playerCount = (status->numPlayers + ambci);
+    } else {
+        am = "No";
+        playerCount = status->numPlayers;
+    }
+    #endif
+
     host = Info_ValueForKey(info, "hostname");
     if (COM_IsWhite(host)) {
         host = hostname;
@@ -271,13 +283,6 @@ void UI_StatusEvent(const serverStatus_t *status)
     maxclients = Info_ValueForKey(info, "maxclients");
     if (!COM_IsUint(maxclients)) {
         maxclients = "?";
-    }
-
-    if (atoi(Info_ValueForKey(status->infostring, "am")) > 0) {
-        ambci = atoi(Info_ValueForKey(status->infostring, "am_botcount"));
-        playerCount = (status->numPlayers + ambci);
-    } else {
-        playerCount = status->numPlayers;
     }
 
     if (timestamp > com_eventTime)
@@ -314,14 +319,19 @@ void UI_StatusEvent(const serverStatus_t *status)
             UI_FormatColumns(0, key, value, NULL);
     }
 
-    slot->numPlayers = status->numPlayers;
-    for (i = 0; i < status->numPlayers; i++) {
-        slot->players[i] =
-            UI_FormatColumns(0,
-                             va("%d", status->players[i].score),
-                             va("%d", status->players[i].ping),
-                             status->players[i].name,
-                             NULL);
+    if (atoi(Info_ValueForKey(status->infostring, "am")) > 0) {
+        // Do not try to list player names in a Bot server
+        return;
+    } else {
+        slot->numPlayers = status->numPlayers;
+        for (i = 0; i < status->numPlayers; i++) {
+            slot->players[i] =
+                UI_FormatColumns(0,
+                                va("%d", status->players[i].score),
+                                va("%d", status->players[i].ping),
+                                status->players[i].name,
+                                NULL);
+            }
     }
 
     slot->timestamp = timestamp;
