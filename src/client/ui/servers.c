@@ -200,9 +200,6 @@ static uint32_t ColorForStatus(const serverStatus_t *status, unsigned ping)
     if (Q_stricmp(Info_ValueForKey(status->infostring, "NoFake"), "ENABLED") == 0)
         return uis.color.disabled.u32;
 
-    if (atoi(Info_ValueForKey(status->infostring, "sv_antilag")) > 0)
-        return U32_CYAN;
-
     if (atoi(Info_ValueForKey(status->infostring, "am")) > 0)
         return U32_MAGENTA;
     
@@ -211,6 +208,9 @@ static uint32_t ColorForStatus(const serverStatus_t *status, unsigned ping)
 
     if (ping < ui_colorpingmax->value)
         return U32_GREEN;
+
+     if (atoi(Info_ValueForKey(status->infostring, "sv_antilag")) > 0)
+        return U32_CYAN;
 
     return U32_WHITE;
 }
@@ -226,12 +226,15 @@ void UI_StatusEvent(const serverStatus_t *status)
 {
     serverslot_t *slot;
     char *hostname;
-    const char *host, *mod, *map, *maxclients, *am, *ambc, *antilag;
+    const char *host, *map, *maxclients;
     unsigned timestamp, ping;
     const char *info = status->infostring;
     char key[MAX_INFO_STRING];
     char value[MAX_INFO_STRING];
     int i;
+    int am = 0;
+    int ambci = 0;
+    int playerCount = 0;
 
     // ignore unless menu is up
     if (!m_servers.args) {
@@ -260,11 +263,6 @@ void UI_StatusEvent(const serverStatus_t *status)
         host = hostname;
     }
 
-    // mod = Info_ValueForKey(info, "game");
-    // if (COM_IsWhite(mod)) {
-    //     mod = "aqtion";
-    // }
-
     map = Info_ValueForKey(info, "mapname");
     if (COM_IsWhite(map)) {
         map = "???";
@@ -275,24 +273,12 @@ void UI_StatusEvent(const serverStatus_t *status)
         maxclients = "?";
     }
 
-    am = Info_ValueForKey(key, "am");
-    if (COM_IsWhite(am)) {
-        am = "No";
+    if (atoi(Info_ValueForKey(status->infostring, "am")) > 0) {
+        ambci = atoi(Info_ValueForKey(status->infostring, "am_botcount"));
+        playerCount = (status->numPlayers + ambci);
     } else {
-        am = "Yes";
+        playerCount = status->numPlayers;
     }
-
-    // antilag = Info_ValueForKey(key, "sv_antilag");
-    // if (COM_IsWhite(antilag) || antilag == "0") {
-    //     antilag = "No";
-    // } else {
-    //     antilag = "Yes";
-    // }
-
-    // ambc = Info_ValueForKey(key, "ambc");
-    // if (COM_IsWhite(ambc)) {
-    //     ambc = "0";
-    // }
 
     if (timestamp > com_eventTime)
         timestamp = com_eventTime;
@@ -301,21 +287,8 @@ void UI_StatusEvent(const serverStatus_t *status)
     if (ping > 999)
         ping = 999;
 
-    // int ami = atoi(am);
-    // int ambci = atoi(ambc);
-    int playerCount = 0;
-
-    // Com_Printf("%d\n", ami);
-    // Com_Printf("%d\n", ambci);
-
-    // if ((ami = 1) && (ambci > 1)) {
-    //     playerCount = (status->numPlayers + ambci);
-    // } else {
-    playerCount = status->numPlayers;
-    //}
-
     slot = UI_FormatColumns(SLOT_EXTRASIZE, host, am, map,
-                            va("%d/%s", status->numPlayers, maxclients),
+                            va("%d/%s", playerCount, maxclients),
                             va("%u", ping),
                             NULL);
     slot->status = SLOT_VALID;
