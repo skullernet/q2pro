@@ -61,6 +61,8 @@ typedef struct {
     unsigned    timestamp;
     uint32_t    color;
     char        name[1];
+    bool        hasBots;
+    int         numBots;
 } serverslot_t;
 
 typedef struct {
@@ -164,6 +166,7 @@ static void FreeSlot(serverslot_t *slot)
         Z_Free(slot->rules[i]);
     for (i = 0; i < slot->numPlayers; i++)
         Z_Free(slot->players[i]);
+
     Z_Free(slot);
 }
 
@@ -241,6 +244,29 @@ void UI_StatusEvent(const serverStatus_t *status)
 
     // see if already added
     slot = FindSlot(&net_from, &i);
+
+    #ifdef USE_AQTION
+    const char *am = "No";
+    int ambci = 0;
+    static char hasBotsCheck[128];
+	hasBotsCheck[0] = 0;
+    static char botsCountCheck[128];
+	botsCountCheck[0] = 0;
+
+    Q_strncpyz(hasBotsCheck, Info_ValueForKey(status->infostring, "am"), sizeof(hasBotsCheck));
+    Q_strncpyz(botsCountCheck, Info_ValueForKey(status->infostring, "am_botcount"), sizeof(botsCountCheck));
+
+    if (hasBotsCheck == NULL || COM_IsWhite(hasBotsCheck) || hasBotsCheck == 0) {
+        slot->hasBots = false;
+    } else {
+        ambci = atoi(botsCountCheck);
+        slot->numBots = ambci;
+        playerCount = status->numPlayers + slot->numBots;
+        slot->hasBots = true;
+        am = "Yes";
+    }
+    #endif
+
     if (!slot) {
         // reply to broadcast, create new slot
         if (m_servers.list.numItems >= MAX_STATUS_SERVERS) {
@@ -255,20 +281,6 @@ void UI_StatusEvent(const serverStatus_t *status)
         timestamp = slot->timestamp;
         FreeSlot(slot);
     }
-
-    #ifdef USE_AQTION
-    const char *am;
-    int ambci = 0;
-
-    if (atoi(Info_ValueForKey(status->infostring, "am")) > 0) {
-        ambci = atoi(Info_ValueForKey(status->infostring, "am_botcount"));
-        am = "Yes";
-        playerCount = (status->numPlayers + ambci);
-    } else {
-        am = "No";
-        playerCount = status->numPlayers;
-    }
-    #endif
 
     host = Info_ValueForKey(info, "hostname");
     if (COM_IsWhite(host)) {
@@ -319,20 +331,15 @@ void UI_StatusEvent(const serverStatus_t *status)
             UI_FormatColumns(0, key, value, NULL);
     }
 
-    if (atoi(Info_ValueForKey(status->infostring, "am")) > 0) {
-        // Do not try to list player names in a Bot server
-        return;
-    } else {
-        slot->numPlayers = status->numPlayers;
-        for (i = 0; i < status->numPlayers; i++) {
-            slot->players[i] =
-                UI_FormatColumns(0,
-                                va("%d", status->players[i].score),
-                                va("%d", status->players[i].ping),
-                                status->players[i].name,
-                                NULL);
-            }
-    }
+    slot->numPlayers = status->numPlayers;
+    for (i = 0; i < status->numPlayers; i++) {
+        slot->players[i] =
+            UI_FormatColumns(0,
+                            va("%d", status->players[i].score),
+                            va("%d", status->players[i].ping),
+                            status->players[i].name,
+                            NULL);
+        }
 
     slot->timestamp = timestamp;
 
