@@ -510,7 +510,7 @@ extern cvar_t   *cl_noglow;
 extern cvar_t   *cl_nolerp;
 
 //STEPSOUND
-extern cvar_t   *cl_new_movement_sounds;
+extern cvar_t   *cl_enhanced_footsteps;
 
 #if USE_DEBUG
 #define SHOWNET(level, ...) \
