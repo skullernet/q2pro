@@ -29,7 +29,7 @@ env:
     -Dwindows-crash-dumps=disabled
     -Dwrap_mode=nofallback
 
-  MESON_ARGS_LINUX_NONWAYLAND: >-
+  MESON_ARGS_LINUX_X11: >-
     -Dwindows-crash-dumps=disabled
     -Dwayland=disabled
     -Dwrap_mode=nofallback
@@ -113,7 +113,7 @@ jobs:
             builddir/q2proded.exe
             builddir/gamex86_64.dll
 
-  linux64-nonwayland:
+  linux64-x11:
     runs-on: ubuntu-20.04
     #runs-on: [self-hosted, x86]
     strategy:
@@ -133,7 +133,7 @@ jobs:
 
       - name: Build
         run: |
-          meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_LINUX_NONWAYLAND }} builddir
+          meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_LINUX_X11 }} builddir
           meson compile -C builddir
         env:
           CC: ${{ matrix.cc }}
