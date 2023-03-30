@@ -61,6 +61,8 @@ typedef struct {
     unsigned    timestamp;
     uint32_t    color;
     char        name[1];
+    bool        hasBots;
+    int         numBots;
 } serverslot_t;
 
 typedef struct {
@@ -84,6 +86,7 @@ static m_servers_t  m_servers;
 static cvar_t   *ui_sortservers;
 static cvar_t   *ui_colorservers;
 static cvar_t   *ui_pingrate;
+static cvar_t   *ui_colorpingmax;
 
 static void UpdateSelection(void)
 {
@@ -163,6 +166,7 @@ static void FreeSlot(serverslot_t *slot)
         Z_Free(slot->rules[i]);
     for (i = 0; i < slot->numPlayers; i++)
         Z_Free(slot->players[i]);
+
     Z_Free(slot);
 }
 
@@ -188,8 +192,10 @@ static serverslot_t *FindSlot(const netadr_t *search, int *index_p)
 
 static uint32_t ColorForStatus(const serverStatus_t *status, unsigned ping)
 {
+    ui_colorpingmax = Cvar_Get("ui_colorpingmax", "50", 0);
+    
     if (atoi(Info_ValueForKey(status->infostring, "needpass")) >= 1)
-        return uis.color.disabled.u32;
+        return U32_RED;
 
     if (atoi(Info_ValueForKey(status->infostring, "anticheat")) >= 2)
         return uis.color.disabled.u32;
@@ -197,8 +203,17 @@ static uint32_t ColorForStatus(const serverStatus_t *status, unsigned ping)
     if (Q_stricmp(Info_ValueForKey(status->infostring, "NoFake"), "ENABLED") == 0)
         return uis.color.disabled.u32;
 
-    if (ping < 30)
+    if (atoi(Info_ValueForKey(status->infostring, "am")) > 0)
+        return U32_MAGENTA;
+    
+    if (ping > (ui_colorpingmax->value * 3))
+        return U32_YELLOW;
+
+    if (ping <= ui_colorpingmax->value)
         return U32_GREEN;
+
+     if (atoi(Info_ValueForKey(status->infostring, "sv_antilag")) > 0)
+        return U32_CYAN;
 
     return U32_WHITE;
 }
@@ -214,12 +229,13 @@ void UI_StatusEvent(const serverStatus_t *status)
 {
     serverslot_t *slot;
     char *hostname;
-    const char *host, *mod, *map, *maxclients;
+    const char *host, *map, *maxclients;
     unsigned timestamp, ping;
     const char *info = status->infostring;
     char key[MAX_INFO_STRING];
     char value[MAX_INFO_STRING];
     int i;
+    int playerCount = status->numPlayers;
 
     // ignore unless menu is up
     if (!m_servers.args) {
@@ -228,6 +244,29 @@ void UI_StatusEvent(const serverStatus_t *status)
 
     // see if already added
     slot = FindSlot(&net_from, &i);
+
+    #ifdef USE_AQTION
+    const char *am = "No";
+    int ambci = 0;
+    static char hasBotsCheck[128];
+	hasBotsCheck[0] = 0;
+    static char botsCountCheck[128];
+	botsCountCheck[0] = 0;
+
+    Q_strncpyz(hasBotsCheck, Info_ValueForKey(status->infostring, "am"), sizeof(hasBotsCheck));
+    Q_strncpyz(botsCountCheck, Info_ValueForKey(status->infostring, "am_botcount"), sizeof(botsCountCheck));
+
+    if (hasBotsCheck == NULL || COM_IsWhite(hasBotsCheck) || hasBotsCheck == 0) {
+        slot->hasBots = false;
+    } else {
+        ambci = atoi(botsCountCheck);
+        slot->numBots = ambci;
+        playerCount = status->numPlayers + slot->numBots;
+        slot->hasBots = true;
+        am = "Yes";
+    }
+    #endif
+
     if (!slot) {
         // reply to broadcast, create new slot
         if (m_servers.list.numItems >= MAX_STATUS_SERVERS) {
@@ -248,11 +287,6 @@ void UI_StatusEvent(const serverStatus_t *status)
         host = hostname;
     }
 
-    mod = Info_ValueForKey(info, "game");
-    if (COM_IsWhite(mod)) {
-        mod = "baseq2";
-    }
-
     map = Info_ValueForKey(info, "mapname");
     if (COM_IsWhite(map)) {
         map = "???";
@@ -269,11 +303,18 @@ void UI_StatusEvent(const serverStatus_t *status)
     ping = com_eventTime - timestamp;
     if (ping > 999)
         ping = 999;
-
-    slot = UI_FormatColumns(SLOT_EXTRASIZE, host, mod, map,
+    
+    #ifdef USE_AQTION
+    slot = UI_FormatColumns(SLOT_EXTRASIZE, host, am, map,
+                            va("%d/%s", playerCount, maxclients),
+                            va("%u", ping),
+                            NULL);
+    #else
+    slot = UI_FormatColumns(SLOT_EXTRASIZE, host, am, map,
                             va("%d/%s", status->numPlayers, maxclients),
                             va("%u", ping),
                             NULL);
+    #endif
     slot->status = SLOT_VALID;
     slot->address = net_from;
     slot->hostname = hostname;
@@ -301,11 +342,11 @@ void UI_StatusEvent(const serverStatus_t *status)
     for (i = 0; i < status->numPlayers; i++) {
         slot->players[i] =
             UI_FormatColumns(0,
-                             va("%d", status->players[i].score),
-                             va("%d", status->players[i].ping),
-                             status->players[i].name,
-                             NULL);
-    }
+                            va("%d", status->players[i].score),
+                            va("%d", status->players[i].ping),
+                            status->players[i].name,
+                            NULL);
+        }
 
     slot->timestamp = timestamp;
 
@@ -1081,7 +1122,7 @@ void M_Menu_Servers(void)
 {
     ui_sortservers = Cvar_Get("ui_sortservers", "0", 0);
     ui_sortservers->changed = ui_sortservers_changed;
-    ui_colorservers = Cvar_Get("ui_colorservers", "0", 0);
+    ui_colorservers = Cvar_Get("ui_colorservers", "1", 0);
     ui_colorservers->changed = ui_colorservers_changed;
     ui_pingrate = Cvar_Get("ui_pingrate", "0", 0);
 
@@ -1117,7 +1158,7 @@ void M_Menu_Servers(void)
     m_servers.list.columns[0].uiFlags   = UI_LEFT;
     m_servers.list.columns[0].name      = "Hostname";
     m_servers.list.columns[1].uiFlags   = UI_CENTER;
-    m_servers.list.columns[1].name      = "Mod";
+    m_servers.list.columns[1].name      = "Bots";
     m_servers.list.columns[2].uiFlags   = UI_CENTER;
     m_servers.list.columns[2].name      = "Map";
     m_servers.list.columns[3].uiFlags   = UI_CENTER;
