@@ -303,11 +303,18 @@ void UI_StatusEvent(const serverStatus_t *status)
     ping = com_eventTime - timestamp;
     if (ping > 999)
         ping = 999;
-
+    
+    #ifdef USE_AQTION
     slot = UI_FormatColumns(SLOT_EXTRASIZE, host, am, map,
                             va("%d/%s", playerCount, maxclients),
                             va("%u", ping),
                             NULL);
+    #else
+    slot = UI_FormatColumns(SLOT_EXTRASIZE, host, am, map,
+                            va("%d/%s", status->numPlayers, maxclients),
+                            va("%u", ping),
+                            NULL);
+    #endif
     slot->status = SLOT_VALID;
     slot->address = net_from;
     slot->hostname = hostname;
