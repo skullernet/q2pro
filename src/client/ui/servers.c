@@ -267,8 +267,11 @@ void UI_StatusEvent(const serverStatus_t *status)
     const char *hasBotsCheck = Info_ValueForKey(status->infostring, "am");
     const char *botsCountCheck = Info_ValueForKey(status->infostring, "am_botcount");
 
-    if (hasBotsCheck != NULL || !COM_IsWhite(hasBotsCheck) || *hasBotsCheck != '0') {
-        if (slot != NULL){
+    if (hasBotsCheck == NULL || COM_IsWhite(hasBotsCheck) || *hasBotsCheck == '0') {
+        am = "No";
+        slot->hasBots = false;
+    } else {
+        if (slot) {
             ambci = atoi(botsCountCheck);
             if (ambci < 0) {
                 ambci = 0;
@@ -277,8 +280,6 @@ void UI_StatusEvent(const serverStatus_t *status)
             playerCount = status->numPlayers + slot->numBots;
             slot->hasBots = true;
             am = "Yes";
-        } else {
-            Com_Printf("Guess what, slot is null!\n");
         }
     }
     #endif
