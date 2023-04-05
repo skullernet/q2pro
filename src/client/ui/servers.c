@@ -267,7 +267,7 @@ void UI_StatusEvent(const serverStatus_t *status)
     const char *hasBotsCheck = Info_ValueForKey(status->infostring, "am");
     const char *botsCountCheck = Info_ValueForKey(status->infostring, "am_botcount");
 
-    if (hasBotsCheck != NULL || COM_IsWhite(hasBotsCheck) || hasBotsCheck == 0) {
+    if (hasBotsCheck != NULL || !COM_IsWhite(hasBotsCheck) || *hasBotsCheck != '0') {
         if (slot != NULL){
             ambci = atoi(botsCountCheck);
             if (ambci < 0) {
