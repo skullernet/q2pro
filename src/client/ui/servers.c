@@ -62,7 +62,7 @@ typedef struct {
     uint32_t    color;
     char        name[1];
     bool        hasBots;
-    int         numBots;
+    size_t      numBots;
 } serverslot_t;
 
 typedef struct {
@@ -245,28 +245,6 @@ void UI_StatusEvent(const serverStatus_t *status)
     // see if already added
     slot = FindSlot(&net_from, &i);
 
-    #ifdef USE_AQTION
-    const char *am = "No";
-    int ambci = 0;
-    static char hasBotsCheck[128];
-	hasBotsCheck[0] = 0;
-    static char botsCountCheck[128];
-	botsCountCheck[0] = 0;
-
-    Q_strncpyz(hasBotsCheck, Info_ValueForKey(status->infostring, "am"), sizeof(hasBotsCheck));
-    Q_strncpyz(botsCountCheck, Info_ValueForKey(status->infostring, "am_botcount"), sizeof(botsCountCheck));
-
-    if (hasBotsCheck == NULL || COM_IsWhite(hasBotsCheck) || hasBotsCheck == 0) {
-        slot->hasBots = false;
-    } else {
-        ambci = atoi(botsCountCheck);
-        slot->numBots = ambci;
-        playerCount = status->numPlayers + slot->numBots;
-        slot->hasBots = true;
-        am = "Yes";
-    }
-    #endif
-
     if (!slot) {
         // reply to broadcast, create new slot
         if (m_servers.list.numItems >= MAX_STATUS_SERVERS) {
@@ -281,6 +259,29 @@ void UI_StatusEvent(const serverStatus_t *status)
         timestamp = slot->timestamp;
         FreeSlot(slot);
     }
+
+    #ifdef USE_AQTION
+    const char *am = "No";
+    size_t ambci;
+
+    const char *hasBotsCheck = Info_ValueForKey(status->infostring, "am");
+    const char *botsCountCheck = Info_ValueForKey(status->infostring, "am_botcount");
+
+    if (hasBotsCheck != NULL || COM_IsWhite(hasBotsCheck) || hasBotsCheck == 0) {
+        if (slot != NULL){
+            ambci = atoi(botsCountCheck);
+            if (ambci < 0) {
+                ambci = 0;
+            }
+            slot->numBots = ambci;
+            playerCount = status->numPlayers + slot->numBots;
+            slot->hasBots = true;
+            am = "Yes";
+        } else {
+            Com_Printf("Guess what, slot is null!\n");
+        }
+    }
+    #endif
 
     host = Info_ValueForKey(info, "hostname");
     if (COM_IsWhite(host)) {
