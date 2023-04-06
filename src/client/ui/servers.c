@@ -277,7 +277,13 @@ void UI_StatusEvent(const serverStatus_t *status)
                 ambci = 0;
             }
             slot->numBots = ambci;
-            playerCount = status->numPlayers + slot->numBots;
+
+            // Don't count bots if humans equal or outnumber ambci
+            if (playerCount >= slot->numBots) {
+                playerCount = status->numPlayers;
+            } else {
+                playerCount = status->numPlayers + slot->numBots;
+            }
             slot->hasBots = true;
             am = "Yes";
         }
@@ -978,8 +984,8 @@ static void SizeFull(void)
     m_servers.list.generic.height       = uis.height / 2 - CHAR_HEIGHT;
 
     m_servers.list.columns[0].width     = w - 26 * CHAR_WIDTH - MLIST_PADDING * 4;
-    m_servers.list.columns[1].width     = 8 * CHAR_WIDTH + MLIST_PADDING;
-    m_servers.list.columns[2].width     = 8 * CHAR_WIDTH + MLIST_PADDING;
+    m_servers.list.columns[1].width     = 4 * CHAR_WIDTH + MLIST_PADDING;
+    m_servers.list.columns[2].width     = 12 * CHAR_WIDTH + MLIST_PADDING;
     m_servers.list.columns[3].width     = 7 * CHAR_WIDTH + MLIST_PADDING;
     m_servers.list.columns[4].width     = 3 * CHAR_WIDTH + MLIST_PADDING;
 
