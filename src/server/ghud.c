@@ -2,7 +2,7 @@
 #ifdef AQTION_EXTENSION
 
 
-void SV_Ghud_Clear()
+void SV_Ghud_Clear(void)
 {
 	client_t *cl;
 	FOR_EACH_CLIENT(cl) {
