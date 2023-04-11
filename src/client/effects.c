@@ -234,6 +234,17 @@ void CL_MuzzleFlash(void)
     } else {
         S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_LOUD, 0);
     }
+
+    if (cl_dlight_hacks->integer & DLHACK_NO_MUZZLEFLASH) {
+        switch (mz.weapon) {
+        case MZ_MACHINEGUN:
+        case MZ_CHAINGUN1:
+        case MZ_CHAINGUN2:
+        case MZ_CHAINGUN3:
+            memset(dl, 0, sizeof(*dl));
+            break;
+        }
+    }
 }
 
 
