@@ -211,7 +211,6 @@ void CL_MuzzleFlash(void)
             Q_snprintf(soundname, sizeof(soundname), "weapons/mp5fire.wav");
             break;
         } else {
-        if (mp5snd) {
             Q_snprintf(soundname, sizeof(soundname), "weapons/mp5fire%i.wav", mp5snd);
             break;
         }
