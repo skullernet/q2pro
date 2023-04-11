@@ -4020,12 +4020,12 @@ static void CL_InitLocal(void)
     info_version = Cvar_Get("version", "", CVAR_USERINFO);
 
     #if USE_AQTION
-        cl_mk23_sound = Cvar_Get("cl_mk23_sound", 0, 0);
-        cl_mp5_sound = Cvar_Get("cl_mp5_sound", 0, 0);
-        cl_m4_sound = Cvar_Get("cl_m4_sound", 0, 0);
-        cl_m3_sound = Cvar_Get("cl_m3_sound", 0, 0);
-        cl_hc_sound = Cvar_Get("cl_hc_sound", 0, 0);
-        cl_ssg_sound = Cvar_Get("cl_ssg_sound", 0, 0);
+        cl_mk23_sound = Cvar_Get("cl_mk23_sound", "0", 0);
+        cl_mp5_sound = Cvar_Get("cl_mp5_sound", "0", 0);
+        cl_m4_sound = Cvar_Get("cl_m4_sound", "0", 0);
+        cl_m3_sound = Cvar_Get("cl_m3_sound", "0", 0);
+        cl_hc_sound = Cvar_Get("cl_hc_sound", "0", 0);
+        cl_ssg_sound = Cvar_Get("cl_ssg_sound", "0", 0);
 
         cl_indicators = Cvar_Get("cl_indicators", "1", 0);
     #endif

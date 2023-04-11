@@ -186,7 +186,7 @@ void CL_MuzzleFlash(void)
 
     switch (mz.weapon) {
     case MZ_BLASTER:  // MK23
-        mk23snd = (int)cl_mk23_sound->value;
+        mk23snd = atoi(cl_mk23_sound->string);
 
         if (mk23snd >= MAX_WEAPON_SOUND || mk23snd <= MIN_WEAPON_SOUND) {
             mk23snd = MIN_WEAPON_SOUND;
@@ -201,7 +201,7 @@ void CL_MuzzleFlash(void)
         }
 
 	case MZ_MACHINEGUN: // MP5/10 Submachinegun
-		mp5snd = (int)cl_mp5_sound->value;
+		mp5snd = atoi(cl_mp5_sound->string);
 
         if (mp5snd >= MAX_WEAPON_SOUND || mp5snd <= MIN_WEAPON_SOUND) {
             mp5snd = MIN_WEAPON_SOUND;
@@ -216,7 +216,7 @@ void CL_MuzzleFlash(void)
         }
 
 	case MZ_ROCKET: // M4 Assault Rifle
-		m4snd = (int)cl_m4_sound->value;
+		m4snd = atoi(cl_m4_sound->string);
 
         if (m4snd >= MAX_WEAPON_SOUND  || m4snd <= MIN_WEAPON_SOUND) {
             m4snd = MIN_WEAPON_SOUND;
@@ -231,7 +231,7 @@ void CL_MuzzleFlash(void)
         }
 
 	case MZ_SHOTGUN: // M3 Shotgun
-		m3snd = (int)cl_m3_sound->value;
+		m3snd = atoi(cl_m3_sound->string);
 
         if (m3snd >= MAX_WEAPON_SOUND  || m3snd <= MIN_WEAPON_SOUND) {
             m3snd = MIN_WEAPON_SOUND;
@@ -246,7 +246,7 @@ void CL_MuzzleFlash(void)
         }
 
 	case MZ_SSHOTGUN: // Handcannon -- needs adjustment for single barrel vs double
-		hcsnd = (int)cl_hc_sound->value;
+		hcsnd = atoi(cl_hc_sound->string);
 
         if (hcsnd >= MAX_WEAPON_SOUND  || hcsnd <= MIN_WEAPON_SOUND) {
             hcsnd = MIN_WEAPON_SOUND;
@@ -261,7 +261,7 @@ void CL_MuzzleFlash(void)
         }
         
 	case MZ_HYPERBLASTER: // SSG 3000 Sniper Rifle
-		ssgsnd = (int)cl_ssg_sound->value;
+		ssgsnd = atoi(cl_ssg_sound->string);
 
         if (ssgsnd >= MAX_WEAPON_SOUND || ssgsnd <= MIN_WEAPON_SOUND) {
             ssgsnd = MIN_WEAPON_SOUND;
