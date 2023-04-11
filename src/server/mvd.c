@@ -704,6 +704,8 @@ static void emit_frame(void)
 {
     player_packed_t *oldps, newps;
     entity_packed_t *oldes, newes;
+	entity_state_t ent_state;
+	int	ent_active;
     edict_t *ent;
     int flags, portalbytes;
     byte portalbits[MAX_MAP_PORTAL_BYTES];
@@ -760,11 +762,20 @@ static void emit_frame(void)
     MSG_WriteByte(CLIENTNUM_NONE);      // end of packetplayers
 
     // send entity states
-    for (i = 1; i < ge->num_edicts; i++) {
-        oldes = &mvd.entities[i];
-        ent = EDICT_NUM(i);
+	for (i = 1; i < ge->num_edicts; i++) {
+		oldes = &mvd.entities[i];
+		ent = EDICT_NUM(i);
 
-        if (!entity_is_active(ent)) {
+		ent_state = ent->s;
+		ent_active = entity_is_active(ent);
+
+#ifdef AQTION_EXTENSION
+		if (ent_active && GE_customizeentityforclient)
+			if (!GE_customizeentityforclient(NULL, ent, &ent_state))
+				ent_active = false;
+#endif
+
+        if (!ent_active) {
             if (oldes->number) {
                 // the old entity isn't present in the new message
                 MSG_WriteDeltaEntity(oldes, NULL, MSG_ES_FORCE);
@@ -796,7 +807,7 @@ static void emit_frame(void)
         }
 
         // quantize
-        MSG_PackEntity(&newes, &ent->s, false);
+        MSG_PackEntity(&newes, &ent_state, false);
 
         MSG_WriteDeltaEntity(oldes, &newes, flags);
 

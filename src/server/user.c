@@ -56,6 +56,11 @@ static void SV_CreateBaselines(void)
         memset(base, 0, sizeof(*base) * SV_BASELINES_PER_CHUNK);
     }
 
+#ifdef AQTION_EXTENSION
+	// clear ghud from previous level
+	memset(sv_client->ghud, 0, sizeof(ghud_element_t) * MAX_GHUDS);
+#endif
+
     for (i = 1; i < sv_client->pool->num_edicts; i++) {
         ent = EDICT_POOL(sv_client, i);
 
@@ -305,20 +310,6 @@ void SV_New_f(void)
     // create baselines for this client
     SV_CreateBaselines();
 
-
-#ifdef AQTION_EXTENSION
-	// make sure we send initial hud elements that were created before connection
-
-	int i;
-	for (i = 0; i < MAX_GHUDS; i++)
-	{
-		if (!(svs.ghud[i].flags & GHF_INUSE))
-			break;
-
-		sv_client->ghud_updateflags[i] = 0xFF;
-	}
-#endif
-
     // send the serverdata
     MSG_WriteByte(svc_serverdata);
     MSG_WriteLong(sv_client->protocol);
@@ -426,6 +417,42 @@ void SV_New_f(void)
 
 		SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
 	}
+
+#ifdef AQTION_EXTENSION
+	if (svs.cvarsync_length && sv_client->protocol == PROTOCOL_VERSION_AQTION && sv_client->version >= PROTOCOL_VERSION_AQTION_CVARSYNC)
+	{
+		MSG_WriteByte(svc_extend);
+		MSG_WriteByte(svc_cvarsync);
+		MSG_WriteByte(svs.cvarsync_length);
+		for (int i = 0; i < svs.cvarsync_length; i++)
+		{
+			cvarsync_t *var = &svs.cvarsync_list[i];
+			MSG_WriteString(var->name);
+			MSG_WriteString(var->value);
+
+			if (sv_client->edict)
+			{
+				strcpy(sv_client->edict->client->cl_cvar[i], var->value);
+
+				if (GE_CvarSync_Updated) // poke game dll to tell it a cvar was updated
+					GE_CvarSync_Updated(i, sv_client->edict);
+			}
+		}
+
+		SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
+	}
+	else if (sv_client->edict)
+	{
+		for (int i = 0; i < svs.cvarsync_length; i++)
+		{
+			cvarsync_t *var = &svs.cvarsync_list[i];
+			strcpy(sv_client->edict->client->cl_cvar[i], var->value);
+
+			if (GE_CvarSync_Updated) // poke game dll to tell it a cvar was updated
+				GE_CvarSync_Updated(i, sv_client->edict);
+		}
+	}
+#endif
 }
 
 /*
@@ -799,6 +826,55 @@ static void SV_PacketdupHack_f(void)
 }
 #endif
 
+static void SV_CvarSync_f(void)
+{
+	if (!sv_client->edict->client)
+		return;
+
+	if (Cmd_Argc() > 2) {
+		char varname[CVARSYNC_MAX];
+		Q_strlcpy(varname, Cmd_Argv(1), CVARSYNC_MAX);
+		varname[CVARSYNC_MAX - 1] = 0;
+
+		for (int i = 0; i < svs.cvarsync_length; i++)
+		{
+			cvarsync_t *var = &svs.cvarsync_list[i];
+			if (strcmp(var->name, varname))
+				continue;
+
+			strcpy(sv_client->edict->client->cl_cvar[i], Cmd_Argv(2));
+
+			if (GE_CvarSync_Updated) // poke game dll to tell it a cvar was updated
+				GE_CvarSync_Updated(i, sv_client->edict);
+
+			SV_ClientPrintf(sv_client, PRINT_HIGH, "cvarsync: set %s to %s\n", varname, sv_client->edict->client->cl_cvar[i]);
+		}
+	}
+	else if (Cmd_Argc() == 2)
+	{
+		char varname[CVARSYNC_MAX];
+		Q_strlcpy(varname, Cmd_Argv(1), CVARSYNC_MAX);
+		varname[CVARSYNC_MAX - 1] = 0;
+
+		for (int i = 0; i < svs.cvarsync_length; i++)
+		{
+			cvarsync_t *var = &svs.cvarsync_list[i];
+			if (strcmp(var->name, varname))
+				continue;
+
+			SV_ClientPrintf(sv_client, PRINT_HIGH, "cvarsync: %s is currently set to %s\n", varname, sv_client->edict->client->cl_cvar[i]);
+		}
+	}
+	else
+	{
+		for (int i = 0; i < svs.cvarsync_length; i++)
+		{
+			cvarsync_t *var = &svs.cvarsync_list[i];
+			SV_ClientPrintf(sv_client, PRINT_HIGH, "cvarsync: %s = %s\n", var->name, sv_client->edict->client->cl_cvar[i]);
+		}
+	}
+}
+
 static bool match_cvar_val(const char *s, const char *v)
 {
     switch (*s++) {
@@ -946,6 +1022,9 @@ static const ucmd_t ucmds[] = {
 #endif
     { "aclist", SV_AC_List_f },
     { "acinfo", SV_AC_Info_f },
+#ifdef AQTION_EXTENSION
+	{ "cvarsync", SV_CvarSync_f },
+#endif
 
     { NULL, NULL }
 };
@@ -1519,6 +1598,7 @@ The current net_message is parsed for the given client
 void SV_ExecuteClientMessage(client_t *client)
 {
     int c;
+	int index;
 
     sv_client = client;
     sv_player = sv_client->edict;
@@ -1538,7 +1618,7 @@ void SV_ExecuteClientMessage(client_t *client)
         if (c == -1)
             break;
 
-        if (client->protocol == PROTOCOL_VERSION_Q2PRO) {
+        if (client->protocol == PROTOCOL_VERSION_Q2PRO || client->protocol == PROTOCOL_VERSION_AQTION) {
             switch (c & SVCMD_MASK) {
             case clc_move_nodelta:
             case clc_move_batched:
@@ -1589,6 +1669,20 @@ badbyte:
 
             SV_ParseDeltaUserinfo();
             break;
+
+		case clc_cvarsync:
+			if (client->protocol != PROTOCOL_VERSION_AQTION)
+				goto badbyte;
+#ifdef AQTION_EXTENSION
+			index = MSG_ReadByte();
+			MSG_ReadString(sv_player->client->cl_cvar[index], CVARSYNC_MAXSIZE);
+
+			if (GE_CvarSync_Updated) // poke game dll to tell it a cvar was updated
+				GE_CvarSync_Updated(index, sv_player);
+#else
+			goto badbyte;
+#endif
+			break;
         }
 
 nextcmd:

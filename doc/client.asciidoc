@@ -976,7 +976,7 @@ m_filter::
 Miscellaneous
 ~~~~~~~~~~~~~
 
-cl_new_movement_sounds::
+cl_enhanced_footsteps::
     Specifies whether to play the original four step sounds (step1.wav ... 
     step4.wav) and landing sound (land1.wav). Or new improved twelve step
     sounds and eight landing sounds.

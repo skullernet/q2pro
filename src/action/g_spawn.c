@@ -1747,7 +1747,7 @@ void SP_worldspawn (edict_t * ent)
 
 	sm_meat_index = gi.modelindex("models/objects/gibs/sm_meat/tris.md2");
 	gi.modelindex("models/objects/gibs/skull/tris.md2");
-	gi.modelindex("models/objects/gibs/head2/tris.m`d2");
+	gi.modelindex("models/objects/gibs/head2/tris.md2");
 
 
 //

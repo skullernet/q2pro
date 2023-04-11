@@ -73,6 +73,7 @@ void CL_SendStatusRequest(const netadr_t *address);
 demoInfo_t *CL_GetDemoInfo(const char *path, demoInfo_t *info);
 bool CL_CheatsOK(void);
 void CL_SetSky(void);
+void CL_SendCvarSync(cvar_t *var);
 
 #if USE_CURL
 int HTTP_FetchFile(const char *url, void **data);

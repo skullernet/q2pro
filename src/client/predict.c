@@ -254,7 +254,11 @@ void CL_PredictMovement(void)
     }
 
 
-	if (cl.predicted_viewheight_frame != cl.frame.number)
+	if (cl.predicted_viewheight_frame != cl.frame.number
+#if USE_FPS
+		&& cl.frame.number == cl.keyframe.number
+#endif
+		)
 	{
 		cl.predicted_viewheight_frame = cl.frame.number;
 		cl.predicted_viewheight[1] = cl.predicted_viewheight[0];

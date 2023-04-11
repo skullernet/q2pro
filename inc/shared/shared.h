@@ -726,6 +726,9 @@ typedef struct cvar_s {
 
 // ------ new stuff ------
 #if USE_CLIENT || USE_SERVER
+#ifdef AQTION_EXTENSION
+	int			sync_index;
+#endif
     int         integer;
     char        *default_string;
     xchanged_t      changed;
@@ -1026,6 +1029,9 @@ typedef struct {
 #define RDF_UVGOGGLES       8
 //ROGUE
 
+#define RF_INDICATOR			(RF_TRANSLUCENT | RF_FULLBRIGHT | RF_DEPTHHACK)
+#define IS_INDICATOR(rflags)	((rflags & RF_INDICATOR) == RF_INDICATOR)
+
 //
 // muzzle flashes / player effects
 //
@@ -1256,7 +1262,8 @@ typedef enum {
 #define ATTN_STATIC             3	// diminish very rapidly with distance
 
 // adjustable weapon sounds
-#define MAX_WEAPON_SOUND        9
+#define MIN_WEAPON_SOUND        0
+#define MAX_WEAPON_SOUND        8
 
 // player_state->stats[] indexes
 #define STAT_HEALTH_ICON        0
@@ -1477,3 +1484,14 @@ typedef struct {
 
     short       stats[MAX_STATS];       // fast status bar updates
 } player_state_t;
+
+
+// Reki : Cvar Sync info shared between engine and game
+#define CVARSYNC_MAXSIZE	64
+#define CVARSYNC_MAX		32
+typedef struct {
+	char name[CVARSYNC_MAXSIZE];
+	char value[CVARSYNC_MAXSIZE];
+} cvarsync_t;
+
+typedef char cvarsyncvalue_t[CVARSYNC_MAXSIZE];

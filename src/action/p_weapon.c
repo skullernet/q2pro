@@ -2126,7 +2126,7 @@ void PlayWeaponSound(edict_t* ent)
 		MuzzleFlash(ent, MZ_MACHINEGUN);
 		break;
 	case MZ_MACHINEGUN:
-		gi.sound(ent, CHAN_WEAPON, gi.soundindex("weapons/mp5fire1.wav"), 1, ATTN_LOUD, 0);
+		gi.sound(ent, CHAN_WEAPON, gi.soundindex("weapons/mp5fire.wav"), 1, ATTN_LOUD, 0);
 		MuzzleFlash(ent, MZ_MACHINEGUN);
 		break;
 	case MZ_ROCKET:

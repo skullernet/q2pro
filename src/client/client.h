@@ -288,6 +288,8 @@ typedef struct client_state_s {
 
     char    weaponModels[MAX_CLIENTWEAPONMODELS][MAX_QPATH];
     int     numWeaponModels;
+
+	cvarsync_t cvarsync[CVARSYNC_MAX];
 } client_state_t;
 
 extern client_state_t   cl;
@@ -512,7 +514,7 @@ extern cvar_t   *cl_noglow;
 extern cvar_t   *cl_nolerp;
 
 //STEPSOUND
-extern cvar_t   *cl_new_movement_sounds;
+extern cvar_t   *cl_enhanced_footsteps;
 
 #if USE_DEBUG
 #define SHOWNET(level, ...) \
@@ -564,6 +566,9 @@ extern cvar_t    *cl_m3_sound;
 extern cvar_t    *cl_hc_sound;
 extern cvar_t    *cl_ssg_sound;
 #endif
+
+// enable/disable drawing of team indicators (assuming they are present)
+extern cvar_t   *cl_indicators;
 
 //
 // userinfo
