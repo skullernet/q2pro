@@ -207,10 +207,10 @@ void CL_MuzzleFlash(void)
             mp5snd = MIN_WEAPON_SOUND;
         }
 
-        // if (mp5snd == 0) {
-        //     Q_snprintf(soundname, sizeof(soundname), "weapons/mp5fire.wav");
-        //     break;
-        // } else {
+        if (mp5snd == 0) {
+            Q_snprintf(soundname, sizeof(soundname), "weapons/mp5fire.wav");
+            break;
+        } else {
         if (mp5snd) {
             Q_snprintf(soundname, sizeof(soundname), "weapons/mp5fire%i.wav", mp5snd);
             break;
