@@ -87,6 +87,21 @@ static cvar_t   *scr_chathud_time;
 static cvar_t   *scr_chathud_x;
 static cvar_t   *scr_chathud_y;
 
+static cvar_t   *xhair_dot;
+static cvar_t   *xhair_length;
+static cvar_t   *xhair_gap;
+static cvar_t   *xhair_firing_error;
+static cvar_t   *xhair_movement_error;
+static cvar_t   *xhair_deployed_weapon_gap;
+static cvar_t   *xhair_thickness;
+static cvar_t   *xhair_scale;
+static cvar_t   *xhair_x;
+static cvar_t   *xhair_y;
+static cvar_t   *xhair_elasticity;
+static cvar_t   *xhair_enabled;
+
+static cvar_t   *r_maxfps;
+
 static cvar_t   *ch_health;
 static cvar_t   *ch_red;
 static cvar_t   *ch_green;
@@ -1258,6 +1273,21 @@ void SCR_Init(void)
     scr_chathud_x = Cvar_Get("scr_chathud_x", "8", 0);
     scr_chathud_y = Cvar_Get("scr_chathud_y", "-64", 0);
 
+    xhair_dot = Cvar_Get("xhair_dot", "1",0);
+    xhair_length = Cvar_Get("xhair_length","4",0);
+    xhair_gap = Cvar_Get("xhair_gap", "10",0);
+    xhair_firing_error = Cvar_Get("xhair_firing_error","1",0);
+    xhair_movement_error = Cvar_Get("xhair_movement_error","1",0);
+    xhair_deployed_weapon_gap = Cvar_Get("xhair_deployed_weapon_gap","1",0);
+    xhair_thickness = Cvar_Get("xhair_thickness","1",0);
+    xhair_scale = Cvar_Get("xhair_scale","1",0);
+    xhair_x = Cvar_Get("xhair_x","0",0);
+    xhair_y = Cvar_Get("xhair_y","0",0);
+    xhair_elasticity = Cvar_Get("xhair_elasticity","1",0);
+    xhair_enabled = Cvar_Get("xhair_enabled","0",0);
+
+    r_maxfps = Cvar_Get("r_maxfps","0",0);
+
     ch_health = Cvar_Get("ch_health", "0", 0);
     ch_health->changed = scr_crosshair_changed;
     ch_red = Cvar_Get("ch_red", "1", 0);
@@ -1874,8 +1904,178 @@ static void SCR_DrawLoading(void)
     R_SetScale(1.0f);
 }
 
-static void SCR_DrawCrosshair(void)
-{
+typedef struct {
+    char wepname[64];
+    int gap;
+    float moving_inacc;
+    float duck_acc;
+    int firing_frame;
+    int firing_frame_2;
+    float firing_scale;
+} xhair_weapon_cfg_t;
+
+typedef struct {
+    int gap, length;
+} xhair_state_t;
+
+static const int XHAIR_MAX_GAP = 1024;
+static const int XHAIR_MAX_LENGTH = 648;
+
+static xhair_weapon_cfg_t xhair_weapon_cfgs[9] = {
+    {"models/weapons/v_m4/tris.md2", 5, 2.25, 0.65, 12, 11, 1.1},
+    {"models/weapons/v_blast/tris.md2", -2, 3, 0.7, 11, 12, 2.25},
+    {"models/weapons/v_machn/tris.md2", 1, 2.25, 0.74, 12, 11, 1.25},
+    {"models/weapons/v_knife/tris.md2", XHAIR_MAX_GAP, 1, 1, -1, -1, 1},
+    {"models/weapons/v_sniper/tris.md2", XHAIR_MAX_GAP, 1, 1, -1, -1, 1},
+    {"models/weapons/v_shotg/tris.md2", 50, 1, 1, 9, -1, 1},
+    {"models/weapons/v_cannon/tris.md2", 180, 1, 1, 8, -1, 1},
+    {"models/weapons/v_dual/tris.md2", 3, 2.25, 0.7, 11, 12, 1},
+    {"models/weapons/v_handgr/tris.md2", XHAIR_MAX_GAP, 1, 1, -1, -1, 1}
+};
+static int XHAIR_GetWeaponIndex(void) {
+    char* wepname = cl.configstrings[CS_MODELS + cl.frame.ps.gunindex];
+    for(int i=0; i<9; i++) {
+        if (Q_stricmp(wepname, xhair_weapon_cfgs[i].wepname) == 0) {
+            return i;
+        }
+    }
+    return 3; //fallback gives {XHAIR_MAX_GAP,1,1}
+}
+static xhair_state_t XHAIR_ApplyWeaponGap(xhair_state_t xh, int wep_index) {
+    xh.gap += xhair_weapon_cfgs[wep_index].gap
+        *cls.frametime*1000;
+    if (xhair_weapon_cfgs[wep_index].gap == XHAIR_MAX_GAP) {
+        xh.length = XHAIR_MAX_LENGTH;
+    }
+    return xh; 
+}
+
+static xhair_state_t XHAIR_ApplyMovingInaccuracy(xhair_state_t xh, int wep_index) {
+    byte pm_flags = cl.frame.ps.pmove.pm_flags;
+    pmove_state_t* pm = &cl.frame.ps.pmove;
+    static const short velo_boundary = 20;
+    if (pm_flags & PMF_DUCKED) {
+        xh.gap *= 1000*xhair_weapon_cfgs[wep_index].duck_acc*xhair_firing_error->value
+            *cls.frametime;
+    } else {
+        if (!(pm_flags & PMF_ON_GROUND)) {
+            
+        }
+        if (fabs(pm->velocity[0]) > velo_boundary 
+            || fabs(pm->velocity[1]) > velo_boundary) {
+            xh.gap += 5000*xhair_weapon_cfgs[wep_index].moving_inacc*xhair_firing_error->value
+                *cls.frametime;
+        }
+    }
+    return xh;
+}
+
+static int XHAIR_WeaponJustFired(int wep_index) {
+    return (cl.frame.ps.gunframe == xhair_weapon_cfgs[wep_index].firing_frame);
+}
+
+static int XHAIR_WeaponIsFiring(int wep_index) {
+    return (cl.frame.ps.gunframe == xhair_weapon_cfgs[wep_index].firing_frame
+        ||  cl.frame.ps.gunframe == xhair_weapon_cfgs[wep_index].firing_frame_2);
+}
+
+static xhair_state_t XHAIR_ApplyFiringInaccuracy(xhair_state_t xh, int wep_index) {
+    static int spray = 0;
+    if (spray > 0) {
+        spray -= 1800*cls.frametime;
+    }
+    if (XHAIR_WeaponJustFired(wep_index)) {
+        xh.gap += xhair_weapon_cfgs[wep_index].firing_scale*
+            2850*spray/425*xhair_firing_error->value * cls.frametime;
+        xh.gap *= xhair_weapon_cfgs[wep_index].firing_scale*
+            1300*xhair_firing_error->value * cls.frametime;
+        xh.length *= 750*spray/60*xhair_firing_error->value * cls.frametime;
+        spray += 4000*cls.frametime;
+    }
+    
+    //Con_Printf("%d\n",cl.frame.ps.gunframe);
+    return xh;
+}
+static void SCR_DrawXhair(void) {
+    if (xhair_dot->integer) {
+        R_DrawFill32(scr.hud_width/2+xhair_x->integer,
+            scr.hud_height/2+xhair_y->integer,xhair_thickness->integer,
+            xhair_thickness->integer, scr.crosshair_color.u32);
+    }
+    static float gap = 5;
+    static float length = 4;
+    static float xh_elasticity = 0.05;
+    xhair_state_t xh;
+    xh.gap = xhair_gap->integer;
+    xh.length = xhair_length->integer;
+
+    int current_maxfps = r_maxfps->integer;
+    if (current_maxfps == 0) current_maxfps = 1000;
+    if (current_maxfps < 125) current_maxfps = 125;
+    if (current_maxfps > 1000) current_maxfps = 1000;
+
+    int wep_index = XHAIR_GetWeaponIndex();
+
+    //fix for alt-tab glitch
+    if (fabs(gap) > XHAIR_MAX_GAP*1.5
+        || fabs(length) > XHAIR_MAX_LENGTH*2
+        || fabs(xh_elasticity) > 1 ) {
+        xh_elasticity = .75;
+        gap = XHAIR_MAX_GAP;
+        length = XHAIR_MAX_LENGTH; //I think this is a cool effect :P
+    }
+
+    for (float repeat=0; repeat<500.0f/current_maxfps; repeat++) {
+        
+        if (xhair_deployed_weapon_gap->integer) 
+            xh = XHAIR_ApplyWeaponGap(xh,wep_index);
+        if (xhair_firing_error->value)
+            xh = XHAIR_ApplyFiringInaccuracy(xh,wep_index);
+        if (xhair_movement_error->value)
+            xh = XHAIR_ApplyMovingInaccuracy(xh,wep_index);        
+        
+        if (XHAIR_WeaponIsFiring(wep_index) && xhair_firing_error->value) {
+            xh_elasticity += (0.04*xhair_elasticity->value - xh_elasticity) * cls.frametime*500;
+        } else {
+            xh_elasticity += (0.02*xhair_elasticity->value - xh_elasticity) * cls.frametime*500;
+        }
+        gap += (xh.gap - gap) * xh_elasticity * cls.frametime*500;
+        length += (xh.length - length) * xh_elasticity * cls.frametime*500;
+    }
+
+    int rgap = (int)(round(gap));
+    int rlength = (int)(round(length));
+    if (xhair_weapon_cfgs[wep_index].gap != XHAIR_MAX_GAP) {
+        /*
+        i       rem     quot    x       y       w       h 
+        0       0       0       0       gap     1       length
+        1       1       0       gap     0       length  1
+        2       0       1       0      -gap-len 1       length
+        3       1       1      -gap-len 0       length  1
+        */
+        for (int i=0; i<4; i++) {
+            int xh_x = scr.hud_width/2 + xhair_x->integer;
+            int xh_y = scr.hud_height/2 + xhair_y->integer;
+            int xh_w;
+            int xh_h;
+            int quot = i / 2;
+            int rem  = i % 2;
+            if (quot) {
+                xh_x -= (rgap+rlength)*rem;
+                xh_y -= (rgap+rlength)*(1-rem);
+                xh_w = rem ? rlength : xhair_thickness->integer;
+                xh_h = rem ? xhair_thickness->integer : rlength;
+            } else {
+                xh_x += (1+rgap)*(1-rem);
+                xh_y += (1+rgap)*rem;
+                xh_h = rem ? rlength : xhair_thickness->integer;
+                xh_w = rem ? xhair_thickness->integer : rlength;
+            }
+            R_DrawFill32(xh_x,xh_y,xh_w,xh_h,scr.crosshair_color.u32);
+        }
+    } 
+}
+static void SCR_DrawClassicCrosshair(void) {
     int x, y;
 
     if (!scr_crosshair->integer)
@@ -1883,14 +2083,21 @@ static void SCR_DrawCrosshair(void)
 
     x = scr.hud_x + (scr.hud_width - scr.crosshair_width) / 2;
     y = scr.hud_y + (scr.hud_height - scr.crosshair_height) / 2;
-
-    R_SetColor(scr.crosshair_color.u32);
-
+    
     R_DrawStretchPic(x + ch_x->integer,
                      y + ch_y->integer,
                      scr.crosshair_width,
                      scr.crosshair_height,
                      scr.crosshair_pic);
+}
+static void SCR_DrawCrosshair(void)
+{
+    R_SetColor(scr.crosshair_color.u32);
+    if (xhair_enabled->integer) {
+        SCR_DrawXhair();
+    } else {
+        SCR_DrawClassicCrosshair();
+    }
 }
 
 #ifdef AQTION_EXTENSION
