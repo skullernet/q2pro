@@ -772,7 +772,7 @@ static void GL_Register(void)
     gl_doublelight_entities = Cvar_Get("gl_doublelight_entities", "1", 0);
     gl_fontshadow = Cvar_Get("gl_fontshadow", "0", 0);
     gl_shaders = Cvar_Get("gl_shaders", (gl_config.caps & QGL_CAP_SHADER) ? "1" : "0", CVAR_REFRESH);
-    gl_waterwarp = Cvar_Get("gl_waterwarp", "1", 0);
+    gl_waterwarp = Cvar_Get("gl_waterwarp", "0", 0);
     gl_swapinterval = Cvar_Get("gl_swapinterval", "1", CVAR_ARCHIVE);
     gl_swapinterval->changed = gl_swapinterval_changed;
 
