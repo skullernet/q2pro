@@ -807,7 +807,10 @@ static void CL_AddPacketEntities(void)
                 if (!(cl_disable_particles->integer & NOPART_ROCKET_TRAIL)) {
                     CL_RocketTrail(cent->lerp_origin, ent.origin, cent);
                 }
-                V_AddLight(ent.origin, 200, 1, 1, 0);
+                if (cl_dlight_hacks->integer & DLHACK_ROCKET_COLOR)
+                    V_AddLight(ent.origin, 200, 1, 0.23f, 0);
+                else
+                    V_AddLight(ent.origin, 200, 1, 1, 0);
             } else if (effects & EF_BLASTER) {
                 if (effects & EF_TRACKER) {
                     CL_BlasterTrail2(cent->lerp_origin, ent.origin);

@@ -121,8 +121,8 @@ void OGG_Play(void)
     if (!ogg_enable->integer)
         return;
 
-    int track = atoi(cl.configstrings[CS_CDTRACK]);
-    if (track < 1)
+    const char *s = cl.configstrings[CS_CDTRACK];
+    if (!*s || !strcmp(s, "0"))
         return;
 
     if (ogg_shuffle->integer && trackcount) {
@@ -130,8 +130,10 @@ void OGG_Play(void)
             shuffle();
         Q_strlcpy(ogg.path, tracklist[trackindex], sizeof(ogg.path));
         trackindex = (trackindex + 1) % trackcount;
+    } else if (COM_IsUint(s)) {
+        Q_snprintf(ogg.path, sizeof(ogg.path), "music/track%02d.ogg", atoi(s));
     } else {
-        Q_snprintf(ogg.path, sizeof(ogg.path), "music/track%02d.ogg", track);
+        Q_snprintf(ogg.path, sizeof(ogg.path), "music/%s.ogg", s);
     }
 
     int ret = FS_OpenFile(ogg.path, &ogg.f, FS_MODE_READ);
