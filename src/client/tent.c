@@ -94,11 +94,9 @@ void CL_RegisterTEntSounds(void)
     for (size_t j = 0; j < guncount; j++) {
         Q_snprintf(name, sizeof(name), "weapons/%s.wav", gunsounds[j]);
         S_RegisterSound(name);
-        Com_Printf("I registered sound weapons/%s.wav\n", gunsounds[j]);
         for (i = MIN_WEAPON_SOUND; i < MAX_WEAPON_SOUND; i++) {
             Q_snprintf(name, sizeof(name), "weapons/%s%i.wav", gunsounds[j], i + 1);
             S_RegisterSound(name);
-            Com_Printf("I registered sound weapons/%s%i.wav\n", gunsounds[j], i + 1);
         }
     }
 }
