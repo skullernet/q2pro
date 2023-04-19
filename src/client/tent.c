@@ -88,21 +88,19 @@ void CL_RegisterTEntSounds(void)
     cl_sfx_disrexp = S_RegisterSound("weapons/disrupthit.wav");
 
     // Register all AQtion gun sounds
-    for (i = MIN_WEAPON_SOUND; i < MAX_WEAPON_SOUND; i++) {
-        Q_snprintf(name, sizeof(name), "weapons/mk23fire%i.wav", i + 1);
-        Q_snprintf(name, sizeof(name), "weapons/mp5fire%i.wav", i + 1);
-        Q_snprintf(name, sizeof(name), "weapons/m4a1fire%i.wav", i + 1);
-        Q_snprintf(name, sizeof(name), "weapons/shotgf1b%i.wav", i + 1);
-        Q_snprintf(name, sizeof(name), "weapons/cannon_fire%i.wav", i + 1);
-        Q_snprintf(name, sizeof(name), "weapons/ssgfire%i.wav", i + 1);
-        cl_sfx_footsteps[i] = S_RegisterSound(name);
+    char gunsounds[][64] = {"mk23fire", "mp5fire", "m4a1fire", "shotgf1b", "cannon_fire", "ssgfire"};
+    size_t guncount = sizeof(gunsounds) / sizeof(gunsounds[0]);
+
+    for (size_t j = 0; j < guncount; j++) {
+        Q_snprintf(name, sizeof(name), "weapons/%s.wav", gunsounds[j]);
+        S_RegisterSound(name);
+        Com_Printf("I registered sound weapons/%s.wav\n", gunsounds[j]);
+        for (i = MIN_WEAPON_SOUND; i < MAX_WEAPON_SOUND; i++) {
+            Q_snprintf(name, sizeof(name), "weapons/%s%i.wav", gunsounds[j], i + 1);
+            S_RegisterSound(name);
+            Com_Printf("I registered sound weapons/%s%i.wav\n", gunsounds[j], i + 1);
+        }
     }
-    S_RegisterSound("weapons/mk23fire.wav");
-    S_RegisterSound("weapons/mp5fire.wav");
-    S_RegisterSound("weapons/m4a1fire.wav");
-    S_RegisterSound("weapons/shotgf1b.wav");
-    S_RegisterSound("weapons/cannon_fire.wav");
-    S_RegisterSound("weapons/ssgfire.wav");
 }
 
 /*
