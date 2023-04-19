@@ -1263,7 +1263,7 @@ typedef enum {
 
 // adjustable weapon sounds
 #define MIN_WEAPON_SOUND        0
-#define MAX_WEAPON_SOUND        8
+#define MAX_WEAPON_SOUND        7
 
 // player_state->stats[] indexes
 #define STAT_HEALTH_ICON        0

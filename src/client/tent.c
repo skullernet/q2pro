@@ -86,6 +86,19 @@ void CL_RegisterTEntSounds(void)
 
     cl_sfx_lightning = S_RegisterSound("weapons/tesla.wav");
     cl_sfx_disrexp = S_RegisterSound("weapons/disrupthit.wav");
+
+    // Register all AQtion gun sounds
+    char gunsounds[][64] = {"mk23fire", "mp5fire", "m4a1fire", "shotgf1b", "cannon_fire", "ssgfire"};
+    size_t guncount = sizeof(gunsounds) / sizeof(gunsounds[0]);
+
+    for (size_t j = 0; j < guncount; j++) {
+        Q_snprintf(name, sizeof(name), "weapons/%s.wav", gunsounds[j]);
+        S_RegisterSound(name);
+        for (i = MIN_WEAPON_SOUND; i < MAX_WEAPON_SOUND; i++) {
+            Q_snprintf(name, sizeof(name), "weapons/%s%i.wav", gunsounds[j], i + 1);
+            S_RegisterSound(name);
+        }
+    }
 }
 
 /*
