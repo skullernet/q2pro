@@ -133,7 +133,7 @@ option('system-console',
 
 option('system-wide',
   type: 'boolean',
-  value: true,
+  value: false,
   description: 'Enable system-wide installation')
 
 option('tests',
