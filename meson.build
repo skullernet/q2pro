@@ -1,7 +1,7 @@
 project('q2pro', 'c',
   license: 'GPL-2.0-or-later',
   version: run_command(find_program('python3'), 'version.py', check: true).stdout().strip(),
-  meson_version: '>= 0.61.1',
+  meson_version: '>= 0.59.0',
   default_options: [
     'c_std=gnu99',
     'buildtype=debugoptimized',
@@ -238,7 +238,6 @@ x86 = host_machine.cpu_family() == 'x86'
 cpuremap = {
   'x86': win32 ? 'x86' : 'i386',
   'aarch64': 'arm64',
-  'alpha': 'axp',
 }
 
 cpu = host_machine.cpu_family()
@@ -517,7 +516,7 @@ executable('q2pro', common_src, client_src, refresh_src,
   dependencies:          common_deps + client_deps,
   include_directories:   'inc',
   gnu_symbol_visibility: 'hidden',
-  win_subsystem:         'windows',
+  win_subsystem:         'windows,6.0',
   link_args:             exe_link_args,
   c_args:                ['-DUSE_CLIENT=1', '-DUSE_REF=1', engine_args],
   install:               system_wide,
@@ -527,7 +526,7 @@ executable('q2proded', common_src, server_src,
   dependencies:          common_deps + server_deps,
   include_directories:   'inc',
   gnu_symbol_visibility: 'hidden',
-  win_subsystem:         'console',
+  win_subsystem:         'console,6.0',
   link_args:             exe_link_args,
   c_args:                ['-DUSE_SERVER=1', engine_args],
   install:               system_wide,

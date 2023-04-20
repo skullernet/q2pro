@@ -86,6 +86,19 @@ void CL_RegisterTEntSounds(void)
 
     cl_sfx_lightning = S_RegisterSound("weapons/tesla.wav");
     cl_sfx_disrexp = S_RegisterSound("weapons/disrupthit.wav");
+
+    // Register all AQtion gun sounds
+    char gunsounds[][64] = {"mk23fire", "mp5fire", "m4a1fire", "shotgf1b", "cannon_fire", "ssgfire"};
+    size_t guncount = sizeof(gunsounds) / sizeof(gunsounds[0]);
+
+    for (size_t j = 0; j < guncount; j++) {
+        Q_snprintf(name, sizeof(name), "weapons/%s.wav", gunsounds[j]);
+        S_RegisterSound(name);
+        for (i = MIN_WEAPON_SOUND; i < MAX_WEAPON_SOUND; i++) {
+            Q_snprintf(name, sizeof(name), "weapons/%s%i.wav", gunsounds[j], i + 1);
+            S_RegisterSound(name);
+        }
+    }
 }
 
 /*
@@ -187,8 +200,7 @@ static explosion_t *CL_PlainExplosion(void)
     VectorSet(ex->lightcolor, 1.0f, 0.5f, 0.5f);
     ex->ent.angles[1] = Q_rand() % 360;
     ex->ent.model = cl_mod_explo4;
-    if (frand() < 0.5f)
-        ex->baseframe = 15;
+    ex->baseframe = 15 * (Q_rand() & 1);
     ex->frames = 15;
 
     return ex;
@@ -1034,6 +1046,9 @@ void CL_ParseTEnt(void)
         if (!(cl_disable_particles->integer & NOPART_GRENADE_EXPLOSION))
             CL_ExplosionParticles(te.pos1);
 
+        if (cl_dlight_hacks->integer & DLHACK_SMALLER_EXPLOSION)
+            ex->light = 200;
+
         if (te.type == TE_GRENADE_EXPLOSION_WATER)
             S_StartSound(te.pos1, 0, 0, cl_sfx_watrexp, 1, ATTN_NORM, 0);
         else
@@ -1056,6 +1071,9 @@ void CL_ParseTEnt(void)
 
         if (!(cl_disable_particles->integer & NOPART_ROCKET_EXPLOSION))
             CL_ExplosionParticles(te.pos1);
+
+        if (cl_dlight_hacks->integer & DLHACK_SMALLER_EXPLOSION)
+            ex->light = 200;
 
         if (te.type == TE_ROCKET_EXPLOSION_WATER)
             S_StartSound(te.pos1, 0, 0, cl_sfx_watrexp, 1, ATTN_NORM, 0);
