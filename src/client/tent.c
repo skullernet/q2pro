@@ -36,7 +36,7 @@ qhandle_t   cl_sfx_landing[8];
 qhandle_t   cl_sfx_lightning;
 qhandle_t   cl_sfx_disrexp;
 
-qhandle_t   cl_mod_explode;
+//qhandle_t   cl_mod_explode;
 qhandle_t   cl_mod_smoke;
 qhandle_t   cl_mod_flash;
 qhandle_t   cl_mod_parasite_segment;
@@ -108,7 +108,8 @@ CL_RegisterTEntModels
 */
 void CL_RegisterTEntModels(void)
 {
-    cl_mod_explode = R_RegisterModel("models/objects/explode/tris.md2");
+    // AQtion does not use this model
+    //cl_mod_explode = R_RegisterModel("models/objects/explode/tris.md2");
     cl_mod_smoke = R_RegisterModel("models/objects/smoke/tris.md2");
     cl_mod_flash = R_RegisterModel("models/objects/flash/tris.md2");
     cl_mod_parasite_segment = R_RegisterModel("models/monsters/parasite/segment/tris.md2");
@@ -1023,11 +1024,11 @@ void CL_ParseTEnt(void)
             VectorSet(ex->lightcolor, 0.19f, 0.41f, 0.75f);
             break;
         }
-        ex->start = cl.servertime - CL_FRAMETIME;
-        ex->light = 150;
-        ex->ent.model = cl_mod_explode;
-        ex->frames = 4;
-        S_StartSound(te.pos1,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
+        // ex->start = cl.servertime - CL_FRAMETIME;
+        // ex->light = 150;
+        // ex->ent.model = cl_mod_explode;
+        // ex->frames = 4;
+        // S_StartSound(te.pos1,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
         break;
 
     case TE_RAILTRAIL:          // railgun effect
