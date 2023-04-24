@@ -1918,13 +1918,14 @@ typedef struct {
     int gap, length;
 } xhair_state_t;
 
-static const int XHAIR_MAX_GAP = 1024;
-static const int XHAIR_MAX_LENGTH = 648;
+#define XHAIR_MAX_GAP 1024
+#define XHAIR_MAX_LENGTH 648
+static float deltatime_factor = 0.001;
 
 static xhair_weapon_cfg_t xhair_weapon_cfgs[9] = {
-    {"models/weapons/v_m4/tris.md2", 5, 2.25, 0.65, 12, 11, 1.1},
+    {"models/weapons/v_m4/tris.md2", 5, 2.35, 0.6, 12, 11, 1.1},
     {"models/weapons/v_blast/tris.md2", -2, 3, 0.7, 11, 12, 2.25},
-    {"models/weapons/v_machn/tris.md2", 1, 2.25, 0.74, 12, 11, 1.25},
+    {"models/weapons/v_machn/tris.md2", 1, 2.35, 0.6, 12, 11, 1.25},
     {"models/weapons/v_knife/tris.md2", XHAIR_MAX_GAP, 1, 1, -1, -1, 1},
     {"models/weapons/v_sniper/tris.md2", XHAIR_MAX_GAP, 1, 1, -1, -1, 1},
     {"models/weapons/v_shotg/tris.md2", 50, 1, 1, 9, -1, 1},
@@ -1943,7 +1944,7 @@ static int XHAIR_GetWeaponIndex(void) {
 }
 static xhair_state_t XHAIR_ApplyWeaponGap(xhair_state_t xh, int wep_index) {
     xh.gap += xhair_weapon_cfgs[wep_index].gap
-        *cls.frametime*1000;
+        *deltatime_factor*1000;
     if (xhair_weapon_cfgs[wep_index].gap == XHAIR_MAX_GAP) {
         xh.length = XHAIR_MAX_LENGTH;
     }
@@ -1955,16 +1956,15 @@ static xhair_state_t XHAIR_ApplyMovingInaccuracy(xhair_state_t xh, int wep_index
     pmove_state_t* pm = &cl.frame.ps.pmove;
     static const short velo_boundary = 20;
     if (pm_flags & PMF_DUCKED) {
-        xh.gap *= 1000*xhair_weapon_cfgs[wep_index].duck_acc*xhair_firing_error->value
-            *cls.frametime;
+        xh.gap *= 1000*xhair_weapon_cfgs[wep_index].duck_acc*deltatime_factor;
     } else {
         if (!(pm_flags & PMF_ON_GROUND)) {
-            
+           //doesn't actually do anything to weapon accuracy 
         }
         if (fabs(pm->velocity[0]) > velo_boundary 
             || fabs(pm->velocity[1]) > velo_boundary) {
-            xh.gap += 5000*xhair_weapon_cfgs[wep_index].moving_inacc*xhair_firing_error->value
-                *cls.frametime;
+            xh.gap += 5000*xhair_weapon_cfgs[wep_index].moving_inacc
+                    *xhair_movement_error->value*deltatime_factor;
         }
     }
     return xh;
@@ -1982,38 +1982,48 @@ static int XHAIR_WeaponIsFiring(int wep_index) {
 static xhair_state_t XHAIR_ApplyFiringInaccuracy(xhair_state_t xh, int wep_index) {
     static int spray = 0;
     if (spray > 0) {
-        spray -= 1800*cls.frametime;
+        spray -= 1800*deltatime_factor;
     }
     if (XHAIR_WeaponJustFired(wep_index)) {
         xh.gap += xhair_weapon_cfgs[wep_index].firing_scale*
-            2850*spray/425*xhair_firing_error->value * cls.frametime;
+            2850*spray/425*xhair_firing_error->value * deltatime_factor;
         xh.gap *= xhair_weapon_cfgs[wep_index].firing_scale*
-            1300*xhair_firing_error->value * cls.frametime;
-        xh.length *= 750*spray/60*xhair_firing_error->value * cls.frametime;
-        spray += 4000*cls.frametime;
+            1300*xhair_firing_error->value * deltatime_factor;
+        xh.length *= 750*spray/60*xhair_firing_error->value * deltatime_factor;
+        spray += 4000*deltatime_factor;
     }
     
     //Con_Printf("%d\n",cl.frame.ps.gunframe);
     return xh;
 }
 static void SCR_DrawXhair(void) {
+    //Con_Printf("deltatime_factor: %g\n",deltatime_factor);
+    R_SetColor(scr.crosshair_color.u32);
+    //Con_Printf("%f",scr.hud_scale);
+    R_SetScale(1.0f); 
+    static int last_rtime = 0;
+    deltatime_factor = (float)((cls.realtime-last_rtime)/2 + 4)*0.001;
+    //deltatime_factor = 0.001;
+    deltatime_factor /= 4;
+    int deltatime_ms = (cls.realtime - last_rtime);
+    if (deltatime_ms > 8) deltatime_ms = 8;
+   // Con_Printf("%d ",deltatime_ms);
+    last_rtime = cls.realtime;
+    int xh_center_x = scr.hud_width/2 - xhair_thickness->integer/2;
+    int xh_center_y = scr.hud_height/2 - xhair_thickness->integer/2;
     if (xhair_dot->integer) {
-        R_DrawFill32(scr.hud_width/2+xhair_x->integer,
-            scr.hud_height/2+xhair_y->integer,xhair_thickness->integer,
-            xhair_thickness->integer, scr.crosshair_color.u32);
+        R_DrawFill32(xh_center_x+xhair_x->integer,
+            xh_center_y+xhair_y->integer,
+            xhair_thickness->integer,
+            xhair_thickness->integer,
+            scr.crosshair_color.u32);
     }
     static float gap = 5;
     static float length = 4;
-    static float xh_elasticity = 0.05;
+    static float xh_elasticity = 0.04;
     xhair_state_t xh;
     xh.gap = xhair_gap->integer;
     xh.length = xhair_length->integer;
-
-    int current_maxfps = r_maxfps->integer;
-    if (current_maxfps == 0) current_maxfps = 1000;
-    if (current_maxfps < 125) current_maxfps = 125;
-    if (current_maxfps > 1000) current_maxfps = 1000;
-
     int wep_index = XHAIR_GetWeaponIndex();
 
     //fix for alt-tab glitch
@@ -2025,23 +2035,24 @@ static void SCR_DrawXhair(void) {
         length = XHAIR_MAX_LENGTH; //I think this is a cool effect :P
     }
 
-    for (float repeat=0; repeat<500.0f/current_maxfps; repeat++) {
-        
-        if (xhair_deployed_weapon_gap->integer) 
-            xh = XHAIR_ApplyWeaponGap(xh,wep_index);
-        if (xhair_firing_error->value)
-            xh = XHAIR_ApplyFiringInaccuracy(xh,wep_index);
-        if (xhair_movement_error->value)
-            xh = XHAIR_ApplyMovingInaccuracy(xh,wep_index);        
-        
-        if (XHAIR_WeaponIsFiring(wep_index) && xhair_firing_error->value) {
-            xh_elasticity += (0.04*xhair_elasticity->value - xh_elasticity) * cls.frametime*500;
-        } else {
-            xh_elasticity += (0.02*xhair_elasticity->value - xh_elasticity) * cls.frametime*500;
-        }
-        gap += (xh.gap - gap) * xh_elasticity * cls.frametime*500;
-        length += (xh.length - length) * xh_elasticity * cls.frametime*500;
+    if (xhair_deployed_weapon_gap->integer) 
+        xh = XHAIR_ApplyWeaponGap(xh,wep_index);
+    if (xhair_firing_error->value)
+        xh = XHAIR_ApplyFiringInaccuracy(xh,wep_index);
+    if (xhair_movement_error->value)
+        xh = XHAIR_ApplyMovingInaccuracy(xh,wep_index);        
+    
+    if (XHAIR_WeaponIsFiring(wep_index) && xhair_firing_error->value) {
+        xh_elasticity += (0.04*xhair_elasticity->value - xh_elasticity) * deltatime_factor*500;
+    } else {
+        xh_elasticity += (0.02*xhair_elasticity->value - xh_elasticity) * deltatime_factor*500;
     }
+    int repeat = 1;
+    do { //framerate-independence...not ideal, but it works
+        gap += (xh.gap - gap) * xh_elasticity * deltatime_factor*500;
+        length += (xh.length - length) * xh_elasticity * deltatime_factor*500;
+        repeat *= 2;
+    } while(repeat<deltatime_ms);
 
     int rgap = (int)(round(gap));
     int rlength = (int)(round(length));
@@ -2054,8 +2065,8 @@ static void SCR_DrawXhair(void) {
         3       1       1      -gap-len 0       length  1
         */
         for (int i=0; i<4; i++) {
-            int xh_x = scr.hud_width/2 + xhair_x->integer;
-            int xh_y = scr.hud_height/2 + xhair_y->integer;
+            int xh_x = xh_center_x + xhair_x->integer;
+            int xh_y = xh_center_y + xhair_y->integer;
             int xh_w;
             int xh_h;
             int quot = i / 2;
@@ -2066,16 +2077,18 @@ static void SCR_DrawXhair(void) {
                 xh_w = rem ? rlength : xhair_thickness->integer;
                 xh_h = rem ? xhair_thickness->integer : rlength;
             } else {
-                xh_x += (1+rgap)*(1-rem);
-                xh_y += (1+rgap)*rem;
+                xh_x += (1+rgap+xhair_thickness->integer-1)*(1-rem);
+                xh_y += (1+rgap+xhair_thickness->integer-1)*rem;
                 xh_h = rem ? rlength : xhair_thickness->integer;
                 xh_w = rem ? xhair_thickness->integer : rlength;
             }
-            R_DrawFill32(xh_x,xh_y,xh_w,xh_h,scr.crosshair_color.u32);
+            R_DrawFill32(xh_x,xh_y,
+                xh_w,xh_h,scr.crosshair_color.u32);
         }
     } 
 }
 static void SCR_DrawClassicCrosshair(void) {
+    R_SetColor(scr.crosshair_color.u32);
     int x, y;
 
     if (!scr_crosshair->integer)
@@ -2090,16 +2103,6 @@ static void SCR_DrawClassicCrosshair(void) {
                      scr.crosshair_height,
                      scr.crosshair_pic);
 }
-static void SCR_DrawCrosshair(void)
-{
-    R_SetColor(scr.crosshair_color.u32);
-    if (xhair_enabled->integer) {
-        SCR_DrawXhair();
-    } else {
-        SCR_DrawClassicCrosshair();
-    }
-}
-
 #ifdef AQTION_EXTENSION
 void CL_Clear3DGhudQueue(void)
 {
@@ -2348,7 +2351,11 @@ static void SCR_Draw2D(void)
     if (cls.key_dest & KEY_MENU)
         return;
 
+    if (xhair_enabled->integer)
+        SCR_DrawXhair();
+
     R_SetScale(scr.hud_scale);
+
 
 	scr.hud_x = Q_rint(scr_hudborder_x->integer);
 	scr.hud_y = Q_rint(scr_hudborder_y->integer);
@@ -2357,9 +2364,7 @@ static void SCR_Draw2D(void)
 	scr.hud_x *= scr.hud_scale / 2;
 	scr.hud_y *= scr.hud_scale / 2;
 
-    // crosshair has its own color and alpha
-    SCR_DrawCrosshair();
-
+    
     // the rest of 2D elements share common alpha
     R_ClearColor();
     R_SetAlpha(Cvar_ClampValue(scr_alpha, 0, 1));
@@ -2398,6 +2403,10 @@ static void SCR_Draw2D(void)
     SCR_DrawDebugStats();
     SCR_DrawDebugPmove();
 #endif
+    if (!xhair_enabled->integer) {
+        SCR_DrawClassicCrosshair();
+    }    
+    R_ClearColor();
 
     R_SetScale(1.0f);
 }
