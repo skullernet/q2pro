@@ -1059,6 +1059,7 @@ a deathmatch.
 */
 void PutClientInServer(edict_t *ent)
 {
+    char    userinfo[MAX_INFO_STRING];
     vec3_t  mins = { -16, -16, -24};
     vec3_t  maxs = {16, 16, 32};
     int     index;
@@ -1078,20 +1079,16 @@ void PutClientInServer(edict_t *ent)
     index = ent - g_edicts - 1;
     client = ent->client;
 
+    memcpy(userinfo, client->pers.userinfo, sizeof(userinfo));
+
     // deathmatch wipes most client data every spawn
     if (deathmatch->value) {
-        char        userinfo[MAX_INFO_STRING];
-
         resp = client->resp;
-        memcpy(userinfo, client->pers.userinfo, sizeof(userinfo));
         InitClientPersistant(client);
-        ClientUserinfoChanged(ent, userinfo);
     } else if (coop->value) {
 //      int         n;
-        char        userinfo[MAX_INFO_STRING];
 
         resp = client->resp;
-        memcpy(userinfo, client->pers.userinfo, sizeof(userinfo));
         // this is kind of ugly, but it's how we want to handle keys in coop
 //      for (n = 0; n < game.num_items; n++)
 //      {
@@ -1101,12 +1098,13 @@ void PutClientInServer(edict_t *ent)
         resp.coop_respawn.game_helpchanged = client->pers.game_helpchanged;
         resp.coop_respawn.helpchanged = client->pers.helpchanged;
         client->pers = resp.coop_respawn;
-        ClientUserinfoChanged(ent, userinfo);
         if (resp.score > client->pers.score)
             client->pers.score = resp.score;
     } else {
         memset(&resp, 0, sizeof(resp));
     }
+
+    ClientUserinfoChanged(ent, userinfo);
 
     // clear everything but the persistant data
     saved = client->pers;

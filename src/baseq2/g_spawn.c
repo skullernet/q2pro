@@ -326,6 +326,7 @@ static const spawn_field_t temp_fields[] = {
     {"minpitch", STOFS(minpitch), F_FLOAT},
     {"maxpitch", STOFS(maxpitch), F_FLOAT},
     {"nextmap", STOFS(nextmap), F_LSTRING},
+    {"musictrack", STOFS(musictrack), F_LSTRING},
 
     {NULL}
 };
@@ -822,7 +823,10 @@ void SP_worldspawn(edict_t *ent)
     gi.configstring(CS_SKYAXIS, va("%f %f %f",
                                    st.skyaxis[0], st.skyaxis[1], st.skyaxis[2]));
 
-    gi.configstring(CS_CDTRACK, va("%i", ent->sounds));
+    if (st.musictrack && st.musictrack[0])
+        gi.configstring(CS_CDTRACK, st.musictrack);
+    else
+        gi.configstring(CS_CDTRACK, va("%i", ent->sounds));
 
     gi.configstring(CS_MAXCLIENTS, va("%i", (int)(maxclients->value)));
 
@@ -847,6 +851,11 @@ void SP_worldspawn(edict_t *ent)
         gi.cvar_set("sv_gravity", st.gravity);
 
     snd_fry = gi.soundindex("player/fry.wav");  // standing in lava / slime
+
+    gi.soundindex("player/lava_in.wav");
+    gi.soundindex("player/burn1.wav");
+    gi.soundindex("player/burn2.wav");
+    gi.soundindex("player/drown1.wav");
 
     PrecacheItem(FindItem("Blaster"));
 

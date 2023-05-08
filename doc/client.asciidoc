@@ -232,6 +232,13 @@ cl_disable_explosions::
       - 1 — grenade explosions
       - 2 — rocket explosions
 
+cl_dlight_hacks::
+    Toggles miscellaneous dynamic light effects options. This variable
+    is a bitmask. Default value is 0.
+      - 1 — make rocket projectile light red instead of yellow
+      - 2 — make rocket/grenade explosion light radius smaller
+      - 4 — disable muzzle flashes for machinegun and chaingun
+
 cl_noglow::
     Disables the glowing effect on bonus entities like ammo, health, etc.
     Default value is 0 (glowing enabled).
@@ -641,7 +648,7 @@ gl_drawsky::
 
 gl_waterwarp::
     Enable screen warping effect when underwater. Only effective when using
-    GLSL backend. Default value is 1 (enabled).
+    GLSL backend. Default value is 0 (disabled).
 
 gl_fontshadow::
     Specifies font shadow width, in pixels, ranging from 0 to 2. Default value

@@ -1,39 +1,197 @@
-option('anticheat-server', type: 'boolean', value: false, description: 'r1ch.net anticheat server')
-option('aqtion-build', type: 'boolean', value: true, description: 'Build-specific for AQtion enhancements')
-option('auto-reply', type: 'boolean', value: true, description: 'auto reply to !version probes')
-option('base-game', type: 'string', value: 'baseaq', description: 'base game directory')
-option('client-gtv', type: 'boolean', value: false, description: 'client GTV relay')
-option('client-ui', type: 'boolean', value: true, description: 'client UI')
-option('default-game', type: 'string', value: 'action', description: 'default game directory')
-option('discord-sdk', type: 'boolean', value: false, description: 'enable Discord SDK')
-option('dynamic-lights', type: 'boolean', value: true, description: 'dynamic lighting')
-option('game-abi-hack', type: 'feature', value: 'disabled', description: 'game ABI compat hack')
-option('game-build-options', type: 'array', value: [], description: 'game build options')
-option('homedir', type: 'string', value: '~/.q2pro', description: 'default home directory')
-option('icmp-errors', type: 'feature', value: 'auto', description: 'handle ICMP errors')
-option('libcurl', type: 'feature', value: 'auto', description: 'libcurl support')
-option('libjpeg', type: 'feature', value: 'auto', description: 'libjpeg support')
-option('libpng', type: 'feature', value: 'auto', description: 'libpng support')
-option('md3', type: 'boolean', value: true, description: 'MD3 models support')
-option('mvd-client', type: 'boolean', value: true, description: 'MVD client')
-option('mvd-server', type: 'boolean', value: true, description: 'MVD server')
-option('ogg', type: 'feature', value: 'auto', description: 'Ogg Vorbis support')
-option('openal', type: 'feature', value: 'auto', description: 'OpenAL support')
-option('packetdup-hack', type: 'boolean', value: false, description: 'packet duplication hack')
-option('save-games', type: 'boolean', value: true, description: 'game saving support')
-option('sdl2', type: 'feature', value: 'auto', description: 'SDL2 support')
-option('software-sound', type: 'boolean', value: true, description: 'software sound')
-option('system-console', type: 'boolean', value: true, description: 'system console')
-option('system-wide', type: 'boolean', value: false, description: 'system-wide install')
-option('tests', type: 'boolean', value: false, description: 'tests')
-option('tga', type: 'boolean', value: true, description: 'TGA images support')
-option('uuid', type: 'feature', value: 'auto', description: 'uuid support')
-option('variable-fps', type: 'boolean', value: false, description: 'variable server FPS')
-option('vid-geometry', type: 'string', value: '640x480', description: 'default window geometry')
-option('vid-modelist', type: 'string', value: '640x480 800x600 1024x768', description: 'default video mode list')
-option('wayland', type: 'feature', value: 'auto', description: 'wayland support')
-option('windows-crash-dumps', type: 'feature', value: 'auto', description: 'windows crash dumps')
-option('windows-egl', type: 'boolean', value: true, description: 'windows EGL support')
-option('windows-service', type: 'boolean', value: true, description: 'run as windows service')
-option('x11', type: 'feature', value: 'auto', description: 'X11 support')
-option('zlib', type: 'feature', value: 'auto', description: 'zlib support')
+option('aqtion-build', 
+  type: 'boolean', 
+  value: true, 
+  description: 'Build-specific for AQtion enhancements')
+
+option('anticheat-server',
+  type: 'boolean',
+  value: false,
+  description: 'Enable r1ch.net anticheat server interface')
+
+option('auto-reply',
+  type: 'boolean',
+  value: true,
+  description: 'Make client auto reply to !version chat probes')
+
+option('base-game',
+  type: 'string',
+  value: 'baseaq',
+  description: 'Name of the base game directory')
+
+option('client-gtv',
+  type: 'boolean',
+  value: false,
+  description: 'Experimental client GTV relay')
+
+option('client-ui',
+  type: 'boolean',
+  value: true,
+  description: 'Enable menu-based user interface')
+
+option('default-game',
+  type: 'string',
+  value: 'action',
+  description: 'Default value for "game" console variable')
+
+option('discord-sdk', 
+  type: 'boolean', 
+  value: false, 
+  description: 'Enable Discord SDK')
+
+option('dynamic-lights', 
+  type: 'boolean', 
+  value: true, 
+  description: 'dynamic lighting')
+
+option('game-abi-hack',
+  type: 'feature',
+  value: 'disabled',
+  description: 'Enable this option on i386 Linux to build a server capable of '+
+  'loading closed source game mods built using ancient GCC versions.')
+
+option('game-build-options',
+  type: 'array',
+  value: [],
+  description: 'Custom game build options for LTO, etc')
+
+option('homedir',
+  type: 'string',
+  value: '~/.q2pro',
+  description: 'Default value for "homedir" console variable')
+
+option('icmp-errors',
+  type: 'feature',
+  value: 'auto',
+  description: 'Handle ICMP errors on UDP sockets')
+
+option('libcurl',
+  type: 'feature',
+  value: 'auto',
+  description: 'libcurl support')
+
+option('libjpeg',
+  type: 'feature',
+  value: 'auto',
+  description: 'libjpeg support')
+
+option('libpng',
+  type: 'feature',
+  value: 'auto',
+  description: 'libpng support')
+
+option('md3',
+  type: 'boolean',
+  value: true,
+  description: 'MD3 models support')
+
+option('mvd-client',
+  type: 'boolean',
+  value: true,
+  description: 'Enable MVD/GTV client functionality. '+
+  'Use this for hosting a GTV relay server.')
+
+option('mvd-server',
+  type: 'boolean',
+  value: true,
+  description: 'Enable local MVD recording and MVD/GTV server functionality. '+
+  'Use this for hosting a GTV-capable game server.')
+
+option('ogg',
+  type: 'feature',
+  value: 'auto',
+  description: 'Ogg Vorbis music and sound effects support')
+
+option('openal',
+  type: 'feature',
+  value: 'auto',
+  description: 'OpenAL sound backend')
+
+option('packetdup-hack',
+  type: 'boolean',
+  value: false,
+  description: 'Server side packet duplication hack')
+
+option('save-games',
+  type: 'boolean',
+  value: true,
+  description: 'Server side support for savegames')
+
+option('sdl2',
+  type: 'feature',
+  value: 'auto',
+  description: 'SDL2 video and audio drivers')
+
+option('software-sound',
+  type: 'boolean',
+  value: true,
+  description: 'Software sound backend')
+
+option('system-console',
+  type: 'boolean',
+  value: true,
+  description: 'Enhanced system console support')
+
+option('system-wide',
+  type: 'boolean',
+  value: false,
+  description: 'Enable system-wide installation')
+
+option('tests',
+  type: 'boolean',
+  value: false,
+  description: 'Enable ***dangerous*** built-in testing code. Never use in release builds!')
+
+option('tga',
+  type: 'boolean',
+  value: true,
+  description: 'TGA images support')
+
+option('uuid', 
+  type: 'feature', 
+  value: 'auto', 
+  description: 'AQtion uuid support')
+
+option('variable-fps',
+  type: 'boolean',
+  value: false,
+  description: 'Support for variable server FPS in both client and server')
+
+option('vid-geometry',
+  type: 'string',
+  value: '640x480',
+  description: 'Default window geometry')
+
+option('vid-modelist',
+  type: 'string',
+  value: '640x480 800x600 1024x768',
+  description: 'Default video mode list')
+
+option('wayland',
+  type: 'feature',
+  value: 'auto',
+  description: 'Wayland video driver')
+
+option('windows-crash-dumps',
+  type: 'feature',
+  value: 'auto',
+  description: 'Windows crash dumps')
+
+option('windows-egl',
+  type: 'boolean',
+  value: true,
+  description: 'Windows EGL video driver')
+
+option('windows-service',
+  type: 'boolean',
+  value: true,
+  description: 'Support for running dedicated server as Windows service')
+
+option('x11',
+  type: 'feature',
+  value: 'auto',
+  description: 'X11 video driver')
+
+option('zlib',
+  type: 'feature',
+  value: 'auto',
+  description: 'zlib support')

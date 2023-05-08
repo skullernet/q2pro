@@ -66,6 +66,7 @@ typedef struct image_s {
     int             registration_sequence; // 0 = free
     unsigned        texnum; // gl texture binding
     float           sl, sh, tl, th;
+    float           aspect;
 } image_t;
 
 #define MAX_RIMAGES     1024

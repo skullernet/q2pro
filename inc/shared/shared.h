@@ -594,6 +594,7 @@ int SortStricmp(const void *p1, const void *p2);
 
 size_t COM_strclr(char *s);
 char *COM_StripQuotes(char *s);
+char *COM_Trim(char *s);
 
 // buffer safe operations
 size_t Q_strlcpy(char *dst, const char *src, size_t size);
@@ -1263,7 +1264,7 @@ typedef enum {
 
 // adjustable weapon sounds
 #define MIN_WEAPON_SOUND        0
-#define MAX_WEAPON_SOUND        8
+#define MAX_WEAPON_SOUND        7
 
 // player_state->stats[] indexes
 #define STAT_HEALTH_ICON        0

@@ -105,10 +105,11 @@ void BeginIntermission(edict_t *targ)
                 if (!client->inuse)
                     continue;
                 // strip players of all keys between units
-                for (n = 0; n < MAX_ITEMS; n++) {
+                for (n = 0; n < game.num_items; n++) {
                     if (itemlist[n].flags & IT_KEY)
                         client->client->pers.inventory[n] = 0;
                 }
+                client->client->pers.power_cubes = 0;
             }
         }
     } else {
