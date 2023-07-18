@@ -939,7 +939,7 @@ static void CL_Seek_f(void)
     if (strchr(to, '%')) {
         char *suf;
         float percent = strtof(to, &suf);
-        if (strcmp(suf, "%") || !isfinite(percent)) {
+        if (suf == to || strcmp(suf, "%") || !isfinite(percent)) {
             Com_Printf("Invalid percentage.\n");
             return;
         }
