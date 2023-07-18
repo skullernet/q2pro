@@ -906,6 +906,20 @@ void CL_FirstDemoFrame(void)
 
 /*
 ====================
+CL_FreeDemoSnapshots
+====================
+*/
+void CL_FreeDemoSnapshots(void)
+{
+    for (int i = 0; i < cls.demo.numsnapshots; i++)
+        Z_Free(cls.demo.snapshots[i]);
+    cls.demo.numsnapshots = 0;
+
+    Z_Freep(&cls.demo.snapshots);
+}
+
+/*
+====================
 CL_Seek_f
 ====================
 */
@@ -1053,7 +1067,8 @@ static void CL_Seek_f(void)
             return;
         }
 
-        CL_SeekDemoMessage();
+        if (CL_SeekDemoMessage())
+            goto done;
         CL_EmitDemoSnapshot();
     }
 
@@ -1230,9 +1245,7 @@ void CL_CleanupDemos(void)
         }
     }
 
-    for (int i = 0; i < cls.demo.numsnapshots; i++)
-        Z_Free(cls.demo.snapshots[i]);
-    Z_Free(cls.demo.snapshots);
+    CL_FreeDemoSnapshots();
 
     memset(&cls.demo, 0, sizeof(cls.demo));
 }
