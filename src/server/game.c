@@ -753,6 +753,7 @@ static void *PF_TagRealloc(void *ptr, size_t size)
 #ifdef GAME_API_EXTENSIONS
 //
 extension_func_t *g_extension_funcs;
+int(*GE_customizeentityforclient)(edict_t *viewer, edict_t *ent, entity_state_t *state);
 
 /*
 ================
@@ -782,6 +783,35 @@ static void* G_CheckForExtension(char *text)
 Actual extension functions
 ================
 */
+static int G_Ext_Client_GetProtocol(edict_t *ent)
+{
+	int clientNum;
+	client_t *client;
+
+	clientNum = NUM_FOR_EDICT(ent) - 1;
+	if (clientNum < 0 || clientNum >= sv_maxclients->integer) {
+		Com_WPrintf("%s to a non-client %d\n", __func__, clientNum);
+		return 0;
+	}
+
+	client = svs.client_pool + clientNum;
+	return client->protocol;
+}
+
+static int G_Ext_Client_GetVersion(edict_t *ent)
+{
+	int clientNum;
+	client_t *client;
+
+	clientNum = NUM_FOR_EDICT(ent) - 1;
+	if (clientNum < 0 || clientNum >= sv_maxclients->integer) {
+		Com_WPrintf("%s to a non-client %d\n", __func__, clientNum);
+		return 0;
+	}
+
+	client = svs.client_pool + clientNum;
+	return client->version;
+}
 
 /*
 ================
@@ -792,6 +822,9 @@ Add supported extensions to the linked list
 */
 void G_InitializeExtensions(void)
 {
+	// client networking info
+	g_addextension("Client_GetVersion", G_Ext_Client_GetVersion);
+	g_addextension("Client_GetProtocol", G_Ext_Client_GetProtocol);
 }
 //
 #else
@@ -903,6 +936,7 @@ void SV_ShutdownGameProgs(void)
 
 #ifdef GAME_API_EXTENSIONS
 	// NULL out any entrypoints here
+	GE_customizeentityforclient = NULL;
 #endif
 
     Z_LeakTest(TAG_FREE);
@@ -1014,6 +1048,7 @@ void SV_InitGameProgs(void)
 	if (gex)
 	{
 		// put entrypoint fetches in here
+		GE_customizeentityforclient = gex->CheckForExtension("customizeentityforclient");
 	}
 	#endif
 }

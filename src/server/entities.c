@@ -443,7 +443,9 @@ void SV_BuildClientFrame(client_t *client)
     frame->first_entity = svs.next_entity;
 
     for (e = 1; e < client->pool->num_edicts; e++) {
+		entity_state_t ent_state;
         ent = EDICT_POOL(client, e);
+		ent_state = ent->s; // the state we're going to network
 
         // ignore entities not in use
         if (!ent->inuse && (g_features->integer & GMF_PROPERINUSE)) {
@@ -510,9 +512,15 @@ void SV_BuildClientFrame(client_t *client)
             ent->s.number = e;
         }
 
+#ifdef GAME_API_EXTENSIONS
+		if (GE_customizeentityforclient)
+			if (!GE_customizeentityforclient(client->edict, ent, &ent_state))
+				continue;
+#endif
+
         // add it to the circular client_entities array
         state = &svs.entities[svs.next_entity % svs.num_entities];
-        MSG_PackEntity(state, &ent->s, Q2PRO_SHORTANGLES(client, e));
+        MSG_PackEntity(state, &ent_state, Q2PRO_SHORTANGLES(client, e));
 
 #if USE_FPS
         // fix old entity origins for clients not running at

@@ -45,6 +45,7 @@ void SV_RestartFilesystem(void);
 #ifdef GAME_API_EXTENSIONS
 void G_InitializeExtensions(void);
 
+extern int(*GE_customizeentityforclient)(edict_t *viewer, edict_t *ent, entity_state_t *state); // 0 don't send, 1 send normally
 #endif
 
 #if USE_MVD_CLIENT && USE_CLIENT
