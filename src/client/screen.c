@@ -2364,6 +2364,9 @@ static void SCR_Draw2D(void)
 	scr.hud_x *= scr.hud_scale / 2;
 	scr.hud_y *= scr.hud_scale / 2;
 
+    if (!xhair_enabled->integer) {
+        SCR_DrawClassicCrosshair();
+    }    
     
     // the rest of 2D elements share common alpha
     R_ClearColor();
@@ -2403,9 +2406,6 @@ static void SCR_Draw2D(void)
     SCR_DrawDebugStats();
     SCR_DrawDebugPmove();
 #endif
-    if (!xhair_enabled->integer) {
-        SCR_DrawClassicCrosshair();
-    }    
     R_ClearColor();
 
     R_SetScale(1.0f);
