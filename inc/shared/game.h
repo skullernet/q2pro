@@ -43,8 +43,6 @@ typedef enum {
 
 // extended features
 
-#define GAME_API_EXTENSIONS
-
 // R1Q2 and Q2PRO specific
 #define GMF_CLIENTNUM               0x00000001  // game sets clientNum gclient_s field
 #define GMF_PROPERINUSE             0x00000002  // game maintains edict_s inuse field properly
@@ -264,6 +262,7 @@ typedef game_export_t *(*game_entry_t)(game_import_t *);
  */
 
 #define GAME_API_VERSION_EX     2
+#define GAME_API_EXTENSIONS
 
 typedef struct {
     int     apiversion;
