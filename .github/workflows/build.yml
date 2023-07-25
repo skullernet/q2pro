@@ -113,43 +113,6 @@ jobs:
             builddir/q2proded.exe
             builddir/gamex86_64.dll
 
-  msvc32:
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        #arch: ["x86", "x64"]
-        arch: ["x86"]
-    steps:
-      - uses: actions/checkout@v3
-
-      - uses: actions/cache@v3
-        with:
-          path: subprojects/packagecache
-          key: ${{ hashFiles('subprojects/*.wrap') }}
-
-      - uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: ${{ matrix.arch }}
-
-      - uses: ilammy/setup-nasm@v1
-
-      - name: Install dependencies
-        run: pip3 install --no-input meson ninja
-
-      - name: Build
-        run: |
-          meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_WIN }} -Dvorbis:werror=false buildwin32
-          meson compile -vC buildwin32
-
-      - name: Generate Win MSVC archives
-        uses: actions/upload-artifact@v3
-        with:
-          name: q2pro-msvc32-${{ matrix.arch }}
-          path: |
-            builddir/q2pro.exe
-            builddir/q2proded.exe
-            builddir/gamex86_64.dll
-
   linux64-x11:
     runs-on: ubuntu-20.04
     #runs-on: [self-hosted, x86]
