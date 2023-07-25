@@ -43,6 +43,8 @@ typedef enum {
 
 // extended features
 
+#define GAME_API_EXTENSIONS
+
 // R1Q2 and Q2PRO specific
 #define GMF_CLIENTNUM               0x00000001  // game sets clientNum gclient_s field
 #define GMF_PROPERINUSE             0x00000002  // game maintains edict_s inuse field properly
@@ -261,11 +263,12 @@ typedef game_export_t *(*game_entry_t)(game_import_t *);
  * game_export_ex_t structures, provided GAME_API_VERSION_EX is also bumped.
  */
 
-#define GAME_API_VERSION_EX     1
+#define GAME_API_VERSION_EX     2
 
 typedef struct {
     int     apiversion;
-
+	
+	// EX API version 1
     int64_t (*OpenFile)(const char *path, qhandle_t *f, unsigned mode); // returns file length
     int     (*CloseFile)(qhandle_t f);
     int     (*LoadFile)(const char *path, void **buffer, unsigned flags, unsigned tag);
@@ -282,12 +285,50 @@ typedef struct {
 
     const char *(*ErrorString)(int error);
     void    *(*TagRealloc)(void *ptr, size_t size);
+
+	// EX API version 2
+	void	*(*CheckForExtension)(char *text);
 } game_import_ex_t;
 
 typedef struct {
     int     apiversion;
-
+	
+	// EX API version 1
     void    (*RestartFilesystem)(void); // called when fs_restart is issued
+	
+	// EX API version 2
+	void	*(*CheckForExtension)(char *text);
 } game_export_ex_t;
 
 typedef const game_export_ex_t *(*game_entry_ex_t)(const game_import_ex_t *);
+
+#ifdef GAME_API_EXTENSIONS
+typedef struct extension_func_s
+{
+	char		name[MAX_QPATH];
+	void*		func;
+	struct extension_func_s *n;
+} extension_func_t;
+
+// the do {} while here is a bizarre C-ism to allow for our local variable, maybe not the best way to do this?
+#ifndef GAME_INCLUDE	// the server version
+#define g_addextension(ename, efunc) \
+				do { \
+				extension_func_t *ext = malloc(sizeof(extension_func_t)); \
+				strcpy(ext->name, ename); \
+				ext->func = efunc; \
+				ext->n = g_extension_funcs; \
+				g_extension_funcs = ext; \
+				} while (0);
+#else // the dll version
+#define g_addextension(ename, efunc) \
+				do { \
+				extension_func_t *ext = gi.TagMalloc(sizeof(extension_func_t), TAG_GAME); \
+				strcpy(ext->name, ename); \
+				ext->func = efunc; \
+				ext->n = g_extension_funcs; \
+				g_extension_funcs = ext; \
+				} while (0);
+#endif
+#endif
+

@@ -42,6 +42,11 @@ void SV_SetConsoleTitle(void);
 //void SV_ConsoleOutput(const char *msg);
 void SV_RestartFilesystem(void);
 
+#ifdef GAME_API_EXTENSIONS
+void G_InitializeExtensions(void);
+
+#endif
+
 #if USE_MVD_CLIENT && USE_CLIENT
 bool MVD_GetDemoStatus(float *progress, bool *paused, int *framenum);
 #else

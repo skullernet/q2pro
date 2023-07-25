@@ -750,6 +750,54 @@ static void *PF_TagRealloc(void *ptr, size_t size)
     return Z_Realloc(ptr, size);
 }
 
+#ifdef GAME_API_EXTENSIONS
+//
+extension_func_t *g_extension_funcs;
+
+/*
+================
+G_CheckForExtension
+
+Check for (and return) an extension function by name
+================
+*/
+static void* G_CheckForExtension(char *text)
+{
+	Com_Printf("G_CheckForExtension for %s\n", text);
+	extension_func_t *ext;
+	for (ext = g_extension_funcs; ext != NULL; ext = ext->n)
+	{
+		if (strcmp(ext->name, text))
+			continue;
+
+		return ext->func;
+	}
+
+	Com_Printf("Engine: Extension not found.\n");
+	return NULL;
+}
+
+/*
+================
+Actual extension functions
+================
+*/
+
+/*
+================
+G_InitializeExtensions
+
+Add supported extensions to the linked list
+================
+*/
+void G_InitializeExtensions(void)
+{
+}
+//
+#else
+static void* G_CheckForExtension(char *text) { return NULL; }
+#endif // GAME_API_EXTENSIONS
+
 //==============================================
 
 static const game_import_t game_import = {
@@ -808,24 +856,26 @@ static const game_import_t game_import = {
 };
 
 static const game_import_ex_t game_import_ex = {
-    .apiversion = GAME_API_VERSION_EX,
+	.apiversion = GAME_API_VERSION_EX,
 
-    .OpenFile = FS_OpenFile,
-    .CloseFile = FS_CloseFile,
-    .LoadFile = PF_LoadFile,
+	.OpenFile = FS_OpenFile,
+	.CloseFile = FS_CloseFile,
+	.LoadFile = PF_LoadFile,
 
-    .ReadFile = FS_Read,
-    .WriteFile = FS_Write,
-    .FlushFile = FS_Flush,
-    .TellFile = FS_Tell,
-    .SeekFile = FS_Seek,
-    .ReadLine = FS_ReadLine,
+	.ReadFile = FS_Read,
+	.WriteFile = FS_Write,
+	.FlushFile = FS_Flush,
+	.TellFile = FS_Tell,
+	.SeekFile = FS_Seek,
+	.ReadLine = FS_ReadLine,
 
-    .ListFiles = FS_ListFiles,
-    .FreeFileList = FS_FreeList,
+	.ListFiles = FS_ListFiles,
+	.FreeFileList = FS_FreeList,
 
-    .ErrorString = Q_ErrorString,
-    .TagRealloc = PF_TagRealloc,
+	.ErrorString = Q_ErrorString,
+	.TagRealloc = PF_TagRealloc,
+
+	.CheckForExtension = G_CheckForExtension,
 };
 
 static void *game_library;
@@ -850,6 +900,10 @@ void SV_ShutdownGameProgs(void)
         game_library = NULL;
     }
     Cvar_Set("g_features", "0");
+
+#ifdef GAME_API_EXTENSIONS
+	// NULL out any entrypoints here
+#endif
 
     Z_LeakTest(TAG_FREE);
 }
@@ -955,4 +1009,11 @@ void SV_InitGameProgs(void)
     if (ge->max_edicts <= sv_maxclients->integer || ge->max_edicts > MAX_EDICTS) {
         Com_Error(ERR_DROP, "Game library returned bad number of max_edicts");
     }
+
+	#ifdef GAME_API_EXTENSIONS
+	if (gex)
+	{
+		// put entrypoint fetches in here
+	}
+	#endif
 }
