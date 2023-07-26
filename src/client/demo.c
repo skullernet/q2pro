@@ -573,7 +573,7 @@ static int read_first_message(qhandle_t f)
         type = 0;
     }
 
-    if (msglen < 64 || msglen > sizeof(msg_read_buffer)) {
+    if (msglen > sizeof(msg_read_buffer)) {
         return Q_ERR_INVALID_FORMAT;
     }
 
@@ -906,6 +906,20 @@ void CL_FirstDemoFrame(void)
 
 /*
 ====================
+CL_FreeDemoSnapshots
+====================
+*/
+void CL_FreeDemoSnapshots(void)
+{
+    for (int i = 0; i < cls.demo.numsnapshots; i++)
+        Z_Free(cls.demo.snapshots[i]);
+    cls.demo.numsnapshots = 0;
+
+    Z_Freep(&cls.demo.snapshots);
+}
+
+/*
+====================
 CL_Seek_f
 ====================
 */
@@ -939,7 +953,7 @@ static void CL_Seek_f(void)
     if (strchr(to, '%')) {
         char *suf;
         float percent = strtof(to, &suf);
-        if (strcmp(suf, "%") || !isfinite(percent)) {
+        if (suf == to || strcmp(suf, "%") || !isfinite(percent)) {
             Com_Printf("Invalid percentage.\n");
             return;
         }
@@ -1053,7 +1067,8 @@ static void CL_Seek_f(void)
             return;
         }
 
-        CL_SeekDemoMessage();
+        if (CL_SeekDemoMessage())
+            goto done;
         CL_EmitDemoSnapshot();
     }
 
@@ -1141,7 +1156,8 @@ demoInfo_t *CL_GetDemoInfo(const char *path, demoInfo_t *info)
         if (MSG_ReadByte() != svc_serverdata) {
             goto fail;
         }
-        if (MSG_ReadLong() != PROTOCOL_VERSION_DEFAULT) {
+        c = MSG_ReadLong();
+        if (c < PROTOCOL_VERSION_OLD || c > PROTOCOL_VERSION_DEFAULT) {
             goto fail;
         }
         MSG_ReadLong();
@@ -1203,7 +1219,6 @@ demoInfo_t *CL_GetDemoInfo(const char *path, demoInfo_t *info)
 fail:
     FS_CloseFile(f);
     return NULL;
-
 }
 
 // =========================================================================
@@ -1230,9 +1245,7 @@ void CL_CleanupDemos(void)
         }
     }
 
-    for (int i = 0; i < cls.demo.numsnapshots; i++)
-        Z_Free(cls.demo.snapshots[i]);
-    Z_Free(cls.demo.snapshots);
+    CL_FreeDemoSnapshots();
 
     memset(&cls.demo, 0, sizeof(cls.demo));
 }

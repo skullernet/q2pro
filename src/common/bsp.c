@@ -329,7 +329,7 @@ LOAD(Edges)
 
 LOAD(SurfEdges)
 {
-    int         *in;
+    int32_t     *in;
     msurfedge_t *out;
     int         i, vert;
     int32_t     index;
