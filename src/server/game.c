@@ -850,8 +850,14 @@ void SV_ShutdownGameProgs(void)
         game_library = NULL;
     }
     Cvar_Set("g_features", "0");
-
+    Cvar_Set("g_view_predict", "0");
     Z_LeakTest(TAG_FREE);
+	
+#ifdef AQTION_EXTENSION
+	GE_customizeentityforclient = NULL;
+	GE_CvarSync_Updated = NULL;
+#endif
+
 }
 
 static void *SV_LoadGameLibraryFrom(const char *path)
@@ -878,13 +884,135 @@ static void *SV_LoadGameLibrary(const char *libdir, const char *gamedir)
         return NULL;
     }
 
-    if (os_access(path, X_OK)) {
+    if (os_access(path, SOLIB_X_OK)) {
         Com_Printf("Can't access %s: %s\n", path, strerror(errno));
         return NULL;
     }
 
     return SV_LoadGameLibraryFrom(path);
 }
+
+
+#ifdef AQTION_EXTENSION
+typedef struct extension_func_s
+{
+	char		name[MAX_QPATH];
+	void*		func;
+	struct extension_func_s *n;
+} extension_func_t;
+extension_func_t *g_extension_funcs;
+
+// the do {} while here is a bizarre C-ism to allow for our local variable, probably not the best way to do this
+#define g_addextension(ename, efunc) \
+				do { \
+				extension_func_t *ext = malloc(sizeof(extension_func_t)); \
+				strcpy(ext->name, ename); \
+				ext->func = efunc; \
+				ext->n = g_extension_funcs; \
+				g_extension_funcs = ext; \
+				} while (0);
+
+int(*GE_customizeentityforclient)(edict_t *client, edict_t *ent, entity_state_t *state);
+void(*GE_CvarSync_Updated)(int index, edict_t *clent);
+
+/*
+================
+G_CheckForExtension
+
+Check for (and return) an extension function by name
+================
+*/
+static void* G_CheckForExtension(char *text)
+{
+	Com_Printf("G_CheckForExtension for %s\n", text);
+	extension_func_t *ext;
+	for(ext = g_extension_funcs; ext != NULL; ext = ext->n)
+	{
+		if (strcmp(ext->name, text))
+			continue;
+
+		return ext->func;
+	}
+
+	Com_Printf("Extension not found.\n");
+	return NULL;
+}
+
+static int G_Ext_Client_GetProtocol(edict_t *ent)
+{
+	if (!ent->client)
+		return 0;
+
+	client_t *client;
+	FOR_EACH_CLIENT(client) {
+		if (client->edict != ent)
+			continue;
+
+		return client->protocol;
+	}
+
+	return 0;
+}
+
+static int G_Ext_Client_GetVersion(edict_t *ent)
+{
+	if (!ent->client)
+		return 0;
+
+	client_t *client;
+	FOR_EACH_CLIENT(client) {
+		if (client->edict != ent)
+			continue;
+
+		return client->version;
+	}
+
+	return 0;
+}
+
+static void SV_CvarSync_Clear(void)
+{
+	svs.cvarsync_length = 0;
+	memset(svs.cvarsync_list, 0, sizeof(svs.cvarsync_list));
+}
+
+static void G_Ext_CvarSync_Set(int index, const char *name, const char *val)
+{
+	cvarsync_t *var = &svs.cvarsync_list[index];
+	
+	Q_strlcpy(var->name, name, CVARSYNC_MAXSIZE);
+	Q_strlcpy(var->value, val, CVARSYNC_MAXSIZE);
+
+	svs.cvarsync_length = index + 1;
+
+	Com_Printf("Adding cvarsync: %s, d%s\n", var->name, var->value);
+}
+
+void G_InitializeExtensions(void)
+{
+	// client networking info
+	g_addextension("Client_GetVersion", G_Ext_Client_GetVersion);
+	g_addextension("Client_GetProtocol", G_Ext_Client_GetProtocol);
+
+	// gamedll hud stuff
+	g_addextension("Ghud_ClearForClient", SV_Ghud_ClearForClient);
+	g_addextension("Ghud_NewElement",	SV_Ghud_NewElement);
+	g_addextension("Ghud_RemoveElement",SV_Ghud_RemoveElement);
+	g_addextension("Ghud_SetFlags",		SV_Ghud_SetFlags);
+	g_addextension("Ghud_SetText",		SV_Ghud_SetText);
+	g_addextension("Ghud_SetInt",		SV_Ghud_SetInt);
+	g_addextension("Ghud_SetPosition",	SV_Ghud_SetPosition);
+	g_addextension("Ghud_SetAnchor",	SV_Ghud_SetAnchor);
+	g_addextension("Ghud_SetColor",		SV_Ghud_SetColor);
+	g_addextension("Ghud_SetSize",		SV_Ghud_SetSize);
+
+	// cvar sync
+	g_addextension("CvarSync_Set", G_Ext_CvarSync_Set);
+}
+
+
+#endif
+
 
 /*
 ===============
@@ -900,6 +1028,11 @@ void SV_InitGameProgs(void)
 
     // unload anything we have now
     SV_ShutdownGameProgs();
+
+#ifdef AQTION_EXTENSION
+	SV_Ghud_Clear();
+	SV_CvarSync_Clear();
+#endif
 
     // for debugging or `proxy' mods
     if (sys_forcegamelib->string[0])
@@ -928,6 +1061,10 @@ void SV_InitGameProgs(void)
     // load a new game dll
     import = game_import;
 
+#ifdef AQTION_EXTENSION
+	import.CheckForExtension = G_CheckForExtension;
+#endif
+
     ge = entry(&import);
     if (!ge) {
         Com_Error(ERR_DROP, "Game library returned NULL exports");
@@ -955,4 +1092,9 @@ void SV_InitGameProgs(void)
     if (ge->max_edicts <= sv_maxclients->integer || ge->max_edicts > MAX_EDICTS) {
         Com_Error(ERR_DROP, "Game library returned bad number of max_edicts");
     }
+
+#ifdef AQTION_EXTENSION
+	GE_customizeentityforclient = ge->FetchGameExtension("customizeentityforclient");
+	GE_CvarSync_Updated = ge->FetchGameExtension("CvarSync_Updated");
+#endif
 }

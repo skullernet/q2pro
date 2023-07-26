@@ -37,6 +37,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <inttypes.h>
 #include <limits.h>
 #include <time.h>
+//FIREBLADE
+#include <stddef.h>
+//FIREBLADE
 
 #include "shared/platform.h"
 
@@ -92,6 +95,125 @@ typedef enum {
     PRINT_ERROR,        // print in red color
     PRINT_NOTICE        // print in cyan color
 } print_type_t;
+
+#ifdef AQTION_EXTENSION
+#include "shared/ghud.h"
+#endif
+
+// action functionality
+// legacy ABI support for Windows
+#if defined(__GNUC__) && defined(WIN32) && ! defined(WIN64)
+#define		q_gameabi           __attribute__((callee_pop_aggregate_return(0)))
+#else
+#define		q_gameabi
+#endif
+
+//==============================================
+#ifdef _WIN32
+#ifdef _MSC_VER
+// unknown pragmas are SUPPOSED to be ignored, but....
+#pragma warning(disable : 4244)	// MIPS
+#pragma warning(disable : 4136)	// X86
+#pragma warning(disable : 4051)	// ALPHA
+#pragma warning(disable : 4018)	// signed/unsigned mismatch
+#pragma warning(disable : 4305)	// truncation from const double to float
+#pragma warning(disable : 4996)	// deprecated functions
+#pragma warning(disable : 4100)	// unreferenced formal parameter
+#endif
+
+# define HAVE___INLINE
+# define HAVE__SNPRINTF
+# define HAVE__VSNPRINTF
+# define HAVE__STRICMP
+# define HAVE___FASTCALL
+# define HAVE__CDECL
+
+#endif
+//==============================================
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__GNUC__)
+
+# define HAVE_INLINE
+# define HAVE_STRCASECMP
+# define HAVE_SNPRINTF
+# define HAVE_VSNPRINTF
+
+#endif
+//==============================================
+
+#if ! defined(HAVE__CDECL) && ! defined(__cdecl)
+# define __cdecl
+#endif
+
+#if ! defined(HAVE___FASTCALL) && ! defined(__fastcall)
+# define __fastcall
+#endif
+
+#if ! defined(HAVE_INLINE) && ! defined(inline)
+# ifdef HAVE___INLINE
+#  define inline __inline
+# else
+#  define inline
+# endif
+#endif
+
+#if defined(HAVE__SNPRINTF) && ! defined(snprintf)
+# define snprintf _snprintf
+#endif
+
+#if defined(HAVE__VSNPRINTF) && ! defined(vsnprintf)
+# define vsnprintf(dest, size, src, list) _vsnprintf((dest), (size), (src), (list)), (dest)[(size)-1] = 0
+#endif
+
+#ifdef HAVE__STRICMP
+# ifndef Q_stricmp
+#  define Q_stricmp _stricmp
+# endif
+# ifndef Q_strnicmp
+#  define Q_strnicmp _strnicmp
+# endif
+# ifndef strcasecmp
+#  define strcasecmp _stricmp
+# endif
+# ifndef strncasecmp
+#  define strncasecmp _strnicmp
+# endif
+#elif defined(HAVE_STRCASECMP)
+# ifndef Q_stricmp
+#  define Q_stricmp strcasecmp
+# endif
+# ifndef Q_strnicmp
+#  define Q_strnicmp strncasecmp
+# endif
+#endif
+
+// zucc some I got from quake devels
+#define EF_BLUE          0x00400000	//a blue light
+#define EF_ROTATEREDSPOT 0x00800000	//fast rotate with a red spot of light at the front
+#define EF_TRANSLIGHT    0x01000000	//transparant with some lighting
+#define EF_PFOUNT        0x02000000	// particle foundtain
+#define EF_DYNDARK       0x04000000	//DYNAMIC darkness the one i was looking for!
+#define EF_YELLOWSHELL   0x08000000	//a yellow shell similar to those found with EF_COLOR_SHELL IIRC
+#define EF_TRANS         0x10000000	//translucency
+#define EF_YELLOWDOT     0x20000000	//yellow lighting with yellow dots under the model
+#define EF_WHITESHELL    0x40000000	//a yellow shell around  the model (like EF_YELLOWSHELL)
+#define EF_FLIES2        0x80000000	//Flies go a buzzin' and the sky grows dim
+#define EF_EDARK         0x84000000	// Extreme Darkness, you won't believe!
+#define EF_BLUE_CRUST    0x08208000	// An odd blue "crust" around the model
+#define EF_QBF           0x90408000	// The best of three worlds, blue shell like a quad, dark, and covered with flies
+#define EF_REDC          0x30050001	// This one is nice, a red light eminating of a red Quad crust
+#define EF_GREENRC       0x35152841	// It's Christmas time!  Red shell and geen light!
+#define EF_REDG          0x22010107	// RedCrust with gib effect trail
+#define EF_PUP           0x86080100	// 'ere's an odd one, a straight, upwards line of particles sprays above the modle
+#define EF_FLYG          0x60507800	// A few flies with a light, greenish yello crust
+#define EF_YELLOW_CRUST  0x10300070	// Yellow crust with a of smoke & yellow particles
+#define EF_BACKRED       0x90900900	// The Usual is black fly maham, but with a red light peeking through.
+
+#define EF_GREEN_LIGHT   0x04000040
+
+void Q_strncpyz (char *dest, const char *src, size_t size );
+void Q_strncatz (char *dest, const char *src, size_t size );
+
+// end action functionality
 
 void    Com_LPrintf(print_type_t type, const char *fmt, ...)
 q_printf(2, 3);
@@ -438,7 +560,9 @@ int Q_strcasecmp(const char *s1, const char *s2);
 int Q_strncasecmp(const char *s1, const char *s2, size_t n);
 char *Q_strcasestr(const char *s1, const char *s2);
 
-#define Q_stricmp   Q_strcasecmp
+//Defined above
+//#define Q_stricmp   Q_strcasecmp
+
 #define Q_stricmpn  Q_strncasecmp
 #define Q_stristr   Q_strcasestr
 
@@ -461,6 +585,8 @@ bool COM_IsWhite(const char *s);
 
 char *COM_Parse(const char **data_p);
 // data is an in/out parm, returns a parsed out token
+char *COM_ParseC(char **data_p);
+// mutable version of COM_Parse
 size_t COM_Compress(char *data);
 
 int SortStrcmp(const void *p1, const void *p2);
@@ -601,6 +727,9 @@ typedef struct cvar_s {
 
 // ------ new stuff ------
 #if USE_CLIENT || USE_SERVER
+#ifdef AQTION_EXTENSION
+	int			sync_index;
+#endif
     int         integer;
     char        *default_string;
     xchanged_t      changed;
@@ -740,6 +869,8 @@ typedef enum {
     PM_FREEZE
 } pmtype_t;
 
+//#define AQTION_EXTENSION
+
 // pmove->pm_flags
 #define PMF_DUCKED          1
 #define PMF_JUMP_HELD       2
@@ -749,6 +880,12 @@ typedef enum {
 #define PMF_TIME_TELEPORT   32  // pm_time is non-moving time
 #define PMF_NO_PREDICTION   64  // temporarily disables prediction (used for grappling hook)
 #define PMF_TELEPORT_BIT    128 // used by q2pro
+
+
+#ifdef AQTION_EXTENSION
+// pmove->pm_aq2_flags
+#define PMF_AQ2_LIMP		0x01 // used to predict limping
+#endif
 
 // this structure needs to be communicated bit-accurate
 // from the server to the client to guarantee that
@@ -760,11 +897,16 @@ typedef struct {
 
     short       origin[3];      // 12.3
     short       velocity[3];    // 12.3
-    byte        pm_flags;       // ducked, jump_held, etc
+	byte        pm_flags;       // ducked, jump_held, etc
     byte        pm_time;        // each unit = 8 ms
     short       gravity;
     short       delta_angles[3];    // add to command angles to get view direction
                                     // changed by spawns, rotating objects, and teleporters
+#ifdef AQTION_EXTENSION
+	short       pm_aq2_flags;   // limping, bandaging, etc
+	unsigned short pm_timestamp; // timestamp, resets every 60 seconds
+	byte		pm_aq2_leghits;		 // number of leg hits
+#endif
 } pmove_state_t;
 
 
@@ -887,6 +1029,9 @@ typedef struct {
 #define RDF_IRGOGGLES       4
 #define RDF_UVGOGGLES       8
 //ROGUE
+
+#define RF_INDICATOR			(RF_TRANSLUCENT | RF_FULLBRIGHT | RF_DEPTHHACK)
+#define IS_INDICATOR(rflags)	((rflags & RF_INDICATOR) == RF_INDICATOR)
 
 //
 // muzzle flashes / player effects
@@ -1111,18 +1256,22 @@ typedef enum {
 
 
 // sound attenuation values
-#define ATTN_NONE               0   // full volume the entire level
+#define ATTN_NONE               0    // full volume the entire level
+#define ATTN_LOUD               0.4  // handcannon
 #define ATTN_NORM               1
 #define ATTN_IDLE               2
-#define ATTN_STATIC             3   // diminish very rapidly with distance
+#define ATTN_STATIC             3	// diminish very rapidly with distance
 
+// adjustable weapon sounds
+#define MIN_WEAPON_SOUND        0
+#define MAX_WEAPON_SOUND        7
 
 // player_state->stats[] indexes
 #define STAT_HEALTH_ICON        0
 #define STAT_HEALTH             1
 #define STAT_AMMO_ICON          2
 #define STAT_AMMO               3
-#define STAT_ARMOR_ICON         4
+#define STAT_TEAM_ICON          4
 #define STAT_ARMOR              5
 #define STAT_SELECTED_ICON      6
 #define STAT_PICKUP_ICON        7
@@ -1134,8 +1283,36 @@ typedef enum {
 #define STAT_LAYOUTS            13
 #define STAT_FRAGS              14
 #define STAT_FLASHES            15      // cleared each frame, 1 = health, 2 = armor
-#define STAT_CHASE              16
-#define STAT_SPECTATOR          17
+
+// action changes
+//zucc need some new ones
+#define STAT_CLIP_ICON                  16
+#define STAT_CLIP                       17
+#define STAT_SNIPER_ICON                18
+#define STAT_ITEMS_ICON                 19
+#define STAT_WEAPONS_ICON               20
+#define STAT_ID_VIEW                    21
+
+//FIREBLADE
+#define STAT_TEAM_HEADER                22
+#define STAT_FLAG_PIC                   23
+#define STAT_TEAM1_PIC                  24
+#define STAT_TEAM2_PIC                  25
+#define STAT_TEAM1_SCORE                26
+#define STAT_TEAM2_SCORE                27
+//FIREBLADE
+
+//zucc more for me
+#define STAT_GRENADE_ICON               28
+#define STAT_GRENADES                   29
+
+#define STAT_TEAM3_PIC	        		30
+#define STAT_TEAM3_SCORE        		31
+
+#define STAT_TEAM1_HEADER               30
+#define STAT_TEAM2_HEADER               31
+
+// action end
 
 #define MAX_STATS               32
 
@@ -1159,15 +1336,18 @@ typedef enum {
 #define DF_FIXED_FOV        0x00008000  // 32768
 
 // RAFAEL
-#define DF_QUADFIRE_DROP    0x00010000  // 65536
+// action changes
+//#define DF_QUADFIRE_DROP    0x00010000  // 65536
+#define DF_WEAPON_RESPAWN       0x00010000
 
+/* action changes
 //ROGUE
 #define DF_NO_MINES         0x00020000
 #define DF_NO_STACK_DOUBLE  0x00040000
 #define DF_NO_NUKES         0x00080000
 #define DF_NO_SPHERES       0x00100000
 //ROGUE
-
+*/
 
 #define UF_AUTOSCREENSHOT   1
 #define UF_AUTORECORD       2
@@ -1305,3 +1485,14 @@ typedef struct {
 
     short       stats[MAX_STATS];       // fast status bar updates
 } player_state_t;
+
+
+// Reki : Cvar Sync info shared between engine and game
+#define CVARSYNC_MAXSIZE	64
+#define CVARSYNC_MAX		32
+typedef struct {
+	char name[CVARSYNC_MAXSIZE];
+	char value[CVARSYNC_MAXSIZE];
+} cvarsync_t;
+
+typedef char cvarsyncvalue_t[CVARSYNC_MAXSIZE];

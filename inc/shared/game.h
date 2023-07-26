@@ -24,7 +24,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // game.h -- game dll information visible to server
 //
 
-#define GAME_API_VERSION    3
+#ifdef AQTION_EXTENSION
+#define GAME_API_VERSION        4
+#else
+#define GAME_API_VERSION        3
+#endif
 
 // edict->svflags
 
@@ -60,6 +64,12 @@ typedef enum {
 
 #define MAX_ENT_CLUSTERS    16
 
+// link_t is only used for entity area links now
+typedef struct link_s
+{
+  struct link_s *prev, *next;
+}
+link_t;
 
 typedef struct edict_s edict_t;
 typedef struct gclient_s gclient_t;
@@ -77,6 +87,10 @@ struct gclient_s {
 
     // the game dll can add anything it wants after
     // this point in the structure
+
+#ifdef AQTION_EXTENSION
+	cvarsyncvalue_t cl_cvar[CVARSYNC_MAX];
+#endif
 };
 
 
@@ -110,6 +124,11 @@ struct edict_s {
 #endif      // GAME_INCLUDE
 
 //===============================================================
+
+// action start
+// making real copies for bot compatibility
+extern void (*real_cprintf) (struct edict_s * ent, int printlevel, const char *fmt, ...);
+extern void (*real_centerprintf) (struct edict_s * ent, const char *fmt, ...);
 
 //
 // functions provided by the main engine
@@ -187,6 +206,10 @@ typedef struct {
     void (*AddCommandString)(const char *text);
 
     void (*DebugGraph)(float value, int color);
+
+#ifdef AQTION_EXTENSION
+	void *(*CheckForExtension)(char *text);
+#endif
 } game_import_t;
 
 //
@@ -230,6 +253,11 @@ typedef struct {
     // The game can issue gi.argc() / gi.argv() commands to get the rest
     // of the parameters
     void (*ServerCommand)(void);
+
+#ifdef AQTION_EXTENSION
+	void* (*FetchGameExtension)(char *name);
+#endif
+
 
     //
     // global variables shared between game and server

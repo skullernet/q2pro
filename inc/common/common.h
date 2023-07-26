@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #pragma once
 
+
 #include "common/cmd.h"
 #include "common/utils.h"
 
@@ -25,10 +26,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // common.h -- definitions common between client and server, but not game.dll
 //
 
-#define PRODUCT         "Q2PRO"
+#define PRODUCT         "AQtion"
 
 #if USE_CLIENT
-#define APPLICATION     "q2pro"
+#define APPLICATION     PRODUCT
 #else
 #define APPLICATION     "q2proded"
 #endif
@@ -112,6 +113,10 @@ void        Com_AddConfigFile(const char *name, unsigned flags);
 #define COM_DEDICATED   1
 #endif
 
+#ifdef AQTION_EXTENSION
+void G_InitializeExtensions(void);
+#endif
+
 #if USE_DEBUG
 #define Com_DPrintf(...) \
     if (developer && developer->integer > 0) \
@@ -138,6 +143,11 @@ extern cvar_t  *z_perturb;
 extern cvar_t   *developer;
 #endif
 extern cvar_t   *dedicated;
+#if USE_CLIENT
+extern cvar_t   *steamid;
+extern cvar_t   *steamcloudappenabled;
+extern cvar_t   *steamclouduserenabled;
+#endif
 #if USE_CLIENT
 extern cvar_t   *host_speeds;
 #endif

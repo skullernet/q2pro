@@ -1,0 +1,124 @@
+name: Q2Pro Release
+
+on:
+  push:
+    tags:
+      - '*'
+  workflow_dispatch:
+
+jobs:
+  generate_release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          repository: actionquake/q2pro
+          ref: ${{ github.ref }}
+
+      - name: version
+        run: echo "::set-output name=version::$(git rev-parse --short HEAD)"
+        id: version
+        
+      - name: release
+        uses: actions/create-release@v1
+        id: create_release
+        with:
+          draft: false
+          prerelease: false
+          release_name: q2pro_${{ steps.version.outputs.version }}
+          tag_name: ${{ steps.version.outputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Download Linux x64 clang build artifacts
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build.yml
+          name: q2pro-lin-clang
+          skip_unpack: true
+
+      - name: Download Linux x64 gcc build artifacts
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build.yml
+          name: q2pro-lin-gcc
+          skip_unpack: true
+
+      - name: Download Linux Wayland x64 clang build artifacts
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build.yml
+          name: q2pro-lin-wayland-clang
+          skip_unpack: true
+
+      - name: Download Linux Wayland x64 gcc build artifacts
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build.yml
+          name: q2pro-lin-wayland-gcc
+          skip_unpack: true
+      
+      - name: Download Linux ARM x64 build artifacts
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build.yml
+          name: q2pro-lin-arm64
+          skip_unpack: true
+
+      # - name: Download Win MSVC x86 build artifacts
+      #   uses: dawidd6/action-download-artifact@v2
+      #   with:
+      #     workflow: build.yml
+      #     name: q2pro-msvc-x86
+      #     skip_unpack: true
+
+      - name: Download Win MSVC x64 build artifacts
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build.yml
+          name: q2pro-msvc-x64
+          skip_unpack: true
+
+      # - name: Download Win mingw i686 build artifacts
+      #   uses: dawidd6/action-download-artifact@v2
+      #   with:
+      #     workflow: build.yml
+      #     name: q2pro-mingw-i686
+      #     skip_unpack: true
+
+      - name: Download Win mingw x64 build artifacts
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build.yml
+          name: q2pro-mingw-x86_64
+          skip_unpack: true
+          
+      - name: Download Darwin x86_64 build artifacts
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build.yml
+          name: q2pro-darwin-x86_64
+          skip_unpack: true
+
+      - name: Upload dist tarball to release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          body_path: 
+          tag_name: ${{ steps.version.outputs.version }}
+          files: |
+            q2pro-mingw-x86_64.zip
+            q2pro-msvc-x64.zip
+            q2pro-lin-arm64.zip
+            q2pro-lin-gcc.zip
+            q2pro-lin-clang.zip
+            q2pro-lin-wayland-gcc.zip
+            q2pro-lin-wayland-clang.zip
+            q2pro-darwin-x86_64.zip
+
+
+
+            
+

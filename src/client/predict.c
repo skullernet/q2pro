@@ -253,6 +253,30 @@ void CL_PredictMovement(void)
         cl.predicted_step_frame = frame;
     }
 
+
+	if (cl.predicted_viewheight_frame != cl.frame.number
+#if USE_FPS
+		&& cl.frame.number == cl.keyframe.number
+#endif
+		)
+	{
+		cl.predicted_viewheight_frame = cl.frame.number;
+		cl.predicted_viewheight[1] = cl.predicted_viewheight[0];
+
+		if (cl.view_predict)
+		{
+			if (pm.s.pm_flags & PMF_DUCKED)
+				cl.predicted_viewheight[0] = cl.view_low;
+			else
+				cl.predicted_viewheight[0] = cl.view_high;
+		}
+		else
+		{
+			cl.predicted_viewheight[0] = pm.viewheight;
+		}
+	}
+
+
     // copy results out for rendering
     VectorScale(pm.s.origin, 0.125f, cl.predicted_origin);
     VectorScale(pm.s.velocity, 0.125f, cl.predicted_velocity);

@@ -30,12 +30,13 @@ qhandle_t   cl_sfx_railg;
 qhandle_t   cl_sfx_rockexp;
 qhandle_t   cl_sfx_grenexp;
 qhandle_t   cl_sfx_watrexp;
-qhandle_t   cl_sfx_footsteps[4];
+qhandle_t   cl_sfx_footsteps[12];
+qhandle_t   cl_sfx_landing[8];
 
 qhandle_t   cl_sfx_lightning;
 qhandle_t   cl_sfx_disrexp;
 
-qhandle_t   cl_mod_explode;
+//qhandle_t   cl_mod_explode;
 qhandle_t   cl_mod_smoke;
 qhandle_t   cl_mod_flash;
 qhandle_t   cl_mod_parasite_segment;
@@ -72,17 +73,32 @@ void CL_RegisterTEntSounds(void)
     cl_sfx_grenexp = S_RegisterSound("weapons/grenlx1a.wav");
     cl_sfx_watrexp = S_RegisterSound("weapons/xpld_wat.wav");
 
-    S_RegisterSound("player/land1.wav");
+    for (i = 0; i < 8; i++) {
+        Q_snprintf(name, sizeof(name), "player/land%i.wav", i + 1);
+        cl_sfx_landing[i] = S_RegisterSound(name);
+    }
     S_RegisterSound("player/fall2.wav");
     S_RegisterSound("player/fall1.wav");
-
-    for (i = 0; i < 4; i++) {
+    for (i = 0; i < 12; i++) {
         Q_snprintf(name, sizeof(name), "player/step%i.wav", i + 1);
         cl_sfx_footsteps[i] = S_RegisterSound(name);
     }
 
     cl_sfx_lightning = S_RegisterSound("weapons/tesla.wav");
     cl_sfx_disrexp = S_RegisterSound("weapons/disrupthit.wav");
+
+    // Register all AQtion gun sounds
+    char gunsounds[][64] = {"mk23fire", "mp5fire", "m4a1fire", "shotgf1b", "cannon_fire", "ssgfire"};
+    size_t guncount = sizeof(gunsounds) / sizeof(gunsounds[0]);
+
+    for (size_t j = 0; j < guncount; j++) {
+        Q_snprintf(name, sizeof(name), "weapons/%s.wav", gunsounds[j]);
+        S_RegisterSound(name);
+        for (i = MIN_WEAPON_SOUND; i < MAX_WEAPON_SOUND; i++) {
+            Q_snprintf(name, sizeof(name), "weapons/%s%i.wav", gunsounds[j], i + 1);
+            S_RegisterSound(name);
+        }
+    }
 }
 
 /*
@@ -92,7 +108,8 @@ CL_RegisterTEntModels
 */
 void CL_RegisterTEntModels(void)
 {
-    cl_mod_explode = R_RegisterModel("models/objects/explode/tris.md2");
+    // AQtion does not use this model
+    //cl_mod_explode = R_RegisterModel("models/objects/explode/tris.md2");
     cl_mod_smoke = R_RegisterModel("models/objects/smoke/tris.md2");
     cl_mod_flash = R_RegisterModel("models/objects/flash/tris.md2");
     cl_mod_parasite_segment = R_RegisterModel("models/monsters/parasite/segment/tris.md2");
@@ -1007,11 +1024,11 @@ void CL_ParseTEnt(void)
             VectorSet(ex->lightcolor, 0.19f, 0.41f, 0.75f);
             break;
         }
-        ex->start = cl.servertime - CL_FRAMETIME;
-        ex->light = 150;
-        ex->ent.model = cl_mod_explode;
-        ex->frames = 4;
-        S_StartSound(te.pos1,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
+        // ex->start = cl.servertime - CL_FRAMETIME;
+        // ex->light = 150;
+        // ex->ent.model = cl_mod_explode;
+        // ex->frames = 4;
+        // S_StartSound(te.pos1,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
         break;
 
     case TE_RAILTRAIL:          // railgun effect
