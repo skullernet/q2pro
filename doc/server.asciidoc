@@ -149,12 +149,13 @@ sv_lan_force_rate::
     Default value is 0 (disabled).
 
 sv_min_rate::
-    Specifies minimum value of ‘rate’ userinfo parameter clients are allowed
-    to use. Default value is 100 bytes/sec.
+    Server clamps minimum value of ‘rate’ userinfo parameter to this value.
+    Default value is 1500 bytes/sec. This parameter can't be greater than
+    ‘sv_max_rate’ value or less than 1500 bytes/sec.
 
 sv_max_rate::
-    Specifies maximum value of ‘rate’ userinfo parameter clients are allowed
-    use. Default value is 15000 bytes/sec.
+    Server clamps maximum value of ‘rate’ userinfo parameter to this value.
+    Default value is 15000 bytes/sec.
 
 sv_calcpings_method::
     Specifies the way client pings are calculated. Default ping calculation
