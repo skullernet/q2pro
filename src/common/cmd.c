@@ -133,6 +133,7 @@ void Cbuf_Execute(cmdbuf_t *buf)
     char    *text;
     char    line[MAX_STRING_CHARS];
     int     quotes;
+    bool    ok;
 
     while (buf->cursize) {
         if (buf->waitCount > 0) {
@@ -155,9 +156,12 @@ void Cbuf_Execute(cmdbuf_t *buf)
         }
 
         // check for overflow
-        i = min(i, sizeof(line) - 1);
-        memcpy(line, text, i);
-        line[i] = 0;
+        ok = false;
+        if (i < sizeof(line)) {
+            memcpy(line, text, i);
+            line[i] = 0;
+            ok = true;
+        }
 
 // delete the text from the command buffer and move remaining commands down
 // this is necessary because commands (exec, alias) can insert data at the
@@ -171,8 +175,12 @@ void Cbuf_Execute(cmdbuf_t *buf)
         }
 
 // execute the command line
-        cmd_current = buf;
-        buf->exec(buf, line);
+        if (ok) {
+            cmd_current = buf;
+            buf->exec(buf, line);
+        } else {
+            Com_Printf("Line exceeded %i chars, discarded.\n", MAX_STRING_CHARS);
+        }
     }
 }
 
