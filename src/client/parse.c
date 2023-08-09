@@ -414,7 +414,7 @@ static void CL_ParseConfigstring(int index)
     maxlen = CS_SIZE(index);
     len = MSG_ReadString(s, maxlen);
 
-    SHOWNET(2, "    %d \"%s\"\n", index, s);
+    SHOWNET(2, "    %d \"%s\"\n", index, Com_MakePrintable(s));
 
     if (len >= maxlen) {
         Com_WPrintf(
@@ -918,7 +918,7 @@ static void CL_ParsePrint(void)
     level = MSG_ReadByte();
     MSG_ReadString(s, sizeof(s));
 
-    SHOWNET(2, "    %i \"%s\"\n", level, s);
+    SHOWNET(2, "    %i \"%s\"\n", level, Com_MakePrintable(s));
 
     if (level != PRINT_CHAT) {
         Com_Printf("%s", s);
@@ -976,7 +976,7 @@ static void CL_ParseCenterPrint(void)
     char s[MAX_STRING_CHARS];
 
     MSG_ReadString(s, sizeof(s));
-    SHOWNET(2, "    \"%s\"\n", s);
+    SHOWNET(2, "    \"%s\"\n", Com_MakePrintable(s));
     SCR_CenterPrint(s);
 
     if (!cls.demo.playback && cl.serverstate != ss_broadcast) {
@@ -990,14 +990,14 @@ static void CL_ParseStuffText(void)
     char s[MAX_STRING_CHARS];
 
     MSG_ReadString(s, sizeof(s));
-    SHOWNET(2, "    \"%s\"\n", s);
+    SHOWNET(2, "    \"%s\"\n", Com_MakePrintable(s));
     Cbuf_AddText(&cl_cmdbuf, s);
 }
 
 static void CL_ParseLayout(void)
 {
     MSG_ReadString(cl.layout, sizeof(cl.layout));
-    SHOWNET(2, "    \"%s\"\n", cl.layout);
+    SHOWNET(2, "    \"%s\"\n", Com_MakePrintable(cl.layout));
 }
 
 static void CL_ParseInventory(void)
