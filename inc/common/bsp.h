@@ -249,6 +249,7 @@ typedef struct bsp_s {
     int             numsurfedges;
     msurfedge_t     *surfedges;
 #endif
+    bool            extended;
 
     char            name[1];
 } bsp_t;
