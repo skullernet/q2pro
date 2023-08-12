@@ -238,7 +238,7 @@ static void MVD_UnicastLayout(mvd_t *mvd, mvd_player_t *player)
         Q_strlcpy(mvd->oldscores, mvd->layout, sizeof(mvd->oldscores));
     }
 
-    if (mvd->demoseeking)
+    if (mvd->demoseeking || !mvd->dummy)
         return;
 
     // force an update to all relevant clients
