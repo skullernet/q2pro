@@ -938,6 +938,67 @@ void BSP_Free(bsp_t *bsp)
     }
 }
 
+#if USE_REF
+
+static void BSP_ParseDecoupledLM(bsp_t *bsp, const byte *in, uint32_t filelen)
+{
+    mface_t *out;
+    uint32_t offset;
+
+    if (filelen % 40)
+        return;
+    if (bsp->numfaces > filelen / 40)
+        return;
+
+    out = bsp->faces;
+    for (int i = 0; i < bsp->numfaces; i++, out++) {
+        out->lm_width = BSP_Short();
+        out->lm_height = BSP_Short();
+
+        offset = BSP_Long();
+        if (offset < bsp->numlightmapbytes)
+            out->lightmap = bsp->lightmap + offset;
+
+        for (int j = 0; j < 2; j++) {
+            out->lm_axis[j][0] = BSP_Float();
+            out->lm_axis[j][1] = BSP_Float();
+            out->lm_axis[j][2] = BSP_Float();
+            out->lm_offset[j] = BSP_Float();
+        }
+    }
+
+    bsp->lm_decoupled = true;
+}
+
+static void BSP_ParseExtensions(bsp_t *bsp, const byte *buf, uint32_t pos, uint32_t filelen)
+{
+    pos = ALIGN(pos, 4);
+    if (pos > filelen - 8)
+        return;
+    if (RL32(buf + pos) != BSPXHEADER)
+        return;
+    pos += 8;
+
+    uint32_t numlumps = RL32(buf + pos - 4);
+    if (numlumps > (filelen - pos) / sizeof(xlump_t))
+        return;
+
+    xlump_t *l = (xlump_t *)(buf + pos);
+    for (int i = 0; i < numlumps; i++, l++) {
+        uint32_t ofs = LittleLong(l->fileofs);
+        uint32_t len = LittleLong(l->filelen);
+        uint32_t end = ofs + len;
+        if (end < ofs || end > filelen)
+            continue;
+
+        if (!strcmp(l->name, "DECOUPLED_LM")) {
+            BSP_ParseDecoupledLM(bsp, buf + ofs, len);
+            continue;
+        }
+    }
+}
+
+#endif
 
 /*
 ==================
@@ -952,7 +1013,7 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
     byte            *buf;
     dheader_t       *header;
     const lump_info_t *info;
-    uint32_t        filelen, ofs, len, end, count;
+    uint32_t        filelen, ofs, len, end, count, maxpos;
     int             ret;
     byte            *lumpdata[HEADER_LUMPS];
     size_t          lumpcount[HEADER_LUMPS];
@@ -1006,6 +1067,7 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
 
     // byte swap and validate all lumps
     memsize = 0;
+    maxpos = 0;
     for (info = bsp_lumps; info->load; info++) {
         ofs = LittleLong(header->lumps[info->lump].fileofs);
         len = LittleLong(header->lumps[info->lump].filelen);
@@ -1026,6 +1088,7 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
 
         // round to cacheline
         memsize += ALIGN(count * info->memsize, 64);
+        maxpos = max(maxpos, end);
     }
 
     // load into hunk
@@ -1057,6 +1120,10 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
     if (ret) {
         goto fail1;
     }
+
+#if USE_REF
+    BSP_ParseExtensions(bsp, buf, maxpos, filelen);
+#endif
 
     Hunk_End(&bsp->hunk);
 
@@ -1103,9 +1170,9 @@ static lightpoint_t *light_point;
 
 static bool BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, const vec3_t p1, const vec3_t p2)
 {
-    vec_t d1, d2, frac, midf;
+    vec_t d1, d2, frac, midf, s, t;
     vec3_t mid;
-    int i, side, s, t;
+    int i, side;
     mface_t *surf;
     mtexinfo_t *texinfo;
 
@@ -1138,14 +1205,11 @@ static bool BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, const v
             if (texinfo->c.flags & SURF_NOLM_MASK)
                 continue;
 
-            s = DotProduct(texinfo->axis[0], mid) + texinfo->offset[0];
-            t = DotProduct(texinfo->axis[1], mid) + texinfo->offset[1];
-
-            s -= surf->texturemins[0];
-            t -= surf->texturemins[1];
-            if (s < 0 || s > surf->extents[0])
+            s = DotProduct(surf->lm_axis[0], mid) + surf->lm_offset[0];
+            t = DotProduct(surf->lm_axis[1], mid) + surf->lm_offset[1];
+            if (s < 0 || s > surf->lm_width - 1)
                 continue;
-            if (t < 0 || t > surf->extents[1])
+            if (t < 0 || t > surf->lm_height - 1)
                 continue;
 
             light_point->surf = surf;

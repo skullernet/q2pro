@@ -94,3 +94,13 @@ typedef struct {
     uint32_t    numclusters;
     uint32_t    bitofs[][2];    // bitofs[numclusters][2]
 } dvis_t;
+
+//=============================================================================
+
+#define BSPXHEADER      MakeLittleLong('B','S','P','X')
+
+typedef struct {
+    char        name[24];
+    uint32_t    fileofs;
+    uint32_t    filelen;
+} xlump_t;
