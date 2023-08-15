@@ -21,7 +21,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 game_locals_t   game;
 level_locals_t  level;
 game_import_t   gi;
+game_import_ex_t gix;
 game_export_t   globals;
+game_export_ex_t globalsx;
 spawn_temp_t    st;
 
 int sm_meat_index;
@@ -90,6 +92,61 @@ void G_RunFrame(void);
 
 //===================================================================
 
+#ifdef GAME_API_EXTENSIONS
+extension_func_t *g_extension_funcs;
+int(*engine_Client_GetVersion)(edict_t *ent);
+int(*engine_Client_GetProtocol)(edict_t *ent);
+
+// extended functions
+int Client_GetVersion(edict_t *ent)
+{
+	if (!engine_Client_GetVersion)
+		return 0;
+
+	return engine_Client_GetVersion(ent);
+}
+
+int Client_GetProtocol(edict_t *ent)
+{
+	if (!engine_Client_GetProtocol)
+		return 0;
+
+	return engine_Client_GetProtocol(ent);
+}
+
+
+// extended entrypoints
+static int G_customizeentityforclient(edict_t *viewer, edict_t *ent, entity_state_t *state)
+{
+	return true;
+}
+
+// declarations
+static void* G_FetchGameExtension(char *name)
+{
+	Com_Printf("Game: G_FetchGameExtension for %s\n", name);
+	extension_func_t *ext;
+	for (ext = g_extension_funcs; ext != NULL; ext = ext->n)
+	{
+		if (strcmp(ext->name, name))
+			continue;
+
+		return ext->func;
+	}
+
+	Com_Printf("Game: Extension not found.\n");
+	return NULL;
+}
+
+static void G_InitExtEntrypoints(void)
+{
+	g_addextension("customizeentityforclient", G_customizeentityforclient);
+}
+
+
+#else
+void* G_FetchGameExtension(char *name) { return NULL; }
+#endif
 
 void ShutdownGame(void)
 {
@@ -226,6 +283,23 @@ q_exported game_export_t *GetGameAPI(game_import_t *import)
     globals.edict_size = sizeof(edict_t);
 
     return &globals;
+}
+
+q_exported game_export_ex_t *GetExtendedGameAPI(game_import_ex_t *importx)
+{
+	gix = *importx;
+
+	globalsx.apiversion = GAME_API_VERSION_EX;
+	globalsx.CheckForExtension = G_FetchGameExtension;
+
+#ifdef GAME_API_EXTENSIONS
+	G_InitExtEntrypoints();
+
+	engine_Client_GetProtocol = gix.CheckForExtension("Client_GetProtocol");
+	engine_Client_GetVersion = gix.CheckForExtension("Client_GetVersion");
+#endif
+
+	return &globalsx;
 }
 
 #ifndef GAME_HARD_LINKED

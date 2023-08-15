@@ -2259,6 +2259,10 @@ void SV_Init(void)
     SV_SetConsoleTitle();
 #endif
 
+#ifdef GAME_API_EXTENSIONS
+	G_InitializeExtensions();
+#endif
+
     sv_registered = true;
 }
 
