@@ -166,10 +166,14 @@ static int MOD_LoadSP2(model_t *model, const void *rawdata, size_t length)
         model->type = MOD_EMPTY;
         return Q_ERR_SUCCESS;
     }
-    if (header.numframes > SP2_MAX_FRAMES)
-        return Q_ERR_TOO_MANY;
-    if (sizeof(dsp2header_t) + sizeof(dsp2frame_t) * header.numframes > length)
-        return Q_ERR_BAD_EXTENT;
+    if (header.numframes > SP2_MAX_FRAMES) {
+        Com_SetLastError("too many frames");
+        return Q_ERR_INVALID_FORMAT;
+    }
+    if (sizeof(dsp2header_t) + sizeof(dsp2frame_t) * header.numframes > length) {
+        Com_SetLastError("frames out of bounds");
+        return Q_ERR_INVALID_FORMAT;
+    }
 
     Hunk_Begin(&model->hunk, sizeof(model->spriteframes[0]) * header.numframes);
     model->type = MOD_SPRITE;
@@ -203,78 +207,72 @@ static int MOD_LoadSP2(model_t *model, const void *rawdata, size_t length)
     return Q_ERR_SUCCESS;
 }
 
-static int MOD_ValidateMD2(dmd2header_t *header, size_t length)
+static const char *MOD_ValidateMD2(const dmd2header_t *header, size_t length)
 {
     size_t end;
 
-    // check ident and version
-    if (header->ident != MD2_IDENT)
-        return Q_ERR_UNKNOWN_FORMAT;
-    if (header->version != MD2_VERSION)
-        return Q_ERR_UNKNOWN_FORMAT;
-
     // check triangles
     if (header->num_tris < 1)
-        return Q_ERR_TOO_FEW;
+        return "too few tris";
     if (header->num_tris > TESS_MAX_INDICES / 3)
-        return Q_ERR_TOO_MANY;
+        return "too many tris";
 
     end = header->ofs_tris + sizeof(dmd2triangle_t) * header->num_tris;
     if (header->ofs_tris < sizeof(*header) || end < header->ofs_tris || end > length)
-        return Q_ERR_BAD_EXTENT;
+        return "bad tris offset";
     if (header->ofs_tris % q_alignof(dmd2triangle_t))
-        return Q_ERR_BAD_ALIGN;
+        return "odd tris offset";
 
     // check st
     if (header->num_st < 3)
-        return Q_ERR_TOO_FEW;
+        return "too few st";
     if (header->num_st > INT_MAX / sizeof(dmd2stvert_t))
-        return Q_ERR_TOO_MANY;
+        return "too many st";
 
     end = header->ofs_st + sizeof(dmd2stvert_t) * header->num_st;
     if (header->ofs_st < sizeof(*header) || end < header->ofs_st || end > length)
-        return Q_ERR_BAD_EXTENT;
+        return "bad st offset";
     if (header->ofs_st % q_alignof(dmd2stvert_t))
-        return Q_ERR_BAD_ALIGN;
+        return "odd st offset";
 
     // check xyz and frames
     if (header->num_xyz < 3)
-        return Q_ERR_TOO_FEW;
+        return "too few xyz";
     if (header->num_xyz > MD2_MAX_VERTS)
-        return Q_ERR_TOO_MANY;
+        return "too many xyz";
     if (header->num_frames < 1)
-        return Q_ERR_TOO_FEW;
+        return "too few frames";
     if (header->num_frames > MD2_MAX_FRAMES)
-        return Q_ERR_TOO_MANY;
+        return "too many frames";
 
     end = sizeof(dmd2frame_t) + (header->num_xyz - 1) * sizeof(dmd2trivertx_t);
     if (header->framesize < end || header->framesize > MD2_MAX_FRAMESIZE)
-        return Q_ERR_BAD_EXTENT;
+        return "bad frame size";
     if (header->framesize % q_alignof(dmd2frame_t))
-        return Q_ERR_BAD_ALIGN;
+        return "odd frame size";
 
     end = header->ofs_frames + (size_t)header->framesize * header->num_frames;
     if (header->ofs_frames < sizeof(*header) || end < header->ofs_frames || end > length)
-        return Q_ERR_BAD_EXTENT;
+        return "bad frames offset";
     if (header->ofs_frames % q_alignof(dmd2frame_t))
-        return Q_ERR_BAD_ALIGN;
+        return "odd frames offset";
 
     // check skins
     if (header->num_skins) {
         if (header->num_skins > MD2_MAX_SKINS)
-            return Q_ERR_TOO_MANY;
+            return "too many skins";
 
         end = header->ofs_skins + (size_t)MD2_MAX_SKINNAME * header->num_skins;
         if (header->ofs_skins < sizeof(*header) || end < header->ofs_skins || end > length)
-            return Q_ERR_BAD_EXTENT;
+            return "bad skins offset";
     }
 
     if (header->skinwidth < 1 || header->skinwidth > MD2_MAX_SKINWIDTH)
-        return Q_ERR_INVALID_FORMAT;
+        return "bad skin width";
     if (header->skinheight < 1 || header->skinheight > MD2_MAX_SKINHEIGHT)
-        return Q_ERR_INVALID_FORMAT;
+        return "bad skin height";
 
-    return Q_ERR_SUCCESS;
+    return NULL;
 }
 
 static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
@@ -298,6 +296,7 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
     char            skinname[MAX_QPATH];
     vec_t           scale_s, scale_t;
     vec3_t          mins, maxs;
+    const char      *err;
 
     if (length < sizeof(header)) {
         return Q_ERR_FILE_TOO_SMALL;
@@ -306,15 +305,22 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
     // byte swap the header
     LittleBlock(&header, rawdata, sizeof(header));
 
+    // check ident and version
+    if (header.ident != MD2_IDENT)
+        return Q_ERR_UNKNOWN_FORMAT;
+    if (header.version != MD2_VERSION)
+        return Q_ERR_UNKNOWN_FORMAT;
+
     // validate the header
-    ret = MOD_ValidateMD2(&header, length);
-    if (ret) {
-        if (ret == Q_ERR_TOO_FEW) {
+    err = MOD_ValidateMD2(&header, length);
+    if (err) {
+        if (!strncmp(err, CONST_STR_LEN("too few"))) {
             // empty models draw nothing
             model->type = MOD_EMPTY;
             return Q_ERR_SUCCESS;
         }
-        return ret;
+        Com_SetLastError(err);
+        return Q_ERR_INVALID_FORMAT;
     }
 
     // load all triangle indices
@@ -341,7 +347,8 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
     }
 
     if (numindices < 3) {
-        return Q_ERR_TOO_FEW;
+        Com_SetLastError("too few valid indices");
+        return Q_ERR_INVALID_FORMAT;
     }
 
     for (i = 0; i < numindices; i++) {
@@ -372,7 +379,8 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
     }
 
     if (numverts > TESS_MAX_VERTICES) {
-        return Q_ERR_TOO_MANY;
+        Com_SetLastError("too many verts");
+        return Q_ERR_INVALID_FORMAT;
     }
 
     Hunk_Begin(&model->hunk, 0x400000);
@@ -487,11 +495,51 @@ fail:
 }
 
 #if USE_MD3
+static const char *MOD_ValidateMD3Mesh(const model_t *model, const dmd3mesh_t *header, size_t length)
+{
+    size_t end;
+
+    if (header->meshsize < sizeof(header) || header->meshsize > length)
+        return "bad mesh size";
+    if (header->meshsize % q_alignof(dmd3mesh_t))
+        return "odd mesh size";
+    if (header->num_verts < 3)
+        return "too few verts";
+    if (header->num_verts > TESS_MAX_VERTICES)
+        return "too many verts";
+    if (header->num_tris < 1)
+        return "too few tris";
+    if (header->num_tris > TESS_MAX_INDICES / 3)
+        return "too many tris";
+    if (header->num_skins > MD3_MAX_SKINS)
+        return "too many skins";
+    end = header->ofs_skins + header->num_skins * sizeof(dmd3skin_t);
+    if (end < header->ofs_skins || end > length)
+        return "bad skins offset";
+    if (header->ofs_skins % q_alignof(dmd3skin_t))
+        return "odd skins offset";
+    end = header->ofs_verts + header->num_verts * model->numframes * sizeof(dmd3vertex_t);
+    if (end < header->ofs_verts || end > length)
+        return "bad verts offset";
+    if (header->ofs_verts % q_alignof(dmd3vertex_t))
+        return "odd verts offset";
+    end = header->ofs_tcs + header->num_verts * sizeof(dmd3coord_t);
+    if (end < header->ofs_tcs || end > length)
+        return "bad tcs offset";
+    if (header->ofs_tcs % q_alignof(dmd3coord_t))
+        return "odd tcs offset";
+    end = header->ofs_indexes + header->num_tris * 3 * sizeof(uint32_t);
+    if (end < header->ofs_indexes || end > length)
+        return "bad indexes offset";
+    if (header->ofs_indexes & 3)
+        return "odd indexes offset";
+    return NULL;
+}
+
 static int MOD_LoadMD3Mesh(model_t *model, maliasmesh_t *mesh,
                            const byte *rawdata, size_t length, size_t *offset_p)
 {
     dmd3mesh_t      header;
-    size_t          end;
     dmd3vertex_t    *src_vert;
     dmd3coord_t     *src_tc;
     dmd3skin_t      *src_skin;
@@ -502,47 +550,20 @@ static int MOD_LoadMD3Mesh(model_t *model, maliasmesh_t *mesh,
     uint32_t        index;
     char            skinname[MAX_QPATH];
     int             i, j, k, ret;
+    const char      *err;
 
     if (length < sizeof(header))
-        return Q_ERR_BAD_EXTENT;
+        return Q_ERR_UNEXPECTED_EOF;
 
     // byte swap the header
     LittleBlock(&header, rawdata, sizeof(header));
 
-    if (header.meshsize < sizeof(header) || header.meshsize > length)
-        return Q_ERR_BAD_EXTENT;
-    if (header.meshsize % q_alignof(dmd3mesh_t))
-        return Q_ERR_BAD_ALIGN;
-    if (header.num_verts < 3)
-        return Q_ERR_TOO_FEW;
-    if (header.num_verts > TESS_MAX_VERTICES)
-        return Q_ERR_TOO_MANY;
-    if (header.num_tris < 1)
-        return Q_ERR_TOO_FEW;
-    if (header.num_tris > TESS_MAX_INDICES / 3)
-        return Q_ERR_TOO_MANY;
-    if (header.num_skins > MD3_MAX_SKINS)
-        return Q_ERR_TOO_MANY;
-    end = header.ofs_skins + header.num_skins * sizeof(dmd3skin_t);
-    if (end < header.ofs_skins || end > length)
-        return Q_ERR_BAD_EXTENT;
-    if (header.ofs_skins % q_alignof(dmd3skin_t))
-        return Q_ERR_BAD_ALIGN;
-    end = header.ofs_verts + header.num_verts * model->numframes * sizeof(dmd3vertex_t);
-    if (end < header.ofs_verts || end > length)
-        return Q_ERR_BAD_EXTENT;
-    if (header.ofs_verts % q_alignof(dmd3vertex_t))
-        return Q_ERR_BAD_ALIGN;
-    end = header.ofs_tcs + header.num_verts * sizeof(dmd3coord_t);
-    if (end < header.ofs_tcs || end > length)
-        return Q_ERR_BAD_EXTENT;
-    if (header.ofs_tcs % q_alignof(dmd3coord_t))
-        return Q_ERR_BAD_ALIGN;
-    end = header.ofs_indexes + header.num_tris * 3 * sizeof(uint32_t);
-    if (end < header.ofs_indexes || end > length)
-        return Q_ERR_BAD_EXTENT;
-    if (header.ofs_indexes & 3)
-        return Q_ERR_BAD_ALIGN;
+    // validate the header
+    err = MOD_ValidateMD3Mesh(model, &header, length);
+    if (err) {
+        Com_SetLastError(err);
+        return Q_ERR_INVALID_FORMAT;
+    }
 
     mesh->numtris = header.num_tris;
     mesh->numindices = header.num_tris * 3;
@@ -600,8 +621,10 @@ static int MOD_LoadMD3Mesh(model_t *model, maliasmesh_t *mesh,
     dst_idx = mesh->indices;
     for (i = 0; i < header.num_tris * 3; i++) {
         index = LittleLong(*src_idx++);
-        if (index >= header.num_verts)
-            return Q_ERR_BAD_INDEX;
+        if (index >= header.num_verts) {
+            Com_SetLastError("bad triangle index");
+            return Q_ERR_INVALID_FORMAT;
+        }
         *dst_idx++ = index;
     }
 
@@ -612,14 +635,39 @@ fail:
     return ret;
 }
 
+static const char *MOD_ValidateMD3(const dmd3header_t *header, size_t length)
+{
+    size_t end;
+
+    if (header->num_frames < 1)
+        return "too few frames";
+    if (header->num_frames > MD3_MAX_FRAMES)
+        return "too many frames";
+    end = header->ofs_frames + sizeof(dmd3frame_t) * header->num_frames;
+    if (end < header->ofs_frames || end > length)
+        return "bad frames offset";
+    if (header->ofs_frames % q_alignof(dmd3frame_t))
+        return "odd frames offset";
+    if (header->num_meshes < 1)
+        return "too few meshes";
+    if (header->num_meshes > MD3_MAX_MESHES)
+        return "too many meshes";
+    if (header->ofs_meshes > length)
+        return "bad meshes offset";
+    if (header->ofs_meshes % q_alignof(dmd3mesh_t))
+        return "odd meshes offset";
+    return NULL;
+}
+
 static int MOD_LoadMD3(model_t *model, const void *rawdata, size_t length)
 {
     dmd3header_t    header;
-    size_t          end, offset, remaining;
+    size_t          offset, remaining;
     dmd3frame_t     *src_frame;
     maliasframe_t   *dst_frame;
     const byte      *src_mesh;
     int             i, ret;
+    const char      *err;
 
     if (length < sizeof(header))
         return Q_ERR_FILE_TOO_SMALL;
@@ -627,27 +675,18 @@ static int MOD_LoadMD3(model_t *model, const void *rawdata, size_t length)
     // byte swap the header
     LittleBlock(&header, rawdata, sizeof(header));
 
+    // check ident and version
     if (header.ident != MD3_IDENT)
         return Q_ERR_UNKNOWN_FORMAT;
     if (header.version != MD3_VERSION)
         return Q_ERR_UNKNOWN_FORMAT;
-    if (header.num_frames < 1)
-        return Q_ERR_TOO_FEW;
-    if (header.num_frames > MD3_MAX_FRAMES)
-        return Q_ERR_TOO_MANY;
-    end = header.ofs_frames + sizeof(dmd3frame_t) * header.num_frames;
-    if (end < header.ofs_frames || end > length)
-        return Q_ERR_BAD_EXTENT;
-    if (header.ofs_frames % q_alignof(dmd3frame_t))
-        return Q_ERR_BAD_ALIGN;
-    if (header.num_meshes < 1)
-        return Q_ERR_TOO_FEW;
-    if (header.num_meshes > MD3_MAX_MESHES)
-        return Q_ERR_TOO_MANY;
-    if (header.ofs_meshes > length)
-        return Q_ERR_BAD_EXTENT;
-    if (header.ofs_meshes % q_alignof(dmd3mesh_t))
-        return Q_ERR_BAD_ALIGN;
+
+    // validate the header
+    err = MOD_ValidateMD3(&header, length);
+    if (err) {
+        Com_SetLastError(err);
+        return Q_ERR_INVALID_FORMAT;
+    }
 
     Hunk_Begin(&model->hunk, 0x400000);
     model->type = MOD_ALIAS;
@@ -836,7 +875,9 @@ done:
 fail2:
     FS_FreeFile(rawdata);
 fail1:
-    Com_EPrintf("Couldn't load %s: %s\n", normalized, Q_ErrorString(ret));
+    Com_EPrintf("Couldn't load %s: %s\n", normalized,
+                ret == Q_ERR_INVALID_FORMAT ?
+                Com_GetLastError() : Q_ErrorString(ret));
     return 0;
 }
 
