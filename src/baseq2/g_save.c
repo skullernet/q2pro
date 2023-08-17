@@ -724,7 +724,7 @@ static void *read_pointer(gzFile f, ptr_type_t type)
         gi.error("%s: type mismatch", __func__);
     }
 
-    return ptr->ptr;
+    return (void *)ptr->ptr;
 }
 
 static void read_field(gzFile f, const save_field_t *field, void *base)
