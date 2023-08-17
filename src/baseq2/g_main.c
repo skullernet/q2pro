@@ -87,9 +87,7 @@ void ReadLevel(const char *filename);
 void InitGame(void);
 void G_RunFrame(void);
 
-
 //===================================================================
-
 
 void ShutdownGame(void)
 {
@@ -152,7 +150,7 @@ void InitGame(void)
 
     run_pitch = gi.cvar("run_pitch", "0.002", 0);
     run_roll = gi.cvar("run_roll", "0.005", 0);
-    bob_up  = gi.cvar("bob_up", "0.005", 0);
+    bob_up = gi.cvar("bob_up", "0.005", 0);
     bob_pitch = gi.cvar("bob_pitch", "0.002", 0);
     bob_roll = gi.cvar("bob_roll", "0.002", 0);
 
@@ -188,7 +186,6 @@ void InitGame(void)
     game.clients = gi.TagMalloc(game.maxclients * sizeof(game.clients[0]), TAG_GAME);
     globals.num_edicts = game.maxclients + 1;
 }
-
 
 /*
 =================
@@ -261,7 +258,6 @@ void Com_Error(error_type_t type, const char *fmt, ...)
 
 //======================================================================
 
-
 /*
 =================
 ClientEndServerFrames
@@ -274,13 +270,12 @@ void ClientEndServerFrames(void)
 
     // calc the player views now that all pushing
     // and damage has been added
-    for (i = 0 ; i < maxclients->value ; i++) {
+    for (i = 0; i < maxclients->value; i++) {
         ent = g_edicts + 1 + i;
         if (!ent->inuse || !ent->client)
             continue;
         ClientEndServerFrame(ent);
     }
-
 }
 
 /*
@@ -361,7 +356,6 @@ void EndDMLevel(void)
     }
 }
 
-
 /*
 =================
 CheckNeedPass
@@ -412,7 +406,7 @@ void CheckDMRules(void)
     }
 
     if (fraglimit->value) {
-        for (i = 0 ; i < maxclients->value ; i++) {
+        for (i = 0; i < maxclients->value; i++) {
             cl = game.clients + i;
             if (!g_edicts[i + 1].inuse)
                 continue;
@@ -426,7 +420,6 @@ void CheckDMRules(void)
     }
 }
 
-
 /*
 =============
 ExitLevel
@@ -436,7 +429,7 @@ void ExitLevel(void)
 {
     int     i;
     edict_t *ent;
-    char    command [256];
+    char    command[256];
 
     Q_snprintf(command, sizeof(command), "gamemap \"%s\"\n", level.changemap);
     gi.AddCommandString(command);
@@ -445,7 +438,7 @@ void ExitLevel(void)
     level.intermission_framenum = 0;
 
     // clear some things before going to next level
-    for (i = 0 ; i < maxclients->value ; i++) {
+    for (i = 0; i < maxclients->value; i++) {
         ent = g_edicts + 1 + i;
         if (!ent->inuse)
             continue;
@@ -484,7 +477,7 @@ void G_RunFrame(void)
     // even the world gets a chance to think
     //
     ent = &g_edicts[0];
-    for (i = 0 ; i < globals.num_edicts ; i++, ent++) {
+    for (i = 0; i < globals.num_edicts; i++, ent++) {
         if (!ent->inuse)
             continue;
 
