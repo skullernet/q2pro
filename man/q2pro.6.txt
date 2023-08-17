@@ -77,17 +77,7 @@ FILES
     User's local data hierarchy. Files placed there take precedence over files
     in the system hierarchy. This directory should be writable by Q2PRO user.
     Any dynamic data Q2PRO produces (savegames, screenshots, demos, downloads)
-    are written here.  Game mod libraries are *never* loaded from here for
-    security reasons.
-
-
-BUGS
-----
-Q2PRO graphical menu subsystem is incomplete. Automatic saving of console variables
-to config.txt is sloppy, it is advised to use autoexec.cfg for your settings.
-
-Q2PRO has cinematics code removed, and savegames code incomplete, this means no
-single player support (yet).
+    are written here.
 
 
 AUTHOR

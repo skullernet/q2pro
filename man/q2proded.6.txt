@@ -70,8 +70,7 @@ FILES
 *~/.q2pro/*::
     User's local data hierarchy. Files placed there take precedence over files
     in the system hierarchy. This directory should be writable by Q2PRO user.
-    Any dynamic data Q2PRO produces (savegames, demos) are written here.  Game
-    mod libraries are *never* loaded from here for security reasons.
+    Any dynamic data Q2PRO produces (savegames, demos) are written here.
 
 
 AUTHOR
