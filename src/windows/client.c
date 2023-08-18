@@ -663,8 +663,8 @@ static BOOL check_cursor_pos(void)
     return PtInRect(&win.screen_rc, pt);
 }
 
-#define BTN_DN(i) (1<<(i*2+0))
-#define BTN_UP(i) (1<<(i*2+1))
+#define BTN_DN(i)   BIT((i) * 2 + 0)
+#define BTN_UP(i)   BIT((i) * 2 + 1)
 
 static void raw_mouse_event(PRAWMOUSE rm)
 {

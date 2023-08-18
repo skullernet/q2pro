@@ -77,10 +77,10 @@ static struct {
 } x11;
 
 enum {
-    QGLX_ARB_create_context     = (1 << 0),
-    QGLX_ARB_multisample        = (1 << 1),
-    QGLX_EXT_swap_control       = (1 << 2),
-    QGLX_EXT_swap_control_tear  = (1 << 3),
+    QGLX_ARB_create_context     = BIT(0),
+    QGLX_ARB_multisample        = BIT(1),
+    QGLX_EXT_swap_control       = BIT(2),
+    QGLX_EXT_swap_control_tear  = BIT(3),
 };
 
 static unsigned glx_parse_extension_string(const char *s)

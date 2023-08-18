@@ -131,8 +131,8 @@ typedef struct {
 } r_opengl_config_t;
 
 typedef enum {
-    QVF_FULLSCREEN      = (1 << 0),
-    QVF_GAMMARAMP       = (1 << 1),
+    QVF_FULLSCREEN      = BIT(0),
+    QVF_GAMMARAMP       = BIT(1),
 } vidFlags_t;
 
 typedef struct {
@@ -149,15 +149,15 @@ typedef struct {
 
 typedef enum {
     IF_NONE         = 0,
-    IF_PERMANENT    = (1 << 0),
-    IF_TRANSPARENT  = (1 << 1),
-    IF_PALETTED     = (1 << 2),
-    IF_UPSCALED     = (1 << 3),
-    IF_SCRAP        = (1 << 4),
-    IF_TURBULENT    = (1 << 5),
-    IF_REPEAT       = (1 << 6),
-    IF_NEAREST      = (1 << 7),
-    IF_OPAQUE       = (1 << 8),
+    IF_PERMANENT    = BIT(0),
+    IF_TRANSPARENT  = BIT(1),
+    IF_PALETTED     = BIT(2),
+    IF_UPSCALED     = BIT(3),
+    IF_SCRAP        = BIT(4),
+    IF_TURBULENT    = BIT(5),
+    IF_REPEAT       = BIT(6),
+    IF_NEAREST      = BIT(7),
+    IF_OPAQUE       = BIT(8),
 } imageflags_t;
 
 typedef enum {

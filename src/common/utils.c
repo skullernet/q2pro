@@ -250,7 +250,7 @@ unsigned Com_ParseExtensionString(const char *s, const char *const extnames[])
             l2 = strlen(extnames[i]);
             if (l1 == l2 && !memcmp(s, extnames[i], l1)) {
                 Com_DPrintf("Found %s\n", extnames[i]);
-                mask |= 1U << i;
+                mask |= BIT(i);
                 break;
             }
         }

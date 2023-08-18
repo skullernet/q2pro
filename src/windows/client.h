@@ -103,10 +103,10 @@ typedef struct {
     bool    alttab_disabled;
 
     enum {
-        MODE_SIZE       = (1 << 0),
-        MODE_POS        = (1 << 1),
-        MODE_STYLE      = (1 << 2),
-        MODE_REPOSITION = (1 << 3),
+        MODE_SIZE       = BIT(0),
+        MODE_POS        = BIT(1),
+        MODE_STYLE      = BIT(2),
+        MODE_REPOSITION = BIT(3),
     } mode_changed;
 
     struct {

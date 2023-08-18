@@ -33,11 +33,11 @@ static struct {
 static cvar_t   *gl_allow_software;
 
 enum {
-    QWGL_ARB_create_context     = (1 << 0),
-    QWGL_ARB_multisample        = (1 << 1),
-    QWGL_ARB_pixel_format       = (1 << 2),
-    QWGL_EXT_swap_control       = (1 << 3),
-    QWGL_EXT_swap_control_tear  = (1 << 4),
+    QWGL_ARB_create_context     = BIT(0),
+    QWGL_ARB_multisample        = BIT(1),
+    QWGL_ARB_pixel_format       = BIT(2),
+    QWGL_EXT_swap_control       = BIT(3),
+    QWGL_EXT_swap_control_tear  = BIT(4),
 };
 
 static unsigned wgl_parse_extension_string(const char *s)
