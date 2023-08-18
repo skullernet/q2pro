@@ -866,7 +866,7 @@ static void PM_CheckDuck(void)
 
     if (pm->s.pm_flags & PMF_DUCKED) {
         pm->maxs[2] = 4;
-        pm->viewheight = -2;
+        pm->viewheight = 8;
     } else {
         pm->maxs[2] = 32;
         pm->viewheight = 22;
@@ -1039,6 +1039,30 @@ void Pmove(pmove_t *pmove, pmoveParams_t *params)
 
     // clear all pmove local vars
     memset(&pml, 0, sizeof(pml));
+
+#ifdef AQTION_EXTENSION
+	// add msec to the timestamp
+	pm->s.pm_timestamp = (pm->s.pm_timestamp + pm->cmd.msec) % 60000;
+	
+	// do AQ2 limp command processing if needed
+	if (pm->s.pm_aq2_flags & PMF_AQ2_LIMP)
+	{
+		int frame_mod_6 = (pm->s.pm_timestamp) % 600;
+		if (frame_mod_6 <= 300)
+		{
+			pm->cmd.forwardmove = 0;
+			pm->cmd.sidemove = 0;
+		}
+		else if (frame_mod_6 > 300 && frame_mod_6 <= 400)
+		{
+			pm->cmd.forwardmove /= pm->s.pm_aq2_leghits + 1;
+			pm->cmd.sidemove /= pm->s.pm_aq2_leghits + 1;
+		}
+
+		// Prevent jumping with leg damage.
+		pm->s.pm_flags |= PMF_JUMP_HELD;
+	}
+#endif
 
     // convert origin and velocity to float values
     VectorScale(pm->s.origin, 0.125f, pml.origin);

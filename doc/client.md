@@ -92,6 +92,16 @@
     - [ch\_alpha](#ch_alpha)
     - [ch\_scale](#ch_scale)
     - [ch\_x; ch\_y](#ch_x-ch_y)
+    - [xhair\_enabled](#xhair_enabled)
+    - [xhair\_firing\_error](#xhair_firing_error)
+    - [xhair\_movement\_error](#xhair_movement_error)
+    - [xhair\_dot](#xhair_dot)
+    - [xhair\_gap](#xhair_gap)
+    - [xhair\_length](#xhair_length)
+    - [xhair\_deployed\_weapon\_gap](#xhair_deployed_weapon_gap)
+    - [xhair\_thickness](#xhair_thickness)
+    - [xhair\_elasticity](#xhair_elasticity)
+    - [xhair\_x; xhair\_y](#xhair_x-xhair_y)
   - [Video Modes](#video-modes)
     - [vid\_modelist](#vid_modelist)
     - [vid\_fullscreen](#vid_fullscreen)
@@ -881,6 +891,36 @@ size).
 These variables specify the crosshair image offset, counted in pixels
 from the default position in center of the game screen. Default values
 are 0 (draw in center).
+
+### xhair_enabled
+Enables new xhair system which replaces the classic crosshair.
+
+### xhair_firing_error
+Makes crosshair dynamic (move in and out) while firing.
+
+### xhair_movement_error
+Makes crosshair dynamic (move in and out) while moving.
+
+### xhair_dot
+Enables drawing of the dot in the center of the xhair.
+
+### xhair_gap
+Specifies the xhair gap, i.e. the amount of pixels from the center of the screen to the start of the xhair lines.
+
+### xhair_length
+Specifies the length of the xhair lines.
+
+### xhair_deployed_weapon_gap
+If enabled, the xhair gap will adapt to the weapon currently in use. For example, the shotguns will get a bigger gap due to their higher spread.
+
+### xhair_thickness
+Specifies the thickness of the xhair lines and/or dot.
+
+### xhair_elasticity
+Specifies how 'elastic' the xhair is, i.e. how easily it adapts. Lower values will result in a more stiff xhair, while higher values will have a more bouncy effect.
+
+### xhair_x; xhair_y
+These variables specify the crosshair image offset, counted in pixels from the default position in center of the game screen. Default values are 0 (draw in center).
 
 ## Video Modes
 

@@ -709,7 +709,10 @@ static int my_jpeg_start_decompress(j_decompress_ptr cinfo, byte *rawdata, size_
         return Q_ERR_INVALID_FORMAT;
     }
 
-    cinfo->out_color_space = JCS_EXT_RGBA;
+    // Mac builds use libjpeg9 which does not have JCS_EXT_RGBA
+    #ifdef JCS_ALPHA_EXTENSIONS
+        cinfo->out_color_space = JCS_EXT_RGBA;
+    #endif
 
     jpeg_start_decompress(cinfo);
 
@@ -780,7 +783,7 @@ fail:
 }
 
 static int my_jpeg_compress(j_compress_ptr cinfo, JSAMPARRAY row_pointers, screenshot_t *s)
-{
+{    
     my_error_ptr jerr = (my_error_ptr)cinfo->err;
 
     if (setjmp(jerr->setjmp_buffer)) {

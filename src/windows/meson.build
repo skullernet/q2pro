@@ -9,22 +9,41 @@ client_deps += cc.find_library('opengl32')
 rc_args = ['-DHAVE_CONFIG_H']
 rc_inc = meson.project_build_root()
 
-client_src += windows.compile_resources('res/q2pro.rc',
+if get_option('aqtion-build')
+  client_src += windows.compile_resources('res/q2pro-aqtion.rc',
+    args:                rc_args,
+    depend_files:        ['res/q2pro-aqtion.ico', 'res/q2pro.exe.manifest'],
+    include_directories: rc_inc,
+  )
+
+  server_src += windows.compile_resources('res/q2proded-aqtion.rc',
+    args:                rc_args,
+    depend_files:        ['res/q2proded-aqtion.ico', 'res/q2proded.exe.manifest'],
+    include_directories: rc_inc,
+  )
+
+  game_src += windows.compile_resources('res/aqtion.rc',
+    args:                rc_args,
+    include_directories: rc_inc,
+  )
+else
+  client_src += windows.compile_resources('res/q2pro.rc',
   args:                rc_args,
   depend_files:        ['res/q2pro.ico', 'res/q2pro.exe.manifest'],
   include_directories: rc_inc,
-)
+  )
 
-server_src += windows.compile_resources('res/q2proded.rc',
-  args:                rc_args,
-  depend_files:        ['res/q2proded.ico', 'res/q2proded.exe.manifest'],
-  include_directories: rc_inc,
-)
+  server_src += windows.compile_resources('res/q2proded.rc',
+    args:                rc_args,
+    depend_files:        ['res/q2proded.ico', 'res/q2proded.exe.manifest'],
+    include_directories: rc_inc,
+  )
 
-game_src += windows.compile_resources('res/baseq2.rc',
-  args:                rc_args,
-  include_directories: rc_inc,
-)
+  game_src += windows.compile_resources('res/baseq2.rc',
+    args:                rc_args,
+    include_directories: rc_inc,
+  )
+endif
 
 client_deps += subproject('khr-headers').get_variable('khr_headers_dep')
 

@@ -196,7 +196,30 @@ static void CL_ParseFrame(int extrabits)
     cl.frameflags = 0;
 
     extraflags = 0;
-    if (cls.serverProtocol > PROTOCOL_VERSION_DEFAULT) {
+	if (cls.serverProtocol == PROTOCOL_VERSION_AQTION) {
+		bits = MSG_ReadLong();
+
+		currentframe = bits & FRAMENUM_MASK;
+		delta = bits >> FRAMENUM_BITS;
+
+		if (delta == 31) {
+			deltaframe = -1;
+		}
+		else {
+			deltaframe = currentframe - delta;
+		}
+
+		bits = MSG_ReadByte();
+
+		suppressed = bits & SUPPRESSCOUNT_MASK;
+		if (suppressed & FF_CLIENTPRED) {
+			// CLIENTDROP is implied, don't draw both
+			suppressed &= ~FF_CLIENTDROP;
+		}
+		cl.frameflags |= suppressed;
+
+		extraflags = (extrabits << 4) | (bits >> SUPPRESSCOUNT_BITS);
+	} else if (cls.serverProtocol > PROTOCOL_VERSION_DEFAULT) {
         bits = MSG_ReadLong();
 
         currentframe = bits & FRAMENUM_MASK;
@@ -292,7 +315,7 @@ static void CL_ParseFrame(int extrabits)
         frame.areabytes = 0;
     }
 
-    if (cls.serverProtocol <= PROTOCOL_VERSION_DEFAULT) {
+    if (cls.serverProtocol <= PROTOCOL_VERSION_DEFAULT || cls.serverProtocol == PROTOCOL_VERSION_AQTION) {
         if (MSG_ReadByte() != svc_playerinfo) {
             Com_Error(ERR_DROP, "%s: not playerinfo", __func__);
         }
@@ -301,8 +324,23 @@ static void CL_ParseFrame(int extrabits)
     SHOWNET(2, "%3zu:playerinfo\n", msg_read.readcount - 1);
 
     // parse playerstate
-    bits = MSG_ReadWord();
-    if (cls.serverProtocol > PROTOCOL_VERSION_DEFAULT) {
+	bits = MSG_ReadWord();
+	if (cls.serverProtocol == PROTOCOL_VERSION_AQTION) {
+		MSG_ParseDeltaPlayerstate_Aqtion(from, &frame.ps, bits, extraflags);
+#ifdef USE_DEBUG
+		if (cl_shownet->integer > 2 && (bits || extraflags)) {
+			MSG_ShowDeltaPlayerstateBits_Enhanced(bits, extraflags);
+			Com_LPrintf(PRINT_DEVELOPER, "\n");
+		}
+#endif
+		// parse clientNum
+		if (extraflags & EPS_CLIENTNUM) {
+			frame.clientNum = MSG_ReadByte();
+		}
+		else if (oldframe) {
+			frame.clientNum = oldframe->clientNum;
+		}
+	} else if (cls.serverProtocol > PROTOCOL_VERSION_DEFAULT) {
         MSG_ParseDeltaPlayerstate_Enhanced(from, &frame.ps, bits, extraflags);
 #if USE_DEBUG
         if (cl_shownet->integer > 2 && (bits || extraflags)) {
@@ -341,7 +379,7 @@ static void CL_ParseFrame(int extrabits)
     }
 
     // parse packetentities
-    if (cls.serverProtocol <= PROTOCOL_VERSION_DEFAULT) {
+    if (cls.serverProtocol <= PROTOCOL_VERSION_DEFAULT || cls.serverProtocol == PROTOCOL_VERSION_AQTION) {
         if (MSG_ReadByte() != svc_packetentities) {
             Com_Error(ERR_DROP, "%s: not packetentities", __func__);
         }
@@ -502,7 +540,7 @@ static void CL_ParseServerData(void)
                       cls.serverProtocol, protocol);
         }
         // BIG HACK to let demos from release work with the 3.0x patch!!!
-        if (protocol < PROTOCOL_VERSION_OLD || protocol > PROTOCOL_VERSION_DEFAULT) {
+        if (protocol < PROTOCOL_VERSION_OLD || protocol > PROTOCOL_VERSION_AQTION) {
             Com_Error(ERR_DROP, "Demo uses unsupported protocol version %d.", protocol);
         }
         cls.serverProtocol = protocol;
@@ -615,6 +653,44 @@ static void CL_ParseServerData(void)
         cl.pmp.speedmult = 2;
         cl.pmp.flyhack = true; // fly hack is unconditionally enabled
         cl.pmp.flyfriction = 4;
+    } else if (cls.serverProtocol == PROTOCOL_VERSION_AQTION) {
+		i = MSG_ReadShort();
+		if (!AQTION_SUPPORTED(i)) {
+			Com_Error(ERR_DROP,
+				"AQTION server reports unsupported protocol version %d.\n"
+				"Current client version is %d.", i, PROTOCOL_VERSION_AQTION_CURRENT);
+		}
+		Com_DPrintf("Using minor AQTION protocol version %d\n", i);
+		cls.protocolVersion = i;
+		i = MSG_ReadByte();
+		Com_DPrintf("AQTION server state %d\n", i);
+		cl.serverstate = i;
+
+		i = MSG_ReadByte();
+		if (i) {
+			Com_DPrintf("AQTION strafejump hack enabled\n");
+			cl.pmp.strafehack = true;
+		}
+		i = MSG_ReadByte(); //atu QWMod
+		if (i) {
+			Com_DPrintf("AQTION QW mode enabled\n");
+			PmoveEnableQW(&cl.pmp);
+		}
+		cl.esFlags |= MSG_ES_UMASK;
+		cl.esFlags |= MSG_ES_LONGSOLID;
+		cl.esFlags |= MSG_ES_BEAMORIGIN;
+		cl.esFlags |= MSG_ES_SHORTANGLES;
+
+		// waterjump hack
+		i = MSG_ReadByte();
+		if (i) {
+			Com_DPrintf("AQTION waterjump hack enabled\n");
+			cl.pmp.waterhack = true;
+		}
+
+		cl.pmp.speedmult = 2;
+		cl.pmp.flyhack = true; // fly hack is unconditionally enabled
+		cl.pmp.flyfriction = 4;
     } else {
         cls.protocolVersion = 0;
     }
@@ -772,7 +848,7 @@ static void CL_ParseTEntPacket(void)
         break;
 
     default:
-        Com_Error(ERR_DROP, "%s: bad type", __func__);
+        Com_Error(ERR_DROP, "%s: bad type %i", __func__, te.type);
     }
 }
 
@@ -1132,10 +1208,89 @@ static void CL_ParseSetting(void)
         set_server_fps(value);
         break;
 #endif
+	case SVS_VIEW_LOW:
+		cl.view_predict = 1;
+		cl.view_low = value;
+		break;
+	case SVS_VIEW_HIGH:
+		cl.view_predict = 1;
+		cl.view_high = value;
+		break;
     default:
         break;
     }
 }
+
+
+/*
+============
+AQTION Protocol CVAR Sync
+============
+*/
+#ifdef PROTOCOL_VERSION_AQTION_CVARSYNC
+void CL_SendCvarSync(cvar_t *var)
+{
+	char val_str[CVARSYNC_MAXSIZE];
+	Q_strlcpy(val_str, var->string, CVARSYNC_MAXSIZE);
+	val_str[CVARSYNC_MAXSIZE - 1] = 0;
+
+	if (!cls.netchan.protocol) {
+		return;
+	}
+
+	if (cls.serverProtocol != PROTOCOL_VERSION_AQTION || cls.protocolVersion < PROTOCOL_VERSION_AQTION_CVARSYNC)
+		return;
+
+	MSG_WriteByte(clc_cvarsync);
+	MSG_WriteByte(var->sync_index);
+	MSG_WriteString(val_str);
+	MSG_FlushTo(&cls.netchan.message);
+}
+
+static void CL_ParseCvarSync(void)
+{
+	int amt;
+	cvar_t *var;
+	cvarsync_t nullCvar;
+	memset(&nullCvar, 0, sizeof(nullCvar));
+
+	for (int i = 0; i < CVARSYNC_MAX; i++)
+		cl.cvarsync[i] = nullCvar;
+
+	for (var = cvar_vars; var; var = var->next) {
+		if (!(var->flags & CVAR_SYNC))
+			continue;
+
+		var->changed = NULL;
+	}
+
+	amt = MSG_ReadByte(); // amount of cvar syncs
+	if (amt > CVARSYNC_MAX)
+	{
+		Com_Error(ERR_DROP, "%s: cvar sync amount greater than maximum %i > %i", __func__, amt, CVARSYNC_MAX);
+		return;
+	}
+
+	for (int i = 0; i < amt; i++)
+	{
+		MSG_ReadString(cl.cvarsync[i].name, CVARSYNC_MAXSIZE);	// read cvar name
+		MSG_ReadString(cl.cvarsync[i].value, CVARSYNC_MAXSIZE); // read default cvar value
+
+		var = Cvar_FindVar(cl.cvarsync[i].name);
+		if (!var)
+			var = Cvar_Get(cl.cvarsync[i].name, cl.cvarsync[i].value, 0);
+
+		var->sync_index = i;
+		var->flags |= CVAR_SYNC;
+		var->changed = CL_SendCvarSync;
+
+		Com_Printf("CL adding cvarsync: %s, %s\n", cl.cvarsync[i].name, var->string);
+
+		if (strcmp(cl.cvarsync[i].value, var->string)) // if value is not default, sync the value
+			CL_SendCvarSync(var);
+	}
+}
+#endif
 
 /*
 =====================
@@ -1175,115 +1330,161 @@ void CL_ParseServerMessage(void)
         extrabits = cmd >> SVCMD_BITS;
         cmd &= SVCMD_MASK;
 
+		if (cmd == svc_extend)
+			cmd = MSG_ReadByte();
+
         SHOWNET(1, "%3zu:%s\n", msg_read.readcount - 1, MSG_ServerCommandString(cmd));
 
         // other commands
-        switch (cmd) {
-        default:
-        badbyte:
-            Com_Error(ERR_DROP, "%s: illegible server message: %d", __func__, cmd);
-            break;
+		switch (cmd) {
+		default:
+		badbyte:
+			Com_Error(ERR_DROP, "%s: illegible server message: %d", __func__, cmd);
+			break;
 
-        case svc_nop:
-            break;
+		case svc_nop:
+			break;
 
-        case svc_disconnect:
-            Com_Error(ERR_DISCONNECT, "Server disconnected");
-            break;
+		case svc_disconnect:
+			Com_Error(ERR_DISCONNECT, "Server disconnected");
+			break;
 
-        case svc_reconnect:
-            CL_ParseReconnect();
-            return;
+		case svc_reconnect:
+			CL_ParseReconnect();
+			return;
 
-        case svc_print:
-            CL_ParsePrint();
-            break;
+		case svc_print:
+			CL_ParsePrint();
+			break;
 
-        case svc_centerprint:
-            CL_ParseCenterPrint();
-            break;
+		case svc_centerprint:
+			CL_ParseCenterPrint();
+			break;
 
-        case svc_stufftext:
-            CL_ParseStuffText();
-            break;
+		case svc_stufftext:
+			CL_ParseStuffText();
+			break;
 
-        case svc_serverdata:
-            CL_ParseServerData();
-            continue;
+		case svc_serverdata:
+			CL_ParseServerData();
+			continue;
 
-        case svc_configstring:
-            index = MSG_ReadShort();
-            CL_ParseConfigstring(index);
-            break;
+		case svc_configstring:
+			index = MSG_ReadShort();
+			CL_ParseConfigstring(index);
+			break;
 
-        case svc_sound:
-            CL_ParseStartSoundPacket();
-            S_ParseStartSound();
-            break;
+		case svc_sound:
+			CL_ParseStartSoundPacket();
+			S_ParseStartSound();
+			break;
 
-        case svc_spawnbaseline:
-            index = MSG_ParseEntityBits(&bits);
-            CL_ParseBaseline(index, bits);
-            break;
+		case svc_spawnbaseline:
+			index = MSG_ParseEntityBits(&bits);
+			CL_ParseBaseline(index, bits);
+			break;
 
-        case svc_temp_entity:
-            CL_ParseTEntPacket();
-            CL_ParseTEnt();
-            break;
+		case svc_temp_entity:
+			CL_ParseTEntPacket();
+			CL_ParseTEnt();
+			break;
 
-        case svc_muzzleflash:
-            CL_ParseMuzzleFlashPacket(MZ_SILENCED);
-            CL_MuzzleFlash();
-            break;
+		case svc_muzzleflash:
+			CL_ParseMuzzleFlashPacket(MZ_SILENCED);
+			CL_MuzzleFlash();
+			break;
 
-        case svc_muzzleflash2:
-            CL_ParseMuzzleFlashPacket(0);
-            CL_MuzzleFlash2();
-            break;
+		case svc_muzzleflash2:
+			CL_ParseMuzzleFlashPacket(0);
+			CL_MuzzleFlash2();
+			break;
 
-        case svc_download:
-            CL_ParseDownload(cmd);
-            continue;
+		case svc_download:
+			CL_ParseDownload(cmd);
+			continue;
 
-        case svc_frame:
-            CL_ParseFrame(extrabits);
-            continue;
+		case svc_frame:
+			CL_ParseFrame(extrabits);
+			continue;
 
-        case svc_inventory:
-            CL_ParseInventory();
-            break;
+		case svc_inventory:
+			CL_ParseInventory();
+			break;
 
-        case svc_layout:
-            CL_ParseLayout();
-            break;
+		case svc_layout:
+			CL_ParseLayout();
+			break;
 
-        case svc_zpacket:
-            if (cls.serverProtocol < PROTOCOL_VERSION_R1Q2) {
-                goto badbyte;
-            }
-            CL_ParseZPacket();
-            continue;
+		case svc_zpacket:
+			if (cls.serverProtocol < PROTOCOL_VERSION_R1Q2) {
+				goto badbyte;
+			}
+			CL_ParseZPacket();
+			continue;
 
-        case svc_zdownload:
-            if (cls.serverProtocol < PROTOCOL_VERSION_R1Q2) {
-                goto badbyte;
-            }
-            CL_ParseDownload(cmd);
-            continue;
+		case svc_zdownload:
+			if (cls.serverProtocol < PROTOCOL_VERSION_R1Q2) {
+				goto badbyte;
+			}
+			CL_ParseDownload(cmd);
+			continue;
 
-        case svc_gamestate:
-            if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO) {
-                goto badbyte;
-            }
-            CL_ParseGamestate();
-            continue;
+		case svc_gamestate:
+			if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO && cls.serverProtocol != PROTOCOL_VERSION_AQTION) {
+				goto badbyte;
+			}
+			CL_ParseGamestate();
+			continue;
 
-        case svc_setting:
-            if (cls.serverProtocol < PROTOCOL_VERSION_R1Q2) {
-                goto badbyte;
-            }
-            CL_ParseSetting();
-            continue;
+		case svc_setting:
+			if (cls.serverProtocol < PROTOCOL_VERSION_R1Q2) {
+				goto badbyte;
+			}
+			CL_ParseSetting();
+			continue;
+
+		case svc_ghudupdate:
+#ifdef AQTION_EXTENSION
+			if (cls.serverProtocol != PROTOCOL_VERSION_AQTION)
+				goto badbyte;
+			//CL_ParseGhud();
+			int hud_index;
+			while (1)
+			{
+				hud_index = MSG_ReadByte();
+				if (hud_index == 255)
+					break;
+
+				ghud_element_t *element = &(cl.ghud[hud_index]);
+				MSG_ParseGhud(element);
+			}
+#else
+			goto badbyte;
+#endif
+			continue;
+
+		case svc_userstatistic:
+			if (cls.serverProtocol < PROTOCOL_VERSION_AQTION) {
+				goto badbyte;
+			}
+
+			char key[MAX_STRING_CHARS];
+
+			MSG_ReadString(key, sizeof(key));
+			MSG_ReadLong(); // Reki - unused for now, can be used to network end of game statistics to players
+			
+			continue;
+
+		case svc_cvarsync:
+			if (cls.serverProtocol < PROTOCOL_VERSION_AQTION) {
+				goto badbyte;
+			}
+#ifdef PROTOCOL_VERSION_AQTION_CVARSYNC
+			CL_ParseCvarSync();
+#else
+			goto badbyte;
+#endif
+			continue;
         }
 
         // if recording demos, copy off protocol invariant stuff

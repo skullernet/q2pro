@@ -17,7 +17,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 // server.h
 
+<<<<<<< HEAD
 #pragma once
+=======
+//#define AQTION_EXTENSION
+>>>>>>> d8d561fdb3d905f48f9735cd000b691388f1dc86
 
 #include "shared/shared.h"
 #include "shared/list.h"
@@ -109,6 +113,9 @@ typedef struct {
     byte        areabits[MAX_MAP_AREA_BYTES];  // portalarea visibility bits
     unsigned    sentTime;                   // for ping calculations
     int         latency;
+#ifdef AQTION_EXTENSION
+	ghud_element_t ghud[MAX_GHUDS];
+#endif
 } client_frame_t;
 
 typedef struct {
@@ -181,8 +188,9 @@ typedef struct {
 
 // hack for smooth BSP model rotation
 #define Q2PRO_SHORTANGLES(c, e) \
-    ((c)->protocol == PROTOCOL_VERSION_Q2PRO && \
-     (c)->version >= PROTOCOL_VERSION_Q2PRO_SHORT_ANGLES && \
+	((((c)->protocol == PROTOCOL_VERSION_Q2PRO && \
+	 (c)->version >= PROTOCOL_VERSION_Q2PRO_SHORT_ANGLES) || \
+	 (c)->protocol == PROTOCOL_VERSION_AQTION) && \
      sv.state == ss_game && \
      EDICT_POOL(c, e)->solid == SOLID_BSP)
 
@@ -389,6 +397,10 @@ typedef struct client_s {
     string_entry_t  *ac_bad_files;
     char            *ac_token;
 #endif
+
+#ifdef AQTION_EXTENSION
+	ghud_element_t	ghud[MAX_GHUDS];
+#endif
 } client_t;
 
 // a client can leave the server in one of four ways:
@@ -495,6 +507,12 @@ typedef struct server_static_s {
     ratelimit_t     ratelimit_rcon;
 
     challenge_t     challenges[MAX_CHALLENGES]; // to prevent invalid IPs from connecting
+
+#ifdef AQTION_EXTENSION
+	// Reki: cvar sync entries
+	cvarsync_t	cvarsync_list[CVARSYNC_MAX];
+	byte		cvarsync_length;
+#endif
 } server_static_t;
 
 //=============================================================================
@@ -560,6 +578,9 @@ extern cvar_t       *sv_uptime;
 extern cvar_t       *sv_allow_unconnected_cmds;
 
 extern cvar_t       *g_features;
+extern cvar_t       *g_view_predict;
+extern cvar_t       *g_view_low;
+extern cvar_t       *g_view_high;
 
 extern cvar_t       *sv_timeout;
 extern cvar_t       *sv_zombietime;
@@ -753,6 +774,7 @@ void SV_PrintMiscInfo(void);
 void SV_BuildClientFrame(client_t *client);
 void SV_WriteFrameToClient_Default(client_t *client);
 void SV_WriteFrameToClient_Enhanced(client_t *client);
+void SV_WriteFrameToClient_Aqtion(client_t *client);
 
 //
 // sv_game.c
@@ -765,6 +787,10 @@ void SV_ShutdownGameProgs(void);
 void SV_InitEdict(edict_t *e);
 
 void PF_Pmove(pmove_t *pm);
+
+#ifdef AQTION_EXTENSION
+void G_InitializeExtensions(void);
+#endif
 
 //
 // sv_save.c
@@ -781,6 +807,28 @@ void SV_RegisterSavegames(void);
 #define SV_CheckForSavegame(cmd)        (void)0
 #define SV_CheckForEnhancedSavegames()  (void)0
 #define SV_RegisterSavegames()          (void)0
+#endif
+
+#ifdef AQTION_EXTENSION
+//
+// sv_ghud.c
+//
+void SV_Ghud_Clear(void);
+void SV_Ghud_ClearForClient(edict_t *ent);
+int  SV_Ghud_NewElement(edict_t *ent, int type);
+void SV_Ghud_RemoveElement(edict_t *ent, int i);
+void SV_Ghud_SetFlags(edict_t *ent, int i, int val);
+void SV_Ghud_SetInt(edict_t *ent, int i, int val);
+void SV_Ghud_SetText(edict_t *ent, int i, char *text);
+void SV_Ghud_SetPosition(edict_t *ent, int i, int x, int y, int z);
+void SV_Ghud_SetAnchor(edict_t *ent, int i, float x, float y);
+void SV_Ghud_SetColor(edict_t *ent, int i, int r, int g, int b, int a);
+void SV_Ghud_SetSize(edict_t *ent, int i, int x, int y);
+#endif
+
+#ifdef AQTION_EXTENSION
+extern int(*GE_customizeentityforclient)(edict_t *client, edict_t *ent, entity_state_t *state); // 0 don't send, 1 send normally
+extern void(*GE_CvarSync_Updated)(int index, edict_t *clent);
 #endif
 
 //============================================================

@@ -910,7 +910,6 @@ void Sys_Init(void)
     // allows the game to run from outside the data tree
     sys_basedir = Cvar_Get("basedir", ".", CVAR_NOSET);
     sys_libdir = Cvar_Get("libdir", ".", CVAR_NOSET);
-
     // homedir <path>
     // specifies per-user writable directory for demos, screenshots, etc
     sys_homedir = Cvar_Get("homedir", "", CVAR_NOSET);

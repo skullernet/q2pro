@@ -511,6 +511,39 @@ ch_y::
     These variables specify the crosshair image offset, counted in pixels from
     the default position in center of the game screen. Default values are 0
     (draw in center).
+    
+xhair_enabled::
+    Enables new xhair system which replaces the classic crosshair.
+
+xhair_firing_error::
+    Makes crosshair dynamic (move in and out) while firing.
+
+xhair_movement_error::
+    Makes crosshair dynamic (move in and out) while moving.
+    
+xhair_dot::
+    Enables drawing of the dot in the center of the xhair.
+
+xhair_gap::
+    Specifies the xhair gap, i.e. the amount of pixels from the center of the screen to the start of the xhair lines.
+
+xhair_length::
+    Specifies the length of the xhair lines.
+
+xhair_deployed_weapon_gap::
+    If enabled, the xhair gap will adapt to the weapon currently in use. For example, the shotguns will get a bigger gap due to their higher spread.
+
+xhair_thickness::
+    Specifies the thickness of the xhair lines and/or dot.
+
+xhair_elasticity::
+    Specifies how 'elastic' the xhair is, i.e. how easily it adapts. Lower values will result in a more stiff xhair, while higher values will have a more bouncy effect.
+    
+xhair_x::
+xhair_y::
+    These variables specify the crosshair image offset, counted in pixels from
+    the default position in center of the game screen. Default values are 0
+    (draw in center).
 
 Video Modes
 ~~~~~~~~~~~
@@ -975,6 +1008,13 @@ m_filter::
 
 Miscellaneous
 ~~~~~~~~~~~~~
+
+cl_enhanced_footsteps::
+    Specifies whether to play the original four step sounds (step1.wav ... 
+    step4.wav) and landing sound (land1.wav). Or new improved twelve step
+    sounds and eight landing sounds.
+     - 0 - default behaviour with four step and one landing sounds
+     - 1 - new behaviour with twelve step and eight landing sounds
 
 cl_chat_notify::
     Specifies whether to display chat lines in the notify area. Default value

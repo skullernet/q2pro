@@ -345,6 +345,107 @@ int BoxOnPlaneSide(const vec3_t emins, const vec3_t emaxs, const cplane_t *p)
     return sides;
 }
 
+
+
+// Matrix math functions from FTE
+// these are used for projecting a worldspace coordinate into hud screenspace
+void Matrix4x4_CM_Transform4(const float *matrix, const float *vector, float *product)
+{
+	product[0] = matrix[0] * vector[0] + matrix[4] * vector[1] + matrix[8] * vector[2] + matrix[12] * vector[3];
+	product[1] = matrix[1] * vector[0] + matrix[5] * vector[1] + matrix[9] * vector[2] + matrix[13] * vector[3];
+	product[2] = matrix[2] * vector[0] + matrix[6] * vector[1] + matrix[10] * vector[2] + matrix[14] * vector[3];
+	product[3] = matrix[3] * vector[0] + matrix[7] * vector[1] + matrix[11] * vector[2] + matrix[15] * vector[3];
+}
+
+
+void Matrix4x4_CM_Projection2(float *proj, float fovx, float fovy, float neard)
+{
+	float xmin, xmax, ymin, ymax;
+	float nudge = 1;
+
+	//proj
+	ymax = neard * tan(fovy * M_PI / 360.0);
+	ymin = -ymax;
+
+	xmax = neard * tan(fovx * M_PI / 360.0);
+	xmin = -xmax;
+
+	proj[0] = (2 * neard) / (xmax - xmin);
+	proj[4] = 0;
+	proj[8] = (xmax + xmin) / (xmax - xmin);
+	proj[12] = 0;
+
+	proj[1] = 0;
+	proj[5] = (2 * neard) / (ymax - ymin);
+	proj[9] = (ymax + ymin) / (ymax - ymin);
+	proj[13] = 0;
+
+	proj[2] = 0;
+	proj[6] = 0;
+	proj[10] = -1 * nudge;
+	proj[14] = -2 * neard * nudge;
+
+	proj[3] = 0;
+	proj[7] = 0;
+	proj[11] = -1;
+	proj[15] = 0;
+}
+
+
+void Matrix4x4_CM_ModelViewMatrix(float *modelview, const vec3_t viewangles, const vec3_t vieworg)
+{
+	float *out = modelview;
+	float cp = cos(-viewangles[0] * M_PI / 180.0);
+	float sp = sin(-viewangles[0] * M_PI / 180.0);
+	float cy = cos(-viewangles[1] * M_PI / 180.0);
+	float sy = sin(-viewangles[1] * M_PI / 180.0);
+	float cr = cos(-viewangles[2] * M_PI / 180.0);
+	float sr = sin(-viewangles[2] * M_PI / 180.0);
+
+	out[0] = -sr * sp*cy - cr * sy;
+	out[1] = -cr * sp*cy + sr * sy;
+	out[2] = -cp * cy;
+	out[3] = 0;
+	out[4] = sr * sp*sy - cr * cy;
+	out[5] = cr * sp*sy + sr * cy;
+	out[6] = cp * sy;
+	out[7] = 0;
+	out[8] = sr * cp;
+	out[9] = cr * cp;
+	out[10] = -sp;
+	out[11] = 0;
+	out[12] = -out[0] * vieworg[0] - out[4] * vieworg[1] - out[8] * vieworg[2];
+	out[13] = -out[1] * vieworg[0] - out[5] * vieworg[1] - out[9] * vieworg[2];
+	out[14] = -out[2] * vieworg[0] - out[6] * vieworg[1] - out[10] * vieworg[2];
+	out[15] = 1 - out[3] * vieworg[0] - out[7] * vieworg[1] - out[11] * vieworg[2];
+}
+
+
+void Matrix4_Multiply(const float *a, const float *b, float *out)
+{
+	out[0] = a[0] * b[0] + a[4] * b[1] + a[8] * b[2] + a[12] * b[3];
+	out[1] = a[1] * b[0] + a[5] * b[1] + a[9] * b[2] + a[13] * b[3];
+	out[2] = a[2] * b[0] + a[6] * b[1] + a[10] * b[2] + a[14] * b[3];
+	out[3] = a[3] * b[0] + a[7] * b[1] + a[11] * b[2] + a[15] * b[3];
+
+	out[4] = a[0] * b[4] + a[4] * b[5] + a[8] * b[6] + a[12] * b[7];
+	out[5] = a[1] * b[4] + a[5] * b[5] + a[9] * b[6] + a[13] * b[7];
+	out[6] = a[2] * b[4] + a[6] * b[5] + a[10] * b[6] + a[14] * b[7];
+	out[7] = a[3] * b[4] + a[7] * b[5] + a[11] * b[6] + a[15] * b[7];
+
+	out[8] = a[0] * b[8] + a[4] * b[9] + a[8] * b[10] + a[12] * b[11];
+	out[9] = a[1] * b[8] + a[5] * b[9] + a[9] * b[10] + a[13] * b[11];
+	out[10] = a[2] * b[8] + a[6] * b[9] + a[10] * b[10] + a[14] * b[11];
+	out[11] = a[3] * b[8] + a[7] * b[9] + a[11] * b[10] + a[15] * b[11];
+
+	out[12] = a[0] * b[12] + a[4] * b[13] + a[8] * b[14] + a[12] * b[15];
+	out[13] = a[1] * b[12] + a[5] * b[13] + a[9] * b[14] + a[13] * b[15];
+	out[14] = a[2] * b[12] + a[6] * b[13] + a[10] * b[14] + a[14] * b[15];
+	out[15] = a[3] * b[12] + a[7] * b[13] + a[11] * b[14] + a[15] * b[15];
+}
+//
+
+
 #if USE_REF
 
 /*

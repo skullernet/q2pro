@@ -1025,9 +1025,19 @@ static void Cvar_Inc_f(void)
         value = atof(Cmd_Argv(2));
     }
     if (!strcmp(Cmd_Argv(0), "dec")) {
-        value = -value;
+                value = var->value - value;
     }
-    Cvar_SetValue(var, var->value + value, Cmd_From());
+    else if (!strcmp(Cmd_Argv(0), "div")) {
+        value = var->value / value;
+    }
+    else if (!strcmp(Cmd_Argv(0), "mul")) {
+        value = var->value * value;
+    }
+    else {
+        value = var->value + value;
+    }
+
+    Cvar_SetValue(var, value, Cmd_From());
 }
 
 static void Cvar_Inc_c(genctx_t *ctx, int argnum)
@@ -1133,6 +1143,8 @@ static const cmdreg_t c_cvar[] = {
     { "toggle", Cvar_Toggle_f, Cvar_Toggle_c },
     { "inc", Cvar_Inc_f, Cvar_Inc_c },
     { "dec", Cvar_Inc_f, Cvar_Inc_c },
+    { "div", Cvar_Inc_f, Cvar_Inc_c },
+    { "mul", Cvar_Inc_f, Cvar_Inc_c },
     { "reset", Cvar_Reset_f, Cvar_Reset_c },
     { "resetall", Cvar_ResetAll_f },
 

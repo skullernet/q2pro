@@ -669,6 +669,11 @@ void CL_RequestNextDownload(void)
     char fn[MAX_QPATH], *name;
     size_t len;
     int i;
+    static cvar_t   *r_override_textures;
+    static cvar_t   *r_texture_overrides;
+
+    r_override_textures = Cvar_Get("r_override_textures", "1", CVAR_FILES);
+    r_texture_overrides = Cvar_Get("r_texture_overrides", "-1", CVAR_FILES);
 
     if (cls.state != ca_connected && cls.state != ca_loading)
         return;
@@ -801,9 +806,28 @@ void CL_RequestNextDownload(void)
         CL_RegisterBspModels();
 
         if (allow_download_textures->integer) {
-            for (i = 0; i < cl.bsp->numtexinfo; i++) {
-                len = Q_concat(fn, sizeof(fn), "textures/", cl.bsp->texinfo[i].name, ".wal");
-                check_file_len(fn, len, DL_OTHER);
+            // Only download jpg textures along with wal if r_override_textures = 1 and
+            // r_texture_overrides bitmap is -1 (all), 16 (walls), 32 (skies) or 48 (walls and skies)
+            if (r_override_textures->value && 
+                (r_texture_overrides->value == -1 
+                || r_texture_overrides->value == 16 
+                || r_texture_overrides->value == 32 
+                || r_texture_overrides->value == 48)) 
+                {
+                // Some textures do not have high def versions, for those we still default to wal, 
+                // so we download both of them
+                for (i = 0; i < cl.bsp->numtexinfo; i++) {
+                    len = Q_concat(fn, sizeof(fn), "textures/", cl.bsp->texinfo[i].name, ".jpg");
+                    check_file_len(fn, len, DL_OTHER);
+                    len = Q_concat(fn, sizeof(fn), "textures/", cl.bsp->texinfo[i].name, ".wal");
+                    check_file_len(fn, len, DL_OTHER);
+                }
+            }
+            else { // Only download wal due to the user's settings not wanting hi res textures
+                for (i = 0; i < cl.bsp->numtexinfo; i++) {
+                    len = Q_concat(fn, sizeof(fn), "textures/", cl.bsp->texinfo[i].name, ".wal");
+                    check_file_len(fn, len, DL_OTHER);
+                }
             }
         }
 

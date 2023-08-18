@@ -1,3 +1,8 @@
+option('aqtion-build', 
+  type: 'boolean', 
+  value: true, 
+  description: 'Build-specific for AQtion enhancements')
+
 option('anticheat-server',
   type: 'boolean',
   value: false,
@@ -10,7 +15,7 @@ option('auto-reply',
 
 option('base-game',
   type: 'string',
-  value: 'baseq2',
+  value: 'baseaq',
   description: 'Name of the base game directory')
 
 option('client-gtv',
@@ -25,8 +30,18 @@ option('client-ui',
 
 option('default-game',
   type: 'string',
-  value: '',
+  value: 'action',
   description: 'Default value for "game" console variable')
+
+option('discord-sdk', 
+  type: 'boolean', 
+  value: false, 
+  description: 'Enable Discord SDK')
+
+option('dynamic-lights', 
+  type: 'boolean', 
+  value: true, 
+  description: 'dynamic lighting')
 
 option('game-abi-hack',
   type: 'feature',
@@ -118,7 +133,7 @@ option('system-console',
 
 option('system-wide',
   type: 'boolean',
-  value: true,
+  value: false,
   description: 'Enable system-wide installation')
 
 option('tests',
@@ -130,6 +145,11 @@ option('tga',
   type: 'boolean',
   value: true,
   description: 'TGA images support')
+
+option('uuid', 
+  type: 'feature', 
+  value: 'auto', 
+  description: 'AQtion uuid support')
 
 option('variable-fps',
   type: 'boolean',
