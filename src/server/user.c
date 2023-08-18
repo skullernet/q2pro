@@ -50,10 +50,9 @@ static void SV_CreateBaselines(void)
     // clear baselines from previous level
     for (i = 0; i < SV_BASELINES_CHUNKS; i++) {
         base = sv_client->baselines[i];
-        if (!base) {
-            continue;
+        if (base) {
+            memset(base, 0, sizeof(*base) * SV_BASELINES_PER_CHUNK);
         }
-        memset(base, 0, sizeof(*base) * SV_BASELINES_PER_CHUNK);
     }
 
     for (i = 1; i < sv_client->pool->num_edicts; i++) {
@@ -1332,7 +1331,7 @@ static void SV_ParseFullUserinfo(void)
     }
 
     Com_DDPrintf("%s(%s): %s [%d]\n", __func__,
-                 sv_client->name, sv_client->userinfo, userinfoUpdateCount);
+                 sv_client->name, Com_MakePrintable(sv_client->userinfo), userinfoUpdateCount);
 
     SV_UpdateUserinfo();
     userinfoUpdateCount++;
@@ -1468,7 +1467,7 @@ static void SV_ParseClientCommand(void)
         return;
     }
 
-    Com_DDPrintf("%s(%s): %s\n", __func__, sv_client->name, buffer);
+    Com_DDPrintf("%s(%s): %s\n", __func__, sv_client->name, Com_MakePrintable(buffer));
 
     SV_ExecuteUserCommand(buffer);
     stringCmdCount++;

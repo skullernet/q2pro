@@ -48,7 +48,7 @@ typedef struct m_player_s {
 
 static m_player_t    m_player;
 
-static const char *handedness[] = {
+static const char *const handedness[] = {
     "right",
     "left",
     "center",

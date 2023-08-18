@@ -28,7 +28,7 @@ The .pak files are just a linear collapse of a directory tree
 
 #define IDPAKHEADER         MakeLittleLong('P','A','C','K')
 
-#define MAX_FILES_IN_PACK   4096
+#define MAX_FILES_IN_PACK   (1 << 20)
 
 typedef struct {
     char        name[56];

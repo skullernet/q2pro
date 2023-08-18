@@ -606,7 +606,7 @@ static void registry_global(void *data, struct wl_registry *wl_registry,
     }
 
     if (!strcmp(interface, wl_data_device_manager_interface.name)) {
-        wl.data_device_manager = wl_registry_bind(wl_registry, name, &wl_data_device_manager_interface, 3);
+        wl.data_device_manager = wl_registry_bind(wl_registry, name, &wl_data_device_manager_interface, 1);
         return;
     }
 

@@ -67,3 +67,7 @@ color_index_t Com_ParseColor(const char *s);
 #if USE_REF
 unsigned Com_ParseExtensionString(const char *s, const char *const extnames[]);
 #endif
+
+#if USE_DEBUG
+char *Com_MakePrintable(const char *s);
+#endif

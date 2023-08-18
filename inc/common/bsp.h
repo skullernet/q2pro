@@ -64,10 +64,6 @@ typedef struct {
 
 #define DSURF_PLANEBACK     1
 
-// for lightmap block calculation
-#define S_MAX(surf) (((surf)->extents[0] >> 4) + 1)
-#define T_MAX(surf) (((surf)->extents[1] >> 4) + 1)
-
 typedef struct mface_s {
     msurfedge_t     *firstsurfedge;
     int             numsurfedges;
@@ -80,8 +76,11 @@ typedef struct mface_s {
     int             numstyles;
 
     mtexinfo_t      *texinfo;
-    int             texturemins[2];
-    int             extents[2];
+    vec3_t          lm_axis[2];
+    vec2_t          lm_offset;
+    vec2_t          lm_scale;
+    int             lm_width;
+    int             lm_height;
 
     int             texnum[2];
     int             statebits;
@@ -248,7 +247,10 @@ typedef struct bsp_s {
 
     int             numsurfedges;
     msurfedge_t     *surfedges;
+
+    bool            lm_decoupled;
 #endif
+    bool            extended;
 
     char            name[1];
 } bsp_t;
@@ -261,7 +263,7 @@ const char *BSP_ErrorString(int err);
 typedef struct {
     mface_t     *surf;
     cplane_t    plane;
-    int         s, t;
+    float       s, t;
     float       fraction;
 } lightpoint_t;
 

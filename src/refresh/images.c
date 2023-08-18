@@ -322,7 +322,8 @@ IMG_LOAD(WAL)
     offset = LittleLong(mt->offsets[0]);
     endpos = offset + size;
     if (endpos < offset || endpos > rawlen) {
-        return Q_ERR_BAD_EXTENT;
+        Com_SetLastError("data out of bounds");
+        return Q_ERR_INVALID_FORMAT;
     }
 
     *pic = IMG_AllocPixels(size * 4);
@@ -534,7 +535,8 @@ IMG_LOAD(TGA)
     // skip TARGA image comment
     offset = TARGA_HEADER_SIZE + id_length;
     if (offset + 4 > rawlen) {
-        return Q_ERR_BAD_EXTENT;
+        Com_SetLastError("bad offset");
+        return Q_ERR_INVALID_FORMAT;
     }
 
     if (colormap_type) {
@@ -558,7 +560,8 @@ IMG_LOAD(TGA)
 
     if (image_type == 2) {
         if (offset + w * h * bpp > rawlen) {
-            return Q_ERR_BAD_EXTENT;
+            Com_SetLastError("data out of bounds");
+            return Q_ERR_INVALID_FORMAT;
         }
         if (pixel_size == 32) {
             decode = tga_decode_bgra;

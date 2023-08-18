@@ -390,7 +390,7 @@ void Touch_Item(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
 
 void TossClientWeapon(edict_t *self)
 {
-    gitem_t     *item;
+    const gitem_t   *item;
     edict_t     *drop;
     bool        quad;
     float       spread;
@@ -573,7 +573,7 @@ but is called after each death and level change in deathmatch
 */
 void InitClientPersistant(gclient_t *client)
 {
-    gitem_t     *item;
+    const gitem_t   *item;
 
     memset(&client->pers, 0, sizeof(client->pers));
 
