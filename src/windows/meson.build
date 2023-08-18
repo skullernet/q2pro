@@ -21,7 +21,7 @@ server_src += windows.compile_resources('res/q2proded.rc',
   include_directories: rc_inc,
 )
 
-game_src += windows.compile_resources('res/baseq2.rc',
+game_src += windows.compile_resources('res/game.rc',
   args:                rc_args,
   include_directories: rc_inc,
 )

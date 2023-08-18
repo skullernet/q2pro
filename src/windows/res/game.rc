@@ -13,9 +13,9 @@
 #endif
 
 #ifdef _WIN64
-#define VER_FILEDESCRIPTION_STR     "Q2PRO baseq2 game module (64-bit)"
+#define VER_FILEDESCRIPTION_STR     "Q2PRO game module (64-bit)"
 #else
-#define VER_FILEDESCRIPTION_STR     "Q2PRO baseq2 game module"
+#define VER_FILEDESCRIPTION_STR     "Q2PRO game module"
 #endif
 
 #define VER_ORIGINALFILENAME_STR    "game" CPUSTRING ".dll"
@@ -40,7 +40,7 @@ BEGIN
             VALUE "FileDescription", VER_FILEDESCRIPTION_STR
             VALUE "OriginalFilename", VER_ORIGINALFILENAME_STR
             VALUE "FileVersion", VERSION
-            VALUE "InternalName", "baseq2"
+            VALUE "InternalName", "game"
             VALUE "LegalCopyright", "Copyright © 2023 skuller.net"
             VALUE "ProductName", "Q2PRO"
             VALUE "ProductVersion", VERSION
