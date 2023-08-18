@@ -17,11 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 // server.h
 
-<<<<<<< HEAD
 #pragma once
-=======
-//#define AQTION_EXTENSION
->>>>>>> d8d561fdb3d905f48f9735cd000b691388f1dc86
 
 #include "shared/shared.h"
 #include "shared/list.h"
