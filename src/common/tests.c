@@ -789,27 +789,32 @@ static void Com_ExtCmpTest_f(void)
     Com_Printf("%d failures, %d strings tested\n", errors, numextcmptests);
 }
 
-void TST_Init(void)
-{
-    Cmd_AddCommand("error", Com_Error_f);
-    Cmd_AddCommand("errordrop", Com_ErrorDrop_f);
-    Cmd_AddCommand("freeze", Com_Freeze_f);
-    Cmd_AddCommand("crash", Com_Crash_f);
-    Cmd_AddCommand("doublefree", Com_DoubleFree_f);
-    Cmd_AddCommand("printjunk", Com_PrintJunk_f);
-    Cmd_AddCommand("bsptest", BSP_Test_f);
-    Cmd_AddCommand("wildtest", Com_TestWild_f);
-    Cmd_AddCommand("normtest", Com_TestNorm_f);
-    Cmd_AddCommand("infotest", Com_TestInfo_f);
-    Cmd_AddCommand("snprintftest", Com_TestSnprintf_f);
+static const cmdreg_t c_test[] = {
+    { "error", Com_Error_f },
+    { "errordrop", Com_ErrorDrop_f },
+    { "freeze", Com_Freeze_f },
+    { "crash", Com_Crash_f },
+    { "doublefree", Com_DoubleFree_f },
+    { "printjunk", Com_PrintJunk_f },
+    { "bsptest", BSP_Test_f },
+    { "wildtest", Com_TestWild_f },
+    { "normtest", Com_TestNorm_f },
+    { "infotest", Com_TestInfo_f },
+    { "snprintftest", Com_TestSnprintf_f },
 #if USE_REF
-    Cmd_AddCommand("modeltest", Com_TestModels_f);
-    Cmd_AddCommand("imagetest", Com_TestImages_f);
+    { "modeltest", Com_TestModels_f },
+    { "imagetest", Com_TestImages_f },
 #endif
 #if USE_CLIENT
-    Cmd_AddCommand("soundtest", Com_TestSounds_f);
+    { "soundtest", Com_TestSounds_f },
 #endif
-    Cmd_AddCommand("mdfourtest", Com_MdfourTest_f);
-    Cmd_AddCommand("mdfoursum", Com_MdfourSum_f);
-    Cmd_AddCommand("extcmptest", Com_ExtCmpTest_f);
+    { "mdfourtest", Com_MdfourTest_f },
+    { "mdfoursum", Com_MdfourSum_f },
+    { "extcmptest", Com_ExtCmpTest_f },
+    { NULL }
+};
+
+void TST_Init(void)
+{
+    Cmd_Register(c_test);
 }

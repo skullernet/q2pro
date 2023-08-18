@@ -231,8 +231,8 @@ typedef struct {
 typedef struct gitem_s {
     char        *classname; // spawning name
     bool        (*pickup)(struct edict_s *ent, struct edict_s *other);
-    void        (*use)(struct edict_s *ent, struct gitem_s *item);
-    void        (*drop)(struct edict_s *ent, struct gitem_s *item);
+    void        (*use)(struct edict_s *ent, const struct gitem_s *item);
+    void        (*drop)(struct edict_s *ent, const struct gitem_s *item);
     void        (*weaponthink)(struct edict_s *ent);
     char        *pickup_sound;
     char        *world_model;
@@ -250,7 +250,7 @@ typedef struct gitem_s {
 
     int         weapmodel;      // weapon model index (for weapons)
 
-    void        *info;
+    const void  *info;
     int         tag;
 
     const char *const   *precaches;     // array of all models, sounds, and images this item will use
@@ -400,12 +400,12 @@ typedef struct {
 typedef struct {
     int         firstframe;
     int         lastframe;
-    mframe_t    *frame;
+    const mframe_t  *frame;
     void        (*endfunc)(edict_t *self);
 } mmove_t;
 
 typedef struct {
-    mmove_t     *currentmove;
+    const mmove_t   *currentmove;
     int         aiflags;
     int         nextframe;
     float       scale;
@@ -579,7 +579,7 @@ typedef enum {
     F_IGNORE
 } fieldtype_t;
 
-extern  gitem_t itemlist[];
+extern const gitem_t    itemlist[];
 
 //
 // g_cmds.c
@@ -590,21 +590,21 @@ void Cmd_Score_f(edict_t *ent);
 //
 // g_items.c
 //
-void PrecacheItem(gitem_t *it);
+void PrecacheItem(const gitem_t *it);
 void InitItems(void);
 void SetItemNames(void);
-gitem_t *FindItem(char *pickup_name);
-gitem_t *FindItemByClassname(char *classname);
+const gitem_t *FindItem(const char *pickup_name);
+const gitem_t *FindItemByClassname(const char *classname);
 #define ITEM_INDEX(x) ((x)-itemlist)
-edict_t *Drop_Item(edict_t *ent, gitem_t *item);
+edict_t *Drop_Item(edict_t *ent, const gitem_t *item);
 void SetRespawn(edict_t *ent, float delay);
 void ChangeWeapon(edict_t *ent);
-void SpawnItem(edict_t *ent, gitem_t *item);
+void SpawnItem(edict_t *ent, const gitem_t *item);
 void Think_Weapon(edict_t *ent);
 int ArmorIndex(edict_t *ent);
 int PowerArmorType(edict_t *ent);
-gitem_t *GetItemByIndex(int index);
-bool Add_Ammo(edict_t *ent, gitem_t *item, int count);
+const gitem_t *GetItemByIndex(int index);
+bool Add_Ammo(edict_t *ent, const gitem_t *item, int count);
 void Touch_Item(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf);
 
 //
@@ -837,8 +837,8 @@ typedef struct {
     int         max_cells;
     int         max_slugs;
 
-    gitem_t     *weapon;
-    gitem_t     *lastweapon;
+    const gitem_t   *weapon;
+    const gitem_t   *lastweapon;
 
     int         power_cubes;    // used for tracking the cubes in coop games
     int         score;          // for calculating total unit score in coop games
@@ -884,7 +884,7 @@ struct gclient_s {
 
     bool        weapon_thunk;
 
-    gitem_t     *newweapon;
+    const gitem_t   *newweapon;
 
     // sum up damage over an entire frame, so
     // shotgun blasts give a single big kick
@@ -1088,7 +1088,7 @@ struct edict_s {
 
     int         style;          // also used as areaportal number
 
-    gitem_t     *item;          // for bonus items
+    const gitem_t   *item;      // for bonus items
 
     // common data blocks
     moveinfo_t      moveinfo;

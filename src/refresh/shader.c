@@ -30,6 +30,8 @@ enum {
     VERT_ATTR_COLOR
 };
 
+static void upload_u_block(void);
+
 static void write_header(char *buf)
 {
     *buf = 0;
@@ -54,6 +56,7 @@ static void write_block(char *buf)
         GLSL(float u_intensity;)
         GLSL(vec2 w_amp;)
         GLSL(vec2 w_phase;)
+        GLSL(vec2 u_scroll;)
     GLSF("};\n");
 }
 
@@ -74,12 +77,8 @@ static void write_vertex_shader(char *buf, GLbitfield bits)
     }
     GLSF("void main() {\n");
         GLSL(vec2 tc = a_tc;)
-        if (bits & GLS_FLOW_ENABLE) {
-            if (bits & GLS_WARP_ENABLE)
-                GLSL(tc.s -= u_time * 0.5;)
-            else
-                GLSL(tc.s -= 64.0 * fract(u_time * 0.025);)
-        }
+        if (bits & GLS_SCROLL_ENABLE)
+            GLSL(tc += u_time * u_scroll;)
         GLSL(v_tc = tc;)
         if (bits & GLS_LIGHTMAP_ENABLE)
             GLSL(v_lmtc = a_lmtc;)
@@ -256,6 +255,11 @@ static void shader_state_bits(GLbitfield bits)
         else
             gl_static.programs[i] = create_and_use_program(bits);
     }
+
+    if (diff & GLS_SCROLL_MASK && bits & GLS_SCROLL_ENABLE) {
+        GL_ScrollSpeed(gls.u_block.scroll, bits);
+        upload_u_block();
+    }
 }
 
 static void shader_array_bits(GLbitfield bits)
@@ -328,6 +332,7 @@ static void shader_color(GLfloat r, GLfloat g, GLfloat b, GLfloat a)
 static void upload_u_block(void)
 {
     qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_block), &gls.u_block, GL_DYNAMIC_DRAW);
+    c.uniformUploads++;
 }
 
 static void shader_load_view_matrix(const GLfloat *matrix)

@@ -306,6 +306,7 @@ static void CL_ParseFrame(int extrabits)
         MSG_ParseDeltaPlayerstate_Enhanced(from, &frame.ps, bits, extraflags);
 #if USE_DEBUG
         if (cl_shownet->integer > 2 && (bits || extraflags)) {
+            Com_LPrintf(PRINT_DEVELOPER, "   ");
             MSG_ShowDeltaPlayerstateBits_Enhanced(bits, extraflags);
             Com_LPrintf(PRINT_DEVELOPER, "\n");
         }
@@ -331,6 +332,7 @@ static void CL_ParseFrame(int extrabits)
         MSG_ParseDeltaPlayerstate_Default(from, &frame.ps, bits);
 #if USE_DEBUG
         if (cl_shownet->integer > 2 && bits) {
+            Com_LPrintf(PRINT_DEVELOPER, "   ");
             MSG_ShowDeltaPlayerstateBits_Default(bits);
             Com_LPrintf(PRINT_DEVELOPER, "\n");
         }
@@ -414,7 +416,7 @@ static void CL_ParseConfigstring(int index)
     maxlen = CS_SIZE(index);
     len = MSG_ReadString(s, maxlen);
 
-    SHOWNET(2, "    %d \"%s\"\n", index, s);
+    SHOWNET(2, "    %d \"%s\"\n", index, Com_MakePrintable(s));
 
     if (len >= maxlen) {
         Com_WPrintf(
@@ -442,6 +444,7 @@ static void CL_ParseBaseline(int index, int bits)
     }
 #if USE_DEBUG
     if (cl_shownet->integer > 2) {
+        Com_LPrintf(PRINT_DEVELOPER, "   baseline: %i ", index);
         MSG_ShowDeltaEntityBits(bits);
         Com_LPrintf(PRINT_DEVELOPER, "\n");
     }
@@ -499,7 +502,7 @@ static void CL_ParseServerData(void)
                       cls.serverProtocol, protocol);
         }
         // BIG HACK to let demos from release work with the 3.0x patch!!!
-        if (protocol < PROTOCOL_VERSION_OLD || protocol > PROTOCOL_VERSION_Q2PRO) {
+        if (protocol < PROTOCOL_VERSION_OLD || protocol > PROTOCOL_VERSION_DEFAULT) {
             Com_Error(ERR_DROP, "Demo uses unsupported protocol version %d.", protocol);
         }
         cls.serverProtocol = protocol;
@@ -918,7 +921,7 @@ static void CL_ParsePrint(void)
     level = MSG_ReadByte();
     MSG_ReadString(s, sizeof(s));
 
-    SHOWNET(2, "    %i \"%s\"\n", level, s);
+    SHOWNET(2, "    %i \"%s\"\n", level, Com_MakePrintable(s));
 
     if (level != PRINT_CHAT) {
         Com_Printf("%s", s);
@@ -976,7 +979,7 @@ static void CL_ParseCenterPrint(void)
     char s[MAX_STRING_CHARS];
 
     MSG_ReadString(s, sizeof(s));
-    SHOWNET(2, "    \"%s\"\n", s);
+    SHOWNET(2, "    \"%s\"\n", Com_MakePrintable(s));
     SCR_CenterPrint(s);
 
     if (!cls.demo.playback && cl.serverstate != ss_broadcast) {
@@ -990,14 +993,14 @@ static void CL_ParseStuffText(void)
     char s[MAX_STRING_CHARS];
 
     MSG_ReadString(s, sizeof(s));
-    SHOWNET(2, "    \"%s\"\n", s);
+    SHOWNET(2, "    \"%s\"\n", Com_MakePrintable(s));
     Cbuf_AddText(&cl_cmdbuf, s);
 }
 
 static void CL_ParseLayout(void)
 {
     MSG_ReadString(cl.layout, sizeof(cl.layout));
-    SHOWNET(2, "    \"%s\"\n", cl.layout);
+    SHOWNET(2, "    \"%s\"\n", Com_MakePrintable(cl.layout));
 }
 
 static void CL_ParseInventory(void)
@@ -1308,13 +1311,13 @@ void CL_ParseServerMessage(void)
 CL_SeekDemoMessage
 
 A variant of ParseServerMessage that skips over non-important action messages,
-used for seeking in demos.
+used for seeking in demos. Returns true if seeking should be aborted (got serverdata).
 =====================
 */
-void CL_SeekDemoMessage(void)
+bool CL_SeekDemoMessage(void)
 {
-    int         cmd, extrabits;
-    int         index;
+    int         cmd, index, bits;
+    bool        serverdata = false;
 
 #if USE_DEBUG
     if (cl_shownet->integer == 1) {
@@ -1336,18 +1339,11 @@ void CL_SeekDemoMessage(void)
         }
 
         cmd = MSG_ReadByte();
-        if (cmd & ~SVCMD_MASK && (cls.serverProtocol < PROTOCOL_VERSION_R1Q2 || (cmd & SVCMD_MASK) != svc_frame))
-            goto badbyte;
-
-        extrabits = cmd >> SVCMD_BITS;
-        cmd &= SVCMD_MASK;
-
         SHOWNET(1, "%3zu:%s\n", msg_read.readcount - 1, MSG_ServerCommandString(cmd));
 
         // other commands
         switch (cmd) {
         default:
-        badbyte:
             Com_Error(ERR_DROP, "%s: illegible server message: %d", __func__, cmd);
             break;
 
@@ -1368,6 +1364,11 @@ void CL_SeekDemoMessage(void)
             MSG_ReadString(NULL, 0);
             break;
 
+        case svc_serverdata:
+            CL_ParseServerData();
+            serverdata = true;
+            break;
+
         case svc_configstring:
             index = MSG_ReadShort();
             CL_ParseConfigstring(index);
@@ -1375,6 +1376,11 @@ void CL_SeekDemoMessage(void)
 
         case svc_sound:
             CL_ParseStartSoundPacket();
+            break;
+
+        case svc_spawnbaseline:
+            index = MSG_ParseEntityBits(&bits);
+            CL_ParseBaseline(index, bits);
             break;
 
         case svc_temp_entity:
@@ -1387,7 +1393,7 @@ void CL_SeekDemoMessage(void)
             break;
 
         case svc_frame:
-            CL_ParseFrame(extrabits);
+            CL_ParseFrame(0);
             continue;
 
         case svc_inventory:
@@ -1399,4 +1405,6 @@ void CL_SeekDemoMessage(void)
             break;
         }
     }
+
+    return serverdata;
 }

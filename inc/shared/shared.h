@@ -468,7 +468,7 @@ int SortStricmp(const void *p1, const void *p2);
 
 size_t COM_strclr(char *s);
 char *COM_StripQuotes(char *s);
-char *COM_Trim(char *s);
+char *COM_TrimSpace(char *s);
 
 // buffer safe operations
 size_t Q_strlcpy(char *dst, const char *src, size_t size);
@@ -511,6 +511,17 @@ static inline float FloatSwap(float f)
     dat1.f = f;
     dat2.l = LongSwap(dat1.l);
     return dat2.f;
+}
+
+static inline float LongToFloat(uint32_t l)
+{
+    union {
+        float f;
+        uint32_t l;
+    } dat;
+
+    dat.l = l;
+    return dat.f;
 }
 
 #if USE_LITTLE_ENDIAN
@@ -667,6 +678,10 @@ COLLISION DETECTION
 
 #define SURF_ALPHATEST  0x02000000  // used by kmquake2
 
+#define SURF_N64_UV             (1U << 28)
+#define SURF_N64_SCROLL_X       (1U << 29)
+#define SURF_N64_SCROLL_Y       (1U << 30)
+#define SURF_N64_SCROLL_FLIP    (1U << 31)
 
 
 // content masks

@@ -133,6 +133,7 @@ void Cbuf_Execute(cmdbuf_t *buf)
     char    *text;
     char    line[MAX_STRING_CHARS];
     int     quotes;
+    bool    ok;
 
     while (buf->cursize) {
         if (buf->waitCount > 0) {
@@ -155,9 +156,12 @@ void Cbuf_Execute(cmdbuf_t *buf)
         }
 
         // check for overflow
-        i = min(i, sizeof(line) - 1);
-        memcpy(line, text, i);
-        line[i] = 0;
+        ok = false;
+        if (i < sizeof(line)) {
+            memcpy(line, text, i);
+            line[i] = 0;
+            ok = true;
+        }
 
 // delete the text from the command buffer and move remaining commands down
 // this is necessary because commands (exec, alias) can insert data at the
@@ -171,8 +175,12 @@ void Cbuf_Execute(cmdbuf_t *buf)
         }
 
 // execute the command line
-        cmd_current = buf;
-        buf->exec(buf, line);
+        if (ok) {
+            cmd_current = buf;
+            buf->exec(buf, line);
+        } else {
+            Com_Printf("Line exceeded %i chars, discarded.\n", MAX_STRING_CHARS);
+        }
     }
 }
 
@@ -658,7 +666,7 @@ error:
     if (matched) {
         // execute branch 1
         if (i > j) {
-            Cbuf_InsertText(cmd_current, COM_StripQuotes(COM_Trim(Cmd_RawArgsFrom(j))));
+            Cbuf_InsertText(cmd_current, COM_StripQuotes(COM_TrimSpace(Cmd_RawArgsFrom(j))));
         }
     } else {
         // execute branch 2
@@ -1744,7 +1752,12 @@ static char *unescape_string(char *dst, const char *src)
                 src += 2;
                 break;
             default:
-                *p++ = src[1];
+                if (src[0] >= '0' && src[1] <= '7') {
+                    *p++ = strtoul(&src[1], (char **)&src, 8);
+                    src -= 2;
+                } else {
+                    *p++ = src[1];
+                }
                 break;
             }
             src += 2;

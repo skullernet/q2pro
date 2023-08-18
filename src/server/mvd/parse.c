@@ -238,7 +238,7 @@ static void MVD_UnicastLayout(mvd_t *mvd, mvd_player_t *player)
         Q_strlcpy(mvd->oldscores, mvd->layout, sizeof(mvd->oldscores));
     }
 
-    if (mvd->demoseeking)
+    if (mvd->demoseeking || !mvd->dummy)
         return;
 
     // force an update to all relevant clients
@@ -604,7 +604,9 @@ static void MVD_ParsePrint(mvd_t *mvd)
     level = MSG_ReadByte();
     MSG_ReadString(string, sizeof(string));
 
-    if (level == PRINT_HIGH && strstr(string, "Match ended.")) {
+    if (level == PRINT_HIGH && (strstr(string, "Match ended.") ||
+                                !strcmp(string, "Fraglimit hit.\n") ||
+                                !strcmp(string, "Timelimit hit.\n"))) {
         match_ended_hack = true;
     }
 

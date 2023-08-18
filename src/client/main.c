@@ -65,6 +65,7 @@ cvar_t  *cl_changemapcmd;
 cvar_t  *cl_beginmapcmd;
 
 cvar_t  *cl_ignore_stufftext;
+cvar_t  *cl_allow_vid_restart;
 
 cvar_t  *cl_gibs;
 #if USE_FPS
@@ -665,6 +666,7 @@ void CL_ClearState(void)
     CL_ClearEffects();
     CL_ClearTEnts();
     LOC_FreeLocations();
+    CL_FreeDemoSnapshots();
 
     // wipe the entire cl structure
     BSP_Free(cl.bsp);
@@ -1222,7 +1224,7 @@ static void CL_ConnectionlessPacket(void)
 
     c = Cmd_Argv(0);
 
-    Com_DPrintf("%s: %s\n", NET_AdrToString(&net_from), string);
+    Com_DPrintf("%s: %s\n", NET_AdrToString(&net_from), Com_MakePrintable(string));
 
     // challenge from the server we are connecting to
     if (!strcmp(c, "challenge")) {
@@ -2442,6 +2444,23 @@ Perform complete restart of the renderer subsystem.
 */
 static void CL_RestartRefresh_f(void)
 {
+    static bool warned;
+
+    if (!cl_allow_vid_restart->integer && strcmp(Cmd_Argv(1), "force")) {
+        if (Cmd_From() == FROM_STUFFTEXT)
+            return;
+
+        Com_Printf("Manual `vid_restart' command ignored.\n");
+        if (warned)
+            return;
+
+        Com_Printf("Video settings are automatically applied by " PRODUCT ", thus manual "
+                   "`vid_restart' is never needed. To force restart of video subsystem, "
+                   "use `vid_restart force', or set `cl_allow_vid_restart' variable to 1 "
+                   "to restore old behavior of this command.\n");
+        warned = true;
+        return;
+    }
     CL_RestartRefresh(true);
 }
 
@@ -2468,7 +2487,7 @@ static void exec_server_string(cmdbuf_t *buf, const char *text)
         return;        // no tokens
     }
 
-    Com_DPrintf("stufftext: %s\n", text);
+    Com_DPrintf("stufftext: %s\n", Com_MakePrintable(text));
 
     s = Cmd_Argv(0);
 
@@ -2708,7 +2727,7 @@ static void CL_InitLocal(void)
     cl_predict->changed = cl_predict_changed;
     cl_kickangles = Cvar_Get("cl_kickangles", "1", CVAR_CHEAT);
     cl_warn_on_fps_rounding = Cvar_Get("cl_warn_on_fps_rounding", "1", 0);
-    cl_maxfps = Cvar_Get("cl_maxfps", "60", 0);
+    cl_maxfps = Cvar_Get("cl_maxfps", "62", 0);
     cl_maxfps->changed = cl_maxfps_changed;
     cl_async = Cvar_Get("cl_async", "1", 0);
     cl_async->changed = cl_sync_changed;
@@ -2766,6 +2785,7 @@ static void CL_InitLocal(void)
     cl_beginmapcmd = Cvar_Get("cl_beginmapcmd", "", 0);
 
     cl_ignore_stufftext = Cvar_Get("cl_ignore_stufftext", "0", 0);
+    cl_allow_vid_restart = Cvar_Get("cl_allow_vid_restart", "0", 0);
 
     cl_protocol = Cvar_Get("cl_protocol", "0", 0);
 
@@ -2784,7 +2804,7 @@ static void CL_InitLocal(void)
     info_spectator = Cvar_Get("spectator", "0", CVAR_USERINFO);
     info_name = Cvar_Get("name", "unnamed", CVAR_USERINFO | CVAR_ARCHIVE);
     info_skin = Cvar_Get("skin", "male/grunt", CVAR_USERINFO | CVAR_ARCHIVE);
-    info_rate = Cvar_Get("rate", "5000", CVAR_USERINFO | CVAR_ARCHIVE);
+    info_rate = Cvar_Get("rate", "15000", CVAR_USERINFO | CVAR_ARCHIVE);
     info_msg = Cvar_Get("msg", "1", CVAR_USERINFO | CVAR_ARCHIVE);
     info_hand = Cvar_Get("hand", "0", CVAR_USERINFO | CVAR_ARCHIVE);
     info_hand->changed = info_hand_changed;

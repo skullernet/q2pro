@@ -396,7 +396,7 @@ static void MVD_UpdateLayouts(mvd_t *mvd)
             break;
         case LAYOUT_OLDSCORES:
         case LAYOUT_SCORES:
-            if (!client->layout_time) {
+            if (!client->layout_time || (!mvd->dummy && svs.realtime - client->layout_time > LAYOUT_MSEC)) {
                 MVD_LayoutScores(client);
             }
             break;
@@ -2199,19 +2199,14 @@ static void MVD_NotifyClient(mvd_client_t *client)
 void MVD_UpdateClients(mvd_t *mvd)
 {
     mvd_client_t *client;
+    bool intermission = mvd_freeze_hack->integer
+        && mvd->dummy && mvd->dummy->ps.pmove.pm_type == PM_FREEZE;
 
     // check for intermission
-    if (mvd_freeze_hack->integer && mvd->dummy) {
-        if (!mvd->intermission) {
-            if (mvd->dummy->ps.pmove.pm_type == PM_FREEZE) {
-                MVD_IntermissionStart(mvd);
-            }
-        } else if (mvd->dummy->ps.pmove.pm_type != PM_FREEZE) {
-            MVD_IntermissionStop(mvd);
-        }
-    } else if (mvd->intermission) {
+    if (!mvd->intermission && intermission)
+        MVD_IntermissionStart(mvd);
+    else if (mvd->intermission && !intermission)
         MVD_IntermissionStop(mvd);
-    }
 
     // update UDP clients
     FOR_EACH_MVDCL(client, mvd) {

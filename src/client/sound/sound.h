@@ -18,6 +18,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 // sound.h -- private sound functions
 
+#pragma once
+
 #include "../client.h"
 #include "shared/list.h"
 
@@ -89,11 +91,9 @@ typedef struct {
     int         format;
     int         channels;
     int         rate;
-    int         block_align;
     int         width;
     int         loopstart;
     int         samples;
-    int         data_chunk_len;
     byte        *data;
 } wavinfo_t;
 
