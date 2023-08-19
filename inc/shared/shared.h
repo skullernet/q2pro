@@ -662,6 +662,7 @@ COLLISION DETECTION
 #define SURF_NODRAW             BIT(7)      // don't bother referencing the texture
 
 #define SURF_ALPHATEST          BIT(25)     // used by kmquake2
+
 #define SURF_N64_UV             BIT(28)
 #define SURF_N64_SCROLL_X       BIT(29)
 #define SURF_N64_SCROLL_Y       BIT(30)
@@ -997,14 +998,17 @@ enum {
 // sound channels
 // channel 0 never willingly overrides
 // other channels (1-7) allways override a playing sound on that channel
-#define CHAN_AUTO               0
-#define CHAN_WEAPON             1
-#define CHAN_VOICE              2
-#define CHAN_ITEM               3
-#define CHAN_BODY               4
-// modifier flags
-#define CHAN_NO_PHS_ADD         BIT(3)  // send to all clients, not just ones in PHS (ATTN 0 will also do this)
-#define CHAN_RELIABLE           BIT(4)  // send by reliable message, not datagram
+enum {
+    CHAN_AUTO,
+    CHAN_WEAPON,
+    CHAN_VOICE,
+    CHAN_ITEM,
+    CHAN_BODY,
+
+    // modifier flags
+    CHAN_NO_PHS_ADD     = BIT(3),   // send to all clients, not just ones in PHS (ATTN 0 will also do this)
+    CHAN_RELIABLE       = BIT(4),   // send by reliable message, not datagram
+};
 
 // sound attenuation values
 #define ATTN_NONE               0   // full volume the entire level
