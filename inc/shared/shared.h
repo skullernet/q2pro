@@ -118,6 +118,8 @@ typedef enum {
     MULTICAST_PVS_R
 } multicast_t;
 
+typedef char configstring_t[MAX_QPATH];
+
 /*
 ==============================================================
 
