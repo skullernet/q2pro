@@ -367,15 +367,15 @@ fix_old_origin(client_t *client, entity_packed_t *state, edict_t *ent, int e)
 }
 #endif
 
-static bool SV_EntityVisible(client_t *client, edict_t *ent, byte *mask)
+static bool SV_EntityVisible(client_t *client, server_entity_t *svent, byte *mask)
 {
-    if (ent->num_clusters == -1)
+    if (svent->num_clusters == -1)
         // too many leafs for individual check, go by headnode
-        return CM_HeadnodeVisible(CM_NodeNum(client->cm, ent->headnode), mask);
+        return CM_HeadnodeVisible(CM_NodeNum(client->cm, svent->headnode), mask);
 
     // check individual leafs
-    for (int i = 0; i < ent->num_clusters; i++)
-        if (Q_IsBitSet(mask, ent->clusternums[i]))
+    for (int i = 0; i < svent->num_clusters; i++)
+        if (Q_IsBitSet(mask, svent->clusternums[i]))
             return true;
 
     return false;
@@ -405,6 +405,7 @@ void SV_BuildClientFrame(client_t *client)
     int         e;
     vec3_t      org;
     edict_t     *ent;
+    server_entity_t *svent;
     edict_t     *clent;
     client_frame_t  *frame;
     entity_packed_t *state;
@@ -477,6 +478,7 @@ void SV_BuildClientFrame(client_t *client)
 
     for (e = 1; e < client->ge->num_edicts; e++) {
         ent = EDICT_NUM2(client->ge, e);
+        svent = &sv.entities[e];
 
         // ignore entities not in use
         if (!ent->inuse && (g_features->integer & GMF_PROPERINUSE)) {
@@ -515,7 +517,7 @@ void SV_BuildClientFrame(client_t *client)
             bool beam_cull = ent->s.renderfx & RF_BEAM;
             bool sound_cull = client->csr->extended && ent->s.sound;
 
-            if (!SV_EntityVisible(client, ent, (beam_cull || sound_cull) ? clientphs : clientpvs))
+            if (!SV_EntityVisible(client, svent, (beam_cull || sound_cull) ? clientphs : clientpvs))
                 continue;
 
             // don't send sounds if they will be attenuated away
@@ -523,7 +525,7 @@ void SV_BuildClientFrame(client_t *client)
                 if (SV_EntityAttenuatedAway(org, ent)) {
                     if (!ent->s.modelindex)
                         continue;
-                    if (!beam_cull && !SV_EntityVisible(client, ent, clientpvs))
+                    if (!beam_cull && !SV_EntityVisible(client, svent, clientpvs))
                         continue;
                 }
             } else if (!ent->s.modelindex) {

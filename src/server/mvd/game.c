@@ -1718,7 +1718,10 @@ void MVD_LinkEdict(mvd_t *mvd, edict_t *ent)
         ent->solid = SOLID_NOT;
     }
 
-    SV_LinkEdict(&mvd->cm, ent);
+    int entnum = ent - mvd->edicts;
+    server_entity_t* sent = &sv.entities[entnum];
+
+    SV_LinkEdict(&mvd->cm, ent, sent);
 }
 
 void MVD_RemoveClient(client_t *client)

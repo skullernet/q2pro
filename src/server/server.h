@@ -115,6 +115,12 @@ typedef struct {
 typedef struct {
     int         solid32;
 
+    list_t area; // linked to a division node or leaf
+
+    int num_clusters; // if -1, use headnode instead
+    int clusternums[MAX_ENT_CLUSTERS];
+    int headnode; // unused if num_clusters != -1
+
 #if USE_FPS
 
 // must be > MAX_FRAMEDIV
@@ -793,7 +799,7 @@ void PF_UnlinkEdict(edict_t *ent);
 // call before removing an entity, and before trying to move one,
 // so it doesn't clip against itself
 
-void SV_LinkEdict(cm_t *cm, edict_t *ent);
+void SV_LinkEdict(cm_t *cm, edict_t *ent, server_entity_t* sv_ent);
 void PF_LinkEdict(edict_t *ent);
 // Needs to be called any time an entity changes origin, mins, maxs,
 // or solid.  Automatically unlinks if needed.

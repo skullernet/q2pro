@@ -101,8 +101,6 @@ SV_ClearWorld
 void SV_ClearWorld(void)
 {
     mmodel_t *cm;
-    edict_t *ent;
-    int i;
 
     memset(sv_areanodes, 0, sizeof(sv_areanodes));
     sv_numareanodes = 0;
@@ -113,9 +111,9 @@ void SV_ClearWorld(void)
     }
 
     // make sure all entities are unlinked
-    for (i = 0; i < ge->max_edicts; i++) {
-        ent = EDICT_NUM(i);
-        ent->area.next = ent->area.prev = NULL;
+    for (int i = 0; i < ge->max_edicts; i++) {
+        server_entity_t *sent = &sv.entities[i];
+        sent->area.next = sent->area.prev = NULL;
     }
 }
 
@@ -127,7 +125,7 @@ General purpose routine shared between game DLL and MVD code.
 Links entity to PVS leafs.
 ===============
 */
-void SV_LinkEdict(cm_t *cm, edict_t *ent)
+void SV_LinkEdict(cm_t *cm, edict_t *ent, server_entity_t* sv_ent)
 {
     mleaf_t     *leafs[MAX_TOTAL_ENT_LEAFS];
     int         clusters[MAX_TOTAL_ENT_LEAFS];
@@ -173,7 +171,7 @@ void SV_LinkEdict(cm_t *cm, edict_t *ent)
     ent->absmax[2] += 1;
 
 // link to PVS leafs
-    ent->num_clusters = 0;
+    sv_ent->num_clusters = 0;
     ent->areanum = 0;
     ent->areanum2 = 0;
 
@@ -200,10 +198,10 @@ void SV_LinkEdict(cm_t *cm, edict_t *ent)
 
     if (num_leafs >= MAX_TOTAL_ENT_LEAFS) {
         // assume we missed some leafs, and mark by headnode
-        ent->num_clusters = -1;
-        ent->headnode = CM_NumNode(cm, topnode);
+        sv_ent->num_clusters = -1;
+        sv_ent->headnode = CM_NumNode(cm, topnode);
     } else {
-        ent->num_clusters = 0;
+        sv_ent->num_clusters = 0;
         for (i = 0; i < num_leafs; i++) {
             if (clusters[i] == -1)
                 continue;        // not a visible leaf
@@ -211,27 +209,34 @@ void SV_LinkEdict(cm_t *cm, edict_t *ent)
                 if (clusters[j] == clusters[i])
                     break;
             if (j == i) {
-                if (ent->num_clusters == MAX_ENT_CLUSTERS) {
+                if (sv_ent->num_clusters == MAX_ENT_CLUSTERS) {
                     // assume we missed some leafs, and mark by headnode
-                    ent->num_clusters = -1;
-                    ent->headnode = CM_NumNode(cm, topnode);
+                    sv_ent->num_clusters = -1;
+                    sv_ent->headnode = CM_NumNode(cm, topnode);
                     break;
                 }
 
-                ent->clusternums[ent->num_clusters++] = clusters[i];
+                sv_ent->clusternums[sv_ent->num_clusters++] = clusters[i];
             }
         }
     }
+}
+
+static void unlink_sent(server_entity_t *sent)
+{
+    if (!sent->area.prev)
+        return;        // not linked in anywhere
+    List_Remove(&sent->area);
+    sent->area.prev = sent->area.next = NULL;
 }
 
 void PF_UnlinkEdict(edict_t *ent)
 {
     if (!ent)
         Com_Error(ERR_DROP, "%s: NULL", __func__);
-    if (!ent->area.next)
-        return;        // not linked in anywhere
-    List_Remove(&ent->area);
-    ent->area.next = ent->area.prev = NULL;
+    int entnum = NUM_FOR_EDICT(ent);
+    server_entity_t *sent = &sv.entities[entnum];
+    unlink_sent(sent);
 }
 
 static uint32_t SV_PackSolid32(edict_t *ent)
@@ -276,8 +281,11 @@ void PF_LinkEdict(edict_t *ent)
     if (!ent)
         Com_Error(ERR_DROP, "%s: NULL", __func__);
 
-    if (ent->area.next)
-        PF_UnlinkEdict(ent);     // unlink from old position
+    entnum = NUM_FOR_EDICT(ent);
+    sent = &sv.entities[entnum];
+
+    if (sent->area.prev)
+        unlink_sent(sent);     // unlink from old position
 
     if (ent == ge->edicts)
         return;        // don't add the world
@@ -290,9 +298,6 @@ void PF_LinkEdict(edict_t *ent)
     if (!sv.cm.cache) {
         return;
     }
-
-    entnum = NUM_FOR_EDICT(ent);
-    sent = &sv.entities[entnum];
 
     // encode the size into the entity_state for client prediction
     switch (ent->solid) {
@@ -315,7 +320,7 @@ void PF_LinkEdict(edict_t *ent)
         break;
     }
 
-    SV_LinkEdict(&sv.cm, ent);
+    SV_LinkEdict(&sv.cm, ent, sent);
 
     // if first time, make sure old_origin is valid
     if (!ent->linkcount) {
@@ -353,9 +358,9 @@ void PF_LinkEdict(edict_t *ent)
 
     // link it in
     if (ent->solid == SOLID_TRIGGER)
-        List_Append(&node->trigger_edicts, &ent->area);
+        List_Append(&node->trigger_edicts, &sent->area);
     else
-        List_Append(&node->solid_edicts, &ent->area);
+        List_Append(&node->solid_edicts, &sent->area);
 }
 
 
@@ -368,7 +373,7 @@ SV_AreaEdicts_r
 static void SV_AreaEdicts_r(areanode_t *node)
 {
     list_t      *start;
-    edict_t     *check;
+    server_entity_t *sent;
 
     // touch linked edicts
     if (area_type == AREA_SOLID)
@@ -376,7 +381,8 @@ static void SV_AreaEdicts_r(areanode_t *node)
     else
         start = &node->trigger_edicts;
 
-    LIST_FOR_EACH(edict_t, check, start, area) {
+    LIST_FOR_EACH(server_entity_t, sent, start, area) {
+        edict_t *check = EDICT_NUM(sent - sv.entities);
         if (check->solid == SOLID_NOT)
             continue;        // deactivated
         if (check->absmin[0] > area_maxs[0]

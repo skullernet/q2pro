@@ -97,11 +97,11 @@ struct edict_s {
     int         linkcount;
 
     // FIXME: move these fields to a server private sv_entity_t
-    list_t      area;               // linked to a division node or leaf
+    list_t      _donotuse_area;               // linked to a division node or leaf
 
-    int         num_clusters;       // if -1, use headnode instead
-    int         clusternums[MAX_ENT_CLUSTERS];
-    int         headnode;           // unused if num_clusters != -1
+    int         _donotuse_num_clusters;       // if -1, use headnode instead
+    int         _donotuse_clusternums[MAX_ENT_CLUSTERS];
+    int         _donotuse_headnode;           // unused if num_clusters != -1
     int         areanum, areanum2;
 
     //================================
