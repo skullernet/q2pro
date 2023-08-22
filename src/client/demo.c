@@ -430,7 +430,7 @@ static void CL_Record_f(void)
         if (!ent->number)
             continue;
 
-        if (msg_write.cursize + 64 > size) {
+        if (msg_write.cursize + MAX_PACKETENTITY_BYTES > size) {
             if (!CL_WriteDemoMessage(&msg_write))
                 return;
         }
