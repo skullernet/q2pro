@@ -57,6 +57,7 @@ static void write_block(char *buf)
         GLSL(vec2 w_amp;)
         GLSL(vec2 w_phase;)
         GLSL(vec2 u_scroll;)
+        GLSL(vec2 pad;)
     GLSF("};\n");
 }
 
