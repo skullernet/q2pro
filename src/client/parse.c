@@ -459,7 +459,7 @@ static void CL_ParseGamestate(void)
     int        index, bits;
 
     while (1) {
-        index = MSG_ReadShort();
+        index = MSG_ReadWord();
         if (index == MAX_CONFIGSTRINGS) {
             break;
         }
@@ -551,7 +551,7 @@ static void CL_ParseServerData(void)
         if (i) {
             Com_Error(ERR_DROP, "'Enhanced' R1Q2 servers are not supported");
         }
-        i = MSG_ReadShort();
+        i = MSG_ReadWord();
         // for some reason, R1Q2 servers always report the highest protocol
         // version they support, while still using the lower version
         // client specified in the 'connect' packet. oh well...
@@ -576,7 +576,7 @@ static void CL_ParseServerData(void)
         }
         cl.pmp.speedmult = 2;
     } else if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO) {
-        i = MSG_ReadShort();
+        i = MSG_ReadWord();
         if (!Q2PRO_SUPPORTED(i)) {
             Com_Error(ERR_DROP,
                       "Q2PRO server reports unsupported protocol version %d.\n"
@@ -780,7 +780,7 @@ static void CL_ParseMuzzleFlashPacket(int mask)
 {
     int entity, weapon;
 
-    entity = MSG_ReadShort();
+    entity = MSG_ReadWord();
     if (entity < 1 || entity >= MAX_EDICTS)
         Com_Error(ERR_DROP, "%s: bad entity", __func__);
 
@@ -815,7 +815,7 @@ static void CL_ParseStartSoundPacket(void)
 
     if (flags & SND_ENT) {
         // entity relative
-        channel = MSG_ReadShort();
+        channel = MSG_ReadWord();
         entity = channel >> 3;
         if (entity < 0 || entity >= MAX_EDICTS)
             Com_Error(ERR_DROP, "%s: bad entity: %d", __func__, entity);
@@ -1208,7 +1208,7 @@ void CL_ParseServerMessage(void)
             continue;
 
         case svc_configstring:
-            index = MSG_ReadShort();
+            index = MSG_ReadWord();
             CL_ParseConfigstring(index);
             break;
 
@@ -1366,7 +1366,7 @@ bool CL_SeekDemoMessage(void)
             break;
 
         case svc_configstring:
-            index = MSG_ReadShort();
+            index = MSG_ReadWord();
             CL_ParseConfigstring(index);
             break;
 

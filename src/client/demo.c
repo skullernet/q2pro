@@ -1179,7 +1179,7 @@ demoInfo_t *CL_GetDemoInfo(const char *path, demoInfo_t *info)
             if (c != svc_configstring) {
                 break;
             }
-            index = MSG_ReadShort();
+            index = MSG_ReadWord();
             if (index < 0 || index >= MAX_CONFIGSTRINGS) {
                 goto fail;
             }
@@ -1192,13 +1192,13 @@ demoInfo_t *CL_GetDemoInfo(const char *path, demoInfo_t *info)
         if (MSG_ReadLong() != PROTOCOL_VERSION_MVD) {
             goto fail;
         }
-        MSG_ReadShort();
+        MSG_ReadWord();
         MSG_ReadLong();
         MSG_ReadString(NULL, 0);
         clientNum = MSG_ReadShort();
 
         while (1) {
-            index = MSG_ReadShort();
+            index = MSG_ReadWord();
             if (index == MAX_CONFIGSTRINGS) {
                 break;
             }

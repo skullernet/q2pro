@@ -1754,7 +1754,7 @@ int MSG_ParseEntityBits(int *bits)
     }
 
     if (total & U_NUMBER16)
-        number = MSG_ReadShort();
+        number = MSG_ReadWord();
     else
         number = MSG_ReadByte();
 
