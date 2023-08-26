@@ -2478,6 +2478,8 @@ const char *MSG_ServerCommandString(int cmd)
         S(zdownload)
         S(gamestate)
         S(setting)
+        S(configstringstream)
+        S(baselinestream)
 #undef S
     }
 }
