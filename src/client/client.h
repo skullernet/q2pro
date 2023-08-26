@@ -80,7 +80,7 @@ typedef struct centity_s {
 
 extern centity_t    cl_entities[MAX_EDICTS];
 
-#define MAX_CLIENTWEAPONMODELS        20        // PGM -- upped from 16 to fit the chainfist vwep
+#define MAX_CLIENTWEAPONMODELS        256       // PGM -- upped from 16 to fit the chainfist vwep
 
 typedef struct clientinfo_s {
     char name[MAX_QPATH];
@@ -178,6 +178,7 @@ typedef struct client_state_s {
     int             numEntityStates;
 
     msgEsFlags_t    esFlags;
+    msgPsFlags_t    psFlags;
 
     server_frame_t  frames[UPDATE_BACKUP];
     unsigned        frameflags;
@@ -256,6 +257,8 @@ typedef struct client_state_s {
 
     configstring_t  baseconfigstrings[MAX_CONFIGSTRINGS];
     configstring_t  configstrings[MAX_CONFIGSTRINGS];
+    cs_remap_t      csr;
+
     char        mapname[MAX_QPATH]; // short format - q2dm1, etc
 
 #if USE_AUTOREPLY
@@ -448,6 +451,7 @@ typedef struct client_static_s {
         bool        paused;
         bool        seeking;
         bool        eof;
+        msgEsFlags_t    esFlags;        // for snapshots/recording
     } demo;
 
 #if USE_CLIENT_GTV
@@ -459,6 +463,7 @@ typedef struct client_static_s {
 
         player_packed_t     ps;
         entity_packed_t     entities[MAX_EDICTS];
+        msgEsFlags_t        esFlags;    // for writing
 
         sizebuf_t       message;
     } gtv;
@@ -637,6 +642,9 @@ void CL_SendCmd(void);
 //
 // parse.c
 //
+
+#define CL_ES_EXTENDED_MASK \
+    (MSG_ES_LONGSOLID | MSG_ES_UMASK | MSG_ES_BEAMORIGIN | MSG_ES_EXTENSIONS)
 
 typedef struct {
     int type;

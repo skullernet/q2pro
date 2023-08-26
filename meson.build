@@ -194,7 +194,7 @@ if system_wide
   homedir = get_option('homedir')
 endif
 
-common_args = ['-DHAVE_CONFIG_H']
+common_args = ['-DHAVE_CONFIG_H', '-DUSE_PROTOCOL_EXTENSIONS=1']
 if not win32
   common_args += '-D_GNU_SOURCE'
 endif
@@ -215,6 +215,7 @@ if cc.get_argument_syntax() == 'gcc'
 
   test_args = [
     '-fsigned-char',
+    '-Wno-tautological-constant-out-of-range-compare',
     '-Wpointer-arith',
     '-Wformat-security',
     '-Werror=vla',

@@ -1140,7 +1140,7 @@ static void CL_Skins_f(void)
     CL_RegisterVWepModels();
 
     for (i = 0; i < MAX_CLIENTS; i++) {
-        s = cl.configstrings[CS_PLAYERSKINS + i];
+        s = cl.configstrings[cl.csr.playerskins + i];
         if (!s[0])
             continue;
         ci = &cl.clientinfo[i];
@@ -1164,7 +1164,7 @@ static void cl_noskins_changed(cvar_t *self)
     }
 
     for (i = 0; i < MAX_CLIENTS; i++) {
-        s = cl.configstrings[CS_PLAYERSKINS + i];
+        s = cl.configstrings[cl.csr.playerskins + i];
         if (!s[0])
             continue;
         ci = &cl.clientinfo[i];
@@ -2266,7 +2266,8 @@ static size_t CL_Armor_m(char *buffer, size_t size)
 
 static size_t CL_WeaponModel_m(char *buffer, size_t size)
 {
-    return Q_strlcpy(buffer, cl.configstrings[CS_MODELS + cl.frame.ps.gunindex], size);
+    int i = cl.csr.models + (cl.frame.ps.gunindex & GUNINDEX_MASK);
+    return Q_strlcpy(buffer, cl.configstrings[i], size);
 }
 
 /*

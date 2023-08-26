@@ -43,6 +43,7 @@ cvar_t  *maxclients;
 cvar_t  *maxspectators;
 cvar_t  *maxentities;
 cvar_t  *g_select_empty;
+cvar_t  *g_protocol_extensions;
 cvar_t  *dedicated;
 
 cvar_t  *filterban;
@@ -108,6 +109,8 @@ is loaded.
 */
 void InitGame(void)
 {
+    int features = G_FEATURES;
+
     gi.dprintf("==== InitGame ====\n");
 
     Q_srand(time(NULL));
@@ -147,6 +150,7 @@ void InitGame(void)
     filterban = gi.cvar("filterban", "1", 0);
 
     g_select_empty = gi.cvar("g_select_empty", "0", CVAR_ARCHIVE);
+    g_protocol_extensions = gi.cvar("g_protocol_extensions", "0", CVAR_LATCH);
 
     run_pitch = gi.cvar("run_pitch", "0.002", 0);
     run_roll = gi.cvar("run_roll", "0.005", 0);
@@ -165,8 +169,16 @@ void InitGame(void)
     // obtain server features
     sv_features = gi.cvar("sv_features", NULL, 0);
 
+    // enable protocol extensions if supported
+    if (sv_features && (int)sv_features->value & GMF_PROTOCOL_EXTENSIONS && (int)g_protocol_extensions->value) {
+        features |= GMF_PROTOCOL_EXTENSIONS;
+        game.csr = cs_remap_new;
+    } else {
+        game.csr = cs_remap_old;
+    }
+
     // export our own features
-    gi.cvar_forceset("g_features", va("%d", G_FEATURES));
+    gi.cvar_forceset("g_features", va("%d", features));
 
     // items
     InitItems();
@@ -176,7 +188,7 @@ void InitGame(void)
 
     // initialize all entities for this game
     game.maxentities = maxentities->value;
-    clamp(game.maxentities, (int)maxclients->value + 1, MAX_EDICTS);
+    clamp(game.maxentities, (int)maxclients->value + 1, game.csr.max_edicts);
     g_edicts = gi.TagMalloc(game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
     globals.edicts = g_edicts;
     globals.max_edicts = game.maxentities;

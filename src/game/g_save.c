@@ -576,7 +576,7 @@ static void write_field(gzFile f, const save_field_t *field, void *base)
         break;
 
     case F_EDICT:
-        write_index(f, *(void **)p, sizeof(edict_t), g_edicts, MAX_EDICTS - 1);
+        write_index(f, *(void **)p, sizeof(edict_t), g_edicts, game.maxentities - 1);
         break;
     case F_CLIENT:
         write_index(f, *(void **)p, sizeof(gclient_t), game.clients, game.maxclients - 1);
@@ -883,7 +883,7 @@ void ReadGame(const char *filename)
         gzclose(f);
         gi.error("Savegame has bad maxclients");
     }
-    if (game.maxentities <= game.maxclients || game.maxentities > MAX_EDICTS) {
+    if (game.maxentities <= game.maxclients || game.maxentities > game.csr.max_edicts) {
         gzclose(f);
         gi.error("Savegame has bad maxentities");
     }
