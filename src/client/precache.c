@@ -242,7 +242,7 @@ void CL_RegisterBspModels(void)
 
     for (i = 2; i < cl.csr.max_models; i++) {
         name = cl.configstrings[cl.csr.models + i];
-        if (!name[0]) {
+        if (!name[0] && i != MODELINDEX_PLAYER) {
             break;
         }
         if (name[0] == '*')
@@ -274,7 +274,7 @@ void CL_RegisterVWepModels(void)
 
     for (i = 2; i < cl.csr.max_models; i++) {
         name = cl.configstrings[cl.csr.models + i];
-        if (!name[0]) {
+        if (!name[0] && i != MODELINDEX_PLAYER) {
             break;
         }
         if (name[0] != '#') {
@@ -337,7 +337,7 @@ void CL_PrepRefresh(void)
 
     for (i = 2; i < cl.csr.max_models; i++) {
         name = cl.configstrings[cl.csr.models + i];
-        if (!name[0]) {
+        if (!name[0] && i != MODELINDEX_PLAYER) {
             break;
         }
         if (name[0] == '#') {
