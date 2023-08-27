@@ -1804,11 +1804,11 @@ MSG_ParseDeltaEntity
 Can go from either a baseline or a previous packet_entity
 ==================
 */
-void MSG_ParseDeltaEntity(const entity_state_t *from,
-                          entity_state_t *to,
-                          int            number,
-                          int            bits,
-                          msgEsFlags_t   flags)
+void MSG_ParseDeltaEntity(const entity_state_t  *from,
+                          entity_state_t        *to,
+                          int                   number,
+                          int                   bits,
+                          msgEsFlags_t          flags)
 {
     Q_assert(to);
     Q_assert(number > 0 && number < MAX_EDICTS);
@@ -1873,15 +1873,12 @@ void MSG_ParseDeltaEntity(const entity_state_t *from,
     else if (bits & U_RENDERFX16)
         to->renderfx = MSG_ReadWord();
 
-    if (bits & U_ORIGIN1) {
+    if (bits & U_ORIGIN1)
         to->origin[0] = MSG_ReadCoord();
-    }
-    if (bits & U_ORIGIN2) {
+    if (bits & U_ORIGIN2)
         to->origin[1] = MSG_ReadCoord();
-    }
-    if (bits & U_ORIGIN3) {
+    if (bits & U_ORIGIN3)
         to->origin[2] = MSG_ReadCoord();
-    }
 
     if ((flags & MSG_ES_SHORTANGLES) && (bits & U_ANGLE16)) {
         if (bits & U_ANGLE1)
@@ -1899,9 +1896,8 @@ void MSG_ParseDeltaEntity(const entity_state_t *from,
             to->angles[2] = MSG_ReadAngle();
     }
 
-    if (bits & U_OLDORIGIN) {
+    if (bits & U_OLDORIGIN)
         MSG_ReadPos(to->old_origin);
-    }
 
     if (bits & U_SOUND) {
         if (flags & MSG_ES_EXTENSIONS)
@@ -1910,16 +1906,14 @@ void MSG_ParseDeltaEntity(const entity_state_t *from,
             to->sound = MSG_ReadByte();
     }
 
-    if (bits & U_EVENT) {
+    if (bits & U_EVENT)
         to->event = MSG_ReadByte();
-    }
 
     if (bits & U_SOLID) {
-        if (flags & MSG_ES_LONGSOLID) {
+        if (flags & MSG_ES_LONGSOLID)
             to->solid = MSG_ReadLong();
-        } else {
+        else
             to->solid = MSG_ReadWord();
-        }
     }
 }
 
@@ -2077,18 +2071,16 @@ void MSG_ParseDeltaPlayerstate_Enhanced(const player_state_t    *from,
         to->pmove.origin[1] = MSG_ReadShort();
     }
 
-    if (extraflags & EPS_M_ORIGIN2) {
+    if (extraflags & EPS_M_ORIGIN2)
         to->pmove.origin[2] = MSG_ReadShort();
-    }
 
     if (flags & PS_M_VELOCITY) {
         to->pmove.velocity[0] = MSG_ReadShort();
         to->pmove.velocity[1] = MSG_ReadShort();
     }
 
-    if (extraflags & EPS_M_VELOCITY2) {
+    if (extraflags & EPS_M_VELOCITY2)
         to->pmove.velocity[2] = MSG_ReadShort();
-    }
 
     if (flags & PS_M_TIME)
         to->pmove.pm_time = MSG_ReadByte();
@@ -2119,9 +2111,8 @@ void MSG_ParseDeltaPlayerstate_Enhanced(const player_state_t    *from,
         to->viewangles[1] = MSG_ReadAngle16();
     }
 
-    if (extraflags & EPS_VIEWANGLE2) {
+    if (extraflags & EPS_VIEWANGLE2)
         to->viewangles[2] = MSG_ReadAngle16();
-    }
 
     if (flags & PS_KICKANGLES) {
         to->kick_angles[0] = MSG_ReadChar() * 0.25f;
@@ -2136,9 +2127,8 @@ void MSG_ParseDeltaPlayerstate_Enhanced(const player_state_t    *from,
             to->gunindex = MSG_ReadByte();
     }
 
-    if (flags & PS_WEAPONFRAME) {
+    if (flags & PS_WEAPONFRAME)
         to->gunframe = MSG_ReadByte();
-    }
 
     if (extraflags & EPS_GUNOFFSET) {
         to->gunoffset[0] = MSG_ReadChar() * 0.25f;
@@ -2168,13 +2158,10 @@ void MSG_ParseDeltaPlayerstate_Enhanced(const player_state_t    *from,
     // parse stats
     if (extraflags & EPS_STATS) {
         statbits = MSG_ReadLong();
-        for (i = 0; i < MAX_STATS; i++) {
-            if (statbits & BIT(i)) {
+        for (i = 0; i < MAX_STATS; i++)
+            if (statbits & BIT(i))
                 to->stats[i] = MSG_ReadShort();
-            }
-        }
     }
-
 }
 
 #endif // USE_CLIENT
@@ -2214,9 +2201,8 @@ void MSG_ParseDeltaPlayerstate_Packet(const player_state_t  *from,
         to->pmove.origin[1] = MSG_ReadShort();
     }
 
-    if (flags & PPS_M_ORIGIN2) {
+    if (flags & PPS_M_ORIGIN2)
         to->pmove.origin[2] = MSG_ReadShort();
-    }
 
     //
     // parse the rest of the player_state_t
@@ -2232,9 +2218,8 @@ void MSG_ParseDeltaPlayerstate_Packet(const player_state_t  *from,
         to->viewangles[1] = MSG_ReadAngle16();
     }
 
-    if (flags & PPS_VIEWANGLE2) {
+    if (flags & PPS_VIEWANGLE2)
         to->viewangles[2] = MSG_ReadAngle16();
-    }
 
     if (flags & PPS_KICKANGLES) {
         to->kick_angles[0] = MSG_ReadChar() * 0.25f;
@@ -2249,9 +2234,8 @@ void MSG_ParseDeltaPlayerstate_Packet(const player_state_t  *from,
             to->gunindex = MSG_ReadByte();
     }
 
-    if (flags & PPS_WEAPONFRAME) {
+    if (flags & PPS_WEAPONFRAME)
         to->gunframe = MSG_ReadByte();
-    }
 
     if (flags & PPS_GUNOFFSET) {
         to->gunoffset[0] = MSG_ReadChar() * 0.25f;
@@ -2281,11 +2265,9 @@ void MSG_ParseDeltaPlayerstate_Packet(const player_state_t  *from,
     // parse stats
     if (flags & PPS_STATS) {
         statbits = MSG_ReadLong();
-        for (i = 0; i < MAX_STATS; i++) {
-            if (statbits & BIT(i)) {
+        for (i = 0; i < MAX_STATS; i++)
+            if (statbits & BIT(i))
                 to->stats[i] = MSG_ReadShort();
-            }
-        }
     }
 }
 
