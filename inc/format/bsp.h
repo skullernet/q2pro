@@ -33,10 +33,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 // can't be increased without changing network protocol
 #define     MAX_MAP_AREAS       256
-#define     MAX_MAP_LEAFS       65536
 
 // arbitrary limit
 #define     MAX_MAP_AREAPORTALS 1024
+#define     MAX_MAP_CLUSTERS    65536
 
 // key / value pair sizes
 

@@ -1118,6 +1118,10 @@ void SV_MvdMulticast(int leafnum, multicast_t to)
         Com_WPrintf("%s: overflow\n", __func__);
         return;
     }
+    if (leafnum >= UINT16_MAX) {
+        Com_WPrintf("%s: leafnum out of range\n", __func__);
+        return;
+    }
 
     op = mvd_multicast_all + to;
     buf = to < MULTICAST_ALL_R ? &mvd.datagram : &mvd.message;
