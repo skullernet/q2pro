@@ -35,7 +35,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define     MAX_MAP_AREAS       256
 
 // arbitrary limit
-#define     MAX_MAP_AREAPORTALS 1024
 #define     MAX_MAP_CLUSTERS    65536
 
 // key / value pair sizes
