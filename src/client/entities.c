@@ -676,6 +676,13 @@ static void CL_AddPacketEntities(void)
                 ent.alpha = 0.3f;
         }
 
+        if (!(ent.flags & RF_TRANSLUCENT) && s1->alpha > 0 && s1->alpha < 1) {
+            ent.flags |= RF_TRANSLUCENT;
+            ent.alpha = s1->alpha;
+        }
+
+        ent.scale = s1->scale;
+
         // add to refresh list
         V_AddEntity(&ent);
 

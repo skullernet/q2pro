@@ -79,6 +79,8 @@ typedef struct entity_s {
 
     qhandle_t   skin;           // NULL for inline skin
     int         flags;
+
+    float       scale;
 } entity_t;
 
 typedef struct dlight_s {
