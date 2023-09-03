@@ -395,6 +395,7 @@ void SV_BuildClientFrame(client_t *client)
     byte        clientphs[VIS_MAX_BYTES];
     byte        clientpvs[VIS_MAX_BYTES];
     bool        need_clientnum_fix;
+    int         max_packet_entities;
 
     clent = client->edict;
     if (!clent->client)
@@ -442,6 +443,11 @@ void SV_BuildClientFrame(client_t *client)
     need_clientnum_fix = client->protocol == PROTOCOL_VERSION_Q2PRO
         && client->version < PROTOCOL_VERSION_Q2PRO_CLIENTNUM_SHORT
         && frame->clientNum >= CLIENTNUM_NONE;
+
+    // limit maximum number of entities in client frame
+    max_packet_entities =
+        sv_max_packet_entities->integer > 0 ? sv_max_packet_entities->integer :
+        client->csr->extended ? MAX_PACKET_ENTITIES : MAX_PACKET_ENTITIES_OLD;
 
     CM_FatPVS(client->cm, clientpvs, org);
     BSP_ClusterVis(client->cm->cache, clientphs, clientcluster, DVIS_PHS);
@@ -556,7 +562,7 @@ void SV_BuildClientFrame(client_t *client)
 
         svs.next_entity++;
 
-        if (++frame->num_entities == sv_max_packet_entities->integer) {
+        if (++frame->num_entities == max_packet_entities) {
             break;
         }
     }
