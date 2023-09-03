@@ -73,7 +73,9 @@ static bool         com_conNewline;
 static char     **com_argv;
 static int      com_argc;
 
+#if USE_TESTS
 cvar_t  *z_perturb;
+#endif
 
 #if USE_DEBUG
 cvar_t  *developer;
@@ -863,7 +865,9 @@ void Qcommon_Init(int argc, char **argv)
     //
     // init commands and vars
     //
+#if USE_TESTS
     z_perturb = Cvar_Get("z_perturb", "0", 0);
+#endif
 #if USE_CLIENT
     host_speeds = Cvar_Get("host_speeds", "0", 0);
 #endif
