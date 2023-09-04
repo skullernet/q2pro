@@ -488,13 +488,13 @@ CL_AddBeams
 */
 static void CL_AddBeams(void)
 {
-    int         i, j;
+    int         i, j, steps;
     beam_t      *b;
     vec3_t      dist, org;
     float       d;
     entity_t    ent;
     vec3_t      angles;
-    float       len, steps;
+    float       len;
     float       model_length;
 
 // update beams
@@ -520,8 +520,7 @@ static void CL_AddBeams(void)
         } else {
             model_length = 30.0f;
         }
-        steps = ceil(d / model_length);
-        len = (d - model_length) / (steps - 1);
+        steps = ceilf(d / model_length);
 
         memset(&ent, 0, sizeof(ent));
         ent.model = b->model;
@@ -529,7 +528,7 @@ static void CL_AddBeams(void)
         // PMM - special case for lightning model .. if the real length is shorter than the model,
         // flip it around & draw it from the end to the start.  This prevents the model from going
         // through the tesla mine (instead it goes through the target)
-        if ((b->model == cl_mod_lightning) && (d <= model_length)) {
+        if ((b->model == cl_mod_lightning) && (steps <= 1)) {
             VectorCopy(b->end, ent.origin);
             ent.flags = RF_FULLBRIGHT;
             ent.angles[0] = angles[0];
@@ -539,8 +538,13 @@ static void CL_AddBeams(void)
             return;
         }
 
-        while (d > 0) {
-            VectorCopy(org, ent.origin);
+        if (steps > 1) {
+            len = (d - model_length) / (steps - 1);
+            VectorScale(dist, len, dist);
+        }
+
+        VectorCopy(org, ent.origin);
+        for (j = 0; i < steps; j++) {
             if (b->model == cl_mod_lightning) {
                 ent.flags = RF_FULLBRIGHT;
                 ent.angles[0] = -angles[0];
@@ -553,10 +557,7 @@ static void CL_AddBeams(void)
             }
 
             V_AddEntity(&ent);
-
-            for (j = 0; j < 3; j++)
-                org[j] += dist[j] * len;
-            d -= model_length;
+            VectorAdd(ent.origin, dist, ent.origin);
         }
     }
 }
@@ -570,13 +571,13 @@ Draw player locked beams. Currently only used by the plasma beam.
 */
 static void CL_AddPlayerBeams(void)
 {
-    int         i, j;
+    int         i, j, steps;
     beam_t      *b;
     vec3_t      dist, org;
     float       d;
     entity_t    ent;
     vec3_t      angles;
-    float       len, steps;
+    float       len;
     int         framenum;
     float       model_length;
     float       hand_multiplier;
@@ -659,8 +660,11 @@ static void CL_AddPlayerBeams(void)
         // add new entities for the beams
         d = VectorNormalize(dist);
         model_length = 32.0f;
-        steps = ceil(d / model_length);
-        len = (d - model_length) / (steps - 1);
+        steps = ceilf(d / model_length);
+        if (steps > 1) {
+            len = (d - model_length) / (steps - 1);
+            VectorScale(dist, len, dist);
+        }
 
         memset(&ent, 0, sizeof(ent));
         ent.model = b->model;
@@ -670,14 +674,10 @@ static void CL_AddPlayerBeams(void)
         ent.angles[1] = angles[1] + 180.0f;
         ent.angles[2] = cl.time % 360;
 
-        while (d > 0) {
-            VectorCopy(org, ent.origin);
-
+        VectorCopy(org, ent.origin);
+        for (j = 0; j < steps; j++) {
             V_AddEntity(&ent);
-
-            for (j = 0; j < 3; j++)
-                org[j] += dist[j] * len;
-            d -= model_length;
+            VectorAdd(ent.origin, dist, ent.origin);
         }
     }
 }
