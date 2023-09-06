@@ -455,6 +455,27 @@ static mnode_t *SV_HullForEntity(edict_t *ent)
 
 /*
 =============
+SV_HullForEntity2
+
+Can be used to clip to SOLID_TRIGGER by its BSP tree
+=============
+*/
+static mnode_t *SV_HullForEntity2(edict_t *ent)
+{
+    if (ent->solid == SOLID_BSP || ent->solid == SOLID_TRIGGER) {
+        int i = ent->s.modelindex - 1;
+
+        // explicit hulls in the BSP model
+        if (i > 0 && i < sv.cm.cache->nummodels)
+            return sv.cm.cache->models[i].headnode;
+    }
+
+    // create a temp hull from bounding box sizes
+    return CM_HeadnodeForBox(ent->mins, ent->maxs);
+}
+
+/*
+=============
 SV_PointContents
 =============
 */
@@ -565,6 +586,19 @@ trace_t q_gameabi SV_Trace(const vec3_t start, const vec3_t mins,
         mins = vec3_origin;
     if (!maxs)
         maxs = vec3_origin;
+
+    // clip to entity hack
+    if ((uintptr_t)passedict & 1) {
+        edict_t *clip = (edict_t *)((uintptr_t)passedict & ~1);
+        if (clip == ge->edicts)
+            CM_BoxTrace(&trace, start, end, mins, maxs, sv.cm.cache->nodes, contentmask);
+        else
+            CM_TransformedBoxTrace(&trace, start, end, mins, maxs,
+                                   SV_HullForEntity2(clip), contentmask,
+                                   clip->s.origin, clip->s.angles);
+        trace.ent = clip;
+        return trace;
+    }
 
     // clip to world
     CM_BoxTrace(&trace, start, end, mins, maxs, sv.cm.cache->nodes, contentmask);
