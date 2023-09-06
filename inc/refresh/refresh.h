@@ -196,7 +196,7 @@ void    R_BeginRegistration(const char *map);
 qhandle_t R_RegisterModel(const char *name);
 qhandle_t R_RegisterImage(const char *name, imagetype_t type,
                           imageflags_t flags);
-void    R_SetSky(const char *name, float rotate, const vec3_t axis);
+void    R_SetSky(const char *name, float rotate, bool autorotate, const vec3_t axis);
 void    R_EndRegistration(void);
 
 #define R_RegisterPic(name)     R_RegisterImage(name, IT_PIC, IF_PERMANENT)

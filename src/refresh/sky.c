@@ -19,6 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "gl.h"
 
 static float    skyrotate;
+static bool     skyautorotate;
 static vec3_t   skyaxis;
 static int      sky_images[6];
 
@@ -247,7 +248,7 @@ void R_AddSkySurface(mface_t *fa)
     // calculate vertex values for sky box
     surfedge = fa->firstsurfedge;
     if (skyrotate) {
-        if (!skyfaces)
+        if (!skyfaces && skyautorotate)
             SetupRotationMatrix(skymatrix, skyaxis, glr.fd.time * skyrotate);
 
         for (i = 0; i < fa->numsurfedges; i++, surfedge++) {
@@ -379,7 +380,7 @@ static void R_UnsetSky(void)
 R_SetSky
 ============
 */
-void R_SetSky(const char *name, float rotate, const vec3_t axis)
+void R_SetSky(const char *name, float rotate, bool autorotate, const vec3_t axis)
 {
     int     i;
     char    pathname[MAX_QPATH];
@@ -393,7 +394,10 @@ void R_SetSky(const char *name, float rotate, const vec3_t axis)
     }
 
     skyrotate = rotate;
+    skyautorotate = autorotate;
     VectorNormalize2(axis, skyaxis);
+    if (!skyautorotate)
+        SetupRotationMatrix(skymatrix, skyaxis, skyrotate);
 
     for (i = 0; i < 6; i++) {
         if (Q_concat(pathname, sizeof(pathname), "env/", name,
