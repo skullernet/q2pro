@@ -804,9 +804,7 @@ static void CL_AddPacketEntities(void)
                 i = 200;
             } else {
                 static const int bfg_lightramp[6] = {300, 400, 600, 300, 150, 75};
-                i = s1->frame;
-                clamp(i, 0, 5);
-                i = bfg_lightramp[i];
+                i = bfg_lightramp[Q_clip(s1->frame, 0, 5)];
             }
             V_AddLight(ent.origin, i, 0, 1, 0);
         } else if (effects & EF_TRAP) {
