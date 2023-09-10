@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // sv_game.c -- interface to the game dll
 
 #include "server.h"
+#include "game3_proxy/game3_proxy.h"
 
 const game_export_t     *ge;
 const game_export_ex_t  *gex;
@@ -983,14 +984,19 @@ void SV_InitGameProgs(void)
     if (!ge) {
         Com_Error(ERR_DROP, "Game library returned NULL exports");
     }
-
-    if (ge->apiversion != GAME_API_VERSION) {
-        Com_Error(ERR_DROP, "Game library is version %d, expected %d",
-                  ge->apiversion, GAME_API_VERSION);
-    }
-
     // get extended api if present
     game_entry_ex_t entry_ex = Sys_GetProcAddress(game_library, "GetGameAPIEx");
+
+    if (ge->apiversion != GAME_API_VERSION) {
+        if (ge->apiversion == 3) {
+            Com_DPrintf("Detected version 3 game library, using proxy game\n");
+            ge = GetGame3Proxy(&import, &game_import_ex, entry, entry_ex);
+        } else {
+            Com_Error(ERR_DROP, "Game library is version %d, expected %d",
+                      ge->apiversion, GAME_API_VERSION);
+        }
+    }
+
     if (entry_ex)
         gex = entry_ex(&game_import_ex);
 
