@@ -1049,9 +1049,12 @@ void CL_ParseTEnt(void)
         break;
 
     case TE_EXPLOSION2:
+    case TE_EXPLOSION2_NL:
         ex = CL_PlainExplosion();
         ex->frames = 19;
         ex->baseframe = 30;
+        if (te.type == TE_EXPLOSION2_NL)
+            ex->light = 0;
         CL_ExplosionParticles(te.pos1);
         S_StartSound(te.pos1, 0, 0, cl_sfx_grenexp, 1, ATTN_NORM, 0);
         break;
@@ -1075,8 +1078,11 @@ void CL_ParseTEnt(void)
         break;
 
     case TE_EXPLOSION1:
+    case TE_EXPLOSION1_NL:
     case TE_PLASMA_EXPLOSION:
-        CL_PlainExplosion();
+        ex = CL_PlainExplosion();
+        if (te.type == TE_EXPLOSION1_NL)
+            ex->light = 0;
         CL_ExplosionParticles(te.pos1);
         S_StartSound(te.pos1, 0, 0, cl_sfx_rockexp, 1, ATTN_NORM, 0);
         break;
