@@ -947,14 +947,8 @@ struct edict_s {
                                     // but the rest of it is opaque
 
     qboolean    inuse;
+    bool        linked;
     int         linkcount;
-
-    // FIXME: move these fields to a server private sv_entity_t
-    list_t      area;               // linked to a division node or leaf
-
-    int         num_clusters;       // if -1, use headnode instead
-    int         clusternums[MAX_ENT_CLUSTERS];
-    int         headnode;           // unused if num_clusters != -1
     int         areanum, areanum2;
 
     //================================

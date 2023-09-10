@@ -24,7 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // game.h -- game dll information visible to server
 //
 
-#define GAME_API_VERSION    3
+#define GAME_API_VERSION    1000 // TRANSITIONAL during rerelease conversion
 
 // edict->svflags
 
@@ -94,14 +94,8 @@ struct edict_s {
     entity_state_t  s;
     struct gclient_s    *client;
     qboolean    inuse;
+    bool        linked;
     int         linkcount;
-
-    // FIXME: move these fields to a server private sv_entity_t
-    list_t      _donotuse_area;               // linked to a division node or leaf
-
-    int         _donotuse_num_clusters;       // if -1, use headnode instead
-    int         _donotuse_clusternums[MAX_ENT_CLUSTERS];
-    int         _donotuse_headnode;           // unused if num_clusters != -1
     int         areanum, areanum2;
 
     //================================

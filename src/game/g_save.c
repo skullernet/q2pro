@@ -1009,7 +1009,6 @@ void ReadLevel(const char *filename)
         ent->s.number = entnum;
 
         // let the server rebuild world links for this ent
-        memset(&ent->area, 0, sizeof(ent->area));
         gi.linkentity(ent);
     }
 

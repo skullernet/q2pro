@@ -237,6 +237,8 @@ void PF_UnlinkEdict(edict_t *ent)
     int entnum = NUM_FOR_EDICT(ent);
     server_entity_t *sent = &sv.entities[entnum];
     unlink_sent(sent);
+
+    ent->linked = sent->area.prev != NULL;
 }
 
 static uint32_t SV_PackSolid32(edict_t *ent)
@@ -284,7 +286,7 @@ void PF_LinkEdict(edict_t *ent)
     entnum = NUM_FOR_EDICT(ent);
     sent = &sv.entities[entnum];
 
-    if (sent->area.prev)
+    if (ent->linked)
         unlink_sent(sent);     // unlink from old position
 
     if (ent == ge->edicts)
@@ -361,6 +363,8 @@ void PF_LinkEdict(edict_t *ent)
         List_Append(&node->trigger_edicts, &sent->area);
     else
         List_Append(&node->solid_edicts, &sent->area);
+
+    ent->linked = sent->area.prev != NULL;
 }
 
 
