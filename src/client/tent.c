@@ -898,7 +898,7 @@ static void CL_RailSpiral(void)
 
 static void CL_RailTrail(void)
 {
-    if (!cl_railtrail_type->integer) {
+    if (!cl_railtrail_type->integer && te.type != TE_RAILTRAIL2) {
         CL_OldRailTrail();
     } else {
         if (cl_railcore_width->integer > 0) {
@@ -1041,6 +1041,7 @@ void CL_ParseTEnt(void)
         break;
 
     case TE_RAILTRAIL:          // railgun effect
+    case TE_RAILTRAIL2:
         CL_RailTrail();
         S_StartSound(te.pos2, 0, 0, cl_sfx_railg, 1, ATTN_NORM, 0);
         break;
