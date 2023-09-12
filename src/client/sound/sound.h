@@ -133,11 +133,6 @@ extern const sndapi_t   snd_openal;
 
 //====================================================================
 
-// only begin attenuating sound volumes when outside the FULLVOLUME range
-#define SOUND_FULLVOLUME        80
-
-#define SOUND_LOOPATTENUATE     0.003f
-
 typedef enum {
     SS_NOT,
 #if USE_SNDDMA
