@@ -499,7 +499,7 @@ void Drop_Ammo(edict_t *ent, const gitem_t *item)
         ent->client->pers.weapon->tag == AMMO_GRENADES &&
         item->tag == AMMO_GRENADES &&
         ent->client->pers.inventory[index] - dropped->count <= 0) {
-        gi.cprintf(ent, PRINT_HIGH, "Can't drop current weapon\n");
+        gi.Client_Print(ent, PRINT_HIGH, "Can't drop current weapon\n");
         G_FreeEdict(dropped);
         return;
     }
@@ -673,7 +673,7 @@ void Use_PowerArmor(edict_t *ent, const gitem_t *item)
     } else {
         index = ITEM_INDEX(FindItem("cells"));
         if (!ent->client->pers.inventory[index]) {
-            gi.cprintf(ent, PRINT_HIGH, "No cells for power armor.\n");
+            gi.Client_Print(ent, PRINT_HIGH, "No cells for power armor.\n");
             return;
         }
         ent->flags |= FL_POWER_ARMOR;
@@ -879,7 +879,7 @@ void droptofloor(edict_t *ent)
 
     tr = gi.trace(ent->s.origin, ent->mins, ent->maxs, dest, ent, MASK_SOLID);
     if (tr.startsolid) {
-        gi.dprintf("droptofloor: %s startsolid at %s\n", ent->classname, vtos(ent->s.origin));
+        gi.Com_Print(va("droptofloor: %s startsolid at %s\n", ent->classname, vtos(ent->s.origin)));
         G_FreeEdict(ent);
         return;
     }
@@ -989,7 +989,7 @@ void SpawnItem(edict_t *ent, const gitem_t *item)
     if (ent->spawnflags) {
         if (strcmp(ent->classname, "key_power_cube") != 0) {
             ent->spawnflags = 0;
-            gi.dprintf("%s at %s has invalid spawnflags set\n", ent->classname, vtos(ent->s.origin));
+            gi.Com_Print(va("%s at %s has invalid spawnflags set\n", ent->classname, vtos(ent->s.origin)));
         }
     }
 

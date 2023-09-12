@@ -37,6 +37,45 @@ static void wrap_unicast(game3_edict_t *gent, qboolean reliable)
     game_import.unicast(ent, reliable);
 }
 
+static void wrap_bprintf(int printlevel, const char *fmt, ...)
+{
+    char        msg[MAX_STRING_CHARS];
+    va_list     argptr;
+    va_start(argptr, fmt);
+    size_t len = Q_vsnprintf(msg, sizeof(msg), fmt, argptr);
+    va_end(argptr);
+
+    if (len >= sizeof(msg)) {
+        Com_WPrintf("%s: overflow\n", __func__);
+        return;
+    }
+    game_import.Broadcast_Print(printlevel, msg);
+}
+
+static void wrap_dprintf(const char *fmt, ...)
+{
+    char        msg[MAX_STRING_CHARS];
+    va_list     argptr;
+    va_start(argptr, fmt);
+    size_t len = Q_vsnprintf(msg, sizeof(msg), fmt, argptr);
+    va_end(argptr);
+
+    if (len >= sizeof(msg)) {
+        Com_WPrintf("%s: overflow\n", __func__);
+        return;
+    }
+
+#if USE_SAVEGAMES
+    // detect YQ2 game lib by unique first two messages
+    if (!sv.gamedetecthack)
+        sv.gamedetecthack = 1 + !strcmp(fmt, "Game is starting up.\n");
+    else if (sv.gamedetecthack == 2)
+        sv.gamedetecthack = 3 + !strcmp(fmt, "Game is %s built on %s.\n");
+#endif
+
+    game_import.Com_Print(msg);
+}
+
 static void wrap_cprintf(game3_edict_t *gent, int level, const char *fmt, ...)
 {
     edict_t *ent = translate_edict_from_game(gent);
@@ -51,7 +90,7 @@ static void wrap_cprintf(game3_edict_t *gent, int level, const char *fmt, ...)
         Com_WPrintf("%s: overflow\n", __func__);
         return;
     }
-    game_import.cprintf(ent, level, "%s", msg);
+    game_import.Client_Print(ent, level, msg);
 }
 
 static void wrap_centerprintf(game3_edict_t *gent, const char *fmt, ...)
@@ -68,7 +107,7 @@ static void wrap_centerprintf(game3_edict_t *gent, const char *fmt, ...)
         Com_WPrintf("%s: overflow\n", __func__);
         return;
     }
-    game_import.centerprintf(ent, "%s", msg);
+    game_import.Center_Print(ent, msg);
 }
 
 static void wrap_setmodel(game3_edict_t *gent, const char *name)
@@ -403,8 +442,8 @@ game_export_t *GetGame3Proxy(game_import_t *import, const game_import_ex_t *impo
 
     import3.multicast = import->multicast;
     import3.unicast = wrap_unicast;
-    import3.bprintf = import->bprintf;
-    import3.dprintf = import->dprintf;
+    import3.bprintf = wrap_bprintf;
+    import3.dprintf = wrap_dprintf;
     import3.cprintf = wrap_cprintf;
     import3.centerprintf = wrap_centerprintf;
     import3.error = import->error;

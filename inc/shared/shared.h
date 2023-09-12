@@ -128,6 +128,10 @@ enum {
     PRINT_CENTER,
 // KEX
 };
+#define PRINT_TYPEWRITER    4       // centerprint but typed out one char at a time
+#define PRINT_CENTER        5       // centerprint without a separate function (loc variants only)
+#define PRINT_BROADCAST     8       // Bitflag, add to message to broadcast print to all clients.
+
 
 // destination class for gi.multicast()
 typedef enum {

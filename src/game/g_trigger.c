@@ -158,7 +158,7 @@ void SP_trigger_once(edict_t *ent)
         VectorMA(ent->mins, 0.5f, ent->size, v);
         ent->spawnflags &= ~1;
         ent->spawnflags |= 4;
-        gi.dprintf("fixed TRIGGERED flag on %s at %s\n", ent->classname, vtos(v));
+        gi.Com_Print(va("fixed TRIGGERED flag on %s at %s\n", ent->classname, vtos(v)));
     }
 
     ent->wait = -1;
@@ -204,7 +204,7 @@ void trigger_key_use(edict_t *self, edict_t *other, edict_t *activator)
         if (level.framenum < self->touch_debounce_framenum)
             return;
         self->touch_debounce_framenum = level.framenum + 5.0f * BASE_FRAMERATE;
-        gi.centerprintf(activator, "You need the %s", self->item->pickup_name);
+        gi.Center_Print(activator, va("You need the %s", self->item->pickup_name));
         gi.sound(activator, CHAN_AUTO, gi.soundindex("misc/keytry.wav"), 1, ATTN_NORM, 0);
         return;
     }
@@ -253,18 +253,18 @@ void trigger_key_use(edict_t *self, edict_t *other, edict_t *activator)
 void SP_trigger_key(edict_t *self)
 {
     if (!st.item) {
-        gi.dprintf("no key item for trigger_key at %s\n", vtos(self->s.origin));
+        gi.Com_Print(va("no key item for trigger_key at %s\n", vtos(self->s.origin)));
         return;
     }
     self->item = FindItemByClassname(st.item);
 
     if (!self->item) {
-        gi.dprintf("item %s not found for trigger_key at %s\n", st.item, vtos(self->s.origin));
+        gi.Com_Print(va("item %s not found for trigger_key at %s\n", st.item, vtos(self->s.origin)));
         return;
     }
 
     if (!self->target) {
-        gi.dprintf("%s at %s has no target\n", self->classname, vtos(self->s.origin));
+        gi.Com_Print(va("%s at %s has no target\n", self->classname, vtos(self->s.origin)));
         return;
     }
 
@@ -299,14 +299,14 @@ void trigger_counter_use(edict_t *self, edict_t *other, edict_t *activator)
 
     if (self->count) {
         if (!(self->spawnflags & 1)) {
-            gi.centerprintf(activator, "%i more to go...", self->count);
+            gi.Center_Print(activator, va("%i more to go...", self->count));
             gi.sound(activator, CHAN_AUTO, gi.soundindex("misc/talk1.wav"), 1, ATTN_NORM, 0);
         }
         return;
     }
 
     if (!(self->spawnflags & 1)) {
-        gi.centerprintf(activator, "Sequence completed!");
+        gi.Center_Print(activator, "Sequence completed!");
         gi.sound(activator, CHAN_AUTO, gi.soundindex("misc/talk1.wav"), 1, ATTN_NORM, 0);
     }
     self->activator = activator;
@@ -485,7 +485,7 @@ void trigger_gravity_touch(edict_t *self, edict_t *other, cplane_t *plane, csurf
 void SP_trigger_gravity(edict_t *self)
 {
     if (st.gravity == NULL) {
-        gi.dprintf("trigger_gravity without gravity set at %s\n", vtos(self->s.origin));
+        gi.Com_Print(va("trigger_gravity without gravity set at %s\n", vtos(self->s.origin)));
         G_FreeEdict(self);
         return;
     }

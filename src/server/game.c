@@ -147,18 +147,14 @@ Sends text to all active clients.
 Archived in MVD stream.
 =================
 */
-static void PF_bprintf(int level, const char *fmt, ...)
+static void PF_Broadcast_Print(int level, const char *msg)
 {
-    va_list     argptr;
     char        string[MAX_STRING_CHARS];
     client_t    *client;
     size_t      len;
     int         i;
 
-    va_start(argptr, fmt);
-    len = Q_vsnprintf(string, sizeof(string), fmt, argptr);
-    va_end(argptr);
-
+    len = Q_strlcpy(string, msg, sizeof(string));
     if (len >= sizeof(string)) {
         Com_WPrintf("%s: overflow\n", __func__);
         return;
@@ -196,23 +192,8 @@ PF_dprintf
 Debug print to server console.
 ===============
 */
-static void PF_dprintf(const char *fmt, ...)
+static void PF_Com_Print(const char *msg)
 {
-    char        msg[MAXPRINTMSG];
-    va_list     argptr;
-
-#if USE_SAVEGAMES
-    // detect YQ2 game lib by unique first two messages
-    if (!sv.gamedetecthack)
-        sv.gamedetecthack = 1 + !strcmp(fmt, "Game is starting up.\n");
-    else if (sv.gamedetecthack == 2)
-        sv.gamedetecthack = 3 + !strcmp(fmt, "Game is %s built on %s.\n");
-#endif
-
-    va_start(argptr, fmt);
-    Q_vsnprintf(msg, sizeof(msg), fmt, argptr);
-    va_end(argptr);
-
     Con_SkipNotify(true);
     Com_Printf("%s", msg);
     Con_SkipNotify(false);
@@ -226,22 +207,10 @@ Print to a single client if the level passes.
 Archived in MVD stream.
 ===============
 */
-static void PF_cprintf(edict_t *ent, int level, const char *fmt, ...)
+static void PF_Client_Print(edict_t *ent, int level, const char *msg)
 {
-    char        msg[MAX_STRING_CHARS];
-    va_list     argptr;
     int         clientNum;
-    size_t      len;
     client_t    *client;
-
-    va_start(argptr, fmt);
-    len = Q_vsnprintf(msg, sizeof(msg), fmt, argptr);
-    va_end(argptr);
-
-    if (len >= sizeof(msg)) {
-        Com_WPrintf("%s: overflow\n", __func__);
-        return;
-    }
 
     if (!ent) {
         Com_LPrintf(level == PRINT_CHAT ? PRINT_TALK : PRINT_ALL, "%s", msg);
@@ -261,7 +230,7 @@ static void PF_cprintf(edict_t *ent, int level, const char *fmt, ...)
 
     MSG_WriteByte(svc_print);
     MSG_WriteByte(level);
-    MSG_WriteData(msg, len + 1);
+    MSG_WriteData(msg, strlen(msg) + 1);
 
     if (level >= client->messagelevel) {
         SV_ClientAddMessage(client, MSG_RELIABLE);
@@ -280,12 +249,9 @@ Centerprint to a single client.
 Archived in MVD stream.
 ===============
 */
-static void PF_centerprintf(edict_t *ent, const char *fmt, ...)
+static void PF_Center_Print(edict_t *ent, const char *msg)
 {
-    char        msg[MAX_STRING_CHARS];
-    va_list     argptr;
     int         n;
-    size_t      len;
 
     if (!ent) {
         return;
@@ -297,17 +263,8 @@ static void PF_centerprintf(edict_t *ent, const char *fmt, ...)
         return;
     }
 
-    va_start(argptr, fmt);
-    len = Q_vsnprintf(msg, sizeof(msg), fmt, argptr);
-    va_end(argptr);
-
-    if (len >= sizeof(msg)) {
-        Com_WPrintf("%s: overflow\n", __func__);
-        return;
-    }
-
     MSG_WriteByte(svc_centerprint);
-    MSG_WriteData(msg, len + 1);
+    MSG_WriteData(msg, strlen(msg) + 1);
 
     PF_Unicast(ent, true);
 }
@@ -788,10 +745,10 @@ static void *PF_TagRealloc(void *ptr, size_t size)
 static const game_import_t game_import = {
     .multicast = SV_Multicast,
     .unicast = PF_Unicast,
-    .bprintf = PF_bprintf,
-    .dprintf = PF_dprintf,
-    .cprintf = PF_cprintf,
-    .centerprintf = PF_centerprintf,
+    .Broadcast_Print = PF_Broadcast_Print,
+    .Com_Print = PF_Com_Print,
+    .Client_Print = PF_Client_Print,
+    .Center_Print = PF_Center_Print,
     .error = PF_error,
 
     .linkentity = PF_LinkEdict,

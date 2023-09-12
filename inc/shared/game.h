@@ -125,11 +125,15 @@ struct edict_s {
 // functions provided by the main engine
 //
 typedef struct {
-    // special messages
-    void (* q_printf(2, 3) bprintf)(int printlevel, const char *fmt, ...);
-    void (* q_printf(1, 2) dprintf)(const char *fmt, ...);
-    void (* q_printf(3, 4) cprintf)(edict_t *ent, int printlevel, const char *fmt, ...);
-    void (* q_printf(2, 3) centerprintf)(edict_t *ent, const char *fmt, ...);
+    // broadcast to all clients
+    void (*Broadcast_Print)(int printlevel, const char *message);
+    // print to appropriate places (console, log file, etc)
+    void (*Com_Print)(const char *msg);
+    // print directly to a single client (or nullptr for server console)
+    void (*Client_Print)(edict_t *ent, int printlevel, const char *message);
+    // center-print to player (legacy function)
+    void (*Center_Print)(edict_t *ent, const char *message);
+
     void (*sound)(edict_t *ent, int channel, int soundindex, float volume, float attenuation, float timeofs);
     void (*positioned_sound)(const vec3_t origin, edict_t *ent, int channel, int soundindex, float volume, float attenuation, float timeofs);
 
