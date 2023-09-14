@@ -347,177 +347,99 @@ TARGA IMAGES
 
 #define TARGA_HEADER_SIZE  18
 
-#define TGA_DECODE(x) \
-    static int tga_decode_##x(byte *in, byte **row_pointers, int cols, int rows, byte *max_in)
-
-typedef int (*tga_decode_t)(byte *, byte **, int, int, byte *);
-
-TGA_DECODE(bgr)
-{
-    int col, row;
-    byte *out_row;
-
-    for (row = 0; row < rows; row++) {
-        out_row = row_pointers[row];
-        for (col = 0; col < cols; col++, out_row += 4, in += 3) {
-            out_row[0] = in[2];
-            out_row[1] = in[1];
-            out_row[2] = in[0];
-            out_row[3] = 255;
-        }
-    }
-
-    return Q_ERR_SUCCESS;
+#define TGA_DECODE_RAW(x, bpp, a, b, c, d)                              \
+static int tga_decode_##x##_raw(const byte *in, byte **row_pointers,    \
+                                int cols, int rows, const byte *max_in) \
+{                                                                       \
+    int col, row;                                                       \
+    byte *out_row;                                                      \
+                                                                        \
+    for (row = 0; row < rows; row++) {                                  \
+        out_row = row_pointers[row];                                    \
+        for (col = 0; col < cols; col++, out_row += 4, in += bpp) {     \
+            out_row[0] = a;                                             \
+            out_row[1] = b;                                             \
+            out_row[2] = c;                                             \
+            out_row[3] = d;                                             \
+        }                                                               \
+    }                                                                   \
+                                                                        \
+    return Q_ERR_SUCCESS;                                               \
 }
 
-TGA_DECODE(bgra)
-{
-    int col, row;
-    byte *out_row;
-
-    for (row = 0; row < rows; row++) {
-        out_row = row_pointers[row];
-        for (col = 0; col < cols; col++, out_row += 4, in += 4) {
-            out_row[0] = in[2];
-            out_row[1] = in[1];
-            out_row[2] = in[0];
-            out_row[3] = in[3];
-        }
-    }
-
-    return Q_ERR_SUCCESS;
+#define TGA_DECODE_RLE(x, bpp, a, b, c, d)                              \
+static int tga_decode_##x##_rle(const byte *in, byte **row_pointers,    \
+                                int cols, int rows, const byte *max_in) \
+{                                                                       \
+    int col, row;                                                       \
+    byte *out_row;                                                      \
+    uint32_t color;                                                     \
+    int j, packet_header, packet_size;                                  \
+                                                                        \
+    for (row = 0; row < rows; row++) {                                  \
+        out_row = row_pointers[row];                                    \
+                                                                        \
+        for (col = 0; col < cols;) {                                    \
+            packet_header = *in++;                                      \
+            packet_size = 1 + (packet_header & 0x7f);                   \
+                                                                        \
+            if (packet_header & 0x80) {                                 \
+                if (max_in - in < bpp)                                  \
+                    return Q_ERR_OVERRUN;                               \
+                                                                        \
+                color = MakeColor(a, b, c, d);                          \
+                in += bpp;                                              \
+                for (j = 0; j < packet_size; j++) {                     \
+                    *(uint32_t *)out_row = color;                       \
+                    out_row += 4;                                       \
+                                                                        \
+                    if (++col == cols) {                                \
+                        col = 0;                                        \
+                        if (++row == rows)                              \
+                            return Q_ERR_SUCCESS;                       \
+                        out_row = row_pointers[row];                    \
+                    }                                                   \
+                }                                                       \
+            } else {                                                    \
+                if (max_in - in < bpp * packet_size)                    \
+                    return Q_ERR_OVERRUN;                               \
+                                                                        \
+                for (j = 0; j < packet_size; j++) {                     \
+                    out_row[0] = a;                                     \
+                    out_row[1] = b;                                     \
+                    out_row[2] = c;                                     \
+                    out_row[3] = d;                                     \
+                    out_row += 4;                                       \
+                    in += bpp;                                          \
+                                                                        \
+                    if (++col == cols) {                                \
+                        col = 0;                                        \
+                        if (++row == rows)                              \
+                            return Q_ERR_SUCCESS;                       \
+                        out_row = row_pointers[row];                    \
+                    }                                                   \
+                }                                                       \
+            }                                                           \
+        }                                                               \
+    }                                                                   \
+                                                                        \
+    return Q_ERR_SUCCESS;                                               \
 }
 
-TGA_DECODE(bgr_rle)
-{
-    int col, row;
-    byte *out_row;
-    uint32_t color;
-    int j, packet_header, packet_size;
+TGA_DECODE_RAW(mono, 1,   255,   255,   255, in[0])
+TGA_DECODE_RAW(bgr,  3, in[2], in[1], in[0],   255)
+TGA_DECODE_RAW(bgra, 4, in[2], in[1], in[0], in[3])
 
-    for (row = 0; row < rows; row++) {
-        out_row = row_pointers[row];
-
-        for (col = 0; col < cols;) {
-            packet_header = *in++;
-            packet_size = 1 + (packet_header & 0x7f);
-
-            if (packet_header & 0x80) {
-                // run-length packet
-                if (max_in - in < 3) {
-                    return Q_ERR_OVERRUN;
-                }
-                color = MakeColor(in[2], in[1], in[0], 255);
-                in += 3;
-                for (j = 0; j < packet_size; j++) {
-                    *(uint32_t *)out_row = color;
-                    out_row += 4;
-
-                    if (++col == cols) {
-                        // run spans across rows
-                        col = 0;
-                        if (++row == rows)
-                            goto break_out;
-                        out_row = row_pointers[row];
-                    }
-                }
-            } else {
-                // non run-length packet
-                if (max_in - in < 3 * packet_size) {
-                    return Q_ERR_OVERRUN;
-                }
-                for (j = 0; j < packet_size; j++) {
-                    out_row[0] = in[2];
-                    out_row[1] = in[1];
-                    out_row[2] = in[0];
-                    out_row[3] = 255;
-                    out_row += 4;
-                    in += 3;
-
-                    if (++col == cols) {
-                        // run spans across rows
-                        col = 0;
-                        if (++row == rows)
-                            goto break_out;
-                        out_row = row_pointers[row];
-                    }
-                }
-            }
-        }
-    }
-
-break_out:
-    return Q_ERR_SUCCESS;
-}
-
-TGA_DECODE(bgra_rle)
-{
-    int col, row;
-    byte *out_row;
-    uint32_t color;
-    int j, packet_header, packet_size;
-
-    for (row = 0; row < rows; row++) {
-        out_row = row_pointers[row];
-
-        for (col = 0; col < cols;) {
-            packet_header = *in++;
-            packet_size = 1 + (packet_header & 0x7f);
-
-            if (packet_header & 0x80) {
-                // run-length packet
-                if (max_in - in < 4) {
-                    return Q_ERR_OVERRUN;
-                }
-                color = MakeColor(in[2], in[1], in[0], in[3]);
-                in += 4;
-                for (j = 0; j < packet_size; j++) {
-                    *(uint32_t *)out_row = color;
-                    out_row += 4;
-
-                    if (++col == cols) {
-                        // run spans across rows
-                        col = 0;
-                        if (++row == rows)
-                            goto break_out;
-                        out_row = row_pointers[row];
-                    }
-                }
-            } else {
-                // non run-length packet
-                if (max_in - in < 4 * packet_size) {
-                    return Q_ERR_OVERRUN;
-                }
-                for (j = 0; j < packet_size; j++) {
-                    out_row[0] = in[2];
-                    out_row[1] = in[1];
-                    out_row[2] = in[0];
-                    out_row[3] = in[3];
-                    out_row += 4;
-                    in += 4;
-
-                    if (++col == cols) {
-                        // run spans across rows
-                        col = 0;
-                        if (++row == rows)
-                            goto break_out;
-                        out_row = row_pointers[row];
-                    }
-                }
-            }
-        }
-    }
-
-break_out:
-    return Q_ERR_SUCCESS;
-}
+TGA_DECODE_RLE(mono, 1,   255,   255,   255, in[0])
+TGA_DECODE_RLE(bgr,  3, in[2], in[1], in[0],   255)
+TGA_DECODE_RLE(bgra, 4, in[2], in[1], in[0], in[3])
 
 IMG_LOAD(TGA)
 {
     byte *pixels;
     byte *row_pointers[MAX_TEXTURE_SIZE];
     unsigned i, bpp, id_length, colormap_type, image_type, w, h, pixel_size, attributes, offset;
-    tga_decode_t decode;
+    int (*decode)(const byte *, byte **, int, int, const byte *) = NULL;
     int ret;
 
     if (rawlen < TARGA_HEADER_SIZE) {
@@ -548,8 +470,10 @@ IMG_LOAD(TGA)
         bpp = 4;
     } else if (pixel_size == 24) {
         bpp = 3;
+    } else if (pixel_size == 8) {
+        bpp = 1;
     } else {
-        Com_SetLastError("only 32 and 24 bit targa RGB images supported");
+        Com_SetLastError("unsupported number of bits per pixel");
         return Q_ERR_INVALID_FORMAT;
     }
 
@@ -559,24 +483,36 @@ IMG_LOAD(TGA)
     }
 
     if (image_type == 2) {
-        if (offset + w * h * bpp > rawlen) {
-            Com_SetLastError("data out of bounds");
-            return Q_ERR_INVALID_FORMAT;
-        }
         if (pixel_size == 32) {
-            decode = tga_decode_bgra;
-        } else {
-            decode = tga_decode_bgr;
+            decode = tga_decode_bgra_raw;
+        } else if (pixel_size == 24) {
+            decode = tga_decode_bgr_raw;
+        }
+    } else if (image_type == 3) {
+        if (pixel_size == 8) {
+            decode = tga_decode_mono_raw;
         }
     } else if (image_type == 10) {
         if (pixel_size == 32) {
             decode = tga_decode_bgra_rle;
-        } else {
+        } else if (pixel_size == 24) {
             decode = tga_decode_bgr_rle;
         }
-    } else {
-        Com_SetLastError("only type 2 and 10 targa RGB images supported");
+    } else if (image_type == 11) {
+        if (pixel_size == 8) {
+            decode = tga_decode_mono_rle;
+        }
+    }
+    if (!decode) {
+        Com_SetLastError("unsupported targa image type");
         return Q_ERR_INVALID_FORMAT;
+    }
+
+    if (image_type == 2 || image_type == 3) {
+        if (offset + w * h * bpp > rawlen) {
+            Com_SetLastError("data out of bounds");
+            return Q_ERR_INVALID_FORMAT;
+        }
     }
 
     pixels = IMG_AllocPixels(w * h * 4);
@@ -603,6 +539,8 @@ IMG_LOAD(TGA)
 
     if (pixel_size == 24)
         image->flags |= IF_OPAQUE;
+    else if (pixel_size == 8)
+        image->flags |= IF_TRANSPARENT;
 
     return Q_ERR_SUCCESS;
 }
