@@ -44,6 +44,7 @@ QGLAPI void (APIENTRYP qglBlendFunc)(GLenum sfactor, GLenum dfactor);
 QGLAPI void (APIENTRYP qglClearColor)(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 QGLAPI void (APIENTRYP qglClear)(GLbitfield mask);
 QGLAPI void (APIENTRYP qglClearStencil)(GLint s);
+QGLAPI void (APIENTRYP qglColorMask)(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha);
 QGLAPI void (APIENTRYP qglCullFace)(GLenum mode);
 QGLAPI void (APIENTRYP qglDeleteTextures)(GLsizei n, const GLuint *textures);
 QGLAPI void (APIENTRYP qglDepthFunc)(GLenum func);
@@ -107,6 +108,13 @@ QGLAPI void (APIENTRYP qglBufferData)(GLenum target, GLsizeiptr size, const void
 QGLAPI void (APIENTRYP qglBufferSubData)(GLenum target, GLintptr offset, GLsizeiptr size, const void *data);
 QGLAPI void (APIENTRYP qglDeleteBuffers)(GLsizei n, const GLuint *buffers);
 QGLAPI void (APIENTRYP qglGenBuffers)(GLsizei n, GLuint *buffers);
+
+// GL 1.5, ES 3.0
+QGLAPI void (APIENTRYP qglBeginQuery)(GLenum target, GLuint id);
+QGLAPI void (APIENTRYP qglDeleteQueries)(GLsizei n, const GLuint *ids);
+QGLAPI void (APIENTRYP qglEndQuery)(GLenum target);
+QGLAPI void (APIENTRYP qglGenQueries)(GLsizei n, GLuint *ids);
+QGLAPI void (APIENTRYP qglGetQueryObjectuiv)(GLuint id, GLenum pname, GLuint *params);
 
 // GL 2.0
 QGLAPI void (APIENTRYP qglAttachShader)(GLuint program, GLuint shader);

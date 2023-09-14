@@ -558,6 +558,7 @@ extern cvar_t   *cl_changemapcmd;
 extern cvar_t   *cl_beginmapcmd;
 
 extern cvar_t   *cl_gibs;
+extern cvar_t   *cl_flares;
 
 extern cvar_t   *cl_thirdperson;
 extern cvar_t   *cl_thirdperson_angle;

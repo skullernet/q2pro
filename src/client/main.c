@@ -69,6 +69,7 @@ cvar_t  *cl_ignore_stufftext;
 cvar_t  *cl_allow_vid_restart;
 
 cvar_t  *cl_gibs;
+cvar_t  *cl_flares;
 #if USE_FPS
 cvar_t  *cl_updaterate;
 #endif
@@ -2771,6 +2772,8 @@ static void CL_InitLocal(void)
 
     cl_gibs = Cvar_Get("cl_gibs", "1", 0);
     cl_gibs->changed = cl_gibs_changed;
+
+    cl_flares = Cvar_Get("cl_flares", "1", 0);
 
 #if USE_FPS
     cl_updaterate = Cvar_Get("cl_updaterate", "0", 0);

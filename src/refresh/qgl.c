@@ -47,6 +47,7 @@ static const glsection_t sections[] = {
             QGL_FN(Clear),
             QGL_FN(ClearColor),
             QGL_FN(ClearStencil),
+            QGL_FN(ColorMask),
             QGL_FN(CullFace),
             QGL_FN(DeleteTextures),
             QGL_FN(DepthFunc),
@@ -182,6 +183,22 @@ static const glsection_t sections[] = {
             QGL_FN(BufferSubData),
             QGL_FN(DeleteBuffers),
             QGL_FN(GenBuffers),
+            { NULL }
+        }
+    },
+
+    // GL 1.5, ES 3.0
+    // GL_ARB_occlusion_query
+    {
+        .extension = "GL_ARB_occlusion_query",
+        .ver_gl = QGL_VER(1, 5),
+        .ver_es = QGL_VER(3, 0),
+        .functions = (const glfunction_t []) {
+            QGL_FN(BeginQuery),
+            QGL_FN(DeleteQueries),
+            QGL_FN(EndQuery),
+            QGL_FN(GenQueries),
+            QGL_FN(GetQueryObjectuiv),
             { NULL }
         }
     },

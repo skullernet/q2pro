@@ -600,8 +600,33 @@ static void CL_AddPacketEntities(void)
         // create a new entity
 
         if (cl.csr.extended) {
-            if (renderfx & RF_FLARE)
+            if (renderfx & RF_FLARE) {
+                if (!cl_flares->integer)
+                    goto skip;
+                float fade_start = s1->modelindex2;
+                float fade_end = s1->modelindex3;
+                float d = Distance(cl.refdef.vieworg, ent.origin);
+                if (d < fade_start)
+                    goto skip;
+                if (d > fade_end)
+                    ent.alpha = 1;
+                else
+                    ent.alpha = (d - fade_start) / (fade_end - fade_start);
+                ent.skin = 0;
+                if (renderfx & RF_CUSTOMSKIN && (unsigned)s1->frame < cl.csr.max_images)
+                    ent.skin = cl.image_precache[s1->frame];
+                if (!ent.skin)
+                    goto skip;  // skip default flare for now, it looks bad
+                ent.scale = s1->scale ? s1->scale : 1;
+                ent.flags = renderfx | RF_TRANSLUCENT;
+                if (!s1->skinnum)
+                    ent.rgba.u32 = U32_WHITE;
+                else
+                    ent.rgba.u32 = BigLong(s1->skinnum);
+                ent.skinnum = s1->number;
+                V_AddEntity(&ent);
                 goto skip;
+            }
 
             if (renderfx & RF_CUSTOM_LIGHT) {
                 color_t color;

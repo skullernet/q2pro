@@ -93,6 +93,8 @@ typedef struct {
     GLuint          u_bufnum;
     GLuint          programs[MAX_PROGRAMS];
     GLuint          texnums[NUM_TEXNUMS];
+    GLuint          queries[MAX_EDICTS];
+    GLenum          samples_passed;
     GLbitfield      stencil_buffer_bit;
     float           entity_modulate;
     uint32_t        inverse_intensity_33;
@@ -120,9 +122,11 @@ typedef struct {
     GLfloat         entmatrix[16];
     lightpoint_t    lightpoint;
     int             num_beams;
+    int             num_flares;
     int             framebuffer_width;
     int             framebuffer_height;
     bool            framebuffer_ok;
+    byte            queryflags[MAX_EDICTS];
 } glRefdef_t;
 
 enum {
