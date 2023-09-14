@@ -203,6 +203,7 @@ void    R_EndRegistration(void);
 #define R_RegisterPic2(name)    R_RegisterImage(name, IT_PIC, IF_NONE)
 #define R_RegisterFont(name)    R_RegisterImage(name, IT_FONT, IF_PERMANENT)
 #define R_RegisterSkin(name)    R_RegisterImage(name, IT_SKIN, IF_NONE)
+#define R_RegisterSprite(name)  R_RegisterImage(name, IT_SPRITE, IF_NONE)
 
 void    R_RenderFrame(refdef_t *fd);
 void    R_LightPoint(const vec3_t origin, vec3_t light);
