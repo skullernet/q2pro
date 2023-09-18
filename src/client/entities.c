@@ -536,6 +536,11 @@ static void CL_AddPacketEntities(void)
             renderfx |= RF_SHELL_HALF_DAM;
         }
 
+        if (s1->morefx & EFX_DUALFIRE) {
+            effects |= EF_COLOR_SHELL;
+            renderfx |= RF_SHELL_LITE_GREEN;
+        }
+
         // optionally remove the glowing effect
         if (cl_noglow->integer)
             renderfx &= ~RF_GLOW;
@@ -976,6 +981,8 @@ static int shell_effect_hack(void)
         flags |= RF_SHELL_DOUBLE;
     if (ent->current.effects & EF_HALF_DAMAGE)
         flags |= RF_SHELL_HALF_DAM;
+    if (ent->current.morefx & EFX_DUALFIRE)
+        flags |= RF_SHELL_LITE_GREEN;
 
     return flags;
 }
