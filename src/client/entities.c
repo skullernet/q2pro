@@ -701,6 +701,9 @@ static void CL_AddPacketEntities(void)
             V_AddLight(start, 256, 1, 1, 1);
         }
 
+        if (s1->morefx & EFX_GRENADE_LIGHT)
+            V_AddLight(ent.origin, 100, 1, 1, 0);
+
         if (s1->number == cl.frame.clientNum + 1) {
             if (effects & EF_FLAG1)
                 V_AddLight(ent.origin, 225, 1.0f, 0.1f, 0.1f);
