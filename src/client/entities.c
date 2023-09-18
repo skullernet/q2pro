@@ -478,6 +478,7 @@ static void CL_AddPacketEntities(void)
     int                 autoanim;
     clientinfo_t        *ci;
     unsigned int        effects, renderfx;
+    bool                has_alpha;
 
     // bonus items rotate at a fixed rate
     autorotate = anglemod(cl.time * 0.1f);
@@ -737,9 +738,11 @@ static void CL_AddPacketEntities(void)
                 ent.alpha = 0.3f;
         }
 
+        has_alpha = false;
         if (!(ent.flags & RF_TRANSLUCENT) && s1->alpha > 0 && s1->alpha < 1) {
             ent.flags |= RF_TRANSLUCENT;
             ent.alpha = s1->alpha;
+            has_alpha = true;
         }
 
         ent.scale = s1->scale;
@@ -788,6 +791,12 @@ static void CL_AddPacketEntities(void)
         ent.flags = 0;
         ent.alpha = 0;
 
+        // duplicate alpha
+        if (has_alpha) {
+            ent.flags = RF_TRANSLUCENT;
+            ent.alpha = s1->alpha;
+        }
+
         // duplicate for linked models
         if (s1->modelindex2) {
             if (s1->modelindex2 == MODELINDEX_PLAYER) {
@@ -817,6 +826,12 @@ static void CL_AddPacketEntities(void)
             //PGM - make sure these get reset.
             ent.flags = 0;
             ent.alpha = 0;
+        }
+
+        // duplicate alpha
+        if (has_alpha) {
+            ent.flags = RF_TRANSLUCENT;
+            ent.alpha = s1->alpha;
         }
 
         if (s1->modelindex3) {
