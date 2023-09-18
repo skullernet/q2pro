@@ -953,3 +953,38 @@ void CL_PowerSplash(void)
         p->alphavel = -1.0f / (0.5f + frand() * 0.3f);
     }
 }
+
+/*
+===============
+CL_TeleporterParticles
+===============
+*/
+void CL_TeleporterParticles2(const vec3_t org)
+{
+    int         i;
+    cparticle_t *p;
+    vec3_t      dir;
+
+    for (i = 0; i < 8; i++) {
+        p = CL_AllocParticle();
+        if (!p)
+            return;
+
+        p->time = cl.time;
+        p->color = 0xdb;
+
+        dir[0] = crand();
+        dir[1] = crand();
+        dir[2] = crand();
+        VectorNormalize(dir);
+
+        VectorMA(org, 30.0f, dir, p->org);
+        p->org[2] += 20.0f;
+        VectorScale(dir, -25.0f, p->vel);
+
+        VectorClear(p->accel);
+        p->alpha = 1.0f;
+
+        p->alphavel = -0.8f;
+    }
+}

@@ -862,6 +862,7 @@ void CL_ParticleEffect3(const vec3_t org, const vec3_t dir, int color, int count
 void CL_ParticleSteamEffect2(cl_sustain_t *self);
 void CL_BerserkSlamParticles(const vec3_t org, const vec3_t dir);
 void CL_PowerSplash(void);
+void CL_TeleporterParticles2(const vec3_t org);
 
 
 //
