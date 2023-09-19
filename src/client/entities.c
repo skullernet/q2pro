@@ -878,6 +878,9 @@ static void CL_AddPacketEntities(void)
             }
         }
 
+        if (s1->morefx & EFX_HOLOGRAM)
+            CL_HologramParticles(ent.origin);
+
         // add automatic particle trails
         if (!(effects & EF_TRAIL_MASK))
             goto skip;
