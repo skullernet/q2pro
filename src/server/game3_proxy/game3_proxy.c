@@ -23,13 +23,34 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <assert.h>
 #include <malloc.h>
 
-static edict_t *translate_edict_from_game(game3_edict_t *ent);
-static game3_edict_t *translate_edict_to_game(edict_t *ent);
+static void sync_single_edict_server_to_game(int index);
 static void sync_edicts_server_to_game(void);
+static void sync_single_edict_game_to_server(int index);
 static void sync_edicts_game_to_server(void);
 
 static game_import_t game_import;
 static const game_import_ex_t *game_import_ex;
+
+static game3_export_t *game3_export;
+static const game3_export_ex_t *game3_export_ex;
+static game_export_t game_export;
+
+#define GAME_EDICT_NUM(n) ((game3_edict_t *)((byte *)game3_export->edicts + game3_export->edict_size*(n)))
+#define NUM_FOR_GAME_EDICT(e) ((int)(((byte *)(e) - (byte *)game3_export->edicts) / game3_export->edict_size))
+
+static edict_t *server_edicts;
+
+static edict_t *translate_edict_from_game(game3_edict_t *ent)
+{
+    assert(!ent || (ent >= GAME_EDICT_NUM(0) && ent < GAME_EDICT_NUM(game3_export->num_edicts)));
+    return ent ? &server_edicts[NUM_FOR_GAME_EDICT(ent)] : NULL;
+}
+
+static game3_edict_t* translate_edict_to_game(edict_t* ent)
+{
+    assert(!ent || (ent >= server_edicts && ent < server_edicts + game_export.num_edicts));
+    return ent ? GAME_EDICT_NUM(ent - server_edicts) : NULL;
+}
 
 static void wrap_unicast(game3_edict_t *gent, qboolean reliable)
 {
@@ -112,10 +133,12 @@ static void wrap_centerprintf(game3_edict_t *gent, const char *fmt, ...)
 
 static void wrap_setmodel(game3_edict_t *gent, const char *name)
 {
-    edict_t *ent = translate_edict_from_game(gent);
-    sync_edicts_game_to_server();
-    game_import.setmodel(ent, name);
-    sync_edicts_server_to_game();
+    game_export.num_edicts = game3_export->num_edicts;
+
+    int ent_idx = NUM_FOR_GAME_EDICT(gent);
+    sync_single_edict_game_to_server(ent_idx);
+    game_import.setmodel(translate_edict_from_game(gent), name);
+    sync_single_edict_server_to_game(ent_idx);
 }
 
 static void wrap_sound(game3_edict_t *gent, int channel,
@@ -136,16 +159,20 @@ static void wrap_positioned_sound(const vec3_t origin, game3_edict_t *gent, int 
 
 static void wrap_unlinkentity(game3_edict_t *ent)
 {
-    sync_edicts_game_to_server();
+    int ent_idx = NUM_FOR_GAME_EDICT(ent);
+    sync_single_edict_game_to_server(ent_idx);
     game_import.unlinkentity(translate_edict_from_game(ent));
-    sync_edicts_server_to_game();
+    sync_single_edict_server_to_game(ent_idx);
 }
 
 static void wrap_linkentity(game3_edict_t *ent)
 {
-    sync_edicts_game_to_server();
+    game_export.num_edicts = game3_export->num_edicts;
+
+    int ent_idx = NUM_FOR_GAME_EDICT(ent);
+    sync_single_edict_game_to_server(ent_idx);
     game_import.linkentity(translate_edict_from_game(ent));
-    sync_edicts_server_to_game();
+    sync_single_edict_server_to_game(ent_idx);
 }
 
 static int wrap_BoxEdicts(const vec3_t mins, const vec3_t maxs, game3_edict_t **glist, int maxcount, int areatype)
@@ -162,7 +189,6 @@ static game3_trace_t wrap_trace(const vec3_t start, const vec3_t mins,
                                 const vec3_t maxs, const vec3_t end,
                                 game3_edict_t *passedict, int contentmask)
 {
-    sync_edicts_game_to_server();
     trace_t str = game_import.trace(start, mins, maxs, end, translate_edict_from_game(passedict), contentmask);
     game3_trace_t tr;
     tr.allsolid = str.allsolid;
@@ -206,56 +232,84 @@ static void *wrap_TagRealloc(void *ptr, size_t size)
     return game_import_ex->TagRealloc(ptr, size);
 }
 
-static game3_export_t *game3_export;
-static const game3_export_ex_t *game3_export_ex;
-static game_export_t game_export;
+// Macro to check whether a member that wasn't synced has been unexpectedly changed
+#define VERIFY_UNCHANGED(pred, a, b, member) \
+    if (pred)                                \
+    {                                        \
+        assert((a).member == (b).member);    \
+    }
 
-static edict_t *server_edicts;
-
-#define GAME_EDICT_NUM(n) ((game3_edict_t *)((byte *)game3_export->edicts + game3_export->edict_size*(n)))
-#define NUM_FOR_GAME_EDICT(e) ((int)(((byte *)(e) - (byte *)game3_export->edicts) / game3_export->edict_size))
-
-static edict_t *translate_edict_from_game(game3_edict_t *ent)
+static void sync_single_edict_server_to_game(int index)
 {
-    assert(!ent || (ent >= GAME_EDICT_NUM(0) && ent < GAME_EDICT_NUM(game3_export->num_edicts)));
-    return ent ? &server_edicts[NUM_FOR_GAME_EDICT(ent)] : NULL;
-}
+    edict_t *server_edict = &server_edicts[index];
+    server_entity_t *sent = &sv.entities[index];
+    game3_edict_t *game_edict = GAME_EDICT_NUM(index);
 
-static game3_edict_t* translate_edict_to_game(edict_t* ent)
-{
-    assert(!ent || (ent >= server_edicts && ent < server_edicts + game_export.num_edicts));
-    return ent ? GAME_EDICT_NUM(ent - server_edicts) : NULL;
+    // Skip unused entities
+    bool server_edict_inuse = server_edict->inuse || HAS_EFFECTS(server_edict);
+    if(!server_edict_inuse && !game_edict->inuse)
+        return;
+
+    bool is_new = !(game_edict->inuse || HAS_EFFECTS(game_edict));
+    game_edict->inuse = server_edict->inuse;
+    // Don't change fields if edict became unused
+    if(!game_edict->inuse)
+        return;
+
+    // Check that fields not changed by server are, indeed, unchanged
+    VERIFY_UNCHANGED(!is_new, server_edict->s, game_edict->s, origin[0]);
+    VERIFY_UNCHANGED(!is_new, server_edict->s, game_edict->s, origin[1]);
+    VERIFY_UNCHANGED(!is_new, server_edict->s, game_edict->s, origin[2]);
+    VERIFY_UNCHANGED(!is_new, server_edict->s, game_edict->s, angles[0]);
+    VERIFY_UNCHANGED(!is_new, server_edict->s, game_edict->s, angles[1]);
+    VERIFY_UNCHANGED(!is_new, server_edict->s, game_edict->s, angles[2]);
+    VERIFY_UNCHANGED(!is_new, server_edict->s, game_edict->s, modelindex2);
+    VERIFY_UNCHANGED(!is_new, server_edict->s, game_edict->s, modelindex3);
+    VERIFY_UNCHANGED(!is_new, server_edict->s, game_edict->s, modelindex4);
+    VERIFY_UNCHANGED(!is_new, server_edict->s, game_edict->s, frame);
+    VERIFY_UNCHANGED(!is_new, server_edict->s, game_edict->s, skinnum);
+    VERIFY_UNCHANGED(!is_new, server_edict->s, game_edict->s, effects);
+    VERIFY_UNCHANGED(!is_new, server_edict->s, game_edict->s, renderfx);
+    VERIFY_UNCHANGED(!is_new, server_edict->s, game_edict->s, sound);
+
+    game_edict->s.number = server_edict->s.number;
+    VectorCopy(server_edict->s.old_origin, game_edict->s.old_origin);
+    game_edict->s.modelindex = server_edict->s.modelindex;
+    game_edict->s.solid = server_edict->s.solid;
+    game_edict->s.event = server_edict->s.event;
+
+    VERIFY_UNCHANGED(!is_new, *game_edict, *server_edict, client);
+    game_edict->linkcount = server_edict->linkcount;
+    game_edict->area.prev = server_edict->linked ? &game_edict->area : NULL; // emulate entity being linked
+    game_edict->num_clusters = sent->num_clusters;
+    memcpy(&game_edict->clusternums, &sent->clusternums, sizeof(game_edict->clusternums));
+    game_edict->headnode = sent->headnode;
+    game_edict->areanum = server_edict->areanum;
+    game_edict->areanum2 = server_edict->areanum2;
+    game_edict->svflags = server_edict->svflags;
+
+    /* Although it's said "If the size, position, or solidity changes, [an edict] must be relinked.",
+     * those fields may not only be changed by linkentity. */
+    // changed by setmodel
+    VectorCopy(server_edict->mins, game_edict->mins);
+    VectorCopy(server_edict->maxs, game_edict->maxs);
+    // changed by linkentity
+    VectorCopy(server_edict->absmin, game_edict->absmin);
+    VectorCopy(server_edict->absmax, game_edict->absmax);
+    VectorCopy(server_edict->size, game_edict->size);
+    VERIFY_UNCHANGED(!is_new, *game_edict, *server_edict, solid);
+    VERIFY_UNCHANGED(!is_new, *game_edict, *server_edict, clipmask);
+
+    // slightly changed 'translate_edict_to_game', as owners may be beyond num_edicts when loading a game
+    assert(!server_edict->owner || (server_edict->owner >= server_edicts && server_edict->owner < server_edicts + game_export.max_edicts));
+    game_edict->owner = server_edict->owner ? GAME_EDICT_NUM(server_edict->owner - server_edicts) : NULL;
 }
 
 // Sync edicts from server to game
 static void sync_edicts_server_to_game(void)
 {
     for (int i = 0; i < game_export.num_edicts; i++) {
-        edict_t *server_edict = &server_edicts[i];
-        server_entity_t *sent = &sv.entities[i];
-        game3_edict_t *game_edict = GAME_EDICT_NUM(i);
-
-        memcpy(&game_edict->s, &server_edict->s, sizeof(entity_state_t));
-        game_edict->client = server_edict->client;
-
-        game_edict->inuse = server_edict->inuse;
-        game_edict->linkcount = server_edict->linkcount;
-        game_edict->area.prev = server_edict->linked ? &game_edict->area : NULL; // emulate entity being linked
-        game_edict->num_clusters = sent->num_clusters;
-        memcpy(&game_edict->clusternums, &sent->clusternums, sizeof(game_edict->clusternums));
-        game_edict->headnode = sent->headnode;
-        game_edict->svflags = server_edict->svflags;
-        VectorCopy(server_edict->mins, game_edict->mins);
-        VectorCopy(server_edict->maxs, game_edict->maxs);
-        VectorCopy(server_edict->absmin, game_edict->absmin);
-        VectorCopy(server_edict->absmax, game_edict->absmax);
-        VectorCopy(server_edict->size, game_edict->size);
-        game_edict->solid = server_edict->solid;
-        game_edict->clipmask = server_edict->clipmask;
-
-        // slightly changed 'translate_edict_to_game', as owners may be beyond num_edicts when loading a game
-        assert(!server_edict->owner || (server_edict->owner >= server_edicts && server_edict->owner < server_edicts + game_export.max_edicts));
-        game_edict->owner = server_edict->owner ? GAME_EDICT_NUM(server_edict->owner - server_edicts) : NULL;
+        sync_single_edict_server_to_game(i);
     }
 
     game3_export->num_edicts = game_export.num_edicts;
@@ -280,30 +334,47 @@ static void game_entity_state_to_server(entity_state_t* server_state, const game
     server_state->event = game_state->event;
 }
 
+static void sync_single_edict_game_to_server(int index)
+{
+    edict_t *server_edict = &server_edicts[index];
+    server_entity_t *sent = &sv.entities[index];
+    game3_edict_t *game_edict = GAME_EDICT_NUM(index);
+
+    server_edict->client = game_edict->client; // client may be set, even though inuse == false
+
+    // Skip unused entities
+    bool game_edict_inuse = game_edict->inuse || HAS_EFFECTS(game_edict);
+    if(!game_edict_inuse && !server_edict->inuse)
+        return;
+
+    server_edict->inuse = game_edict->inuse;
+    // HAS_EFFECTS() needs correct entity state
+    game_entity_state_to_server(&server_edict->s, &game_edict->s);
+    // Don't change more fields if edict became unused
+    if(!server_edict->inuse)
+        return;
+
+    // Check whether game cleared links
+    if (!game_edict->area.next && !game_edict->area.prev && (sent->area.next || sent->area.prev))
+        PF_UnlinkEdict(server_edict);
+    server_edict->svflags = game_edict->svflags;
+
+    VectorCopy(game_edict->mins, server_edict->mins);
+    VectorCopy(game_edict->maxs, server_edict->maxs);
+    VectorCopy(game_edict->absmin, server_edict->absmin);
+    VectorCopy(game_edict->absmax, server_edict->absmax);
+    VectorCopy(game_edict->size, server_edict->size);
+    server_edict->solid = game_edict->solid;
+    server_edict->clipmask = game_edict->clipmask;
+
+    server_edict->owner = game_edict->owner ? &server_edicts[NUM_FOR_GAME_EDICT(game_edict->owner)] : NULL;
+}
+
 // Sync edicts from game to server
 static void sync_edicts_game_to_server(void)
 {
     for (int i = 0; i < game3_export->num_edicts; i++) {
-        edict_t *server_edict = &server_edicts[i];
-        server_entity_t *sent = &sv.entities[i];
-        game3_edict_t *game_edict = GAME_EDICT_NUM(i);
-
-        game_entity_state_to_server(&server_edict->s, &game_edict->s);
-        server_edict->client = game_edict->client;
-
-        server_edict->inuse = game_edict->inuse;
-        // Check whether game cleared links
-        if (!game_edict->area.next && !game_edict->area.prev && (sent->area.next || sent->area.prev))
-            PF_UnlinkEdict(server_edict);
-        server_edict->svflags = game_edict->svflags;
-        VectorCopy(game_edict->mins, server_edict->mins);
-        VectorCopy(game_edict->maxs, server_edict->maxs);
-        VectorCopy(game_edict->absmin, server_edict->absmin);
-        VectorCopy(game_edict->absmax, server_edict->absmax);
-        VectorCopy(game_edict->size, server_edict->size);
-        server_edict->solid = game_edict->solid;
-        server_edict->clipmask = game_edict->clipmask;
-        server_edict->owner = game_edict->owner ? &server_edicts[NUM_FOR_GAME_EDICT(game_edict->owner)] : NULL;
+        sync_single_edict_game_to_server(i);
     }
 
     game_export.num_edicts = game3_export->num_edicts;
@@ -363,35 +434,44 @@ static void wrap_ReadLevel(const char *filename)
 
 static qboolean wrap_ClientConnect(edict_t *ent, char *userinfo)
 {
-    sync_edicts_server_to_game();
+    int ent_idx = NUM_FOR_EDICT(ent);
+    sync_single_edict_server_to_game(ent_idx);
     qboolean result = game3_export->ClientConnect(translate_edict_to_game(ent), userinfo);
-    sync_edicts_game_to_server();
+    sync_single_edict_game_to_server(ent_idx);
+    game_export.num_edicts = game3_export->num_edicts;
     return result;
 }
 
 static void wrap_ClientBegin(edict_t *ent)
 {
-    sync_edicts_server_to_game();
+    int ent_idx = NUM_FOR_EDICT(ent);
+    sync_single_edict_server_to_game(ent_idx);
     game3_export->ClientBegin(translate_edict_to_game(ent));
-    sync_edicts_game_to_server();
+    sync_single_edict_game_to_server(ent_idx);
+    game_export.num_edicts = game3_export->num_edicts;
 }
 
 static void wrap_ClientUserinfoChanged(edict_t *ent, char *userinfo)
 {
-    sync_edicts_server_to_game();
+    int ent_idx = NUM_FOR_EDICT(ent);
+    sync_single_edict_server_to_game(ent_idx);
     game3_export->ClientUserinfoChanged(translate_edict_to_game(ent), userinfo);
-    sync_edicts_game_to_server();
+    sync_single_edict_game_to_server(ent_idx);
+    game_export.num_edicts = game3_export->num_edicts;
 }
 
 static void wrap_ClientDisconnect(edict_t *ent)
 {
-    sync_edicts_server_to_game();
+    int ent_idx = NUM_FOR_EDICT(ent);
+    sync_single_edict_server_to_game(ent_idx);
     game3_export->ClientDisconnect(translate_edict_to_game(ent));
-    sync_edicts_game_to_server();
+    sync_single_edict_game_to_server(ent_idx);
+    game_export.num_edicts = game3_export->num_edicts;
 }
 
 static void wrap_ClientCommand(edict_t *ent)
 {
+    // ClientCommand() may spawn new entitities, so sync them all
     sync_edicts_server_to_game();
     game3_export->ClientCommand(translate_edict_to_game(ent));
     sync_edicts_game_to_server();
@@ -399,6 +479,7 @@ static void wrap_ClientCommand(edict_t *ent)
 
 static void wrap_ClientThink(edict_t *ent, usercmd_t *cmd)
 {
+    // ClientThink() may spawn new entitities, so sync them all
     sync_edicts_server_to_game();
     game3_export->ClientThink(translate_edict_to_game(ent), cmd);
     sync_edicts_game_to_server();
