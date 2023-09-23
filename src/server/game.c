@@ -209,7 +209,9 @@ static void PF_dprintf(const char *fmt, ...)
     Q_vsnprintf(msg, sizeof(msg), fmt, argptr);
     va_end(argptr);
 
+    Con_SkipNotify(true);
     Com_Printf("%s", msg);
+    Con_SkipNotify(false);
 }
 
 /*
