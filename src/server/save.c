@@ -179,7 +179,7 @@ static int remove_file(const char *dir, const char *name)
 static void **list_save_dir(const char *dir, int *count)
 {
     return FS_ListFiles(va("save/%s", dir), ".ssv;.sav;.sv2",
-        FS_TYPE_REAL | FS_PATH_GAME, count);
+        FS_TYPE_REAL | FS_PATH_GAME | FS_SEARCH_RECURSIVE, count);
 }
 
 static int wipe_save_dir(const char *dir)
