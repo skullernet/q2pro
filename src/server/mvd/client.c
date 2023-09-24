@@ -2509,7 +2509,7 @@ static const cmd_option_t o_mvdplay[] = {
 
 void MVD_File_g(genctx_t *ctx)
 {
-    FS_File_g("demos", "*.mvd2;*.mvd2.gz", FS_SEARCH_SAVEPATH | FS_SEARCH_BYFILTER, ctx);
+    FS_File_g("demos", ".mvd2;.mvd2.gz", FS_SEARCH_RECURSIVE, ctx);
 }
 
 static void MVD_Play_c(genctx_t *ctx, int argnum)

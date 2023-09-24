@@ -53,7 +53,7 @@ typedef struct {
 
 // search mode for ListFiles()
 #define FS_SEARCH_BYFILTER      0x00000100  // wildcard search instead of extension search
-#define FS_SEARCH_SAVEPATH      0x00000200  // preserve file path
+#define FS_SEARCH_SAVEPATH      0x00000200  // preserve full file path
 #define FS_SEARCH_EXTRAINFO     0x00000400  // return file_info_t *, not char *
 #define FS_SEARCH_STRIPEXT      0x00000800  // strip file extension
 #define FS_SEARCH_DIRSONLY      0x00001000  // search only directories (can't be mixed with other flags)

@@ -2566,6 +2566,7 @@ static void q_printf(2, 3) add_game_dir(unsigned mode, const char *fmt, ...)
 #else
     list.filter = ".pak";
 #endif
+    list.baselen = len + 1;
     Sys_ListFiles_r(&list, fs_gamedir, 0);
     if (!list.count) {
         return;
@@ -2762,12 +2763,19 @@ void **FS_ListFiles(const char *path, const char *filter, unsigned flags, int *c
                     if (s[pathlen] != '/') {
                         continue;   // matched prefix must be a directory
                     }
-                    if (flags & FS_SEARCH_BYFILTER) {
-                        s += pathlen + 1;
+                    if (!(flags & FS_SEARCH_SAVEPATH)) {
+                        s += pathlen + 1;   // skip path
                     }
-                } else if (path == normalized) {
-                    if (!(flags & FS_SEARCH_DIRSONLY) && strchr(s, '/')) {
-                        continue;   // must be a file in the root directory
+                }
+
+                // check for subdirectory
+                if (!(flags & (FS_SEARCH_BYFILTER | FS_SEARCH_RECURSIVE | FS_SEARCH_DIRSONLY))) {
+                    p = s;
+                    if (flags & FS_SEARCH_SAVEPATH && pathlen) {
+                        p += pathlen + 1;
+                    }
+                    if (strchr(p, '/')) {
+                        continue;   // don't search in subdirectories
                     }
                 }
 
@@ -2793,7 +2801,7 @@ void **FS_ListFiles(const char *path, const char *filter, unsigned flags, int *c
                 // hacky directory search support for pak files
                 if (flags & FS_SEARCH_DIRSONLY) {
                     p = s;
-                    if (pathlen) {
+                    if (flags & FS_SEARCH_SAVEPATH && pathlen) {
                         p += pathlen + 1;
                     }
                     p = strchr(p, '/');
@@ -2809,11 +2817,6 @@ void **FS_ListFiles(const char *path, const char *filter, unsigned flags, int *c
                     if (j != list.count) {
                         continue;   // already listed this directory
                     }
-                }
-
-                // strip path
-                if (!(flags & FS_SEARCH_SAVEPATH)) {
-                    s = COM_SkipPath(s);
                 }
 
                 // strip extension
@@ -2844,27 +2847,24 @@ void **FS_ListFiles(const char *path, const char *filter, unsigned flags, int *c
                 continue; // don't search in filesystem
             }
 
-            len = strlen(search->filename);
+            len = strlen(search->filename) + 1;
 
             if (pathlen) {
-                if (len + pathlen + 1 >= MAX_OSPATH) {
-                    continue;
-                }
                 if (valid == PATH_NOT_CHECKED) {
                     valid = FS_ValidatePath(path);
                 }
                 if (valid == PATH_INVALID) {
                     continue;
                 }
-                s = memcpy(buffer, search->filename, len);
-                s[len++] = '/';
-                memcpy(s + len, path, pathlen + 1);
+                if (Q_concat(buffer, sizeof(buffer), search->filename, "/", path) >= sizeof(buffer)) {
+                    continue;
+                }
+                if (!(flags & FS_SEARCH_SAVEPATH)) {
+                    len += pathlen + 1; // skip path
+                }
+                s = buffer;
             } else {
                 s = search->filename;
-            }
-
-            if (flags & FS_SEARCH_BYFILTER) {
-                len += pathlen + 1;
             }
 
             list.filter = filter;
@@ -2974,22 +2974,12 @@ FS_FDir_f
 */
 static void FS_FDir_f(void)
 {
-    unsigned flags;
-    char *filter;
-
     if (Cmd_Argc() < 2) {
-        Com_Printf("Usage: %s <filter> [full_path]\n", Cmd_Argv(0));
+        Com_Printf("Usage: %s <filter>\n", Cmd_Argv(0));
         return;
     }
 
-    filter = Cmd_Argv(1);
-
-    flags = FS_SEARCH_BYFILTER;
-    if (Cmd_Argc() > 2) {
-        flags |= FS_SEARCH_SAVEPATH;
-    }
-
-    print_file_list(NULL, filter, flags);
+    print_file_list(NULL, Cmd_Argv(1), FS_SEARCH_BYFILTER);
 }
 
 /*
@@ -3688,6 +3678,7 @@ static void list_dirs(genctx_t *ctx, const char *path)
 {
     listfiles_t list = {
         .flags = FS_SEARCH_DIRSONLY,
+        .baselen = strlen(path) + 1,
     };
 
     Sys_ListFiles_r(&list, path, 0);

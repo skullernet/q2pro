@@ -1023,7 +1023,7 @@ void Sys_ListFiles_r(listfiles_t *list, const char *path, int depth)
     const char  *filter = list->filter;
 
     // optimize single extension search
-    if (!(list->flags & FS_SEARCH_BYFILTER) &&
+    if (!(list->flags & (FS_SEARCH_BYFILTER | FS_SEARCH_RECURSIVE)) &&
         filter && !strchr(filter, ';')) {
         if (*filter == '.') {
             filter++;
@@ -1104,12 +1104,8 @@ void Sys_ListFiles_r(listfiles_t *list, const char *path, int depth)
             }
         }
 
-        // strip path
-        if (list->flags & FS_SEARCH_SAVEPATH) {
-            name = fullpath + list->baselen;
-        } else {
-            name = data.name;
-        }
+        // skip path
+        name = fullpath + list->baselen;
 
         // reformat it back to quake filesystem style
         FS_ReplaceSeparators(name, '/');

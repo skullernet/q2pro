@@ -145,7 +145,7 @@ static void BSP_Test_f(void)
     int ret;
     unsigned start, end;
 
-    list = FS_ListFiles(NULL, ".bsp", FS_SEARCH_SAVEPATH | FS_SEARCH_RECURSIVE, &count);
+    list = FS_ListFiles(NULL, ".bsp", FS_SEARCH_RECURSIVE, &count);
     if (!list) {
         Com_Printf("No maps found\n");
         return;
@@ -519,7 +519,7 @@ static void Com_TestModels_f(void)
     int i, count, errors;
     unsigned start, end;
 
-    list = FS_ListFiles(NULL, ".md2", FS_SEARCH_SAVEPATH | FS_SEARCH_RECURSIVE, &count);
+    list = FS_ListFiles(NULL, ".md2", FS_SEARCH_RECURSIVE, &count);
     if (!list) {
         Com_Printf("No models found\n");
         return;
@@ -557,7 +557,7 @@ static void Com_TestImages_f(void)
     int i, count, errors;
     unsigned start, end;
 
-    list = FS_ListFiles(NULL, ".pcx;.wal;.png;.jpg;.tga", FS_SEARCH_SAVEPATH | FS_SEARCH_RECURSIVE, &count);
+    list = FS_ListFiles(NULL, ".pcx;.wal;.png;.jpg;.tga", FS_SEARCH_RECURSIVE, &count);
     if (!list) {
         Com_Printf("No images found\n");
         return;
@@ -597,7 +597,7 @@ static void Com_TestSounds_f(void)
     int i, count, errors;
     unsigned start, end;
 
-    list = FS_ListFiles(NULL, ".wav", FS_SEARCH_SAVEPATH | FS_SEARCH_RECURSIVE, &count);
+    list = FS_ListFiles(NULL, ".wav", FS_SEARCH_RECURSIVE, &count);
     if (!list) {
         Com_Printf("No sounds found\n");
         return;

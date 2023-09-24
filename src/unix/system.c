@@ -405,12 +405,8 @@ void Sys_ListFiles_r(listfiles_t *list, const char *path, int depth)
             }
         }
 
-        // strip path
-        if (list->flags & FS_SEARCH_SAVEPATH) {
-            name = fullpath + list->baselen;
-        } else {
-            name = ent->d_name;
-        }
+        // skip path
+        name = fullpath + list->baselen;
 
         // strip extension
         if (list->flags & FS_SEARCH_STRIPEXT) {
@@ -423,10 +419,7 @@ void Sys_ListFiles_r(listfiles_t *list, const char *path, int depth)
 
         // copy info off
         if (list->flags & FS_SEARCH_EXTRAINFO) {
-            info = FS_CopyInfo(name,
-                               st.st_size,
-                               st.st_ctime,
-                               st.st_mtime);
+            info = FS_CopyInfo(name, st.st_size, st.st_ctime, st.st_mtime);
         } else {
             info = FS_CopyString(name);
         }

@@ -78,7 +78,7 @@ void PlayerModel_Load(void)
     uis.numPlayerModels = 0;
 
     // get a list of directories
-    if (!(list = (char **)FS_ListFiles(NULL, "players/*/tris.md2", FS_SEARCH_BYFILTER | FS_SEARCH_SAVEPATH, &numFiles))) {
+    if (!(list = (char **)FS_ListFiles(NULL, "players/*/tris.md2", FS_SEARCH_BYFILTER, &numFiles))) {
         return;
     }
 
