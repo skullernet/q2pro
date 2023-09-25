@@ -18,7 +18,9 @@ env:
     -Dwerror=true
 
   MESON_ARGS_WIN: >-
+    -Dlibpng:werror=false
     -Dsdl2=disabled
+    -Dvorbis:werror=false
     -Dwayland=disabled
     -Dwrap_mode=forcefallback
     -Dx11=disabled
@@ -76,7 +78,7 @@ jobs:
 
       - name: Build
         run: |
-          meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_WIN }} -Dvorbis:werror=false builddir
+          meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_WIN }} builddir
           meson compile -C builddir
 
   linux:
