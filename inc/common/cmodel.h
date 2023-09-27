@@ -40,9 +40,6 @@ void        CM_FreeMap(cm_t *cm);
 int         CM_LoadMap(cm_t *cm, const char *name);
 void        CM_LoadOverrides(cm_t *cm, char *server, size_t server_size);
 
-int         CM_NumClusters(cm_t *cm);
-int         CM_NumInlineModels(cm_t *cm);
-char        *CM_EntityString(cm_t *cm);
 mnode_t     *CM_NodeNum(cm_t *cm, int number);
 mleaf_t     *CM_LeafNum(cm_t *cm, int number);
 
