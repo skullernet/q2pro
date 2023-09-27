@@ -438,16 +438,11 @@ static qboolean PF_inVIS(const vec3_t p1, const vec3_t p2, int vis)
 {
     mleaf_t *leaf1, *leaf2;
     byte mask[VIS_MAX_BYTES];
-    bsp_t *bsp = sv.cm.cache;
 
-    if (!bsp) {
-        Com_Error(ERR_DROP, "%s: no map loaded", __func__);
-    }
+    leaf1 = CM_PointLeaf(&sv.cm, p1);
+    BSP_ClusterVis(sv.cm.cache, mask, leaf1->cluster, vis);
 
-    leaf1 = BSP_PointLeaf(bsp->nodes, p1);
-    BSP_ClusterVis(bsp, mask, leaf1->cluster, vis);
-
-    leaf2 = BSP_PointLeaf(bsp->nodes, p2);
+    leaf2 = CM_PointLeaf(&sv.cm, p2);
     if (leaf2->cluster == -1)
         return false;
     if (!Q_IsBitSet(mask, leaf2->cluster))
@@ -711,17 +706,11 @@ static void PF_AddCommandString(const char *string)
 
 static void PF_SetAreaPortalState(int portalnum, qboolean open)
 {
-    if (!sv.cm.cache) {
-        Com_Error(ERR_DROP, "%s: no map loaded", __func__);
-    }
     CM_SetAreaPortalState(&sv.cm, portalnum, open);
 }
 
 static qboolean PF_AreasConnected(int area1, int area2)
 {
-    if (!sv.cm.cache) {
-        Com_Error(ERR_DROP, "%s: no map loaded", __func__);
-    }
     return CM_AreasConnected(&sv.cm, area1, area2);
 }
 

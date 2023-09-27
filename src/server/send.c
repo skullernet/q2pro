@@ -261,10 +261,6 @@ void SV_Multicast(const vec3_t origin, multicast_t to)
     int         leafnum q_unused = 0;
     int         flags = 0;
 
-    if (!sv.cm.cache) {
-        Com_Error(ERR_DROP, "%s: no map loaded", __func__);
-    }
-
     switch (to) {
     case MULTICAST_ALL_R:
         flags |= MSG_RELIABLE;
@@ -276,7 +272,7 @@ void SV_Multicast(const vec3_t origin, multicast_t to)
         // intentional fallthrough
     case MULTICAST_PHS:
         leaf1 = CM_PointLeaf(&sv.cm, origin);
-        leafnum = leaf1 - sv.cm.cache->leafs;
+        leafnum = CM_NumLeaf(&sv.cm, leaf1);
         BSP_ClusterVis(sv.cm.cache, mask, leaf1->cluster, DVIS_PHS);
         break;
     case MULTICAST_PVS_R:
@@ -284,7 +280,7 @@ void SV_Multicast(const vec3_t origin, multicast_t to)
         // intentional fallthrough
     case MULTICAST_PVS:
         leaf1 = CM_PointLeaf(&sv.cm, origin);
-        leafnum = leaf1 - sv.cm.cache->leafs;
+        leafnum = CM_NumLeaf(&sv.cm, leaf1);
         BSP_ClusterVis(sv.cm.cache, mask, leaf1->cluster, DVIS_PVS);
         break;
     default:

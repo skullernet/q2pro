@@ -476,6 +476,16 @@ static mnode_t *SV_HullForEntity2(edict_t *ent)
 
 /*
 =============
+SV_WorldNodes
+=============
+*/
+static mnode_t *SV_WorldNodes(void)
+{
+    return sv.cm.cache ? sv.cm.cache->nodes : NULL;
+}
+
+/*
+=============
 SV_PointContents
 =============
 */
@@ -485,12 +495,8 @@ int SV_PointContents(const vec3_t p)
     int         i, num;
     int         contents;
 
-    if (!sv.cm.cache) {
-        Com_Error(ERR_DROP, "%s: no map loaded", __func__);
-    }
-
     // get base contents from world
-    contents = CM_PointContents(p, sv.cm.cache->nodes);
+    contents = CM_PointContents(p, SV_WorldNodes());
 
     // or in contents from all the other entities
     num = SV_AreaEdicts(p, p, touch, MAX_EDICTS, AREA_SOLID);
@@ -578,10 +584,6 @@ trace_t q_gameabi SV_Trace(const vec3_t start, const vec3_t mins,
 {
     trace_t     trace;
 
-    if (!sv.cm.cache) {
-        Com_Error(ERR_DROP, "%s: no map loaded", __func__);
-    }
-
     if (!mins)
         mins = vec3_origin;
     if (!maxs)
@@ -591,7 +593,7 @@ trace_t q_gameabi SV_Trace(const vec3_t start, const vec3_t mins,
     if ((uintptr_t)passedict & 1) {
         edict_t *clip = (edict_t *)((uintptr_t)passedict & ~1);
         if (clip == ge->edicts)
-            CM_BoxTrace(&trace, start, end, mins, maxs, sv.cm.cache->nodes, contentmask);
+            CM_BoxTrace(&trace, start, end, mins, maxs, SV_WorldNodes(), contentmask);
         else
             CM_TransformedBoxTrace(&trace, start, end, mins, maxs,
                                    SV_HullForEntity2(clip), contentmask,
@@ -601,11 +603,10 @@ trace_t q_gameabi SV_Trace(const vec3_t start, const vec3_t mins,
     }
 
     // clip to world
-    CM_BoxTrace(&trace, start, end, mins, maxs, sv.cm.cache->nodes, contentmask);
+    CM_BoxTrace(&trace, start, end, mins, maxs, SV_WorldNodes(), contentmask);
     trace.ent = ge->edicts;
-    if (trace.fraction == 0) {
+    if (trace.fraction == 0)
         return trace;   // blocked by the world
-    }
 
     // clip to other solid entities
     SV_ClipMoveToEntities(start, mins, maxs, end, passedict, contentmask, &trace);
