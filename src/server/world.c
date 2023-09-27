@@ -589,19 +589,6 @@ trace_t q_gameabi SV_Trace(const vec3_t start, const vec3_t mins,
     if (!maxs)
         maxs = vec3_origin;
 
-    // clip to entity hack
-    if ((uintptr_t)passedict & 1) {
-        edict_t *clip = (edict_t *)((uintptr_t)passedict & ~1);
-        if (clip == ge->edicts)
-            CM_BoxTrace(&trace, start, end, mins, maxs, SV_WorldNodes(), contentmask);
-        else
-            CM_TransformedBoxTrace(&trace, start, end, mins, maxs,
-                                   SV_HullForEntity2(clip), contentmask,
-                                   clip->s.origin, clip->s.angles);
-        trace.ent = clip;
-        return trace;
-    }
-
     // clip to world
     CM_BoxTrace(&trace, start, end, mins, maxs, SV_WorldNodes(), contentmask);
     trace.ent = ge->edicts;
@@ -610,5 +597,34 @@ trace_t q_gameabi SV_Trace(const vec3_t start, const vec3_t mins,
 
     // clip to other solid entities
     SV_ClipMoveToEntities(start, mins, maxs, end, passedict, contentmask, &trace);
+    return trace;
+}
+
+/*
+==================
+SV_Clip
+
+Like SV_Trace(), but clip to specified entity only.
+Can be used to clip to SOLID_TRIGGER by its BSP tree.
+==================
+*/
+trace_t q_gameabi SV_Clip(const vec3_t start, const vec3_t mins,
+                          const vec3_t maxs, const vec3_t end,
+                          edict_t *clip, int contentmask)
+{
+    trace_t     trace;
+
+    if (!mins)
+        mins = vec3_origin;
+    if (!maxs)
+        maxs = vec3_origin;
+
+    if (clip == ge->edicts)
+        CM_BoxTrace(&trace, start, end, mins, maxs, SV_WorldNodes(), contentmask);
+    else
+        CM_TransformedBoxTrace(&trace, start, end, mins, maxs,
+                               SV_HullForEntity2(clip), contentmask,
+                               clip->s.origin, clip->s.angles);
+    trace.ent = clip;
     return trace;
 }

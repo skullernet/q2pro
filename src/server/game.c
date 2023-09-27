@@ -429,25 +429,33 @@ static void PF_configstring(int index, const char *val)
     SZ_Clear(&msg_write);
 }
 
+static const char *PF_GetConfigstring(int index)
+{
+    if (index < 0 || index >= svs.csr.end)
+        Com_Error(ERR_DROP, "%s: bad index: %d", __func__, index);
+
+    return sv.configstrings[index];
+}
+
 static void PF_WriteFloat(float f)
 {
     Com_Error(ERR_DROP, "PF_WriteFloat not implemented");
 }
 
-static qboolean PF_inVIS(const vec3_t p1, const vec3_t p2, int vis)
+static qboolean PF_inVIS(const vec3_t p1, const vec3_t p2, vis_t vis)
 {
     mleaf_t *leaf1, *leaf2;
     byte mask[VIS_MAX_BYTES];
 
     leaf1 = CM_PointLeaf(&sv.cm, p1);
-    BSP_ClusterVis(sv.cm.cache, mask, leaf1->cluster, vis);
+    BSP_ClusterVis(sv.cm.cache, mask, leaf1->cluster, vis & VIS_PHS);
 
     leaf2 = CM_PointLeaf(&sv.cm, p2);
     if (leaf2->cluster == -1)
         return false;
     if (!Q_IsBitSet(mask, leaf2->cluster))
         return false;
-    if (!CM_AreasConnected(&sv.cm, leaf1->area, leaf2->area))
+    if (!(vis & VIS_NOAREAS) && !CM_AreasConnected(&sv.cm, leaf1->area, leaf2->area))
         return false;       // a door blocks it
     return true;
 }
@@ -461,7 +469,7 @@ Also checks portalareas so that doors block sight
 */
 static qboolean PF_inPVS(const vec3_t p1, const vec3_t p2)
 {
-    return PF_inVIS(p1, p2, DVIS_PVS);
+    return PF_inVIS(p1, p2, VIS_PVS);
 }
 
 /*
@@ -473,7 +481,7 @@ Also checks portalareas so that doors block sound
 */
 static qboolean PF_inPHS(const vec3_t p1, const vec3_t p2)
 {
-    return PF_inVIS(p1, p2, DVIS_PHS);
+    return PF_inVIS(p1, p2, VIS_PHS);
 }
 
 /*
@@ -676,6 +684,30 @@ static void PF_StartSound(edict_t *entity, int channel,
     SV_StartSound(NULL, entity, channel, soundindex, volume, attenuation, timeofs);
 }
 
+// TODO: support origin/entity/volume/attenuation/timeofs
+static void PF_LocalSound(edict_t *target, const vec3_t origin,
+                          edict_t *entity, int channel,
+                          int soundindex, float volume,
+                          float attenuation, float timeofs)
+{
+    int entnum = NUM_FOR_EDICT(target);
+    int sendchan = (entnum << 3) | (channel & 7);
+    int flags = SND_ENT;
+
+    if (svs.csr.extended && soundindex > 255)
+        flags |= SND_INDEX16;
+
+    MSG_WriteByte(svc_sound);
+    MSG_WriteByte(flags);
+    if (flags & SND_INDEX16)
+        MSG_WriteShort(soundindex);
+    else
+        MSG_WriteByte(soundindex);
+    MSG_WriteShort(sendchan);
+
+    PF_Unicast(target, !!(channel & CHAN_RELIABLE));
+}
+
 void PF_Pmove(pmove_t *pm)
 {
     if (sv_client) {
@@ -807,9 +839,7 @@ static const game_import_t game_import = {
     .AreasConnected = PF_AreasConnected,
 };
 
-static const game_import_ex_t game_import_ex = {
-    .apiversion = GAME_API_VERSION_EX,
-
+static const filesystem_api_v1_t filesystem_api_v1 = {
     .OpenFile = FS_OpenFile,
     .CloseFile = FS_CloseFile,
     .LoadFile = PF_LoadFile,
@@ -825,6 +855,27 @@ static const game_import_ex_t game_import_ex = {
     .FreeFileList = FS_FreeList,
 
     .ErrorString = Q_ErrorString,
+};
+
+static void *PF_GetExtension(const char *name)
+{
+    if (!name)
+        return NULL;
+    if (!strcmp(name, "FILESYSTEM_API_V1"))
+        return (void *)&filesystem_api_v1;
+    return NULL;
+}
+
+static const game_import_ex_t game_import_ex = {
+    .apiversion = GAME_API_VERSION_EX,
+    .structsize = sizeof(game_import_ex),
+
+    .local_sound = PF_LocalSound,
+    .get_configstring = PF_GetConfigstring,
+    .clip = SV_Clip,
+    .inVIS = PF_inVIS,
+
+    .GetExtension = PF_GetExtension,
     .TagRealloc = PF_TagRealloc,
 };
 
@@ -939,7 +990,7 @@ void SV_InitGameProgs(void)
     }
 
     // get extended api if present
-    game_entry_ex_t entry_ex = Sys_GetProcAddress(game_library, "GetExtendedGameAPI");
+    game_entry_ex_t entry_ex = Sys_GetProcAddress(game_library, "GetGameAPIEx");
     if (entry_ex)
         gex = entry_ex(&game_import_ex);
 

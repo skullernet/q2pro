@@ -1709,6 +1709,11 @@ static void SV_PrepWorldFrame(void)
     }
 #endif
 
+    if (gex && gex->PrepFrame) {
+        gex->PrepFrame();
+        return;
+    }
+
     if (!SV_FRAMESYNC)
         return;
 
