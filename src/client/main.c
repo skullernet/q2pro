@@ -2272,6 +2272,11 @@ static size_t CL_WeaponModel_m(char *buffer, size_t size)
     return Q_strlcpy(buffer, cl.configstrings[i], size);
 }
 
+static size_t CL_NumEntities_m(char *buffer, size_t size)
+{
+    return Q_scnprintf(buffer, size, "%i", cl.frame.numEntities);
+}
+
 /*
 ===============
 CL_WriteConfig
@@ -2838,6 +2843,7 @@ static void CL_InitLocal(void)
     Cmd_AddMacro("cl_ammo", CL_Ammo_m);
     Cmd_AddMacro("cl_armor", CL_Armor_m);
     Cmd_AddMacro("cl_weaponmodel", CL_WeaponModel_m);
+    Cmd_AddMacro("cl_numentities", CL_NumEntities_m);
 }
 
 /*
