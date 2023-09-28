@@ -45,6 +45,7 @@ static inline void
 entity_update_new(centity_t *ent, const centity_state_t *state, const vec_t *origin)
 {
     ent->trailcount = 1024;     // for diminishing rocket / grenade trails
+    ent->flashlightfrac = 1.0f;
 
     // duplicate the current state so lerping doesn't hurt anything
     ent->prev = *state;
@@ -94,6 +95,7 @@ entity_update_old(centity_t *ent, const centity_state_t *state, const vec_t *ori
         || cl_nolerp->integer == 1) {
         // some data changes will force no lerping
         ent->trailcount = 1024;     // for diminishing rocket / grenade trails
+        ent->flashlightfrac = 1.0f;
 
         // duplicate the current state so lerping doesn't hurt anything
         ent->prev = *state;
@@ -724,14 +726,24 @@ static void CL_AddPacketEntities(void)
         }
 
         if (s1->morefx & EFX_FLASHLIGHT) {
-            vec3_t forward, start;
+            vec3_t forward, start, end;
+            trace_t trace;
+
             if (s1->number == cl.frame.clientNum + 1) {
-                VectorMA(cl.refdef.vieworg, 256, cl.v_forward, start);
+                VectorMA(cl.refdef.vieworg, 256, cl.v_forward, end);
+                VectorCopy(cl.refdef.vieworg, start);
             } else {
                 AngleVectors(ent.angles, forward, NULL, NULL);
-                VectorMA(ent.origin, 256, forward, start);
+                VectorMA(ent.origin, 256, forward, end);
+                VectorCopy(ent.origin, start);
             }
-            V_AddLight(start, 256, 1, 1, 1);
+
+            CL_Trace(&trace, start, vec3_origin, vec3_origin, end, CONTENTS_SOLID | CONTENTS_MONSTER);
+            LerpVector(start, end, cent->flashlightfrac, end);
+            V_AddLight(end, 256, 1, 1, 1);
+
+            // smooth out distance "jumps"
+            CL_AdvanceValue(&cent->flashlightfrac, trace.fraction, 1);
         }
 
         if (s1->morefx & EFX_GRENADE_LIGHT)

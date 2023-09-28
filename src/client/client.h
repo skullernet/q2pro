@@ -91,6 +91,8 @@ typedef struct centity_s {
 #endif
 
     int             fly_stoptime;
+
+    float           flashlightfrac;
 } centity_t;
 
 extern centity_t    cl_entities[MAX_EDICTS];
