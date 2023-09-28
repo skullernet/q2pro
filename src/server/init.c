@@ -88,6 +88,16 @@ static void resolve_masters(void)
 #endif
 }
 
+/*
+================
+SV_SetState
+================
+*/
+void SV_SetState(server_state_t state)
+{
+    sv.state = state;
+    Cvar_SetInteger(sv_running, state, FROM_CODE);
+}
 
 /*
 ================
@@ -173,7 +183,7 @@ void SV_SpawnServer(const mapcmd_t *cmd)
 
     // precache and static commands can be issued during
     // map initialization
-    sv.state = ss_loading;
+    SV_SetState(ss_loading);
 
     // load and spawn all other entities
     ge->SpawnEntities(sv.name, sv.cm.entitystring, cmd->spawnpoint);
@@ -189,7 +199,7 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     SV_CheckForSavegame(cmd);
 
     // all precaches are complete
-    sv.state = cmd->state;
+    SV_SetState(cmd->state);
 
     // respawn dummy MVD client, set base states, etc
     SV_MvdMapChanged();
@@ -199,7 +209,6 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     SV_InfoSet("port", net_port->string);
     SV_InfoSet("protocol", svs.csr.extended ? "36" : "34");
 
-    Cvar_SetInteger(sv_running, sv.state, FROM_CODE);
     Cvar_Set("sv_paused", "0");
     Cvar_Set("timedemo", "0");
 

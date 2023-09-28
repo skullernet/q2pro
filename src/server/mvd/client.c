@@ -1680,7 +1680,8 @@ OPERATOR COMMANDS
 
 void MVD_Spawn(void)
 {
-    Cvar_SetInteger(sv_running, ss_broadcast, FROM_CODE);
+    SV_SetState(ss_broadcast);
+
     Cvar_Set("sv_paused", "0");
     Cvar_Set("timedemo", "0");
     SV_InfoSet("port", net_port->string);
@@ -1702,8 +1703,6 @@ void MVD_Spawn(void)
 
     // set externally visible server name
     Q_strlcpy(sv.name, mvd_waitingRoom.mapname, sizeof(sv.name));
-
-    sv.state = ss_broadcast;
 
     // start as inactive
     mvd_last_activity = INT_MIN;
