@@ -1684,6 +1684,7 @@ void MVD_Spawn(void)
     Cvar_Set("sv_paused", "0");
     Cvar_Set("timedemo", "0");
     SV_InfoSet("port", net_port->string);
+    SV_InfoSet("protocol", "34");
 
 #if USE_SYSCON
     SV_SetConsoleTitle();
