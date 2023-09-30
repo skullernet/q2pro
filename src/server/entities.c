@@ -92,9 +92,6 @@ static void SV_EmitPacketEntities(client_t         *client,
                 VectorCopy(oldent->origin, newent->origin);
                 VectorCopy(oldent->angles, newent->angles);
             }
-            if (Q2PRO_SHORTANGLES(client, newnum)) {
-                flags |= MSG_ES_SHORTANGLES;
-            }
             MSG_WriteDeltaEntity(oldent, newent, flags);
             oldindex++;
             newindex++;
@@ -114,9 +111,6 @@ static void SV_EmitPacketEntities(client_t         *client,
                 flags |= MSG_ES_FIRSTPERSON;
                 VectorCopy(oldent->origin, newent->origin);
                 VectorCopy(oldent->angles, newent->angles);
-            }
-            if (Q2PRO_SHORTANGLES(client, newnum)) {
-                flags |= MSG_ES_SHORTANGLES;
             }
             MSG_WriteDeltaEntity(oldent, newent, flags);
             newindex++;

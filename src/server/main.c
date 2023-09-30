@@ -1002,6 +1002,9 @@ static void init_pmove_and_es_flags(client_t *newcl)
         if (newcl->version >= PROTOCOL_VERSION_Q2PRO_BEAM_ORIGIN) {
             newcl->esFlags |= MSG_ES_BEAMORIGIN;
         }
+        if (newcl->version >= PROTOCOL_VERSION_Q2PRO_SHORT_ANGLES && sv.state == ss_game) {
+            newcl->esFlags |= MSG_ES_SHORTANGLES;
+        }
         if (svs.csr.extended) {
             newcl->esFlags |= MSG_ES_EXTENSIONS;
         }

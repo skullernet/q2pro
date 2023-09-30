@@ -128,13 +128,7 @@ static void write_configstrings(void)
 
 static void write_baseline(entity_packed_t *base)
 {
-    msgEsFlags_t flags = sv_client->esFlags | MSG_ES_FORCE;
-
-    if (Q2PRO_SHORTANGLES(sv_client, base->number)) {
-        flags |= MSG_ES_SHORTANGLES;
-    }
-
-    MSG_WriteDeltaEntity(NULL, base, flags);
+    MSG_WriteDeltaEntity(NULL, base, sv_client->esFlags | MSG_ES_FORCE);
 }
 
 static void write_baselines(void)

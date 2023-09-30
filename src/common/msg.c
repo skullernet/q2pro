@@ -543,7 +543,7 @@ void MSG_WriteDeltaEntity(const entity_packed_t *from,
         if (to->origin[2] != from->origin[2])
             bits |= U_ORIGIN3;
 
-        if (flags & MSG_ES_SHORTANGLES) {
+        if (flags & MSG_ES_SHORTANGLES && to->solid == PACKED_BSP) {
             if (to->angles[0] != from->angles[0])
                 bits |= U_ANGLE1 | U_ANGLE16;
             if (to->angles[1] != from->angles[1])
