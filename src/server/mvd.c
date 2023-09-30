@@ -2119,7 +2119,7 @@ void SV_MvdPostInit(void)
         mvd.psFlags |= MSG_PS_IGNORE_GUNINDEX | MSG_PS_IGNORE_GUNFRAMES;
     }
     if (svs.csr.extended) {
-        mvd.esFlags |= MSG_ES_EXTENSIONS;
+        mvd.esFlags |= MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS;
         mvd.psFlags |= MSG_PS_EXTENSIONS;
     }
 }

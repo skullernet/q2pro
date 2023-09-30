@@ -785,9 +785,9 @@ static void MVD_SetServerState(client_t *cl, mvd_t *mvd)
     cl->spawncount = mvd->servercount;
     cl->maxclients = mvd->maxclients;
     if (cl->csr->extended)
-        cl->esFlags |= MSG_ES_EXTENSIONS;
+        cl->esFlags |= MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS;
     else
-        cl->esFlags &= ~MSG_ES_EXTENSIONS;
+        cl->esFlags &= ~(MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS);
 }
 
 void MVD_SwitchChannel(mvd_client_t *client, mvd_t *mvd)
