@@ -73,6 +73,18 @@ fail:
     return false;
 }
 
+void CL_PackEntity(entity_packed_t *out, const centity_state_t *in)
+{
+    MSG_PackEntity(out, &in->s, cl.csr.extended ? &in->x : NULL);
+
+    // repack solid 32 to 16
+    if (!cl.csr.extended && cl.esFlags & MSG_ES_LONGSOLID && in->solid && in->solid != PACKED_BSP) {
+        vec3_t mins, maxs;
+        MSG_UnpackSolid32_Ver1(in->solid, mins, maxs);
+        out->solid = MSG_PackSolid16(mins, maxs);
+    }
+}
+
 // writes a delta update of an entity_state_t list to the message.
 static void emit_packet_entities(server_frame_t *from, server_frame_t *to)
 {

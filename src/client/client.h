@@ -70,8 +70,6 @@ typedef union {
     };
 } centity_state_t;
 
-#define CL_PackEntity(out, in)  MSG_PackEntity(out, &(in)->s, &(in)->x)
-
 typedef struct centity_s {
     centity_state_t     current;
     centity_state_t     prev;           // will always be valid, but might just be a copy of current
@@ -891,6 +889,7 @@ void CL_InitDemos(void);
 void CL_CleanupDemos(void);
 void CL_DemoFrame(int msec);
 bool CL_WriteDemoMessage(sizebuf_t *buf);
+void CL_PackEntity(entity_packed_t *out, const centity_state_t *in);
 void CL_EmitDemoFrame(void);
 void CL_EmitDemoSnapshot(void);
 void CL_FreeDemoSnapshots(void);
