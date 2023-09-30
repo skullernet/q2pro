@@ -586,6 +586,8 @@ static void build_gamestate(void)
 
         ent->s.number = i;
         MSG_PackEntity(&mvd.entities[i], &ent->s, ENT_EXTENSION(&svs.csr, ent));
+        if (svs.csr.extended)
+            mvd.entities[i].solid = sv.entities[i].solid32;
     }
 }
 
@@ -798,6 +800,8 @@ static void emit_frame(void)
 
         // quantize
         MSG_PackEntity(&newes, &ent->s, ENT_EXTENSION(&svs.csr, ent));
+        if (svs.csr.extended)
+            newes.solid = sv.entities[i].solid32;
 
         MSG_WriteDeltaEntity(oldes, &newes, flags);
 
@@ -2119,7 +2123,7 @@ void SV_MvdPostInit(void)
         mvd.psFlags |= MSG_PS_IGNORE_GUNINDEX | MSG_PS_IGNORE_GUNFRAMES;
     }
     if (svs.csr.extended) {
-        mvd.esFlags |= MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS;
+        mvd.esFlags |= MSG_ES_LONGSOLID | MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS;
         mvd.psFlags |= MSG_PS_EXTENSIONS;
     }
 }

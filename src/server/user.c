@@ -79,7 +79,7 @@ static void SV_CreateBaselines(void)
 #if USE_MVD_CLIENT
         if (sv.state == ss_broadcast) {
             // spectators only need to know about inline BSP models
-            if (base->solid != PACKED_BSP)
+            if (!sv_client->csr->extended && base->solid != PACKED_BSP)
                 base->solid = 0;
         } else
 #endif

@@ -1707,7 +1707,10 @@ void MVD_LinkEdict(mvd_t *mvd, edict_t *ent)
         VectorCopy(cm->maxs, ent->maxs);
         ent->solid = SOLID_BSP;
     } else if (ent->s.solid) {
-        MSG_UnpackSolid16(ent->s.solid, ent->mins, ent->maxs);
+        if (mvd->csr->extended)
+            MSG_UnpackSolid32_Ver2(ent->s.solid, ent->mins, ent->maxs);
+        else
+            MSG_UnpackSolid16(ent->s.solid, ent->mins, ent->maxs);
         ent->solid = SOLID_BBOX;
     } else {
         VectorClear(ent->mins);

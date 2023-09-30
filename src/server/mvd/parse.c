@@ -924,7 +924,7 @@ static void MVD_ParseServerData(mvd_t *mvd, int extrabits)
     mvd->csr = &cs_remap_old;
 
     if (mvd->version >= PROTOCOL_VERSION_MVD_EXTENDED_LIMITS && mvd->flags & MVF_EXTLIMITS) {
-        mvd->esFlags |= MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS;
+        mvd->esFlags |= MSG_ES_LONGSOLID | MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS;
         mvd->psFlags |= MSG_PS_EXTENSIONS;
         mvd->csr = &cs_remap_new;
     }
