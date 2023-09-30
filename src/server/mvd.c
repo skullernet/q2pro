@@ -2113,7 +2113,7 @@ void SV_MvdPostInit(void)
     mvd.entities = SV_Malloc(sizeof(mvd.entities[0]) * svs.csr.max_edicts);
 
     // setup protocol flags
-    mvd.esFlags = MSG_ES_UMASK;
+    mvd.esFlags = MSG_ES_UMASK | MSG_ES_BEAMORIGIN;
     mvd.psFlags = 0;
 
     if (sv_mvd_noblend->integer) {

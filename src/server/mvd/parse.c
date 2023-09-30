@@ -919,7 +919,7 @@ static void MVD_ParseServerData(mvd_t *mvd, int extrabits)
     }
     mvd->clientNum = MSG_ReadShort();
     mvd->flags = extrabits;
-    mvd->esFlags = MSG_ES_UMASK;
+    mvd->esFlags = MSG_ES_UMASK | MSG_ES_BEAMORIGIN;
     mvd->psFlags = 0;
     mvd->csr = &cs_remap_old;
 
