@@ -81,6 +81,14 @@ static int write_level_file(void)
     char        *s;
     size_t      len;
     byte        portalbits[MAX_MAP_PORTAL_BYTES];
+    qhandle_t   f;
+
+    if (Q_snprintf(name, MAX_QPATH, "save/" SAVE_CURRENT "/%s.sv2", sv.name) >= MAX_QPATH)
+        return -1;
+
+    FS_OpenFile(name, &f, FS_MODE_WRITE);
+    if (!f)
+        return -1;
 
     // write magic
     MSG_WriteLong(SAVE_MAGIC2);
@@ -96,6 +104,11 @@ static int write_level_file(void)
         MSG_WriteShort(i);
         MSG_WriteData(s, len);
         MSG_WriteByte(0);
+
+        if (msg_write.cursize > msg_write.maxsize / 2) {
+            FS_Write(msg_write.data, msg_write.cursize, f);
+            SZ_Clear(&msg_write);
+        }
     }
     MSG_WriteShort(i);
 
@@ -103,13 +116,10 @@ static int write_level_file(void)
     MSG_WriteByte(len);
     MSG_WriteData(portalbits, len);
 
-    if (Q_snprintf(name, MAX_QPATH, "save/" SAVE_CURRENT "/%s.sv2", sv.name) >= MAX_QPATH)
-        ret = -1;
-    else
-        ret = FS_WriteFile(name, msg_write.data, msg_write.cursize);
-
+    FS_Write(msg_write.data, msg_write.cursize, f);
     SZ_Clear(&msg_write);
 
+    ret = FS_CloseFile(f);
     if (ret < 0)
         return -1;
 
@@ -375,20 +385,30 @@ static int read_level_file(void)
     char    name[MAX_OSPATH];
     size_t  len, maxlen;
     int     index;
+    void    *data;
 
     if (Q_snprintf(name, MAX_QPATH, "save/" SAVE_CURRENT "/%s.sv2", sv.name) >= MAX_QPATH)
         return -1;
 
-    if (read_binary_file(name))
+    len = FS_LoadFileEx(name, &data, FS_TYPE_REAL | FS_PATH_GAME, TAG_SERVER);
+    if (!data)
         return -1;
 
-    if (MSG_ReadLong() != SAVE_MAGIC2)
-        return -1;
+    SZ_Init(&msg_read, data, len);
+    msg_read.cursize = len;
 
-    if (MSG_ReadLong() != SAVE_VERSION)
+    if (MSG_ReadLong() != SAVE_MAGIC2) {
+        FS_FreeFile(data);
         return -1;
+    }
+
+    if (MSG_ReadLong() != SAVE_VERSION) {
+        FS_FreeFile(data);
+        return -1;
+    }
 
     // any error will drop from this point
+    Com_AbortFunc(Z_Free, data);
 
     // the rest can't underflow
     msg_read.allowunderflow = false;
@@ -411,6 +431,9 @@ static int read_level_file(void)
 
     len = MSG_ReadByte();
     CM_SetPortalStates(&sv.cm, MSG_ReadData(len), len);
+
+    Com_AbortFunc(NULL, NULL);
+    FS_FreeFile(data);
 
     // read game level
     if (Q_snprintf(name, MAX_OSPATH, "%s/save/" SAVE_CURRENT "/%s.sav", fs_gamedir, sv.name) >= MAX_OSPATH)
