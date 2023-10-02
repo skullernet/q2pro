@@ -496,6 +496,9 @@ void SV_BuildClientFrame(client_t *client)
             continue;
         }
 
+        if (client->csr->extended && ent->s.renderfx & RF_FLARE && client->settings[CLS_NOFLARES])
+            continue;
+
         // ignore if not touching a PV leaf
         if (ent != clent && !sv_novis->integer && !(client->csr->extended && ent->svflags & SVF_NOCULL)) {
             // check area

@@ -377,6 +377,7 @@ typedef enum {
     CLS_NOGIBS            = 10,
     CLS_NOFOOTSTEPS,
     CLS_NOPREDICT,
+    CLS_NOFLARES,
 
     CLS_MAX
 } clientSetting_t;

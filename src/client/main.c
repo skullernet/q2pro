@@ -280,6 +280,21 @@ void CL_UpdateRecordingSetting(void)
     MSG_FlushTo(&cls.netchan.message);
 }
 
+static void CL_UpdateFlaresSetting(void)
+{
+    if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO) {
+        return;
+    }
+    if (!cl.csr.extended) {
+        return;
+    }
+
+    MSG_WriteByte(clc_setting);
+    MSG_WriteShort(CLS_NOFLARES);
+    MSG_WriteShort(!cl_flares->integer);
+    MSG_FlushTo(&cls.netchan.message);
+}
+
 /*
 ===================
 CL_ClientCommand
@@ -1688,6 +1703,7 @@ void CL_Begin(void)
     CL_UpdateFootstepsSetting();
     CL_UpdatePredictSetting();
     CL_UpdateRecordingSetting();
+    CL_UpdateFlaresSetting();
 }
 
 /*
@@ -2568,6 +2584,11 @@ static void cl_updaterate_changed(cvar_t *self)
 }
 #endif
 
+static void cl_flares_changed(cvar_t *self)
+{
+    CL_UpdateFlaresSetting();
+}
+
 static inline int fps_to_msec(int fps)
 {
 #if 0
@@ -2779,6 +2800,7 @@ static void CL_InitLocal(void)
     cl_gibs->changed = cl_gibs_changed;
 
     cl_flares = Cvar_Get("cl_flares", "1", 0);
+    cl_flares->changed = cl_flares_changed;
 
 #if USE_FPS
     cl_updaterate = Cvar_Get("cl_updaterate", "0", 0);
