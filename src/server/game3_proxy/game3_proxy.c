@@ -156,6 +156,16 @@ static void wrap_setmodel(game3_edict_t *gent, const char *name)
     sync_single_edict_server_to_game(ent_idx);
 }
 
+static qboolean wrap_inPVS(const vec3_t p1, const vec3_t p2)
+{
+    return game_import.inPVS(p1, p2, true);
+}
+
+static qboolean wrap_inPHS(const vec3_t p1, const vec3_t p2)
+{
+    return game_import.inPHS(p1, p2, true);
+}
+
 static void wrap_sound(game3_edict_t *gent, int channel,
                        int soundindex, float volume,
                        float attenuation, float timeofs)
@@ -234,7 +244,14 @@ static trace_t wrap_clip(const vec3_t start, const vec3_t mins, const vec3_t max
 
 static qboolean wrap_inVIS(const vec3_t p1, const vec3_t p2, vis_t vis)
 {
-    return game_import_ex->inVIS(p1, p2, vis);
+    switch(vis & ~VIS_NOAREAS)
+    {
+    case VIS_PVS:
+        return game_import.inPVS(p1, p2, (vis & VIS_NOAREAS) == 0);
+    case VIS_PHS:
+        return game_import.inPHS(p1, p2, (vis & VIS_NOAREAS) == 0);
+    }
+    return false;
 }
 
 static void *wrap_GetExtension(const char *name)
@@ -550,8 +567,8 @@ game_export_t *GetGame3Proxy(game_import_t *import, const game_import_ex_t *impo
     import3.trace = wrap_trace;
     import3.pointcontents = import->pointcontents;
     import3.setmodel = wrap_setmodel;
-    import3.inPVS = import->inPVS;
-    import3.inPHS = import->inPHS;
+    import3.inPVS = wrap_inPVS;
+    import3.inPHS = wrap_inPHS;
     import3.Pmove = import->Pmove;
 
     import3.modelindex = import->modelindex;

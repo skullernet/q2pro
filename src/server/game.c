@@ -398,6 +398,12 @@ static void PF_WriteFloat(float f)
     Com_Error(ERR_DROP, "PF_WriteFloat not implemented");
 }
 
+typedef enum {
+    VIS_PVS     = 0,
+    VIS_PHS     = 1,
+    VIS_NOAREAS = 2     // can be OR'ed with one of above
+} vis_t;
+
 static qboolean PF_inVIS(const vec3_t p1, const vec3_t p2, vis_t vis)
 {
     mleaf_t *leaf1, *leaf2;
@@ -416,6 +422,7 @@ static qboolean PF_inVIS(const vec3_t p1, const vec3_t p2, vis_t vis)
     return true;
 }
 
+
 /*
 =================
 PF_inPVS
@@ -423,9 +430,9 @@ PF_inPVS
 Also checks portalareas so that doors block sight
 =================
 */
-static qboolean PF_inPVS(const vec3_t p1, const vec3_t p2)
+static qboolean PF_inPVS(const vec3_t p1, const vec3_t p2, bool portals)
 {
-    return PF_inVIS(p1, p2, VIS_PVS);
+    return PF_inVIS(p1, p2, VIS_PVS | (portals ? 0 : VIS_NOAREAS));
 }
 
 /*
@@ -435,9 +442,9 @@ PF_inPHS
 Also checks portalareas so that doors block sound
 =================
 */
-static qboolean PF_inPHS(const vec3_t p1, const vec3_t p2)
+static qboolean PF_inPHS(const vec3_t p1, const vec3_t p2, bool portals)
 {
-    return PF_inVIS(p1, p2, VIS_PHS);
+    return PF_inVIS(p1, p2, VIS_PHS | (portals ? 0 : VIS_NOAREAS));
 }
 
 /*
@@ -832,8 +839,6 @@ static void *PF_GetExtension(const char *name)
 static const game_import_ex_t game_import_ex = {
     .apiversion = GAME_API_VERSION_EX,
     .structsize = sizeof(game_import_ex),
-
-    .inVIS = PF_inVIS,
 
     .TagRealloc = PF_TagRealloc,
 };

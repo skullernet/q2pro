@@ -477,7 +477,7 @@ bool FindTarget(edict_t *self)
             if (!visible(self, client))
                 return false;
         } else {
-            if (!gi.inPHS(self->s.origin, client->s.origin))
+            if (!gi.inPHS(self->s.origin, client->s.origin, true))
                 return false;
         }
 

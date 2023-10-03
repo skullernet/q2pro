@@ -215,6 +215,12 @@ typedef struct {
 
 #define GAME3_API_VERSION_EX     1
 
+typedef enum {
+    VIS_PVS     = 0,
+    VIS_PHS     = 1,
+    VIS_NOAREAS = 2     // can be OR'ed with one of above
+} vis_t;
+
 typedef struct {
     uint32_t    apiversion;
     uint32_t    structsize;
