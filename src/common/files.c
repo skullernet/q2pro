@@ -3454,11 +3454,36 @@ static void free_game_paths(void)
     fs_searchpaths = fs_base_searchpaths;
 }
 
+// game needs this for localized map messages
+static void add_game_kpf(const char *dir)
+{
+#if USE_ZLIB
+    char path[MAX_OSPATH];
+    pack_t *pack;
+    searchpath_t *search;
+
+    if (Q_snprintf(path, sizeof(path), "%s/Q2Game.kpf", dir) >= sizeof(path))
+        return;
+
+    pack = load_zip_file(path);
+    if (!pack)
+        return;
+
+    search = FS_Malloc(sizeof(*search));
+    search->mode = FS_PATH_BASE | FS_PATH_GAME;
+    search->filename[0] = 0;
+    search->pack = pack_get(pack);
+    search->next = fs_searchpaths;
+    fs_searchpaths = search;
+#endif
+}
+
 static void setup_base_paths(void)
 {
     // base paths have both BASE and GAME bits set by default
     // the GAME bit will be removed once gamedir is set,
     // and will be put back once gamedir is reset to basegame
+    add_game_kpf(sys_basedir->string);
     add_game_dir(FS_PATH_BASE | FS_PATH_GAME, "%s/"BASEGAME, sys_basedir->string);
 
     if (sys_homedir->string[0]) {
