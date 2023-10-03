@@ -229,7 +229,7 @@ static const char *wrap_get_configstring(int index)
 
 static trace_t wrap_clip(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, game3_edict_t *clip, int contentmask)
 {
-    return game_import_ex->clip(start, mins, maxs, end, translate_edict_from_game(clip), contentmask);
+    return game_import.clip(translate_edict_from_game(clip), start, mins, maxs, end, contentmask);
 }
 
 static qboolean wrap_inVIS(const vec3_t p1, const vec3_t p2, vis_t vis)

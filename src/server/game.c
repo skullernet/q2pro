@@ -281,6 +281,11 @@ static q_noreturn void PF_error(const char *msg)
     Com_Error(ERR_DROP, "Game Error: %s", msg);
 }
 
+static trace_t PF_Clip(edict_t *entity, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int contentmask)
+{
+    return SV_Clip(start, mins, maxs, end, entity, contentmask);
+}
+
 /*
 =================
 PF_setmodel
@@ -749,6 +754,7 @@ static const game_import_t game_import = {
     .unlinkentity = PF_UnlinkEdict,
     .BoxEdicts = SV_AreaEdicts,
     .trace = SV_Trace,
+    .clip = PF_Clip,
     .pointcontents = SV_PointContents,
     .setmodel = PF_setmodel,
     .inPVS = PF_inPVS,
@@ -824,7 +830,6 @@ static const game_import_ex_t game_import_ex = {
     .apiversion = GAME_API_VERSION_EX,
     .structsize = sizeof(game_import_ex),
 
-    .clip = SV_Clip,
     .inVIS = PF_inVIS,
 
     .GetExtension = PF_GetExtension,

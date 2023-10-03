@@ -156,6 +156,7 @@ typedef struct {
 
     // collision detection
     trace_t (* q_gameabi trace)(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, edict_t *passent, int contentmask);
+    trace_t (* q_gameabi clip)(edict_t *entity, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int contentmask);
     int (*pointcontents)(const vec3_t point);
     qboolean (*inPVS)(const vec3_t p1, const vec3_t p2);
     qboolean (*inPHS)(const vec3_t p1, const vec3_t p2);
@@ -290,7 +291,6 @@ typedef struct {
     uint32_t    apiversion;
     uint32_t    structsize;
 
-    trace_t     (*q_gameabi clip)(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, edict_t *clip, int contentmask);
     qboolean    (*inVIS)(const vec3_t p1, const vec3_t p2, vis_t vis);
 
     void        *(*GetExtension)(const char *name);
