@@ -44,8 +44,11 @@ static int          sv_numareanodes;
 
 static const vec_t  *area_mins, *area_maxs;
 static edict_t      **area_list;
-static int          area_count, area_maxcount;
+static size_t       area_count, area_maxcount;
 static int          area_type;
+static BoxEdictsFilter_t area_filter;
+static void         *area_filter_data;
+static bool         area_bail;
 
 /*
 ===============
@@ -379,6 +382,9 @@ static void SV_AreaEdicts_r(areanode_t *node)
     list_t      *start;
     server_entity_t *sent;
 
+    if (area_bail)
+        return;
+
     // touch linked edicts
     if (area_type == AREA_SOLID)
         start = &node->solid_edicts;
@@ -397,13 +403,22 @@ static void SV_AreaEdicts_r(areanode_t *node)
             || check->absmax[2] < area_mins[2])
             continue;        // not touching
 
-        if (area_count == area_maxcount) {
+        if (area_maxcount > 0 && area_count == area_maxcount) {
             Com_WPrintf("SV_AreaEdicts: MAXCOUNT\n");
             return;
         }
 
-        area_list[area_count] = check;
-        area_count++;
+        BoxEdictsResult_t filter_result = area_filter ? area_filter(check, area_filter_data) : BoxEdictsResult_Keep;
+
+        if ((filter_result & ~BoxEdictsResult_End) == BoxEdictsResult_Keep) {
+            if (area_list)
+                area_list[area_count] = check;
+            area_count++;
+        }
+        if ((filter_result & BoxEdictsResult_End) != 0) {
+            area_bail = true;
+            return;
+        }
     }
 
     if (node->axis == -1)
@@ -421,8 +436,9 @@ static void SV_AreaEdicts_r(areanode_t *node)
 SV_AreaEdicts
 ================
 */
-int SV_AreaEdicts(const vec3_t mins, const vec3_t maxs,
-                  edict_t **list, int maxcount, int areatype)
+size_t SV_AreaEdicts(const vec3_t mins, const vec3_t maxs,
+                     edict_t **list, size_t maxcount, int areatype,
+                     BoxEdictsFilter_t filter, void *filter_data)
 {
     area_mins = mins;
     area_maxs = maxs;
@@ -430,6 +446,9 @@ int SV_AreaEdicts(const vec3_t mins, const vec3_t maxs,
     area_count = 0;
     area_maxcount = maxcount;
     area_type = areatype;
+    area_filter = filter;
+    area_filter_data = filter_data;
+    area_bail = false;
 
     SV_AreaEdicts_r(sv_areanodes);
 
@@ -494,7 +513,7 @@ int SV_PointContents(const vec3_t p)
     contents = CM_PointContents(p, SV_WorldNodes());
 
     // or in contents from all the other entities
-    num = SV_AreaEdicts(p, p, touch, q_countof(touch), AREA_SOLID);
+    num = SV_AreaEdicts(p, p, touch, q_countof(touch), AREA_SOLID, NULL, NULL);
 
     for (i = 0; i < num; i++) {
         hit = touch[i];
@@ -533,7 +552,7 @@ static void SV_ClipMoveToEntities(const vec3_t start, const vec3_t mins,
         }
     }
 
-    num = SV_AreaEdicts(boxmins, boxmaxs, touchlist, MAX_EDICTS, AREA_SOLID);
+    num = SV_AreaEdicts(boxmins, boxmaxs, touchlist, MAX_EDICTS, AREA_SOLID, NULL, NULL);
 
     // be careful, it is possible to have an entity in this
     // list removed before we get to it (killtriggered)

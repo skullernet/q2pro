@@ -121,6 +121,16 @@ struct edict_s {
 
 //===============================================================
 
+typedef enum BoxEdictsResult_e
+{
+    BoxEdictsResult_Keep, // keep the given entity in the result and keep looping
+    BoxEdictsResult_Skip, // skip the given entity
+
+    BoxEdictsResult_End = 64, // stop searching any further
+} BoxEdictsResult_t;
+
+typedef BoxEdictsResult_t (*BoxEdictsFilter_t)(edict_t *, void *);
+
 //
 // functions provided by the main engine
 //

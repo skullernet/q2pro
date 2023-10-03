@@ -203,11 +203,11 @@ static void wrap_linkentity(game3_edict_t *ent)
 static int wrap_BoxEdicts(const vec3_t mins, const vec3_t maxs, game3_edict_t **glist, int maxcount, int areatype)
 {
     edict_t **list = alloca(maxcount * sizeof(edict_t *));
-    int num_edicts = game_import.BoxEdicts(mins, maxs, list, maxcount, areatype);
-    for (int i = 0; i < num_edicts; i++) {
+    size_t num_edicts = game_import.BoxEdicts(mins, maxs, list, maxcount, areatype, NULL, NULL);
+    for (size_t i = 0; i < min(num_edicts, maxcount); i++) {
         glist[i] = translate_edict_to_game(list[i]);
     }
-    return num_edicts;
+    return (int)min(num_edicts, maxcount);
 }
 
 static game3_trace_t wrap_trace(const vec3_t start, const vec3_t mins,

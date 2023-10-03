@@ -807,7 +807,7 @@ void PF_LinkEdict(edict_t *ent);
 // sets ent->leafnums[] for pvs determination even if the entity
 // is not solid
 
-int SV_AreaEdicts(const vec3_t mins, const vec3_t maxs, edict_t **list, int maxcount, int areatype);
+size_t SV_AreaEdicts(const vec3_t mins, const vec3_t maxs, edict_t **list, size_t maxcount, int areatype, BoxEdictsFilter_t filter, void *filter_data);
 // fills in a table of edict pointers with edicts that have bounding boxes
 // that intersect the given area.  It is possible for a non-axial bmodel
 // to be returned that doesn't actually intersect the area on an exact
