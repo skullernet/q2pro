@@ -1793,7 +1793,7 @@ static void fuzz_data(const char *path, byte *buf, int size)
 {
     if (fs_fuzz_factor->value <= 0)
         return;
-    if (!strcmp(path, "pics/colormap.pcx") || !strcmp(path, "pics/conchars.pcx"))
+    if (!strcmp(path, "pics/colormap.pcx") || !strncmp(path, CONST_STR_LEN("pics/conchars.")))
         return;
     if (!FS_WildCmp(fs_fuzz_filter->string, path))
         return;
