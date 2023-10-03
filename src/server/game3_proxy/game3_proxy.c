@@ -209,7 +209,7 @@ static void wrap_local_sound(game3_edict_t *target, const vec3_t origin, game3_e
 
 static const char *wrap_get_configstring(int index)
 {
-    return game_import_ex->get_configstring(index);
+    return game_import.get_configstring(index);
 }
 
 static trace_t wrap_clip(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, game3_edict_t *clip, int contentmask)

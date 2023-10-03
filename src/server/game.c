@@ -767,6 +767,7 @@ static const game_import_t game_import = {
     .imageindex = PF_ImageIndex,
 
     .configstring = PF_configstring,
+    .get_configstring = PF_GetConfigstring,
     .sound = PF_StartSound,
     .positioned_sound = SV_StartSound,
     .local_sound = PF_LocalSound,
@@ -830,7 +831,6 @@ static const game_import_ex_t game_import_ex = {
     .apiversion = GAME_API_VERSION_EX,
     .structsize = sizeof(game_import_ex),
 
-    .get_configstring = PF_GetConfigstring,
     .clip = SV_Clip,
     .inVIS = PF_inVIS,
 

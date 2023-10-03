@@ -143,6 +143,7 @@ typedef struct {
     // All of the current configstrings are sent to clients when
     // they connect, and changes are sent to all connected clients.
     void (*configstring)(int num, const char *string);
+    const char *(*get_configstring)(int num);
 
     void (* q_noreturn_ptr q_printf(1, 2) error)(const char *fmt, ...);
 
@@ -289,7 +290,6 @@ typedef struct {
     uint32_t    apiversion;
     uint32_t    structsize;
 
-    const char  *(*get_configstring)(int index);
     trace_t     (*q_gameabi clip)(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, edict_t *clip, int contentmask);
     qboolean    (*inVIS)(const vec3_t p1, const vec3_t p2, vis_t vis);
 
