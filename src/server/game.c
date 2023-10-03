@@ -276,15 +276,8 @@ PF_error
 Abort the server with a game error
 ===============
 */
-static q_noreturn void PF_error(const char *fmt, ...)
+static q_noreturn void PF_error(const char *msg)
 {
-    char        msg[MAXERRORMSG];
-    va_list     argptr;
-
-    va_start(argptr, fmt);
-    Q_vsnprintf(msg, sizeof(msg), fmt, argptr);
-    va_end(argptr);
-
     Com_Error(ERR_DROP, "Game Error: %s", msg);
 }
 
@@ -750,7 +743,7 @@ static const game_import_t game_import = {
     .Com_Print = PF_Com_Print,
     .Client_Print = PF_Client_Print,
     .Center_Print = PF_Center_Print,
-    .error = PF_error,
+    .Com_Error = PF_error,
 
     .linkentity = PF_LinkEdict,
     .unlinkentity = PF_UnlinkEdict,

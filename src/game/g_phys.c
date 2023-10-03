@@ -95,7 +95,7 @@ bool SV_RunThink(edict_t *ent)
 
     ent->nextthink = 0;
     if (!ent->think)
-        gi.error("NULL ent->think");
+        gi.Com_Error("NULL ent->think");
     ent->think(ent);
 
     return false;
@@ -535,7 +535,7 @@ void SV_Physics_Pusher(edict_t *ent)
         }
     }
     if (pushed_p > &pushed[MAX_EDICTS])
-        gi.error("pushed_p > &pushed[MAX_EDICTS], memory corrupted");
+        gi.Com_Error("pushed_p > &pushed[MAX_EDICTS], memory corrupted");
 
     if (part) {
         // the move failed, bump all nextthink times and back out moves
@@ -887,6 +887,6 @@ void G_RunEntity(edict_t *ent)
         SV_Physics_Toss(ent);
         break;
     default:
-        gi.error("SV_Physics: bad movetype %i", ent->movetype);
+        gi.Com_Error(va("SV_Physics: bad movetype %i", ent->movetype));
     }
 }

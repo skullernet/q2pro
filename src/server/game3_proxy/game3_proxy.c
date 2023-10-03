@@ -131,6 +131,21 @@ static void wrap_centerprintf(game3_edict_t *gent, const char *fmt, ...)
     game_import.Center_Print(ent, msg);
 }
 
+static q_noreturn void wrap_error(const char *fmt, ...)
+{
+    char        msg[MAX_STRING_CHARS];
+    va_list     argptr;
+    va_start(argptr, fmt);
+    size_t len = Q_vsnprintf(msg, sizeof(msg), fmt, argptr);
+    va_end(argptr);
+
+    if (len >= sizeof(msg)) {
+        Com_WPrintf("%s: overflow\n", __func__);
+    }
+    game_import.Com_Error(msg);
+}
+
+
 static void wrap_setmodel(game3_edict_t *gent, const char *name)
 {
     game_export.num_edicts = game3_export->num_edicts;
@@ -527,7 +542,7 @@ game_export_t *GetGame3Proxy(game_import_t *import, const game_import_ex_t *impo
     import3.dprintf = wrap_dprintf;
     import3.cprintf = wrap_cprintf;
     import3.centerprintf = wrap_centerprintf;
-    import3.error = import->error;
+    import3.error = wrap_error;
 
     import3.linkentity = wrap_linkentity;
     import3.unlinkentity = wrap_unlinkentity;

@@ -264,7 +264,7 @@ void Com_Error(error_type_t type, const char *fmt, ...)
     Q_vsnprintf(text, sizeof(text), fmt, argptr);
     va_end(argptr);
 
-    gi.error("%s", text);
+    gi.Com_Error(text);
 }
 #endif
 

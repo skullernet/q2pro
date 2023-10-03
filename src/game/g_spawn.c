@@ -480,15 +480,15 @@ void ED_ParseEdict(const char **data, edict_t *ent)
         if (key[0] == '}')
             break;
         if (!*data)
-            gi.error("%s: EOF without closing brace", __func__);
+            gi.Com_Error(va("%s: EOF without closing brace", __func__));
 
         // parse value
         value = COM_Parse(data);
         if (!*data)
-            gi.error("%s: EOF without closing brace", __func__);
+            gi.Com_Error(va("%s: EOF without closing brace", __func__));
 
         if (value[0] == '}')
-            gi.error("%s: closing brace without data", __func__);
+            gi.Com_Error(va("%s: closing brace without data", __func__));
 
         init = true;
 
@@ -661,7 +661,7 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
         if (!entities)
             break;
         if (com_token[0] != '{')
-            gi.error("ED_LoadFromFile: found %s when expecting {", com_token);
+            gi.Com_Error(va("ED_LoadFromFile: found %s when expecting {", com_token));
 
         if (!ent)
             ent = g_edicts;

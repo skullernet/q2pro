@@ -446,7 +446,7 @@ static void write_data(void *buf, size_t len, gzFile f)
 {
     if (gzwrite(f, buf, len) != len) {
         gzclose(f);
-        gi.error("%s: couldn't write %zu bytes", __func__, len);
+        gi.Com_Error(va("%s: couldn't write %zu bytes", __func__, len));
     }
 }
 
@@ -480,7 +480,7 @@ static void write_string(gzFile f, char *s)
     len = strlen(s);
     if (len >= 65536) {
         gzclose(f);
-        gi.error("%s: bad length", __func__);
+        gi.Com_Error(va("%s: bad length", __func__));
     }
     write_int(f, len);
     write_data(s, len, f);
@@ -505,11 +505,11 @@ static void write_index(gzFile f, void *p, size_t size, const void *start, int m
     diff = (uintptr_t)p - (uintptr_t)start;
     if (diff > max_index * size) {
         gzclose(f);
-        gi.error("%s: pointer out of range: %p", __func__, p);
+        gi.Com_Error(va("%s: pointer out of range: %p", __func__, p));
     }
     if (diff % size) {
         gzclose(f);
-        gi.error("%s: misaligned pointer: %p", __func__, p);
+        gi.Com_Error(va("%s: misaligned pointer: %p", __func__, p));
     }
     write_int(f, (int)(diff / size));
 }
@@ -532,7 +532,7 @@ static void write_pointer(gzFile f, void *p, ptr_type_t type)
     }
 
     gzclose(f);
-    gi.error("%s: unknown pointer: %p", __func__, p);
+    gi.Com_Error(va("%s: unknown pointer: %p", __func__, p));
 }
 
 static void write_field(gzFile f, const save_field_t *field, void *base)
@@ -590,7 +590,7 @@ static void write_field(gzFile f, const save_field_t *field, void *base)
         break;
 
     default:
-        gi.error("%s: unknown field type", __func__);
+        gi.Com_Error(va("%s: unknown field type", __func__));
     }
 }
 
@@ -607,7 +607,7 @@ static void read_data(void *buf, size_t len, gzFile f)
 {
     if (gzread(f, buf, len) != len) {
         gzclose(f);
-        gi.error("%s: couldn't read %zu bytes", __func__, len);
+        gi.Com_Error(va("%s: couldn't read %zu bytes", __func__, len));
     }
 }
 
@@ -653,7 +653,7 @@ static char *read_string(gzFile f)
 
     if (len < 0 || len >= 65536) {
         gzclose(f);
-        gi.error("%s: bad length", __func__);
+        gi.Com_Error(va("%s: bad length", __func__));
     }
 
     s = gi.TagMalloc(len + 1, TAG_LEVEL);
@@ -670,7 +670,7 @@ static void read_zstring(gzFile f, char *s, size_t size)
     len = read_int(f);
     if (len < 0 || len >= size) {
         gzclose(f);
-        gi.error("%s: bad length", __func__);
+        gi.Com_Error(va("%s: bad length", __func__));
     }
 
     read_data(s, len, f);
@@ -696,7 +696,7 @@ static void *read_index(gzFile f, size_t size, const void *start, int max_index)
 
     if (index < 0 || index > max_index) {
         gzclose(f);
-        gi.error("%s: bad index", __func__);
+        gi.Com_Error(va("%s: bad index", __func__));
     }
 
     p = (byte *)start + index * size;
@@ -715,13 +715,13 @@ static void *read_pointer(gzFile f, ptr_type_t type)
 
     if (index < 0 || index >= num_save_ptrs) {
         gzclose(f);
-        gi.error("%s: bad index", __func__);
+        gi.Com_Error(va("%s: bad index", __func__));
     }
 
     ptr = &save_ptrs[index];
     if (ptr->type != type) {
         gzclose(f);
-        gi.error("%s: type mismatch", __func__);
+        gi.Com_Error(va("%s: type mismatch", __func__));
     }
 
     return (void *)ptr->ptr;
@@ -782,7 +782,7 @@ static void read_field(gzFile f, const save_field_t *field, void *base)
         break;
 
     default:
-        gi.error("%s: unknown field type", __func__);
+        gi.Com_Error(va("%s: unknown field type", __func__));
     }
 }
 
@@ -805,7 +805,7 @@ static void check_gzip(int magic)
 {
 #if !USE_ZLIB
     if ((magic & 0xe0ffffff) == 0x00088b1f)
-        gi.error("Savegame is compressed, but no gzip support linked in");
+        gi.Com_Error("Savegame is compressed, but no gzip support linked in");
 #endif
 }
 
@@ -833,7 +833,7 @@ void WriteGame(const char *filename, qboolean autosave)
 
     f = gzopen(filename, "wb");
     if (!f)
-        gi.error("Couldn't open %s", filename);
+        gi.Com_Error(va("Couldn't open %s", filename));
 
     write_int(f, SAVE_MAGIC1);
     write_int(f, SAVE_VERSION);
@@ -847,7 +847,7 @@ void WriteGame(const char *filename, qboolean autosave)
     }
 
     if (gzclose(f))
-        gi.error("Couldn't write %s", filename);
+        gi.Com_Error(va("Couldn't write %s", filename));
 }
 
 void ReadGame(const char *filename)
@@ -859,7 +859,7 @@ void ReadGame(const char *filename)
 
     f = gzopen(filename, "rb");
     if (!f)
-        gi.error("Couldn't open %s", filename);
+        gi.Com_Error(va("Couldn't open %s", filename));
 
     gzbuffer(f, 65536);
 
@@ -867,13 +867,13 @@ void ReadGame(const char *filename)
     if (i != SAVE_MAGIC1) {
         gzclose(f);
         check_gzip(i);
-        gi.error("Not a Q2PRO save game");
+        gi.Com_Error("Not a Q2PRO save game");
     }
 
     i = read_int(f);
     if (i != SAVE_VERSION) {
         gzclose(f);
-        gi.error("Savegame from different version (got %d, expected %d)", i, SAVE_VERSION);
+        gi.Com_Error(va("Savegame from different version (got %d, expected %d)", i, SAVE_VERSION));
     }
 
     read_fields(f, gamefields, &game);
@@ -881,11 +881,11 @@ void ReadGame(const char *filename)
     // should agree with server's version
     if (game.maxclients != (int)maxclients->value) {
         gzclose(f);
-        gi.error("Savegame has bad maxclients");
+        gi.Com_Error("Savegame has bad maxclients");
     }
     if (game.maxentities <= game.maxclients || game.maxentities > game.csr.max_edicts) {
         gzclose(f);
-        gi.error("Savegame has bad maxentities");
+        gi.Com_Error("Savegame has bad maxentities");
     }
 
     g_edicts = gi.TagMalloc(game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
@@ -916,7 +916,7 @@ void WriteLevel(const char *filename)
 
     f = gzopen(filename, "wb");
     if (!f)
-        gi.error("Couldn't open %s", filename);
+        gi.Com_Error(va("Couldn't open %s", filename));
 
     write_int(f, SAVE_MAGIC2);
     write_int(f, SAVE_VERSION);
@@ -935,7 +935,7 @@ void WriteLevel(const char *filename)
     write_int(f, -1);
 
     if (gzclose(f))
-        gi.error("Couldn't write %s", filename);
+        gi.Com_Error(va("Couldn't write %s", filename));
 }
 
 /*
@@ -967,7 +967,7 @@ void ReadLevel(const char *filename)
 
     f = gzopen(filename, "rb");
     if (!f)
-        gi.error("Couldn't open %s", filename);
+        gi.Com_Error(va("Couldn't open %s", filename));
 
     gzbuffer(f, 65536);
 
@@ -979,13 +979,13 @@ void ReadLevel(const char *filename)
     if (i != SAVE_MAGIC2) {
         gzclose(f);
         check_gzip(i);
-        gi.error("Not a Q2PRO save game");
+        gi.Com_Error("Not a Q2PRO save game");
     }
 
     i = read_int(f);
     if (i != SAVE_VERSION) {
         gzclose(f);
-        gi.error("Savegame from different version (got %d, expected %d)", i, SAVE_VERSION);
+        gi.Com_Error(va("Savegame from different version (got %d, expected %d)", i, SAVE_VERSION));
     }
 
     // load the level locals
@@ -998,7 +998,7 @@ void ReadLevel(const char *filename)
             break;
         if (entnum < 0 || entnum >= game.maxentities) {
             gzclose(f);
-            gi.error("%s: bad entity number", __func__);
+            gi.Com_Error(va("%s: bad entity number", __func__));
         }
         if (entnum >= globals.num_edicts)
             globals.num_edicts = entnum + 1;

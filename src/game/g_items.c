@@ -958,7 +958,7 @@ void PrecacheItem(const gitem_t *it)
         data = *s++;
         len = strlen(data);
         if (len >= MAX_QPATH || len < 5)
-            gi.error("PrecacheItem: %s has bad precache string", it->classname);
+            gi.Com_Error(va("PrecacheItem: %s has bad precache string", it->classname));
 
         // determine type based on extension
         if (!strcmp(data + len - 3, "md2"))
