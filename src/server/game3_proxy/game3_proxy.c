@@ -204,7 +204,7 @@ static game3_trace_t wrap_trace(const vec3_t start, const vec3_t mins,
 
 static void wrap_local_sound(game3_edict_t *target, const vec3_t origin, game3_edict_t *ent, int channel, int soundindex, float volume, float attenuation, float timeofs)
 {
-    game_import_ex->local_sound(translate_edict_from_game(target), origin, translate_edict_from_game(ent), channel, soundindex, volume, attenuation, timeofs);
+    game_import.local_sound(translate_edict_from_game(target), origin, translate_edict_from_game(ent), channel, soundindex, volume, attenuation, timeofs, 0);
 }
 
 static const char *wrap_get_configstring(int index)

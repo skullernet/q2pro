@@ -136,6 +136,7 @@ typedef struct {
 
     void (*sound)(edict_t *ent, int channel, int soundindex, float volume, float attenuation, float timeofs);
     void (*positioned_sound)(const vec3_t origin, edict_t *ent, int channel, int soundindex, float volume, float attenuation, float timeofs);
+    void (*local_sound)(edict_t *target, const vec3_t origin, edict_t *ent, int channel, int soundindex, float volume, float attenuation, float timeofs, uint32_t dupe_key);
 
     // config strings hold all the index strings, the lightstyles,
     // and misc data like the sky definition and cdtrack.
@@ -276,7 +277,7 @@ typedef game_export_t *(*game_entry_t)(game_import_t *);
  * game_export_ex_t structures, provided GAME_API_VERSION_EX is also bumped.
  */
 
-#define GAME_API_VERSION_EX     1
+#define GAME_API_VERSION_EX     -1
 
 typedef enum {
     VIS_PVS     = 0,
@@ -288,7 +289,6 @@ typedef struct {
     uint32_t    apiversion;
     uint32_t    structsize;
 
-    void        (*local_sound)(edict_t *target, const vec3_t origin, edict_t *ent, int channel, int soundindex, float volume, float attenuation, float timeofs);
     const char  *(*get_configstring)(int index);
     trace_t     (*q_gameabi clip)(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, edict_t *clip, int contentmask);
     qboolean    (*inVIS)(const vec3_t p1, const vec3_t p2, vis_t vis);

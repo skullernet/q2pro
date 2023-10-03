@@ -646,7 +646,8 @@ static void PF_StartSound(edict_t *entity, int channel,
 static void PF_LocalSound(edict_t *target, const vec3_t origin,
                           edict_t *entity, int channel,
                           int soundindex, float volume,
-                          float attenuation, float timeofs)
+                          float attenuation, float timeofs,
+                          uint32_t dupe_key)
 {
     int entnum = NUM_FOR_EDICT(target);
     int sendchan = (entnum << 3) | (channel & 7);
@@ -768,6 +769,7 @@ static const game_import_t game_import = {
     .configstring = PF_configstring,
     .sound = PF_StartSound,
     .positioned_sound = SV_StartSound,
+    .local_sound = PF_LocalSound,
 
     .WriteChar = MSG_WriteChar,
     .WriteByte = MSG_WriteByte,
@@ -828,7 +830,6 @@ static const game_import_ex_t game_import_ex = {
     .apiversion = GAME_API_VERSION_EX,
     .structsize = sizeof(game_import_ex),
 
-    .local_sound = PF_LocalSound,
     .get_configstring = PF_GetConfigstring,
     .clip = SV_Clip,
     .inVIS = PF_inVIS,
