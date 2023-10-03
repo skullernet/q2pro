@@ -239,7 +239,7 @@ static qboolean wrap_inVIS(const vec3_t p1, const vec3_t p2, vis_t vis)
 
 static void *wrap_GetExtension(const char *name)
 {
-    return game_import_ex->GetExtension(name);
+    return game_import.GetExtension(name);
 }
 
 static void *wrap_TagRealloc(void *ptr, size_t size)

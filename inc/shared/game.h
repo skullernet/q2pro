@@ -204,6 +204,8 @@ typedef struct {
     void (*AddCommandString)(const char *text);
 
     void (*DebugGraph)(float value, int color);
+
+    void *(*GetExtension)(const char *name);
 } game_import_t;
 
 //
@@ -293,7 +295,6 @@ typedef struct {
 
     qboolean    (*inVIS)(const vec3_t p1, const vec3_t p2, vis_t vis);
 
-    void        *(*GetExtension)(const char *name);
     void        *(*TagRealloc)(void *ptr, size_t size);
 } game_import_ex_t;
 

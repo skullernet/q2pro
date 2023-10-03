@@ -739,6 +739,8 @@ static void *PF_TagRealloc(void *ptr, size_t size)
     return Z_Realloc(ptr, size);
 }
 
+static void *PF_GetExtension(const char *name);
+
 //==============================================
 
 static const game_import_t game_import = {
@@ -797,6 +799,7 @@ static const game_import_t game_import = {
     .DebugGraph = PF_DebugGraph,
     .SetAreaPortalState = PF_SetAreaPortalState,
     .AreasConnected = PF_AreasConnected,
+    .GetExtension = PF_GetExtension,
 };
 
 static const filesystem_api_v1_t filesystem_api_v1 = {
@@ -832,7 +835,6 @@ static const game_import_ex_t game_import_ex = {
 
     .inVIS = PF_inVIS,
 
-    .GetExtension = PF_GetExtension,
     .TagRealloc = PF_TagRealloc,
 };
 
