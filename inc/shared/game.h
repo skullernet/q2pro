@@ -216,6 +216,13 @@ typedef struct {
     void (*DebugGraph)(float value, int color);
 
     void *(*GetExtension)(const char *name);
+
+    // === [KEX] Additional APIs ===
+
+    // info string stuff
+    size_t (*Info_ValueForKey) (const char *s, const char *key, char *buffer, size_t buffer_len);
+    bool (*Info_RemoveKey) (char *s, const char *key);
+    bool (*Info_SetValueForKey) (char *s, const char *key, const char *value);
 } game_import_t;
 
 //

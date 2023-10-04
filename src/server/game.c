@@ -748,6 +748,13 @@ static void *PF_TagRealloc(void *ptr, size_t size)
 
 static void *PF_GetExtension(const char *name);
 
+
+static size_t PF_Info_ValueForKey (const char *s, const char *key, char *buffer, size_t buffer_len)
+{
+    char *infostr = Info_ValueForKey(s, key);
+    return Q_strlcpy(buffer, infostr, buffer_len);
+}
+
 //==============================================
 
 static const game_import_t game_import = {
@@ -807,6 +814,10 @@ static const game_import_t game_import = {
     .SetAreaPortalState = PF_SetAreaPortalState,
     .AreasConnected = PF_AreasConnected,
     .GetExtension = PF_GetExtension,
+
+    .Info_ValueForKey = PF_Info_ValueForKey,
+    .Info_RemoveKey = Info_RemoveKey,
+    .Info_SetValueForKey = Info_SetValueForKey,
 };
 
 static const filesystem_api_v1_t filesystem_api_v1 = {
