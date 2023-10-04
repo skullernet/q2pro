@@ -335,7 +335,7 @@ check_player_lerp(server_frame_t *oldframe, server_frame_t *frame, int framediv)
     }
 
     // no lerping if teleport bit was flipped
-    if ((ops->pmove.pm_flags ^ ps->pmove.pm_flags) & PMF_TELEPORT_BIT)
+    if (!cl.csr.extended && (ops->pmove.pm_flags ^ ps->pmove.pm_flags) & PMF_TELEPORT_BIT)
         goto dup;
 
     // no lerping if POV number changed
@@ -728,6 +728,7 @@ static void CL_AddPacketEntities(void)
         if (s1->morefx & EFX_FLASHLIGHT) {
             vec3_t forward, start, end;
             trace_t trace;
+            const int mask = CONTENTS_SOLID | CONTENTS_MONSTER | CONTENTS_PLAYER;
 
             if (s1->number == cl.frame.clientNum + 1) {
                 VectorMA(cl.refdef.vieworg, 256, cl.v_forward, end);
@@ -738,7 +739,7 @@ static void CL_AddPacketEntities(void)
                 VectorCopy(ent.origin, start);
             }
 
-            CL_Trace(&trace, start, vec3_origin, vec3_origin, end, CONTENTS_SOLID | CONTENTS_MONSTER);
+            CL_Trace(&trace, start, vec3_origin, vec3_origin, end, mask);
             LerpVector(start, end, cent->flashlightfrac, end);
             V_AddLight(end, 256, 1, 1, 1);
 

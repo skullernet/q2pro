@@ -86,6 +86,9 @@ static void CL_ClipMoveToEntities(trace_t *tr, const vec3_t start, const vec3_t 
     for (i = 0; i < cl.numSolidEntities; i++) {
         ent = cl.solidEntities[i];
 
+        if (cl.csr.extended && ent->current.number <= cl.maxclients && !(contentmask & CONTENTS_PLAYER))
+            continue;
+
         if (ent->current.solid == PACKED_BSP) {
             // special value for bmodel
             cmodel = cl.model_clip[ent->current.modelindex];
@@ -123,10 +126,12 @@ void CL_Trace(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t m
     CL_ClipMoveToEntities(tr, start, mins, maxs, end, contentmask);
 }
 
+static int pm_clipmask;
+
 static trace_t q_gameabi CL_PMTrace(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end)
 {
     trace_t t;
-    CL_Trace(&t, start, mins, maxs, end, MASK_PLAYERSOLID);
+    CL_Trace(&t, start, mins, maxs, end, pm_clipmask);
     return t;
 }
 
@@ -208,6 +213,17 @@ void CL_PredictMovement(void)
     if (!cl.cmd.msec && current == ack) {
         SHOWMISS("%i: not moved\n", cl.frame.number);
         return;
+    }
+
+    pm_clipmask = MASK_PLAYERSOLID;
+
+    // remaster player collision rules
+    if (cl.csr.extended) {
+        if (cl.frame.ps.pmove.pm_type == PM_DEAD || cl.frame.ps.pmove.pm_type == PM_GIB)
+            pm_clipmask = MASK_DEADSOLID;
+
+        if (!(cl.frame.ps.pmove.pm_flags & PMF_IGNORE_PLAYER_COLLISION))
+            pm_clipmask |= CONTENTS_PLAYER;
     }
 
     // copy current state to pmove

@@ -653,6 +653,7 @@ COLLISION DETECTION
 
 // remaining contents are non-visible, and don't eat brushes
 
+#define CONTENTS_PROJECTILECLIP BIT(14)     // KEX
 #define CONTENTS_AREAPORTAL     BIT(15)
 
 #define CONTENTS_PLAYERCLIP     BIT(16)
@@ -674,6 +675,11 @@ COLLISION DETECTION
 #define CONTENTS_TRANSLUCENT    BIT(28)     // auto set if any surface has trans
 #define CONTENTS_LADDER         BIT(29)
 
+//KEX
+#define CONTENTS_PLAYER         BIT(30)     // should never be on a brush, only in game
+#define CONTENTS_PROJECTILE     BIT(31)
+//KEX
+
 #define SURF_LIGHT              BIT(0)      // value will hold the light strength
 #define SURF_SLICK              BIT(1)      // effects game physics
 #define SURF_SKY                BIT(2)      // don't draw, but add to skybox
@@ -685,10 +691,12 @@ COLLISION DETECTION
 
 #define SURF_ALPHATEST          BIT(25)     // used by kmquake2
 
+//KEX
 #define SURF_N64_UV             BIT(28)
 #define SURF_N64_SCROLL_X       BIT(29)
 #define SURF_N64_SCROLL_Y       BIT(30)
 #define SURF_N64_SCROLL_FLIP    BIT(31)
+//KEX
 
 // content masks
 #define MASK_ALL                (-1)
@@ -760,6 +768,10 @@ typedef enum {
 #define PMF_TIME_TELEPORT   BIT(5)      // pm_time is non-moving time
 #define PMF_NO_PREDICTION   BIT(6)      // temporarily disables prediction (used for grappling hook)
 #define PMF_TELEPORT_BIT    BIT(7)      // used by q2pro
+
+//KEX
+#define PMF_IGNORE_PLAYER_COLLISION     BIT(7)
+//KEX
 
 // this structure needs to be communicated bit-accurate
 // from the server to the client to guarantee that

@@ -561,6 +561,15 @@ static void SV_ClipMoveToEntities(const vec3_t start, const vec3_t mins,
             && (touch->svflags & SVF_DEADMONSTER))
             continue;
 
+        if (svs.csr.extended) {
+            if (!(contentmask & CONTENTS_PROJECTILE)
+                && (touch->svflags & SVF_PROJECTILE))
+                continue;
+            if (!(contentmask & CONTENTS_PLAYER)
+                && (touch->svflags & SVF_PLAYER))
+                continue;
+        }
+
         // might intersect, so do an exact clip
         CM_TransformedBoxTrace(&trace, start, end, mins, maxs,
                                SV_HullForEntity(touch), contentmask,
