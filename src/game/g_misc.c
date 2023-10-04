@@ -1657,9 +1657,9 @@ void teleporter_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t
         other->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(dest->s.angles[i] - other->client->resp.cmd_angles[i]);
     }
 
-    VectorClear(other->s.angles);
-    VectorClear(other->client->ps.viewangles);
-    VectorClear(other->client->v_angle);
+    VectorCopy(dest->s.angles, other->s.angles);
+    VectorCopy(dest->s.angles, other->client->ps.viewangles);
+    VectorCopy(dest->s.angles, other->client->v_angle);
 
     // kill anything at the destination
     KillBox(other);
