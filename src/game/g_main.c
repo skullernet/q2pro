@@ -49,6 +49,10 @@ cvar_t  *filterban;
 
 cvar_t  *sv_maxvelocity;
 cvar_t  *sv_gravity;
+cvar_t  *sv_airaccelerate;
+cvar_t  *sv_qwmod;
+cvar_t  *sv_strafejump_hack;
+cvar_t  *sv_waterjump_hack;
 
 cvar_t  *sv_rollspeed;
 cvar_t  *sv_rollangle;
@@ -125,6 +129,10 @@ void InitGame(void)
     sv_rollangle = gi.cvar("sv_rollangle", "2", 0);
     sv_maxvelocity = gi.cvar("sv_maxvelocity", "2000", 0);
     sv_gravity = gi.cvar("sv_gravity", "800", 0);
+    sv_airaccelerate = gi.cvar("sv_airaccelerate", "0", CVAR_LATCH);
+    sv_qwmod = gi.cvar("sv_qwmod", "0", CVAR_LATCH);   //atu QWMod
+    sv_strafejump_hack = gi.cvar("sv_strafejump_hack", "1", CVAR_LATCH);
+    sv_waterjump_hack = gi.cvar("sv_waterjump_hack", "1", CVAR_LATCH);
 
     // noset vars
     dedicated = gi.cvar("dedicated", "0", CVAR_NOSET);

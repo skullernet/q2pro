@@ -569,7 +569,7 @@ game_export_t *GetGame3Proxy(game_import_t *import, const game_import_ex_t *impo
     import3.setmodel = wrap_setmodel;
     import3.inPVS = wrap_inPVS;
     import3.inPHS = wrap_inPHS;
-    import3.Pmove = import->Pmove;
+    import3.Pmove = PF_Pmove;
 
     import3.modelindex = import->modelindex;
     import3.soundindex = import->soundindex;

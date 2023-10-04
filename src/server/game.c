@@ -775,7 +775,6 @@ static const game_import_t game_import = {
     .setmodel = PF_setmodel,
     .inPVS = PF_inPVS,
     .inPHS = PF_inPHS,
-    .Pmove = PF_Pmove,
 
     .modelindex = PF_ModelIndex,
     .soundindex = PF_SoundIndex,

@@ -1031,6 +1031,39 @@ void spectator_respawn(edict_t *ent)
 
 //==============================================================
 
+#define PROTOCOL_VERSION_DEFAULT    34
+#define PROTOCOL_VERSION_R1Q2       35
+#define PROTOCOL_VERSION_Q2PRO      36
+
+static void init_pmove(pmoveParams_t *pmp, int protocol)
+{
+    int force;
+
+    // copy default pmove parameters
+    PmoveInit(pmp);
+    pmp->airaccelerate = sv_airaccelerate->value;
+
+    // common extensions
+    force = 2;
+    if (protocol >= PROTOCOL_VERSION_R1Q2) {
+        pmp->speedmult = 2;
+        force = 1;
+    }
+    pmp->strafehack = sv_strafejump_hack->value >= force;
+
+    // q2pro extensions
+    force = 2;
+    if (protocol == PROTOCOL_VERSION_Q2PRO) {
+        if (sv_qwmod->value) {
+            PmoveEnableQW(pmp);
+        }
+        pmp->flyhack = true;
+        pmp->flyfriction = 4;
+        force = 1;
+    }
+    pmp->waterhack = sv_waterjump_hack->value >= force;
+}
+
 /*
 ===========
 PutClientInServer
@@ -1123,6 +1156,13 @@ void PutClientInServer(edict_t *ent)
     VectorCopy(mins, ent->mins);
     VectorCopy(maxs, ent->maxs);
     VectorClear(ent->velocity);
+
+    // setup pmove
+    int protocol = 0;
+    char protocol_str[MAX_INFO_STRING];
+    if (gi.Info_ValueForKey(ent->client->pers.extrauserinfo, "major", protocol_str, sizeof(protocol_str)))
+        protocol = atoi(protocol_str);
+    init_pmove(&ent->client->pmp, protocol ? protocol : PROTOCOL_VERSION_DEFAULT);
 
     // clear playerstate values
     memset(&ent->client->ps, 0, sizeof(client->ps));
@@ -1434,6 +1474,9 @@ qboolean ClientConnect(edict_t *ent, char *userinfo)
 
     ClientUserinfoChanged(ent, userinfo);
 
+    const char *extrauserinfo = userinfo + strlen(userinfo) + 1;
+    Q_strlcpy(ent->client->pers.extrauserinfo, extrauserinfo, sizeof(ent->client->pers.extrauserinfo));
+
     if (game.maxclients > 1)
         gi.Com_Print(va("%s connected\n", ent->client->pers.netname));
 
@@ -1566,7 +1609,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         pm.pointcontents = gi.pointcontents;
 
         // perform a pmove
-        gi.Pmove(&pm);
+        Pmove(&pm, &ent->client->pmp);
 
         for (i = 0; i < 3; i++) {
             ent->s.origin[i] = SHORT2COORD(pm.s.origin[i]);

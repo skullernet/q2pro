@@ -20,6 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "shared/shared.h"
 #include "shared/list.h"
 #include "shared/m_flash.h"
+#include "common/pmove.h"
 
 // define GAME_INCLUDE so that game.h does not define the
 // short, server-visible gclient_t and edict_t structures,
@@ -28,7 +29,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "shared/game.h"
 
 // features this game supports
-#define G_FEATURES  (GMF_PROPERINUSE|GMF_WANT_ALL_DISCONNECTS|GMF_ENHANCED_SAVEGAMES)
+#define G_FEATURES  (GMF_PROPERINUSE|GMF_WANT_ALL_DISCONNECTS|GMF_ENHANCED_SAVEGAMES|GMF_EXTRA_USERINFO)
 
 // the "gameversion" client command will print this plus compile date
 #define GAMEVERSION "baseq2"
@@ -510,6 +511,11 @@ extern  cvar_t  *filterban;
 
 extern  cvar_t  *sv_gravity;
 extern  cvar_t  *sv_maxvelocity;
+// movement options, affecting pmove
+extern  cvar_t  *sv_airaccelerate;
+extern  cvar_t  *sv_qwmod;
+extern  cvar_t  *sv_strafejump_hack;
+extern  cvar_t  *sv_waterjump_hack;
 
 extern  cvar_t  *gun_x, *gun_y, *gun_z;
 extern  cvar_t  *sv_rollspeed;
@@ -840,6 +846,8 @@ typedef struct {
     int         helpchanged;
 
     bool        spectator;      // client is a spectator
+
+    char        extrauserinfo[MAX_INFO_STRING]; // used to obtain client protocol, needed for correct pmove params
 } client_persistant_t;
 
 // client data that stays across deathmatch respawns
@@ -861,6 +869,7 @@ struct gclient_s {
 
     // private to game
     client_persistant_t pers;
+    pmoveParams_t       pmp;
     client_respawn_t    resp;
     pmove_state_t       old_pmove;  // for detecting out-of-pmove changes
 
