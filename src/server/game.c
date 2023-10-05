@@ -673,6 +673,11 @@ void PF_Pmove(pmove_t *pm)
     }
 }
 
+static void PF_WriteEntity(const edict_t *entity)
+{
+    MSG_WriteShort(NUM_FOR_EDICT(entity));
+}
+
 static cvar_t *PF_cvar(const char *name, const char *value, int flags)
 {
     if (flags & CVAR_EXTENDED_MASK) {
@@ -787,6 +792,7 @@ static const game_import_t game_import = {
     .WritePosition = MSG_WritePos,
     .WriteDir = MSG_WriteDir,
     .WriteAngle = MSG_WriteAngle,
+    .WriteEntity = PF_WriteEntity,
 
     .TagMalloc = PF_TagMalloc,
     .TagFree = Z_Free,

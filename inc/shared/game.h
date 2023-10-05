@@ -192,6 +192,7 @@ typedef struct {
     void (*WritePosition)(const vec3_t pos);    // some fractional bits
     void (*WriteDir)(const vec3_t pos);         // single byte encoded, very coarse
     void (*WriteAngle)(float f);
+    void (*WriteEntity)(const edict_t *e);
 
     // managed memory allocation
     void *(*TagMalloc)(unsigned size, unsigned tag);
