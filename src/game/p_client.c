@@ -890,7 +890,7 @@ void CopyToBodyQue(edict_t *ent)
         gi.WriteByte(TE_BLOOD);
         gi.WritePosition(body->s.origin);
         gi.WriteDir(vec3_origin);
-        gi.multicast(body->s.origin, MULTICAST_PVS);
+        gi.multicast(body->s.origin, MULTICAST_PVS, false);
     }
 
     gi.unlinkentity(body);
@@ -1014,7 +1014,7 @@ void spectator_respawn(edict_t *ent)
         gi.WriteByte(svc_muzzleflash);
         gi.WriteShort(ent - g_edicts);
         gi.WriteByte(MZ_LOGIN);
-        gi.multicast(ent->s.origin, MULTICAST_PVS);
+        gi.multicast(ent->s.origin, MULTICAST_PVS, false);
 
         // hold in place briefly
         ent->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
@@ -1272,7 +1272,7 @@ void ClientBeginDeathmatch(edict_t *ent)
         gi.WriteByte(svc_muzzleflash);
         gi.WriteShort(ent - g_edicts);
         gi.WriteByte(MZ_LOGIN);
-        gi.multicast(ent->s.origin, MULTICAST_PVS);
+        gi.multicast(ent->s.origin, MULTICAST_PVS, false);
 
         // hold in place briefly
         ent->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
@@ -1335,7 +1335,7 @@ void ClientBegin(edict_t *ent)
             gi.WriteByte(svc_muzzleflash);
             gi.WriteShort(ent - g_edicts);
             gi.WriteByte(MZ_LOGIN);
-            gi.multicast(ent->s.origin, MULTICAST_PVS);
+            gi.multicast(ent->s.origin, MULTICAST_PVS, false);
 
             gi.Broadcast_Print(PRINT_HIGH, va("%s entered the game\n", ent->client->pers.netname));
         }
@@ -1507,7 +1507,7 @@ void ClientDisconnect(edict_t *ent)
         gi.WriteByte(svc_muzzleflash);
         gi.WriteShort(ent - g_edicts);
         gi.WriteByte(MZ_LOGOUT);
-        gi.multicast(ent->s.origin, MULTICAST_PVS);
+        gi.multicast(ent->s.origin, MULTICAST_PVS, false);
     }
 
     gi.unlinkentity(ent);

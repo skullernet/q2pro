@@ -35,7 +35,7 @@ static void check_dodge(edict_t *self, vec3_t start, vec3_t dir, int speed)
 
     // easy mode only ducks one quarter the time
     if (skill->value == 0 && random() > 0.25f)
-        return;
+            return;
     VectorMA(start, 8192, dir, end);
     tr = gi.trace(start, NULL, NULL, end, self, MASK_SHOT);
     if ((tr.ent) && (tr.ent->svflags & SVF_MONSTER) && (tr.ent->health > 0) && (tr.ent->monsterinfo.dodge) && infront(tr.ent, self)) {
@@ -176,7 +176,7 @@ static void fire_lead(edict_t *self, vec3_t start, vec3_t aimdir, int damage, in
                     gi.WritePosition(tr.endpos);
                     gi.WriteDir(tr.plane.normal);
                     gi.WriteByte(color);
-                    gi.multicast(tr.endpos, MULTICAST_PVS);
+                    gi.multicast(tr.endpos, MULTICAST_PVS, false);
                 }
 
                 // change bullet's course when it enters water
@@ -206,7 +206,7 @@ static void fire_lead(edict_t *self, vec3_t start, vec3_t aimdir, int damage, in
                     gi.WriteByte(te_impact);
                     gi.WritePosition(tr.endpos);
                     gi.WriteDir(tr.plane.normal);
-                    gi.multicast(tr.endpos, MULTICAST_PVS);
+                    gi.multicast(tr.endpos, MULTICAST_PVS, false);
 
                     if (self->client)
                         PlayerNoise(self, tr.endpos, PNOISE_IMPACT);
@@ -234,7 +234,7 @@ static void fire_lead(edict_t *self, vec3_t start, vec3_t aimdir, int damage, in
         gi.WriteByte(TE_BUBBLETRAIL);
         gi.WritePosition(water_start);
         gi.WritePosition(tr.endpos);
-        gi.multicast(pos, MULTICAST_PVS);
+        gi.multicast(pos, MULTICAST_PVS, false);
     }
 }
 
@@ -303,7 +303,7 @@ void blaster_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *s
         gi.WriteByte(TE_BLASTER);
         gi.WritePosition(self->s.origin);
         gi.WriteDir(normal);
-        gi.multicast(self->s.origin, MULTICAST_PVS);
+        gi.multicast(self->s.origin, MULTICAST_PVS, false);
     }
 
     G_FreeEdict(self);
@@ -409,7 +409,7 @@ void Grenade_Explode(edict_t *ent)
             gi.WriteByte(TE_ROCKET_EXPLOSION);
     }
     gi.WritePosition(origin);
-    gi.multicast(ent->s.origin, MULTICAST_PHS);
+    gi.multicast(ent->s.origin, MULTICAST_PHS, false);
 
     G_FreeEdict(ent);
 }
@@ -567,7 +567,7 @@ void rocket_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *sur
     else
         gi.WriteByte(TE_ROCKET_EXPLOSION);
     gi.WritePosition(origin);
-    gi.multicast(ent->s.origin, MULTICAST_PHS);
+    gi.multicast(ent->s.origin, MULTICAST_PHS, false);
 
     G_FreeEdict(ent);
 }
@@ -634,7 +634,7 @@ void fire_rail(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick)
         } else {
             //ZOID--added so rail goes through SOLID_BBOX entities (gibs, etc)
             if (((tr.ent->svflags & SVF_MONSTER) || (tr.ent->client) ||
-                 (tr.ent->solid == SOLID_BBOX)) && (lastfrac + tr.fraction > 0))
+                (tr.ent->solid == SOLID_BBOX)) && (lastfrac + tr.fraction > 0))
                 ignore = tr.ent;
             else
                 ignore = NULL;
@@ -652,14 +652,14 @@ void fire_rail(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick)
     gi.WriteByte(TE_RAILTRAIL);
     gi.WritePosition(start);
     gi.WritePosition(tr.endpos);
-    gi.multicast(self->s.origin, MULTICAST_PHS);
+    gi.multicast(self->s.origin, MULTICAST_PHS, false);
 //  gi.multicast (start, MULTICAST_PHS);
     if (water) {
         gi.WriteByte(svc_temp_entity);
         gi.WriteByte(TE_RAILTRAIL);
         gi.WritePosition(start);
         gi.WritePosition(tr.endpos);
-        gi.multicast(tr.endpos, MULTICAST_PHS);
+        gi.multicast(tr.endpos, MULTICAST_PHS, false);
     }
 
     if (self->client)
@@ -702,7 +702,7 @@ void bfg_explode(edict_t *self)
             gi.WriteByte(svc_temp_entity);
             gi.WriteByte(TE_BFG_EXPLOSION);
             gi.WritePosition(ent->s.origin);
-            gi.multicast(ent->s.origin, MULTICAST_PHS);
+            gi.multicast(ent->s.origin, MULTICAST_PHS, false);
             T_Damage(ent, self, self->owner, self->velocity, ent->s.origin, vec3_origin, (int)points, 0, DAMAGE_ENERGY, MOD_BFG_EFFECT);
         }
     }
@@ -747,7 +747,7 @@ void bfg_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
     gi.WriteByte(svc_temp_entity);
     gi.WriteByte(TE_BFG_BIGEXPLOSION);
     gi.WritePosition(self->s.origin);
-    gi.multicast(self->s.origin, MULTICAST_PVS);
+    gi.multicast(self->s.origin, MULTICAST_PVS, false);
 }
 
 void bfg_think(edict_t *self)
@@ -806,7 +806,7 @@ void bfg_think(edict_t *self)
                 gi.WritePosition(tr.endpos);
                 gi.WriteDir(tr.plane.normal);
                 gi.WriteByte(self->s.skinnum);
-                gi.multicast(tr.endpos, MULTICAST_PVS);
+                gi.multicast(tr.endpos, MULTICAST_PVS, false);
                 break;
             }
 
@@ -818,7 +818,7 @@ void bfg_think(edict_t *self)
         gi.WriteByte(TE_BFG_LASER);
         gi.WritePosition(self->s.origin);
         gi.WritePosition(tr.endpos);
-        gi.multicast(self->s.origin, MULTICAST_PHS);
+        gi.multicast(self->s.origin, MULTICAST_PHS, false);
     }
 
     self->nextthink = level.framenum + 1;

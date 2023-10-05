@@ -556,17 +556,9 @@ static void SV_StartSound(const vec3_t origin, edict_t *edict,
     // multicast if force sending origin
     if (force_pos) {
         if (channel & CHAN_NO_PHS_ADD) {
-            if (channel & CHAN_RELIABLE) {
-                SV_Multicast(NULL, MULTICAST_ALL_R);
-            } else {
-                SV_Multicast(NULL, MULTICAST_ALL);
-            }
+            SV_Multicast(NULL, MULTICAST_ALL, channel & CHAN_RELIABLE);
         } else {
-            if (channel & CHAN_RELIABLE) {
-                SV_Multicast(origin, MULTICAST_PHS_R);
-            } else {
-                SV_Multicast(origin, MULTICAST_PHS);
-            }
+            SV_Multicast(origin, MULTICAST_PHS, channel & CHAN_RELIABLE);
         }
         return;
     }

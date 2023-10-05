@@ -52,6 +52,11 @@ static game3_edict_t* translate_edict_to_game(edict_t* ent)
     return ent ? GAME_EDICT_NUM(ent - server_edicts) : NULL;
 }
 
+static void wrap_multicast(const vec3_t origin, multicast_t to)
+{
+    game_import.multicast(origin, to, false);
+}
+
 static void wrap_unicast(game3_edict_t *gent, qboolean reliable)
 {
     edict_t *ent = translate_edict_from_game(gent);
@@ -553,7 +558,7 @@ game_export_t *GetGame3Proxy(game_import_t *import, const game_import_ex_t *impo
     game3_export_t *(*entry)(game3_import_t *) = game3_entry;
     const game3_export_ex_t *(*entry_ex)(const game3_import_ex_t *) = game3_ex_entry;
 
-    import3.multicast = import->multicast;
+    import3.multicast = wrap_multicast;
     import3.unicast = wrap_unicast;
     import3.bprintf = wrap_bprintf;
     import3.dprintf = wrap_dprintf;

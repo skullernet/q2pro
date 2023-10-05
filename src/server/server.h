@@ -626,7 +626,7 @@ void SV_FlushRedirect(int redirected, char *outputbuf, size_t len);
 void SV_SendClientMessages(void);
 void SV_SendAsyncPackets(void);
 
-void SV_Multicast(const vec3_t origin, multicast_t to);
+void SV_Multicast(const vec3_t origin, multicast_t to, bool reliable);
 void SV_ClientPrintf(client_t *cl, int level, const char *fmt, ...) q_printf(3, 4);
 void SV_BroadcastPrintf(int level, const char *fmt, ...) q_printf(2, 3);
 void SV_ClientCommand(client_t *cl, const char *fmt, ...) q_printf(2, 3);
@@ -651,7 +651,7 @@ void SV_MvdMapChanged(void);
 void SV_MvdClientDropped(client_t *client);
 
 void SV_MvdUnicast(edict_t *ent, int clientNum, bool reliable);
-void SV_MvdMulticast(int leafnum, multicast_t to);
+void SV_MvdMulticast(int leafnum, multicast_t to, bool reliable);
 void SV_MvdConfigstring(int index, const char *string, size_t len);
 void SV_MvdBroadcastPrint(int level, const char *string);
 void SV_MvdStartSound(int entnum, int channel, int flags,
@@ -673,7 +673,7 @@ void SV_MvdStop_f(void);
 #define SV_MvdClientDropped(client) (void)0
 
 #define SV_MvdUnicast(ent, clientNum, reliable)     (void)0
-#define SV_MvdMulticast(leafnum, to)                (void)0
+#define SV_MvdMulticast(leafnum, to, reliable)      (void)0
 #define SV_MvdConfigstring(index, string, len)      (void)0
 #define SV_MvdBroadcastPrint(level, string)         (void)0
 #define SV_MvdStartSound(entnum, channel, flags, \

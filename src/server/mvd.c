@@ -1109,7 +1109,7 @@ out-of-band data into the MVD stream.
 SV_MvdMulticast
 ==============
 */
-void SV_MvdMulticast(int leafnum, multicast_t to)
+void SV_MvdMulticast(int leafnum, multicast_t to, bool reliable)
 {
     mvd_ops_t   op;
     sizebuf_t   *buf;
@@ -1127,8 +1127,8 @@ void SV_MvdMulticast(int leafnum, multicast_t to)
         return;
     }
 
-    op = mvd_multicast_all + to;
-    buf = to < MULTICAST_ALL_R ? &mvd.datagram : &mvd.message;
+    op = mvd_multicast_all + to + (reliable ? 3 : 0);
+    buf = reliable ? &mvd.datagram : &mvd.message;
 
     SZ_WriteByte(buf, op | (msg_write.cursize >> 8 << SVCMD_BITS));
     SZ_WriteByte(buf, msg_write.cursize & 255);
