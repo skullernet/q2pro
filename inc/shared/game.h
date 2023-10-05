@@ -140,6 +140,10 @@ typedef struct
 // functions provided by the main engine
 //
 typedef struct {
+    uint32_t    tick_rate;
+    float       frame_time_s;
+    uint32_t    frame_time_ms;
+
     // broadcast to all clients
     void (*Broadcast_Print)(int printlevel, const char *message);
     // print to appropriate places (console, log file, etc)
