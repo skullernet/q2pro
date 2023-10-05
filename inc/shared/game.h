@@ -219,6 +219,9 @@ typedef struct {
 
     // === [KEX] Additional APIs ===
 
+    // scoreboard
+    void (*ReportMatchDetails_Multicast)(bool is_end);
+
     // get server frame #
     uint32_t (*ServerFrame)(void);
 

@@ -759,6 +759,15 @@ static void *PF_TagRealloc(void *ptr, size_t size)
 
 static void *PF_GetExtension(const char *name);
 
+static void PF_ReportMatchDetails_Multicast(bool is_end)
+{
+    /* "This function is solely for platforms that need match result data." -
+     * somewhat unclear...
+     * Anyhow, rerelease game writes some message data prior to calling this,
+     * at least discard that data ... */
+    SZ_Clear(&msg_write);
+}
+
 static uint32_t PF_ServerFrame(void)
 {
     return sv.framenum;
@@ -838,6 +847,7 @@ static const game_import_t game_import = {
     .AreasConnected = PF_AreasConnected,
     .GetExtension = PF_GetExtension,
 
+    .ReportMatchDetails_Multicast = PF_ReportMatchDetails_Multicast,
     .ServerFrame = PF_ServerFrame,
     .SendToClipBoard = PF_SendToClipboard,
 
