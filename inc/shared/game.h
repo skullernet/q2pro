@@ -131,6 +131,85 @@ typedef enum BoxEdictsResult_e
 
 typedef BoxEdictsResult_t (*BoxEdictsFilter_t)(edict_t *, void *);
 
+typedef enum {
+    GoalReturnCode_Error = 0,
+    GoalReturnCode_Started,
+    GoalReturnCode_InProgress,
+    GoalReturnCode_Finished
+} GoalReturnCode;
+
+typedef enum {
+    PathReturnCode_ReachedGoal = 0,        // we're at our destination
+    PathReturnCode_ReachedPathEnd,         // we're as close to the goal as we can get with a path
+    PathReturnCode_TraversalPending,       // the upcoming path segment is a traversal
+    PathReturnCode_RawPathFound,           // user wanted ( and got ) just a raw path ( no processing )
+    PathReturnCode_InProgress,             // pathing in progress
+    PathReturnCode_StartPathErrors,        // any code after this one indicates an error of some kind.
+    PathReturnCode_InvalidStart,           // start position is invalid.
+    PathReturnCode_InvalidGoal,            // goal position is invalid.
+    PathReturnCode_NoNavAvailable,         // no nav file available for this map.
+    PathReturnCode_NoStartNode,            // can't find a nav node near the start position
+    PathReturnCode_NoGoalNode,             // can't find a nav node near the goal position
+    PathReturnCode_NoPathFound,            // can't find a path from the start to the goal
+    PathReturnCode_MissingWalkOrSwimFlag   // MUST have at least Walk or Water path flags set!
+} PathReturnCode;
+
+typedef enum {
+    PathReturnCode_Walk,               // can walk between the path points
+    PathReturnCode_WalkOffLedge,       // will walk off a ledge going between path points
+    PathReturnCode_LongJump,           // will need to perform a long jump between path points
+    PathReturnCode_BarrierJump,        // will need to jump over a low barrier between path points
+    PathReturnCode_Elevator            // will need to use an elevator between path points
+} PathLinkType;
+
+enum {
+    PathFlags_All             = (uint32_t)( -1 ),
+    PathFlags_Water           = 1 << 0,  // swim to your goal ( useful for fish/gekk/etc. )
+    PathFlags_Walk            = 1 << 1,  // walk to your goal
+    PathFlags_WalkOffLedge    = 1 << 2,  // allow walking over ledges
+    PathFlags_LongJump        = 1 << 3,  // allow jumping over gaps
+    PathFlags_BarrierJump     = 1 << 4,  // allow jumping over low barriers
+    PathFlags_Elevator        = 1 << 5   // allow using elevators
+};
+typedef uint32_t PathFlags;
+
+typedef struct {
+    vec3_t     start /*= { 0.0f, 0.0f, 0.0f }*/;
+    vec3_t     goal /*= { 0.0f, 0.0f, 0.0f }*/;
+    PathFlags   pathFlags /*= PathFlags::Walk*/;
+    float       moveDist /*= 0.0f*/;
+
+    struct DebugSettings {
+        float   drawTime /*= 0.0f*/; // if > 0, how long ( in seconds ) to draw path in world
+    } debugging;
+
+    struct NodeSettings {
+        bool    ignoreNodeFlags /*= false*/; // true = ignore node flags when considering nodes
+        float   minHeight /*= 0.0f*/; // 0 <= use default values
+        float   maxHeight /*= 0.0f*/; // 0 <= use default values
+        float   radius /*= 0.0f*/;    // 0 <= use default values
+    } nodeSearch;
+
+    struct TraversalSettings {
+        float dropHeight /*= 0.0f*/;    // 0 = don't drop down
+        float jumpHeight /*= 0.0f*/;    // 0 = don't jump up
+    } traversals;
+
+    struct PathArray {
+        vec3_t * array /*= nullptr*/;  // array to store raw path points
+        int64_t           count /*= 0*/;        // number of elements in array
+    } pathPoints;
+}  PathRequest;
+
+typedef struct {
+    int32_t         numPathPoints /*= 0*/;
+    float           pathDistSqr /*= 0.0f*/;
+    vec3_t          firstMovePoint /*= { 0.0f, 0.0f, 0.0f }*/;
+    vec3_t          secondMovePoint /*= { 0.0f, 0.0f, 0.0f }*/;
+    PathLinkType    pathLinkType /*= PathLinkType::Walk*/;
+    PathReturnCode  returnCode /*= PathReturnCode::StartPathErrors*/;
+} PathInfo;
+
 typedef struct
 {
     uint8_t r, g, b, a;
@@ -227,6 +306,15 @@ typedef struct {
     void *(*GetExtension)(const char *name);
 
     // === [KEX] Additional APIs ===
+
+    // bots
+    void (*Bot_RegisterEdict)(const edict_t * edict);
+    void (*Bot_UnRegisterEdict)(const edict_t * edict);
+    GoalReturnCode (*Bot_MoveToPoint)(const edict_t * bot, const vec3_t point, const float moveTolerance);
+    GoalReturnCode (*Bot_FollowActor)(const edict_t * bot, const edict_t * actor);
+
+    // pathfinding - returns true if a path was found
+    bool (*GetPathToGoal)(const PathRequest* request, PathInfo* info);
 
     // localization
     void (*Loc_Print)(edict_t* ent, print_type_t level, const char* base, const char** args, size_t num_args);

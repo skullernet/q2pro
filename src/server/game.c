@@ -759,6 +759,27 @@ static void *PF_TagRealloc(void *ptr, size_t size)
 
 static void *PF_GetExtension(const char *name);
 
+static void PF_Bot_RegisterEdict(const edict_t * edict) {}
+
+static void PF_Bot_UnRegisterEdict(const edict_t * edict) {}
+
+static GoalReturnCode PF_Bot_MoveToPoint(const edict_t * bot, const vec3_t point, const float moveTolerance)
+{
+    return GoalReturnCode_Error;
+}
+
+static GoalReturnCode PF_Bot_FollowActor(const edict_t * bot, const edict_t * actor)
+{
+    return GoalReturnCode_Error;
+}
+
+static bool PF_GetPathToGoal(const PathRequest* request, PathInfo* info)
+{
+    memset(info, 0, sizeof(*info));
+    info->returnCode = PathReturnCode_NoPathFound;
+    return false;
+}
+
 static void PF_Loc_Print(edict_t* ent, print_type_t level, const char* base, const char** args, size_t num_args)
 {
     /* FIXME - actually support localization & perform formatting.
@@ -867,6 +888,12 @@ static const game_import_t game_import = {
     .SetAreaPortalState = PF_SetAreaPortalState,
     .AreasConnected = PF_AreasConnected,
     .GetExtension = PF_GetExtension,
+
+    .Bot_RegisterEdict = PF_Bot_RegisterEdict,
+    .Bot_UnRegisterEdict = PF_Bot_UnRegisterEdict,
+    .Bot_MoveToPoint = PF_Bot_MoveToPoint,
+    .Bot_FollowActor = PF_Bot_FollowActor,
+    .GetPathToGoal = PF_GetPathToGoal,
 
     .Loc_Print = PF_Loc_Print,
     .Draw_Line = PF_Draw_Line,
