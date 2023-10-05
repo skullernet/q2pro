@@ -759,6 +759,11 @@ static void *PF_TagRealloc(void *ptr, size_t size)
 
 static void *PF_GetExtension(const char *name);
 
+static uint32_t PF_ServerFrame(void)
+{
+    return sv.framenum;
+}
+
 static void PF_SendToClipboard(const char* text)
 {
 #if USE_CLIENT
@@ -833,6 +838,7 @@ static const game_import_t game_import = {
     .AreasConnected = PF_AreasConnected,
     .GetExtension = PF_GetExtension,
 
+    .ServerFrame = PF_ServerFrame,
     .SendToClipBoard = PF_SendToClipboard,
 
     .Info_ValueForKey = PF_Info_ValueForKey,

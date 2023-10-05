@@ -219,6 +219,9 @@ typedef struct {
 
     // === [KEX] Additional APIs ===
 
+    // get server frame #
+    uint32_t (*ServerFrame)(void);
+
     // misc utils
     void (*SendToClipBoard)(const char * text);
 
