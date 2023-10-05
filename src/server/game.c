@@ -759,6 +759,15 @@ static void *PF_TagRealloc(void *ptr, size_t size)
 
 static void *PF_GetExtension(const char *name);
 
+static void PF_Loc_Print(edict_t* ent, print_type_t level, const char* base, const char** args, size_t num_args)
+{
+    /* FIXME - actually support localization & perform formatting.
+     * Also, the rerelease game docs call this "The new primary entry point for printing." and
+     * "This function replaces all of the others (except Com_Print).",
+     * suggesting all other print functions should be wrappers of this one. */
+    PF_Client_Print(ent, level, base);
+}
+
 // Debug drawing functions - all unimplemented for now...
 static void PF_Draw_Line(const vec3_t start, const vec3_t end, const rgba_t* color, const float lifeTime, const bool depthTest) {}
 static void PF_Draw_Point(const vec3_t point, const float size, const rgba_t* color, const float lifeTime, const bool depthTest) {}
@@ -859,6 +868,7 @@ static const game_import_t game_import = {
     .AreasConnected = PF_AreasConnected,
     .GetExtension = PF_GetExtension,
 
+    .Loc_Print = PF_Loc_Print,
     .Draw_Line = PF_Draw_Line,
     .Draw_Point = PF_Draw_Point,
     .Draw_Circle = PF_Draw_Circle,

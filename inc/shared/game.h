@@ -224,6 +224,9 @@ typedef struct {
 
     // === [KEX] Additional APIs ===
 
+    // localization
+    void (*Loc_Print)(edict_t* ent, print_type_t level, const char* base, const char** args, size_t num_args);
+
     // drawing
     void (*Draw_Line)(const vec3_t start, const vec3_t end, const rgba_t* color, const float lifeTime, const bool depthTest);
     void (*Draw_Point)(const vec3_t point, const float size, const rgba_t* color, const float lifeTime, const bool depthTest);
