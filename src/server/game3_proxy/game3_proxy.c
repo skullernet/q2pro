@@ -279,6 +279,18 @@ static void *wrap_TagRealloc(void *ptr, size_t size)
     return game_import_ex->TagRealloc(ptr, size);
 }
 
+static char* wrap_argv(int idx)
+{
+    // TODO ugly
+    return (char *)game_import.argv(idx);
+}
+
+static char* wrap_args(void)
+{
+    // TODO ugly
+    return (char *)game_import.args();
+}
+
 static void wrap_SetAreaPortalState(int portalnum, qboolean open)
 {
     game_import.SetAreaPortalState(portalnum, open);
@@ -618,8 +630,8 @@ game_export_t *GetGame3Proxy(game_import_t *import, const game_import_ex_t *impo
     import3.cvar_forceset = import->cvar_forceset;
 
     import3.argc = import->argc;
-    import3.argv = import->argv;
-    import3.args = import->args;
+    import3.argv = wrap_argv;
+    import3.args = wrap_args;
     import3.AddCommandString = import->AddCommandString;
 
     import3.DebugGraph = import->DebugGraph;

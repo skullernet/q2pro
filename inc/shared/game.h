@@ -206,8 +206,8 @@ typedef struct {
 
     // ClientCommand and ServerCommand parameter access
     int (*argc)(void);
-    char *(*argv)(int n);
-    char *(*args)(void);     // concatenation of all argv >= 1
+    const char *(*argv)(int n);
+    const char *(*args)(void);     // concatenation of all argv >= 1
 
     // add commands to the server console as if they were typed in
     // for map changing, etc

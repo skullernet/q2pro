@@ -143,7 +143,7 @@ Give items to a client
 */
 void Cmd_Give_f(edict_t *ent)
 {
-    char        *name;
+    const char  *name;
     const gitem_t   *it;
     int         index;
     int         i;
@@ -351,7 +351,7 @@ void Cmd_Use_f(edict_t *ent)
 {
     int         index;
     const gitem_t   *it;
-    char        *s;
+    const char  *s;
 
     s = gi.args();
     it = FindItem(s);
@@ -383,7 +383,7 @@ void Cmd_Drop_f(edict_t *ent)
 {
     int         index;
     const gitem_t   *it;
-    char        *s;
+    const char  *s;
 
     s = gi.args();
     it = FindItem(s);
@@ -773,7 +773,9 @@ void Cmd_Say_f(edict_t *ent, bool team, bool arg0)
         Q_strlcat(text, " ", sizeof(text));
         Q_strlcat(text, gi.args(), sizeof(text));
     } else {
-        Q_strlcat(text, COM_StripQuotes(gi.args()), sizeof(text));
+        char stripped[2048];
+        Q_strlcpy(stripped, gi.args(), sizeof(stripped));
+        Q_strlcat(text, COM_StripQuotes(stripped), sizeof(text));
     }
 
     // don't let text be too long for malicious reasons
@@ -837,7 +839,7 @@ ClientCommand
 */
 void ClientCommand(edict_t *ent)
 {
-    char    *cmd;
+    const char *cmd;
 
     if (!ent->client)
         return;     // not fully in game yet

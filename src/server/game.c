@@ -688,6 +688,16 @@ static cvar_t *PF_cvar(const char *name, const char *value, int flags)
     return Cvar_Get(name, value, flags | CVAR_GAME);
 }
 
+static const char* PF_Argv(int idx)
+{
+    return Cmd_Argv(idx);
+}
+
+static const char* PF_RawArgs(void)
+{
+    return Cmd_RawArgs();
+}
+
 static void PF_AddCommandString(const char *string)
 {
 #if USE_CLIENT
@@ -803,8 +813,8 @@ static const game_import_t game_import = {
     .cvar_forceset = Cvar_Set,
 
     .argc = Cmd_Argc,
-    .argv = Cmd_Argv,
-    .args = Cmd_RawArgs,
+    .argv = PF_Argv,
+    .args = PF_RawArgs,
     .AddCommandString = PF_AddCommandString,
 
     .DebugGraph = PF_DebugGraph,
