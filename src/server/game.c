@@ -20,6 +20,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "server.h"
 #include "game3_proxy/game3_proxy.h"
 
+#if USE_CLIENT
+#include "client/video.h"
+#endif
+
 const game_export_t     *ge;
 const game_export_ex_t  *gex;
 
@@ -755,6 +759,13 @@ static void *PF_TagRealloc(void *ptr, size_t size)
 
 static void *PF_GetExtension(const char *name);
 
+static void PF_SendToClipboard(const char* text)
+{
+#if USE_CLIENT
+    if(vid.set_clipboard_data)
+        vid.set_clipboard_data(text);
+#endif
+}
 
 static size_t PF_Info_ValueForKey (const char *s, const char *key, char *buffer, size_t buffer_len)
 {
@@ -821,6 +832,8 @@ static const game_import_t game_import = {
     .SetAreaPortalState = PF_SetAreaPortalState,
     .AreasConnected = PF_AreasConnected,
     .GetExtension = PF_GetExtension,
+
+    .SendToClipBoard = PF_SendToClipboard,
 
     .Info_ValueForKey = PF_Info_ValueForKey,
     .Info_RemoveKey = Info_RemoveKey,

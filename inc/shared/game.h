@@ -219,6 +219,9 @@ typedef struct {
 
     // === [KEX] Additional APIs ===
 
+    // misc utils
+    void (*SendToClipBoard)(const char * text);
+
     // info string stuff
     size_t (*Info_ValueForKey) (const char *s, const char *key, char *buffer, size_t buffer_len);
     bool (*Info_RemoveKey) (char *s, const char *key);
