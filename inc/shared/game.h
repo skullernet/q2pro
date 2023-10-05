@@ -131,6 +131,11 @@ typedef enum BoxEdictsResult_e
 
 typedef BoxEdictsResult_t (*BoxEdictsFilter_t)(edict_t *, void *);
 
+typedef struct
+{
+    uint8_t r, g, b, a;
+} rgba_t;
+
 //
 // functions provided by the main engine
 //
@@ -218,6 +223,18 @@ typedef struct {
     void *(*GetExtension)(const char *name);
 
     // === [KEX] Additional APIs ===
+
+    // drawing
+    void (*Draw_Line)(const vec3_t start, const vec3_t end, const rgba_t* color, const float lifeTime, const bool depthTest);
+    void (*Draw_Point)(const vec3_t point, const float size, const rgba_t* color, const float lifeTime, const bool depthTest);
+    void (*Draw_Circle)(const vec3_t origin, const float radius, const rgba_t* color, const float lifeTime, const bool depthTest);
+    void (*Draw_Bounds)(const vec3_t mins, const vec3_t maxs, const rgba_t* color, const float lifeTime, const bool depthTest);
+    void (*Draw_Sphere)(const vec3_t origin, const float radius, const rgba_t* color, const float lifeTime, const bool depthTest);
+    void (*Draw_OrientedWorldText)(const vec3_t origin, const char * text, const rgba_t* color, const float size, const float lifeTime, const bool depthTest);
+    void (*Draw_StaticWorldText)(const vec3_t origin, const vec3_t angles, const char * text, const rgba_t* color, const float size, const float lifeTime, const bool depthTest);
+    void (*Draw_Cylinder)(const vec3_t origin, const float halfHeight, const float radius, const rgba_t* color, const float lifeTime, const bool depthTest);
+    void (*Draw_Ray)(const vec3_t origin, const vec3_t direction, const float length, const float size, const rgba_t* color, const float lifeTime, const bool depthTest);
+    void (*Draw_Arrow)(const vec3_t start, const vec3_t end, const float size, const rgba_t* lineColor, const rgba_t* arrowColor, const float lifeTime, const bool depthTest);
 
     // scoreboard
     void (*ReportMatchDetails_Multicast)(bool is_end);

@@ -759,6 +759,18 @@ static void *PF_TagRealloc(void *ptr, size_t size)
 
 static void *PF_GetExtension(const char *name);
 
+// Debug drawing functions - all unimplemented for now...
+static void PF_Draw_Line(const vec3_t start, const vec3_t end, const rgba_t* color, const float lifeTime, const bool depthTest) {}
+static void PF_Draw_Point(const vec3_t point, const float size, const rgba_t* color, const float lifeTime, const bool depthTest) {}
+static void PF_Draw_Circle(const vec3_t origin, const float radius, const rgba_t* color, const float lifeTime, const bool depthTest) {}
+static void PF_Draw_Bounds(const vec3_t mins, const vec3_t maxs, const rgba_t* color, const float lifeTime, const bool depthTest) {}
+static void PF_Draw_Sphere(const vec3_t origin, const float radius, const rgba_t* color, const float lifeTime, const bool depthTest) {}
+static void PF_Draw_OrientedWorldText(const vec3_t origin, const char * text, const rgba_t* color, const float size, const float lifeTime, const bool depthTest) {}
+static void PF_Draw_StaticWorldText(const vec3_t origin, const vec3_t angles, const char * text, const rgba_t* color, const float size, const float lifeTime, const bool depthTest) {}
+static void PF_Draw_Cylinder(const vec3_t origin, const float halfHeight, const float radius, const rgba_t* color, const float lifeTime, const bool depthTest) {}
+static void PF_Draw_Ray(const vec3_t origin, const vec3_t direction, const float length, const float size, const rgba_t* color, const float lifeTime, const bool depthTest) {}
+static void PF_Draw_Arrow(const vec3_t start, const vec3_t end, const float size, const rgba_t* lineColor, const rgba_t* arrowColor, const float lifeTime, const bool depthTest) {}
+
 static void PF_ReportMatchDetails_Multicast(bool is_end)
 {
     /* "This function is solely for platforms that need match result data." -
@@ -847,6 +859,16 @@ static const game_import_t game_import = {
     .AreasConnected = PF_AreasConnected,
     .GetExtension = PF_GetExtension,
 
+    .Draw_Line = PF_Draw_Line,
+    .Draw_Point = PF_Draw_Point,
+    .Draw_Circle = PF_Draw_Circle,
+    .Draw_Bounds = PF_Draw_Bounds,
+    .Draw_Sphere = PF_Draw_Sphere,
+    .Draw_OrientedWorldText = PF_Draw_OrientedWorldText,
+    .Draw_StaticWorldText = PF_Draw_StaticWorldText,
+    .Draw_Cylinder = PF_Draw_Cylinder,
+    .Draw_Ray = PF_Draw_Ray,
+    .Draw_Arrow = PF_Draw_Arrow,
     .ReportMatchDetails_Multicast = PF_ReportMatchDetails_Multicast,
     .ServerFrame = PF_ServerFrame,
     .SendToClipBoard = PF_SendToClipboard,
