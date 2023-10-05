@@ -767,7 +767,7 @@ typedef enum {
 #define PMF_TIME_LAND       BIT(4)      // pm_time is time before rejump
 #define PMF_TIME_TELEPORT   BIT(5)      // pm_time is non-moving time
 #define PMF_NO_PREDICTION   BIT(6)      // temporarily disables prediction (used for grappling hook)
-#define PMF_TELEPORT_BIT    BIT(7)      // used by q2pro
+#define PMF_TELEPORT_BIT    BIT(7)      // used by Q2PRO (non-extended servers)
 
 //KEX
 #define PMF_IGNORE_PLAYER_COLLISION     BIT(7)
@@ -935,9 +935,7 @@ typedef struct {
 #define RDF_UVGOGGLES       BIT(3)
 //ROGUE
 
-//KEX
-#define RDF_NO_WEAPON_LERP  BIT(4)
-//KEX
+#define RDF_TELEPORT_BIT    BIT(4)      // used by Q2PRO (extended servers)
 
 //
 // muzzle flashes / player effects

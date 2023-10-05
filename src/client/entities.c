@@ -338,6 +338,9 @@ check_player_lerp(server_frame_t *oldframe, server_frame_t *frame, int framediv)
     if (!cl.csr.extended && (ops->pmove.pm_flags ^ ps->pmove.pm_flags) & PMF_TELEPORT_BIT)
         goto dup;
 
+    if (cl.csr.extended && (ops->rdflags ^ ps->rdflags) & RDF_TELEPORT_BIT)
+        goto dup;
+
     // no lerping if POV number changed
     if (oldframe->clientNum != frame->clientNum)
         goto dup;
