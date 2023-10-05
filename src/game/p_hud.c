@@ -71,7 +71,7 @@ void MoveClientToIntermission(edict_t *ent)
 
     if (deathmatch->value || coop->value) {
         DeathmatchScoreboardMessage(ent, NULL);
-        gi.unicast(ent, true);
+        gi.unicast(ent, true, 0);
     }
 
 }
@@ -251,7 +251,7 @@ Note that it isn't that hard to overflow the 1400 byte message limit!
 void DeathmatchScoreboard(edict_t *ent)
 {
     DeathmatchScoreboardMessage(ent, ent->enemy);
-    gi.unicast(ent, true);
+    gi.unicast(ent, true, 0);
 }
 
 /*
@@ -318,7 +318,7 @@ void HelpComputer(edict_t *ent)
 
     gi.WriteByte(svc_layout);
     gi.WriteString(string);
-    gi.unicast(ent, true);
+    gi.unicast(ent, true, 0);
 }
 
 /*

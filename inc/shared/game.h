@@ -182,7 +182,7 @@ typedef struct {
 
     // network messaging
     void (*multicast)(const vec3_t origin, multicast_t to);
-    void (*unicast)(edict_t *ent, qboolean reliable);
+    void (*unicast)(edict_t *ent, bool reliable, uint32_t dupe_key);
     void (*WriteChar)(int c);
     void (*WriteByte)(int c);
     void (*WriteShort)(int c);

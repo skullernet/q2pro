@@ -430,7 +430,7 @@ void Cmd_Inven_f(edict_t *ent)
     for (i = 0; i < MAX_ITEMS; i++) {
         gi.WriteShort(cl->pers.inventory[i]);
     }
-    gi.unicast(ent, true);
+    gi.unicast(ent, true, 0);
 }
 
 /*

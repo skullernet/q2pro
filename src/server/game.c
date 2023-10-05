@@ -88,7 +88,7 @@ Sends the contents of the mutlicast buffer to a single client.
 Archived in MVD stream.
 ===============
 */
-static void PF_Unicast(edict_t *ent, qboolean reliable)
+static void PF_Unicast(edict_t *ent, bool reliable, uint32_t dupe_key)
 {
     client_t    *client;
     int         cmd, flags, clientNum;
@@ -266,7 +266,7 @@ static void PF_Center_Print(edict_t *ent, const char *msg)
     MSG_WriteByte(svc_centerprint);
     MSG_WriteData(msg, strlen(msg) + 1);
 
-    PF_Unicast(ent, true);
+    PF_Unicast(ent, true, 0);
 }
 
 /*
@@ -669,7 +669,7 @@ static void PF_LocalSound(edict_t *target, const vec3_t origin,
         MSG_WriteByte(soundindex);
     MSG_WriteShort(sendchan);
 
-    PF_Unicast(target, !!(channel & CHAN_RELIABLE));
+    PF_Unicast(target, !!(channel & CHAN_RELIABLE), dupe_key);
 }
 
 void PF_Pmove(pmove_t *pm)

@@ -55,7 +55,7 @@ static game3_edict_t* translate_edict_to_game(edict_t* ent)
 static void wrap_unicast(game3_edict_t *gent, qboolean reliable)
 {
     edict_t *ent = translate_edict_from_game(gent);
-    game_import.unicast(ent, reliable);
+    game_import.unicast(ent, reliable, 0);
 }
 
 static void wrap_bprintf(int printlevel, const char *fmt, ...)
