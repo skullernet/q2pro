@@ -195,9 +195,9 @@ typedef struct {
     void (*WriteEntity)(const edict_t *e);
 
     // managed memory allocation
-    void *(*TagMalloc)(unsigned size, unsigned tag);
+    void *(*TagMalloc)(size_t size, int tag);
     void (*TagFree)(void *block);
-    void (*FreeTags)(unsigned tag);
+    void (*FreeTags)(int tag);
 
     // console variable interaction
     cvar_t *(*cvar)(const char *var_name, const char *value, int flags);

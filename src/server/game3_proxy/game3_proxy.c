@@ -264,6 +264,16 @@ static void *wrap_GetExtension(const char *name)
     return game_import.GetExtension(name);
 }
 
+static void *wrap_TagMalloc(unsigned size, unsigned tag)
+{
+    return game_import.TagMalloc(size, tag);
+}
+
+static void wrap_FreeTags(unsigned tag)
+{
+    game_import.FreeTags(tag);
+}
+
 static void *wrap_TagRealloc(void *ptr, size_t size)
 {
     return game_import_ex->TagRealloc(ptr, size);
@@ -599,9 +609,9 @@ game_export_t *GetGame3Proxy(game_import_t *import, const game_import_ex_t *impo
     import3.WriteDir = import->WriteDir;
     import3.WriteAngle = import->WriteAngle;
 
-    import3.TagMalloc = import->TagMalloc;
+    import3.TagMalloc = wrap_TagMalloc;
     import3.TagFree = import->TagFree;
-    import3.FreeTags = import->FreeTags;
+    import3.FreeTags = wrap_FreeTags;
 
     import3.cvar = import->cvar;
     import3.cvar_set = import->cvar_set;

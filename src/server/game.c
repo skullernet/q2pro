@@ -707,7 +707,7 @@ static qboolean PF_AreasConnected(int area1, int area2)
     return CM_AreasConnected(&sv.cm, area1, area2);
 }
 
-static void *PF_TagMalloc(unsigned size, unsigned tag)
+static void *PF_TagMalloc(size_t size, int tag)
 {
     if (tag > UINT16_MAX - TAG_MAX) {
         Com_Error(ERR_DROP, "%s: bad tag", __func__);
@@ -715,7 +715,7 @@ static void *PF_TagMalloc(unsigned size, unsigned tag)
     return Z_TagMallocz(size, tag + TAG_MAX);
 }
 
-static void PF_FreeTags(unsigned tag)
+static void PF_FreeTags(int tag)
 {
     if (tag > UINT16_MAX - TAG_MAX) {
         Com_Error(ERR_DROP, "%s: bad tag", __func__);
