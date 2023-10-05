@@ -170,7 +170,7 @@ typedef struct {
     int (*pointcontents)(const vec3_t point);
     qboolean (*inPVS)(const vec3_t p1, const vec3_t p2, bool portals);
     qboolean (*inPHS)(const vec3_t p1, const vec3_t p2, bool portals);
-    void (*SetAreaPortalState)(int portalnum, qboolean open);
+    void (*SetAreaPortalState)(int portalnum, bool open);
     qboolean (*AreasConnected)(int area1, int area2);
 
     // an entity will never be sent to a client or used for collision

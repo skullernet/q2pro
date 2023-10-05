@@ -269,6 +269,11 @@ static void *wrap_TagRealloc(void *ptr, size_t size)
     return game_import_ex->TagRealloc(ptr, size);
 }
 
+static void wrap_SetAreaPortalState(int portalnum, qboolean open)
+{
+    game_import.SetAreaPortalState(portalnum, open);
+}
+
 // Macro to check whether a member that wasn't synced has been unexpectedly changed
 #define VERIFY_UNCHANGED(pred, a, b, member) \
     if (pred)                                \
@@ -608,7 +613,7 @@ game_export_t *GetGame3Proxy(game_import_t *import, const game_import_ex_t *impo
     import3.AddCommandString = import->AddCommandString;
 
     import3.DebugGraph = import->DebugGraph;
-    import3.SetAreaPortalState = import->SetAreaPortalState;
+    import3.SetAreaPortalState = wrap_SetAreaPortalState;
     import3.AreasConnected = import->AreasConnected;
 
     game3_export = entry(&import3);

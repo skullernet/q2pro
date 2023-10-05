@@ -692,7 +692,7 @@ static void PF_AddCommandString(const char *string)
     Cbuf_AddText(&cmd_buffer, string);
 }
 
-static void PF_SetAreaPortalState(int portalnum, qboolean open)
+static void PF_SetAreaPortalState(int portalnum, bool open)
 {
     CM_SetAreaPortalState(&sv.cm, portalnum, open);
 }
