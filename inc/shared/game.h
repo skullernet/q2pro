@@ -355,6 +355,7 @@ typedef struct {
     // the init function will only be called when a game starts,
     // not each time a level is loaded.  Persistant data for clients
     // and the server can be allocated in init
+    void (*PreInit)(void); // [Paril-KEX] called before InitGame, to potentially change maxclients
     void (*Init)(void);
     void (*Shutdown)(void);
 

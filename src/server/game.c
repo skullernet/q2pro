@@ -1074,6 +1074,7 @@ void SV_InitGameProgs(void)
     import.frame_time_ms = SV_FRAMETIME;
 
     // initialize
+    ge->PreInit(); // FIXME: When to call PreInit(), when Init()?
     ge->Init();
 
     if (g_features->integer & GMF_PROTOCOL_EXTENSIONS) {

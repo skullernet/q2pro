@@ -446,6 +446,8 @@ static void sync_edicts_game_to_server(void)
     game_export.num_edicts = game3_export->num_edicts;
 }
 
+static void wrap_PreInit(void) { }
+
 static void wrap_Init(void)
 {
     game3_export->Init();
@@ -781,6 +783,7 @@ game_export_t *GetGame3Proxy(game_import_t *import, const game_import_ex_t *impo
         game3_export_ex = entry_ex(&game3_import_ex);
 
     game_export.apiversion = GAME_API_VERSION;
+    game_export.PreInit = wrap_PreInit;
     game_export.Init = wrap_Init;
     game_export.Shutdown = wrap_Shutdown;
     game_export.SpawnEntities = wrap_SpawnEntities;

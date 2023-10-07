@@ -1735,6 +1735,10 @@ void MVD_RemoveClient(client_t *client)
     cl->cl = client;
 }
 
+static void MVD_GamePreInit(void)
+{
+}
+
 static void MVD_GameInit(void)
 {
     mvd_t *mvd = &mvd_waitingRoom;
@@ -2331,6 +2335,7 @@ void MVD_PrepWorldFrame(void)
 game_export_t mvd_ge = {
     GAME_API_VERSION,
 
+    MVD_GamePreInit,
     MVD_GameInit,
     MVD_GameShutdown,
     MVD_GameSpawnEntities,
