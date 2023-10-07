@@ -1842,16 +1842,24 @@ static void MVD_GameShutdown(void)
 static void MVD_GameSpawnEntities(const char *mapname, const char *entstring, const char *spawnpoint)
 {
 }
-static void MVD_GameWriteGame(const char *filename, qboolean autosave)
+
+static char* MVD_GameWriteGameJson(bool autosave, size_t* json_size)
+{
+    *json_size = 0;
+    return NULL;
+}
+
+static void MVD_GameReadGameJson(const char *json)
 {
 }
-static void MVD_GameReadGame(const char *filename)
+
+static char* MVD_GameWriteLevelJson(bool transition, size_t* json_size)
 {
+    *json_size = 0;
+    return NULL;
 }
-static void MVD_GameWriteLevel(const char *filename)
-{
-}
-static void MVD_GameReadLevel(const char *filename)
+
+static void MVD_GameReadLevelJson(const char *json)
 {
 }
 
@@ -2326,10 +2334,10 @@ game_export_t mvd_ge = {
     MVD_GameInit,
     MVD_GameShutdown,
     MVD_GameSpawnEntities,
-    MVD_GameWriteGame,
-    MVD_GameReadGame,
-    MVD_GameWriteLevel,
-    MVD_GameReadLevel,
+    MVD_GameWriteGameJson,
+    MVD_GameReadGameJson,
+    MVD_GameWriteLevelJson,
+    MVD_GameReadLevelJson,
     MVD_GameClientConnect,
     MVD_GameClientBegin,
     MVD_GameClientUserinfoChanged,

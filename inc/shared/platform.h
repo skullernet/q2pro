@@ -48,6 +48,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #ifdef _WIN32
 #define os_mkdir(p)         _mkdir(p)
+#define os_rmdir(p)         _rmdir(p)
 #define os_unlink(p)        _unlink(p)
 #define os_stat(p, s)       _stat64(p, s)
 #define os_fstat(f, s)      _fstat64(f, s)
@@ -65,6 +66,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define Q_STATBUF           struct _stat64
 #else
 #define os_mkdir(p)         mkdir(p, 0775)
+#define os_rmdir(p)         rmdir(p)
 #define os_unlink(p)        unlink(p)
 #define os_stat(p, s)       stat(p, s)
 #define os_fstat(f, s)      fstat(f, s)

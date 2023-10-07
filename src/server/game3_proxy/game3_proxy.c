@@ -19,9 +19,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "../server.h"
 #include "game3_proxy.h"
 #include "game3.h"
+#include "shared/base85.h"
 
 #include <assert.h>
 #include <malloc.h>
+#include <stdlib.h>
 
 static void sync_single_edict_server_to_game(int index);
 static void sync_edicts_server_to_game(void);
@@ -472,27 +474,163 @@ static void wrap_SpawnEntities(const char *mapname, const char *entstring, const
     sync_edicts_game_to_server();
 }
 
-static void wrap_WriteGame(const char *filename, qboolean autosave)
+
+static char* make_temp_directory(void)
 {
-    sync_edicts_server_to_game();
-    game3_export->WriteGame(filename, autosave);
+#if defined(_WIN32)
+    char temp_name[MAX_OSPATH];
+    while(true)
+    {
+        tmpnam_s(temp_name, sizeof(temp_name));
+        if (_mkdir(temp_name) == 0)
+            break;
+        if (errno != EEXIST)
+            return NULL;
+    }
+    return strdup(temp_name);
+#else
+    char temp_dir[MAX_OSPATH];
+    Q_strlcpy(temp_dir, "/tmp/q2game-XXXXXXXX", sizeof(temp_dir));
+    if (!mkdtemp(temp_dir))
+        Com_Error(ERR_DROP, "Couldn't get temp directory");
+    return strdup(temp_dir);
+#endif
 }
 
-static void wrap_ReadGame(const char *filename)
+static char* read_as_base85(const char* filename, size_t* result_size)
 {
-    game3_export->ReadGame(filename);
+    FILE *f = fopen(filename, "rb");
+    if (!f)
+        Com_Error(ERR_DROP, "Couldn't open %s", filename);
+
+    struct base85_context_t ctx;
+    ascii85_context_init(&ctx);
+
+    uint8_t buf[1024];
+    while(!feof(f)) {
+        size_t num_read = fread(buf, sizeof(char), sizeof(buf) / sizeof(buf[0]), f);
+        if (num_read == 0 && ferror(f))
+            Com_Error(ERR_DROP, "Error reading %s", filename);
+        ascii85_encode(buf, num_read, &ctx);
+    }
+    fclose(f);
+
+    ascii85_encode_last(&ctx);
+
+    const char *encoded_data = (const char *)ascii85_get_output(&ctx, result_size);
+    char *result = Z_CopyString(encoded_data);
+    ascii85_context_destroy(&ctx);
+
+    return result;
+}
+
+static void write_as_base85(const char* filename, const char* base85)
+{
+    FILE *f = fopen(filename, "wb");
+    if (!f)
+        Com_Error(ERR_DROP, "Couldn't open %s", filename);
+
+    struct base85_context_t ctx;
+    ascii85_context_init(&ctx);
+
+    ascii85_decode((const uint8_t*)base85, strlen(base85), &ctx);
+    ascii85_decode_last(&ctx);
+
+    size_t data_size = 0;
+    const uint8_t *data = ascii85_get_output(&ctx, &data_size);
+    if (fwrite(data, 1, data_size, f) != data_size)
+        Com_Error(ERR_DROP, "Error writing %s", filename);
+    fclose(f);
+
+    ascii85_context_destroy(&ctx);
+}
+
+static char* wrap_WriteGameJson(bool autosave, size_t* json_size)
+{
+    sync_edicts_server_to_game();
+
+    /* Game 3 interface only supports writing to files.
+     * So have the game write itself to a temp file,
+     * and read _that_ file, and encode it into a string... */
+    char *save_dir = make_temp_directory();
+    if (!save_dir)
+        Com_Error(ERR_DROP, "Couldn't create temp dir to save game");
+
+    char game_fn[MAX_OSPATH];
+    Q_snprintf(game_fn, sizeof(game_fn), "%s/game.ssv", save_dir);
+    game3_export->WriteGame(game_fn, autosave);
+
+    char* result = read_as_base85(game_fn, json_size);
+
+    os_unlink(game_fn);
+    os_rmdir(save_dir);
+    free(save_dir);
+
+    return result;
+}
+
+static void wrap_ReadGameJson(const char *json)
+{
+    /* Game 3 interface only supports reading files.
+     * So decode the game data into a temp file
+     * and read _that_ file... */
+    char *save_dir = make_temp_directory();
+    if (!save_dir)
+        Com_Error(ERR_DROP, "Couldn't create temp dir to load game");
+
+    char game_fn[MAX_OSPATH];
+    Q_snprintf(game_fn, sizeof(game_fn), "%s/game.ssv", save_dir);
+    write_as_base85(game_fn, json);
+
+    game3_export->ReadGame(game_fn);
+
+    os_unlink(game_fn);
+    os_rmdir(save_dir);
+    free(save_dir);
+
     sync_edicts_game_to_server();
 }
 
-static void wrap_WriteLevel(const char *filename)
+static char* wrap_WriteLevelJson(bool transition, size_t* json_size)
 {
     sync_edicts_server_to_game();
-    game3_export->WriteLevel(filename);
+
+    /* Game 3 interface only supports writing to files.
+     * So have the game write itself to a temp file,
+     * and read _that_ file, and encode it into a string... */
+    char *save_dir = make_temp_directory();
+    if (!save_dir)
+        Com_Error(ERR_DROP, "Couldn't create temp dir to save level");
+
+    char level_fn[MAX_OSPATH];
+    Q_snprintf(level_fn, sizeof(level_fn), "%s/level.sav", save_dir);
+    game3_export->WriteLevel(level_fn);
+
+    char* result = read_as_base85(level_fn, json_size);
+
+    os_unlink(level_fn);
+    os_rmdir(save_dir);
+    free(save_dir);
+
+    return result;
 }
 
-static void wrap_ReadLevel(const char *filename)
+static void wrap_ReadLevelJson(const char *json)
 {
-    game3_export->ReadLevel(filename);
+    char *save_dir = make_temp_directory();
+    if (!save_dir)
+        Com_Error(ERR_DROP, "Couldn't create temp dir to load game");
+
+    char level_fn[MAX_OSPATH];
+    Q_snprintf(level_fn, sizeof(level_fn), "%s/level.sav", save_dir);
+    write_as_base85(level_fn, json);
+
+    game3_export->ReadLevel(level_fn);
+
+    os_unlink(level_fn);
+    os_rmdir(save_dir);
+    free(save_dir);
+
     sync_edicts_game_to_server();
 }
 
@@ -646,10 +784,10 @@ game_export_t *GetGame3Proxy(game_import_t *import, const game_import_ex_t *impo
     game_export.Init = wrap_Init;
     game_export.Shutdown = wrap_Shutdown;
     game_export.SpawnEntities = wrap_SpawnEntities;
-    game_export.WriteGame = wrap_WriteGame;
-    game_export.ReadGame = wrap_ReadGame;
-    game_export.WriteLevel = wrap_WriteLevel;
-    game_export.ReadLevel = wrap_ReadLevel;
+    game_export.WriteGameJson = wrap_WriteGameJson;
+    game_export.ReadGameJson = wrap_ReadGameJson;
+    game_export.WriteLevelJson = wrap_WriteLevelJson;
+    game_export.ReadLevelJson = wrap_ReadLevelJson;
 
     game_export.ClientConnect = wrap_ClientConnect;
     game_export.ClientBegin = wrap_ClientBegin;

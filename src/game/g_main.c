@@ -84,10 +84,10 @@ void ClientDisconnect(edict_t *ent);
 void ClientBegin(edict_t *ent);
 void ClientCommand(edict_t *ent);
 void RunEntity(edict_t *ent);
-void WriteGame(const char *filename, qboolean autosave);
-void ReadGame(const char *filename);
-void WriteLevel(const char *filename);
-void ReadLevel(const char *filename);
+char* WriteGameJson(bool autosave, size_t* json_size);
+void ReadGameJson(const char *json);
+char* WriteLevelJson(bool transition, size_t* json_size);
+void ReadLevelJson(const char *json);
 void InitGame(void);
 void G_RunFrame(void);
 
@@ -224,10 +224,10 @@ q_exported game_export_t *GetGameAPI(game_import_t *import)
     globals.Shutdown = ShutdownGame;
     globals.SpawnEntities = SpawnEntities;
 
-    globals.WriteGame = WriteGame;
-    globals.ReadGame = ReadGame;
-    globals.WriteLevel = WriteLevel;
-    globals.ReadLevel = ReadLevel;
+    globals.WriteGameJson = WriteGameJson;
+    globals.ReadGameJson = ReadGameJson;
+    globals.WriteLevelJson = WriteLevelJson;
+    globals.ReadLevelJson = ReadLevelJson;
 
     globals.ClientThink = ClientThink;
     globals.ClientConnect = ClientConnect;

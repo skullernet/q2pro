@@ -64,6 +64,7 @@ client_src = [
   'src/server/send.c',
   'src/server/user.c',
   'src/server/world.c',
+  'src/shared/base85.c',
   'src/shared/m_flash.c',
 ]
 
@@ -106,6 +107,7 @@ server_src = [
   'src/server/send.c',
   'src/server/user.c',
   'src/server/world.c',
+  'src/shared/base85.c',
 ]
 
 game_src = [
@@ -156,6 +158,7 @@ game_src = [
   'src/game/p_trail.c',
   'src/game/p_view.c',
   'src/game/p_weapon.c',
+  'src/shared/base85.c',
   'src/shared/m_flash.c',
   'src/shared/shared.c',
   'src/common/pmove.c',

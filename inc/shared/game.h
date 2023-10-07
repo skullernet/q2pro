@@ -365,13 +365,17 @@ typedef struct {
     // about the world state and the clients.
     // WriteGame is called every time a level is exited.
     // ReadGame is called on a loadgame.
-    void (*WriteGame)(const char *filename, qboolean autosave);
-    void (*ReadGame)(const char *filename);
+    // returns pointer to tagmalloc'd allocated string.
+    // tagfree after use
+    char *(*WriteGameJson)(bool autosave, size_t *out_size);
+    void (*ReadGameJson)(const char *json);
 
     // ReadLevel is called after the default map information has been
     // loaded with SpawnEntities
-    void (*WriteLevel)(const char *filename);
-    void (*ReadLevel)(const char *filename);
+    // returns pointer to tagmalloc'd allocated string.
+    // tagfree after use
+    char *(*WriteLevelJson)(bool transition, size_t *out_size);
+    void (*ReadLevelJson)(const char *json);
 
     qboolean (*ClientConnect)(edict_t *ent, char *userinfo);
     void (*ClientBegin)(edict_t *ent);
