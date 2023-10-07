@@ -1896,7 +1896,7 @@ static edict_t *MVD_GameClientChooseSlot (const char *userinfo, const char *soci
     return NULL;
 }
 
-static qboolean MVD_GameClientConnect(edict_t *ent, char *userinfo)
+static bool MVD_GameClientConnect(edict_t *ent, char *userinfo, const char *social_id, bool isBot)
 {
     mvd_client_t *client = EDICT_MVDCL(ent);
     mvd_t *mvd = NULL;

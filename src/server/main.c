@@ -1120,7 +1120,7 @@ static void SVC_DirectConnect(void)
     // get the game a chance to reject this connection or modify the userinfo
     sv_client = newcl;
     sv_player = newcl->edict;
-    allow = ge->ClientConnect(newcl->edict, userinfo);
+    allow = ge->ClientConnect(newcl->edict, userinfo, "", false);
     sv_client = NULL;
     sv_player = NULL;
     if (!allow) {

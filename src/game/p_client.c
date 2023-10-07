@@ -1439,7 +1439,7 @@ Changing levels will NOT cause this to be called again, but
 loadgames will.
 ============
 */
-qboolean ClientConnect(edict_t *ent, char *userinfo)
+bool ClientConnect(edict_t *ent, char *userinfo, const char *social_id, bool isBot)
 {
     char    *value;
 

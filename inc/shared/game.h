@@ -387,7 +387,7 @@ typedef struct {
     // return a slot that is currently in use by another client; that must
     // throw a fatal error.
     edict_t *(*ClientChooseSlot) (const char *userinfo, const char *social_id, bool isBot, edict_t **ignore, size_t num_ignore, bool cinematic);
-    qboolean (*ClientConnect)(edict_t *ent, char *userinfo);
+    bool (*ClientConnect)(edict_t *ent, char *userinfo, const char *social_id, bool isBot);
     void (*ClientBegin)(edict_t *ent);
     void (*ClientUserinfoChanged)(edict_t *ent, char *userinfo);
     void (*ClientDisconnect)(edict_t *ent);

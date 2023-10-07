@@ -670,11 +670,11 @@ static edict_t *game_ClientChooseSlot (const char *userinfo, const char *social_
     return NULL;
 }
 
-static qboolean wrap_ClientConnect(edict_t *ent, char *userinfo)
+static bool wrap_ClientConnect(edict_t *ent, char *userinfo, const char *social_id, bool isBot)
 {
     int ent_idx = NUM_FOR_EDICT(ent);
     sync_single_edict_server_to_game(ent_idx);
-    qboolean result = game3_export->ClientConnect(translate_edict_to_game(ent), userinfo);
+    bool result = game3_export->ClientConnect(translate_edict_to_game(ent), userinfo);
     sync_single_edict_game_to_server(ent_idx);
     game_export.num_edicts = game3_export->num_edicts;
     return result;
