@@ -1031,6 +1031,27 @@ void spectator_respawn(edict_t *ent)
 
 //==============================================================
 
+static bool edict_ignored(edict_t *ent, edict_t **ignore, size_t num_ignore)
+{
+    for (size_t i = 0; i < num_ignore; i++) {
+        if (ent == ignore[i])
+            return true;
+    }
+    return false;
+}
+
+edict_t *ClientChooseSlot (const char *userinfo, const char *social_id, bool isBot, edict_t **ignore, size_t num_ignore, bool cinematic)
+{
+    // find a free client slot
+    for (int i = 0; i < game.maxclients; i++) {
+        edict_t *ent = &g_edicts[i + 1];
+        if (!edict_ignored(ent, ignore, num_ignore) && !game.clients[i].pers.connected)
+            return ent;
+    }
+
+    return NULL;
+}
+
 #define PROTOCOL_VERSION_DEFAULT    34
 #define PROTOCOL_VERSION_R1Q2       35
 #define PROTOCOL_VERSION_Q2PRO      36

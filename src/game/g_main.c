@@ -77,6 +77,7 @@ cvar_t  *sv_maplist;
 cvar_t  *sv_features;
 
 void SpawnEntities(const char *mapname, const char *entities, const char *spawnpoint);
+edict_t *ClientChooseSlot(const char *userinfo, const char *social_id, bool isBot, edict_t **ignore, size_t num_ignore, bool cinematic);
 void ClientThink(edict_t *ent, usercmd_t *cmd);
 qboolean ClientConnect(edict_t *ent, char *userinfo);
 void ClientUserinfoChanged(edict_t *ent, char *userinfo);
@@ -231,6 +232,7 @@ q_exported game_export_t *GetGameAPI(game_import_t *import)
     globals.ReadLevelJson = ReadLevelJson;
     globals.CanSave = CanSave;
 
+    globals.ClientChooseSlot = ClientChooseSlot;
     globals.ClientThink = ClientThink;
     globals.ClientConnect = ClientConnect;
     globals.ClientUserinfoChanged = ClientUserinfoChanged;

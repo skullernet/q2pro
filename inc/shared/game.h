@@ -382,6 +382,11 @@ typedef struct {
     // currently or not.
     bool (*CanSave)(void);
 
+    // [Paril-KEX] choose a free gclient_t slot for the given social ID; for
+    // coop slot re-use. Return nullptr if none is available. You can not
+    // return a slot that is currently in use by another client; that must
+    // throw a fatal error.
+    edict_t *(*ClientChooseSlot) (const char *userinfo, const char *social_id, bool isBot, edict_t **ignore, size_t num_ignore, bool cinematic);
     qboolean (*ClientConnect)(edict_t *ent, char *userinfo);
     void (*ClientBegin)(edict_t *ent);
     void (*ClientUserinfoChanged)(edict_t *ent, char *userinfo);

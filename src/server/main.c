@@ -946,6 +946,8 @@ static client_t *find_client_slot(conn_params_t *params)
     if (*s == '!' && sv_reserved_slots->integer == params->reserved)
         return redirect(s + 1);
 
+    // FIXME: Use ClientChooseSlot()
+
     // find a free client slot
     for (i = 0; i < sv_maxclients->integer - params->reserved; i++) {
         cl = &svs.client_pool[i];

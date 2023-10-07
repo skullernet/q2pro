@@ -1872,6 +1872,30 @@ static bool MVD_GameCanSave(void)
     return false;
 }
 
+static bool edict_ignored(edict_t *ent, edict_t **ignore, size_t num_ignore)
+{
+    for (size_t i = 0; i < num_ignore; i++) {
+        if (ent == ignore[i])
+            return true;
+    }
+    return false;
+}
+
+static edict_t *MVD_GameClientChooseSlot (const char *userinfo, const char *social_id, bool isBot, edict_t **ignore, size_t num_ignore, bool cinematic)
+{
+    client_t *cl;
+    int i;
+
+    // find a free client slot
+    for (i = 0; i < sv_maxclients->integer; i++) {
+        cl = &svs.client_pool[i];
+        if (!edict_ignored(cl->edict, ignore, num_ignore) && cl->state == cs_free)
+            return cl->edict;
+    }
+
+    return NULL;
+}
+
 static qboolean MVD_GameClientConnect(edict_t *ent, char *userinfo)
 {
     mvd_client_t *client = EDICT_MVDCL(ent);
@@ -2349,6 +2373,7 @@ game_export_t mvd_ge = {
     MVD_GameWriteLevelJson,
     MVD_GameReadLevelJson,
     MVD_GameCanSave,
+    MVD_GameClientChooseSlot,
     MVD_GameClientConnect,
     MVD_GameClientBegin,
     MVD_GameClientUserinfoChanged,

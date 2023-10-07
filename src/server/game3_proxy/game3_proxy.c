@@ -646,6 +646,30 @@ static bool wrap_CanSave(void)
     return true;
 }
 
+static bool edict_ignored(edict_t *ent, edict_t **ignore, size_t num_ignore)
+{
+    for (size_t i = 0; i < num_ignore; i++) {
+        if (ent == ignore[i])
+            return true;
+    }
+    return false;
+}
+
+static edict_t *game_ClientChooseSlot (const char *userinfo, const char *social_id, bool isBot, edict_t **ignore, size_t num_ignore, bool cinematic)
+{
+    client_t *cl;
+    int i;
+
+    // find a free client slot
+    for (i = 0; i < sv_maxclients->integer; i++) {
+        cl = &svs.client_pool[i];
+        if (!edict_ignored(cl->edict, ignore, num_ignore) && cl->state == cs_free)
+            return cl->edict;
+    }
+
+    return NULL;
+}
+
 static qboolean wrap_ClientConnect(edict_t *ent, char *userinfo)
 {
     int ent_idx = NUM_FOR_EDICT(ent);
@@ -803,6 +827,7 @@ game_export_t *GetGame3Proxy(game_import_t *import, const game_import_ex_t *impo
     game_export.ReadLevelJson = wrap_ReadLevelJson;
     game_export.CanSave = wrap_CanSave;
 
+    game_export.ClientChooseSlot = game_ClientChooseSlot;
     game_export.ClientConnect = wrap_ClientConnect;
     game_export.ClientBegin = wrap_ClientBegin;
     game_export.ClientUserinfoChanged = wrap_ClientUserinfoChanged;
