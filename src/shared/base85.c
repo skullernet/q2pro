@@ -355,7 +355,7 @@ B85_CONTEXT_DESTROY (struct base85_context_t *ctx)
 }
 
 static b85_result_t
-base85_encode_strict (struct base85_context_t *ctx)
+base85_encode_strict (struct base85_context_t *ctx, bool no_short)
 {
   uint8_t *h = ctx->hold;
   uint32_t v = h[0] << 24 | h[1] << 16 | h[2] << 8 | h[3];
@@ -365,7 +365,7 @@ base85_encode_strict (struct base85_context_t *ctx)
   b85_result_t rv = B85_E_UNSPECIFIED;
 
 #if !defined (B85_ZEROMQ)
-  if (!v)
+  if (!v && !no_short)
   {
     rv = base85_context_request_memory (ctx, 1);
     if (rv)
@@ -404,7 +404,7 @@ B85_ENCODE (const uint8_t *b, size_t cb_b, struct base85_context_t *ctx)
     ctx->processed++;
     if (4 == ctx->pos)
     {
-      b85_result_t rv = base85_encode_strict (ctx);
+      b85_result_t rv = base85_encode_strict (ctx, false);
       if (rv)
         return rv;
     }
@@ -432,7 +432,7 @@ B85_ENCODE_LAST (struct base85_context_t *ctx)
   for (size_t i = pos; i < 4; ++i)
     ctx->hold[i] = 0;
 
-  rv = base85_encode_strict (ctx);
+  rv = base85_encode_strict (ctx, true);
   if (B85_E_OK == rv)
   {
     ctx->out_pos -= 4 - pos;
