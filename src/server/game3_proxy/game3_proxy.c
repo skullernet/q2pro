@@ -689,11 +689,11 @@ static void wrap_ClientBegin(edict_t *ent)
     game_export.num_edicts = game3_export->num_edicts;
 }
 
-static void wrap_ClientUserinfoChanged(edict_t *ent, char *userinfo)
+static void wrap_ClientUserinfoChanged(edict_t *ent, const char *userinfo)
 {
     int ent_idx = NUM_FOR_EDICT(ent);
     sync_single_edict_server_to_game(ent_idx);
-    game3_export->ClientUserinfoChanged(translate_edict_to_game(ent), userinfo);
+    game3_export->ClientUserinfoChanged(translate_edict_to_game(ent), (char*)userinfo);
     sync_single_edict_game_to_server(ent_idx);
     game_export.num_edicts = game3_export->num_edicts;
 }

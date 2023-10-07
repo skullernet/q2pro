@@ -1985,7 +1985,7 @@ static void MVD_GameClientBegin(edict_t *ent)
     mvd_dirty = true;
 }
 
-static void MVD_GameClientUserinfoChanged(edict_t *ent, char *userinfo)
+static void MVD_GameClientUserinfoChanged(edict_t *ent, const char *userinfo)
 {
     mvd_client_t *client = EDICT_MVDCL(ent);
     int fov;

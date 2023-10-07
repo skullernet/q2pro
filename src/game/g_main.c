@@ -80,7 +80,7 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 edict_t *ClientChooseSlot(const char *userinfo, const char *social_id, bool isBot, edict_t **ignore, size_t num_ignore, bool cinematic);
 void ClientThink(edict_t *ent, usercmd_t *cmd);
 bool ClientConnect(edict_t *ent, char *userinfo, const char *social_id, bool isBot);
-void ClientUserinfoChanged(edict_t *ent, char *userinfo);
+void ClientUserinfoChanged(edict_t *ent, const char *userinfo);
 void ClientDisconnect(edict_t *ent);
 void ClientBegin(edict_t *ent);
 void ClientCommand(edict_t *ent);
