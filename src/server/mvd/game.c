@@ -1867,6 +1867,11 @@ static void MVD_GameReadLevelJson(const char *json)
 {
 }
 
+static bool MVD_GameCanSave(void)
+{
+    return false;
+}
+
 static qboolean MVD_GameClientConnect(edict_t *ent, char *userinfo)
 {
     mvd_client_t *client = EDICT_MVDCL(ent);
@@ -2343,6 +2348,7 @@ game_export_t mvd_ge = {
     MVD_GameReadGameJson,
     MVD_GameWriteLevelJson,
     MVD_GameReadLevelJson,
+    MVD_GameCanSave,
     MVD_GameClientConnect,
     MVD_GameClientBegin,
     MVD_GameClientUserinfoChanged,

@@ -636,6 +636,16 @@ static void wrap_ReadLevelJson(const char *json)
     sync_edicts_game_to_server();
 }
 
+static bool wrap_CanSave(void)
+{
+    if (sv_maxclients->integer == 1 && svs.client_pool[0].edict->client->ps.stats[STAT_HEALTH] <= 0) {
+        Com_Printf("Can't savegame while dead!\n");
+        return false;
+    }
+
+    return true;
+}
+
 static qboolean wrap_ClientConnect(edict_t *ent, char *userinfo)
 {
     int ent_idx = NUM_FOR_EDICT(ent);
@@ -791,6 +801,7 @@ game_export_t *GetGame3Proxy(game_import_t *import, const game_import_ex_t *impo
     game_export.ReadGameJson = wrap_ReadGameJson;
     game_export.WriteLevelJson = wrap_WriteLevelJson;
     game_export.ReadLevelJson = wrap_ReadLevelJson;
+    game_export.CanSave = wrap_CanSave;
 
     game_export.ClientConnect = wrap_ClientConnect;
     game_export.ClientBegin = wrap_ClientBegin;

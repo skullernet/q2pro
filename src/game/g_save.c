@@ -1028,3 +1028,14 @@ void ReadLevelJson(const char *json)
 
     ascii85_context_destroy(&ctx);
 }
+
+// Return whether game can be saved
+bool CanSave(void)
+{
+    if (game.maxclients == 1 && game.clients[0].ps.stats[STAT_HEALTH] <= 0) {
+        Com_Printf("Can't savegame while dead!\n");
+        return false;
+    }
+
+    return true;
+}

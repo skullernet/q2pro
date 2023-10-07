@@ -88,6 +88,7 @@ char* WriteGameJson(bool autosave, size_t* json_size);
 void ReadGameJson(const char *json);
 char* WriteLevelJson(bool transition, size_t* json_size);
 void ReadLevelJson(const char *json);
+bool CanSave(void);
 void InitGame(void);
 void G_RunFrame(void);
 
@@ -228,6 +229,7 @@ q_exported game_export_t *GetGameAPI(game_import_t *import)
     globals.ReadGameJson = ReadGameJson;
     globals.WriteLevelJson = WriteLevelJson;
     globals.ReadLevelJson = ReadLevelJson;
+    globals.CanSave = CanSave;
 
     globals.ClientThink = ClientThink;
     globals.ClientConnect = ClientConnect;

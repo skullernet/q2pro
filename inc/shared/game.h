@@ -378,6 +378,10 @@ typedef struct {
     char *(*WriteLevelJson)(bool transition, size_t *out_size);
     void (*ReadLevelJson)(const char *json);
 
+    // [Paril-KEX] game can tell the server whether a save is allowed
+    // currently or not.
+    bool (*CanSave)(void);
+
     qboolean (*ClientConnect)(edict_t *ent, char *userinfo);
     void (*ClientBegin)(edict_t *ent);
     void (*ClientUserinfoChanged)(edict_t *ent, char *userinfo);
@@ -438,7 +442,6 @@ typedef struct {
     uint32_t    structsize;
 
     void        *(*GetExtension)(const char *name);
-    qboolean    (*CanSave)(void);
     void        (*PrepFrame)(void);
     void        (*RestartFilesystem)(void); // called when fs_restart is issued
 } game_export_ex_t;
