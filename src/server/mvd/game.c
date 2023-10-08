@@ -2296,7 +2296,7 @@ fail:
     MVD_StopRecord(mvd);
 }
 
-static void MVD_GameRunFrame(void)
+static void MVD_GameRunFrame(bool main_loop)
 {
     mvd_t *mvd, *next;
     int numplayers = 0;

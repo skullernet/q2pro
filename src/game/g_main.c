@@ -91,7 +91,7 @@ char* WriteLevelJson(bool transition, size_t* json_size);
 void ReadLevelJson(const char *json);
 bool CanSave(void);
 void InitGame(void);
-void G_RunFrame(void);
+void G_RunFrame(bool main_loop);
 
 //===================================================================
 
@@ -479,7 +479,7 @@ G_RunFrame
 Advances the world by 0.1 seconds
 ================
 */
-void G_RunFrame(void)
+void G_RunFrame(bool main_loop)
 {
     int     i;
     edict_t *ent;

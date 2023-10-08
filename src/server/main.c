@@ -1781,7 +1781,7 @@ static void SV_RunGameFrame(void)
         time_before_game = Sys_Milliseconds();
 #endif
 
-    ge->RunFrame();
+    ge->RunFrame(true);
 
 #if USE_CLIENT
     if (host_speeds->integer)

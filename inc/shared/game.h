@@ -394,7 +394,7 @@ typedef struct {
     void (*ClientCommand)(edict_t *ent);
     void (*ClientThink)(edict_t *ent, usercmd_t *cmd);
 
-    void (*RunFrame)(void);
+    void (*RunFrame)(bool main_loop);
 
     // ServerCommand will be called when an "sv <command>" command is issued on the
     // server console.

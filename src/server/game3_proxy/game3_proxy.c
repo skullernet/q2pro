@@ -723,7 +723,7 @@ static void wrap_ClientThink(edict_t *ent, usercmd_t *cmd)
     sync_edicts_game_to_server();
 }
 
-static void wrap_RunFrame(void)
+static void wrap_RunFrame(bool main_loop)
 {
     sync_edicts_server_to_game();
     game3_export->RunFrame();
