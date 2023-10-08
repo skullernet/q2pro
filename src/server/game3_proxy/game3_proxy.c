@@ -19,6 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "../server.h"
 #include "game3_proxy.h"
 #include "game3.h"
+#include "game3_pmove.h"
 #include "shared/base85.h"
 
 #include <assert.h>
@@ -171,6 +172,15 @@ static qboolean wrap_inPVS(const vec3_t p1, const vec3_t p2)
 static qboolean wrap_inPHS(const vec3_t p1, const vec3_t p2)
 {
     return game_import.inPHS(p1, p2, true);
+}
+
+static void wrap_Pmove(game3_pmove_t *pmove)
+{
+    if (sv_client) {
+        game3_Pmove(pmove, &sv_client->pmp);
+    } else {
+        game3_Pmove(pmove, &sv_pmp);
+    }
 }
 
 static void wrap_sound(game3_edict_t *gent, int channel,
@@ -787,7 +797,7 @@ game_export_t *GetGame3Proxy(game_import_t *import, const game_import_ex_t *impo
     import3.setmodel = wrap_setmodel;
     import3.inPVS = wrap_inPVS;
     import3.inPHS = wrap_inPHS;
-    import3.Pmove = PF_Pmove;
+    import3.Pmove = wrap_Pmove;
 
     import3.modelindex = import->modelindex;
     import3.soundindex = import->soundindex;

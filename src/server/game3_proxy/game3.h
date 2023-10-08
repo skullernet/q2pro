@@ -62,6 +62,32 @@ typedef struct {
     game3_edict_t  *ent;    // not set by CM_*() functions
 } game3_trace_t;
 
+typedef struct {
+    // state (in / out)
+    pmove_state_t   s;
+
+    // command (in)
+    usercmd_t       cmd;
+    qboolean        snapinitial;    // if s has been changed outside pmove
+
+    // results (out)
+    int         numtouch;
+    game3_edict_t  *touchents[MAXTOUCH];
+
+    vec3_t      viewangles;         // clamped
+    float       viewheight;
+
+    vec3_t      mins, maxs;         // bounding box size
+
+    game3_edict_t  *groundentity;
+    int         watertype;
+    int         waterlevel;
+
+    // callbacks to test the world
+    game3_trace_t (* q_gameabi trace)(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end);
+    int         (*pointcontents)(const vec3_t point);
+} game3_pmove_t;
+
 //===============================================================
 
 //
@@ -105,7 +131,7 @@ typedef struct {
     void (*linkentity)(game3_edict_t *ent);
     void (*unlinkentity)(game3_edict_t *ent);     // call before removing an interactive edict
     int (*BoxEdicts)(const vec3_t mins, const vec3_t maxs, game3_edict_t **list, int maxcount, int areatype);
-    void (*Pmove)(pmove_t *pmove);          // player movement code common with client prediction
+    void (*Pmove)(game3_pmove_t *pmove);          // player movement code common with client prediction
 
     // network messaging
     void (*multicast)(const vec3_t origin, multicast_t to);
