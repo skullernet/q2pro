@@ -1233,6 +1233,10 @@ void ClientBeginDeathmatch(edict_t *ent)
         gi.WriteShort(ent - g_edicts);
         gi.WriteByte(MZ_LOGIN);
         gi.multicast(ent->s.origin, MULTICAST_PVS);
+
+        // hold in place briefly
+        ent->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
+        ent->client->ps.pmove.pm_time = 200 >> 3;
     }
 
     gi.bprintf(PRINT_HIGH, "%s entered the game\n", ent->client->pers.netname);
@@ -1277,6 +1281,10 @@ void ClientBegin(edict_t *ent)
         ent->classname = "player";
         InitClientResp(ent->client);
         PutClientInServer(ent);
+
+        // hold in place briefly
+        ent->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
+        ent->client->ps.pmove.pm_time = 200 >> 3;
     }
 
     if (level.intermission_framenum) {
