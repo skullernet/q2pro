@@ -416,6 +416,9 @@ typedef struct {
     size_t      edict_size;
     uint32_t    num_edicts;     // current number, <= max_edicts
     uint32_t    max_edicts;
+
+    // [Paril-KEX] special flags to indicate something to the server
+    int server_flags;
 } game_export_t;
 
 typedef game_export_t *(*game_entry_t)(game_import_t *);
