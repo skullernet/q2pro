@@ -1702,30 +1702,10 @@ player processing happens outside RunWorldFrame
 */
 static void SV_PrepWorldFrame(void)
 {
-    edict_t    *ent;
-    int        i;
-
-#if USE_MVD_CLIENT
-    if (sv.state == ss_broadcast) {
-        MVD_PrepWorldFrame();
-        return;
-    }
-#endif
-
-    if (gex && gex->PrepFrame) {
-        gex->PrepFrame();
-        return;
-    }
-
     if (!SV_FRAMESYNC)
         return;
 
-    for (i = 1; i < ge->num_edicts; i++) {
-        ent = EDICT_NUM(i);
-
-        // events only last for a single keyframe
-        ent->s.event = 0;
-    }
+    ge->PrepFrame();
 }
 
 // pause if there is only local client on the server

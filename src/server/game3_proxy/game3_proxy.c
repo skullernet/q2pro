@@ -730,6 +730,18 @@ static void wrap_RunFrame(bool main_loop)
     sync_edicts_game_to_server();
 }
 
+static void wrap_PrepFrame(void)
+{
+    for (int i = 1; i < game3_export->num_edicts; i++) {
+        game3_edict_t *gent = GAME_EDICT_NUM(i);
+        edict_t *sent = EDICT_NUM(i);
+
+        // events only last for a single keyframe
+        gent->s.event = 0;
+        sent->s.event = 0;
+    }
+}
+
 static void wrap_ServerCommand(void)
 {
     sync_edicts_server_to_game();
@@ -835,6 +847,7 @@ game_export_t *GetGame3Proxy(game_import_t *import, const game_import_ex_t *impo
     game_export.ClientCommand = wrap_ClientCommand;
     game_export.ClientThink = wrap_ClientThink;
     game_export.RunFrame = wrap_RunFrame;
+    game_export.PrepFrame = wrap_PrepFrame;
     game_export.ServerCommand = wrap_ServerCommand;
 
     return &game_export;

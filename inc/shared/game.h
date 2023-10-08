@@ -395,6 +395,8 @@ typedef struct {
     void (*ClientThink)(edict_t *ent, usercmd_t *cmd);
 
     void (*RunFrame)(bool main_loop);
+    // [Paril-KEX] allow the game DLL to clear per-frame stuff
+    void (*PrepFrame)(void);
 
     // ServerCommand will be called when an "sv <command>" command is issued on the
     // server console.
@@ -447,7 +449,6 @@ typedef struct {
     uint32_t    structsize;
 
     void        *(*GetExtension)(const char *name);
-    void        (*PrepFrame)(void);
     void        (*RestartFilesystem)(void); // called when fs_restart is issued
 } game_export_ex_t;
 

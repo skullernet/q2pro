@@ -2335,11 +2335,7 @@ update:
     }
 }
 
-static void MVD_GameServerCommand(void)
-{
-}
-
-void MVD_PrepWorldFrame(void)
+static void MVD_GamePrepFrame(void)
 {
     mvd_t *mvd;
     edict_t *ent;
@@ -2358,6 +2354,10 @@ void MVD_PrepWorldFrame(void)
             ent->s.event = 0;
         }
     }
+}
+
+static void MVD_GameServerCommand(void)
+{
 }
 
 
@@ -2381,5 +2381,6 @@ game_export_t mvd_ge = {
     MVD_GameClientCommand,
     MVD_GameClientThink,
     MVD_GameRunFrame,
+    MVD_GamePrepFrame,
     MVD_GameServerCommand
 };
