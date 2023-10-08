@@ -90,7 +90,7 @@ typedef struct mface_s {
 
     unsigned        drawframe;
     unsigned        dlightframe;
-    unsigned        dlightbits;
+    uint64_t        dlightbits;
 
     struct entity_s     *entity;
     struct mface_s      *next;

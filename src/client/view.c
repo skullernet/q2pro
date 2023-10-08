@@ -221,7 +221,7 @@ static void V_TestLights(void)
         return;
     }
 
-    r_numdlights = 32;
+    r_numdlights = MAX_DLIGHTS;
     memset(r_dlights, 0, sizeof(r_dlights));
 
     for (i = 0; i < r_numdlights; i++) {

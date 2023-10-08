@@ -21,7 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/cvar.h"
 #include "common/error.h"
 
-#define MAX_DLIGHTS     32
+#define MAX_DLIGHTS     64
 #define MAX_ENTITIES    2048
 #define MAX_PARTICLES   8192
 #define MAX_LIGHTSTYLES 256
