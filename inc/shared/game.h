@@ -413,9 +413,9 @@ typedef struct {
     //
     // The size will be fixed when ge->Init() is called
     struct edict_s  *edicts;
-    int         edict_size;
-    int         num_edicts;     // current number, <= max_edicts
-    int         max_edicts;
+    size_t      edict_size;
+    uint32_t    num_edicts;     // current number, <= max_edicts
+    uint32_t    max_edicts;
 } game_export_t;
 
 typedef game_export_t *(*game_entry_t)(game_import_t *);
