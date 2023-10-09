@@ -872,11 +872,12 @@ typedef struct {
 
     vec3_t      origin;
     vec3_t      velocity;
-    byte        pm_flags;       // ducked, jump_held, etc
-    byte        pm_time;        // each unit = 8 ms
-    short       gravity;
+    uint16_t    pm_flags;       // ducked, jump_held, etc
+    uint16_t    pm_time;        // each unit = 8 ms
+    int16_t     gravity;
     vec3_t      delta_angles;   // add to command angles to get view direction
                                 // changed by spawns, rotating objects, and teleporters
+    int8_t      viewheight; // view height, added to origin[2] + viewoffset[2], for crouching
 } pmove_state_t;
 
 //
