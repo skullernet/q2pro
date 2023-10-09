@@ -133,6 +133,19 @@ static trace_t q_gameabi CL_PMTrace(const vec3_t start, const vec3_t mins, const
     return t;
 }
 
+static trace_t q_gameabi CL_Clip(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int contentmask)
+{
+    trace_t     trace;
+
+    if (!mins)
+        mins = vec3_origin;
+    if (!maxs)
+        maxs = vec3_origin;
+
+    CM_BoxTrace(&trace, start, end, mins, maxs, cl.bsp->nodes, contentmask);
+    return trace;
+}
+
 static int CL_PointContents(const vec3_t point)
 {
     int         i;
@@ -227,6 +240,7 @@ void CL_PredictMovement(void)
     // copy current state to pmove
     memset(&pm, 0, sizeof(pm));
     pm.trace = CL_PMTrace;
+    pm.clip = CL_Clip;
     pm.pointcontents = CL_PointContents;
     pm.s = cl.frame.ps.pmove;
 

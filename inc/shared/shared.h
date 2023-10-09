@@ -929,6 +929,8 @@ typedef struct {
 
     // callbacks to test the world
     trace_t     (* q_gameabi trace)(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, const struct edict_s* passent, int contentmask);
+    // [Paril-KEX] clip against world only
+    trace_t     (* q_gameabi clip)(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int contentmask);
     int         (*pointcontents)(const vec3_t point);
 } pmove_t;
 
