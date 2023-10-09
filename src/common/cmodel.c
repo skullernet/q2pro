@@ -464,6 +464,7 @@ static vec3_t   trace_extents;
 static trace_t  *trace_trace;
 static int      trace_contents;
 static bool     trace_ispoint;      // optimized case
+static float    trace_2ndbest_fraction;
 
 /*
 ================
@@ -554,12 +555,20 @@ static void CM_ClipBoxToBrush(const vec3_t p1, const vec3_t p2, trace_t *trace, 
     }
     if (enterfrac < leavefrac) {
         if (enterfrac > -1 && enterfrac < trace->fraction) {
+            trace_2ndbest_fraction = trace->fraction;
+            trace->plane2 = trace->plane;
+            trace->surface2 = trace->surface;
+
             if (enterfrac < 0)
                 enterfrac = 0;
             trace->fraction = enterfrac;
             trace->plane = *clipplane;
             trace->surface = &(leadside->texinfo->c);
             trace->contents = brush->contents;
+        } else if (enterfrac > -1 && enterfrac < trace_2ndbest_fraction) {
+            trace_2ndbest_fraction = enterfrac;
+            trace->plane2 = *clipplane;
+            trace->surface2 = &(leadside->texinfo->c);
         }
     }
 }
@@ -675,7 +684,7 @@ static void CM_RecursiveHullCheck(mnode_t *node, float p1f, float p2f, const vec
     int         side;
     float       midf;
 
-    if (trace_trace->fraction <= p1f)
+    if (trace_trace->fraction <= p1f && trace_2ndbest_fraction <= p1f)
         return;     // already hit something nearer
 
 recheck:
@@ -770,6 +779,7 @@ void CM_BoxTrace(trace_t *trace,
     memset(trace_trace, 0, sizeof(*trace_trace));
     trace_trace->fraction = 1;
     trace_trace->surface = &(nulltexinfo.c);
+    trace_2ndbest_fraction = 1;
 
     if (!headnode) {
         return;

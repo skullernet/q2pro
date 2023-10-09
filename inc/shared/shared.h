@@ -834,6 +834,10 @@ typedef struct {
     csurface_t  *surface;   // surface hit
     int         contents;   // contents on other side of surface hit
     struct edict_s  *ent;   // not set by CM_*() functions
+
+    // [Paril-KEX] the second-best surface hit from a trace
+    cplane_t	plane2;		// second surface normal at impact
+	csurface_t *surface2;	// second surface hit
 } trace_t;
 
 // pmove_state_t is the information necessary for client side movement
