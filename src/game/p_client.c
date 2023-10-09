@@ -1675,10 +1675,10 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
             G_TouchTriggers(ent);
 
         // touch other objects
-        for (i = 0; i < pm.numtouch; i++) {
-            other = pm.touchents[i];
+        for (i = 0; i < pm.touch.num; i++) {
+            other = pm.touch.traces[i].ent;
             for (j = 0; j < i; j++)
-                if (pm.touchents[j] == other)
+                if (pm.touch.traces[j].ent == other)
                     break;
             if (j != i)
                 continue;   // duplicated

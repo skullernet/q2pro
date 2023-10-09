@@ -897,6 +897,13 @@ typedef struct usercmd_s {
 } usercmd_t;
 
 #define MAXTOUCH    32
+
+typedef struct
+{
+    uint32_t num;
+    trace_t traces[MAXTOUCH];
+} touch_list_t;
+
 typedef struct {
     // state (in / out)
     pmove_state_t   s;
@@ -906,8 +913,7 @@ typedef struct {
     qboolean        snapinitial;    // if s has been changed outside pmove
 
     // results (out)
-    int         numtouch;
-    struct edict_s  *touchents[MAXTOUCH];
+    touch_list_t touch;
 
     vec3_t      viewangles;         // clamped
     float       viewheight;

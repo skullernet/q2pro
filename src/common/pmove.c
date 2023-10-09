@@ -138,9 +138,9 @@ static void PM_StepSlideMove_(void)
             break;     // moved the entire distance
 
         // save entity for contact
-        if (pm->numtouch < MAXTOUCH && trace.ent) {
-            pm->touchents[pm->numtouch] = trace.ent;
-            pm->numtouch++;
+        if (pm->touch.num < MAXTOUCH && trace.ent) {
+            pm->touch.traces[pm->touch.num] = trace;
+            pm->touch.num++;
         }
 
         time_left -= time_left * trace.fraction;
@@ -603,9 +603,9 @@ static void PM_CategorizePosition(void)
             }
         }
 
-        if (pm->numtouch < MAXTOUCH && trace.ent) {
-            pm->touchents[pm->numtouch] = trace.ent;
-            pm->numtouch++;
+        if (pm->touch.num < MAXTOUCH && trace.ent) {
+            pm->touch.traces[pm->touch.num] = trace;
+            pm->touch.num++;
         }
     }
 
@@ -1030,7 +1030,7 @@ void Pmove(pmove_t *pmove, pmoveParams_t *params)
     pmp = params;
 
     // clear results
-    pm->numtouch = 0;
+    pm->touch.num = 0;
     VectorClear(pm->viewangles);
     pm->viewheight = 0;
     pm->groundentity = NULL;
