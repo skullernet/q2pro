@@ -1554,7 +1554,7 @@ void ClientDisconnect(edict_t *ent)
 edict_t *pm_passent;
 
 // pmove doesn't need to know about passent and contentmask
-trace_t q_gameabi PM_trace(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end)
+trace_t q_gameabi PM_trace(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, const edict_t* passent, int contentmask)
 {
     if (pm_passent->health > 0)
         return gi.trace(start, mins, maxs, end, pm_passent, MASK_PLAYERSOLID);

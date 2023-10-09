@@ -928,7 +928,7 @@ typedef struct {
     struct edict_s *player; // opaque handle
 
     // callbacks to test the world
-    trace_t     (* q_gameabi trace)(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end);
+    trace_t     (* q_gameabi trace)(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, const struct edict_s* passent, int contentmask);
     int         (*pointcontents)(const vec3_t point);
 } pmove_t;
 

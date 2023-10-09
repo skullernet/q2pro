@@ -119,7 +119,7 @@ static void PM_StepSlideMove_(void)
         for (i = 0; i < 3; i++)
             end[i] = pml.origin[i] + time_left * pml.velocity[i];
 
-        trace = pm->trace(pml.origin, pm->mins, pm->maxs, end);
+        trace = pm->trace(pml.origin, pm->mins, pm->maxs, end, pm->player, MASK_PLAYERSOLID);
 
         if (trace.allsolid) {
             // entity is trapped in another solid
@@ -220,7 +220,7 @@ static void PM_StepSlideMove(void)
     VectorCopy(start_o, up);
     up[2] += STEPSIZE;
 
-    trace = pm->trace(up, pm->mins, pm->maxs, up);
+    trace = pm->trace(up, pm->mins, pm->maxs, up, pm->player, MASK_PLAYERSOLID);
     if (trace.allsolid)
         return;     // can't step up
 
@@ -233,7 +233,7 @@ static void PM_StepSlideMove(void)
     // push down the final amount
     VectorCopy(pml.origin, down);
     down[2] -= STEPSIZE;
-    trace = pm->trace(pml.origin, pm->mins, pm->maxs, down);
+    trace = pm->trace(pml.origin, pm->mins, pm->maxs, down, pm->player, MASK_PLAYERSOLID);
     if (!trace.allsolid)
         VectorCopy(trace.endpos, pml.origin);
 
@@ -551,7 +551,7 @@ static void PM_AirMove(void)
 PM_CategorizePosition
 =============
 */
-static void PM_CategorizePosition(void)
+static void PM_CategorizePosition(int contentmask)
 {
     vec3_t      point;
     int         cont;
@@ -570,7 +570,7 @@ static void PM_CategorizePosition(void)
         pm->s.pm_flags &= ~PMF_ON_GROUND;
         pm->groundentity = NULL;
     } else {
-        trace = pm->trace(pml.origin, pm->mins, pm->maxs, point);
+        trace = pm->trace(pml.origin, pm->mins, pm->maxs, point, pm->player, contentmask);
         pm->groundplane = trace.plane;
         pml.groundsurface = trace.surface;
         pml.groundcontents = trace.contents;
@@ -698,7 +698,7 @@ static void PM_CheckJump(void)
 PM_CheckSpecialMovement
 =============
 */
-static void PM_CheckSpecialMovement(void)
+static void PM_CheckSpecialMovement(int contentmask)
 {
     vec3_t  spot;
     int     cont;
@@ -717,7 +717,7 @@ static void PM_CheckSpecialMovement(void)
     VectorNormalize(flatforward);
 
     VectorMA(pml.origin, 1, flatforward, spot);
-    trace = pm->trace(pml.origin, pm->mins, pm->maxs, spot);
+    trace = pm->trace(pml.origin, pm->mins, pm->maxs, spot, pm->player, contentmask);
     if ((trace.fraction < 1) && (trace.contents & CONTENTS_LADDER))
         pml.ladder = true;
 
@@ -828,7 +828,7 @@ PM_CheckDuck
 Sets mins, maxs, and pm->viewheight
 ==============
 */
-static void PM_CheckDuck(void)
+static void PM_CheckDuck(int contentmask)
 {
     trace_t trace;
 
@@ -857,7 +857,7 @@ static void PM_CheckDuck(void)
         if (pm->s.pm_flags & PMF_DUCKED) {
             // try to stand up
             pm->maxs[2] = 32;
-            trace = pm->trace(pml.origin, pm->mins, pm->maxs, pml.origin);
+            trace = pm->trace(pml.origin, pm->mins, pm->maxs, pml.origin, pm->player, contentmask);
             if (!trace.allsolid)
                 pm->s.pm_flags &= ~PMF_DUCKED;
         }
@@ -895,7 +895,7 @@ static void PM_DeadMove(void)
     }
 }
 
-static bool PM_GoodPosition(void)
+static bool PM_GoodPosition(int contentmask)
 {
     trace_t trace;
     vec3_t  origin, end;
@@ -906,7 +906,7 @@ static bool PM_GoodPosition(void)
 
     for (i = 0; i < 3; i++)
         origin[i] = end[i] = pm->s.origin[i] * 0.125f;
-    trace = pm->trace(origin, pm->mins, pm->maxs, end);
+    trace = pm->trace(origin, pm->mins, pm->maxs, end, pm->player, contentmask);
 
     return !trace.allsolid;
 }
@@ -919,7 +919,7 @@ On exit, the origin will have a value that is pre-quantized to the 0.125
 precision of the network channel and in a valid position.
 ================
 */
-static void PM_SnapPosition(void)
+static void PM_SnapPosition(int contentmask)
 {
     int     sign[3];
     int     i, j, bits;
@@ -950,7 +950,7 @@ static void PM_SnapPosition(void)
             if (bits & (1 << i))
                 pm->s.origin[i] += sign[i];
 
-        if (PM_GoodPosition())
+        if (PM_GoodPosition(contentmask))
             return;
     }
 
@@ -964,7 +964,7 @@ PM_InitialSnapPosition
 
 ================
 */
-static void PM_InitialSnapPosition(void)
+static void PM_InitialSnapPosition(int contentmask)
 {
     int        x, y, z;
     short      base[3];
@@ -978,7 +978,7 @@ static void PM_InitialSnapPosition(void)
             pm->s.origin[1] = base[1] + offset[y];
             for (x = 0; x < 3; x++) {
                 pm->s.origin[0] = base[0] + offset[x];
-                if (PM_GoodPosition()) {
+                if (PM_GoodPosition(contentmask)) {
                     VectorScale(pm->s.origin, 0.125f, pml.origin);
                     VectorCopy(pm->s.origin, pml.previous_origin);
                     return;
@@ -1036,6 +1036,8 @@ void Pmove(pmove_t *pmove, pmoveParams_t *params)
     pm->watertype = 0;
     pm->waterlevel = 0;
 
+    int contentmask = /*pm->player->health > 0 ?*/ MASK_PLAYERSOLID /*: MASK_DEADSOLID*/; // FIXME
+
     // clear all pmove local vars
     memset(&pml, 0, sizeof(pml));
 
@@ -1051,7 +1053,7 @@ void Pmove(pmove_t *pmove, pmoveParams_t *params)
     if (pm->s.pm_type == PM_SPECTATOR) {
         pml.frametime = pmp->speedmult * pm->cmd.msec * 0.001f;
         PM_FlyMove();
-        PM_SnapPosition();
+        PM_SnapPosition(contentmask);
         return;
     }
 
@@ -1067,18 +1069,18 @@ void Pmove(pmove_t *pmove, pmoveParams_t *params)
         return;     // no movement at all
 
     // set mins, maxs, and viewheight
-    PM_CheckDuck();
+    PM_CheckDuck(contentmask);
 
     if (pm->snapinitial)
-        PM_InitialSnapPosition();
+        PM_InitialSnapPosition(contentmask);
 
     // set groundentity, watertype, and waterlevel
-    PM_CategorizePosition();
+    PM_CategorizePosition(contentmask);
 
     if (pm->s.pm_type == PM_DEAD)
         PM_DeadMove();
 
-    PM_CheckSpecialMovement();
+    PM_CheckSpecialMovement(contentmask);
 
     // drop timing counter
     if (pm->s.pm_time) {
@@ -1128,9 +1130,9 @@ void Pmove(pmove_t *pmove, pmoveParams_t *params)
     }
 
     // set groundentity, watertype, and waterlevel for final spot
-    PM_CategorizePosition();
+    PM_CategorizePosition(contentmask);
 
-    PM_SnapPosition();
+    PM_SnapPosition(contentmask);
 }
 
 void PmoveInit(pmoveParams_t *pmp)

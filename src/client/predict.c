@@ -115,7 +115,7 @@ static void CL_ClipMoveToEntities(trace_t *tr, const vec3_t start, const vec3_t 
 CL_Trace
 ================
 */
-void CL_Trace(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int contentmask)
+void CL_Trace(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, const struct edict_s* passent, int contentmask)
 {
     // check against world
     CM_BoxTrace(tr, start, end, mins, maxs, cl.bsp->nodes, contentmask);
@@ -126,12 +126,10 @@ void CL_Trace(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t m
     CL_ClipMoveToEntities(tr, start, mins, maxs, end, contentmask);
 }
 
-static int pm_clipmask;
-
-static trace_t q_gameabi CL_PMTrace(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end)
+static trace_t q_gameabi CL_PMTrace(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, const struct edict_s* passent, int contentmask)
 {
     trace_t t;
-    CL_Trace(&t, start, mins, maxs, end, pm_clipmask);
+    CL_Trace(&t, start, mins, maxs, end, passent, contentmask);
     return t;
 }
 
@@ -215,7 +213,7 @@ void CL_PredictMovement(void)
         return;
     }
 
-    pm_clipmask = MASK_PLAYERSOLID;
+    int pm_clipmask = MASK_PLAYERSOLID; // FIXME
 
     // remaster player collision rules
     if (cl.csr.extended) {
