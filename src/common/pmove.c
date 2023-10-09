@@ -35,7 +35,7 @@ typedef struct {
     csurface_t  *groundsurface;
     int         groundcontents;
 
-    short       previous_origin[3];
+    vec3_t      previous_origin;
     bool        ladder;
 } pml_t;
 
@@ -905,7 +905,7 @@ static bool PM_GoodPosition(int contentmask)
         return true;
 
     for (i = 0; i < 3; i++)
-        origin[i] = end[i] = pm->s.origin[i] * 0.125f;
+        origin[i] = end[i] = pm->s.origin[i];
     trace = pm->trace(origin, pm->mins, pm->maxs, end, pm->player, contentmask);
 
     return !trace.allsolid;
@@ -923,7 +923,7 @@ static void PM_SnapPosition(int contentmask)
 {
     int     sign[3];
     int     i, j, bits;
-    short   base[3];
+    vec3_t  base;
     // try all single bits first
     static const byte jitterbits[8] = {0, 4, 1, 2, 3, 5, 6, 7};
 
@@ -936,8 +936,8 @@ static void PM_SnapPosition(int contentmask)
             sign[i] = 1;
         else
             sign[i] = -1;
-        pm->s.origin[i] = (int)(pml.origin[i] * 8);
-        if (pm->s.origin[i] * 0.125f == pml.origin[i])
+        pm->s.origin[i] = ((int)(pml.origin[i] * 8)) * 0.125f;
+        if (pm->s.origin[i] == pml.origin[i])
             sign[i] = 0;
     }
     VectorCopy(pm->s.origin, base);
@@ -948,7 +948,7 @@ static void PM_SnapPosition(int contentmask)
         VectorCopy(base, pm->s.origin);
         for (i = 0; i < 3; i++)
             if (bits & (1 << i))
-                pm->s.origin[i] += sign[i];
+                pm->s.origin[i] += sign[i] * 0.125f;
 
         if (PM_GoodPosition(contentmask))
             return;
@@ -967,8 +967,8 @@ PM_InitialSnapPosition
 static void PM_InitialSnapPosition(int contentmask)
 {
     int        x, y, z;
-    short      base[3];
-    static const short offset[3] = { 0, -1, 1 };
+    vec3_t     base;
+    static const float offset[3] = { 0, -0.125f, 0.125f };
 
     VectorCopy(pm->s.origin, base);
 
@@ -979,7 +979,7 @@ static void PM_InitialSnapPosition(int contentmask)
             for (x = 0; x < 3; x++) {
                 pm->s.origin[0] = base[0] + offset[x];
                 if (PM_GoodPosition(contentmask)) {
-                    VectorScale(pm->s.origin, 0.125f, pml.origin);
+                    VectorCopy(pm->s.origin, pml.origin);
                     VectorCopy(pm->s.origin, pml.previous_origin);
                     return;
                 }
@@ -1042,7 +1042,7 @@ void Pmove(pmove_t *pmove, pmoveParams_t *params)
     memset(&pml, 0, sizeof(pml));
 
     // convert origin and velocity to float values
-    VectorScale(pm->s.origin, 0.125f, pml.origin);
+    VectorCopy(pm->s.origin, pml.origin);
     VectorScale(pm->s.velocity, 0.125f, pml.velocity);
 
     // save old org in case we get stuck

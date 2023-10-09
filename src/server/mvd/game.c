@@ -665,7 +665,7 @@ static void MVD_UpdateClient(mvd_client_t *client)
         // get contents from world
         if (mvd->cm.cache) {
             vec3_t vieworg;
-            VectorMA(client->ps.viewoffset, 0.125f, client->ps.pmove.origin, vieworg);
+            VectorAdd(client->ps.viewoffset, client->ps.pmove.origin, vieworg);
             contents = CM_PointContents(vieworg, mvd->cm.cache->nodes);
         }
 
@@ -1972,7 +1972,7 @@ static void MVD_GameClientBegin(edict_t *ent)
         MVD_FollowStart(client, target);
     } else {
         // spawn the spectator
-        VectorScale(mvd->spawnOrigin, 8, client->ps.pmove.origin);
+        VectorCopy(mvd->spawnOrigin, client->ps.pmove.origin);
         VectorCopy(mvd->spawnAngles, client->ps.viewangles);
         MVD_FollowStop(client);
 
@@ -2057,7 +2057,7 @@ static mvd_player_t *MVD_HitPlayer(mvd_client_t *client)
     if (mvd->intermission)
         return NULL;
 
-    VectorMA(client->ps.viewoffset, 0.125f, client->ps.pmove.origin, start);
+    VectorAdd(client->ps.viewoffset, client->ps.pmove.origin, start);
     AngleVectors(client->ps.viewangles, forward, NULL, NULL);
     VectorMA(start, 8192, forward, end);
 

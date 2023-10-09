@@ -349,7 +349,7 @@ fix_old_origin(client_t *client, entity_packed_t *state, edict_t *ent, int e)
 
     if (sent->create_framenum > sv.framenum - client->framediv) {
         // created between client frames
-        VectorScale(sent->create_origin, 8.0f, state->old_origin);
+        VectorCopy(sent->create_origin, state->old_origin);
         return;
     }
 
@@ -358,7 +358,7 @@ fix_old_origin(client_t *client, entity_packed_t *state, edict_t *ent, int e)
         j = sv.framenum - (client->framediv - i);
         k = j & ENT_HISTORY_MASK;
         if (sent->history[k].framenum == j) {
-            VectorScale(sent->history[k].origin, 8.0f, state->old_origin);
+            VectorCopy(sent->history[k].origin, state->old_origin);
             return;
         }
     }
@@ -431,7 +431,7 @@ void SV_BuildClientFrame(client_t *client)
 
     // find the client's PVS
     ps = &clent->client->ps;
-    VectorMA(ps->viewoffset, 0.125f, ps->pmove.origin, org);
+    VectorAdd(ps->viewoffset, ps->pmove.origin, org);
 
     leaf = CM_PointLeaf(client->cm, org);
     clientarea = leaf->area;

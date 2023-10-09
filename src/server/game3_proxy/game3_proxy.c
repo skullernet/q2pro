@@ -396,7 +396,7 @@ static void sync_edicts_server_to_game(void)
 static void game_client_to_server(struct gclient_s *server_client, const struct game3_gclient_s *game_client)
 {
     server_client->ps.pmove.pm_type = game_client->ps.pmove.pm_type;
-    VectorCopy(game_client->ps.pmove.origin, server_client->ps.pmove.origin);
+    VectorScale(game_client->ps.pmove.origin, 0.125f, server_client->ps.pmove.origin);
     VectorCopy(game_client->ps.pmove.velocity, server_client->ps.pmove.velocity);
     server_client->ps.pmove.pm_flags = game_client->ps.pmove.pm_flags;
     server_client->ps.pmove.pm_time = game_client->ps.pmove.pm_type;

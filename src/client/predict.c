@@ -270,7 +270,7 @@ void CL_PredictMovement(void)
 
     if (pm.s.pm_type != PM_SPECTATOR && (pm.s.pm_flags & PMF_ON_GROUND)) {
         oldz = cl.predicted_origins[cl.predicted_step_frame & CMD_MASK][2];
-        step = pm.s.origin[2] - oldz;
+        step = (pm.s.origin[2] - oldz) * 8;
         if (step > 63 && step < 160) {
             cl.predicted_step = step * 0.125f;
             cl.predicted_step_time = cls.realtime;
@@ -283,7 +283,7 @@ void CL_PredictMovement(void)
     }
 
     // copy results out for rendering
-    VectorScale(pm.s.origin, 0.125f, cl.predicted_origin);
+    VectorCopy(pm.s.origin, cl.predicted_origin);
     VectorScale(pm.s.velocity, 0.125f, cl.predicted_velocity);
     VectorCopy(pm.viewangles, cl.predicted_angles);
 }

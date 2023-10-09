@@ -878,9 +878,7 @@ void MSG_WriteDeltaPlayerstate_Default(const player_packed_t *from, const player
         MSG_WriteByte(to->pmove.pm_type);
 
     if (pflags & PS_M_ORIGIN) {
-        MSG_WriteShort(to->pmove.origin[0]);
-        MSG_WriteShort(to->pmove.origin[1]);
-        MSG_WriteShort(to->pmove.origin[2]);
+        MSG_WritePos(to->pmove.origin);
     }
 
     if (pflags & PS_M_VELOCITY) {
@@ -1104,12 +1102,12 @@ int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
         MSG_WriteByte(to->pmove.pm_type);
 
     if (pflags & PS_M_ORIGIN) {
-        MSG_WriteShort(to->pmove.origin[0]);
-        MSG_WriteShort(to->pmove.origin[1]);
+        MSG_WriteCoord(to->pmove.origin[0]);
+        MSG_WriteCoord(to->pmove.origin[1]);
     }
 
     if (eflags & EPS_M_ORIGIN2)
-        MSG_WriteShort(to->pmove.origin[2]);
+        MSG_WriteCoord(to->pmove.origin[2]);
 
     if (pflags & PS_M_VELOCITY) {
         MSG_WriteShort(to->pmove.velocity[0]);
@@ -1313,12 +1311,12 @@ void MSG_WriteDeltaPlayerstate_Packet(const player_packed_t *from,
         MSG_WriteByte(to->pmove.pm_type);
 
     if (pflags & PPS_M_ORIGIN) {
-        MSG_WriteShort(to->pmove.origin[0]);
-        MSG_WriteShort(to->pmove.origin[1]);
+        MSG_WriteShort(to->pmove.origin[0] * 8);
+        MSG_WriteShort(to->pmove.origin[1] * 8);
     }
 
     if (pflags & PPS_M_ORIGIN2)
-        MSG_WriteShort(to->pmove.origin[2]);
+        MSG_WriteShort(to->pmove.origin[2] * 8);
 
     //
     // write the rest of the player_state_t
@@ -1983,9 +1981,7 @@ void MSG_ParseDeltaPlayerstate_Default(const player_state_t *from,
         to->pmove.pm_type = MSG_ReadByte();
 
     if (flags & PS_M_ORIGIN) {
-        to->pmove.origin[0] = MSG_ReadShort();
-        to->pmove.origin[1] = MSG_ReadShort();
-        to->pmove.origin[2] = MSG_ReadShort();
+        MSG_ReadPos(to->pmove.origin);
     }
 
     if (flags & PS_M_VELOCITY) {
@@ -2100,12 +2096,12 @@ void MSG_ParseDeltaPlayerstate_Enhanced(const player_state_t    *from,
         to->pmove.pm_type = MSG_ReadByte();
 
     if (flags & PS_M_ORIGIN) {
-        to->pmove.origin[0] = MSG_ReadShort();
-        to->pmove.origin[1] = MSG_ReadShort();
+        to->pmove.origin[0] = MSG_ReadCoord();
+        to->pmove.origin[1] = MSG_ReadCoord();
     }
 
     if (extraflags & EPS_M_ORIGIN2)
-        to->pmove.origin[2] = MSG_ReadShort();
+        to->pmove.origin[2] = MSG_ReadCoord();
 
     if (flags & PS_M_VELOCITY) {
         to->pmove.velocity[0] = MSG_ReadShort();
@@ -2230,12 +2226,12 @@ void MSG_ParseDeltaPlayerstate_Packet(const player_state_t  *from,
         to->pmove.pm_type = MSG_ReadByte();
 
     if (flags & PPS_M_ORIGIN) {
-        to->pmove.origin[0] = MSG_ReadShort();
-        to->pmove.origin[1] = MSG_ReadShort();
+        to->pmove.origin[0] = MSG_ReadCoord();
+        to->pmove.origin[1] = MSG_ReadCoord();
     }
 
     if (flags & PPS_M_ORIGIN2)
-        to->pmove.origin[2] = MSG_ReadShort();
+        to->pmove.origin[2] = MSG_ReadCoord();
 
     //
     // parse the rest of the player_state_t

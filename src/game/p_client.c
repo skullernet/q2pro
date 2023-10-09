@@ -1227,9 +1227,7 @@ void PutClientInServer(edict_t *ent)
 
     VectorCopy(ent->s.origin, ent->s.old_origin);
 
-    for (i = 0; i < 3; i++) {
-        client->ps.pmove.origin[i] = COORD2SHORT(ent->s.origin[i]);
-    }
+    VectorCopy(ent->s.origin, client->ps.pmove.origin);
 
     spawn_angles[PITCH] = 0;
     spawn_angles[ROLL] = 0;
@@ -1614,8 +1612,8 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         client->ps.pmove.gravity = sv_gravity->value;
         pm.s = client->ps.pmove;
 
+        VectorCopy(ent->s.origin, pm.s.origin);
         for (i = 0; i < 3; i++) {
-            pm.s.origin[i] = COORD2SHORT(ent->s.origin[i]);
             pm.s.velocity[i] = COORD2SHORT(ent->velocity[i]);
         }
 
@@ -1634,8 +1632,8 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         // perform a pmove
         Pmove(&pm, &ent->client->pmp);
 
+        VectorCopy(pm.s.origin, ent->s.origin);
         for (i = 0; i < 3; i++) {
-            ent->s.origin[i] = SHORT2COORD(pm.s.origin[i]);
             ent->velocity[i] = SHORT2COORD(pm.s.velocity[i]);
         }
 

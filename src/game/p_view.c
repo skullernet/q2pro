@@ -866,8 +866,8 @@ void ClientEndServerFrame(edict_t *ent)
     // If it wasn't updated here, the view position would lag a frame
     // behind the body position when pushed -- "sinking into plats"
     //
+    VectorCopy(ent->s.origin, current_client->ps.pmove.origin);
     for (i = 0; i < 3; i++) {
-        current_client->ps.pmove.origin[i] = COORD2SHORT(ent->s.origin[i]);
         current_client->ps.pmove.velocity[i] = COORD2SHORT(ent->velocity[i]);
     }
 

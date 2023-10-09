@@ -166,7 +166,7 @@ static void parse_entity_update(const centity_state_t *state)
 
     // work around Q2PRO server bandwidth optimization
     if (entity_is_optimized(state)) {
-        VectorScale(cl.frame.ps.pmove.origin, 0.125f, origin_v);
+        VectorCopy(cl.frame.ps.pmove.origin, origin_v);
         origin = origin_v;
     } else {
         origin = state->origin;
@@ -270,7 +270,7 @@ static void set_active_state(void)
         CL_FirstDemoFrame();
     } else {
         // set initial cl.predicted_origin and cl.predicted_angles
-        VectorScale(cl.frame.ps.pmove.origin, 0.125f, cl.predicted_origin);
+        VectorCopy(cl.frame.ps.pmove.origin, cl.predicted_origin);
         VectorScale(cl.frame.ps.pmove.velocity, 0.125f, cl.predicted_velocity);
         if (cl.frame.ps.pmove.pm_type < PM_DEAD &&
             cls.serverProtocol > PROTOCOL_VERSION_DEFAULT) {
@@ -318,9 +318,9 @@ check_player_lerp(server_frame_t *oldframe, server_frame_t *frame, int framediv)
         goto dup;
 
     // no lerping if player entity was teleported (origin check)
-    if (abs(ops->pmove.origin[0] - ps->pmove.origin[0]) > 256 * 8 ||
-        abs(ops->pmove.origin[1] - ps->pmove.origin[1]) > 256 * 8 ||
-        abs(ops->pmove.origin[2] - ps->pmove.origin[2]) > 256 * 8) {
+    if (abs(ops->pmove.origin[0] - ps->pmove.origin[0]) > 256 ||
+        abs(ops->pmove.origin[1] - ps->pmove.origin[1]) > 256 ||
+        abs(ops->pmove.origin[2] - ps->pmove.origin[2]) > 256) {
         goto dup;
     }
 
@@ -1307,8 +1307,8 @@ void CL_CalcViewValues(void)
 
         // just use interpolated values
         for (i = 0; i < 3; i++) {
-            cl.refdef.vieworg[i] = SHORT2COORD(ops->pmove.origin[i] +
-                lerp * (ps->pmove.origin[i] - ops->pmove.origin[i]));
+            cl.refdef.vieworg[i] = ops->pmove.origin[i] +
+                lerp * (ps->pmove.origin[i] - ops->pmove.origin[i]);
         }
     }
 
