@@ -111,12 +111,21 @@ typedef struct {
     game3_edict_t  *ent;    // not set by CM_*() functions
 } game3_trace_t;
 
+typedef struct game3_usercmd_s {
+    byte    msec;
+    byte    buttons;
+    short   angles[3];
+    short   forwardmove, sidemove, upmove;
+    byte    impulse;        // remove?
+    byte    lightlevel;     // light level the player is standing on
+} game3_usercmd_t;
+
 typedef struct {
     // state (in / out)
     game3_pmove_state_t s;
 
     // command (in)
-    usercmd_t       cmd;
+    game3_usercmd_t cmd;
     qboolean        snapinitial;    // if s has been changed outside pmove
 
     // results (out)
@@ -249,7 +258,7 @@ typedef struct {
     void (*ClientUserinfoChanged)(game3_edict_t *ent, char *userinfo);
     void (*ClientDisconnect)(game3_edict_t *ent);
     void (*ClientCommand)(game3_edict_t *ent);
-    void (*ClientThink)(game3_edict_t *ent, usercmd_t *cmd);
+    void (*ClientThink)(game3_edict_t *ent, game3_usercmd_t *cmd);
 
     void (*RunFrame)(void);
 

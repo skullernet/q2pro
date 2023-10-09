@@ -771,7 +771,16 @@ static void wrap_ClientThink(edict_t *ent, usercmd_t *cmd)
 {
     // ClientThink() may spawn new entitities, so sync them all
     sync_edicts_server_to_game();
-    game3_export->ClientThink(translate_edict_to_game(ent), cmd);
+    game3_usercmd_t game_cmd;
+    game_cmd.msec = cmd->msec;
+    game_cmd.buttons = cmd->buttons;
+    VectorCopy(cmd->angles, game_cmd.angles);
+    game_cmd.forwardmove = cmd->forwardmove;
+    game_cmd.sidemove = cmd->sidemove;
+    game_cmd.upmove = cmd->upmove;
+    game_cmd.impulse = cmd->impulse;
+    game_cmd.lightlevel = cmd->impulse;
+    game3_export->ClientThink(translate_edict_to_game(ent), &game_cmd);
     sync_edicts_game_to_server();
 }
 
