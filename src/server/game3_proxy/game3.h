@@ -63,8 +63,20 @@ typedef struct {
 } game3_trace_t;
 
 typedef struct {
+    pmtype_t    pm_type;
+
+    short       origin[3];      // 12.3
+    short       velocity[3];    // 12.3
+    byte        pm_flags;       // ducked, jump_held, etc
+    byte        pm_time;        // each unit = 8 ms
+    short       gravity;
+    short       delta_angles[3];    // add to command angles to get view direction
+                                    // changed by spawns, rotating objects, and teleporters
+} game3_pmove_state_t;
+
+typedef struct {
     // state (in / out)
-    pmove_state_t   s;
+    game3_pmove_state_t s;
 
     // command (in)
     usercmd_t       cmd;
