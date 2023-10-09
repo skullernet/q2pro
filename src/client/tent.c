@@ -133,7 +133,7 @@ EXPLOSION MANAGEMENT
 ==============================================================
 */
 
-#define MAX_EXPLOSIONS  32
+#define MAX_EXPLOSIONS  256
 
 typedef struct {
     enum {
@@ -349,7 +349,7 @@ LASER MANAGEMENT
 ==============================================================
 */
 
-#define MAX_LASERS  32
+#define MAX_LASERS  256
 
 typedef struct {
     vec3_t      start;
@@ -438,7 +438,7 @@ BEAM MANAGEMENT
 ==============================================================
 */
 
-#define MAX_BEAMS   32
+#define MAX_BEAMS   128
 
 typedef struct {
     int         entity;
