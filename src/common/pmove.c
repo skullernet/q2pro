@@ -33,7 +33,6 @@ typedef struct {
     float       frametime;
 
     csurface_t  *groundsurface;
-    cplane_t    groundplane;
     int         groundcontents;
 
     short       previous_origin[3];
@@ -572,7 +571,7 @@ static void PM_CategorizePosition(void)
         pm->groundentity = NULL;
     } else {
         trace = pm->trace(pml.origin, pm->mins, pm->maxs, point);
-        pml.groundplane = trace.plane;
+        pm->groundplane = trace.plane;
         pml.groundsurface = trace.surface;
         pml.groundcontents = trace.contents;
 
