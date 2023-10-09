@@ -932,6 +932,16 @@ typedef struct {
     // [Paril-KEX] clip against world only
     trace_t     (* q_gameabi clip)(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int contentmask);
     int         (*pointcontents)(const vec3_t point);
+
+    // [KEX] variables (in)
+    vec3_t viewoffset; // last viewoffset (for accurate calculation of blending)
+
+    // [KEX] results (out)
+    vec4_t screen_blend;
+    int rdflags; // merged with rdflags from server
+    bool jump_sound; // play jump sound
+    bool step_clip; // we clipped on top of an object from below
+    float impact_delta; // impact delta, for falling damage
 } pmove_t;
 
 // entity_state_t->effects

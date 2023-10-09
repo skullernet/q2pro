@@ -1629,6 +1629,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         pm.player = ent;
         pm.trace = PM_trace;    // adds default parms
         pm.pointcontents = gi.pointcontents;
+        VectorCopy(ent->client->ps.viewoffset, pm.viewoffset);
 
         // perform a pmove
         Pmove(&pm, &ent->client->pmp);
