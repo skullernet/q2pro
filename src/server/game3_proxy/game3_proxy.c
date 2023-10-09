@@ -354,7 +354,9 @@ static void sync_single_edict_server_to_game(int index)
     game_edict->s.solid = server_edict->s.solid;
     game_edict->s.event = server_edict->s.event;
 
-    VERIFY_UNCHANGED(!is_new, *game_edict, *server_edict, client);
+    assert((game_edict->client && server_edict->client) || (!game_edict->client && !server_edict->client));
+    if(game_edict->client)
+        game_edict->client->ping = server_edict->client->ping;
     game_edict->linkcount = server_edict->linkcount;
     game_edict->area.prev = server_edict->linked ? &game_edict->area : NULL; // emulate entity being linked
     game_edict->num_clusters = sent->num_clusters;
@@ -391,6 +393,33 @@ static void sync_edicts_server_to_game(void)
     game3_export->num_edicts = game_export.num_edicts;
 }
 
+static void game_client_to_server(struct gclient_s *server_client, const struct game3_gclient_s *game_client)
+{
+    server_client->ps.pmove.pm_type = game_client->ps.pmove.pm_type;
+    VectorCopy(game_client->ps.pmove.origin, server_client->ps.pmove.origin);
+    VectorCopy(game_client->ps.pmove.velocity, server_client->ps.pmove.velocity);
+    server_client->ps.pmove.pm_flags = game_client->ps.pmove.pm_flags;
+    server_client->ps.pmove.pm_time = game_client->ps.pmove.pm_type;
+    server_client->ps.pmove.gravity = game_client->ps.pmove.gravity;
+    VectorCopy(game_client->ps.pmove.delta_angles, server_client->ps.pmove.delta_angles);
+
+    VectorCopy(game_client->ps.viewangles, server_client->ps.viewangles);
+    VectorCopy(game_client->ps.viewoffset, server_client->ps.viewoffset);
+    VectorCopy(game_client->ps.kick_angles, server_client->ps.kick_angles);
+    VectorCopy(game_client->ps.gunangles, server_client->ps.gunangles);
+    VectorCopy(game_client->ps.gunoffset, server_client->ps.gunoffset);
+    server_client->ps.gunindex = game_client->ps.gunindex;
+    server_client->ps.gunframe = game_client->ps.gunframe;
+    Vector4Copy(game_client->ps.blend, server_client->ps.blend);
+    server_client->ps.fov = game_client->ps.fov;
+    server_client->ps.rdflags = game_client->ps.rdflags;
+    memcpy(&server_client->ps.stats, &game_client->ps.stats, sizeof(server_client->ps.stats));
+
+    server_client->ping = game_client->ping;
+    // FIXME: Only copy if GMF_CLIENTNUM feature is set
+    server_client->clientNum = game_client->clientNum;
+}
+
 static void game_entity_state_to_server(entity_state_t* server_state, const game3_entity_state_t* game_state)
 {
     server_state->number = game_state->number;
@@ -416,7 +445,15 @@ static void sync_single_edict_game_to_server(int index)
     server_entity_t *sent = &sv.entities[index];
     game3_edict_t *game_edict = GAME_EDICT_NUM(index);
 
-    server_edict->client = game_edict->client; // client may be set, even though inuse == false
+    if (game_edict->client) {
+        if(!server_edict->client) {
+            server_edict->client = malloc(sizeof(struct gclient_s));
+        }
+        game_client_to_server(server_edict->client, game_edict->client);
+    } else if (server_edict->client) {
+        free(server_edict->client);
+        server_edict->client = NULL;
+    }
 
     // Skip unused entities
     bool game_edict_inuse = game_edict->inuse || HAS_EFFECTS(game_edict);
@@ -475,6 +512,9 @@ static void wrap_Shutdown(void)
 {
     game3_export->Shutdown();
 
+    for (int i = 0; i < game3_export->max_edicts; i++) {
+        free(server_edicts[i].client);
+    }
     Z_Free(server_edicts);
     server_edicts = NULL;
 }

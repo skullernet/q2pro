@@ -24,9 +24,58 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 typedef entity_state_t game3_entity_state_t;
 
 typedef struct game3_edict_s game3_edict_t;
+
+typedef struct {
+    pmtype_t    pm_type;
+
+    short       origin[3];      // 12.3
+    short       velocity[3];    // 12.3
+    byte        pm_flags;       // ducked, jump_held, etc
+    byte        pm_time;        // each unit = 8 ms
+    short       gravity;
+    short       delta_angles[3];    // add to command angles to get view direction
+                                    // changed by spawns, rotating objects, and teleporters
+} game3_pmove_state_t;
+
+typedef struct {
+    game3_pmove_state_t pmove;      // for prediction
+
+    // these fields do not need to be communicated bit-precise
+
+    vec3_t      viewangles;     // for fixed views
+    vec3_t      viewoffset;     // add to pmovestate->origin
+    vec3_t      kick_angles;    // add to view direction to get render angles
+                                // set by weapon kicks, pain effects, etc
+
+    vec3_t      gunangles;
+    vec3_t      gunoffset;
+    int         gunindex;
+    int         gunframe;
+
+    float       blend[4];       // rgba full screen effect
+
+    float       fov;            // horizontal field of view
+
+    int         rdflags;        // refdef flags
+
+    short       stats[MAX_STATS];       // fast status bar updates
+} game3_player_state_t;
+
+struct game3_gclient_s {
+    game3_player_state_t ps;     // communicated by server to clients
+    int             ping;
+
+    // set to (client POV entity number) - 1 by game,
+    // only valid if g_features has GMF_CLIENTNUM bit
+    int             clientNum;
+
+    // the game dll can add anything it wants after
+    // this point in the structure
+};
+
 struct game3_edict_s {
     game3_entity_state_t  s;
-    struct gclient_s    *client;
+    struct game3_gclient_s    *client;
     qboolean    inuse;
     int         linkcount;
 
@@ -61,18 +110,6 @@ typedef struct {
     int         contents;   // contents on other side of surface hit
     game3_edict_t  *ent;    // not set by CM_*() functions
 } game3_trace_t;
-
-typedef struct {
-    pmtype_t    pm_type;
-
-    short       origin[3];      // 12.3
-    short       velocity[3];    // 12.3
-    byte        pm_flags;       // ducked, jump_held, etc
-    byte        pm_time;        // each unit = 8 ms
-    short       gravity;
-    short       delta_angles[3];    // add to command angles to get view direction
-                                    // changed by spawns, rotating objects, and teleporters
-} game3_pmove_state_t;
 
 typedef struct {
     // state (in / out)
