@@ -925,6 +925,8 @@ typedef struct {
     int         watertype;
     int         waterlevel;
 
+    struct edict_s *player; // opaque handle
+
     // callbacks to test the world
     trace_t     (* q_gameabi trace)(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end);
     int         (*pointcontents)(const vec3_t point);

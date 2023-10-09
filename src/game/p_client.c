@@ -1626,6 +1626,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 
         pm.cmd = *ucmd;
 
+        pm.player = ent;
         pm.trace = PM_trace;    // adds default parms
         pm.pointcontents = gi.pointcontents;
 
