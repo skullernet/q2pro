@@ -847,6 +847,34 @@ void *wrap_GetExtension_export(const char *name)
     return NULL;
 }
 
+void wrap_Bot_SetWeapon(edict_t *botEdict, const int weaponIndex, const bool instantSwitch) {}
+void wrap_Bot_TriggerEdict(edict_t *botEdict, edict_t *edict) {}
+void wrap_Bot_UseItem(edict_t *botEdict, const int32_t itemID) {}
+
+int32_t wrap_Bot_GetItemID(const char *classname)
+{ /* FIXME: Can we get that info? */
+    return 0;
+}
+
+void wrap_Edict_ForceLookAtPoint(edict_t *edict, const vec3_t point)
+{
+    // "is only used for the in-game nav editor"
+}
+
+bool wrap_Bot_PickedUpItem(edict_t *botEdict, edict_t *itemEdict) { return false; }
+
+bool wrap_Entity_IsVisibleToPlayer(edict_t *ent, edict_t *player)
+{
+    // "is only useful for split screen, can always return true"
+    return true;
+}
+
+const shadow_light_data_t *wrap_GetShadowLightData(int32_t entity_number)
+{
+    // currently not supported
+    return NULL;
+}
+
 static const game3_import_ex_t game3_import_ex = {
     .apiversion = GAME3_API_VERSION_EX,
     .structsize = sizeof(game3_import_ex_t),
@@ -949,6 +977,14 @@ game_export_t *GetGame3Proxy(game_import_t *import, const game_import_ex_t *impo
     game_export.ServerCommand = wrap_ServerCommand;
     game_export.Pmove = wrap_Pmove_export;
     game_export.GetExtension = wrap_GetExtension_export;
+    game_export.Bot_SetWeapon = wrap_Bot_SetWeapon;
+    game_export.Bot_TriggerEdict = wrap_Bot_TriggerEdict;
+    game_export.Bot_UseItem = wrap_Bot_UseItem;
+    game_export.Bot_GetItemID = wrap_Bot_GetItemID;
+    game_export.Edict_ForceLookAtPoint = wrap_Edict_ForceLookAtPoint;
+    game_export.Bot_PickedUpItem = wrap_Bot_PickedUpItem;
+    game_export.Entity_IsVisibleToPlayer = wrap_Entity_IsVisibleToPlayer;
+    game_export.GetShadowLightData = wrap_GetShadowLightData;
 
     return &game_export;
 }

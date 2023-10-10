@@ -215,6 +215,25 @@ typedef struct
     uint8_t r, g, b, a;
 } rgba_t;
 
+typedef enum
+{
+    shadow_light_type_point,
+    shadow_light_type_cone
+} shadow_light_type_t;
+
+typedef struct
+{
+    shadow_light_type_t lighttype;
+    float       radius;
+    int         resolution;
+    float       intensity /*= 1*/;
+    float       fade_start;
+    float       fade_end;
+    int         lightstyle /*= -1*/;
+    float       coneangle /*= 45*/;
+    vec3_t      conedirection;
+} shadow_light_data_t;
+
 //
 // functions provided by the main engine
 //
@@ -425,6 +444,19 @@ typedef struct {
 
     // Fetch named extension from game DLL.
     void *(*GetExtension)(const char *name);
+
+    void    (*Bot_SetWeapon)(edict_t * botEdict, const int weaponIndex, const bool instantSwitch);
+    void    (*Bot_TriggerEdict)(edict_t * botEdict, edict_t * edict);
+    void    (*Bot_UseItem)(edict_t * botEdict, const int32_t itemID);
+    int32_t (*Bot_GetItemID)(const char * classname);
+    void    (*Edict_ForceLookAtPoint)(edict_t * edict, const vec3_t point);
+    bool    (*Bot_PickedUpItem )(edict_t * botEdict, edict_t * itemEdict);
+
+    // [KEX]: Checks entity visibility instancing
+    bool (*Entity_IsVisibleToPlayer)(edict_t* ent, edict_t* player);
+
+    // Fetch info from the shadow light, for culling
+    const shadow_light_data_t *(*GetShadowLightData)(int32_t entity_number);
 } game_export_t;
 
 typedef game_export_t *(*game_entry_t)(game_import_t *);
