@@ -258,7 +258,7 @@ int MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *cmd, int versi
         if ((bits & CM_FORWARD) && !((int)cmd->forwardmove % 5)) { // FIXME: Why the modulo 5?
             buttons |= BUTTON_FORWARD;
         }
-        if ((bits & CM_SIDE) && !(cmd->sidemove % 5)) {
+        if ((bits & CM_SIDE) && !((int)cmd->sidemove % 5)) { // FIXME: Why the modulo 5?
             buttons |= BUTTON_SIDE;
         }
         if ((bits & CM_UP) && !(cmd->upmove % 5)) {
@@ -283,7 +283,7 @@ int MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *cmd, int versi
     }
     if (bits & CM_SIDE) {
         if (buttons & BUTTON_SIDE) {
-            MSG_WriteChar(cmd->sidemove / 5);
+            MSG_WriteChar(cmd->sidemove * 0.2f);
         } else {
             MSG_WriteShort(cmd->sidemove);
         }
