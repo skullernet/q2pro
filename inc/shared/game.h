@@ -422,6 +422,9 @@ typedef struct {
 
     // [KEX]: Pmove as export
     void (*Pmove)(pmove_t *pmove); // player movement code called by server & client
+
+    // Fetch named extension from game DLL.
+    void *(*GetExtension)(const char *name);
 } game_export_t;
 
 typedef game_export_t *(*game_entry_t)(game_import_t *);
@@ -454,7 +457,6 @@ typedef struct {
     uint32_t    apiversion;
     uint32_t    structsize;
 
-    void        *(*GetExtension)(const char *name);
     void        (*RestartFilesystem)(void); // called when fs_restart is issued
 } game_export_ex_t;
 

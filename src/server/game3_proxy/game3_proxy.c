@@ -276,7 +276,7 @@ static qboolean wrap_inVIS(const vec3_t p1, const vec3_t p2, vis_t vis)
     return false;
 }
 
-static void *wrap_GetExtension(const char *name)
+static void *wrap_GetExtension_import(const char *name)
 {
     return game_import.GetExtension(name);
 }
@@ -842,6 +842,11 @@ static void wrap_Pmove_export(pmove_t *pmove)
     }
 }
 
+void *wrap_GetExtension_export(const char *name)
+{
+    return NULL;
+}
+
 static const game3_import_ex_t game3_import_ex = {
     .apiversion = GAME3_API_VERSION_EX,
     .structsize = sizeof(game3_import_ex_t),
@@ -851,7 +856,7 @@ static const game3_import_ex_t game3_import_ex = {
     .clip = wrap_clip,
     .inVIS = wrap_inVIS,
 
-    .GetExtension = wrap_GetExtension,
+    .GetExtension = wrap_GetExtension_import,
     .TagRealloc = wrap_TagRealloc,
 };
 
@@ -943,6 +948,7 @@ game_export_t *GetGame3Proxy(game_import_t *import, const game_import_ex_t *impo
     game_export.PrepFrame = wrap_PrepFrame;
     game_export.ServerCommand = wrap_ServerCommand;
     game_export.Pmove = wrap_Pmove_export;
+    game_export.GetExtension = wrap_GetExtension_export;
 
     return &game_export;
 }
