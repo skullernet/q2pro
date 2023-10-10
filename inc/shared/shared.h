@@ -895,7 +895,7 @@ typedef struct {
 typedef struct usercmd_s {
     byte    msec;
     byte    buttons;
-    short   angles[3];
+    vec3_t  angles;
     short   forwardmove, sidemove, upmove;
     byte    impulse;        // remove?
     byte    lightlevel;     // light level the player is standing on

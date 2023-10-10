@@ -774,7 +774,9 @@ static void wrap_ClientThink(edict_t *ent, usercmd_t *cmd)
     game3_usercmd_t game_cmd;
     game_cmd.msec = cmd->msec;
     game_cmd.buttons = cmd->buttons;
-    VectorCopy(cmd->angles, game_cmd.angles);
+    game_cmd.angles[0] = ANGLE2SHORT(cmd->angles[0]);
+    game_cmd.angles[1] = ANGLE2SHORT(cmd->angles[1]);
+    game_cmd.angles[2] = ANGLE2SHORT(cmd->angles[2]);
     game_cmd.forwardmove = cmd->forwardmove;
     game_cmd.sidemove = cmd->sidemove;
     game_cmd.upmove = cmd->upmove;

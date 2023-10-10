@@ -268,11 +268,11 @@ int MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *cmd, int versi
     }
 
     if (bits & CM_ANGLE1)
-        MSG_WriteShort(cmd->angles[0]);
+        MSG_WriteAngle16(cmd->angles[0]);
     if (bits & CM_ANGLE2)
-        MSG_WriteShort(cmd->angles[1]);
+        MSG_WriteAngle16(cmd->angles[1]);
     if (bits & CM_ANGLE3)
-        MSG_WriteShort(cmd->angles[2]);
+        MSG_WriteAngle16(cmd->angles[2]);
 
     if (bits & CM_FORWARD) {
         if (buttons & BUTTON_FORWARD) {
@@ -401,27 +401,27 @@ int MSG_WriteDeltaUsercmd_Enhanced(const usercmd_t *from,
     MSG_WriteBits(bits, 8);
 
     if (bits & CM_ANGLE1) {
-        delta = cmd->angles[0] - from->angles[0];
+        delta = ANGLE2SHORT(cmd->angles[0]) - ANGLE2SHORT(from->angles[0]);
         if (delta >= -128 && delta <= 127) {
             MSG_WriteBits(1, 1);
             MSG_WriteBits(delta, -8);
         } else {
             MSG_WriteBits(0, 1);
-            MSG_WriteBits(cmd->angles[0], -16);
+            MSG_WriteBits(ANGLE2SHORT(cmd->angles[0]), -16);
         }
     }
     if (bits & CM_ANGLE2) {
-        delta = cmd->angles[1] - from->angles[1];
+        delta = ANGLE2SHORT(cmd->angles[1]) - ANGLE2SHORT(from->angles[1]);
         if (delta >= -128 && delta <= 127) {
             MSG_WriteBits(1, 1);
             MSG_WriteBits(delta, -8);
         } else {
             MSG_WriteBits(0, 1);
-            MSG_WriteBits(cmd->angles[1], -16);
+            MSG_WriteBits(ANGLE2SHORT(cmd->angles[1]), -16);
         }
     }
     if (bits & CM_ANGLE3) {
-        MSG_WriteBits(cmd->angles[2], -16);
+        MSG_WriteBits(ANGLE2SHORT(cmd->angles[2]), -16);
     }
 
     if (bits & CM_FORWARD) {
@@ -1597,11 +1597,11 @@ void MSG_ReadDeltaUsercmd(const usercmd_t *from, usercmd_t *to)
 
 // read current angles
     if (bits & CM_ANGLE1)
-        to->angles[0] = MSG_ReadShort();
+        to->angles[0] = MSG_ReadAngle16();
     if (bits & CM_ANGLE2)
-        to->angles[1] = MSG_ReadShort();
+        to->angles[1] = MSG_ReadAngle16();
     if (bits & CM_ANGLE3)
-        to->angles[2] = MSG_ReadShort();
+        to->angles[2] = MSG_ReadAngle16();
 
 // read movement
     if (bits & CM_FORWARD)
@@ -1648,20 +1648,20 @@ void MSG_ReadDeltaUsercmd_Hacked(const usercmd_t *from, usercmd_t *to)
 // read current angles
     if (bits & CM_ANGLE1) {
         if (buttons & BUTTON_ANGLE1) {
-            to->angles[0] = MSG_ReadChar() * 64;
+            to->angles[0] = SHORT2ANGLE(MSG_ReadChar() * 64);
         } else {
-            to->angles[0] = MSG_ReadShort();
+            to->angles[0] = SHORT2ANGLE(MSG_ReadShort());
         }
     }
     if (bits & CM_ANGLE2) {
         if (buttons & BUTTON_ANGLE2) {
-            to->angles[1] = MSG_ReadChar() * 256;
+            to->angles[1] = SHORT2ANGLE(MSG_ReadChar() * 256);
         } else {
-            to->angles[1] = MSG_ReadShort();
+            to->angles[1] = SHORT2ANGLE(MSG_ReadShort());
         }
     }
     if (bits & CM_ANGLE3)
-        to->angles[2] = MSG_ReadShort();
+        to->angles[2] = SHORT2ANGLE(MSG_ReadShort());
 
 // read movement
     if (bits & CM_FORWARD) {
@@ -1748,20 +1748,20 @@ void MSG_ReadDeltaUsercmd_Enhanced(const usercmd_t *from, usercmd_t *to)
 // read current angles
     if (bits & CM_ANGLE1) {
         if (MSG_ReadBits(1)) {
-            to->angles[0] += MSG_ReadBits(-8);
+            to->angles[0] = SHORT2ANGLE(ANGLE2SHORT(to->angles[0]) + MSG_ReadBits(-8));
         } else {
-            to->angles[0] = MSG_ReadBits(-16);
+            to->angles[0] = SHORT2ANGLE(MSG_ReadBits(-16));
         }
     }
     if (bits & CM_ANGLE2) {
         if (MSG_ReadBits(1)) {
-            to->angles[1] += MSG_ReadBits(-8);
+            to->angles[1] = SHORT2ANGLE(ANGLE2SHORT(to->angles[1]) + MSG_ReadBits(-8));
         } else {
-            to->angles[1] = MSG_ReadBits(-16);
+            to->angles[1] = SHORT2ANGLE(MSG_ReadBits(-16));
         }
     }
     if (bits & CM_ANGLE3) {
-        to->angles[2] = MSG_ReadBits(-16);
+        to->angles[2] = SHORT2ANGLE(MSG_ReadBits(-16));
     }
 
 // read movement

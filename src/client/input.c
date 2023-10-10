@@ -624,9 +624,9 @@ void CL_UpdateCmd(int msec)
 
     CL_ClampPitch();
 
-    cl.cmd.angles[0] = ANGLE2SHORT(cl.viewangles[0]);
-    cl.cmd.angles[1] = ANGLE2SHORT(cl.viewangles[1]);
-    cl.cmd.angles[2] = ANGLE2SHORT(cl.viewangles[2]);
+    cl.cmd.angles[0] = cl.viewangles[0];
+    cl.cmd.angles[1] = cl.viewangles[1];
+    cl.cmd.angles[2] = cl.viewangles[2];
 }
 
 static void m_autosens_changed(cvar_t *self)
