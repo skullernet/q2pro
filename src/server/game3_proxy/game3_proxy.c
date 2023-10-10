@@ -227,20 +227,25 @@ static int wrap_BoxEdicts(const vec3_t mins, const vec3_t maxs, game3_edict_t **
     return (int)min(num_edicts, maxcount);
 }
 
+static void server_trace_to_game(game3_trace_t *tr, const trace_t *str)
+{
+    tr->allsolid = str->allsolid;
+    tr->startsolid = str->startsolid;
+    tr->fraction = str->fraction;
+    VectorCopy(str->endpos, tr->endpos);
+    tr->plane = str->plane;
+    tr->surface = str->surface;
+    tr->contents = str->contents;
+    tr->ent = translate_edict_to_game(str->ent);
+}
+
 static game3_trace_t wrap_trace(const vec3_t start, const vec3_t mins,
                                 const vec3_t maxs, const vec3_t end,
                                 game3_edict_t *passedict, int contentmask)
 {
     trace_t str = game_import.trace(start, mins, maxs, end, translate_edict_from_game(passedict), contentmask);
     game3_trace_t tr;
-    tr.allsolid = str.allsolid;
-    tr.startsolid = str.startsolid;
-    tr.fraction = str.fraction;
-    VectorCopy(str.endpos, tr.endpos);
-    tr.plane = str.plane;
-    tr.surface = str.surface;
-    tr.contents = str.contents;
-    tr.ent = translate_edict_to_game(str.ent);
+    server_trace_to_game(&tr, &str);
     return tr;
 }
 
@@ -393,17 +398,22 @@ static void sync_edicts_server_to_game(void)
     game3_export->num_edicts = game_export.num_edicts;
 }
 
+static void game_pmove_state_to_server(pmove_state_t* server_pmove_state, const game3_pmove_state_t* game_pmove_state)
+{
+    server_pmove_state->pm_type = game_pmove_state->pm_type;
+    VectorScale(game_pmove_state->origin, 0.125f, server_pmove_state->origin);
+    VectorScale(game_pmove_state->velocity, 0.125f, server_pmove_state->velocity);
+    server_pmove_state->pm_flags = game_pmove_state->pm_flags;
+    server_pmove_state->pm_time = game_pmove_state->pm_type;
+    server_pmove_state->gravity = game_pmove_state->gravity;
+    server_pmove_state->delta_angles[0] = SHORT2ANGLE(game_pmove_state->delta_angles[0]);
+    server_pmove_state->delta_angles[1] = SHORT2ANGLE(game_pmove_state->delta_angles[1]);
+    server_pmove_state->delta_angles[2] = SHORT2ANGLE(game_pmove_state->delta_angles[2]);
+}
+
 static void game_client_to_server(struct gclient_s *server_client, const struct game3_gclient_s *game_client)
 {
-    server_client->ps.pmove.pm_type = game_client->ps.pmove.pm_type;
-    VectorScale(game_client->ps.pmove.origin, 0.125f, server_client->ps.pmove.origin);
-    VectorScale(game_client->ps.pmove.velocity, 0.125f, server_client->ps.pmove.velocity);
-    server_client->ps.pmove.pm_flags = game_client->ps.pmove.pm_flags;
-    server_client->ps.pmove.pm_time = game_client->ps.pmove.pm_type;
-    server_client->ps.pmove.gravity = game_client->ps.pmove.gravity;
-    server_client->ps.pmove.delta_angles[0] = SHORT2ANGLE(game_client->ps.pmove.delta_angles[0]);
-    server_client->ps.pmove.delta_angles[1] = SHORT2ANGLE(game_client->ps.pmove.delta_angles[1]);
-    server_client->ps.pmove.delta_angles[2] = SHORT2ANGLE(game_client->ps.pmove.delta_angles[2]);
+    game_pmove_state_to_server(&server_client->ps.pmove, &game_client->ps.pmove);
 
     VectorCopy(game_client->ps.viewangles, server_client->ps.viewangles);
     VectorCopy(game_client->ps.viewoffset, server_client->ps.viewoffset);
@@ -767,26 +777,31 @@ static void wrap_ClientCommand(edict_t *ent)
     sync_edicts_game_to_server();
 }
 
+static void server_usercmd_to_game(game3_usercmd_t *game_cmd, const usercmd_t *server_cmd)
+{
+    game_cmd->msec = server_cmd->msec;
+    game_cmd->buttons = server_cmd->buttons;
+    game_cmd->angles[0] = ANGLE2SHORT(server_cmd->angles[0]);
+    game_cmd->angles[1] = ANGLE2SHORT(server_cmd->angles[1]);
+    game_cmd->angles[2] = ANGLE2SHORT(server_cmd->angles[2]);
+    game_cmd->forwardmove = server_cmd->forwardmove;
+    game_cmd->sidemove = server_cmd->sidemove;
+    if(server_cmd->buttons & BUTTON_JUMP)
+        game_cmd->upmove = 200;
+    else if(server_cmd->buttons & BUTTON_CROUCH)
+        game_cmd->upmove = -200;
+    else
+        game_cmd->upmove = 0;
+    game_cmd->impulse = 0;
+    game_cmd->lightlevel = 128; // FIXME
+}
+
 static void wrap_ClientThink(edict_t *ent, usercmd_t *cmd)
 {
     // ClientThink() may spawn new entitities, so sync them all
     sync_edicts_server_to_game();
     game3_usercmd_t game_cmd;
-    game_cmd.msec = cmd->msec;
-    game_cmd.buttons = cmd->buttons;
-    game_cmd.angles[0] = ANGLE2SHORT(cmd->angles[0]);
-    game_cmd.angles[1] = ANGLE2SHORT(cmd->angles[1]);
-    game_cmd.angles[2] = ANGLE2SHORT(cmd->angles[2]);
-    game_cmd.forwardmove = cmd->forwardmove;
-    game_cmd.sidemove = cmd->sidemove;
-    if(cmd->buttons & BUTTON_JUMP)
-        game_cmd.upmove = 200;
-    else if(cmd->buttons & BUTTON_CROUCH)
-        game_cmd.upmove = -200;
-    else
-        game_cmd.upmove = 0;
-    game_cmd.impulse = 0;
-    game_cmd.lightlevel = 128; // FIXME
+    server_usercmd_to_game(&game_cmd, cmd);
     game3_export->ClientThink(translate_edict_to_game(ent), &game_cmd);
     sync_edicts_game_to_server();
 }
