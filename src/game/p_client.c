@@ -1691,7 +1691,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 
     // save light level the player is standing on for
     // monster sighting AI
-    ent->light_level = ucmd->lightlevel;
+    ent->light_level = 128; // ucmd->lightlevel; // FIXME
 
     // fire weapon from final position if needed
     if (client->latched_buttons & BUTTON_ATTACK) {

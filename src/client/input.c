@@ -782,8 +782,6 @@ void CL_FinalizeCmd(void)
     cl.cmd.sidemove = move[1];
     cl.cmd.upmove = move[2];
 
-    cl.cmd.impulse = in_impulse;
-
     // save this command off for prediction
     cl.cmdNumber++;
     cl.cmds[cl.cmdNumber & CMD_MASK] = cl.cmd;

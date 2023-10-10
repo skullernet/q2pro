@@ -780,8 +780,8 @@ static void wrap_ClientThink(edict_t *ent, usercmd_t *cmd)
     game_cmd.forwardmove = cmd->forwardmove;
     game_cmd.sidemove = cmd->sidemove;
     game_cmd.upmove = cmd->upmove;
-    game_cmd.impulse = cmd->impulse;
-    game_cmd.lightlevel = cmd->impulse;
+    game_cmd.impulse = 0;
+    game_cmd.lightlevel = 128; // FIXME
     game3_export->ClientThink(translate_edict_to_game(ent), &game_cmd);
     sync_edicts_game_to_server();
 }

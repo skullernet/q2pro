@@ -247,8 +247,6 @@ int MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *cmd, int versi
         bits |= CM_UP;
     if (cmd->buttons != from->buttons)
         bits |= CM_BUTTONS;
-    if (cmd->impulse != from->impulse)
-        bits |= CM_IMPULSE;
 
     MSG_WriteByte(bits);
 
@@ -298,8 +296,6 @@ int MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *cmd, int versi
 
     if (version < PROTOCOL_VERSION_R1Q2_UCMD && (bits & CM_BUTTONS))
         MSG_WriteByte(cmd->buttons);
-    if (bits & CM_IMPULSE)
-        MSG_WriteByte(cmd->impulse);
 
     MSG_WriteByte(cmd->msec);
 
@@ -1616,13 +1612,13 @@ void MSG_ReadDeltaUsercmd(const usercmd_t *from, usercmd_t *to)
         to->buttons = MSG_ReadByte();
 
     if (bits & CM_IMPULSE)
-        to->impulse = MSG_ReadByte();
+        MSG_ReadByte(); // skip impulse
 
 // read time to run command
     to->msec = MSG_ReadByte();
 
-// read the light level
-    to->lightlevel = MSG_ReadByte();
+// skip the light level
+    MSG_ReadByte();
 }
 
 void MSG_ReadDeltaUsercmd_Hacked(const usercmd_t *from, usercmd_t *to)
@@ -1687,13 +1683,13 @@ void MSG_ReadDeltaUsercmd_Hacked(const usercmd_t *from, usercmd_t *to)
     }
 
     if (bits & CM_IMPULSE)
-        to->impulse = MSG_ReadByte();
+        MSG_ReadByte(); // Skip impulse
 
 // read time to run command
     to->msec = MSG_ReadByte();
 
-// read the light level
-    to->lightlevel = MSG_ReadByte();
+// skip the light level
+    MSG_ReadByte();
 }
 
 int MSG_ReadBits(int bits)

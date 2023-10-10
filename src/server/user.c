@@ -1223,7 +1223,7 @@ static void SV_NewClientExecuteMove(int c)
     usercmd_t   *lastcmd, *cmd;
     int         lastframe;
     int         numCmds[MAX_PACKET_FRAMES], numDups;
-    int         i, j, lightlevel;
+    int         i, j;
     int         net_drop;
 
     if (moveIssued) {
@@ -1247,7 +1247,7 @@ static void SV_NewClientExecuteMove(int c)
         lastframe = MSG_ReadLong();
     }
 
-    lightlevel = MSG_ReadByte();
+    MSG_ReadByte(); // skip lightlevel
 
     // read all cmds
     lastcmd = NULL;
@@ -1268,7 +1268,6 @@ static void SV_NewClientExecuteMove(int c)
             }
             cmd = &cmds[i][j];
             MSG_ReadDeltaUsercmd_Enhanced(lastcmd, cmd);
-            cmd->lightlevel = lightlevel;
             lastcmd = cmd;
         }
     }
