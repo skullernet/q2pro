@@ -419,6 +419,9 @@ typedef struct {
 
     // [Paril-KEX] special flags to indicate something to the server
     int server_flags;
+
+    // [KEX]: Pmove as export
+    void (*Pmove)(pmove_t *pmove); // player movement code called by server & client
 } game_export_t;
 
 typedef game_export_t *(*game_entry_t)(game_import_t *);

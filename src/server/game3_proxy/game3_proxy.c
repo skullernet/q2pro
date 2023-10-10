@@ -174,7 +174,7 @@ static qboolean wrap_inPHS(const vec3_t p1, const vec3_t p2)
     return game_import.inPHS(p1, p2, true);
 }
 
-static void wrap_Pmove(game3_pmove_t *pmove)
+static void wrap_Pmove_import(game3_pmove_t *pmove)
 {
     if (sv_client) {
         game3_Pmove(pmove, &sv_client->pmp);
@@ -832,6 +832,16 @@ static void wrap_ServerCommand(void)
     sync_edicts_game_to_server();
 }
 
+static void wrap_Pmove_export(pmove_t *pmove)
+{
+    // FIXME Correct?
+    if (sv_client) {
+        Pmove(pmove, &sv_client->pmp);
+    } else {
+        Pmove(pmove, &sv_pmp);
+    }
+}
+
 static const game3_import_ex_t game3_import_ex = {
     .apiversion = GAME3_API_VERSION_EX,
     .structsize = sizeof(game3_import_ex_t),
@@ -870,7 +880,7 @@ game_export_t *GetGame3Proxy(game_import_t *import, const game_import_ex_t *impo
     import3.setmodel = wrap_setmodel;
     import3.inPVS = wrap_inPVS;
     import3.inPHS = wrap_inPHS;
-    import3.Pmove = wrap_Pmove;
+    import3.Pmove = wrap_Pmove_import;
 
     import3.modelindex = import->modelindex;
     import3.soundindex = import->soundindex;
@@ -932,6 +942,7 @@ game_export_t *GetGame3Proxy(game_import_t *import, const game_import_ex_t *impo
     game_export.RunFrame = wrap_RunFrame;
     game_export.PrepFrame = wrap_PrepFrame;
     game_export.ServerCommand = wrap_ServerCommand;
+    game_export.Pmove = wrap_Pmove_export;
 
     return &game_export;
 }
