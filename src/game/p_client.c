@@ -1234,7 +1234,7 @@ void PutClientInServer(edict_t *ent)
 
     // set the delta angle
     for (i = 0; i < 3; i++) {
-        client->ps.pmove.delta_angles[i] = ANGLE2SHORT(spawn_angles[i] - client->resp.cmd_angles[i]);
+        client->ps.pmove.delta_angles[i] = spawn_angles[i] - client->resp.cmd_angles[i];
     }
 
     VectorCopy(spawn_angles, ent->s.angles);
@@ -1331,7 +1331,7 @@ void ClientBegin(edict_t *ent)
         // state when the game is saved, so we need to compensate
         // with deltaangles
         for (i = 0; i < 3; i++)
-            ent->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(ent->client->ps.viewangles[i]);
+            ent->client->ps.pmove.delta_angles[i] = ent->client->ps.viewangles[i];
     } else {
         // a spawn point will completely reinitialize the entity
         // except for the persistant data that was initialized at

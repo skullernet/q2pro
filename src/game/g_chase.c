@@ -88,7 +88,7 @@ void UpdateChaseCam(edict_t *ent)
 
     VectorCopy(goal, ent->s.origin);
     for (i = 0; i < 3; i++)
-        ent->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(targ->client->v_angle[i] - ent->client->resp.cmd_angles[i]);
+        ent->client->ps.pmove.delta_angles[i] = targ->client->v_angle[i] - ent->client->resp.cmd_angles[i];
 
     if (targ->deadflag) {
         ent->client->ps.viewangles[ROLL] = 40;

@@ -401,7 +401,9 @@ static void game_client_to_server(struct gclient_s *server_client, const struct 
     server_client->ps.pmove.pm_flags = game_client->ps.pmove.pm_flags;
     server_client->ps.pmove.pm_time = game_client->ps.pmove.pm_type;
     server_client->ps.pmove.gravity = game_client->ps.pmove.gravity;
-    VectorCopy(game_client->ps.pmove.delta_angles, server_client->ps.pmove.delta_angles);
+    server_client->ps.pmove.delta_angles[0] = SHORT2ANGLE(game_client->ps.pmove.delta_angles[0]);
+    server_client->ps.pmove.delta_angles[1] = SHORT2ANGLE(game_client->ps.pmove.delta_angles[1]);
+    server_client->ps.pmove.delta_angles[2] = SHORT2ANGLE(game_client->ps.pmove.delta_angles[2]);
 
     VectorCopy(game_client->ps.viewangles, server_client->ps.viewangles);
     VectorCopy(game_client->ps.viewoffset, server_client->ps.viewoffset);
