@@ -871,7 +871,7 @@ typedef struct {
     pmtype_t    pm_type;
 
     vec3_t      origin;
-    short       velocity[3];    // 12.3
+    vec3_t      velocity;
     byte        pm_flags;       // ducked, jump_held, etc
     byte        pm_time;        // each unit = 8 ms
     short       gravity;

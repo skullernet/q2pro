@@ -853,7 +853,6 @@ and right after spawning
 void ClientEndServerFrame(edict_t *ent)
 {
     float   bobtime;
-    int     i;
 
     current_player = ent;
     current_client = ent->client;
@@ -867,9 +866,7 @@ void ClientEndServerFrame(edict_t *ent)
     // behind the body position when pushed -- "sinking into plats"
     //
     VectorCopy(ent->s.origin, current_client->ps.pmove.origin);
-    for (i = 0; i < 3; i++) {
-        current_client->ps.pmove.velocity[i] = COORD2SHORT(ent->velocity[i]);
-    }
+    VectorCopy(ent->velocity, current_client->ps.pmove.velocity);
 
     //
     // If the end of unit layout is displayed, don't give

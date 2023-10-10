@@ -1613,9 +1613,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         pm.s = client->ps.pmove;
 
         VectorCopy(ent->s.origin, pm.s.origin);
-        for (i = 0; i < 3; i++) {
-            pm.s.velocity[i] = COORD2SHORT(ent->velocity[i]);
-        }
+        VectorCopy(ent->velocity, pm.s.velocity);
 
         if (memcmp(&client->old_pmove, &pm.s, sizeof(pm.s))) {
             pm.snapinitial = true;
@@ -1633,9 +1631,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         Pmove(&pm, &ent->client->pmp);
 
         VectorCopy(pm.s.origin, ent->s.origin);
-        for (i = 0; i < 3; i++) {
-            ent->velocity[i] = SHORT2COORD(pm.s.velocity[i]);
-        }
+        VectorCopy(pm.s.velocity, ent->velocity);
 
         VectorCopy(pm.mins, ent->mins);
         VectorCopy(pm.maxs, ent->maxs);

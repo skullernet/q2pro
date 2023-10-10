@@ -271,7 +271,7 @@ static void set_active_state(void)
     } else {
         // set initial cl.predicted_origin and cl.predicted_angles
         VectorCopy(cl.frame.ps.pmove.origin, cl.predicted_origin);
-        VectorScale(cl.frame.ps.pmove.velocity, 0.125f, cl.predicted_velocity);
+        VectorCopy(cl.frame.ps.pmove.velocity, cl.predicted_velocity);
         if (cl.frame.ps.pmove.pm_type < PM_DEAD &&
             cls.serverProtocol > PROTOCOL_VERSION_DEFAULT) {
             // enhanced servers don't send viewangles

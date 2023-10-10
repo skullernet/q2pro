@@ -397,7 +397,7 @@ static void game_client_to_server(struct gclient_s *server_client, const struct 
 {
     server_client->ps.pmove.pm_type = game_client->ps.pmove.pm_type;
     VectorScale(game_client->ps.pmove.origin, 0.125f, server_client->ps.pmove.origin);
-    VectorCopy(game_client->ps.pmove.velocity, server_client->ps.pmove.velocity);
+    VectorScale(game_client->ps.pmove.velocity, 0.125f, server_client->ps.pmove.velocity);
     server_client->ps.pmove.pm_flags = game_client->ps.pmove.pm_flags;
     server_client->ps.pmove.pm_time = game_client->ps.pmove.pm_type;
     server_client->ps.pmove.gravity = game_client->ps.pmove.gravity;

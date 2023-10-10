@@ -929,7 +929,7 @@ static void PM_SnapPosition(int contentmask)
 
     // snap velocity to eigths
     for (i = 0; i < 3; i++)
-        pm->s.velocity[i] = (int)(pml.velocity[i] * 8);
+        pm->s.velocity[i] = ((int)(pml.velocity[i] * 8)) * 0.125f;
 
     for (i = 0; i < 3; i++) {
         if (pml.origin[i] >= 0)
@@ -1043,7 +1043,7 @@ void Pmove(pmove_t *pmove, pmoveParams_t *params)
 
     // convert origin and velocity to float values
     VectorCopy(pm->s.origin, pml.origin);
-    VectorScale(pm->s.velocity, 0.125f, pml.velocity);
+    VectorCopy(pm->s.velocity, pml.velocity);
 
     // save old org in case we get stuck
     VectorCopy(pm->s.origin, pml.previous_origin);
