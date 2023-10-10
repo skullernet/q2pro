@@ -1107,8 +1107,7 @@ static inline void SV_ClientThink(usercmd_t *cmd)
 
     if (cmd->buttons != old->buttons
         || cmd->forwardmove != old->forwardmove
-        || cmd->sidemove != old->sidemove
-        || cmd->upmove != old->upmove) {
+        || cmd->sidemove != old->sidemove) {
         // don't timeout
         sv_client->lastactivity = svs.realtime;
     }

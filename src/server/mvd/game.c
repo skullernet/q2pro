@@ -2119,8 +2119,7 @@ static void MVD_GameClientThink(edict_t *ent, usercmd_t *cmd)
 
     if (cmd->buttons != old->buttons
         || cmd->forwardmove != old->forwardmove
-        || cmd->sidemove != old->sidemove
-        || cmd->upmove != old->upmove) {
+        || cmd->sidemove != old->sidemove) {
         // don't timeout
         mvd_last_activity = svs.realtime;
     }
@@ -2137,7 +2136,7 @@ static void MVD_GameClientThink(edict_t *ent, usercmd_t *cmd)
     }
 
     if (client->target) {
-        if (cmd->upmove >= 10) {
+        if (cmd->buttons & BUTTON_JUMP) {
             if (client->jump_held < 1) {
                 if (!client->mvd->intermission) {
                     MVD_FollowNext(client, client->target);
@@ -2145,7 +2144,7 @@ static void MVD_GameClientThink(edict_t *ent, usercmd_t *cmd)
                 }
                 client->jump_held = 1;
             }
-        } else if (cmd->upmove <= -10) {
+        } else if (cmd->buttons & BUTTON_CROUCH) {
             if (client->jump_held > -1) {
                 if (!client->mvd->intermission) {
                     MVD_FollowPrev(client, client->target);

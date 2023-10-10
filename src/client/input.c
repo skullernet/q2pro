@@ -780,7 +780,11 @@ void CL_FinalizeCmd(void)
     // store the movement vector
     cl.cmd.forwardmove = move[0];
     cl.cmd.sidemove = move[1];
-    cl.cmd.upmove = move[2];
+    cl.cmd.buttons &= ~(BUTTON_JUMP | BUTTON_CROUCH);
+    if (move[2] > 0)
+        cl.cmd.buttons |= BUTTON_JUMP;
+    else if (move[2] < 0)
+        cl.cmd.buttons |= BUTTON_CROUCH;
 
     // save this command off for prediction
     cl.cmdNumber++;

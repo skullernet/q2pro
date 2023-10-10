@@ -364,9 +364,9 @@ static void PM_AddCurrents(vec3_t wishvel)
             wishvel[2] = 200;
         else if ((pm->viewangles[PITCH] >= 15) && (pm->cmd.forwardmove > 0))
             wishvel[2] = -200;
-        else if (pm->cmd.upmove > 0)
+        else if (pm->cmd.buttons & BUTTON_JUMP)
             wishvel[2] = 200;
-        else if (pm->cmd.upmove < 0)
+        else if (pm->cmd.buttons & BUTTON_CROUCH)
             wishvel[2] = -200;
         else
             wishvel[2] = 0;
@@ -446,10 +446,12 @@ static void PM_WaterMove(void)
     for (i = 0; i < 3; i++)
         wishvel[i] = pml.forward[i] * pm->cmd.forwardmove + pml.right[i] * pm->cmd.sidemove;
 
-    if (!pm->cmd.forwardmove && !pm->cmd.sidemove && !pm->cmd.upmove)
+    if (!pm->cmd.forwardmove && !pm->cmd.sidemove && !(pm->cmd.buttons & BUTTON_JUMP))
         wishvel[2] -= 60;       // drift towards bottom
-    else
-        wishvel[2] += pm->cmd.upmove;
+    else if (pm->cmd.buttons & BUTTON_JUMP)
+        wishvel[2] += 200;
+    else if (pm->cmd.buttons & BUTTON_CROUCH)
+        wishvel[2] -= 200;
 
     PM_AddCurrents(wishvel);
 
@@ -647,7 +649,7 @@ static void PM_CheckJump(void)
         return;
     }
 
-    if (pm->cmd.upmove < 10) {
+    if (!(pm->cmd.buttons & BUTTON_JUMP)) {
         // not holding jump
         pm->s.pm_flags &= ~PMF_JUMP_HELD;
         return;
@@ -789,7 +791,10 @@ static void PM_FlyMove(void)
 
     for (i = 0; i < 3; i++)
         wishvel[i] = pml.forward[i] * fmove + pml.right[i] * smove;
-    wishvel[2] += pm->cmd.upmove;
+    if (pm->cmd.buttons & BUTTON_JUMP)
+        wishvel[2] += 200;
+    else if (pm->cmd.buttons & BUTTON_CROUCH)
+        wishvel[2] -= 200;
 
     VectorCopy(wishvel, wishdir);
     wishspeed = VectorNormalize(wishdir);
@@ -849,7 +854,7 @@ static void PM_CheckDuck(int contentmask)
 
     if (pm->s.pm_type == PM_DEAD) {
         pm->s.pm_flags |= PMF_DUCKED;
-    } else if (pm->cmd.upmove < 0 && (pm->s.pm_flags & PMF_ON_GROUND)) {
+    } else if ((pm->cmd.buttons & BUTTON_CROUCH) && (pm->s.pm_flags & PMF_ON_GROUND)) {
         // duck
         pm->s.pm_flags |= PMF_DUCKED;
     } else {
@@ -1060,7 +1065,7 @@ void Pmove(pmove_t *pmove, pmoveParams_t *params)
     if (pm->s.pm_type >= PM_DEAD) {
         pm->cmd.forwardmove = 0;
         pm->cmd.sidemove = 0;
-        pm->cmd.upmove = 0;
+        pm->cmd.buttons &= ~(BUTTON_JUMP | BUTTON_CROUCH);
     }
 
     if (pm->s.pm_type == PM_FREEZE)

@@ -258,7 +258,10 @@ void CL_PredictMovement(void)
         pm.cmd = cl.cmd;
         pm.cmd.forwardmove = cl.localmove[0];
         pm.cmd.sidemove = cl.localmove[1];
-        pm.cmd.upmove = cl.localmove[2];
+        if (cl.localmove[2] > 0)
+            pm.cmd.buttons |= BUTTON_JUMP;
+        else if (cl.localmove[2] < 0)
+            pm.cmd.buttons |= BUTTON_CROUCH;
         Pmove(&pm, &cl.pmp);
         frame = current;
 

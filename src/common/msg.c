@@ -214,6 +214,16 @@ static inline void MSG_WriteAngle16(float f)
 
 #if USE_CLIENT
 
+static void compute_buttons_upmove(const usercmd_t *cmd, int *buttons, short *upmove)
+{
+    *buttons = cmd->buttons & ~(BUTTON_CROUCH | BUTTON_JUMP);
+    *upmove = 0;
+    if (cmd->buttons & BUTTON_JUMP)
+        *upmove += 200; /* cl_upspeed */
+    if (cmd->buttons & BUTTON_CROUCH)
+        *upmove -= 200; /* cl_upspeed */
+}
+
 /*
 =============
 MSG_WriteDeltaUsercmd
@@ -229,6 +239,13 @@ int MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *cmd, int versi
         from = &nullUserCmd;
     }
 
+    int from_buttons;
+    short from_upmove;
+    compute_buttons_upmove(from, &from_buttons, &from_upmove);
+    int new_buttons;
+    short new_upmove;
+    compute_buttons_upmove(cmd, &new_buttons, &new_upmove);
+
 //
 // send the movement message
 //
@@ -243,14 +260,14 @@ int MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *cmd, int versi
         bits |= CM_FORWARD;
     if (cmd->sidemove != from->sidemove)
         bits |= CM_SIDE;
-    if (cmd->upmove != from->upmove)
+    if (new_upmove != from_upmove)
         bits |= CM_UP;
-    if (cmd->buttons != from->buttons)
+    if (new_buttons != from_buttons)
         bits |= CM_BUTTONS;
 
     MSG_WriteByte(bits);
 
-    buttons = cmd->buttons & BUTTON_MASK;
+    buttons = new_buttons & BUTTON_MASK;
 
     if (version >= PROTOCOL_VERSION_R1Q2_UCMD && (bits & CM_BUTTONS)) {
         if ((bits & CM_FORWARD) && !((int)cmd->forwardmove % 5)) { // FIXME: Why the modulo 5?
@@ -259,7 +276,7 @@ int MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *cmd, int versi
         if ((bits & CM_SIDE) && !((int)cmd->sidemove % 5)) { // FIXME: Why the modulo 5?
             buttons |= BUTTON_SIDE;
         }
-        if ((bits & CM_UP) && !(cmd->upmove % 5)) {
+        if ((bits & CM_UP) && !(new_upmove % 5)) {
             buttons |= BUTTON_UP;
         }
         MSG_WriteByte(buttons);
@@ -288,9 +305,9 @@ int MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *cmd, int versi
     }
     if (bits & CM_UP) {
         if (buttons & BUTTON_UP) {
-            MSG_WriteChar(cmd->upmove / 5);
+            MSG_WriteChar(new_upmove / 5);
         } else {
-            MSG_WriteShort(cmd->upmove);
+            MSG_WriteShort(new_upmove);
         }
     }
 
@@ -367,6 +384,13 @@ int MSG_WriteDeltaUsercmd_Enhanced(const usercmd_t *from,
         from = &nullUserCmd;
     }
 
+    int from_buttons;
+    short from_upmove;
+    compute_buttons_upmove(from, &from_buttons, &from_upmove);
+    int new_buttons;
+    short new_upmove;
+    compute_buttons_upmove(cmd, &new_buttons, &new_upmove);
+
 //
 // send the movement message
 //
@@ -381,9 +405,9 @@ int MSG_WriteDeltaUsercmd_Enhanced(const usercmd_t *from,
         bits |= CM_FORWARD;
     if (cmd->sidemove != from->sidemove)
         bits |= CM_SIDE;
-    if (cmd->upmove != from->upmove)
+    if (new_upmove != from_upmove)
         bits |= CM_UP;
-    if (cmd->buttons != from->buttons)
+    if (new_buttons != from_buttons)
         bits |= CM_BUTTONS;
     if (cmd->msec != from->msec)
         bits |= CM_IMPULSE;
@@ -427,11 +451,11 @@ int MSG_WriteDeltaUsercmd_Enhanced(const usercmd_t *from,
         MSG_WriteBits(cmd->sidemove, -10);
     }
     if (bits & CM_UP) {
-        MSG_WriteBits(cmd->upmove, -10);
+        MSG_WriteBits(new_upmove, -10);
     }
 
     if (bits & CM_BUTTONS) {
-        int buttons = (cmd->buttons & 3) | (cmd->buttons >> 5);
+        int buttons = (new_buttons & 3) | (new_buttons >> 5);
         MSG_WriteBits(buttons, 3);
     }
     if (bits & CM_IMPULSE) {
@@ -1600,16 +1624,26 @@ void MSG_ReadDeltaUsercmd(const usercmd_t *from, usercmd_t *to)
         to->angles[2] = MSG_ReadAngle16();
 
 // read movement
+    int buttons = from ? from->buttons : 0;
     if (bits & CM_FORWARD)
         to->forwardmove = MSG_ReadShort();
     if (bits & CM_SIDE)
         to->sidemove = MSG_ReadShort();
-    if (bits & CM_UP)
-        to->upmove = MSG_ReadShort();
+    if (bits & CM_UP) {
+        short upmove = MSG_ReadShort();
+        buttons &= ~(BUTTON_JUMP | BUTTON_CROUCH);
+        if (upmove > 0)
+            buttons |= BUTTON_JUMP;
+        else if (upmove < 0)
+            buttons |= BUTTON_CROUCH;
+    }
 
 // read buttons
-    if (bits & CM_BUTTONS)
-        to->buttons = MSG_ReadByte();
+    if (bits & CM_BUTTONS) {
+        buttons &= (BUTTON_JUMP | BUTTON_CROUCH);
+        buttons |= MSG_ReadByte();
+    }
+    to->buttons = buttons;
 
     if (bits & CM_IMPULSE)
         MSG_ReadByte(); // skip impulse
@@ -1623,7 +1657,7 @@ void MSG_ReadDeltaUsercmd(const usercmd_t *from, usercmd_t *to)
 
 void MSG_ReadDeltaUsercmd_Hacked(const usercmd_t *from, usercmd_t *to)
 {
-    int bits, buttons = 0;
+    int bits, buttons = from ? from->buttons & (BUTTON_JUMP | BUTTON_CROUCH) : 0;
 
     Q_assert(to);
 
@@ -1637,8 +1671,9 @@ void MSG_ReadDeltaUsercmd_Hacked(const usercmd_t *from, usercmd_t *to)
 
 // read buttons
     if (bits & CM_BUTTONS) {
-        buttons = MSG_ReadByte();
-        to->buttons = buttons & BUTTON_MASK;
+        buttons |= MSG_ReadByte();
+        to->buttons &= ~BUTTON_MASK;
+        to->buttons |= buttons & BUTTON_MASK;
     }
 
 // read current angles
@@ -1675,11 +1710,17 @@ void MSG_ReadDeltaUsercmd_Hacked(const usercmd_t *from, usercmd_t *to)
         }
     }
     if (bits & CM_UP) {
+        short upmove = 0;
         if (buttons & BUTTON_UP) {
-            to->upmove = MSG_ReadChar() * 5;
+            upmove = MSG_ReadChar() * 5;
         } else {
-            to->upmove = MSG_ReadShort();
+            upmove = MSG_ReadShort();
         }
+        to->buttons &= ~(BUTTON_JUMP | BUTTON_CROUCH);
+        if (upmove > 0)
+            to->buttons |= BUTTON_JUMP;
+        else if (upmove < 0)
+            to->buttons |= BUTTON_CROUCH;
     }
 
     if (bits & CM_IMPULSE)
@@ -1761,6 +1802,7 @@ void MSG_ReadDeltaUsercmd_Enhanced(const usercmd_t *from, usercmd_t *to)
     }
 
 // read movement
+    int buttons = from ? from->buttons : 0;
     if (bits & CM_FORWARD) {
         to->forwardmove = MSG_ReadBits(-10);
     }
@@ -1768,14 +1810,20 @@ void MSG_ReadDeltaUsercmd_Enhanced(const usercmd_t *from, usercmd_t *to)
         to->sidemove = MSG_ReadBits(-10);
     }
     if (bits & CM_UP) {
-        to->upmove = MSG_ReadBits(-10);
+        short upmove = MSG_ReadBits(-10);
+        if (upmove > 0)
+            buttons |= BUTTON_JUMP;
+        else if (upmove < 0)
+            buttons |= BUTTON_CROUCH;
     }
 
 // read buttons
     if (bits & CM_BUTTONS) {
-        int buttons = MSG_ReadBits(3);
-        to->buttons = (buttons & 3) | ((buttons & 4) << 5);
+        buttons &= ~BUTTON_MASK;
+        int net_buttons = MSG_ReadBits(3);
+        buttons |= (net_buttons & 3) | ((net_buttons & 4) << 5);
     }
+    to->buttons = buttons;
 
 // read time to run command
     if (bits & CM_IMPULSE) {

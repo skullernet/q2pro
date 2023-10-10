@@ -1712,7 +1712,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
     }
 
     if (client->resp.spectator) {
-        if (ucmd->upmove >= 10) {
+        if (ucmd->buttons & BUTTON_JUMP) {
             if (!(client->ps.pmove.pm_flags & PMF_JUMP_HELD)) {
                 client->ps.pmove.pm_flags |= PMF_JUMP_HELD;
                 if (client->chase_target)
