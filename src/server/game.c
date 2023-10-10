@@ -1048,6 +1048,9 @@ void SV_InitGameProgs(void)
 
     // load a new game dll
     import = game_import;
+    import.tick_rate = SV_FRAMERATE;
+    import.frame_time_s = SV_FRAMETIME * 0.001f;
+    import.frame_time_ms = SV_FRAMETIME;
 
     ge = entry(&import);
     if (!ge) {
@@ -1068,10 +1071,6 @@ void SV_InitGameProgs(void)
 
     if (entry_ex)
         gex = entry_ex(&game_import_ex);
-
-    import.tick_rate = SV_FRAMERATE;
-    import.frame_time_s = SV_FRAMETIME * 0.001f;
-    import.frame_time_ms = SV_FRAMETIME;
 
     // initialize
     ge->PreInit(); // FIXME: When to call PreInit(), when Init()?
