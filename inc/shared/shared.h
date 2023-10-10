@@ -896,7 +896,7 @@ typedef struct {
 // usercmd_t is sent to the server each client frame
 typedef struct usercmd_s {
     byte    msec;
-    byte    buttons;
+    uint8_t buttons;
     vec3_t  angles;
     float   forwardmove, sidemove;
     uint32_t server_frame;
