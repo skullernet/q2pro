@@ -786,7 +786,10 @@ static void PF_Loc_Print(edict_t* ent, print_type_t level, const char* base, con
      * Also, the rerelease game docs call this "The new primary entry point for printing." and
      * "This function replaces all of the others (except Com_Print).",
      * suggesting all other print functions should be wrappers of this one. */
-    PF_Client_Print(ent, level, base);
+
+    char string[MAX_STRING_CHARS];
+    Q_snprintf(string, sizeof(string), "%s\n", base);
+    PF_Client_Print(ent, level, string);
 }
 
 // Debug drawing functions - all unimplemented for now...
