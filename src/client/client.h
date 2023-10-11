@@ -79,6 +79,10 @@ typedef struct centity_s {
     int             fly_stoptime;
 
     float           flashlightfrac;
+
+// KEX
+    int32_t         current_frame, last_frame, frame_servertime;
+// KEX
 } centity_t;
 
 extern centity_t    cl_entities[MAX_EDICTS];

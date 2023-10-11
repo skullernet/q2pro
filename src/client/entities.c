@@ -53,6 +53,11 @@ entity_update_new(centity_t *ent, const entity_state_t *state, const vec_t *orig
     ent->event_frame = cl.frame.number;
 #endif
 
+// KEX
+    ent->current_frame = ent->last_frame = state->frame;
+    ent->frame_servertime = cl.servertime;
+// KEX
+
     if (state->event == EV_PLAYER_TELEPORT ||
         state->event == EV_OTHER_TELEPORT ||
         (state->renderfx & RF_BEAM)) {
@@ -81,6 +86,15 @@ entity_update_old(centity_t *ent, const entity_state_t *state, const vec_t *orig
     else
         event = 0; // duplicated
 #endif
+
+// KEX
+    if (ent->current_frame != state->frame)
+    {
+        ent->current_frame = state->frame;
+        ent->last_frame = ent->current.frame;
+        ent->frame_servertime = cl.servertime;
+    }
+// KEX
 
     if (state->modelindex != ent->current.modelindex
         || state->modelindex2 != ent->current.modelindex2
@@ -558,6 +572,18 @@ static void CL_AddPacketEntities(void)
 
         ent.oldframe = cent->prev.frame;
         ent.backlerp = 1.0f - cl.lerpfrac;
+
+// KEX
+        if (cl.csr.extended) {
+            // TODO: must only do this on alias models
+            if (cent->last_frame != cent->current_frame) {
+                ent.backlerp = 1.0f - ((cl.time - ((float) cent->frame_servertime - cl.sv_frametime)) / 100.f);
+                clamp(ent.backlerp, 0.0f, 1.0f);
+                ent.frame = cent->current_frame;
+                ent.oldframe = cent->last_frame;
+            }
+        }
+// KEX
 
         if (renderfx & RF_BEAM) {
             // interpolate start and end points for beams
