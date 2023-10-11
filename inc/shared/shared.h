@@ -1467,15 +1467,28 @@ typedef struct {
     vec3_t      gunangles;
     vec3_t      gunoffset;
     int         gunindex;
+// KEX
+    int         gunskin;
+// KEX
     int         gunframe;
+// KEX
+    int         gunrate;
+// KEX
 
     float       blend[4];       // rgba full screen effect
+// KEX
+    float       damage_blend[4];
+// KEX
 
     float       fov;            // horizontal field of view
 
-    int         rdflags;        // refdef flags
+    uint8_t     rdflags;        // KEX uint8_t, refdef flags
 
     short       stats[MAX_STATS];       // fast status bar updates
+
+// KEX
+    uint8_t team_id; // team identifier
+// KEX
 } player_state_t;
 
 //==============================================
