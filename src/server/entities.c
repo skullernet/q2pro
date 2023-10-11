@@ -386,8 +386,8 @@ static bool SV_EntityAttenuatedAway(vec3_t org, edict_t *ent)
     float dist = Distance(org, ent->s.origin);
     float dist_mult = SOUND_LOOPATTENUATE;
 
-    if (ent->x.loop_attenuation && ent->x.loop_attenuation != ATTN_STATIC)
-        dist_mult = ent->x.loop_attenuation * SOUND_LOOPATTENUATE_MULT;
+    if (ent->s.loop_attenuation && ent->s.loop_attenuation != ATTN_STATIC)
+        dist_mult = ent->s.loop_attenuation * SOUND_LOOPATTENUATE_MULT;
 
     return (dist - SOUND_FULLVOLUME) * dist_mult > 1.0f;
 }
@@ -542,7 +542,7 @@ void SV_BuildClientFrame(client_t *client)
 
         // add it to the circular client_entities array
         state = &svs.entities[svs.next_entity % svs.num_entities];
-        MSG_PackEntity(state, &ent->s, ENT_EXTENSION(client->csr, ent));
+        MSG_PackEntity(state, &ent->s, client->csr->extended);
 
 #if USE_FPS
         // fix old entity origins for clients not running at

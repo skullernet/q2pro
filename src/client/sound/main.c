@@ -803,7 +803,7 @@ void S_BuildSoundList(int *sounds)
 {
     int         i;
     int         num;
-    centity_state_t *ent;
+    entity_state_t *ent;
 
     for (i = 0; i < cl.frame.numEntities; i++) {
         num = (cl.frame.firstEntity + i) & PARSE_ENTITIES_MASK;
@@ -818,7 +818,7 @@ void S_BuildSoundList(int *sounds)
     }
 }
 
-float S_GetEntityLoopVolume(const centity_state_t *ent)
+float S_GetEntityLoopVolume(const entity_state_t *ent)
 {
     if (ent->loop_volume)
         return ent->loop_volume;
@@ -826,7 +826,7 @@ float S_GetEntityLoopVolume(const centity_state_t *ent)
     return 1.0f;
 }
 
-float S_GetEntityLoopDistMult(const centity_state_t *ent)
+float S_GetEntityLoopDistMult(const entity_state_t *ent)
 {
     if (ent->loop_attenuation) {
         if (ent->loop_attenuation == ATTN_LOOP_NONE)

@@ -1417,15 +1417,35 @@ typedef struct entity_state_s {
     int     modelindex2, modelindex3, modelindex4;  // weapons, CTF flags, etc
     int     frame;
     int     skinnum;
-    unsigned int        effects;        // PGM - we're filling it, so it needs to be unsigned
+    uint32_t effects;        // PGM - we're filling it, so it needs to be unsigned
+// KEX
+    uint32_t morefx;
+// KEX
     int     renderfx;
     int     solid;          // for client side prediction, 8*(bits 0-4) is x/y radius
                             // 8*(bits 5-9) is z down distance, 8(bits10-15) is z up
                             // gi.linkentity sets this properly
     int     sound;          // for looping sounds, to guarantee shutoff
-    int     event;          // impulse events -- muzzle flashes, footsteps, etc
+    uint8_t     event;      // (KEX: uint8_t) impulse events -- muzzle flashes, footsteps, etc
                             // events only go out for a single frame, they
                             // are automatically cleared each frame
+// KEX
+    float          alpha;   // [Paril-KEX] alpha scalar; 0 is a "default" value, which will respect other
+                            // settings (default 1.0 for most things, EF_TRANSLUCENT will default this
+                            // to 0.3, etc)
+    float          scale;   // [Paril-KEX] model scale scalar; 0 is a "default" value, like with alpha.
+    uint8_t        instance_bits; // [Paril-KEX] players that *can't* see this entity will have a bit of 1. handled by
+                                  // the server, do not set directly.
+    // [Paril-KEX] allow specifying volume/attn for looping noises; note that
+    // zero will be defaults (1.0 and 3.0 respectively); -1 attenuation is used
+    // for "none" (similar to target_speaker) for no phs/pvs looping noises
+    float          loop_volume;
+    float          loop_attenuation;
+    // [Paril-KEX] for proper client-side owner collision skipping
+    int32_t        owner;
+    // [Paril-KEX] for custom interpolation stuff
+    int32_t        old_frame;
+// KEX
 } entity_state_t;
 
 //==============================================
@@ -1467,13 +1487,5 @@ typedef struct {
 
 #define GUNINDEX_BITS       13  // upper 3 bits are skinnum
 #define GUNINDEX_MASK       (BIT(GUNINDEX_BITS) - 1)
-
-typedef struct {
-    int         morefx;
-    float       alpha;
-    float       scale;
-    float       loop_volume;
-    float       loop_attenuation;
-} entity_state_extension_t;
 
 #endif

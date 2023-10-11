@@ -585,7 +585,7 @@ static void build_gamestate(void)
         }
 
         ent->s.number = i;
-        MSG_PackEntity(&mvd.entities[i], &ent->s, ENT_EXTENSION(&svs.csr, ent));
+        MSG_PackEntity(&mvd.entities[i], &ent->s, svs.csr.extended);
         if (svs.csr.extended)
             mvd.entities[i].solid = sv.entities[i].solid32;
     }
@@ -799,7 +799,7 @@ static void emit_frame(void)
         }
 
         // quantize
-        MSG_PackEntity(&newes, &ent->s, ENT_EXTENSION(&svs.csr, ent));
+        MSG_PackEntity(&newes, &ent->s, svs.csr.extended);
         if (svs.csr.extended)
             newes.solid = sv.entities[i].solid32;
 

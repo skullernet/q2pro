@@ -694,7 +694,7 @@ static void MVD_ParsePacketEntities(mvd_t *mvd)
         }
 #endif
 
-        MSG_ParseDeltaEntity(&ent->s, &ent->x, number, bits, mvd->esFlags);
+        MSG_ParseDeltaEntity(&ent->s, number, bits, mvd->esFlags);
 
         // lazily relink even if removed
         if ((bits & RELINK_MASK) && !mvd->demoseeking) {

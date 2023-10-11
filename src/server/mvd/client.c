@@ -1869,7 +1869,7 @@ static void emit_base_frame(mvd_t *mvd)
         if (!(ent->svflags & SVF_MONSTER))
             continue;   // entity never seen
         ent->s.number = i;
-        MSG_PackEntity(&es, &ent->s, &ent->x);
+        MSG_PackEntity(&es, &ent->s, mvd->csr->extended);
         MSG_WriteDeltaEntity(NULL, &es, entity_flags(mvd, ent));
     }
     MSG_WriteShort(0);

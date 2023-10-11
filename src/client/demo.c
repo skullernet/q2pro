@@ -73,9 +73,9 @@ fail:
     return false;
 }
 
-void CL_PackEntity(entity_packed_t *out, const centity_state_t *in)
+void CL_PackEntity(entity_packed_t *out, const entity_state_t *in)
 {
-    MSG_PackEntity(out, &in->s, cl.csr.extended ? &in->x : NULL);
+    MSG_PackEntity(out, in, cl.csr.extended);
 
     // repack solid 32 to 16
     if (!cl.csr.extended && cl.esFlags & MSG_ES_LONGSOLID && in->solid && in->solid != PACKED_BSP) {
@@ -89,7 +89,7 @@ void CL_PackEntity(entity_packed_t *out, const centity_state_t *in)
 static void emit_packet_entities(server_frame_t *from, server_frame_t *to)
 {
     entity_packed_t oldpack, newpack;
-    centity_state_t *oldent, *newent;
+    entity_state_t *oldent, *newent;
     int     oldindex, newindex;
     int     oldnum, newnum;
     int     i, from_num_entities;
@@ -334,7 +334,7 @@ static void CL_Record_f(void)
     char    buffer[MAX_OSPATH];
     int     i, c;
     size_t  len;
-    centity_state_t *ent;
+    entity_state_t  *ent;
     entity_packed_t pack;
     char            *s;
     qhandle_t       f;

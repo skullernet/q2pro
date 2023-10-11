@@ -74,7 +74,7 @@ static void SV_CreateBaselines(void)
         }
 
         base = *chunk + (i & SV_BASELINES_MASK);
-        MSG_PackEntity(base, &ent->s, ENT_EXTENSION(sv_client->csr, ent));
+        MSG_PackEntity(base, &ent->s, sv_client->csr->extended);
 
 #if USE_MVD_CLIENT
         if (sv.state == ss_broadcast) {

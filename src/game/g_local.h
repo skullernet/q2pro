@@ -971,8 +971,6 @@ struct edict_s {
 
     //================================
 
-    entity_state_extension_t    x;
-
     // DO NOT MODIFY ANYTHING ABOVE THIS, THE SERVER
     // EXPECTS THE FIELDS IN THAT ORDER!
 

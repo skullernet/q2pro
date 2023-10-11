@@ -1082,7 +1082,7 @@ void SV_InitGameProgs(void)
     }
 
     // sanitize edict_size
-    unsigned min_size = svs.csr.extended ? sizeof(edict_t) : q_offsetof(edict_t, x);
+    unsigned min_size = sizeof(edict_t);
     unsigned max_size = INT_MAX / svs.csr.max_edicts;
 
     if (ge->edict_size < min_size || ge->edict_size > max_size || ge->edict_size % q_alignof(edict_t)) {

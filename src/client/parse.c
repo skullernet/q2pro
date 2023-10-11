@@ -30,10 +30,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 static void CL_ParseDeltaEntity(server_frame_t           *frame,
                                 int                      newnum,
-                                const centity_state_t    *old,
+                                const entity_state_t     *old,
                                 uint64_t                 bits)
 {
-    centity_state_t     *state;
+    entity_state_t     *state;
 
     // suck up to MAX_EDICTS for servers that don't cap at MAX_PACKET_ENTITIES
     if (frame->numEntities >= cl.csr.max_edicts) {
@@ -52,7 +52,7 @@ static void CL_ParseDeltaEntity(server_frame_t           *frame,
 #endif
 
     *state = *old;
-    MSG_ParseDeltaEntity(&state->s, &state->x, newnum, bits, cl.esFlags);
+    MSG_ParseDeltaEntity(state, newnum, bits, cl.esFlags);
 
     // shuffle previous origin to old
     if (!(bits & U_OLDORIGIN) && !(state->renderfx & RF_BEAM))
@@ -77,7 +77,7 @@ static void CL_ParsePacketEntities(server_frame_t *oldframe,
                                    server_frame_t *frame)
 {
     uint64_t        bits;
-    centity_state_t *oldstate;
+    entity_state_t  *oldstate;
     int             i, oldindex, oldnum, newnum;
 
     frame->firstEntity = cl.numEntityStates;
@@ -453,7 +453,7 @@ static void CL_ParseConfigstring(int index)
 
 static void CL_ParseBaseline(int index, uint64_t bits)
 {
-    centity_state_t *base;
+    entity_state_t *base;
 
     if (index < 1 || index >= cl.csr.max_edicts) {
         Com_Error(ERR_DROP, "%s: bad index: %d", __func__, index);
@@ -468,7 +468,7 @@ static void CL_ParseBaseline(int index, uint64_t bits)
 #endif
 
     base = &cl.baselines[index];
-    MSG_ParseDeltaEntity(&base->s, &base->x, index, bits, cl.esFlags);
+    MSG_ParseDeltaEntity(base, index, bits, cl.esFlags);
 }
 
 // instead of wasting space for svc_configstring and svc_spawnbaseline
