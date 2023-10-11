@@ -113,7 +113,7 @@ void    MSG_WriteShort(int c);
 void    MSG_WriteLong(int c);
 void    MSG_WriteLong64(int64_t c);
 void    MSG_WriteString(const char *s);
-void    MSG_WritePos(const vec3_t pos, bool extended);
+void    MSG_WritePos(const vec3_t pos, bool float_coord);
 void    MSG_WriteAngle(float f);
 void    MSG_WriteFloat(float f);
 #if USE_CLIENT
@@ -152,7 +152,7 @@ int64_t MSG_ReadLong64(void);
 size_t  MSG_ReadString(char *dest, size_t size);
 size_t  MSG_ReadStringLine(char *dest, size_t size);
 float   MSG_ReadFloat(void);
-void    MSG_ReadPos(vec3_t pos, bool extended);
+void    MSG_ReadPos(vec3_t pos, bool float_coord);
 #if USE_CLIENT
 void    MSG_ReadDir(vec3_t vector);
 #endif

@@ -176,9 +176,9 @@ MSG_WriteCoord
 =============
 */
 
-static inline void MSG_WriteCoord(float f, bool extended)
+static inline void MSG_WriteCoord(float f, bool float_coord)
 {
-    if (extended)
+    if (float_coord)
         MSG_WriteFloat(f);
     else
         MSG_WriteShort(COORD2SHORT(f));
@@ -189,11 +189,11 @@ static inline void MSG_WriteCoord(float f, bool extended)
 MSG_WritePos
 =============
 */
-void MSG_WritePos(const vec3_t pos, bool extended)
+void MSG_WritePos(const vec3_t pos, bool float_coord)
 {
-    MSG_WriteCoord(pos[0], extended);
-    MSG_WriteCoord(pos[1], extended);
-    MSG_WriteCoord(pos[2], extended);
+    MSG_WriteCoord(pos[0], float_coord);
+    MSG_WriteCoord(pos[1], float_coord);
+    MSG_WriteCoord(pos[2], float_coord);
 }
 
 /*
@@ -1609,19 +1609,19 @@ size_t MSG_ReadStringLine(char *dest, size_t size)
 
 #if USE_CLIENT || USE_MVD_CLIENT
 
-static inline float MSG_ReadCoord(bool extended)
+static inline float MSG_ReadCoord(bool float_coord)
 {
-    if (extended)
+    if (float_coord)
         return MSG_ReadFloat();
     else
         return SHORT2COORD(MSG_ReadShort());
 }
 
-void MSG_ReadPos(vec3_t pos, bool extended)
+void MSG_ReadPos(vec3_t pos, bool float_coord)
 {
-    pos[0] = MSG_ReadCoord(extended);
-    pos[1] = MSG_ReadCoord(extended);
-    pos[2] = MSG_ReadCoord(extended);
+    pos[0] = MSG_ReadCoord(float_coord);
+    pos[1] = MSG_ReadCoord(float_coord);
+    pos[2] = MSG_ReadCoord(float_coord);
 }
 
 static inline float MSG_ReadAngle(void)
