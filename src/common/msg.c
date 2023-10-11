@@ -176,9 +176,12 @@ MSG_WriteCoord
 =============
 */
 
-static inline void MSG_WriteCoord(float f)
+static inline void MSG_WriteCoord(float f, bool extended)
 {
-    MSG_WriteShort(COORD2SHORT(f));
+    if (extended)
+        MSG_WriteFloat(f);
+    else
+        MSG_WriteShort(COORD2SHORT(f));
 }
 
 /*
@@ -186,11 +189,11 @@ static inline void MSG_WriteCoord(float f)
 MSG_WritePos
 =============
 */
-void MSG_WritePos(const vec3_t pos)
+void MSG_WritePos(const vec3_t pos, bool extended)
 {
-    MSG_WriteCoord(pos[0]);
-    MSG_WriteCoord(pos[1]);
-    MSG_WriteCoord(pos[2]);
+    MSG_WriteCoord(pos[0], extended);
+    MSG_WriteCoord(pos[1], extended);
+    MSG_WriteCoord(pos[2], extended);
 }
 
 /*
@@ -205,6 +208,15 @@ MSG_WriteAngle
 void MSG_WriteAngle(float f)
 {
     MSG_WriteByte(ANGLE2BYTE(f));
+}
+
+void MSG_WriteFloat(float f)
+{
+    union {
+        float _f;
+        int32_t _i;
+    } v = { f };
+    MSG_WriteLong(v._i);
 }
 
 static inline void MSG_WriteAngle16(float f)
@@ -480,15 +492,11 @@ void MSG_PackEntity(entity_packed_t *out, const entity_state_t *in, bool ext)
     // allow 0 to accomodate empty baselines
     Q_assert(in->number >= 0 && in->number < MAX_EDICTS);
     out->number = in->number;
-    out->origin[0] = COORD2SHORT(in->origin[0]);
-    out->origin[1] = COORD2SHORT(in->origin[1]);
-    out->origin[2] = COORD2SHORT(in->origin[2]);
+    VectorCopy(in->origin, out->origin);
     out->angles[0] = ANGLE2SHORT(in->angles[0]);
     out->angles[1] = ANGLE2SHORT(in->angles[1]);
     out->angles[2] = ANGLE2SHORT(in->angles[2]);
-    out->old_origin[0] = COORD2SHORT(in->old_origin[0]);
-    out->old_origin[1] = COORD2SHORT(in->old_origin[1]);
-    out->old_origin[2] = COORD2SHORT(in->old_origin[2]);
+    VectorCopy(in->old_origin, out->old_origin);
     out->modelindex = in->modelindex;
     out->modelindex2 = in->modelindex2;
     out->modelindex3 = in->modelindex3;
@@ -743,9 +751,9 @@ void MSG_WriteDeltaEntity(const entity_packed_t *from,
     else if (bits & U_RENDERFX16)
         MSG_WriteShort(to->renderfx);
 
-    if (bits & U_ORIGIN1) MSG_WriteShort(to->origin[0]);
-    if (bits & U_ORIGIN2) MSG_WriteShort(to->origin[1]);
-    if (bits & U_ORIGIN3) MSG_WriteShort(to->origin[2]);
+    if (bits & U_ORIGIN1) MSG_WriteCoord(to->origin[0], flags & MSG_ES_EXTENSIONS);
+    if (bits & U_ORIGIN2) MSG_WriteCoord(to->origin[1], flags & MSG_ES_EXTENSIONS);
+    if (bits & U_ORIGIN3) MSG_WriteCoord(to->origin[2], flags & MSG_ES_EXTENSIONS);
 
     if (bits & U_ANGLE16) {
         if (bits & U_ANGLE1) MSG_WriteShort(to->angles[0]);
@@ -758,9 +766,9 @@ void MSG_WriteDeltaEntity(const entity_packed_t *from,
     }
 
     if (bits & U_OLDORIGIN) {
-        MSG_WriteShort(to->old_origin[0]);
-        MSG_WriteShort(to->old_origin[1]);
-        MSG_WriteShort(to->old_origin[2]);
+        MSG_WriteCoord(to->old_origin[0], flags & MSG_ES_EXTENSIONS);
+        MSG_WriteCoord(to->old_origin[1], flags & MSG_ES_EXTENSIONS);
+        MSG_WriteCoord(to->old_origin[2], flags & MSG_ES_EXTENSIONS);
     }
 
     if (bits & U_SOUND) {
@@ -903,11 +911,11 @@ void MSG_WriteDeltaPlayerstate_Default(const player_packed_t *from, const player
         MSG_WriteByte(to->pmove.pm_type);
 
     if (pflags & PS_M_ORIGIN) {
-        MSG_WritePos(to->pmove.origin);
+        MSG_WritePos(to->pmove.origin, flags & MSG_PS_EXTENSIONS);
     }
 
     if (pflags & PS_M_VELOCITY) {
-        MSG_WritePos(to->pmove.velocity);
+        MSG_WritePos(to->pmove.velocity, flags & MSG_PS_EXTENSIONS);
     }
 
     if (pflags & PS_M_TIME)
@@ -1125,20 +1133,20 @@ int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
         MSG_WriteByte(to->pmove.pm_type);
 
     if (pflags & PS_M_ORIGIN) {
-        MSG_WriteCoord(to->pmove.origin[0]);
-        MSG_WriteCoord(to->pmove.origin[1]);
+        MSG_WriteCoord(to->pmove.origin[0], flags & MSG_PS_EXTENSIONS);
+        MSG_WriteCoord(to->pmove.origin[1], flags & MSG_PS_EXTENSIONS);
     }
 
     if (eflags & EPS_M_ORIGIN2)
-        MSG_WriteCoord(to->pmove.origin[2]);
+        MSG_WriteCoord(to->pmove.origin[2], flags & MSG_PS_EXTENSIONS);
 
     if (pflags & PS_M_VELOCITY) {
-        MSG_WriteCoord(to->pmove.velocity[0]);
-        MSG_WriteCoord(to->pmove.velocity[1]);
+        MSG_WriteCoord(to->pmove.velocity[0], flags & MSG_PS_EXTENSIONS);
+        MSG_WriteCoord(to->pmove.velocity[1], flags & MSG_PS_EXTENSIONS);
     }
 
     if (eflags & EPS_M_VELOCITY2)
-        MSG_WriteCoord(to->pmove.velocity[2]);
+        MSG_WriteCoord(to->pmove.velocity[2], flags & MSG_PS_EXTENSIONS);
 
     if (pflags & PS_M_TIME)
         MSG_WriteByte(to->pmove.pm_time);
@@ -1334,12 +1342,12 @@ void MSG_WriteDeltaPlayerstate_Packet(const player_packed_t *from,
         MSG_WriteByte(to->pmove.pm_type);
 
     if (pflags & PPS_M_ORIGIN) {
-        MSG_WriteShort(to->pmove.origin[0] * 8);
-        MSG_WriteShort(to->pmove.origin[1] * 8);
+        MSG_WriteCoord(to->pmove.origin[0], flags & MSG_PS_EXTENSIONS);
+        MSG_WriteCoord(to->pmove.origin[1], flags & MSG_PS_EXTENSIONS);
     }
 
     if (pflags & PPS_M_ORIGIN2)
-        MSG_WriteShort(to->pmove.origin[2] * 8);
+        MSG_WriteCoord(to->pmove.origin[2], flags & MSG_PS_EXTENSIONS);
 
     //
     // write the rest of the player_state_t
@@ -1502,6 +1510,23 @@ int MSG_ReadLong(void)
     return c;
 }
 
+float MSG_ReadFloat(void)
+{
+    byte *buf = MSG_ReadData(4);
+    union {
+        float _f;
+        int32_t _i;
+    } v;
+
+    if (!buf) {
+        v._f = -1;
+    } else {
+        v._i = (int32_t)RL32(buf);
+    }
+
+    return v._f;
+}
+
 int64_t MSG_ReadLong64(void)
 {
     byte *buf = MSG_ReadData(8);
@@ -1562,19 +1587,19 @@ size_t MSG_ReadStringLine(char *dest, size_t size)
 
 #if USE_CLIENT || USE_MVD_CLIENT
 
-static inline float MSG_ReadCoord(void)
+static inline float MSG_ReadCoord(bool extended)
 {
-    return SHORT2COORD(MSG_ReadShort());
+    if (extended)
+        return MSG_ReadFloat();
+    else
+        return SHORT2COORD(MSG_ReadShort());
 }
 
-#if !USE_CLIENT
-static inline
-#endif
-void MSG_ReadPos(vec3_t pos)
+void MSG_ReadPos(vec3_t pos, bool extended)
 {
-    pos[0] = MSG_ReadCoord();
-    pos[1] = MSG_ReadCoord();
-    pos[2] = MSG_ReadCoord();
+    pos[0] = MSG_ReadCoord(extended);
+    pos[1] = MSG_ReadCoord(extended);
+    pos[2] = MSG_ReadCoord(extended);
 }
 
 static inline float MSG_ReadAngle(void)
@@ -1933,9 +1958,9 @@ void MSG_ParseDeltaEntity(entity_state_t            *to,
     else if (bits & U_RENDERFX16)
         to->renderfx = MSG_ReadWord();
 
-    if (bits & U_ORIGIN1) to->origin[0] = MSG_ReadCoord();
-    if (bits & U_ORIGIN2) to->origin[1] = MSG_ReadCoord();
-    if (bits & U_ORIGIN3) to->origin[2] = MSG_ReadCoord();
+    if (bits & U_ORIGIN1) to->origin[0] = MSG_ReadCoord(flags & MSG_ES_EXTENSIONS);
+    if (bits & U_ORIGIN2) to->origin[1] = MSG_ReadCoord(flags & MSG_ES_EXTENSIONS);
+    if (bits & U_ORIGIN3) to->origin[2] = MSG_ReadCoord(flags & MSG_ES_EXTENSIONS);
 
     if (flags & MSG_ES_SHORTANGLES && bits & U_ANGLE16) {
         if (bits & U_ANGLE1) to->angles[0] = MSG_ReadAngle16();
@@ -1948,7 +1973,7 @@ void MSG_ParseDeltaEntity(entity_state_t            *to,
     }
 
     if (bits & U_OLDORIGIN)
-        MSG_ReadPos(to->old_origin);
+        MSG_ReadPos(to->old_origin, flags & MSG_ES_EXTENSIONS);
 
     if (bits & U_SOUND) {
         if (flags & MSG_ES_EXTENSIONS) {
@@ -2027,11 +2052,11 @@ void MSG_ParseDeltaPlayerstate_Default(const player_state_t *from,
         to->pmove.pm_type = MSG_ReadByte();
 
     if (flags & PS_M_ORIGIN) {
-        MSG_ReadPos(to->pmove.origin);
+        MSG_ReadPos(to->pmove.origin, flags & MSG_PS_EXTENSIONS);
     }
 
     if (flags & PS_M_VELOCITY) {
-        MSG_ReadPos(to->pmove.velocity);
+        MSG_ReadPos(to->pmove.velocity, flags & MSG_PS_EXTENSIONS);
     }
 
     if (flags & PS_M_TIME)
@@ -2140,20 +2165,20 @@ void MSG_ParseDeltaPlayerstate_Enhanced(const player_state_t    *from,
         to->pmove.pm_type = MSG_ReadByte();
 
     if (flags & PS_M_ORIGIN) {
-        to->pmove.origin[0] = MSG_ReadCoord();
-        to->pmove.origin[1] = MSG_ReadCoord();
+        to->pmove.origin[0] = MSG_ReadCoord(psflags & MSG_PS_EXTENSIONS);
+        to->pmove.origin[1] = MSG_ReadCoord(psflags & MSG_PS_EXTENSIONS);
     }
 
     if (extraflags & EPS_M_ORIGIN2)
-        to->pmove.origin[2] = MSG_ReadCoord();
+        to->pmove.origin[2] = MSG_ReadCoord(psflags & MSG_PS_EXTENSIONS);
 
     if (flags & PS_M_VELOCITY) {
-        to->pmove.velocity[0] = MSG_ReadCoord();
-        to->pmove.velocity[1] = MSG_ReadCoord();
+        to->pmove.velocity[0] = MSG_ReadCoord(psflags & MSG_PS_EXTENSIONS);
+        to->pmove.velocity[1] = MSG_ReadCoord(psflags & MSG_PS_EXTENSIONS);
     }
 
     if (extraflags & EPS_M_VELOCITY2)
-        to->pmove.velocity[2] = MSG_ReadCoord();
+        to->pmove.velocity[2] = MSG_ReadCoord(psflags & MSG_PS_EXTENSIONS);
 
     if (flags & PS_M_TIME)
         to->pmove.pm_time = MSG_ReadByte(); // FIXME: Make short
@@ -2270,12 +2295,12 @@ void MSG_ParseDeltaPlayerstate_Packet(const player_state_t  *from,
         to->pmove.pm_type = MSG_ReadByte();
 
     if (flags & PPS_M_ORIGIN) {
-        to->pmove.origin[0] = MSG_ReadCoord();
-        to->pmove.origin[1] = MSG_ReadCoord();
+        to->pmove.origin[0] = MSG_ReadCoord(psflags & MSG_PS_EXTENSIONS);
+        to->pmove.origin[1] = MSG_ReadCoord(psflags & MSG_PS_EXTENSIONS);
     }
 
     if (flags & PPS_M_ORIGIN2)
-        to->pmove.origin[2] = MSG_ReadCoord();
+        to->pmove.origin[2] = MSG_ReadCoord(psflags & MSG_PS_EXTENSIONS);
 
     //
     // parse the rest of the player_state_t

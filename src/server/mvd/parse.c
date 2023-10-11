@@ -508,7 +508,7 @@ static void MVD_ParseSound(mvd_t *mvd, int extrabits)
         MSG_WriteByte(offset);
 
     MSG_WriteShort(sendchan);
-    MSG_WritePos(origin);
+    MSG_WritePos(origin, svs.csr.extended);
 
     leaf1 = NULL;
     if (!(extrabits & 1)) {
@@ -564,9 +564,7 @@ static void MVD_ParseSound(mvd_t *mvd, int extrabits)
         msg->attenuation = attenuation;
         msg->timeofs = offset;
         msg->sendchan = sendchan;
-        for (i = 0; i < 3; i++) {
-            msg->pos[i] = COORD2SHORT(origin[i]);
-        }
+        MSG_ReadPos(msg->pos, cl->csr->extended);
 
         List_Remove(&msg->entry);
         List_Append(&cl->msg_unreliable_list, &msg->entry);

@@ -728,7 +728,7 @@ static void CL_ParseTEntPacket(void)
     case TE_ELECTRIC_SPARKS:
     case TE_BLUEHYPERBLASTER_2:
     case TE_BERSERK_SLAM:
-        MSG_ReadPos(te.pos1);
+        MSG_ReadPos(te.pos1, cl.csr.extended);
         MSG_ReadDir(te.dir);
         break;
 
@@ -737,7 +737,7 @@ static void CL_ParseTEntPacket(void)
     case TE_WELDING_SPARKS:
     case TE_TUNNEL_SPARKS:
         te.count = MSG_ReadByte();
-        MSG_ReadPos(te.pos1);
+        MSG_ReadPos(te.pos1, cl.csr.extended);
         MSG_ReadDir(te.dir);
         te.color = MSG_ReadByte();
         break;
@@ -750,8 +750,8 @@ static void CL_ParseTEntPacket(void)
     case TE_BUBBLETRAIL2:
     case TE_BFG_LASER:
     case TE_BFG_ZAP:
-        MSG_ReadPos(te.pos1);
-        MSG_ReadPos(te.pos2);
+        MSG_ReadPos(te.pos1, cl.csr.extended);
+        MSG_ReadPos(te.pos2, cl.csr.extended);
         break;
 
     case TE_GRENADE_EXPLOSION:
@@ -775,7 +775,7 @@ static void CL_ParseTEntPacket(void)
     case TE_NUKEBLAST:
     case TE_EXPLOSION1_NL:
     case TE_EXPLOSION2_NL:
-        MSG_ReadPos(te.pos1);
+        MSG_ReadPos(te.pos1, cl.csr.extended);
         break;
 
     case TE_PARASITE_ATTACK:
@@ -785,39 +785,39 @@ static void CL_ParseTEntPacket(void)
     case TE_GRAPPLE_CABLE_2:
     case TE_LIGHTNING_BEAM:
         te.entity1 = MSG_ReadShort();
-        MSG_ReadPos(te.pos1);
-        MSG_ReadPos(te.pos2);
+        MSG_ReadPos(te.pos1, cl.csr.extended);
+        MSG_ReadPos(te.pos2, cl.csr.extended);
         break;
 
     case TE_GRAPPLE_CABLE:
         te.entity1 = MSG_ReadShort();
-        MSG_ReadPos(te.pos1);
-        MSG_ReadPos(te.pos2);
-        MSG_ReadPos(te.offset);
+        MSG_ReadPos(te.pos1, cl.csr.extended);
+        MSG_ReadPos(te.pos2, cl.csr.extended);
+        MSG_ReadPos(te.offset, cl.csr.extended);
         break;
 
     case TE_LIGHTNING:
         te.entity1 = MSG_ReadShort();
         te.entity2 = MSG_ReadShort();
-        MSG_ReadPos(te.pos1);
-        MSG_ReadPos(te.pos2);
+        MSG_ReadPos(te.pos1, cl.csr.extended);
+        MSG_ReadPos(te.pos2, cl.csr.extended);
         break;
 
     case TE_FLASHLIGHT:
-        MSG_ReadPos(te.pos1);
+        MSG_ReadPos(te.pos1, cl.csr.extended);
         te.entity1 = MSG_ReadShort();
         break;
 
     case TE_FORCEWALL:
-        MSG_ReadPos(te.pos1);
-        MSG_ReadPos(te.pos2);
+        MSG_ReadPos(te.pos1, cl.csr.extended);
+        MSG_ReadPos(te.pos2, cl.csr.extended);
         te.color = MSG_ReadByte();
         break;
 
     case TE_STEAM:
         te.entity1 = MSG_ReadShort();
         te.count = MSG_ReadByte();
-        MSG_ReadPos(te.pos1);
+        MSG_ReadPos(te.pos1, cl.csr.extended);
         MSG_ReadDir(te.dir);
         te.color = MSG_ReadByte();
         te.entity2 = MSG_ReadShort();
@@ -828,7 +828,7 @@ static void CL_ParseTEntPacket(void)
 
     case TE_WIDOWBEAMOUT:
         te.entity1 = MSG_ReadShort();
-        MSG_ReadPos(te.pos1);
+        MSG_ReadPos(te.pos1, cl.csr.extended);
         break;
 
     case TE_POWER_SPLASH:
@@ -908,7 +908,7 @@ static void CL_ParseStartSoundPacket(void)
 
     // positioned in space
     if (flags & SND_POS)
-        MSG_ReadPos(snd.pos);
+        MSG_ReadPos(snd.pos, cl.csr.extended);
 
     snd.flags = flags;
 

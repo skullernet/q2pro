@@ -399,7 +399,7 @@ static const char *PF_GetConfigstring(int index)
 
 static void PF_WriteFloat(float f)
 {
-    Com_Error(ERR_DROP, "PF_WriteFloat not implemented");
+    MSG_WriteFloat(f);
 }
 
 typedef enum {
@@ -550,7 +550,7 @@ static void SV_StartSound(const vec3_t origin, edict_t *edict,
         MSG_WriteByte(ofs);
 
     MSG_WriteShort(sendchan);
-    MSG_WritePos(origin);
+    MSG_WritePos(origin, svs.csr.extended);
 
     // if the sound doesn't attenuate, send it to everyone
     // (global radio chatter, voiceovers, etc)
@@ -619,9 +619,7 @@ static void SV_StartSound(const vec3_t origin, edict_t *edict,
         msg->attenuation = att;
         msg->timeofs = ofs;
         msg->sendchan = sendchan;
-        for (i = 0; i < 3; i++) {
-            msg->pos[i] = COORD2SHORT(origin[i]);
-        }
+        VectorCopy(origin, msg->pos);
 
         List_Remove(&msg->entry);
         List_Append(&client->msg_unreliable_list, &msg->entry);
@@ -832,6 +830,11 @@ static size_t PF_Info_ValueForKey (const char *s, const char *key, char *buffer,
     return Q_strlcpy(buffer, infostr, buffer_len);
 }
 
+static void PF_MSG_WritePos (const vec3_t p)
+{
+    MSG_WritePos(p, svs.csr.extended);
+}
+
 //==============================================
 
 static const game_import_t game_import = {
@@ -869,7 +872,7 @@ static const game_import_t game_import = {
     .WriteLong = MSG_WriteLong,
     .WriteFloat = PF_WriteFloat,
     .WriteString = MSG_WriteString,
-    .WritePosition = MSG_WritePos,
+    .WritePosition = PF_MSG_WritePos,
     .WriteDir = MSG_WriteDir,
     .WriteAngle = MSG_WriteAngle,
     .WriteEntity = PF_WriteEntity,

@@ -552,9 +552,7 @@ static void emit_snd(client_t *client, message_packet_t *msg)
     MSG_WriteShort(msg->sendchan);
 
     if (flags & SND_POS) {
-        for (i = 0; i < 3; i++) {
-            MSG_WriteShort(msg->pos[i]);
-        }
+        MSG_WritePos(msg->pos, client->csr->extended);
     }
 }
 
