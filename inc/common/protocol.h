@@ -143,6 +143,11 @@ typedef enum {
     svc_frame,
 
 // KEX
+    // svc_splitclient,
+
+    // svc_configblast,            // [Kex] A compressed version of svc_configstring
+    // svc_spawnbaselineblast,     // [Kex] A compressed version of svc_spawnbaseline
+
     svc_level_restart = 24,          // [Paril-KEX] level was soft-rebooted
     svc_damage,                 // [Paril-KEX] damage indicators
     svc_locprint,               // [Kex] localized + libfmt version of print
