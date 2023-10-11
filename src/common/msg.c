@@ -800,18 +800,21 @@ void MSG_WriteDeltaEntity(const entity_packed_t *from,
             MSG_WriteShort(to->solid);
     }
 
-    if ((bits & U_MOREFX32) == U_MOREFX32)
-        MSG_WriteLong(to->morefx);
-    else if (bits & U_MOREFX8)
-        MSG_WriteByte(to->morefx);
-    else if (bits & U_MOREFX16)
-        MSG_WriteShort(to->morefx);
+    if (flags & MSG_ES_EXTENSIONS) {
+        if ((bits & U_MOREFX32) == U_MOREFX32)
+            MSG_WriteLong(to->morefx);
+        else if (bits & U_MOREFX8)
+            MSG_WriteByte(to->morefx);
+        else if (bits & U_MOREFX16)
+            MSG_WriteShort(to->morefx);
 
-    if (bits & U_ALPHA)
-        MSG_WriteByte(to->alpha);
+        if (bits & U_ALPHA)
+            MSG_WriteByte(to->alpha);
 
-    if (bits & U_SCALE)
-        MSG_WriteByte(to->scale);
+        if (bits & U_SCALE)
+            MSG_WriteByte(to->scale);
+    }
+
 }
 
 #define OFFSET2CHAR(x)  Q_clip_int8((x) * 4)
