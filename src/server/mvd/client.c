@@ -557,7 +557,7 @@ static void demo_emit_snapshot(mvd_t *mvd)
     int64_t pos;
     char *from, *to;
     size_t len;
-    int i;
+    int i, bits;
 
     if (mvd_snaps->integer <= 0)
         return;
@@ -610,7 +610,10 @@ static void demo_emit_snapshot(mvd_t *mvd)
         for (cs = player->configstrings; cs; cs = cs->next)
             len += 4 + strlen(cs->string);
 
-        MSG_WriteByte(mvd_unicast | (len >> 8 << SVCMD_BITS));
+        bits = (len >> 8) & 7;
+        MSG_WriteByte(mvd_unicast | (bits ? 128 : 0));
+        if (bits)
+            MSG_WriteByte(bits);
         MSG_WriteByte(len & 255);
         MSG_WriteByte(i);
         for (cs = player->configstrings; cs; cs = cs->next) {
@@ -623,7 +626,10 @@ static void demo_emit_snapshot(mvd_t *mvd)
     // write layout
     if (mvd->clientNum != -1) {
         len = 2 + strlen(mvd->layout);
-        MSG_WriteByte(mvd_unicast | (len >> 8 << SVCMD_BITS));
+        bits = (len >> 8) & 7;
+        MSG_WriteByte(mvd_unicast | (bits ? 128 : 0));
+        if (bits)
+            MSG_WriteByte(bits);
         MSG_WriteByte(len & 255);
         MSG_WriteByte(mvd->clientNum);
         MSG_WriteByte(svc_layout);
@@ -1882,10 +1888,12 @@ static void emit_gamestate(mvd_t *mvd)
     size_t      len;
 
     // pack MVD stream flags into extra bits
-    extra = mvd->flags << SVCMD_BITS;
+    extra = mvd->flags;
 
     // send the serverdata
-    MSG_WriteByte(mvd_serverdata | extra);
+    MSG_WriteByte(mvd_serverdata | (extra ? 128 : 0));
+    if (extra)
+        MSG_WriteByte(extra);
     MSG_WriteLong(PROTOCOL_VERSION_MVD);
     MSG_WriteLong(mvd->version);
     MSG_WriteLong(mvd->servercount);

@@ -222,6 +222,8 @@ static void CL_ParseFrame(int extrabits)
             deltaframe = currentframe - delta;
         }
 
+        extraflags = MSG_ReadByte();
+
         bits = MSG_ReadByte();
 
         suppressed = bits & SUPPRESSCOUNT_MASK;
@@ -234,7 +236,6 @@ static void CL_ParseFrame(int extrabits)
         } else if (suppressed) {
             cl.frameflags |= FF_SUPPRESSED;
         }
-        extraflags = (extrabits << 4) | (bits >> SUPPRESSCOUNT_BITS);
     } else {
         currentframe = MSG_ReadLong();
         deltaframe = MSG_ReadLong();
@@ -1212,6 +1213,86 @@ static void CL_ParseSetting(void)
     }
 }
 
+static void CL_SkipDamage(void)
+{
+    uint8_t count = MSG_ReadByte();
+
+    for (uint8_t i = 0; i < count; i++)
+    {
+        uint8_t encoded = MSG_ReadByte();
+        vec3_t dir;
+        MSG_ReadDir(dir);
+    }
+}
+
+static void CL_SkipFog(void)
+{
+    typedef enum
+    {
+        // global fog
+        BIT_DENSITY     = BIT(0),
+        BIT_R           = BIT(1),
+        BIT_G           = BIT(2),
+        BIT_B           = BIT(3),
+        BIT_TIME        = BIT(4), // if set, the transition takes place over N milliseconds
+
+        // height fog
+        BIT_HEIGHTFOG_FALLOFF   = BIT(5),
+        BIT_HEIGHTFOG_DENSITY   = BIT(6),
+        BIT_MORE_BITS           = BIT(7), // read additional bit
+        BIT_HEIGHTFOG_START_R   = BIT(8),
+        BIT_HEIGHTFOG_START_G   = BIT(9),
+        BIT_HEIGHTFOG_START_B   = BIT(10),
+        BIT_HEIGHTFOG_START_DIST= BIT(11),
+        BIT_HEIGHTFOG_END_R     = BIT(12),
+        BIT_HEIGHTFOG_END_G     = BIT(13),
+        BIT_HEIGHTFOG_END_B     = BIT(14),
+        BIT_HEIGHTFOG_END_DIST  = BIT(15)
+    } bits_t;
+
+    bits_t bits = (bits_t) MSG_ReadByte ();
+
+    if (bits & BIT_MORE_BITS)
+        bits |= (bits_t) (MSG_ReadByte () << 8);
+
+    if (bits & BIT_DENSITY)
+    {
+        MSG_ReadFloat ();
+        MSG_ReadByte ();
+    }
+    if (bits & BIT_R)
+        MSG_ReadByte ();
+    if (bits & BIT_G)
+        MSG_ReadByte ();
+    if (bits & BIT_B)
+        MSG_ReadByte ();
+    if (bits & BIT_TIME)
+        MSG_ReadWord ();
+
+    if (bits & BIT_HEIGHTFOG_FALLOFF)
+        MSG_ReadFloat ();
+    if (bits & BIT_HEIGHTFOG_DENSITY)
+        MSG_ReadFloat ();
+
+    if (bits & BIT_HEIGHTFOG_START_R)
+        MSG_ReadByte ();
+    if (bits & BIT_HEIGHTFOG_START_G)
+        MSG_ReadByte ();
+    if (bits & BIT_HEIGHTFOG_START_B)
+        MSG_ReadByte ();
+    if (bits & BIT_HEIGHTFOG_START_DIST)
+        MSG_ReadLong ();
+
+    if (bits & BIT_HEIGHTFOG_END_R)
+        MSG_ReadByte ();
+    if (bits & BIT_HEIGHTFOG_END_G)
+        MSG_ReadByte ();
+    if (bits & BIT_HEIGHTFOG_END_B)
+        MSG_ReadByte ();
+    if (bits & BIT_HEIGHTFOG_END_DIST)
+        MSG_ReadLong ();
+}
+
 /*
 =====================
 CL_ParseServerMessage
@@ -1244,11 +1325,13 @@ void CL_ParseServerMessage(void)
         }
 
         cmd = MSG_ReadByte();
-        if (cmd & ~SVCMD_MASK && (cls.serverProtocol < PROTOCOL_VERSION_R1Q2 || (cmd & SVCMD_MASK) != svc_frame))
+        if (cmd & 128 && (cls.serverProtocol < PROTOCOL_VERSION_R1Q2 || (cmd & ~128) != svc_frame))
             goto badbyte;
 
-        extrabits = cmd >> SVCMD_BITS;
-        cmd &= SVCMD_MASK;
+        if (cmd & 128)
+            extrabits = MSG_ReadByte();
+
+        cmd &= ~128;
 
         SHOWNET(1, "%3u:%s\n", msg_read.readcount - 1, MSG_ServerCommandString(cmd));
 
@@ -1321,7 +1404,7 @@ void CL_ParseServerMessage(void)
             continue;
 
         case svc_frame:
-            CL_ParseFrame(extrabits);
+            CL_ParseFrame(0);
             continue;
 
         case svc_inventory:
@@ -1361,6 +1444,15 @@ void CL_ParseServerMessage(void)
             }
             CL_ParseSetting();
             continue;
+
+        // KEX
+        case svc_damage:
+            CL_SkipDamage();
+            continue;
+        case svc_fog:
+            CL_SkipFog();
+            continue;
+        // KEX
         }
 
         // if recording demos, copy off protocol invariant stuff

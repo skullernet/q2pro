@@ -1232,18 +1232,17 @@ static void SV_NewClientExecuteMove(int c)
 
     moveIssued = true;
 
-    numDups = c >> SVCMD_BITS;
-    c &= SVCMD_MASK;
-
-    if (numDups >= MAX_PACKET_FRAMES) {
-        SV_DropClient(sv_client, "too many frames in packet");
-        return;
-    }
-
     if (c == clc_move_nodelta) {
         lastframe = -1;
     } else {
         lastframe = MSG_ReadLong();
+    }
+
+    numDups = MSG_ReadByte(); // PARIL TEMP
+
+    if (numDups >= MAX_PACKET_FRAMES) {
+        SV_DropClient(sv_client, "too many frames in packet");
+        return;
     }
 
     MSG_ReadByte(); // skip lightlevel
@@ -1581,7 +1580,7 @@ void SV_ExecuteClientMessage(client_t *client)
             break;
 
         if (client->protocol == PROTOCOL_VERSION_Q2PRO) {
-            switch (c & SVCMD_MASK) {
+            switch (c) {
             case clc_move_nodelta:
             case clc_move_batched:
                 SV_NewClientExecuteMove(c);

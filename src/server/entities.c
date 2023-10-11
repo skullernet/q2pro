@@ -218,7 +218,7 @@ void SV_WriteFrameToClient_Enhanced(client_t *client)
     player_packed_t *oldstate;
     uint32_t        extraflags, delta;
     int             suppressed;
-    byte            *b1, *b2;
+    byte            *b1, *b2, *bflags;
     msgPsFlags_t    psFlags;
     int             clientEntityNum;
 
@@ -240,7 +240,8 @@ void SV_WriteFrameToClient_Enhanced(client_t *client)
 
     MSG_WriteLong((client->framenum & FRAMENUM_MASK) | (delta << FRAMENUM_BITS));
 
-    // second byte to be patched
+    // secondary bytes to be patched
+    bflags = SZ_GetSpace(&msg_write, 1);
     b2 = SZ_GetSpace(&msg_write, 1);
 
     // send over the areabits
@@ -301,7 +302,11 @@ void SV_WriteFrameToClient_Enhanced(client_t *client)
     }
 
     // save 3 high bits of extraflags
-    *b1 = svc_frame | (((extraflags & 0x70) << 1));
+    int extrabits = extraflags;
+
+    *b1 = svc_frame;
+
+    *bflags = extrabits;
 
     // save 4 low bits of extraflags
     *b2 = (suppressed & SUPPRESSCOUNT_MASK) |

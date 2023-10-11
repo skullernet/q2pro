@@ -84,8 +84,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define CMD_MASK        (CMD_BACKUP - 1)
 
 
-#define SVCMD_BITS              5
-#define SVCMD_MASK              (BIT(SVCMD_BITS) - 1)
+// PARIL TEMP: just move these "extra bits" to a second byte
+//#define SVCMD_BITS              5
+//#define SVCMD_MASK              (BIT(SVCMD_BITS) - 1)
 
 #define FRAMENUM_BITS           27
 #define FRAMENUM_MASK           (BIT(FRAMENUM_BITS) - 1)
@@ -141,6 +142,20 @@ typedef enum {
     svc_deltapacketentities,    // [...]
     svc_frame,
 
+// KEX
+    svc_level_restart = 24,          // [Paril-KEX] level was soft-rebooted
+    svc_damage,                 // [Paril-KEX] damage indicators
+    svc_locprint,               // [Kex] localized + libfmt version of print
+    svc_fog,                    // [Paril-KEX] change current fog values
+    svc_waitingforplayers,      // [Kex-Edward] Inform clients that the server is waiting for remaining players
+    svc_bot_chat,               // [Kex] bot specific chat
+    svc_poi,                    // [Paril-KEX] point of interest
+    svc_help_path,              // [Paril-KEX] help path
+    svc_muzzleflash3,           // [Paril-KEX] muzzleflashes, but ushort id
+    svc_achievement,            // [Paril-KEX]
+// KEX
+
+// FIXME these got bumped
     // r1q2 specific operations
     svc_zpacket,
     svc_zdownload,
