@@ -819,9 +819,13 @@ typedef struct cplane_s {
 #define PLANE_NON_AXIAL 6
 
 typedef struct csurface_s {
-    char        name[16];
-    int         flags;
-    int         value;
+    char        name[32]; // KEX 32
+    int32_t     flags;
+    int32_t		value;
+
+    // [Paril-KEX]
+    uint32_t    id; // unique texinfo ID, offset by 1 (0 is 'null')
+    char        material[16];
 } csurface_t;
 
 // a trace is returned when a box is swept through the world
