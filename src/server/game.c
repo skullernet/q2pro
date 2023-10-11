@@ -1073,6 +1073,8 @@ void SV_InitGameProgs(void)
             Com_Error(ERR_DROP, "Game library is version %d, expected %d",
                       ge->apiversion, GAME_API_VERSION);
         }
+    } else {
+        Cvar_SetInteger(g_features, GMF_PROTOCOL_EXTENSIONS | GMF_ENHANCED_SAVEGAMES | GMF_PROPERINUSE | GMF_WANT_ALL_DISCONNECTS, FROM_CODE);
     }
 
     if (entry_ex)
