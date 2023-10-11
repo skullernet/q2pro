@@ -427,7 +427,7 @@ static void game_client_to_server(struct gclient_s *server_client, const struct 
     Vector4Copy(game_client->ps.blend, server_client->ps.blend);
     server_client->ps.fov = game_client->ps.fov;
     server_client->ps.rdflags = game_client->ps.rdflags;
-    memcpy(&server_client->ps.stats, &game_client->ps.stats, sizeof(server_client->ps.stats));
+    memcpy(&server_client->ps.stats, &game_client->ps.stats, sizeof(game_client->ps.stats));
 
     server_client->ping = game_client->ping;
     // FIXME: Only copy if GMF_CLIENTNUM feature is set

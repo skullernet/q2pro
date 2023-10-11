@@ -56,6 +56,8 @@ typedef struct {
                                     // changed by spawns, rotating objects, and teleporters
 } game3_pmove_state_t;
 
+#define MAX_STATS_GAME3 32
+
 typedef struct {
     game3_pmove_state_t pmove;      // for prediction
 
@@ -77,7 +79,7 @@ typedef struct {
 
     int         rdflags;        // refdef flags
 
-    short       stats[MAX_STATS];       // fast status bar updates
+    short       stats[MAX_STATS_GAME3];       // fast status bar updates
 } game3_player_state_t;
 
 struct game3_gclient_s {

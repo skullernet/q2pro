@@ -1233,7 +1233,7 @@ enum {
     STAT_CHASE,
     STAT_SPECTATOR,
 
-    MAX_STATS = 32
+    MAX_STATS = 64 // KEX
 };
 
 // STAT_LAYOUTS flags
