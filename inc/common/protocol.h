@@ -257,6 +257,9 @@ typedef enum {
 
 // q2pro protocol specific extra flags
 #define EPS_CLIENTNUM       BIT(6)
+// KEX
+#define EPS_GUNRATE         BIT(7)
+// KEX
 
 //==============================================
 

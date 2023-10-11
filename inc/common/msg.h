@@ -38,14 +38,18 @@ typedef struct {
     uint32_t    effects;
     uint32_t    renderfx;
     uint32_t    solid;
+// KEX
     uint32_t    morefx;
+// KEX
     uint16_t    frame;
     uint16_t    sound;
     uint8_t     event;
+// KEX
     uint8_t     alpha;
     uint8_t     scale;
     uint8_t     loop_volume;
     uint8_t     loop_attenuation;
+// KEX
 } entity_packed_t;
 
 typedef struct {
@@ -61,6 +65,9 @@ typedef struct {
     uint8_t         fov;
     uint8_t         rdflags;
     int16_t         stats[MAX_STATS];
+// KEX
+    int8_t          gunrate;
+// KEX
 } player_packed_t;
 
 typedef enum {

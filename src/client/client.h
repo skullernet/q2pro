@@ -134,9 +134,9 @@ typedef struct {
 #define CL_OLDKEYPS     &cl.oldkeyframe.ps
 #define CL_KEYLERPFRAC  cl.keylerpfrac
 #else
-#define CL_FRAMETIME    BASE_FRAMETIME
-#define CL_1_FRAMETIME  BASE_1_FRAMETIME
-#define CL_FRAMEDIV     1
+#define CL_FRAMETIME    cl.sv_frametime
+#define CL_1_FRAMETIME  cl.sv_frametime_inv
+#define CL_FRAMEDIV     cl.sv_framediv
 #define CL_FRAMESYNC    1
 #define CL_KEYPS        &cl.frame.ps
 #define CL_OLDKEYPS     &cl.oldframe.ps
@@ -286,6 +286,10 @@ typedef struct client_state_s {
     int     numWeaponModels;
 
     bool    need_powerscreen_scale;
+
+    float sv_frametime_inv;
+    int32_t sv_frametime;
+    int32_t sv_framediv;
 
     // data for view weapon
     struct {

@@ -145,9 +145,10 @@ typedef struct {
 #define SV_FRAMESYNC        !(sv.framenum % sv.frametime.div)
 #define SV_CLIENTSYNC(cl)   !(sv.framenum % (cl)->framediv)
 #else
-#define SV_FRAMERATE        BASE_FRAMERATE
-#define SV_FRAMETIME        BASE_FRAMETIME
-#define SV_FRAMEDIV         1
+// TODO cache these
+#define SV_FRAMERATE        (sv_tick_rate->integer)
+#define SV_FRAMETIME        ((1.0f / sv_tick_rate->integer) * 1000)
+#define SV_FRAMEDIV         4
 #define SV_FRAMESYNC        1
 #define SV_CLIENTSYNC(cl)   1
 #endif
@@ -564,6 +565,10 @@ extern cvar_t       *g_features;
 extern cvar_t       *sv_timeout;
 extern cvar_t       *sv_zombietime;
 extern cvar_t       *sv_ghostime;
+
+// KEX
+extern cvar_t       *sv_tick_rate;
+// KEX
 
 extern client_t     *sv_client;
 extern edict_t      *sv_player;

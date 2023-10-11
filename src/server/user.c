@@ -408,6 +408,10 @@ void SV_New_f(void)
             MSG_WriteByte(sv.state);
         if (sv_client->version >= PROTOCOL_VERSION_Q2PRO_EXTENDED_LIMITS) {
             MSG_WriteShort(q2pro_protocol_flags());
+// KEX
+            if (svs.csr.extended)
+                MSG_WriteByte(SV_FRAMERATE);
+// KEX
         } else {
             MSG_WriteByte(sv_client->pmp.strafehack);
             MSG_WriteByte(sv_client->pmp.qwmode);

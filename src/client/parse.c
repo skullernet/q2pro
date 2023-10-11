@@ -515,7 +515,7 @@ static void CL_ParseServerData(void)
     protocol = MSG_ReadLong();
     cl.servercount = MSG_ReadLong();
     attractloop = MSG_ReadByte();
-
+    
     Com_DPrintf("Serverdata packet received "
                 "(protocol=%d, servercount=%d, attractloop=%d)\n",
                 protocol, cl.servercount, attractloop);
@@ -636,6 +636,11 @@ static void CL_ParseServerData(void)
             if (i & Q2PRO_PF_EXTENSIONS) {
                 Com_DPrintf("Q2PRO protocol extensions enabled\n");
                 cl.csr = cs_remap_new;
+
+                int32_t rate = MSG_ReadByte();
+                cl.sv_frametime_inv = (1.0f / rate);
+                cl.sv_frametime = cl.sv_frametime_inv * 1000;
+                cl.sv_framediv = rate / 10;
             }
         } else {
             if (MSG_ReadByte()) {
