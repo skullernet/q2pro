@@ -123,16 +123,24 @@ typedef enum {
     svc_temp_entity,
     svc_layout,
     svc_inventory,
+    // Q2PRO game
+    svc_stufftext = 11,         // [string] stuffed into client's console buffer
+                                // should be \n terminated
+    // Rerelease game
+    svc_damage = 25,            // [Paril-KEX] damage indicators
+    svc_fog = 27,               // [Paril-KEX] change current fog values
+    svc_poi = 30,               // [Paril-KEX] point of interest
+    svc_help_path,              // [Paril-KEX] help path
+    svc_muzzleflash3,           // [Paril-KEX] muzzleflashes, but ushort id
+    svc_achievement,            // [Paril-KEX]
 
     // the rest are private to the client and server
-    svc_nop,
+    svc_nop = 6,
     svc_disconnect,
     svc_reconnect,
     svc_sound,                  // <see code>
     svc_print,                  // [byte] id [string] null terminated string
-    svc_stufftext,              // [string] stuffed into client's console buffer
-                                // should be \n terminated
-    svc_serverdata,             // [long] protocol ...
+    svc_serverdata = 12,        // [long] protocol ...
     svc_configstring,           // [short] [string]
     svc_spawnbaseline,
     svc_centerprint,            // [string] to put in center of the screen
@@ -148,16 +156,10 @@ typedef enum {
     // svc_configblast,            // [Kex] A compressed version of svc_configstring
     // svc_spawnbaselineblast,     // [Kex] A compressed version of svc_spawnbaseline
 
-    svc_level_restart = 24,          // [Paril-KEX] level was soft-rebooted
-    svc_damage,                 // [Paril-KEX] damage indicators
-    svc_locprint,               // [Kex] localized + libfmt version of print
-    svc_fog,                    // [Paril-KEX] change current fog values
-    svc_waitingforplayers,      // [Kex-Edward] Inform clients that the server is waiting for remaining players
+    svc_level_restart = 24,     // [Paril-KEX] level was soft-rebooted
+    svc_locprint = 26,          // [Kex] localized + libfmt version of print
+    svc_waitingforplayers = 28, // [Kex-Edward] Inform clients that the server is waiting for remaining players
     svc_bot_chat,               // [Kex] bot specific chat
-    svc_poi,                    // [Paril-KEX] point of interest
-    svc_help_path,              // [Paril-KEX] help path
-    svc_muzzleflash3,           // [Paril-KEX] muzzleflashes, but ushort id
-    svc_achievement,            // [Paril-KEX]
 // KEX
 
 // FIXME these got bumped
