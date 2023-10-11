@@ -455,7 +455,7 @@ BOX TRACING
 */
 
 // 1/32 epsilon to keep floating point happy
-#define DIST_EPSILON    0.03125f
+#define DIST_EPSILON    (1 / 32.f)
 
 static vec3_t   trace_start, trace_end;
 static vec3_t   trace_offsets[8];
@@ -464,7 +464,6 @@ static vec3_t   trace_extents;
 static trace_t  *trace_trace;
 static int      trace_contents;
 static bool     trace_ispoint;      // optimized case
-static float    trace_2ndbest_fraction;
 
 /*
 ================
@@ -474,24 +473,24 @@ CM_ClipBoxToBrush
 static void CM_ClipBoxToBrush(const vec3_t p1, const vec3_t p2, trace_t *trace, mbrush_t *brush)
 {
     int         i;
-    cplane_t    *plane, *clipplane;
+    cplane_t    *plane, *clipplane[2];
     float       dist;
-    float       enterfrac, leavefrac;
+    float       enterfrac[2], leavefrac;
     float       d1, d2;
     bool        getout, startout;
     float       f;
-    mbrushside_t    *side, *leadside;
+    mbrushside_t    *side, *leadside[2];
 
     if (!brush->numsides)
         return;
 
-    enterfrac = -1;
+    enterfrac[0] = enterfrac[1] = -1;
     leavefrac = 1;
-    clipplane = NULL;
+    clipplane[0] = clipplane[1] = NULL;
 
     getout = false;
     startout = false;
-    leadside = NULL;
+    leadside[0] = leadside[1] = NULL;
 
     side = brush->firstbrushside;
     for (i = 0; i < brush->numsides; i++, side++) {
@@ -516,25 +515,38 @@ static void CM_ClipBoxToBrush(const vec3_t p1, const vec3_t p2, trace_t *trace, 
         if (d1 > 0)
             startout = true;
 
-        // if completely in front of face, no intersection
-        if (d1 > 0 && d2 >= d1)
+		// if completely in front of face, no intersection with the entire brush
+        // Paril: Q3A fix
+        if (d1 > 0 && (d2 >= DIST_EPSILON || d2 >= d1))
+        // Paril
             return;
-
+        
+		// if it doesn't cross the plane, the plane isn't relevent
         if (d1 <= 0 && d2 <= 0)
             continue;
 
         // crosses face
         if (d1 > d2) {
             // enter
-            f = (d1 - DIST_EPSILON) / (d1 - d2);
-            if (f > enterfrac) {
-                enterfrac = f;
-                clipplane = plane;
-                leadside = side;
+            // Paril: from Q3A
+            f = max(0.0f, (d1-DIST_EPSILON) / (d1-d2));
+            // Paril
+            // KEX
+            if (f > enterfrac[0]) {
+                enterfrac[0] = f;
+                clipplane[0] = plane;
+                leadside[0] = side;
+            } else if (f > enterfrac[1]) {
+                enterfrac[1] = f;
+                clipplane[1] = plane;
+                leadside[1] = side;
             }
+            // KEX
         } else {
             // leave
-            f = (d1 + DIST_EPSILON) / (d1 - d2);
+            // Paril: from Q3A
+            f = min(1.0f, (d1+DIST_EPSILON) / (d1-d2));
+            // Paril
             if (f < leavefrac)
                 leavefrac = f;
         }
@@ -553,22 +565,23 @@ static void CM_ClipBoxToBrush(const vec3_t p1, const vec3_t p2, trace_t *trace, 
         }
         return;
     }
-    if (enterfrac < leavefrac) {
-        if (enterfrac > -1 && enterfrac < trace->fraction) {
-            trace_2ndbest_fraction = trace->fraction;
-            trace->plane2 = trace->plane;
-            trace->surface2 = trace->surface;
+    if (enterfrac[0] < leavefrac) {
+        if (enterfrac[0] > -1 && enterfrac[0] < trace->fraction) {
+            if (trace->surface != &(nulltexinfo.c)) {
+                trace->plane2 = trace->plane;
+                trace->surface2 = trace->surface;
+            }
 
-            if (enterfrac < 0)
-                enterfrac = 0;
-            trace->fraction = enterfrac;
-            trace->plane = *clipplane;
-            trace->surface = &(leadside->texinfo->c);
+            trace->fraction = enterfrac[0];
+            trace->plane = *clipplane[0];
+            trace->surface = &(leadside[0]->texinfo->c);
             trace->contents = brush->contents;
-        } else if (enterfrac > -1 && enterfrac < trace_2ndbest_fraction) {
-            trace_2ndbest_fraction = enterfrac;
-            trace->plane2 = *clipplane;
-            trace->surface2 = &(leadside->texinfo->c);
+
+            if (leadside[1])
+            {
+                trace->plane2 = *clipplane[1];
+                trace->surface2 = &(leadside[0]->texinfo->c);
+            }
         }
     }
 }
@@ -684,7 +697,7 @@ static void CM_RecursiveHullCheck(mnode_t *node, float p1f, float p2f, const vec
     int         side;
     float       midf;
 
-    if (trace_trace->fraction <= p1f && trace_2ndbest_fraction <= p1f)
+    if (trace_trace->fraction <= p1f)
         return;     // already hit something nearer
 
 recheck:
@@ -779,7 +792,6 @@ void CM_BoxTrace(trace_t *trace,
     memset(trace_trace, 0, sizeof(*trace_trace));
     trace_trace->fraction = 1;
     trace_trace->surface = &(nulltexinfo.c);
-    trace_2ndbest_fraction = 1;
 
     if (!headnode) {
         return;
