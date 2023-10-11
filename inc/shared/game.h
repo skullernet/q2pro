@@ -90,9 +90,46 @@ struct gclient_s {
     // this point in the structure
 };
 
+#define MAX_NETNAME         32
+#define MAX_ARMOR_TYPES     3
+
+// Rerelease: Used by AI/Tools on the engine side...
+typedef struct sv_entity_s {
+    bool                        init;
+    uint64_t                    ent_flags;
+    uint8_t                     buttons;
+    uint32_t                    spawnflags;
+    int32_t                     item_id;
+    int32_t                     armor_type;
+    int32_t                     armor_value;
+    int32_t                     health;
+    int32_t                     max_health;
+    int32_t                     starting_health;
+    int32_t                     weapon;
+    int32_t                     team;
+    int32_t                     lobby_usernum;
+    int32_t                     respawntime;
+    int32_t                     viewheight;
+    int32_t                     last_attackertime;
+    uint8_t                     waterlevel;
+    vec3_t                      viewangles;
+    vec3_t                      viewforward;
+    vec3_t                      velocity;
+    vec3_t                      start_origin;
+    vec3_t                      end_origin;
+    edict_t *                   enemy;
+    edict_t *                   ground_entity;
+    const char *                classname;
+    const char *                targetname;
+    char                        netname[ MAX_NETNAME ];
+    int32_t                     inventory[ MAX_ITEMS ];
+    int32_t                     armor_info[ MAX_ARMOR_TYPES ][2];
+} sv_entity_t;
+
 struct edict_s {
     entity_state_t  s;
     struct gclient_s    *client;
+    sv_entity_t sv;
     qboolean    inuse;
     bool        linked;
     int         linkcount;

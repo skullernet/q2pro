@@ -383,6 +383,8 @@ static void sync_single_edict_server_to_game(int index)
     VERIFY_UNCHANGED(!is_new, *game_edict, *server_edict, solid);
     VERIFY_UNCHANGED(!is_new, *game_edict, *server_edict, clipmask);
 
+    // We cannot sensibly set 'sv', as this is all game-private data.
+
     // slightly changed 'translate_edict_to_game', as owners may be beyond num_edicts when loading a game
     assert(!server_edict->owner || (server_edict->owner >= server_edicts && server_edict->owner < server_edicts + game_export.max_edicts));
     game_edict->owner = server_edict->owner ? GAME_EDICT_NUM(server_edict->owner - server_edicts) : NULL;
