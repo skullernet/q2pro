@@ -326,7 +326,7 @@ static void AL_AddLoopSounds(void)
     sfx_t       *sfx;
     sfxcache_t  *sc;
     int         num;
-    centity_state_t *ent;
+    entity_state_t *ent;
 
     if (cls.state != ca_active || sv_paused->integer || !s_ambient->integer)
         return;

@@ -638,8 +638,8 @@ static void CL_ParseServerData(void)
                 cl.csr = cs_remap_new;
 
                 int32_t rate = MSG_ReadByte();
-                cl.sv_frametime_inv = (1.0f / rate);
-                cl.sv_frametime = cl.sv_frametime_inv * 1000;
+                cl.sv_frametime = (1.0f / rate) * 1000;
+                cl.sv_frametime_inv = 1.0f / cl.sv_frametime;
                 cl.sv_framediv = rate / 10;
             }
         } else {
