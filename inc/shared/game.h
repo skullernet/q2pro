@@ -130,7 +130,7 @@ struct edict_s {
     entity_state_t  s;
     struct gclient_s    *client;
     sv_entity_t sv;
-    qboolean    inuse;
+    bool        inuse;
     bool        linked;
     int         linkcount;
     int         areanum, areanum2;
