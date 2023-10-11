@@ -70,12 +70,14 @@ typedef int qhandle_t;
 #define MAX_LIGHTSTYLES     256
 #define MAX_ITEMS           256
 #define MAX_GENERAL         (MAX_CLIENTS * 2) // general config strings
+// [Sam-KEX]
+#define MAX_SHADOW_LIGHTS   256
 
 #if USE_PROTOCOL_EXTENSIONS
 #define MAX_EDICTS          8192    // sent as ENTITYNUM_BITS, can't be increased
 #define MAX_MODELS          8192    // half is reserved for inline BSP models
 #define MAX_SOUNDS          2048
-#define MAX_IMAGES          2048
+#define MAX_IMAGES          512     // FIXME: Q2PRO extended protocol raises this to 2048
 #else
 #define MAX_EDICTS          MAX_EDICTS_OLD
 #define MAX_MODELS          MAX_MODELS_OLD
@@ -1332,6 +1334,9 @@ enum {
 #define MAX_CONFIGSTRINGS_OLD   (CS_GENERAL_OLD + MAX_GENERAL)
 
 #if USE_PROTOCOL_EXTENSIONS
+// bound by number of things we can fit in two stats
+#define MAX_WHEEL_ITEMS     32
+
 #define CS_AIRACCEL         59
 #define CS_MAXCLIENTS       60
 #define CS_MAPCHECKSUM      61
@@ -1339,10 +1344,16 @@ enum {
 #define CS_SOUNDS           (CS_MODELS + MAX_MODELS)
 #define CS_IMAGES           (CS_SOUNDS + MAX_SOUNDS)
 #define CS_LIGHTS           (CS_IMAGES + MAX_IMAGES)
-#define CS_ITEMS            (CS_LIGHTS + MAX_LIGHTSTYLES)
+#define CS_SHADOWLIGHTS     (CS_LIGHTS + MAX_LIGHTSTYLES) // [Sam-KEX]
+#define CS_ITEMS            (CS_SHADOWLIGHTS + MAX_SHADOW_LIGHTS)
 #define CS_PLAYERSKINS      (CS_ITEMS + MAX_ITEMS)
 #define CS_GENERAL          (CS_PLAYERSKINS + MAX_CLIENTS)
-#define MAX_CONFIGSTRINGS   (CS_GENERAL + MAX_GENERAL)
+#define CS_WHEEL_WEAPONS    (CS_GENERAL + MAX_GENERAL) // [Paril-KEX] see MAX_WHEEL_ITEMS
+#define CS_WHEEL_AMMO       (CS_WHEEL_WEAPONS + MAX_WHEEL_ITEMS) // [Paril-KEX] see MAX_WHEEL_ITEMS
+#define CS_WHEEL_POWERUPS   (CS_WHEEL_AMMO + MAX_WHEEL_ITEMS) // [Paril-KEX] see MAX_WHEEL_ITEMS
+#define CS_CD_LOOP_COUNT    (CS_WHEEL_POWERUPS + MAX_WHEEL_ITEMS) // [Paril-KEX] override default loop count
+#define CS_GAME_STYLE       (CS_CD_LOOP_COUNT + 1) // [Paril-KEX] see game_style_t
+#define MAX_CONFIGSTRINGS   (CS_GAME_STYLE + 1)
 #else
 #define CS_AIRACCEL         CS_AIRACCEL_OLD
 #define CS_MAXCLIENTS       CS_MAXCLIENTS_OLD
