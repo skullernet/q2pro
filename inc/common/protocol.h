@@ -164,7 +164,7 @@ typedef enum {
 
 // FIXME these got bumped
     // r1q2 specific operations
-    svc_zpacket /* = 21 */,
+    svc_zpacket = 34 /* = 21 */,
     svc_zdownload,
     svc_gamestate, // q2pro specific, means svc_playerupdate in r1q2
     svc_setting,
