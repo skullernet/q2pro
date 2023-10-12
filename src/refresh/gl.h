@@ -216,6 +216,7 @@ extern cvar_t *gl_lockpvs;
 extern cvar_t *gl_lightmap;
 extern cvar_t *gl_fullbright;
 extern cvar_t *gl_vertexlight;
+extern cvar_t *gl_lightgrid;
 extern cvar_t *gl_showerrors;
 
 typedef enum {

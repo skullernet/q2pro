@@ -183,6 +183,43 @@ typedef struct mmodel_s {
 #endif
 } mmodel_t;
 
+#if USE_REF
+
+typedef struct {
+    int32_t point[3];
+    uint32_t children[8];
+} lightgrid_node_t;
+
+typedef struct {
+    byte style;
+    byte rgb[3];
+} lightgrid_sample_t;
+
+typedef struct {
+    uint32_t mins[3];
+    uint32_t size[3];
+    uint32_t numsamples;
+    uint32_t firstsample;
+} lightgrid_leaf_t;
+
+typedef struct {
+    vec3_t scale;
+    vec3_t mins;
+    uint32_t size[3];
+    uint32_t numstyles;
+    uint32_t numnodes;
+    uint32_t numleafs;
+    uint32_t numsamples;
+    uint32_t rootnode;
+    uint32_t nodepos;
+    uint32_t leafpos;
+    lightgrid_node_t *nodes;
+    lightgrid_leaf_t *leafs;
+    lightgrid_sample_t *samples;
+} lightgrid_t;
+
+#endif
+
 typedef struct bsp_s {
     list_t      entry;
     int         refcount;
@@ -248,6 +285,8 @@ typedef struct bsp_s {
     int             numsurfedges;
     msurfedge_t     *surfedges;
 
+    lightgrid_t     lightgrid;
+
     bool            lm_decoupled;
 #endif
     bool            extended;
@@ -270,6 +309,8 @@ typedef struct {
 void BSP_LightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end, mnode_t *headnode);
 void BSP_TransformedLightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end,
                                mnode_t *headnode, const vec3_t origin, const vec3_t angles);
+
+lightgrid_sample_t *BSP_LookupLightgrid(lightgrid_t *grid, int32_t point[3]);
 #endif
 
 byte *BSP_ClusterVis(bsp_t *bsp, byte *mask, int cluster, int vis);

@@ -77,6 +77,7 @@ cvar_t *gl_lockpvs;
 cvar_t *gl_lightmap;
 cvar_t *gl_fullbright;
 cvar_t *gl_vertexlight;
+cvar_t *gl_lightgrid;
 cvar_t *gl_polyblend;
 cvar_t *gl_showerrors;
 
@@ -930,6 +931,7 @@ static void GL_Register(void)
     gl_fullbright->changed = gl_lightmap_changed;
     gl_vertexlight = Cvar_Get("gl_vertexlight", "0", 0);
     gl_vertexlight->changed = gl_lightmap_changed;
+    gl_lightgrid = Cvar_Get("gl_lightgrid", "1", 0);
     gl_polyblend = Cvar_Get("gl_polyblend", "1", 0);
     gl_showerrors = Cvar_Get("gl_showerrors", "1", 0);
 
