@@ -318,8 +318,8 @@ qhandle_t R_RegisterModel(const char *name);
  * gl_surf.c
  *
  */
-#define LIGHT_STYLE(surf, i) \
-    &glr.fd.lightstyles[gl_static.lightstylemap[(surf)->styles[i]]]
+#define LIGHT_STYLE(i) \
+    &glr.fd.lightstyles[gl_static.lightstylemap[(i)]]
 
 #define LM_MAX_LIGHTMAPS    32
 #define LM_BLOCK_WIDTH      512

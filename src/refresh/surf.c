@@ -198,7 +198,7 @@ static void add_light_styles(mface_t *surf, int size)
     }
 
     // init primary lightmap
-    style = LIGHT_STYLE(surf, 0);
+    style = LIGHT_STYLE(surf->styles[0]);
 
     src = surf->lightmap;
     bl = blocklights;
@@ -220,7 +220,7 @@ static void add_light_styles(mface_t *surf, int size)
 
     // add remaining lightmaps
     for (i = 1; i < surf->numstyles; i++) {
-        style = LIGHT_STYLE(surf, i);
+        style = LIGHT_STYLE(surf->styles[i]);
 
         bl = blocklights;
         for (j = 0; j < size; j++, bl += 3, src += 3) {
@@ -287,7 +287,7 @@ void GL_PushLights(mface_t *surf)
 
     // check for light style updates
     for (i = 0; i < surf->numstyles; i++) {
-        style = LIGHT_STYLE(surf, i);
+        style = LIGHT_STYLE(surf->styles[i]);
         if (style->white != surf->stylecache[i]) {
             update_dynamic_lightmap(surf);
             return;

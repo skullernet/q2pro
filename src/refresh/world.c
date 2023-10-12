@@ -60,7 +60,7 @@ void GL_SampleLightPoint(vec3_t color)
         temp[1] = w1 * b1[1] + w2 * b2[1] + w3 * b3[1] + w4 * b4[1];
         temp[2] = w1 * b1[2] + w2 * b2[2] + w3 * b3[2] + w4 * b4[2];
 
-        style = LIGHT_STYLE(surf, i);
+        style = LIGHT_STYLE(surf->styles[i]);
 
         color[0] += temp[0] * style->white;
         color[1] += temp[1] * style->white;
