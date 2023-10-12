@@ -23,6 +23,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "format/md3.h"
 #endif
 #include "format/sp2.h"
+//#if USE_MD5
+#include "common/hash_map.h"
+//#endif
 
 #define MOD_Malloc(size)    Hunk_TryAlloc(&model->hunk, size)
 
@@ -88,8 +91,8 @@ static void MOD_List_f(void)
             continue;
         }
         Com_Printf("%c %8zu : %s\n", types[model->type],
-                   model->hunk.mapped, model->name);
-        bytes += model->hunk.mapped;
+                   model->hunk.mapped + model->skeleton_hunk.mapped, model->name);
+        bytes += model->hunk.mapped + model->skeleton_hunk.mapped;
         count++;
     }
     Com_Printf("Total models: %d (out of %d slots)\n", count, r_numModels);
@@ -108,9 +111,13 @@ void MOD_FreeUnused(void)
         if (model->registration_sequence == registration_sequence) {
             // make sure it is paged in
             Com_PageInMemory(model->hunk.base, model->hunk.cursize);
+
+            if (model->skeleton_hunk.base)
+                Com_PageInMemory(model->skeleton_hunk.base, model->skeleton_hunk.cursize);
         } else {
             // don't need this model
             Hunk_Free(&model->hunk);
+            Hunk_Free(&model->skeleton_hunk);
             memset(model, 0, sizeof(*model));
         }
     }
@@ -127,6 +134,7 @@ void MOD_FreeAll(void)
         }
 
         Hunk_Free(&model->hunk);
+        Hunk_Free(&model->skeleton_hunk);
         memset(model, 0, sizeof(*model));
     }
 
@@ -292,7 +300,6 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
     uint16_t        tcIndices[TESS_MAX_INDICES];
     uint16_t        finalIndices[TESS_MAX_INDICES];
     int             numverts, numindices;
-    char            skinname[MAX_QPATH];
     vec_t           scale_s, scale_t;
     vec3_t          mins, maxs;
     const char      *err;
@@ -398,6 +405,7 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
     CHECK(mesh->tcoords = MOD_Malloc(numverts * sizeof(mesh->tcoords[0])));
     CHECK(mesh->indices = MOD_Malloc(numindices * sizeof(mesh->indices[0])));
     CHECK(mesh->skins = MOD_Malloc(header.num_skins * sizeof(mesh->skins[0])));
+    CHECK(mesh->skinnames = MOD_Malloc(header.num_skins * sizeof(mesh->skinnames[0])));
 
     if (mesh->numtris != header.num_tris) {
         Com_DPrintf("%s has %d bad triangles\n", model->name, header.num_tris - mesh->numtris);
@@ -411,12 +419,12 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
     // load all skins
     src_skin = (char *)rawdata + header.ofs_skins;
     for (i = 0; i < header.num_skins; i++) {
-        if (!Q_memccpy(skinname, src_skin, 0, sizeof(skinname))) {
+        if (!Q_memccpy(mesh->skinnames[i], src_skin, 0, sizeof(mesh->skinnames[i]))) {
             ret = Q_ERR_STRING_TRUNCATED;
             goto fail;
         }
-        FS_NormalizePath(skinname);
-        mesh->skins[i] = IMG_Find(skinname, IT_SKIN, IF_NONE);
+        FS_NormalizePath(mesh->skinnames[i]);
+        mesh->skins[i] = IMG_Find(mesh->skinnames[i], IT_SKIN, IF_NONE);
         src_skin += MD2_MAX_SKINNAME;
     }
 
@@ -547,7 +555,6 @@ static int MOD_LoadMD3Mesh(model_t *model, maliasmesh_t *mesh,
     maliastc_t      *dst_tc;
     QGL_INDEX_TYPE  *dst_idx;
     uint32_t        index;
-    char            skinname[MAX_QPATH];
     int             i, j, k, ret;
     const char      *err;
 
@@ -572,14 +579,15 @@ static int MOD_LoadMD3Mesh(model_t *model, maliasmesh_t *mesh,
     CHECK(mesh->tcoords = MOD_Malloc(sizeof(mesh->tcoords[0]) * header.num_verts));
     CHECK(mesh->indices = MOD_Malloc(sizeof(mesh->indices[0]) * header.num_tris * 3));
     CHECK(mesh->skins = MOD_Malloc(sizeof(mesh->skins[0]) * header.num_skins));
+    CHECK(mesh->skinnames = MOD_Malloc(sizeof(mesh->skinnames[0]) * header.num_skins));
 
     // load all skins
     src_skin = (dmd3skin_t *)(rawdata + header.ofs_skins);
     for (i = 0; i < header.num_skins; i++) {
-        if (!Q_memccpy(skinname, src_skin->name, 0, sizeof(skinname)))
+        if (!Q_memccpy(mesh->skinnames[i], src_skin->name, 0, sizeof(mesh->skinnames[i])))
             return Q_ERR_STRING_TRUNCATED;
-        FS_NormalizePath(skinname);
-        mesh->skins[i] = IMG_Find(skinname, IT_SKIN, IF_NONE);
+        FS_NormalizePath(mesh->skinnames[i]);
+        mesh->skins[i] = IMG_Find(mesh->skinnames[i], IT_SKIN, IF_NONE);
         src_skin++;
     }
 
@@ -740,6 +748,877 @@ fail:
 }
 #endif
 
+
+
+// splits an input filename into file name and path components
+static void COM_SplitPath(const char *path, char *file_name, size_t file_name_len, char *path_name, size_t path_name_len, bool strip_extension)
+{
+    // split path (models/objects/gibs/tris.md2)
+    // - name (tris)
+    // - path (models/objects/gibs/)
+    const char *name_ptr = COM_SkipPath(path);
+
+    if (strip_extension)
+        COM_StripExtension(file_name, name_ptr, file_name_len);
+    else
+        Q_strlcpy(file_name, name_ptr, file_name_len);
+
+    Q_strnlcpy(path_name, path, name_ptr - path, path_name_len);
+}
+
+/* Joint info */
+struct joint_info_t
+{
+	char name[64];
+	int parent;
+	int flags;
+	int startIndex;
+};
+
+/* Base frame joint */
+struct baseframe_joint_t
+{
+	vec3_t pos;
+	quat4_t orient;
+};
+
+/**
+ * More quaternion operations for skeletal animation.
+ */
+
+#define X 0
+#define Y 1
+#define Z 2
+#define W 3
+
+float
+Quat_dotProduct (const quat4_t qa, const quat4_t qb)
+{
+	return ((qa[X] * qb[X]) + (qa[Y] * qb[Y]) + (qa[Z] * qb[Z]) + (qa[W] * qb[W]));
+}
+
+void
+Quat_slerp (const quat4_t qa, const quat4_t qb, float t, quat4_t out)
+{
+  /* Check for out-of range parameter and return edge points if so */
+	if (t <= 0.0)
+	{
+		memcpy (out, qa, sizeof(quat4_t));
+		return;
+	}
+
+	if (t >= 1.0)
+	{
+		memcpy (out, qb, sizeof (quat4_t));
+		return;
+	}
+
+  /* Compute "cosine of angle between quaternions" using dot product */
+	float cosOmega = Quat_dotProduct (qa, qb);
+
+	/* If negative dot, use -q1.  Two quaternions q and -q
+	   represent the same rotation, but may produce
+	   different slerp.  We chose q or -q to rotate using
+	   the acute angle. */
+	float q1w = qb[W];
+	float q1x = qb[X];
+	float q1y = qb[Y];
+	float q1z = qb[Z];
+
+	if (cosOmega < 0.0f)
+	{
+		q1w = -q1w;
+		q1x = -q1x;
+		q1y = -q1y;
+		q1z = -q1z;
+		cosOmega = -cosOmega;
+	}
+
+  /* We should have two unit quaternions, so dot should be <= 1.0 */
+	Q_assert (cosOmega < 1.1f);
+
+	/* Compute interpolation fraction, checking for quaternions
+	   almost exactly the same */
+	float k0, k1;
+
+	if (cosOmega > 0.9999f)
+	{
+	  /* Very close - just use linear interpolation,
+	 which will protect againt a divide by zero */
+
+		k0 = 1.0f - t;
+		k1 = t;
+	}
+	else
+	{
+	  /* Compute the sin of the angle using the
+	 trig identity sin^2(omega) + cos^2(omega) = 1 */
+		float sinOmega = sqrt (1.0f - (cosOmega * cosOmega));
+
+		/* Compute the angle from its sin and cosine */
+		float omega = atan2 (sinOmega, cosOmega);
+
+		/* Compute inverse of denominator, so we only have
+	   to divide once */
+		float oneOverSinOmega = 1.0f / sinOmega;
+
+		/* Compute interpolation parameters */
+		k0 = sin ((1.0f - t) * omega) * oneOverSinOmega;
+		k1 = sin (t * omega) * oneOverSinOmega;
+	}
+
+  /* Interpolate and return new quaternion */
+	out[W] = (k0 * qa[3]) + (k1 * q1w);
+	out[X] = (k0 * qa[0]) + (k1 * q1x);
+	out[Y] = (k0 * qa[1]) + (k1 * q1y);
+	out[Z] = (k0 * qa[2]) + (k1 * q1z);
+}
+
+/**
+ * Basic quaternion operations.
+ */
+
+void
+Quat_computeW (quat4_t q)
+{
+	float t = 1.0f - (q[X] * q[X]) - (q[Y] * q[Y]) - (q[Z] * q[Z]);
+
+	if (t < 0.0f)
+		q[W] = 0.0f;
+	else
+		q[W] = -sqrt (t);
+}
+
+void
+Quat_normalize (quat4_t q)
+{
+  /* compute magnitude of the quaternion */
+	float mag = sqrt ((q[X] * q[X]) + (q[Y] * q[Y])
+		+ (q[Z] * q[Z]) + (q[W] * q[W]));
+
+/* check for bogus length, to protect against divide by zero */
+	if (mag > 0.0f)
+	{
+	  /* normalize it */
+		float oneOverMag = 1.0f / mag;
+
+		q[X] *= oneOverMag;
+		q[Y] *= oneOverMag;
+		q[Z] *= oneOverMag;
+		q[W] *= oneOverMag;
+	}
+}
+
+void
+Quat_multQuat (const quat4_t qa, const quat4_t qb, quat4_t out)
+{
+	out[W] = (qa[W] * qb[W]) - (qa[X] * qb[X]) - (qa[Y] * qb[Y]) - (qa[Z] * qb[Z]);
+	out[X] = (qa[X] * qb[W]) + (qa[W] * qb[X]) + (qa[Y] * qb[Z]) - (qa[Z] * qb[Y]);
+	out[Y] = (qa[Y] * qb[W]) + (qa[W] * qb[Y]) + (qa[Z] * qb[X]) - (qa[X] * qb[Z]);
+	out[Z] = (qa[Z] * qb[W]) + (qa[W] * qb[Z]) + (qa[X] * qb[Y]) - (qa[Y] * qb[X]);
+}
+
+void
+Quat_multVec (const quat4_t q, const vec3_t v, quat4_t out)
+{
+	out[W] = -(q[X] * v[X]) - (q[Y] * v[Y]) - (q[Z] * v[Z]);
+	out[X] = (q[W] * v[X]) + (q[Y] * v[Z]) - (q[Z] * v[Y]);
+	out[Y] = (q[W] * v[Y]) + (q[Z] * v[X]) - (q[X] * v[Z]);
+	out[Z] = (q[W] * v[Z]) + (q[X] * v[Y]) - (q[Y] * v[X]);
+}
+
+void
+Quat_rotatePoint (const quat4_t q, const vec3_t in, vec3_t out)
+{
+	quat4_t tmp, inv, final;
+
+	inv[X] = -q[X]; inv[Y] = -q[Y];
+	inv[Z] = -q[Z]; inv[W] = q[W];
+
+	Quat_normalize (inv);
+
+	Quat_multVec (q, in, tmp);
+	Quat_multQuat (tmp, inv, final);
+
+	out[X] = final[X];
+	out[Y] = final[Y];
+	out[Z] = final[Z];
+}
+
+static void FS_Gets(const char **in_buffer, char *out_buffer, size_t out_buffer_length)
+{
+	const char *eol = *in_buffer;
+
+	while (*eol && *eol != '\n')
+		eol++;
+
+    if (*eol)
+        eol++;
+
+	Q_strnlcpy(out_buffer, *in_buffer, eol - *in_buffer, out_buffer_length);
+
+    *in_buffer = eol;
+}
+
+#define MD5_Malloc(size)    Hunk_TryAlloc(&model->skeleton_hunk, size)
+
+/**
+ * Load an MD5 model from file.
+ */
+static int ReadMD5Model (model_t *model, md5_model_t *mdl, const char *file_buffer)
+{
+	char buff[512];
+	int version;
+	int curr_mesh = 0;
+	int i;
+    int ret = 0;
+
+    int32_t num_verts, num_tris, num_weights;
+
+    size_t total_vertices = 0;
+    size_t total_indices = 0;
+    size_t total_weights = 0;
+    md5_vertex_t *vertex_data = NULL;
+    QGL_INDEX_TYPE *index_data = NULL;
+    md5_weight_t *weight_data = NULL;
+    size_t vertex_offset = 0;
+    size_t index_offset = 0;
+    size_t weight_offset = 0;
+    int32_t num_meshes;
+
+	while (*file_buffer)
+	{
+	  /* Read whole line */
+		FS_Gets (&file_buffer, buff, sizeof(buff));
+
+		if (sscanf (buff, " MD5Version %d", &version) == 1)
+		{
+			if (version != 10)
+			{
+			    /* Bad version */
+				ret = Q_ERR(EBADF);
+                goto fail;
+			}
+		}
+		else if (sscanf (buff, " numJoints %d", &mdl->num_joints) == 1)
+		{
+			if (mdl->num_joints > 0)
+			{
+			    /* Allocate memory for base skeleton joints */
+				CHECK(mdl->base_skeleton = (md5_joint_t *)
+					MD5_Malloc (mdl->num_joints * sizeof (md5_joint_t)));
+			}
+		}
+		else if (sscanf (buff, " numMeshes %d", &num_meshes) == 1)
+		{
+		}
+		else if (strncmp (buff, "joints {", 8) == 0)
+		{
+            /* Read each joint */
+			for (i = 0; i < mdl->num_joints; ++i)
+			{
+				md5_joint_t *joint = &mdl->base_skeleton[i];
+
+				/* Read whole line */
+				FS_Gets (&file_buffer, buff, sizeof(buff));
+
+                char name[64];
+
+				if (sscanf (buff, "%s %d ( %f %f %f ) ( %f %f %f )",
+					name, &joint->parent, &joint->pos[0],
+					&joint->pos[1], &joint->pos[2], &joint->orient[0],
+					&joint->orient[1], &joint->orient[2]) == 8)
+				{
+                    /* Compute the w component */
+					Quat_computeW (joint->orient);
+				}
+			}
+		}
+		else if (strncmp (buff, "mesh {", 6) == 0)
+		{
+			int32_t vert_index;
+			int32_t tri_index;
+			int32_t weight_index;
+			float fdata[4];
+			int idata[3];
+
+			while ((buff[0] != '}') && buff[0])
+			{
+			  /* Read whole line */
+				FS_Gets (&file_buffer, buff, sizeof(buff));
+
+				if (strstr (buff, "shader "))
+				{
+				}
+				else if (sscanf (buff, " numverts %d", &num_verts) == 1)
+				{
+					if (num_verts > 0)
+					{
+                        total_vertices += num_verts;
+                        /* Allocate memory for vertices */
+						CHECK(vertex_data = (md5_vertex_t *)
+							Z_Realloc (vertex_data, sizeof (md5_vertex_t) * total_vertices));
+					}
+				}
+				else if (sscanf (buff, " numtris %d", &num_tris) == 1)
+				{
+					if (num_tris > 0)
+					{
+                        total_indices += num_tris * 3;
+                        /* Allocate memory for triangles */
+						CHECK(index_data = (QGL_INDEX_TYPE *)
+							Z_Realloc (index_data, sizeof (QGL_INDEX_TYPE) * total_indices));
+					}
+				}
+				else if (sscanf (buff, " numweights %d", &num_weights) == 1)
+				{
+					if (num_weights > 0)
+					{
+                        total_weights += num_weights;
+                        /* Allocate memory for vertex weights */
+						CHECK(weight_data = (md5_weight_t *)
+							Z_Realloc (weight_data, sizeof (md5_weight_t) * total_weights));
+					}
+				}
+				else if (sscanf (buff, " vert %d ( %f %f ) %d %d", &vert_index,
+					&fdata[0], &fdata[1], &idata[0], &idata[1]) == 5)
+				{
+                    if (vert_index >= num_verts)
+                    {
+				        ret = Q_ERR(EBADF);
+                        goto fail;
+                    }
+                    /* Copy vertex data */
+					vertex_data[vert_index + vertex_offset].st[0] = fdata[0];
+					vertex_data[vert_index + vertex_offset].st[1] = fdata[1];
+					vertex_data[vert_index + vertex_offset].start = idata[0] + weight_offset;
+					vertex_data[vert_index + vertex_offset].count = idata[1];
+				}
+				else if (sscanf (buff, " tri %d %d %d %d", &tri_index,
+					&idata[0], &idata[1], &idata[2]) == 4)
+				{
+                    if (tri_index >= num_tris)
+                    {
+				        ret = Q_ERR(EBADF);
+                        goto fail;
+                    }
+                    /* Copy triangle data */
+					index_data[(tri_index * 3) + index_offset + 0] = idata[0] + vertex_offset;
+					index_data[(tri_index * 3) + index_offset + 1] = idata[1] + vertex_offset;
+					index_data[(tri_index * 3) + index_offset + 2] = idata[2] + vertex_offset;
+				}
+				else if (sscanf (buff, " weight %d %d %f ( %f %f %f )",
+					&weight_index, &idata[0], &fdata[3],
+					&fdata[0], &fdata[1], &fdata[2]) == 6)
+				{
+                    if (weight_index >= num_weights)
+                    {
+				        ret = Q_ERR(EBADF);
+                        goto fail;
+                    }
+                    /* Copy vertex data */
+					weight_data[weight_index + weight_offset].joint = idata[0];
+					weight_data[weight_index + weight_offset].bias = fdata[3];
+					weight_data[weight_index + weight_offset].pos[0] = fdata[0];
+					weight_data[weight_index + weight_offset].pos[1] = fdata[1];
+					weight_data[weight_index + weight_offset].pos[2] = fdata[2];
+				}
+			}
+
+			curr_mesh++;
+            vertex_offset += num_verts;
+            index_offset += num_tris * 3;
+            weight_offset += num_weights;
+		}
+	}
+
+    CHECK(mdl->indices = MD5_Malloc(sizeof(QGL_INDEX_TYPE) * total_indices));
+    memcpy(mdl->indices, index_data, sizeof(QGL_INDEX_TYPE) * total_indices);
+
+    CHECK(mdl->vertices = MD5_Malloc(sizeof(md5_vertex_t) * total_vertices));
+    memcpy(mdl->vertices, vertex_data, sizeof(md5_vertex_t) * total_vertices);
+
+    CHECK(mdl->weights = MD5_Malloc(sizeof(md5_weight_t) * total_weights));
+    memcpy(mdl->weights, weight_data, sizeof(md5_weight_t) * total_weights);
+
+    mdl->num_verts = total_vertices;
+    mdl->num_tris = total_indices / 3;
+    mdl->num_weights = total_weights;
+
+fail:
+
+    Z_Free(index_data);
+    Z_Free(vertex_data);
+
+	return ret;
+}
+
+/**
+ * Check if an animation can be used for a given model.  Model's
+ * skeleton and animation's skeleton must match.
+ */
+static bool CheckAnimValidity(const md5_model_t *mdl)
+{
+    /* We just check with frame[0] */
+	for (size_t i = 0; i < mdl->num_joints; ++i)
+	{
+        /* Joints must have the same parent index */
+        if (mdl->base_skeleton[i].parent != mdl->skeleton_frames[0][i].parent)
+			return false;
+    }
+
+	return true;
+}
+
+/* Joint info */
+typedef struct
+{
+	char name[64];
+	int parent;
+	int flags;
+	int startIndex;
+} joint_info_t;
+
+/* Base frame joint */
+typedef struct
+{
+	vec3_t pos;
+	quat4_t orient;
+} baseframe_joint_t;
+
+/**
+ * Build skeleton for a given frame data.
+ */
+static void BuildFrameSkeleton (const joint_info_t *jointInfos,
+	const baseframe_joint_t *baseFrame,
+	const float *animFrameData,
+	md5_joint_t *skelFrame,
+	int num_joints)
+{
+	int i;
+
+	for (i = 0; i < num_joints; ++i)
+	{
+		const baseframe_joint_t *baseJoint = &baseFrame[i];
+		vec3_t animatedPos;
+		quat4_t animatedOrient;
+		int j = 0;
+
+		memcpy (animatedPos, baseJoint->pos, sizeof (vec3_t));
+		memcpy (animatedOrient, baseJoint->orient, sizeof (quat4_t));
+
+		if (jointInfos[i].flags & 1) /* Tx */
+		{
+			animatedPos[0] = animFrameData[jointInfos[i].startIndex + j];
+			++j;
+		}
+
+		if (jointInfos[i].flags & 2) /* Ty */
+		{
+			animatedPos[1] = animFrameData[jointInfos[i].startIndex + j];
+			++j;
+		}
+
+		if (jointInfos[i].flags & 4) /* Tz */
+		{
+			animatedPos[2] = animFrameData[jointInfos[i].startIndex + j];
+			++j;
+		}
+
+		if (jointInfos[i].flags & 8) /* Qx */
+		{
+			animatedOrient[0] = animFrameData[jointInfos[i].startIndex + j];
+			++j;
+		}
+
+		if (jointInfos[i].flags & 16) /* Qy */
+		{
+			animatedOrient[1] = animFrameData[jointInfos[i].startIndex + j];
+			++j;
+		}
+
+		if (jointInfos[i].flags & 32) /* Qz */
+		{
+			animatedOrient[2] = animFrameData[jointInfos[i].startIndex + j];
+			++j;
+		}
+
+        /* Compute orient quaternion's w value */
+		Quat_computeW (animatedOrient);
+
+		/* NOTE: we assume that this joint's parent has
+            already been calculated, i.e. joint's ID should
+            never be smaller than its parent ID. */
+		md5_joint_t *thisJoint = &skelFrame[i];
+
+		int parent = jointInfos[i].parent;
+		thisJoint->parent = parent;
+
+		/* Has parent? */
+		if (thisJoint->parent < 0)
+		{
+			memcpy (thisJoint->pos, animatedPos, sizeof (vec3_t));
+			memcpy (thisJoint->orient, animatedOrient, sizeof (quat4_t));
+		}
+		else
+		{
+			md5_joint_t *parentJoint = &skelFrame[parent];
+			vec3_t rpos; /* Rotated position */
+
+			/* Add positions */
+			Quat_rotatePoint (parentJoint->orient, animatedPos, rpos);
+			thisJoint->pos[0] = rpos[0] + parentJoint->pos[0];
+			thisJoint->pos[1] = rpos[1] + parentJoint->pos[1];
+			thisJoint->pos[2] = rpos[2] + parentJoint->pos[2];
+
+			/* Concatenate rotations */
+			Quat_multQuat (parentJoint->orient, animatedOrient, thisJoint->orient);
+			Quat_normalize (thisJoint->orient);
+		}
+	}
+}
+
+
+/*
+================
+MD5_ComputeNormals
+================
+*/
+static void MD5_ComputeNormals (md5_weight_t *weights, md5_joint_t *base, md5_vertex_t *vert, size_t numverts, QGL_INDEX_TYPE *indexes, size_t numindexes)
+{
+	hash_map_t *pos_to_normal_map = HashMap_Create (vec3_t, vec3_t, &HashVec3, NULL);
+	HashMap_Reserve (pos_to_normal_map, numverts);
+
+	for (size_t v = 0; v < numverts; v++)
+		vert[v].normal[0] = vert[v].normal[1] = vert[v].normal[2] = 0;
+
+	for (size_t t = 0; t < numindexes; t += 3)
+	{
+		md5_vertex_t *verts[3] = {&vert[indexes[t + 0]], &vert[indexes[t + 1]], &vert[indexes[t + 2]]};
+
+        vec3_t xyz[3];
+
+        for (size_t i = 0; i < 3; i++)
+        {
+		    vec3_t finalVertex = { 0.0f, 0.0f, 0.0f };
+
+		    /* Calculate final vertex to draw with weights */
+		    for (size_t j = 0; j < verts[i]->count; ++j)
+		    {
+			    const md5_weight_t *weight = &weights[verts[i]->start + j];
+			    const md5_joint_t *joint = &base[weight->joint];
+
+			      /* Calculate transformed vertex for this weight */
+			    vec3_t wv;
+			    Quat_rotatePoint (joint->orient, weight->pos, wv);
+
+			    /* The sum of all weight->bias should be 1.0 */
+			    finalVertex[0] += (joint->pos[0] + wv[0]) * weight->bias;
+			    finalVertex[1] += (joint->pos[1] + wv[1]) * weight->bias;
+			    finalVertex[2] += (joint->pos[2] + wv[2]) * weight->bias;
+		    }
+
+            VectorCopy(finalVertex, xyz[i]);
+        }
+
+		vec3_t d1, d2;
+		VectorSubtract (xyz[2], xyz[0], d1);
+		VectorSubtract (xyz[1], xyz[0], d2);
+		VectorNormalize (d1);
+		VectorNormalize (d2);
+
+		vec3_t norm;
+		CrossProduct (d1, d2, norm);
+		VectorNormalize (norm);
+
+		const float angle = acos (DotProduct (d1, d2));
+		VectorScale (norm, angle, norm);
+
+		vec3_t *found_normal;
+		for (int i = 0; i < 3; ++i)
+		{
+			if ((found_normal = HashMap_Lookup (vec3_t, pos_to_normal_map, &xyz[i])))
+				VectorAdd (norm, *found_normal, *found_normal);
+			else
+				HashMap_Insert (pos_to_normal_map, &xyz[i], &norm);
+		}
+	}
+
+	const uint32_t map_size = HashMap_Size (pos_to_normal_map);
+	for (uint32_t i = 0; i < map_size; ++i)
+	{
+		vec3_t *norm = HashMap_GetValue (vec3_t, pos_to_normal_map, i);
+		VectorNormalize (*norm);
+	}
+
+	for (size_t v = 0; v < numverts; v++)
+	{
+		vec3_t finalVertex = { 0.0f, 0.0f, 0.0f };
+
+		/* Calculate final vertex to draw with weights */
+		for (size_t j = 0; j < vert[v].count; ++j)
+		{
+			const md5_weight_t *weight = &weights[vert[v].start + j];
+			const md5_joint_t *joint = &base[weight->joint];
+
+			    /* Calculate transformed vertex for this weight */
+			vec3_t wv;
+			Quat_rotatePoint (joint->orient, weight->pos, wv);
+
+			/* The sum of all weight->bias should be 1.0 */
+			finalVertex[0] += (joint->pos[0] + wv[0]) * weight->bias;
+			finalVertex[1] += (joint->pos[1] + wv[1]) * weight->bias;
+			finalVertex[2] += (joint->pos[2] + wv[2]) * weight->bias;
+		}
+
+		vec3_t *norm = HashMap_Lookup (vec3_t, pos_to_normal_map, &finalVertex);
+		if (norm)
+			VectorCopy (*norm, vert[v].normal);
+	}
+
+	HashMap_Destroy (pos_to_normal_map);
+}
+
+/**
+ * Load an MD5 animation from file.
+ */
+static int ReadMD5Anim (model_t *model, md5_model_t *anim, const char *file_buffer)
+{
+	char buff[512];
+	joint_info_t *jointInfos = NULL;
+	baseframe_joint_t *baseFrame = NULL;
+	float *animFrameData = NULL;
+	int version;
+	int numAnimatedComponents;
+	int frame_index;
+	int i;
+    int ret = 0;
+
+    int32_t num_joints = 0, frameRate = 0;
+
+	while (*file_buffer)
+	{
+        /* Read whole line */
+		FS_Gets (&file_buffer, buff, sizeof(buff));
+
+		if (sscanf (buff, " MD5Version %d", &version) == 1)
+		{
+			if (version != 10)
+			{
+			  /* Bad version */
+                ret = Q_ERR(EBADF);
+                goto fail;
+			}
+		}
+		else if (sscanf (buff, " numFrames %d", &anim->num_frames) == 1)
+		{
+            /* Allocate memory for skeleton frames and bounding boxes */
+			if (anim->num_frames > 0)
+			{
+				CHECK(anim->skeleton_frames = (md5_joint_t **)
+					MD5_Malloc (sizeof (md5_joint_t *) * anim->num_frames));
+			}
+		}
+		else if (sscanf (buff, " numJoints %d", &num_joints) == 1)
+		{
+            if (anim->num_joints != num_joints)
+            {
+                ret = Q_ERR(EBADF);
+                goto fail;
+            }
+
+			if (num_joints > 0)
+			{
+				for (i = 0; i < anim->num_frames; ++i)
+				{
+                    /* Allocate memory for joints of each frame */
+					CHECK(anim->skeleton_frames[i] = (md5_joint_t *)
+						MD5_Malloc (sizeof (md5_joint_t) * num_joints));
+				}
+
+                /* Allocate temporary memory for building skeleton frames */
+				CHECK(jointInfos = (joint_info_t *)
+					Z_Malloc (sizeof (joint_info_t) * num_joints));
+
+				CHECK(baseFrame = (baseframe_joint_t *)
+					Z_Malloc (sizeof (baseframe_joint_t) * num_joints));
+			}
+		}
+		else if (sscanf (buff, " frameRate %d", &frameRate) == 1)
+		{
+		}
+		else if (sscanf (buff, " numAnimatedComponents %d", &numAnimatedComponents) == 1)
+		{
+			if (numAnimatedComponents > 0)
+			{
+                /* Allocate memory for animation frame data */
+				CHECK(animFrameData = (float *) Z_Malloc (sizeof (float) * numAnimatedComponents));
+			}
+		}
+		else if (strncmp (buff, "hierarchy {", 11) == 0)
+		{
+			for (i = 0; i < anim->num_joints; ++i)
+			{
+                /* Read whole line */
+				FS_Gets (&file_buffer, buff, sizeof(buff));
+
+				/* Read joint info */
+				sscanf (buff, " %s %d %d %d", jointInfos[i].name, &jointInfos[i].parent,
+					&jointInfos[i].flags, &jointInfos[i].startIndex);
+			}
+		}
+		else if (strncmp (buff, "bounds {", 8) == 0)
+		{
+			for (i = 0; i < anim->num_frames; ++i)
+			{
+                /* Read whole line */
+				FS_Gets (&file_buffer, buff, sizeof(buff));
+
+                vec3_t mins, maxs;
+
+				/* Read bounding box */
+				sscanf (buff, " ( %f %f %f ) ( %f %f %f )",
+					&mins[0], &mins[1],
+					&mins[2], &maxs[0],
+					&maxs[1], &maxs[2]);
+			}
+		}
+		else if (strncmp (buff, "baseframe {", 10) == 0)
+		{
+			for (i = 0; i < anim->num_joints; ++i)
+			{
+                /* Read whole line */
+				FS_Gets (&file_buffer, buff, sizeof(buff));
+
+				/* Read base frame joint */
+				if (sscanf (buff, " ( %f %f %f ) ( %f %f %f )",
+					&baseFrame[i].pos[0], &baseFrame[i].pos[1],
+					&baseFrame[i].pos[2], &baseFrame[i].orient[0],
+					&baseFrame[i].orient[1], &baseFrame[i].orient[2]) == 6)
+				{
+				  /* Compute the w component */
+					Quat_computeW (baseFrame[i].orient);
+				}
+			}
+		}
+		else if (sscanf (buff, " frame %d", &frame_index) == 1)
+		{
+            /* Read frame data */
+			for (i = 0; i < numAnimatedComponents; ++i)
+				animFrameData[i] = atof(COM_Parse(&file_buffer));
+
+            /* Build frame skeleton from the collected data */
+			BuildFrameSkeleton (jointInfos, baseFrame, animFrameData,
+				anim->skeleton_frames[frame_index], anim->num_joints);
+		}
+	}
+
+    if (!CheckAnimValidity(model->skeleton))
+    {
+        ret = Q_ERR(EBADF);
+        goto fail;
+    }
+
+fail:
+
+	/* Free temporary data allocated */
+    Z_Free (animFrameData);
+	Z_Free (baseFrame);
+	Z_Free (jointInfos);
+
+	return ret;
+}
+
+static void MOD_LoadMD5(model_t *model, const char *name)
+{
+    int ret = 0;
+
+    char model_name[MAX_QPATH], mesh_path[MAX_QPATH];
+    COM_SplitPath(name, model_name, sizeof(model_name), mesh_path, sizeof(mesh_path), true);
+
+    // build md5 path
+    Q_strlcat(mesh_path, "md5/", sizeof(mesh_path));
+    Q_strlcat(mesh_path, model_name, sizeof(mesh_path));
+
+    char anim_path[MAX_QPATH];
+    Q_strlcpy(anim_path, mesh_path, sizeof(mesh_path));
+
+    Q_strlcat(mesh_path, ".md5mesh", sizeof(mesh_path));
+    Q_strlcat(anim_path, ".md5anim", sizeof(mesh_path));
+
+    // don't bother if we don't have both
+    if (!FS_FileExists(mesh_path) || !FS_FileExists(anim_path))
+        return;
+
+    // load md5
+    char *buffer = NULL;
+        
+    FS_LoadFile(mesh_path, &buffer);
+
+    Hunk_Begin(&model->skeleton_hunk, 0x800000);
+
+    if (!buffer)
+        goto fail;
+
+    // md5 exists!
+    CHECK(model->skeleton = MD5_Malloc(sizeof(md5_model_t)));
+
+    if (ret = ReadMD5Model(model, model->skeleton, buffer))
+        goto fail;
+
+    FS_FreeFile(buffer);
+            
+    // load md5anim
+    FS_LoadFile(anim_path, &buffer);
+
+    if (!buffer)
+        goto fail;
+
+    if (ret = ReadMD5Anim(model, model->skeleton, buffer))
+        goto fail;
+
+    FS_FreeFile(buffer);
+
+    model->skeleton->num_skins = model->meshes[0].numskins;
+    CHECK(model->skeleton->skins = MD5_Malloc(sizeof(image_t *) * model->meshes[0].numskins));
+
+    for (size_t i = 0; i < model->meshes[0].numskins; i++)
+    {
+        // because skins are actually absolute and
+        // not always relative to the model being used,
+        // we have to stick to the same behavior.
+        char skin_name[MAX_QPATH], skin_path[MAX_QPATH];
+        COM_SplitPath(model->meshes[0].skinnames[i], skin_name, sizeof(skin_name), skin_path, sizeof(skin_path), false);
+
+        // build md5 path
+        Q_strlcat(skin_path, "md5/", sizeof(skin_path));
+        Q_strlcat(skin_path, skin_name, sizeof(skin_path));
+
+        model->skeleton->skins[i] = IMG_Find(skin_path, IT_SKIN, IF_NONE);
+    }
+
+    Hunk_End(&model->skeleton_hunk);
+
+    if (model->numframes != model->skeleton->num_frames)
+    {
+        Com_WPrintf("%s doesn't match frame count for %s (%i vs %i)\n", anim_path, name, model->skeleton->num_frames, model->numframes);
+    }
+
+    MD5_ComputeNormals(model->skeleton->weights, model->skeleton->base_skeleton, model->skeleton->vertices, model->skeleton->num_verts, model->skeleton->indices, model->skeleton->num_tris * 3);
+
+    return;
+
+fail:
+    model->skeleton = NULL;
+
+    Hunk_Free(&model->skeleton_hunk);
+
+    FS_FreeFile(buffer);
+
+    Com_EPrintf("Couldn't load MD5 for %s: %s\n", name,
+                Q_ErrorString(ret));
+}
+
 static void MOD_Reference(model_t *model)
 {
     int i, j;
@@ -753,6 +1632,13 @@ static void MOD_Reference(model_t *model)
                 mesh->skins[j]->registration_sequence = registration_sequence;
             }
         }
+        // #if USE_MD5
+        if (model->skeleton) {
+            for (size_t j = 0; j < model->skeleton->num_skins; j++) {
+                model->skeleton->skins[j]->registration_sequence = registration_sequence;
+            }
+        }
+        // #endif
         break;
     case MOD_SPRITE:
         for (i = 0; i < model->numframes; i++) {
@@ -868,6 +1754,15 @@ qhandle_t R_RegisterModel(const char *name)
     }
 
 done:
+    // #if USE_MD5
+    // check for an MD5; this requires the MD2/MD3
+    // to have loaded first, since we need it for skin names
+    if (model->type == MOD_ALIAS) {
+        MOD_LoadMD5(model, normalized);
+    }
+    // #endif
+
+
     index = (model - r_models) + 1;
     return index;
 

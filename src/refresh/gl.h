@@ -261,6 +261,8 @@ typedef struct {
     vec_t   radius;
 } maliasframe_t;
 
+typedef char maliasskinname_t[MAX_QPATH];
+
 typedef struct {
     int             numverts;
     int             numtris;
@@ -269,6 +271,7 @@ typedef struct {
     QGL_INDEX_TYPE  *indices;
     maliasvert_t    *verts;
     maliastc_t      *tcoords;
+    maliasskinname_t*skinnames; // for MD5
     image_t         **skins;
 } maliasmesh_t;
 
@@ -279,6 +282,75 @@ typedef struct {
     int             origin_y;
     image_t         *image;
 } mspriteframe_t;
+
+// #if USE_MD5
+
+typedef vec4_t quat4_t;
+
+/* Joint */
+typedef struct
+{
+	int parent;
+
+	vec3_t pos;
+	quat4_t orient;
+} md5_joint_t;
+
+/* Vertex */
+typedef struct
+{
+	vec2_t st;
+    vec3_t normal;
+
+	int start; /* start weight */
+	int count; /* weight count */
+} md5_vertex_t;
+
+/* Triangle */
+typedef struct
+{
+	int index[3];
+} md5_triangle_t;
+
+/* Weight */
+typedef struct
+{
+	int joint;
+	float bias;
+
+	vec3_t pos;
+} md5_weight_t;
+
+/* Bounding box */
+typedef struct
+{
+	vec3_t min;
+	vec3_t max;
+} md5_bbox_t;
+
+/* MD5 model + animation structure */
+typedef struct
+{
+    // mesh data
+	md5_vertex_t *vertices;
+	md5_weight_t *weights;
+    QGL_INDEX_TYPE *indices;
+
+	int num_verts;
+	int num_tris;
+	int num_weights;
+
+    // animation data
+	int num_joints;
+	md5_joint_t *base_skeleton;
+	int num_frames;
+	md5_joint_t **skeleton_frames;
+
+    int num_skins;
+    image_t **skins;
+} md5_model_t;
+
+// #endif
 
 typedef struct {
     enum {
@@ -295,7 +367,11 @@ typedef struct {
     int nummeshes;
     int numframes;
 
-    maliasmesh_t *meshes;
+    maliasmesh_t *meshes; // md2 / md3
+    // #if USE_MD5
+    md5_model_t *skeleton; // md5
+    memhunk_t    skeleton_hunk;  // md5
+    // #endif
     union {
         maliasframe_t *frames;
         mspriteframe_t *spriteframes;

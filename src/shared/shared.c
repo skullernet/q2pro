@@ -404,14 +404,20 @@ Parse a token out of a string.
 Handles C and C++ comments.
 ==============
 */
-char *COM_Parse(const char **data_p)
+char *COM_ParseEx(const char **data_p, char *token_buffer, size_t token_buffer_size)
 {
     int         c;
     int         len;
     const char  *data;
-    char        *s = com_token[com_tokidx];
 
-    com_tokidx = (com_tokidx + 1) & 3;
+    if (token_buffer == NULL)
+    {
+        token_buffer = com_token[com_tokidx];
+        token_buffer_size = sizeof(com_token[0]);
+        com_tokidx = (com_tokidx + 1) & 3;
+    }
+
+    char *s = token_buffer;
 
     data = *data_p;
     len = 0;
@@ -669,6 +675,26 @@ Returns length of the source string.
 size_t Q_strlcpy(char *dst, const char *src, size_t size)
 {
     size_t ret = strlen(src);
+
+    if (size) {
+        size_t len = min(ret, size - 1);
+        memcpy(dst, src, len);
+        dst[len] = 0;
+    }
+
+    return ret;
+}
+
+/*
+===============
+Q_strnlcpy
+
+Returns `count`.
+===============
+*/
+size_t Q_strnlcpy(char *dst, const char *src, size_t count, size_t size)
+{
+    size_t ret = min(count, strlen(src));
 
     if (size) {
         size_t len = min(ret, size - 1);

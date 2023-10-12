@@ -19,6 +19,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "gl.h"
 
 typedef void (*tessfunc_t)(const maliasmesh_t *);
+//#if USE_MD5
+typedef void (*skeltessfunc_t)(const md5_model_t *);
+//#endif
 
 static int      oldframenum;
 static int      newframenum;
@@ -29,7 +32,6 @@ static vec3_t   oldscale;
 static vec3_t   newscale;
 static vec3_t   translate;
 static vec_t    shellscale;
-static tessfunc_t tessfunc;
 static vec4_t   color;
 
 static const vec_t  *shadelight;
@@ -38,6 +40,8 @@ static vec3_t       shadedir;
 static float    celscale;
 
 static GLfloat  shadowmatrix[16];
+
+static md5_joint_t  temp_skeleton[256];
 
 static void setup_dotshading(void)
 {
@@ -553,7 +557,7 @@ static int texnum_for_mesh(const maliasmesh_t *mesh)
     return mesh->skins[ent->skinnum]->texnum;
 }
 
-static void draw_alias_mesh(const maliasmesh_t *mesh)
+static void draw_alias_mesh(const maliasmesh_t *mesh, tessfunc_t tessfunc)
 {
     glStateBits_t state = GLS_INTENSITY_ENABLE;
 
@@ -603,6 +607,608 @@ static void draw_alias_mesh(const maliasmesh_t *mesh)
     draw_shadow(mesh);
 
     GL_UnlockArrays();
+}
+
+// #if USE_MD5
+static int texnum_for_skeleton(const md5_model_t *skel)
+{
+    const entity_t *ent = glr.ent;
+
+    if (ent->flags & RF_SHELL_MASK)
+        return TEXNUM_WHITE;
+
+    if (ent->skin)
+        return IMG_ForHandle(ent->skin)->texnum;
+
+    if (!skel->num_skins)
+        return TEXNUM_DEFAULT;
+
+    if (ent->skinnum < 0 || ent->skinnum >= skel->num_skins) {
+        Com_DPrintf("%s: no such skin: %d\n", "GL_DrawAliasModel", ent->skinnum);
+        return skel->skins[0]->texnum;
+    }
+
+    if (skel->skins[ent->skinnum]->texnum == TEXNUM_DEFAULT)
+        return skel->skins[0]->texnum;
+
+    return skel->skins[ent->skinnum]->texnum;
+}
+
+#if 0
+// FIXME: this should be a 3x4 transform function
+static void Matrix4x4_Transform(float *out, const float *a, const float *m)
+{
+    const float x = a[0],
+      y = a[1],
+      z = a[2];
+    const float w = (m[3] * x + m[7] * y + m[11] * z + m[15]) || 1.0;
+    out[0] = (m[0] * x + m[4] * y + m[8] * z + m[12]) / w;
+    out[1] = (m[1] * x + m[5] * y + m[9] * z + m[13]) / w;
+    out[2] = (m[2] * x + m[6] * y + m[10] * z + m[14]) / w;
+}
+
+// rough attempt to convert https://github.com/Novum/vkQuake/blob/19d76588037977f59506c18aa3d307f8f5124d0f/Shaders/md5.vert#L57
+// clearly not working though.
+static void tess_static_plain_skel(const maliasskel_t *skel)
+{
+    const md5vert_t *src_vert = skel->verts;
+    vec_t *dst_vert = tess.vertices;
+    int count = skel->numverts;
+
+    int32_t frame = newframenum % skel->numposes;
+    jointpose_t *joints = skel->joints + (skel->numjoints * frame);
+
+    while (count--) {
+        vec3_t p = { 0 };
+        const float *xyz = src_vert->xyz;
+
+        for (int32_t i = 0; i < 4; i++) {
+            byte joint = src_vert->joint_indices[i];
+            float weight = src_vert->joint_weights[i] / 255.f;
+            const float *mat = joints[joint].mat;
+
+            vec3_t calc;
+            // FIXME why does this need to be transposed??
+            const float matrix[] = {
+                mat[0], mat[4], mat[8], 0.0f, 
+                mat[1], mat[5], mat[9], 0.0f,
+                mat[2], mat[6], mat[10], 0.0f, 
+                mat[3], mat[7], mat[11], 1.0f
+            };
+            Matrix4x4_Transform(calc, xyz, matrix);
+
+            VectorMA(p, weight, calc, p);
+        }
+
+        VectorCopy(p, dst_vert);
+        dst_vert += 4;
+        src_vert++;
+    }
+}
+
+static void tess_static_shell_skel(const maliasskel_t *skel)
+{
+    const md5vert_t *src_vert = skel->verts;
+    vec_t *dst_vert = tess.vertices;
+    int count = skel->numverts;
+
+    int32_t frame = newframenum % skel->numposes;
+    jointpose_t *joints = skel->joints + (skel->numjoints * frame);
+
+    while (count--) {
+        vec3_t p = { 0 };
+        const float *xyz = src_vert->xyz;
+
+        for (int32_t i = 0; i < 4; i++) {
+            byte joint = src_vert->joint_indices[i];
+            float weight = src_vert->joint_weights[i] / 255.f;
+            const float *mat = joints[joint].mat;
+
+            vec3_t calc;
+            // FIXME why does this need to be transposed??
+            const float matrix[] = {
+                mat[0], mat[4], mat[8], 0.0f, 
+                mat[1], mat[5], mat[9], 0.0f,
+                mat[2], mat[6], mat[10], 0.0f, 
+                mat[3], mat[7], mat[11], 1.0f
+            };
+            Matrix4x4_Transform(calc, xyz, matrix);
+
+            VectorMA(p, weight, calc, p);
+        }
+
+        VectorCopy(p, dst_vert);
+        VectorMA(dst_vert, shellscale, src_vert->norm, dst_vert);
+        dst_vert += 4;
+        src_vert++;
+    }
+}
+
+static void tess_static_shade_skel(const maliasskel_t *skel)
+{
+    const md5vert_t *src_vert = skel->verts;
+    vec_t *dst_vert = tess.vertices;
+    int count = skel->numverts;
+
+    int32_t frame = newframenum % skel->numposes;
+    jointpose_t *joints = skel->joints + (skel->numjoints * frame);
+
+    while (count--) {
+        vec3_t p = { 0 };
+        const float *xyz = src_vert->xyz;
+
+        for (int32_t i = 0; i < 4; i++) {
+            byte joint = src_vert->joint_indices[i];
+            float weight = src_vert->joint_weights[i] / 255.f;
+            const float *mat = joints[joint].mat;
+
+            vec3_t calc;
+            // FIXME why does this need to be transposed??
+            const float matrix[] = {
+                mat[0], mat[4], mat[8], 0.0f, 
+                mat[1], mat[5], mat[9], 0.0f,
+                mat[2], mat[6], mat[10], 0.0f, 
+                mat[3], mat[7], mat[11], 1.0f
+            };
+            Matrix4x4_Transform(calc, xyz, matrix);
+
+            VectorMA(p, weight, calc, p);
+        }
+        
+        vec_t d = shadedot(src_vert->norm);
+
+        dst_vert[0] = p[0];
+        dst_vert[1] = p[1];
+        dst_vert[2] = p[2];
+        dst_vert[4] = shadelight[0] * d;
+        dst_vert[5] = shadelight[1] * d;
+        dst_vert[6] = shadelight[2] * d;
+        dst_vert[7] = shadelight[3];
+        
+        dst_vert += VERTEX_SIZE;
+        src_vert++;
+    }
+}
+
+// FIXME: this algorithm is plain wrong, and is using Quake 1's faulty method.
+// it suffers from over-rotation like vanilla does.
+// the proper method is to calculate the proper lerped matrix between two frames
+// and use that instead.
+static void tess_lerped_plain_skel(const maliasskel_t *skel)
+{
+    const md5vert_t *src_vert = skel->verts;
+    vec_t *dst_vert = tess.vertices;
+    int count = skel->numverts;
+
+    int32_t frames[] = {
+        oldframenum % skel->numposes,
+        newframenum % skel->numposes
+    };
+
+    jointpose_t *joints[] = {
+        skel->joints + (skel->numjoints * frames[0]),
+        skel->joints + (skel->numjoints * frames[1])
+    };
+
+    while (count--) {
+        vec3_t p[2] = { { 0 }, { 0 } };
+        const float *xyz = src_vert->xyz;
+        
+        for (int32_t f = 0; f < 2; f++) {
+            for (int32_t i = 0; i < 4; i++) {
+                byte joint = src_vert->joint_indices[i];
+                float weight = src_vert->joint_weights[i] / 255.f;
+                const float *mat = joints[f][joint].mat;
+
+                vec3_t calc;
+                // FIXME why does this need to be transposed??
+                const float matrix[] = {
+                    mat[0], mat[4], mat[8], 0.0f, 
+                    mat[1], mat[5], mat[9], 0.0f,
+                    mat[2], mat[6], mat[10], 0.0f, 
+                    mat[3], mat[7], mat[11], 1.0f
+                };
+                Matrix4x4_Transform(calc, xyz, matrix);
+
+                VectorMA(p[f], weight, calc, p[f]);
+            }
+        }
+
+        LerpVector2(p[0], p[1], backlerp, frontlerp, dst_vert);
+
+        dst_vert += 4;
+        src_vert++;
+    }
+}
+
+// FIXME: this algorithm is plain wrong, and is using Quake 1's faulty method.
+// it suffers from over-rotation like vanilla does.
+// the proper method is to calculate the proper lerped matrix between two frames
+// and use that instead.
+static void tess_lerped_shade_skel(const maliasskel_t *skel)
+{
+    const md5vert_t *src_vert = skel->verts;
+    vec_t *dst_vert = tess.vertices;
+    int count = skel->numverts;
+
+    int32_t frames[] = {
+        oldframenum % skel->numposes,
+        newframenum % skel->numposes
+    };
+
+    jointpose_t *joints[] = {
+        skel->joints + (skel->numjoints * frames[0]),
+        skel->joints + (skel->numjoints * frames[1])
+    };
+
+    while (count--) {
+        vec3_t p[2] = { { 0 }, { 0 } };
+        const float *xyz = src_vert->xyz;
+        
+        for (int32_t f = 0; f < 2; f++) {
+            for (int32_t i = 0; i < 4; i++) {
+                byte joint = src_vert->joint_indices[i];
+                float weight = src_vert->joint_weights[i] / 255.f;
+                const float *mat = joints[f][joint].mat;
+
+                vec3_t calc;
+                // FIXME why does this need to be transposed??
+                const float matrix[] = {
+                    mat[0], mat[4], mat[8], 0.0f, 
+                    mat[1], mat[5], mat[9], 0.0f,
+                    mat[2], mat[6], mat[10], 0.0f, 
+                    mat[3], mat[7], mat[11], 1.0f
+                };
+                Matrix4x4_Transform(calc, xyz, matrix);
+
+                VectorMA(p[f], weight, calc, p[f]);
+            }
+        }
+
+        LerpVector2(p[0], p[1], backlerp, frontlerp, dst_vert);
+        
+        vec_t d = shadedot(src_vert->norm);
+
+        dst_vert[4] = shadelight[0] * d;
+        dst_vert[5] = shadelight[1] * d;
+        dst_vert[6] = shadelight[2] * d;
+        dst_vert[7] = shadelight[3];
+        
+        dst_vert += VERTEX_SIZE;
+        src_vert++;
+    }
+}
+
+
+// FIXME: this algorithm is plain wrong, and is using Quake 1's faulty method.
+// it suffers from over-rotation like vanilla does.
+// the proper method is to calculate the proper lerped matrix between two frames
+// and use that instead.
+static void tess_lerped_shell_skel(const maliasskel_t *skel)
+{
+    const md5vert_t *src_vert = skel->verts;
+    vec_t *dst_vert = tess.vertices;
+    int count = skel->numverts;
+
+    int32_t frames[] = {
+        oldframenum % skel->numposes,
+        newframenum % skel->numposes
+    };
+
+    jointpose_t *joints[] = {
+        skel->joints + (skel->numjoints * frames[0]),
+        skel->joints + (skel->numjoints * frames[1])
+    };
+
+    while (count--) {
+        vec3_t p[2] = { { 0 }, { 0 } };
+        const float *xyz = src_vert->xyz;
+        const float *norm = src_vert->norm;
+        
+        for (int32_t f = 0; f < 2; f++) {
+            for (int32_t i = 0; i < 4; i++) {
+                byte joint = src_vert->joint_indices[i];
+                float weight = src_vert->joint_weights[i] / 255.f;
+                const float *mat = joints[f][joint].mat;
+
+                vec3_t calc;
+                // FIXME why does this need to be transposed??
+                const float matrix[] = {
+                    mat[0], mat[4], mat[8], 0.0f, 
+                    mat[1], mat[5], mat[9], 0.0f,
+                    mat[2], mat[6], mat[10], 0.0f, 
+                    mat[3], mat[7], mat[11], 1.0f
+                };
+                Matrix4x4_Transform(calc, xyz, matrix);
+                VectorMA(p[f], weight, calc, p[f]);
+            }
+        }
+        
+        LerpVector2(p[0], p[1], backlerp, frontlerp, dst_vert);
+        VectorMA(dst_vert, shellscale, norm, dst_vert);
+
+        dst_vert += 4;
+        src_vert++;
+    }
+}
+//#endif
+#endif
+
+void Quat_rotatePoint (const quat4_t q, const vec3_t in, vec3_t out);
+
+static void draw_alias_skeleton(const md5_model_t *model, skeltessfunc_t tessfunc)
+{
+    glStateBits_t state = GLS_INTENSITY_ENABLE;
+
+    // fall back to entity matrix
+    GL_LoadMatrix(glr.entmatrix);
+
+    if (shadelight)
+        state |= GLS_SHADE_SMOOTH;
+
+    if (glr.ent->flags & RF_TRANSLUCENT)
+        state |= GLS_BLEND_BLEND;
+
+    if ((glr.ent->flags & (RF_TRANSLUCENT | RF_WEAPONMODEL)) == RF_TRANSLUCENT)
+        state |= GLS_DEPTHMASK_FALSE;
+
+    GL_StateBits(state);
+
+    GL_BindTexture(0, texnum_for_skeleton(model));
+
+    (*tessfunc)(model);
+
+    c.trisDrawn += model->num_tris;
+
+    if (shadelight) {
+        GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
+        GL_VertexPointer(3, VERTEX_SIZE, tess.vertices);
+        GL_ColorFloatPointer(4, VERTEX_SIZE, tess.vertices + 4);
+    } else {
+        GL_ArrayBits(GLA_VERTEX | GLA_TC);
+        GL_VertexPointer(3, 4, tess.vertices);
+        GL_Color(color[0], color[1], color[2], color[3]);
+    }
+
+    GL_TexCoordPointer(2, sizeof(md5_vertex_t) / sizeof(float), model->vertices->st);
+
+    GL_LockArrays(model->num_verts);
+
+    qglDrawElements(GL_TRIANGLES, model->num_tris * 3, QGL_INDEX_ENUM,
+                    model->indices);
+
+#if 0
+    draw_celshading(mesh);
+
+    if (gl_showtris->integer) {
+        GL_DrawOutlines(mesh->numindices, mesh->indices);
+    }
+
+    // FIXME: unlock arrays before changing matrix?
+    draw_shadow(mesh);
+#endif
+
+    GL_UnlockArrays();
+}
+
+float Quat_dotProduct (const quat4_t qa, const quat4_t qb);
+void Quat_slerp (const quat4_t qa, const quat4_t qb, float t, quat4_t out);
+
+/**
+ * Smoothly interpolate two skeletons
+ */
+void
+InterpolateSkeletons (const md5_joint_t *skelA,
+	const md5_joint_t *skelB,
+	int num_joints, float interp,
+	md5_joint_t *out)
+{
+	int i;
+
+	for (i = 0; i < num_joints; ++i)
+	{
+	  /* Copy parent index */
+		out[i].parent = skelA[i].parent;
+
+		/* Linear interpolation for position */
+		out[i].pos[0] = skelA[i].pos[0] + interp * (skelB[i].pos[0] - skelA[i].pos[0]);
+		out[i].pos[1] = skelA[i].pos[1] + interp * (skelB[i].pos[1] - skelA[i].pos[1]);
+		out[i].pos[2] = skelA[i].pos[2] + interp * (skelB[i].pos[2] - skelA[i].pos[2]);
+
+		/* Spherical linear interpolation for orientation */
+		Quat_slerp (skelA[i].orient, skelB[i].orient, interp, out[i].orient);
+	}
+}
+
+/**
+ * Prepare a mesh for drawing.  Compute mesh's final vertex positions
+ * given a skeleton.  Put the vertices in vertex arrays.
+ */
+static void PrepareMesh_Plain (const md5_model_t *mesh, const md5_joint_t *skeleton)
+{
+	int i, j;
+
+  /* Setup vertices */
+	for (i = 0; i < mesh->num_verts; ++i)
+	{
+		vec3_t finalVertex = { 0.0f, 0.0f, 0.0f };
+
+		/* Calculate final vertex to draw with weights */
+		for (j = 0; j < mesh->vertices[i].count; ++j)
+		{
+			const md5_weight_t *weight = &mesh->weights[mesh->vertices[i].start + j];
+			const md5_joint_t *joint = &skeleton[weight->joint];
+
+			  /* Calculate transformed vertex for this weight */
+			vec3_t wv;
+			Quat_rotatePoint (joint->orient, weight->pos, wv);
+
+			/* The sum of all weight->bias should be 1.0 */
+			finalVertex[0] += (joint->pos[0] + wv[0]) * weight->bias;
+			finalVertex[1] += (joint->pos[1] + wv[1]) * weight->bias;
+			finalVertex[2] += (joint->pos[2] + wv[2]) * weight->bias;
+		}
+
+		tess.vertices[(i * 4) + 0] = finalVertex[0];
+		tess.vertices[(i * 4) + 1] = finalVertex[1];
+		tess.vertices[(i * 4) + 2] = finalVertex[2];
+	}
+}
+
+static void tess_static_plain_skel(const md5_model_t *mesh)
+{
+    const md5_joint_t *skeleton = mesh->skeleton_frames[oldframenum % mesh->num_frames];
+
+    PrepareMesh_Plain(mesh, skeleton);
+}
+
+static void tess_lerped_plain_skel(const md5_model_t *mesh)
+{
+    int32_t frames[] = {
+        oldframenum % mesh->num_frames,
+        newframenum % mesh->num_frames
+    };
+
+	  /* Interpolate skeletons between two frames */
+	InterpolateSkeletons (mesh->skeleton_frames[frames[0]],
+		mesh->skeleton_frames[frames[1]],
+		mesh->num_joints,
+		frontlerp,
+		temp_skeleton);
+
+    PrepareMesh_Plain(mesh, temp_skeleton);
+}
+
+/**
+ * Prepare a mesh for drawing.  Compute mesh's final vertex positions
+ * given a skeleton.  Put the vertices in vertex arrays.
+ */
+static void PrepareMesh_Shade (const md5_model_t *mesh, const md5_joint_t *skeleton)
+{
+	int i, j;
+
+  /* Setup vertices */
+	for (i = 0; i < mesh->num_verts; ++i)
+	{
+        vec3_t finalVertex = { 0 }, finalNormal = { 0 };
+
+		/* Calculate final vertex to draw with weights */
+		for (j = 0; j < mesh->vertices[i].count; ++j)
+		{
+			const md5_weight_t *weight = &mesh->weights[mesh->vertices[i].start + j];
+			const md5_joint_t *joint = &skeleton[weight->joint];
+
+			/* Calculate transformed vertex for this weight */
+			vec3_t wv;
+			Quat_rotatePoint (joint->orient, weight->pos, wv);
+
+			/* The sum of all weight->bias should be 1.0 */
+			finalVertex[0] += (joint->pos[0] + wv[0]) * weight->bias;
+			finalVertex[1] += (joint->pos[1] + wv[1]) * weight->bias;
+			finalVertex[2] += (joint->pos[2] + wv[2]) * weight->bias;
+            
+			Quat_rotatePoint (joint->orient, mesh->vertices[i].normal, wv);
+            VectorScale(wv, weight->bias, wv);
+            VectorAdd(finalNormal, wv, finalNormal);
+		}
+
+        vec_t d = shadedot(finalNormal);
+
+		tess.vertices[(i * VERTEX_SIZE) + 0] = finalVertex[0];
+		tess.vertices[(i * VERTEX_SIZE) + 1] = finalVertex[1];
+		tess.vertices[(i * VERTEX_SIZE) + 2] = finalVertex[2];
+        tess.vertices[(i * VERTEX_SIZE) + 4] = shadelight[0] * d;
+        tess.vertices[(i * VERTEX_SIZE) + 5] = shadelight[1] * d;
+        tess.vertices[(i * VERTEX_SIZE) + 6] = shadelight[2] * d;
+        tess.vertices[(i * VERTEX_SIZE) + 7] = shadelight[3];
+	}
+}
+
+static void tess_static_shade_skel(const md5_model_t *mesh)
+{
+    const md5_joint_t *skeleton = mesh->skeleton_frames[oldframenum % mesh->num_frames];
+
+    PrepareMesh_Shade(mesh, skeleton);
+}
+
+static void tess_lerped_shade_skel(const md5_model_t *mesh)
+{
+    int32_t frames[] = {
+        oldframenum % mesh->num_frames,
+        newframenum % mesh->num_frames
+    };
+
+	  /* Interpolate skeletons between two frames */
+	InterpolateSkeletons (mesh->skeleton_frames[frames[0]],
+		mesh->skeleton_frames[frames[1]],
+		mesh->num_joints,
+		frontlerp,
+		temp_skeleton);
+
+    PrepareMesh_Shade(mesh, temp_skeleton);
+}
+
+/**
+ * Prepare a mesh for drawing.  Compute mesh's final vertex positions
+ * given a skeleton.  Put the vertices in vertex arrays.
+ */
+static void PrepareMesh_Shell (const md5_model_t *mesh, const md5_joint_t *skeleton)
+{
+	int i, j;
+
+  /* Setup vertices */
+	for (i = 0; i < mesh->num_verts; ++i)
+	{
+        vec3_t finalVertex = { 0 }, finalNormal = { 0 };
+
+		/* Calculate final vertex to draw with weights */
+		for (j = 0; j < mesh->vertices[i].count; ++j)
+		{
+			const md5_weight_t *weight = &mesh->weights[mesh->vertices[i].start + j];
+			const md5_joint_t *joint = &skeleton[weight->joint];
+
+			/* Calculate transformed vertex for this weight */
+			vec3_t wv;
+			Quat_rotatePoint (joint->orient, weight->pos, wv);
+
+			/* The sum of all weight->bias should be 1.0 */
+			finalVertex[0] += (joint->pos[0] + wv[0]) * weight->bias;
+			finalVertex[1] += (joint->pos[1] + wv[1]) * weight->bias;
+			finalVertex[2] += (joint->pos[2] + wv[2]) * weight->bias;
+            
+			Quat_rotatePoint (joint->orient, mesh->vertices[i].normal, wv);
+            VectorScale(wv, weight->bias, wv);
+            VectorAdd(finalNormal, wv, finalNormal);
+		}
+
+		tess.vertices[(i * 4) + 0] = finalVertex[0] + (finalNormal[0] * shellscale);
+		tess.vertices[(i * 4) + 1] = finalVertex[1] + (finalNormal[1] * shellscale);
+		tess.vertices[(i * 4) + 2] = finalVertex[2] + (finalNormal[2] * shellscale);
+	}
+}
+
+static void tess_static_shell_skel(const md5_model_t *mesh)
+{
+    const md5_joint_t *skeleton = mesh->skeleton_frames[oldframenum % mesh->num_frames];
+
+    PrepareMesh_Shell(mesh, skeleton);
+}
+
+static void tess_lerped_shell_skel(const md5_model_t *mesh)
+{
+    int32_t frames[] = {
+        oldframenum % mesh->num_frames,
+        newframenum % mesh->num_frames
+    };
+
+	  /* Interpolate skeletons between two frames */
+	InterpolateSkeletons (mesh->skeleton_frames[frames[0]],
+		mesh->skeleton_frames[frames[1]],
+		mesh->num_joints,
+		frontlerp,
+		temp_skeleton);
+
+    PrepareMesh_Shell(mesh, temp_skeleton);
 }
 
 // extra ugly. this needs to be done on the client, but to avoid complexity of
@@ -679,17 +1285,34 @@ void GL_DrawAliasModel(const model_t *model)
     setup_shadow();
 
     // select proper tessfunc
+    tessfunc_t tessfunc;
+    // #if USE_MD5
+    skeltessfunc_t skeltessfunc;
+    // #endif
+
     if (ent->flags & RF_SHELL_MASK) {
         shellscale = (ent->flags & RF_WEAPONMODEL) ?
             WEAPONSHELL_SCALE : POWERSUIT_SCALE;
         tessfunc = newframenum == oldframenum ?
             tess_static_shell : tess_lerped_shell;
+        //#if USE_MD5
+        skeltessfunc = newframenum == oldframenum ?
+            tess_static_shell_skel : tess_lerped_shell_skel;
+        //#endif
     } else if (shadelight) {
         tessfunc = newframenum == oldframenum ?
             tess_static_shade : tess_lerped_shade;
+        //#if USE_MD5
+        skeltessfunc = newframenum == oldframenum ?
+            tess_static_shade_skel : tess_lerped_shade_skel;
+        //#endif
     } else {
         tessfunc = newframenum == oldframenum ?
             tess_static_plain : tess_lerped_plain;
+        //#if USE_MD5
+        skeltessfunc = newframenum == oldframenum ?
+            tess_static_plain_skel : tess_lerped_plain_skel;
+        //#endif
     }
 
     GL_RotateForEntity();
@@ -701,8 +1324,16 @@ void GL_DrawAliasModel(const model_t *model)
         GL_DepthRange(0, 0.25f);
 
     // draw all the meshes
-    for (i = 0; i < model->nummeshes; i++)
-        draw_alias_mesh(&model->meshes[i]);
+    // #if USE_MD5
+    if (model->skeleton) {
+        draw_alias_skeleton(model->skeleton, skeltessfunc);
+    } else {
+    // #endif
+        for (i = 0; i < model->nummeshes; i++)
+            draw_alias_mesh(&model->meshes[i], tessfunc);
+    // #if USE_MD5
+    }
+    // #endif
 
     if (ent->flags & RF_DEPTHHACK)
         GL_DepthRange(0, 1);

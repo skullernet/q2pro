@@ -4,7 +4,7 @@ project('q2pro', 'c',
   meson_version: '>= 0.59.0',
   default_options: [
     'c_std=gnu99',
-    'buildtype=debugoptimized',
+    'buildtype=debugoptimized'
   ],
 )
 
@@ -18,6 +18,7 @@ common_src = [
   'src/common/field.c',
   'src/common/fifo.c',
   'src/common/files.c',
+  'src/common/hash_map.c',
   'src/common/math.c',
   'src/common/mdfour.c',
   'src/common/msg.c',

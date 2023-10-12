@@ -43,6 +43,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define q_countof(a)        (sizeof(a) / sizeof(a[0]))
 
 typedef unsigned char byte;
+typedef intptr_t ssize_t;
 typedef enum { qfalse, qtrue } qboolean;    // ABI compat only, don't use
 typedef int qhandle_t;
 
@@ -326,13 +327,9 @@ void Q_srand(uint32_t seed);
 uint32_t Q_rand(void);
 uint32_t Q_rand_uniform(uint32_t n);
 
-#define clamp(a,b,c)    ((a)<(b)?(a)=(b):(a)>(c)?(a)=(c):(a))
-#define cclamp(a,b,c)   ((b)>(c)?clamp(a,c,b):clamp(a,b,c))
-
-static inline int Q_clip(int a, int b, int c)
-{
-    return clamp(a, b, c);
-}
+#define constclamp(a,b,c)   ((a)<(b)?(b):(a)>(c)?(c):(a))
+#define clamp(a,b,c)        ((a)=constclamp((a),(b),(c)))
+#define cclamp(a,b,c)       ((b)>(c)?clamp(a,c,b):clamp(a,b,c))
 
 #ifndef max
 #define max(a,b) ((a)>(b)?(a):(b))
@@ -469,7 +466,13 @@ bool COM_IsUint(const char *s);
 bool COM_IsPath(const char *s);
 bool COM_IsWhite(const char *s);
 
-char *COM_Parse(const char **data_p);
+// extended parsing routine
+// if token_buffer is null, a temporary internal buffer will be used
+char *COM_ParseEx(const char **data_p, char *token_buffer, size_t token_buffer_size);
+
+#define COM_Parse(data_p) \
+    COM_ParseEx(data_p, NULL, 0)
+
 // data is an in/out parm, returns a parsed out token
 size_t COM_Compress(char *data);
 
@@ -482,6 +485,7 @@ char *COM_TrimSpace(char *s);
 
 // buffer safe operations
 size_t Q_strlcpy(char *dst, const char *src, size_t size);
+size_t Q_strnlcpy(char *dst, const char *src, size_t count, size_t size);
 size_t Q_strlcat(char *dst, const char *src, size_t size);
 
 #define Q_concat(dest, size, ...) \
