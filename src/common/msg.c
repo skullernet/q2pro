@@ -1122,7 +1122,7 @@ int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
     statbits = 0;
     for (i = 0; i < MAX_STATS; i++)
         if (to->stats[i] != from->stats[i])
-            statbits |= BIT(i);
+            statbits |= BIT_ULL(i);
 
     if (statbits)
         eflags |= EPS_STATS;
