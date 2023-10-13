@@ -566,6 +566,7 @@ char *COM_TrimSpace(char *s);
 size_t Q_strlcpy(char *dst, const char *src, size_t size);
 size_t Q_strnlcpy(char *dst, const char *src, size_t count, size_t size);
 size_t Q_strlcat(char *dst, const char *src, size_t size);
+size_t Q_strnlcat(char *dst, const char *src, size_t count, size_t size);
 
 #define Q_concat(dest, size, ...) \
     Q_concat_array(dest, size, (const char *[]){__VA_ARGS__, NULL})

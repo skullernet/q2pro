@@ -19,6 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "server.h"
 #include "game3_proxy/game3_proxy.h"
+#include "common/loc.h"
 
 #if USE_CLIENT
 #include "client/video.h"
@@ -786,7 +787,7 @@ static void PF_Loc_Print(edict_t* ent, print_type_t level, const char* base, con
      * suggesting all other print functions should be wrappers of this one. */
 
     char string[MAX_STRING_CHARS];
-    Q_snprintf(string, sizeof(string), "%s\n", base);
+    Loc_Localize(base, args, num_args, string, sizeof(string));
     PF_Client_Print(ent, level, string);
 }
 

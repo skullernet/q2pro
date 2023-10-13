@@ -868,6 +868,22 @@ size_t Q_strlcat(char *dst, const char *src, size_t size)
 
 /*
 ===============
+Q_strnlcat
+
+Returns length of the source and destinations strings combined.
+===============
+*/
+size_t Q_strnlcat(char *dst, const char *src, size_t count, size_t size)
+{
+    size_t len = strlen(dst);
+
+    Q_assert(len < size);
+
+    return len + Q_strnlcpy(dst + len, src, count, size - len);
+}
+
+/*
+===============
 Q_concat_array
 
 Returns number of characters that would be written into the buffer,

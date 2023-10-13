@@ -35,6 +35,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <zlib.h>
 #endif
 
+#include "common/loc.h"
+
 /*
 =============================================================================
 
@@ -608,7 +610,7 @@ int FS_CreatePath(char *path)
     }
     
     // check for drive path and skip N: part
-    if (Q_charascii(*path) && path[1] == ':') {
+    if (Q_isalpha(*path) && path[1] == ':') {
         ofs = path + 2;
     }
 #endif
@@ -3793,4 +3795,6 @@ void FS_Init(void)
     fs_game_changed(fs_game);
 
     Com_Printf("-----------------------\n");
+
+    Loc_Init();
 }

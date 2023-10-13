@@ -19,6 +19,7 @@ common_src = [
   'src/common/fifo.c',
   'src/common/files.c',
   'src/common/hash_map.c',
+  'src/common/loc.c',
   'src/common/math.c',
   'src/common/mdfour.c',
   'src/common/msg.c',
