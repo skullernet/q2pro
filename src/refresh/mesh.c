@@ -425,7 +425,7 @@ static void setup_celshading(void)
     celscale = 1.0f - Distance(origin, glr.fd.vieworg) / 700.0f;
 }
 
-static inline void draw_celshading(QGL_INDEX_TYPE *indices, size_t num_indices)
+static inline void draw_celshading(QGL_INDEX_TYPE *indices, uint32_t num_indices)
 {
     if (celscale < 0.01f || celscale > 1)
         return;
@@ -499,7 +499,7 @@ static void setup_shadow(void)
     GL_MultMatrix(shadowmatrix, tmp, matrix);
 }
 
-static inline void draw_shadow(QGL_INDEX_TYPE *indices, size_t num_indices)
+static inline void draw_shadow(QGL_INDEX_TYPE *indices, uint32_t num_indices)
 {
     if (shadowmatrix[15] < 0.5f)
         return;
@@ -534,7 +534,7 @@ static inline void draw_shadow(QGL_INDEX_TYPE *indices, size_t num_indices)
     }
 }
 
-static int texnum_for_mesh(const maliasmesh_t *mesh)
+static inline int texnum_for_model(int32_t num_skins, image_t **skins)
 {
     const entity_t *ent = glr.ent;
 
@@ -544,18 +544,18 @@ static int texnum_for_mesh(const maliasmesh_t *mesh)
     if (ent->skin)
         return IMG_ForHandle(ent->skin)->texnum;
 
-    if (!mesh->numskins)
+    if (!num_skins)
         return TEXNUM_DEFAULT;
 
-    if (ent->skinnum < 0 || ent->skinnum >= mesh->numskins) {
+    if (ent->skinnum < 0 || ent->skinnum >= num_skins) {
         Com_DPrintf("%s: no such skin: %d\n", "GL_DrawAliasModel", ent->skinnum);
-        return mesh->skins[0]->texnum;
+        return skins[0]->texnum;
     }
 
-    if (mesh->skins[ent->skinnum]->texnum == TEXNUM_DEFAULT)
-        return mesh->skins[0]->texnum;
+    if (skins[ent->skinnum]->texnum == TEXNUM_DEFAULT)
+        return skins[0]->texnum;
 
-    return mesh->skins[ent->skinnum]->texnum;
+    return skins[ent->skinnum]->texnum;
 }
 
 static void draw_alias_mesh(const maliasmesh_t *mesh, tessfunc_t tessfunc)
@@ -576,7 +576,7 @@ static void draw_alias_mesh(const maliasmesh_t *mesh, tessfunc_t tessfunc)
 
     GL_StateBits(state);
 
-    GL_BindTexture(0, texnum_for_mesh(mesh));
+    GL_BindTexture(0, texnum_for_model(mesh->numskins, mesh->skins));
 
     (*tessfunc)(mesh);
     c.trisDrawn += mesh->numtris;
@@ -611,30 +611,6 @@ static void draw_alias_mesh(const maliasmesh_t *mesh, tessfunc_t tessfunc)
 }
 
 #if USE_MD5
-static int texnum_for_skeleton(const md5_model_t *skel)
-{
-    const entity_t *ent = glr.ent;
-
-    if (ent->flags & RF_SHELL_MASK)
-        return TEXNUM_WHITE;
-
-    if (ent->skin)
-        return IMG_ForHandle(ent->skin)->texnum;
-
-    if (!skel->num_skins)
-        return TEXNUM_DEFAULT;
-
-    if (ent->skinnum < 0 || ent->skinnum >= skel->num_skins) {
-        Com_DPrintf("%s: no such skin: %d\n", "GL_DrawAliasModel", ent->skinnum);
-        return skel->skins[0]->texnum;
-    }
-
-    if (skel->skins[ent->skinnum]->texnum == TEXNUM_DEFAULT)
-        return skel->skins[0]->texnum;
-
-    return skel->skins[ent->skinnum]->texnum;
-}
-
 void Quat_rotatePoint (const quat4_t q, const vec3_t in, vec3_t out);
 void Quat_invert(const quat4_t in, quat4_t out);
 float Quat_dotProduct (const quat4_t qa, const quat4_t qb);
@@ -658,7 +634,7 @@ static void draw_alias_skeleton(const md5_model_t *model, skeltessfunc_t tessfun
 
     GL_StateBits(state);
 
-    GL_BindTexture(0, texnum_for_skeleton(model));
+    GL_BindTexture(0, texnum_for_model(model->num_skins, model->skins));
 
     (*tessfunc)(model);
 
