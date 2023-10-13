@@ -1024,12 +1024,9 @@ static inline bool MD5_ParseInt32(const char **buffer, int32_t *output)
 }
 
 #define MD5_CHECK(x) \
-    if (!(x)) { ret = Q_ERR(EBADF); goto fail; }
+    if (!(x)) { ret = Q_ERR_INVALID_FORMAT; goto fail; }
 
-/**
- * Load an MD5 model from file.
- */
-static int MOD_LoadMD5Mesh (model_t *model, const char *file_buffer)
+static bool MOD_LoadMD5Header(model_t *model, const char **file_buffer, int *out_ret)
 {
     int ret = 0;
 
@@ -1037,15 +1034,33 @@ static int MOD_LoadMD5Mesh (model_t *model, const char *file_buffer)
     {
         int32_t version;
 
-        MD5_CHECK(MD5_ParseExpect(&file_buffer, "MD5Version"));
-        MD5_CHECK(MD5_ParseInt32(&file_buffer, &version));
+        MD5_CHECK(MD5_ParseExpect(file_buffer, "MD5Version"));
+        MD5_CHECK(MD5_ParseInt32(file_buffer, &version));
     
-	    if (version != 10)
-	    {
-		    /* Bad version */
-		    ret = Q_ERR(EBADF);
-            goto fail;
+	    if (version != 10) {
+fail:
+            *out_ret = ret;
+		    return false;
 	    }
+    }
+
+    return true;
+}
+
+/**
+ * Load an MD5 model from file.
+ */
+static int MOD_LoadMD5Mesh(model_t *model, const char *file_buffer)
+{
+    int ret = 0;
+
+    md5_vertex_t *vertex_data = NULL;
+    QGL_INDEX_TYPE *index_data = NULL;
+    md5_weight_t *weight_data = NULL;
+
+    // parse header
+    if (!MOD_LoadMD5Header(model, &file_buffer, &ret)) {
+        goto fail;
     }
 
     // allocate data storage, now that we're definitely an MD5
@@ -1060,9 +1075,6 @@ static int MOD_LoadMD5Mesh (model_t *model, const char *file_buffer)
 
     // MD5 meshes are collapsed into a single data group
     size_t total_vertices = 0, total_indices = 0, total_weights = 0;
-    md5_vertex_t *vertex_data = NULL;
-    QGL_INDEX_TYPE *index_data = NULL;
-    md5_weight_t *weight_data = NULL;
     size_t vertex_offset = 0, index_offset = 0, weight_offset = 0;
 
     // set to -1 to catch invalid writes
@@ -1076,10 +1088,10 @@ static int MOD_LoadMD5Mesh (model_t *model, const char *file_buffer)
         if (!strcmp(token, "commandline")) {
             COM_Parse(&file_buffer);
         } else if (!strcmp(token, "numJoints")) {
-            CHECK(MD5_ParseInt32(&file_buffer, &mdl->num_joints));
+            MD5_CHECK(MD5_ParseInt32(&file_buffer, &mdl->num_joints));
 
-            if (mdl->num_joints > MAX_MD5_JOINTS) {
-				ret = Q_ERR(EBADF);
+            if (mdl->num_joints > MAX_MD5_JOINTS || mdl->num_joints < 0) {
+				ret = Q_ERR_INVALID_FORMAT;
                 goto fail;
             }
 
@@ -1117,7 +1129,7 @@ static int MOD_LoadMD5Mesh (model_t *model, const char *file_buffer)
             total_meshes++;
 
             if (total_meshes > num_meshes) {
-				ret = Q_ERR(EBADF);
+				ret = Q_ERR_INVALID_FORMAT;
                 goto fail;
             }
 
@@ -1143,7 +1155,7 @@ static int MOD_LoadMD5Mesh (model_t *model, const char *file_buffer)
                     MD5_CHECK(MD5_ParseInt32(&file_buffer, &num_verts));
 
                     if (num_verts < 0) {
-				        ret = Q_ERR(EBADF);
+				        ret = Q_ERR_INVALID_FORMAT;
                         goto fail;
                     } else if (num_verts) {
                         total_vertices += num_verts;
@@ -1154,7 +1166,7 @@ static int MOD_LoadMD5Mesh (model_t *model, const char *file_buffer)
                     MD5_CHECK(MD5_ParseInt32(&file_buffer, &num_tris));
 
                     if (num_tris < 0) {
-				        ret = Q_ERR(EBADF);
+				        ret = Q_ERR_INVALID_FORMAT;
                         goto fail;
                     } else if (num_tris) {
                         total_indices += num_tris * 3;
@@ -1165,7 +1177,7 @@ static int MOD_LoadMD5Mesh (model_t *model, const char *file_buffer)
                     MD5_CHECK(MD5_ParseInt32(&file_buffer, &num_weights));
 
                     if (num_weights < 0) {
-				        ret = Q_ERR(EBADF);
+				        ret = Q_ERR_INVALID_FORMAT;
                         goto fail;
                     } else if (num_weights) {
                         total_weights += num_weights;
@@ -1178,7 +1190,7 @@ static int MOD_LoadMD5Mesh (model_t *model, const char *file_buffer)
                     MD5_CHECK(MD5_ParseInt32(&file_buffer, &vert_index));
 
                     if (vert_index < 0 || vert_index >= num_verts) {
-				        ret = Q_ERR(EBADF);
+				        ret = Q_ERR_INVALID_FORMAT;
                         goto fail;
                     }
 
@@ -1199,7 +1211,7 @@ static int MOD_LoadMD5Mesh (model_t *model, const char *file_buffer)
                     MD5_CHECK(MD5_ParseInt32(&file_buffer, &tri_index));
 
                     if (tri_index < 0 || tri_index >= num_tris) {
-				        ret = Q_ERR(EBADF);
+				        ret = Q_ERR_INVALID_FORMAT;
                         goto fail;
                     }
 
@@ -1218,7 +1230,7 @@ static int MOD_LoadMD5Mesh (model_t *model, const char *file_buffer)
                     MD5_CHECK(MD5_ParseInt32(&file_buffer, &weight_index));
 
                     if (weight_index < 0 || weight_index >= num_weights) {
-				        ret = Q_ERR(EBADF);
+				        ret = Q_ERR_INVALID_FORMAT;
                         goto fail;
                     }
 
@@ -1227,7 +1239,7 @@ static int MOD_LoadMD5Mesh (model_t *model, const char *file_buffer)
                     MD5_CHECK(MD5_ParseInt32(&file_buffer, &weight->joint));
 
                     if (weight->joint < 0 || weight->joint >= mdl->num_joints) {
-				        ret = Q_ERR(EBADF);
+				        ret = Q_ERR_INVALID_FORMAT;
                         goto fail;
                     }
 
@@ -1240,7 +1252,7 @@ static int MOD_LoadMD5Mesh (model_t *model, const char *file_buffer)
                     MD5_CHECK(MD5_ParseExpect(&file_buffer, ")"));
                 } else if (!*token) {
                     // assume EOF; invalid tokens will just be ignored
-				    ret = Q_ERR(EBADF);
+				    ret = Q_ERR_INVALID_FORMAT;
                     goto fail;
                 }
             }
@@ -1257,7 +1269,7 @@ static int MOD_LoadMD5Mesh (model_t *model, const char *file_buffer)
 
         if (vert->start < 0 || vert->start >= total_weights ||
             vert->count < 0 || (vert->start + vert->count) > total_weights) {
-			ret = Q_ERR(EBADF);
+			ret = Q_ERR_INVALID_FORMAT;
             goto fail;
         }
     }
@@ -1266,7 +1278,7 @@ static int MOD_LoadMD5Mesh (model_t *model, const char *file_buffer)
         QGL_INDEX_TYPE *index = &index_data[i];
 
         if (*index < 0 || *index >= total_vertices) {
-			ret = Q_ERR(EBADF);
+			ret = Q_ERR_INVALID_FORMAT;
             goto fail;
         }
     }
@@ -1286,28 +1298,10 @@ static int MOD_LoadMD5Mesh (model_t *model, const char *file_buffer)
     mdl->num_weights = total_weights;
 
 fail:
-
     Z_Free(index_data);
     Z_Free(vertex_data);
 
 	return ret;
-}
-
-/**
- * Check if an animation can be used for a given model.  Model's
- * skeleton and animation's skeleton must match.
- */
-static bool CheckAnimValidity(const md5_model_t *mdl)
-{
-    /* We just check with frame[0] */
-	for (size_t i = 0; i < mdl->num_joints; ++i)
-	{
-        /* Joints must have the same parent index */
-        if (mdl->base_skeleton[i].parent != mdl->skeleton_frames[0][i].parent)
-			return false;
-    }
-
-	return true;
 }
 
 /* Joint info */
@@ -1530,153 +1524,198 @@ static void MD5_ComputeNormals (md5_weight_t *weights, md5_joint_t *base, md5_ve
 
 	HashMap_Destroy (pos_to_normal_map);
 }
+        
+#define MD5_COMPONENT_TX BIT(0)
+#define MD5_COMPONENT_TY BIT(1)
+#define MD5_COMPONENT_TZ BIT(2)
+#define MD5_COMPONENT_QX BIT(3)
+#define MD5_COMPONENT_QY BIT(4)
+#define MD5_COMPONENT_QZ BIT(5)
+#define MD5_NUM_ANIMATED_COMPONENT_BITS 6
 
 /**
  * Load an MD5 animation from file.
  */
-static int ReadMD5Anim (model_t *model, md5_model_t *anim, const char *file_buffer)
+static int MOD_LoadMD5Anim(model_t *model, const char *anim_path, const char *file_buffer)
 {
-	char buff[512];
-	joint_info_t *jointInfos = NULL;
-	baseframe_joint_t *baseFrame = NULL;
-	float *animFrameData = NULL;
-	int version;
-	int numAnimatedComponents;
-	int frame_index;
-	int i;
     int ret = 0;
 
-    int32_t num_joints = 0, frameRate = 0;
+    // parse header
+    if (!MOD_LoadMD5Header(model, &file_buffer, &ret)) {
+        goto fail;
+    }
+    
+    md5_model_t *anim = model->skeleton;
+    
+    // temporary info for building skeleton frames
+	joint_info_t *joint_infos = NULL;
+	baseframe_joint_t *base_frame = NULL;
+	float *anim_frame_data = NULL;
 
-	while (*file_buffer)
-	{
-        /* Read whole line */
-		FS_Gets (&file_buffer, buff, sizeof(buff));
+    int32_t num_animated_components = -1;
 
-		if (sscanf (buff, " MD5Version %d", &version) == 1)
-		{
-			if (version != 10)
-			{
-			  /* Bad version */
-                ret = Q_ERR(EBADF);
-                goto fail;
-			}
-		}
-		else if (sscanf (buff, " numFrames %d", &anim->num_frames) == 1)
-		{
-            /* Allocate memory for skeleton frames and bounding boxes */
-			if (anim->num_frames > 0)
-			{
-				CHECK(anim->skeleton_frames = (md5_joint_t **)
-					MD5_Malloc (sizeof (md5_joint_t *) * anim->num_frames));
-			}
-		}
-		else if (sscanf (buff, " numJoints %d", &num_joints) == 1)
-		{
-            if (anim->num_joints != num_joints)
-            {
-                ret = Q_ERR(EBADF);
+    // initial invalid value, to catch out of bounds errors
+    anim->num_frames = -1;
+
+    // anything after this point can technically come in any order
+    while (*file_buffer) {
+        const char *token = COM_Parse(&file_buffer);
+
+        // ignored
+        if (!strcmp(token, "commandline")) {
+            COM_Parse(&file_buffer);
+        } else if (!strcmp(token, "numFrames")) {
+            MD5_CHECK(MD5_ParseInt32(&file_buffer, &anim->num_frames));
+
+            // md5 replacements need at least 1 frame, because the
+            // pose frame isn't used
+            if (anim->num_frames <= 0) {
+				ret = Q_ERR_INVALID_FORMAT;
                 goto fail;
             }
 
-			if (num_joints > 0)
-			{
-				for (i = 0; i < anim->num_frames; ++i)
-				{
-                    /* Allocate memory for joints of each frame */
-					CHECK(anim->skeleton_frames[i] = (md5_joint_t *)
-						MD5_Malloc (sizeof (md5_joint_t) * num_joints));
-				}
+            // warn on mismatched frame counts (not fatal)
+            if (anim->num_frames != model->numframes) {
+                Com_WPrintf("%s doesn't match frame count for %s (%i vs %i)\n", anim_path, model->name, model->skeleton->num_frames, model->numframes);
+            }
 
-                /* Allocate temporary memory for building skeleton frames */
-				CHECK(jointInfos = (joint_info_t *)
-					Z_Malloc (sizeof (joint_info_t) * num_joints));
+            if (anim->num_frames > 0 && anim->num_joints > 0 && !anim->skeleton_frames) {
+    			CHECK(anim->skeleton_frames = (md5_joint_t *) MD5_Malloc (sizeof (md5_joint_t) * anim->num_frames * anim->num_joints));
+			    CHECK(joint_infos = (joint_info_t *) Z_Malloc (sizeof (joint_info_t) * anim->num_joints));
+			    CHECK(base_frame = (baseframe_joint_t *) Z_Malloc (sizeof (baseframe_joint_t) * anim->num_joints));
+            }
+        } else if (!strcmp(token, "numJoints")) {
+            int32_t num_joints;
+            MD5_CHECK(MD5_ParseInt32(&file_buffer, &num_joints));
 
-				CHECK(baseFrame = (baseframe_joint_t *)
-					Z_Malloc (sizeof (baseframe_joint_t) * num_joints));
+            if (anim->num_joints != num_joints) {
+                ret = Q_ERR_INVALID_FORMAT;
+                goto fail;
+            }
+
+            if (anim->num_frames > 0 && anim->num_joints > 0 && !anim->skeleton_frames) {
+    			CHECK(anim->skeleton_frames = (md5_joint_t *) MD5_Malloc (sizeof (md5_joint_t) * anim->num_frames * anim->num_joints));
+			    CHECK(joint_infos = (joint_info_t *) Z_Malloc (sizeof (joint_info_t) * anim->num_joints));
+			    CHECK(base_frame = (baseframe_joint_t *) Z_Malloc (sizeof (baseframe_joint_t) * anim->num_joints));
+            }
+        } else if (!strcmp(token, "frameRate")) {
+            // ignored
+            int32_t frame_rate;
+            MD5_CHECK(MD5_ParseInt32(&file_buffer, &frame_rate));
+        } else if (!strcmp(token, "numAnimatedComponents")) {
+            MD5_CHECK(MD5_ParseInt32(&file_buffer, &num_animated_components));
+
+            if (num_animated_components < 0) {
+                ret = Q_ERR_INVALID_FORMAT;
+                goto fail;
+            }
+
+			if (num_animated_components > 0) {
+				CHECK(anim_frame_data = (float *) Z_Malloc (sizeof (float) * num_animated_components));
 			}
-		}
-		else if (sscanf (buff, " frameRate %d", &frameRate) == 1)
-		{
-		}
-		else if (sscanf (buff, " numAnimatedComponents %d", &numAnimatedComponents) == 1)
-		{
-			if (numAnimatedComponents > 0)
-			{
-                /* Allocate memory for animation frame data */
-				CHECK(animFrameData = (float *) Z_Malloc (sizeof (float) * numAnimatedComponents));
-			}
-		}
-		else if (strncmp (buff, "hierarchy {", 11) == 0)
-		{
-			for (i = 0; i < anim->num_joints; ++i)
-			{
-                /* Read whole line */
-				FS_Gets (&file_buffer, buff, sizeof(buff));
+		} else if (!strcmp(token, "hierarchy")) {
+            MD5_CHECK(MD5_ParseExpect(&file_buffer, "{"));
 
-				/* Read joint info */
-				sscanf (buff, " %s %d %d %d", jointInfos[i].name, &jointInfos[i].parent,
-					&jointInfos[i].flags, &jointInfos[i].startIndex);
-			}
-		}
-		else if (strncmp (buff, "bounds {", 8) == 0)
-		{
-			for (i = 0; i < anim->num_frames; ++i)
-			{
-                /* Read whole line */
-				FS_Gets (&file_buffer, buff, sizeof(buff));
+			for (int32_t i = 0; i < anim->num_joints; ++i) {
+                joint_info_t *joint_info = &joint_infos[i];
 
-                vec3_t mins, maxs;
+                COM_Parse(&file_buffer); // ignore name
+                MD5_CHECK(MD5_ParseInt32(&file_buffer, &joint_info->parent));
+                MD5_CHECK(MD5_ParseInt32(&file_buffer, &joint_info->flags));
+                MD5_CHECK(MD5_ParseInt32(&file_buffer, &joint_info->startIndex));
 
-				/* Read bounding box */
-				sscanf (buff, " ( %f %f %f ) ( %f %f %f )",
-					&mins[0], &mins[1],
-					&mins[2], &maxs[0],
-					&maxs[1], &maxs[2]);
-			}
-		}
-		else if (strncmp (buff, "baseframe {", 10) == 0)
-		{
-			for (i = 0; i < anim->num_joints; ++i)
-			{
-                /* Read whole line */
-				FS_Gets (&file_buffer, buff, sizeof(buff));
+                // validate animated components
+                int32_t num_components = 0;
 
-				/* Read base frame joint */
-				if (sscanf (buff, " ( %f %f %f ) ( %f %f %f )",
-					&baseFrame[i].pos[0], &baseFrame[i].pos[1],
-					&baseFrame[i].pos[2], &baseFrame[i].orient[0],
-					&baseFrame[i].orient[1], &baseFrame[i].orient[2]) == 6)
-				{
-				  /* Compute the w component */
-					Quat_computeW (baseFrame[i].orient);
-				}
+                for (int32_t f = 0; f < MD5_NUM_ANIMATED_COMPONENT_BITS; f++) {
+                    if (joint_info->flags & BIT(f)) {
+                        num_components++;
+                    }
+                }
+
+                if (joint_info->startIndex < 0 || joint_info->startIndex >= num_animated_components ||
+                    (joint_info->startIndex + num_components) < 0 || (joint_info->startIndex + num_components) > num_animated_components) {
+                    ret = Q_ERR_INVALID_FORMAT;
+                    goto fail;
+                }
+
+                // validate parents; they need to match the base skeleton
+                if (joint_info->parent != anim->base_skeleton[i].parent) {
+                    ret = Q_ERR_INVALID_FORMAT;
+                    goto fail;
+                }
 			}
-		}
-		else if (sscanf (buff, " frame %d", &frame_index) == 1)
-		{
-            /* Read frame data */
-			for (i = 0; i < numAnimatedComponents; ++i)
-				animFrameData[i] = atof(COM_Parse(&file_buffer));
+
+            MD5_CHECK(MD5_ParseExpect(&file_buffer, "}"));
+		} else if (!strcmp(token, "bounds")) {
+            // bounds are ignored and are apparently usually wrong anyways
+            // so we'll just rely on them being "replacement" md2s/md3s.
+            // the md2/md3 ones are used instead.
+            MD5_CHECK(MD5_ParseExpect(&file_buffer, "{"));
+
+			for (int32_t i = 0; i < anim->num_frames; ++i) {
+                for (int32_t b = 0; b < 2; b++) {
+                    MD5_CHECK(MD5_ParseExpect(&file_buffer, "("));
+                    for (int32_t v = 0; v < 3; v++) {
+                        float x;
+                        MD5_CHECK(MD5_ParseFloat(&file_buffer, &x));
+                    }
+                    MD5_CHECK(MD5_ParseExpect(&file_buffer, ")"));
+                }
+			}
+
+            MD5_CHECK(MD5_ParseExpect(&file_buffer, "}"));
+		} else if (!strcmp(token, "baseframe")) {
+            MD5_CHECK(MD5_ParseExpect(&file_buffer, "{"));
+
+			for (int32_t i = 0; i < anim->num_joints; ++i) {
+                baseframe_joint_t *base_joint = &base_frame[i];
+                
+                MD5_CHECK(MD5_ParseExpect(&file_buffer, "("));
+                MD5_CHECK(MD5_ParseFloat(&file_buffer, &base_joint->pos[0]));
+                MD5_CHECK(MD5_ParseFloat(&file_buffer, &base_joint->pos[1]));
+                MD5_CHECK(MD5_ParseFloat(&file_buffer, &base_joint->pos[2]));
+                MD5_CHECK(MD5_ParseExpect(&file_buffer, ")"));
+
+                MD5_CHECK(MD5_ParseExpect(&file_buffer, "("));
+                MD5_CHECK(MD5_ParseFloat(&file_buffer, &base_joint->orient[0]));
+                MD5_CHECK(MD5_ParseFloat(&file_buffer, &base_joint->orient[1]));
+                MD5_CHECK(MD5_ParseFloat(&file_buffer, &base_joint->orient[2]));
+                MD5_CHECK(MD5_ParseExpect(&file_buffer, ")"));
+
+                Quat_computeW (base_joint->orient);
+			}
+
+            MD5_CHECK(MD5_ParseExpect(&file_buffer, "}"));
+		} else if (!strcmp(token, "frame")) {
+            int32_t frame_index = -1;
+            MD5_CHECK(MD5_ParseInt32(&file_buffer, &frame_index));
+
+            if (frame_index < 0 || frame_index >= anim->num_frames) {
+                ret = Q_ERR_INVALID_FORMAT;
+                goto fail;
+            }
+            
+            MD5_CHECK(MD5_ParseExpect(&file_buffer, "{"));
+			for (int32_t i = 0; i < num_animated_components; ++i) {
+                MD5_CHECK(MD5_ParseFloat(&file_buffer, &anim_frame_data[i]));
+            }
+            MD5_CHECK(MD5_ParseExpect(&file_buffer, "}"));
 
             /* Build frame skeleton from the collected data */
-			BuildFrameSkeleton (jointInfos, baseFrame, animFrameData,
-				anim->skeleton_frames[frame_index], anim->num_joints);
-		}
-	}
-
-    if (!CheckAnimValidity(model->skeleton))
-    {
-        ret = Q_ERR(EBADF);
-        goto fail;
+			BuildFrameSkeleton(joint_infos, base_frame, anim_frame_data,
+				&anim->skeleton_frames[frame_index * anim->num_joints], anim->num_joints);
+		} else if (!*token) {
+            // assume EOF; invalid tokens will just be ignored
+            break;
+        }
     }
-
+    
 fail:
 
-	/* Free temporary data allocated */
-    Z_Free (animFrameData);
-	Z_Free (baseFrame);
-	Z_Free (jointInfos);
+    Z_Free (anim_frame_data);
+	Z_Free (base_frame);
+	Z_Free (joint_infos);
 
 	return ret;
 }
@@ -1722,7 +1761,7 @@ static void MOD_LoadMD5(model_t *model, const char *name)
     if (!buffer)
         goto fail;
 
-    if (ret = ReadMD5Anim(model, model->skeleton, buffer))
+    if (ret = MOD_LoadMD5Anim(model, anim_path, buffer))
         goto fail;
 
     FS_FreeFile(buffer);
@@ -1746,11 +1785,6 @@ static void MOD_LoadMD5(model_t *model, const char *name)
     }
 
     Hunk_End(&model->skeleton_hunk);
-
-    if (model->numframes != model->skeleton->num_frames)
-    {
-        Com_WPrintf("%s doesn't match frame count for %s (%i vs %i)\n", anim_path, name, model->skeleton->num_frames, model->numframes);
-    }
 
     MD5_ComputeNormals(model->skeleton->weights, model->skeleton->base_skeleton, model->skeleton->vertices, model->skeleton->num_verts, model->skeleton->indices, model->skeleton->num_tris * 3);
 

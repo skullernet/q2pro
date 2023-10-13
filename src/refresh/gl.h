@@ -353,7 +353,7 @@ typedef struct
 	int num_joints;
 	md5_joint_t *base_skeleton;
 	int num_frames; // may not match model_t::numframes, but not fatal
-	md5_joint_t **skeleton_frames;
+	md5_joint_t *skeleton_frames; // [num_joints][num_frames]
 
     int num_skins;
     image_t **skins;

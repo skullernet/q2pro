@@ -757,7 +757,7 @@ static void PrepareMesh_Plain (const md5_model_t *mesh, const md5_joint_t *skele
 
 static void tess_static_plain_skel(const md5_model_t *mesh)
 {
-    const md5_joint_t *skeleton = mesh->skeleton_frames[oldframenum % mesh->num_frames];
+    const md5_joint_t *skeleton = &mesh->skeleton_frames[(oldframenum % mesh->num_frames) * mesh->num_joints];
 
     PrepareMesh_Plain(mesh, skeleton);
 }
@@ -770,8 +770,8 @@ static void tess_lerped_plain_skel(const md5_model_t *mesh)
     };
 
 	  /* Interpolate skeletons between two frames */
-	InterpolateSkeletons (mesh->skeleton_frames[frames[0]],
-		mesh->skeleton_frames[frames[1]],
+	InterpolateSkeletons (&mesh->skeleton_frames[frames[0]* mesh->num_joints],
+		&mesh->skeleton_frames[frames[1]* mesh->num_joints],
 		mesh->num_joints,
 		frontlerp,
 		temp_skeleton);
@@ -828,7 +828,7 @@ static void PrepareMesh_Shade (const md5_model_t *mesh, const md5_joint_t *skele
 
 static void tess_static_shade_skel(const md5_model_t *mesh)
 {
-    const md5_joint_t *skeleton = mesh->skeleton_frames[oldframenum % mesh->num_frames];
+    const md5_joint_t *skeleton = &mesh->skeleton_frames[(oldframenum % mesh->num_frames) * mesh->num_joints];
 
     PrepareMesh_Shade(mesh, skeleton);
 }
@@ -841,8 +841,8 @@ static void tess_lerped_shade_skel(const md5_model_t *mesh)
     };
 
 	  /* Interpolate skeletons between two frames */
-	InterpolateSkeletons (mesh->skeleton_frames[frames[0]],
-		mesh->skeleton_frames[frames[1]],
+	InterpolateSkeletons (&mesh->skeleton_frames[frames[0] * mesh->num_joints],
+		&mesh->skeleton_frames[frames[1] * mesh->num_joints],
 		mesh->num_joints,
 		frontlerp,
 		temp_skeleton);
@@ -893,7 +893,7 @@ static void PrepareMesh_Shell (const md5_model_t *mesh, const md5_joint_t *skele
 
 static void tess_static_shell_skel(const md5_model_t *mesh)
 {
-    const md5_joint_t *skeleton = mesh->skeleton_frames[oldframenum % mesh->num_frames];
+    const md5_joint_t *skeleton = &mesh->skeleton_frames[(oldframenum % mesh->num_frames) * mesh->num_joints];
 
     PrepareMesh_Shell(mesh, skeleton);
 }
@@ -905,9 +905,9 @@ static void tess_lerped_shell_skel(const md5_model_t *mesh)
         newframenum % mesh->num_frames
     };
 
-	  /* Interpolate skeletons between two frames */
-	InterpolateSkeletons (mesh->skeleton_frames[frames[0]],
-		mesh->skeleton_frames[frames[1]],
+    /* Interpolate skeletons between two frames */
+	InterpolateSkeletons (&mesh->skeleton_frames[frames[0] * mesh->num_joints],
+		&mesh->skeleton_frames[frames[1] * mesh->num_joints],
 		mesh->num_joints,
 		frontlerp,
 		temp_skeleton);
