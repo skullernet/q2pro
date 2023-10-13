@@ -606,6 +606,11 @@ int FS_CreatePath(char *path)
     } else if (Q_isalpha(*path) && path[1] == ':') {
         ofs = path + 2; // skip drive part
     }
+    
+    // check for drive path and skip N: part
+    if (Q_charascii(*path) && path[1] == ':') {
+        ofs = path + 2;
+    }
 #endif
 
     // skip leading slash(es)

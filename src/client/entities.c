@@ -990,7 +990,7 @@ static void CL_AddPacketEntities(void)
                 i = 200;
             } else {
                 static const uint16_t bfg_lightramp[6] = {300, 400, 600, 300, 150, 75};
-                i = bfg_lightramp[Q_clip(s1->frame, 0, 5)];
+                i = bfg_lightramp[constclamp(s1->frame, 0, 5)];
             }
             V_AddLight(ent.origin, i, 0, 1, 0);
         } else if (effects & EF_TRAP) {
@@ -1170,7 +1170,7 @@ static void CL_AddViewWeapon(void)
     if (cl.time - cl.weapon.muzzle.time > 50) {
         cl.weapon.muzzle.model = 0;
         return;
-    }
+}
 
     gun.flags = RF_FULLBRIGHT | RF_DEPTHHACK | RF_WEAPONMODEL | RF_TRANSLUCENT;
     gun.alpha = 1.0f;

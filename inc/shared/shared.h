@@ -43,6 +43,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define q_countof(a)        (sizeof(a) / sizeof(a[0]))
 
 typedef unsigned char byte;
+typedef intptr_t ssize_t;
 typedef enum { qfalse, qtrue } qboolean;    // ABI compat only, don't use
 typedef int qhandle_t;
 
@@ -337,14 +338,9 @@ void Q_srand(uint32_t seed);
 uint32_t Q_rand(void);
 uint32_t Q_rand_uniform(uint32_t n);
 
-static inline int Q_clip(int a, int b, int c)
-{
-    if (a < b)
-        return b;
-    if (a > c)
-        return c;
-    return a;
-}
+#define constclamp(a,b,c)   ((a)<(b)?(b):(a)>(c)?(c):(a))
+#define clamp(a,b,c)        ((a)=constclamp((a),(b),(c)))
+#define cclamp(a,b,c)       ((b)>(c)?clamp(a,c,b):clamp(a,b,c))
 
 static inline float Q_clipf(float a, float b, float c)
 {
@@ -568,6 +564,7 @@ char *COM_TrimSpace(char *s);
 
 // buffer safe operations
 size_t Q_strlcpy(char *dst, const char *src, size_t size);
+size_t Q_strnlcpy(char *dst, const char *src, size_t count, size_t size);
 size_t Q_strlcat(char *dst, const char *src, size_t size);
 
 #define Q_concat(dest, size, ...) \

@@ -4,7 +4,7 @@ project('q2pro', 'c',
   meson_version: '>= 0.59.0',
   default_options: [
     'c_std=c11',
-    'buildtype=debugoptimized',
+    'buildtype=debugoptimized'
   ],
 )
 
