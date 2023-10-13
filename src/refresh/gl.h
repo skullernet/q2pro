@@ -220,6 +220,7 @@ extern cvar_t *gl_lockpvs;
 extern cvar_t *gl_lightmap;
 extern cvar_t *gl_fullbright;
 extern cvar_t *gl_vertexlight;
+extern cvar_t *gl_lightgrid;
 extern cvar_t *gl_showerrors;
 
 typedef enum {
@@ -403,8 +404,8 @@ qhandle_t R_RegisterModel(const char *name);
  * gl_surf.c
  *
  */
-#define LIGHT_STYLE(surf, i) \
-    &glr.fd.lightstyles[gl_static.lightstylemap[(surf)->styles[i]]]
+#define LIGHT_STYLE(i) \
+    &glr.fd.lightstyles[gl_static.lightstylemap[(i)]]
 
 #define LM_MAX_LIGHTMAPS    32
 #define LM_BLOCK_WIDTH      512

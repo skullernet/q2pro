@@ -60,7 +60,7 @@ void GL_SampleLightPoint(vec3_t color)
         temp[1] = w1 * b1[1] + w2 * b2[1] + w3 * b3[1] + w4 * b4[1];
         temp[2] = w1 * b1[2] + w2 * b2[2] + w3 * b3[2] + w4 * b4[2];
 
-        style = LIGHT_STYLE(surf, i);
+        style = LIGHT_STYLE(surf->styles[i]);
 
         color[0] += temp[0] * style->white;
         color[1] += temp[1] * style->white;
@@ -68,6 +68,52 @@ void GL_SampleLightPoint(vec3_t color)
 
         lightmap += size;
     }
+}
+
+static bool GL_LightGridPoint(lightgrid_t *grid, const vec3_t start, vec3_t color)
+{
+    int point_i[3];
+    int i, j, samples;
+
+    if (!grid->numleafs || !gl_lightgrid->integer)
+        return false;
+
+    point_i[0] = (start[0] - grid->mins[0]) * grid->scale[0];
+    point_i[1] = (start[1] - grid->mins[1]) * grid->scale[1];
+    point_i[2] = (start[2] - grid->mins[2]) * grid->scale[2];
+
+    VectorClear(color);
+
+    // TODO: needs interpolation. just average for now.
+    samples = 0;
+    for (i = 0; i < 8; i++) {
+        int32_t tmp[3];
+
+        tmp[0] = point_i[0] + ((i >> 0) & 1);
+        tmp[1] = point_i[1] + ((i >> 1) & 1);
+        tmp[2] = point_i[2] + ((i >> 2) & 1);
+
+        lightgrid_sample_t *s = BSP_LookupLightgrid(grid, tmp);
+        if (!s)
+            continue;
+
+        for (j = 0; j < grid->numstyles && s->style != 255; j++, s++) {
+            lightstyle_t *style = LIGHT_STYLE(s->style);
+            color[0] += s->rgb[0] * style->white;
+            color[1] += s->rgb[1] * style->white;
+            color[2] += s->rgb[2] * style->white;
+        }
+
+        if (j)
+            samples++;
+    }
+
+    if (!samples)
+        return false;
+
+    VectorScale(color, 1.0f / samples, color);
+    GL_AdjustColor(color);
+    return true;
 }
 
 static bool _GL_LightPoint(const vec3_t start, vec3_t color)
@@ -83,6 +129,9 @@ static bool _GL_LightPoint(const vec3_t start, vec3_t color)
     bsp = gl_static.world.cache;
     if (!bsp || !bsp->lightmap)
         return false;
+
+    if (GL_LightGridPoint(&bsp->lightgrid, start, color))
+        return true;
 
     end[0] = start[0];
     end[1] = start[1];

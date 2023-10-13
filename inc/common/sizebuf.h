@@ -45,7 +45,15 @@ static inline void *SZ_Write(sizebuf_t *buf, const void *data, size_t len)
     return memcpy(SZ_GetSpace(buf, len), data, len);
 }
 
+static inline size_t SZ_Remaining(const sizebuf_t *buf)
+{
+    if (buf->readcount > buf->cursize)
+        return 0;
+    return buf->cursize - buf->readcount;
+}
+
 void *SZ_ReadData(sizebuf_t *buf, size_t len);
 int SZ_ReadByte(sizebuf_t *sb);
 int SZ_ReadShort(sizebuf_t *sb);
 int SZ_ReadLong(sizebuf_t *sb);
+float SZ_ReadFloat(sizebuf_t *sb);

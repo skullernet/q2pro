@@ -29,6 +29,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/intreadwrite.h"
 #include "common/math.h"
 #include "common/mdfour.h"
+#include "common/sizebuf.h"
 #include "common/utils.h"
 #include "system/hunk.h"
 
@@ -749,6 +750,12 @@ LOAD(EntString)
 */
 
 typedef struct {
+    const char *name;
+    void (*load)(bsp_t *, const byte *, size_t);
+    size_t (*parse_header)(bsp_t *, const byte *, size_t);
+} xlump_info_t;
+
+typedef struct {
     int (*load)(bsp_t *, const byte *, size_t);
     const char *name;
     uint8_t lump;
@@ -935,7 +942,7 @@ void BSP_Free(bsp_t *bsp)
 
 #if USE_REF
 
-static void BSP_ParseDecoupledLM(bsp_t *bsp, const byte *in, uint32_t filelen)
+static void BSP_ParseDecoupledLM(bsp_t *bsp, const byte *in, size_t filelen)
 {
     mface_t *out;
     uint32_t offset;
@@ -965,32 +972,255 @@ static void BSP_ParseDecoupledLM(bsp_t *bsp, const byte *in, uint32_t filelen)
     bsp->lm_decoupled = true;
 }
 
-static void BSP_ParseExtensions(bsp_t *bsp, const byte *buf, uint32_t pos, uint32_t filelen)
+#define FLAG_OCCLUDED   BIT(30)
+#define FLAG_LEAF       BIT(31)
+
+lightgrid_sample_t *BSP_LookupLightgrid(lightgrid_t *grid, int32_t point[3])
+{
+    uint32_t nodenum = grid->rootnode;
+
+    while (1) {
+        if (nodenum & FLAG_OCCLUDED)
+            return NULL;
+
+        if (nodenum & FLAG_LEAF) {
+            lightgrid_leaf_t *leaf = &grid->leafs[nodenum & ~FLAG_LEAF];
+
+            uint32_t pos[3];
+            VectorSubtract(point, leaf->mins, pos);
+
+            uint32_t w = leaf->size[0];
+            uint32_t h = leaf->size[1];
+            uint32_t index = w * (h * pos[2] + pos[1]) + pos[0];
+            if (index >= leaf->numsamples)
+                return NULL;
+
+            return &grid->samples[leaf->firstsample + index * grid->numstyles];
+        }
+
+        lightgrid_node_t *node = &grid->nodes[nodenum];
+        nodenum = node->children[
+            (point[0] >= node->point[0]) << 2 |
+            (point[1] >= node->point[1]) << 1 |
+            (point[2] >= node->point[2]) << 0
+        ];
+    }
+}
+
+// ugh, requires parsing entire thing
+static bool BSP_ParseLightgridHeader_(lightgrid_t *grid, sizebuf_t *s)
+{
+    int i;
+
+    for (i = 0; i < 3; i++)
+        grid->scale[i] = 1.0f / SZ_ReadFloat(s);
+    for (i = 0; i < 3; i++)
+        grid->size[i] = SZ_ReadLong(s);
+    for (i = 0; i < 3; i++)
+        grid->mins[i] = SZ_ReadFloat(s);
+
+    grid->numstyles = SZ_ReadByte(s);
+    if (grid->numstyles - 1 >= MAX_LIGHTMAPS)
+        return false;
+    grid->rootnode = SZ_ReadLong(s);
+    grid->numnodes = SZ_ReadLong(s);
+    if (grid->numnodes > SZ_Remaining(s) / 44)
+        return false;
+    grid->nodepos = s->readcount;
+    s->readcount += grid->numnodes * 44;
+    grid->numleafs = SZ_ReadLong(s);
+    if (grid->numleafs - 1 >= SZ_Remaining(s) / 24)
+        return false;
+    grid->leafpos = s->readcount;
+    for (i = 0; i < grid->numleafs; i++) {
+        uint32_t x, y, z, numsamples;
+        s->readcount += 12;
+        x = SZ_ReadLong(s);
+        y = SZ_ReadLong(s);
+        z = SZ_ReadLong(s);
+        numsamples = x * y * z;
+        grid->numsamples += numsamples;
+        while (numsamples--) {
+            unsigned numstyles = SZ_ReadByte(s);
+            if (numstyles == 255)
+                continue;
+            if (numstyles > grid->numstyles)
+                return false;
+            if (!SZ_ReadData(s, sizeof(lightgrid_sample_t) * numstyles))
+                return false;
+        }
+    }
+
+    return true;
+}
+
+static size_t BSP_ParseLightgridHeader(bsp_t *bsp, const byte *in, size_t filelen)
+{
+    lightgrid_t *grid = &bsp->lightgrid;
+    sizebuf_t s;
+
+    SZ_Init(&s, (void *)in, filelen);
+    s.cursize = filelen;
+
+    if (!BSP_ParseLightgridHeader_(grid, &s)) {
+        Com_WPrintf("Bad LIGHTGRID_OCTREE header\n");
+        memset(grid, 0, sizeof(*grid));
+        return 0;
+    }
+
+    return
+        ALIGN(sizeof(grid->nodes[0]) * grid->numnodes, 64) +
+        ALIGN(sizeof(grid->leafs[0]) * grid->numleafs, 64) +
+        ALIGN(sizeof(grid->samples[0]) * grid->numsamples * grid->numstyles, 64);
+}
+
+static bool BSP_ValidateLightgrid_r(lightgrid_t *grid, uint32_t nodenum)
+{
+    if (nodenum & FLAG_OCCLUDED)
+        return true;
+
+    if (nodenum & FLAG_LEAF)
+        return (nodenum & ~FLAG_LEAF) < grid->numleafs;
+
+    if (nodenum >= grid->numnodes)
+        return false;
+
+    lightgrid_node_t *node = &grid->nodes[nodenum];
+
+    // until points are loaded use point[0] as visited marker
+    if (node->point[0])
+        return false;
+    node->point[0] = true;
+
+    for (int i = 0; i < 8; i++)
+        if (!BSP_ValidateLightgrid_r(grid, node->children[i]))
+            return false;
+
+    return true;
+}
+
+static void BSP_ParseLightgrid(bsp_t *bsp, const byte *in, size_t filelen)
+{
+    lightgrid_t *grid = &bsp->lightgrid;
+    lightgrid_node_t *node;
+    lightgrid_leaf_t *leaf;
+    lightgrid_sample_t *sample;
+    sizebuf_t s;
+    byte *data;
+    size_t size;
+    int i, j;
+
+    if (!grid->numleafs)
+        return;
+
+    // no point loading if map isn't lit
+    if (!bsp->lightmap) {
+        Com_WPrintf("Ignoring LIGHTGRID_OCTREE, map isn't lit\n");
+        memset(grid, 0, sizeof(*grid));
+        return;
+    }
+
+    SZ_Init(&s, (void *)in, filelen);
+    s.cursize = filelen;
+
+    grid->nodes = ALLOC(sizeof(grid->nodes[0]) * grid->numnodes);
+
+    // load children first
+    s.readcount = grid->nodepos;
+    for (i = 0, node = grid->nodes; i < grid->numnodes; i++, node++) {
+        s.readcount += 12;
+        for (j = 0; j < 8; j++)
+            node->children[j] = SZ_ReadLong(&s);
+    }
+
+    // validate tree
+    if (!BSP_ValidateLightgrid_r(grid, grid->rootnode)) {
+        Com_WPrintf("Bad LIGHTGRID_OCTREE structure\n");
+        memset(grid, 0, sizeof(*grid));
+        return;
+    }
+
+    // now load points
+    s.readcount = grid->nodepos;
+    for (i = 0, node = grid->nodes; i < grid->numnodes; i++, node++) {
+        for (j = 0; j < 3; j++)
+            node->point[j] = SZ_ReadLong(&s);
+        s.readcount += 32;
+    }
+
+    grid->leafs = ALLOC(sizeof(grid->leafs[0]) * grid->numleafs);
+
+    size = sizeof(grid->samples[0]) * grid->numsamples * grid->numstyles;
+    grid->samples = sample = memset(ALLOC(size), 255, size);
+
+    s.readcount = grid->leafpos;
+    for (i = 0, leaf = grid->leafs; i < grid->numleafs; i++, leaf++) {
+        for (j = 0; j < 3; j++)
+            leaf->mins[j] = SZ_ReadLong(&s);
+        for (j = 0; j < 3; j++)
+            leaf->size[j] = SZ_ReadLong(&s);
+
+        leaf->firstsample = sample - grid->samples;
+        leaf->numsamples = leaf->size[0] * leaf->size[1] * leaf->size[2];
+        Q_assert(leaf->numsamples <= grid->numsamples);
+        for (j = 0; j < leaf->numsamples; j++, sample += grid->numstyles) {
+            unsigned numstyles = SZ_ReadByte(&s);
+            if (numstyles == 255)
+                continue;
+            Q_assert(numstyles <= grid->numstyles);
+            data = SZ_ReadData(&s, sizeof(*sample) * numstyles);
+            Q_assert(data);
+            memcpy(sample, data, sizeof(*sample) * numstyles);
+        }
+    }
+}
+
+static const xlump_info_t bspx_lumps[] = {
+    { "DECOUPLED_LM", BSP_ParseDecoupledLM },
+    { "LIGHTGRID_OCTREE", BSP_ParseLightgrid, BSP_ParseLightgridHeader },
+};
+
+// returns amount of extra data to allocate
+static size_t BSP_ParseExtensionHeader(bsp_t *bsp, lump_t *out, const byte *buf, uint32_t pos, uint32_t filelen)
 {
     pos = ALIGN(pos, 4);
     if (pos > filelen - 8)
-        return;
+        return 0;
     if (RL32(buf + pos) != BSPXHEADER)
-        return;
+        return 0;
     pos += 8;
 
     uint32_t numlumps = RL32(buf + pos - 4);
-    if (numlumps > (filelen - pos) / sizeof(xlump_t))
-        return;
+    if (numlumps > (filelen - pos) / sizeof(xlump_t)) {
+        Com_WPrintf("Bad BSPX header\n");
+        return 0;
+    }
 
+    size_t extrasize = 0;
     xlump_t *l = (xlump_t *)(buf + pos);
     for (int i = 0; i < numlumps; i++, l++) {
         uint32_t ofs = LittleLong(l->fileofs);
         uint32_t len = LittleLong(l->filelen);
         uint32_t end = ofs + len;
-        if (end < ofs || end > filelen)
+        if (end <= ofs || end > filelen)
             continue;
-
-        if (!strcmp(l->name, "DECOUPLED_LM")) {
-            BSP_ParseDecoupledLM(bsp, buf + ofs, len);
-            continue;
+        for (int j = 0; j < q_countof(bspx_lumps); j++) {
+            const xlump_info_t *e = &bspx_lumps[j];
+            if (strcmp(l->name, e->name))
+                continue;
+            if (out[j].filelen) {
+                Com_WPrintf("Duplicate %s lump\n", e->name);
+                break;
+            }
+            if (e->parse_header)
+                extrasize += e->parse_header(bsp, buf + ofs, len);
+            out[j].fileofs = ofs;
+            out[j].filelen = len;
+            break;
         }
     }
+
+    return extrasize;
 }
 
 #endif
@@ -1095,6 +1325,11 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
     bsp->refcount = 1;
     bsp->extended = extended;
 
+#if USE_REF
+    lump_t ext[q_countof(bspx_lumps)] = { 0 };
+    memsize += BSP_ParseExtensionHeader(bsp, ext, buf, maxpos, filelen);
+#endif
+
     Hunk_Begin(&bsp->hunk, memsize);
 
     // calculate the checksum
@@ -1119,7 +1354,12 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
     }
 
 #if USE_REF
-    BSP_ParseExtensions(bsp, buf, maxpos, filelen);
+    // load extension lumps
+    for (i = 0; i < q_countof(bspx_lumps); i++) {
+        if (ext[i].filelen) {
+            bspx_lumps[i].load(bsp, buf + ext[i].fileofs, ext[i].filelen);
+        }
+    }
 #endif
 
     Hunk_End(&bsp->hunk);
