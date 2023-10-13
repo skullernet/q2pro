@@ -199,6 +199,10 @@ extern cvar_t *gl_modulate_entities;
 extern cvar_t *gl_doublelight_entities;
 extern cvar_t *gl_fontshadow;
 extern cvar_t *gl_shaders;
+#if USE_MD5
+extern cvar_t *gl_load_md5models;
+extern cvar_t *gl_use_md5models;
+#endif
 
 // development variables
 extern cvar_t *gl_znear;
@@ -264,15 +268,17 @@ typedef struct {
 typedef char maliasskinname_t[MAX_QPATH];
 
 typedef struct {
-    int             numverts;
-    int             numtris;
-    int             numindices;
-    int             numskins;
-    QGL_INDEX_TYPE  *indices;
-    maliasvert_t    *verts;
-    maliastc_t      *tcoords;
-    maliasskinname_t*skinnames; // for MD5
-    image_t         **skins;
+    int              numverts;
+    int              numtris;
+    int              numindices;
+    int              numskins;
+    QGL_INDEX_TYPE   *indices;
+    maliasvert_t     *verts;
+    maliastc_t       *tcoords;
+#if USE_MD5          
+    maliasskinname_t *skinnames;
+#endif               
+    image_t          **skins;
 } maliasmesh_t;
 
 typedef struct {
@@ -283,7 +289,7 @@ typedef struct {
     image_t         *image;
 } mspriteframe_t;
 
-// #if USE_MD5
+#if USE_MD5
 
 typedef vec4_t quat4_t;
 
@@ -350,7 +356,7 @@ typedef struct
     image_t **skins;
 } md5_model_t;
 
-// #endif
+#endif
 
 typedef struct {
     enum {
@@ -368,10 +374,10 @@ typedef struct {
     int numframes;
 
     maliasmesh_t *meshes; // md2 / md3
-    // #if USE_MD5
-    md5_model_t *skeleton; // md5
-    memhunk_t    skeleton_hunk;  // md5
-    // #endif
+#if USE_MD5
+    md5_model_t *skeleton;      // md5
+    memhunk_t    skeleton_hunk; // md5
+#endif
     union {
         maliasframe_t *frames;
         mspriteframe_t *spriteframes;

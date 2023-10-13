@@ -23,9 +23,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "format/md3.h"
 #endif
 #include "format/sp2.h"
-//#if USE_MD5
+#if USE_MD5
 #include "common/hash_map.h"
-//#endif
+#endif
 
 #define MOD_Malloc(size)    Hunk_TryAlloc(&model->hunk, size)
 
@@ -90,9 +90,13 @@ static void MOD_List_f(void)
         if (!model->type) {
             continue;
         }
+        size_t model_size = model->hunk.mapped;
+#if USE_MD5
+        model_size += model->skeleton_hunk.mapped;
+#endif
         Com_Printf("%c %8zu : %s\n", types[model->type],
-                   model->hunk.mapped + model->skeleton_hunk.mapped, model->name);
-        bytes += model->hunk.mapped + model->skeleton_hunk.mapped;
+                   model_size, model->name);
+        bytes += model_size;
         count++;
     }
     Com_Printf("Total models: %d (out of %d slots)\n", count, r_numModels);
@@ -111,13 +115,16 @@ void MOD_FreeUnused(void)
         if (model->registration_sequence == registration_sequence) {
             // make sure it is paged in
             Com_PageInMemory(model->hunk.base, model->hunk.cursize);
-
+#if USE_MD5
             if (model->skeleton_hunk.base)
                 Com_PageInMemory(model->skeleton_hunk.base, model->skeleton_hunk.cursize);
+#endif
         } else {
             // don't need this model
             Hunk_Free(&model->hunk);
+#if USE_MD5
             Hunk_Free(&model->skeleton_hunk);
+#endif
             memset(model, 0, sizeof(*model));
         }
     }
@@ -134,7 +141,9 @@ void MOD_FreeAll(void)
         }
 
         Hunk_Free(&model->hunk);
+#if USE_MD5
         Hunk_Free(&model->skeleton_hunk);
+#endif
         memset(model, 0, sizeof(*model));
     }
 
@@ -405,7 +414,9 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
     CHECK(mesh->tcoords = MOD_Malloc(numverts * sizeof(mesh->tcoords[0])));
     CHECK(mesh->indices = MOD_Malloc(numindices * sizeof(mesh->indices[0])));
     CHECK(mesh->skins = MOD_Malloc(header.num_skins * sizeof(mesh->skins[0])));
+#if USE_MD5
     CHECK(mesh->skinnames = MOD_Malloc(header.num_skins * sizeof(mesh->skinnames[0])));
+#endif
 
     if (mesh->numtris != header.num_tris) {
         Com_DPrintf("%s has %d bad triangles\n", model->name, header.num_tris - mesh->numtris);
@@ -419,12 +430,17 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
     // load all skins
     src_skin = (char *)rawdata + header.ofs_skins;
     for (i = 0; i < header.num_skins; i++) {
-        if (!Q_memccpy(mesh->skinnames[i], src_skin, 0, sizeof(mesh->skinnames[i]))) {
+#if USE_MD5
+        char *skinname = mesh->skinnames[i];
+#else
+        char skinname[MAX_QPATH];
+#endif
+        if (!Q_memccpy(skinname, src_skin, 0, sizeof(maliasskinname_t))) {
             ret = Q_ERR_STRING_TRUNCATED;
             goto fail;
         }
-        FS_NormalizePath(mesh->skinnames[i]);
-        mesh->skins[i] = IMG_Find(mesh->skinnames[i], IT_SKIN, IF_NONE);
+        FS_NormalizePath(skinname);
+        mesh->skins[i] = IMG_Find(skinname, IT_SKIN, IF_NONE);
         src_skin += MD2_MAX_SKINNAME;
     }
 
@@ -579,15 +595,22 @@ static int MOD_LoadMD3Mesh(model_t *model, maliasmesh_t *mesh,
     CHECK(mesh->tcoords = MOD_Malloc(sizeof(mesh->tcoords[0]) * header.num_verts));
     CHECK(mesh->indices = MOD_Malloc(sizeof(mesh->indices[0]) * header.num_tris * 3));
     CHECK(mesh->skins = MOD_Malloc(sizeof(mesh->skins[0]) * header.num_skins));
+#if USE_MD5
     CHECK(mesh->skinnames = MOD_Malloc(sizeof(mesh->skinnames[0]) * header.num_skins));
+#endif
 
     // load all skins
     src_skin = (dmd3skin_t *)(rawdata + header.ofs_skins);
     for (i = 0; i < header.num_skins; i++) {
-        if (!Q_memccpy(mesh->skinnames[i], src_skin->name, 0, sizeof(mesh->skinnames[i])))
+#if USE_MD5
+        char *skinname = mesh->skinnames[i];
+#else
+        char skinname[MAX_QPATH];
+#endif
+        if (!Q_memccpy(skinname, src_skin->name, 0, sizeof(maliasskinname_t)))
             return Q_ERR_STRING_TRUNCATED;
-        FS_NormalizePath(mesh->skinnames[i]);
-        mesh->skins[i] = IMG_Find(mesh->skinnames[i], IT_SKIN, IF_NONE);
+        FS_NormalizePath(skinname);
+        mesh->skins[i] = IMG_Find(skinname, IT_SKIN, IF_NONE);
         src_skin++;
     }
 
@@ -748,8 +771,7 @@ fail:
 }
 #endif
 
-
-
+#if USE_MD5
 // splits an input filename into file name and path components
 static void COM_SplitPath(const char *path, char *file_name, size_t file_name_len, char *path_name, size_t path_name_len, bool strip_extension)
 {
@@ -1638,6 +1660,7 @@ fail:
     Com_EPrintf("Couldn't load MD5 for %s: %s\n", name,
                 Q_ErrorString(ret));
 }
+#endif
 
 static void MOD_Reference(model_t *model)
 {
@@ -1652,13 +1675,13 @@ static void MOD_Reference(model_t *model)
                 mesh->skins[j]->registration_sequence = registration_sequence;
             }
         }
-        // #if USE_MD5
+#if USE_MD5
         if (model->skeleton) {
             for (size_t j = 0; j < model->skeleton->num_skins; j++) {
                 model->skeleton->skins[j]->registration_sequence = registration_sequence;
             }
         }
-        // #endif
+#endif
         break;
     case MOD_SPRITE:
         for (i = 0; i < model->numframes; i++) {
@@ -1774,13 +1797,13 @@ qhandle_t R_RegisterModel(const char *name)
     }
 
 done:
-    // #if USE_MD5
+#if USE_MD5
     // check for an MD5; this requires the MD2/MD3
     // to have loaded first, since we need it for skin names
-    if (model->type == MOD_ALIAS) {
+    if (gl_load_md5models->integer && model->type == MOD_ALIAS) {
         MOD_LoadMD5(model, normalized);
     }
-    // #endif
+#endif
 
 
     index = (model - r_models) + 1;
