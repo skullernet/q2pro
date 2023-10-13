@@ -499,7 +499,7 @@ static void setup_shadow(void)
     GL_MultMatrix(shadowmatrix, tmp, matrix);
 }
 
-static void draw_shadow(const maliasmesh_t *mesh)
+static inline void draw_shadow(QGL_INDEX_TYPE *indices, size_t num_indices)
 {
     if (shadowmatrix[15] < 0.5f)
         return;
@@ -521,8 +521,8 @@ static void draw_shadow(const maliasmesh_t *mesh)
     qglEnable(GL_POLYGON_OFFSET_FILL);
     qglPolygonOffset(-1.0f, -2.0f);
     GL_Color(0, 0, 0, color[3] * 0.5f);
-    qglDrawElements(GL_TRIANGLES, mesh->numindices, QGL_INDEX_ENUM,
-                    mesh->indices);
+    qglDrawElements(GL_TRIANGLES, num_indices, QGL_INDEX_ENUM,
+                    indices);
     qglDisable(GL_POLYGON_OFFSET_FILL);
 
     // once we have drawn something to stencil buffer, continue to clear it for
@@ -605,7 +605,7 @@ static void draw_alias_mesh(const maliasmesh_t *mesh, tessfunc_t tessfunc)
     }
 
     // FIXME: unlock arrays before changing matrix?
-    draw_shadow(mesh);
+    draw_shadow(mesh->indices, mesh->numindices);
 
     GL_UnlockArrays();
 }
@@ -687,10 +687,8 @@ static void draw_alias_skeleton(const md5_model_t *model, skeltessfunc_t tessfun
         GL_DrawOutlines(model->num_indices, model->indices);
     }
 
-#if 0
     // FIXME: unlock arrays before changing matrix?
-    draw_shadow(mesh);
-#endif
+    draw_shadow(model->indices, model->num_indices);
 
     GL_UnlockArrays();
 }
