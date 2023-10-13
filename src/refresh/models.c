@@ -25,6 +25,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "format/sp2.h"
 #if USE_MD5
 #include "common/hash_map.h"
+#define JSMN_STATIC
+#include "common/jsmn.h"
 #endif
 
 #define MOD_Malloc(size)    Hunk_TryAlloc(&model->hunk, size)
@@ -848,7 +850,7 @@ fail:
 /**
  * Load an MD5 model from file.
  */
-static int MOD_LoadMD5Mesh(model_t *model, const char *file_buffer)
+static int MOD_LoadMD5Mesh(model_t *model, const char *file_buffer, maliasskinname_t **joint_names)
 {
     int ret = 0;
 
@@ -893,8 +895,10 @@ static int MOD_LoadMD5Mesh(model_t *model, const char *file_buffer)
                 goto fail;
             }
 
-			if (mdl->num_joints > 0)
+			if (mdl->num_joints > 0) {
 				CHECK(mdl->base_skeleton = (md5_joint_t *) MD5_Malloc (mdl->num_joints * sizeof (md5_joint_t)));
+                CHECK(*joint_names = (maliasskinname_t *) Z_Malloc (mdl->num_joints * sizeof (maliasskinname_t)));
+            }
         } else if (!strcmp(token, "numMeshes")) {
             MD5_CHECK(MD5_ParseInt32(&file_buffer, &num_meshes));
         } else if (!strcmp(token, "joints")) {
@@ -903,8 +907,9 @@ static int MOD_LoadMD5Mesh(model_t *model, const char *file_buffer)
 			for (int32_t i = 0; i < mdl->num_joints; ++i)
 			{
 				md5_joint_t *joint = &mdl->base_skeleton[i];
+                char *joint_name = ((*joint_names)[i]);
 
-                COM_Parse(&file_buffer); // ignore name
+                Q_strlcpy(joint_name, COM_Parse(&file_buffer), sizeof(maliasskinname_t));
                 MD5_CHECK(MD5_ParseInt32(&file_buffer, &joint->parent));
                 
                 MD5_CHECK(MD5_ParseExpect(&file_buffer, "("));
@@ -920,6 +925,8 @@ static int MOD_LoadMD5Mesh(model_t *model, const char *file_buffer)
                 MD5_CHECK(MD5_ParseExpect(&file_buffer, ")"));
 
 				Quat_ComputeW (joint->orient);
+
+                joint->scale = 1.0f;
 			}
 
             MD5_CHECK(MD5_ParseExpect(&file_buffer, "}"));
@@ -1151,6 +1158,7 @@ static inline void MD5_BuildFrameSkeleton(const joint_info_t *joint_infos,
 
         // parent should already be calculated
 		md5_joint_t *thisJoint = &skeleton_frame[i];
+        thisJoint->scale = 1.0f;
 
 		int parent = thisJoint->parent = joint_infos[i].parent;
 
@@ -1462,7 +1470,158 @@ fail:
 	return ret;
 }
 
-static void MOD_LoadMD5(model_t *model, const char *name)
+// skips the current token entirely, making sure that
+// current_token will point to the actual next logical
+// token to be parsed.
+static void MOD_MD5ScaleSkipToken(jsmntok_t *tokens, jsmntok_t **current_token, size_t num_tokens)
+{
+#if 0
+  JSMN_UNDEFINED = 0,
+  JSMN_OBJECT = 1,
+  JSMN_ARRAY = 2,
+  JSMN_STRING = 3,
+  JSMN_PRIMITIVE = 4
+#endif
+    // just in case...
+    if ((*current_token - tokens) >= num_tokens) {
+        return;
+    }
+
+    switch ((*current_token)->type) {
+    case JSMN_UNDEFINED:
+    case JSMN_STRING:
+    case JSMN_PRIMITIVE:
+        (*current_token)++;
+        break;
+    case JSMN_ARRAY: {
+        size_t num_to_parse = (*current_token)->size;
+        (*current_token)++;
+        for (size_t i = 0; i < num_to_parse; i++) {
+            MOD_MD5ScaleSkipToken(tokens, current_token, num_tokens);
+        }
+        break;
+    }
+    case JSMN_OBJECT: {
+        size_t num_to_parse = (*current_token)->size;
+        (*current_token)++;
+        for (size_t i = 0; i < num_to_parse; i++) {
+            (*current_token)++;
+            MOD_MD5ScaleSkipToken(tokens, current_token, num_tokens);
+        }
+    }
+    }
+}
+
+static void MOD_LoadMD5Scale(model_t *model, const char *name, maliasskinname_t *joint_names)
+{
+    int ret = 0;
+
+    char model_name[MAX_QPATH], mesh_path[MAX_QPATH];
+    COM_SplitPath(name, model_name, sizeof(model_name), mesh_path, sizeof(mesh_path), true);
+
+    char scale_path[MAX_QPATH];
+    Q_strlcpy(scale_path, mesh_path, sizeof(mesh_path));
+    Q_strlcat(scale_path, "md5/", sizeof(mesh_path));
+    Q_strlcat(scale_path, model_name, sizeof(mesh_path));
+    Q_strlcat(scale_path, ".md5scale", sizeof(mesh_path));
+
+    // load md5scale (kex extension)
+    char *buffer = NULL;
+    jsmntok_t *tokens = NULL;
+
+    int32_t buffer_len = FS_LoadFile(scale_path, &buffer);
+
+    if (!buffer)
+        return;
+
+    // calculate the total token size so we can grok all of them.
+    jsmn_parser p;
+        
+    jsmn_init(&p);
+    size_t num_tokens = jsmn_parse(&p, buffer, buffer_len, NULL, 0);
+        
+    CHECK(tokens = Z_Malloc(sizeof(jsmntok_t) * num_tokens));
+
+    // decode all tokens
+    jsmn_init(&p);
+    jsmn_parse(&p, buffer, buffer_len, tokens, num_tokens);
+
+    jsmntok_t *current_token = tokens;
+
+    // check root validity
+    MD5_CHECK(current_token->type == JSMN_OBJECT);
+
+    // move to the first object key
+    current_token++;
+
+    // parse all of the bone roots
+    while (current_token - tokens < num_tokens) {
+        MD5_CHECK(current_token->type == JSMN_STRING);
+
+        int32_t joint_id = -1;
+        char joint_name[MAX_QPATH];
+        Q_strnlcpy(joint_name, buffer + current_token->start, (current_token->end - current_token->start), sizeof(joint_name));
+
+        // move to the object
+        current_token++;
+        MD5_CHECK(current_token->type == JSMN_OBJECT);
+
+        for (size_t i = 0; i < model->skeleton->num_joints; i++) {
+            if (!strcmp(joint_name, joint_names[i])) {
+                joint_id = i;
+                break;
+            }
+        }
+
+        if (joint_id == -1) {
+            Com_WPrintf("%s: joint \"%s\" is not valid\n", scale_path, joint_name);
+            MOD_MD5ScaleSkipToken(tokens, &current_token, num_tokens);
+            continue;
+        }
+
+        // valid joint, parse the contents
+        size_t num_scales_to_parse = current_token->size;
+
+        for (size_t i = 0; i < num_scales_to_parse; i++) {
+            current_token++;
+            MD5_CHECK(current_token->type == JSMN_STRING);
+
+            // parse frame ID
+            char *end_ptr;
+            int32_t frame_id = strtol(buffer + current_token->start, &end_ptr, 10);
+
+            MD5_CHECK(end_ptr != (buffer + current_token->start));
+            MD5_CHECK(frame_id >= 0 && frame_id < model->skeleton->num_frames);
+
+            // parse scale
+            current_token++;
+            MD5_CHECK(current_token->type == JSMN_PRIMITIVE);
+
+            float frame_scale = strtof(buffer + current_token->start, &end_ptr);
+
+            MD5_CHECK(end_ptr != (buffer + current_token->start));
+
+            md5_joint_t *frame_ptr = &model->skeleton->skeleton_frames[(frame_id * model->skeleton->num_joints) + joint_id];
+
+            frame_ptr->scale = frame_scale;
+        }
+
+        // move to the next key
+        current_token++;
+    }
+
+fail:
+    Z_Free(tokens);
+
+    FS_FreeFile(buffer);
+
+    if (ret) {
+        Com_WPrintf("Couldn't load md5scale for %s: %s\n", name,
+                    Q_ErrorString(ret));
+    }
+}
+
+static bool MOD_LoadMD5(model_t *model, const char *name, maliasskinname_t **joint_names)
 {
     char model_name[MAX_QPATH], mesh_path[MAX_QPATH];
     COM_SplitPath(name, model_name, sizeof(model_name), mesh_path, sizeof(mesh_path), true);
@@ -1478,8 +1637,9 @@ static void MOD_LoadMD5(model_t *model, const char *name)
     Q_strlcat(anim_path, ".md5anim", sizeof(mesh_path));
 
     // don't bother if we don't have both
-    if (!FS_FileExists(mesh_path) || !FS_FileExists(anim_path))
-        return;
+    if (!FS_FileExists(mesh_path) || !FS_FileExists(anim_path)) {
+        return false;
+    }
 
     // load md5
     char *buffer = NULL;
@@ -1492,8 +1652,9 @@ static void MOD_LoadMD5(model_t *model, const char *name)
     int ret = 0;
 
     // md5 exists!
-    if (ret = MOD_LoadMD5Mesh(model, buffer))
+    if (ret = MOD_LoadMD5Mesh(model, buffer, joint_names)) {
         goto fail;
+    }
 
     FS_FreeFile(buffer);
             
@@ -1503,8 +1664,9 @@ static void MOD_LoadMD5(model_t *model, const char *name)
     if (!buffer)
         goto fail;
 
-    if (ret = MOD_LoadMD5Anim(model, anim_path, buffer))
+    if (ret = MOD_LoadMD5Anim(model, anim_path, buffer)) {
         goto fail;
+    }
 
     FS_FreeFile(buffer);
 
@@ -1529,7 +1691,7 @@ static void MOD_LoadMD5(model_t *model, const char *name)
 
     MD5_ComputeNormals(model->skeleton->weights, model->skeleton->base_skeleton, model->skeleton->vertices, model->skeleton->num_verts, model->skeleton->indices, model->skeleton->num_indices);
 
-    return;
+    return true;
 
 fail:
     model->skeleton = NULL;
@@ -1540,6 +1702,8 @@ fail:
 
     Com_EPrintf("Couldn't load MD5 for %s: %s\n", name,
                 Q_ErrorString(ret));
+
+    return false;
 }
 #endif
 
@@ -1682,7 +1846,13 @@ done:
     // check for an MD5; this requires the MD2/MD3
     // to have loaded first, since we need it for skin names
     if (gl_load_md5models->integer && model->type == MOD_ALIAS) {
-        MOD_LoadMD5(model, normalized);
+        maliasskinname_t *joint_names = NULL;
+
+        if (MOD_LoadMD5(model, normalized, &joint_names)) {
+            MOD_LoadMD5Scale(model, normalized, joint_names);
+        }
+
+        Z_Free(joint_names);
     }
 #endif
 

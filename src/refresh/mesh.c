@@ -625,8 +625,11 @@ static inline void calculate_vertex_for_skeleton(const md5_vertex_t *vert, const
 		const md5_weight_t *weight = &weights[vert->start + j];
 		const md5_joint_t *joint = &skeleton[weight->joint];
 
+        vec3_t local_pos;
+        VectorScale(weight->pos, joint->scale, local_pos);
+
 		vec3_t wv;
-		Quat_RotatePoint(joint->orient, weight->pos, wv);
+		Quat_RotatePoint(joint->orient, local_pos, wv);
 
         VectorAdd(joint->pos, wv, wv);
         VectorMA(out_position, weight->bias, wv, out_position);
@@ -712,6 +715,7 @@ static inline void tess_skel_interpolate_skeleton (const md5_joint_t *skel_a, co
 {
 	for (int32_t i = 0; i < num_joints; ++i) {
 		out[i].parent = skel_a[i].parent;
+        out[i].scale = skel_a[i].scale;
 
         LerpVector2(skel_a[i].pos, skel_b[i].pos, backlerp, frontlerp, out[i].pos);
 		Quat_SLerp(skel_a[i].orient, skel_b[i].orient, backlerp, frontlerp, out[i].orient);

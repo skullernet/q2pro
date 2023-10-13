@@ -302,6 +302,7 @@ typedef struct
 
 	vec3_t pos;
 	quat_t orient;
+    float  scale;
 } md5_joint_t;
 
 /* Vertex */
