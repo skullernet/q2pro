@@ -947,10 +947,15 @@ static void BSP_ParseDecoupledLM(bsp_t *bsp, const byte *in, size_t filelen)
     mface_t *out;
     uint32_t offset;
 
-    if (filelen % 40)
+    if (filelen % 40) {
+        Com_WPrintf("DECOUPLED_LM lump has odd size\n");
         return;
-    if (bsp->numfaces > filelen / 40)
+    }
+
+    if (bsp->numfaces > filelen / 40) {
+        Com_WPrintf("DECOUPLED_LM lump too short\n");
         return;
+    }
 
     out = bsp->faces;
     for (int i = 0; i < bsp->numfaces; i++, out++) {
@@ -1191,7 +1196,7 @@ static const xlump_info_t bspx_lumps[] = {
     { "LIGHTGRID_OCTREE", BSP_ParseLightgrid, BSP_ParseLightgridHeader },
 };
 
-// returns amount of extra data to allocate
+// returns amount of extra space to allocate
 static size_t BSP_ParseExtensionHeader(bsp_t *bsp, lump_t *out, const byte *buf, uint32_t pos, uint32_t filelen)
 {
     pos = ALIGN(pos, 4);
@@ -1210,21 +1215,34 @@ static size_t BSP_ParseExtensionHeader(bsp_t *bsp, lump_t *out, const byte *buf,
     size_t extrasize = 0;
     xlump_t *l = (xlump_t *)(buf + pos);
     for (int i = 0; i < numlumps; i++, l++) {
-        uint32_t ofs = LittleLong(l->fileofs);
-        uint32_t len = LittleLong(l->filelen);
-        uint32_t end = ofs + len;
-        if (end <= ofs || end > filelen)
-            continue;
         for (int j = 0; j < q_countof(bspx_lumps); j++) {
             const xlump_info_t *e = &bspx_lumps[j];
+            uint32_t ofs, len, end;
+
             if (strcmp(l->name, e->name))
                 continue;
-            if (out[j].filelen) {
-                Com_WPrintf("Duplicate %s lump\n", e->name);
+
+            ofs = LittleLong(l->fileofs);
+            len = LittleLong(l->filelen);
+            if (len == 0) {
+                Com_WPrintf("Ignoring empty %s lump\n", e->name);
                 break;
             }
+
+            end = ofs + len;
+            if (end < ofs || end > filelen) {
+                Com_WPrintf("Ignoring out of bounds %s lump\n", e->name);
+                break;
+            }
+
+            if (out[j].filelen) {
+                Com_WPrintf("Ignoring duplicate %s lump\n", e->name);
+                break;
+            }
+
             if (e->parse_header)
                 extrasize += e->parse_header(bsp, buf + ofs, len);
+
             out[j].fileofs = ofs;
             out[j].filelen = len;
             break;
