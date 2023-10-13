@@ -23,11 +23,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 static cvar_t *loc_file;
 
-#define npos ((size_t) -1)
-
 #define MAX_LOC_KEY         64
 #define MAX_LOC_FORMAT      1024
 #define MAX_LOC_ARGS        8
+
+// must be POT
+#define LOC_HASH_SIZE        256
 
 typedef struct {
     uint8_t     arg_index;
@@ -41,10 +42,11 @@ typedef struct loc_string_s {
     size_t      num_arguments;
     loc_arg_t   arguments[MAX_LOC_ARGS];
 
-    struct loc_string_s    *next;
+    struct loc_string_s    *next, *hash_next;
 } loc_string_t;
 
 static loc_string_t *loc_head;
+static loc_string_t *loc_hash[LOC_HASH_SIZE];
 
 size_t Loc_Localize(const char *base, const char **arguments, size_t num_arguments, char *output, size_t output_length)
 {
@@ -52,11 +54,17 @@ size_t Loc_Localize(const char *base, const char **arguments, size_t num_argumen
     if (*base == '$') {
         base++;
     }
+    
+    // find loc via hash
+    uint32_t hash = Com_HashString(base, LOC_HASH_SIZE) & (LOC_HASH_SIZE - 1);
 
-    // find loc
-    const loc_string_t *str = loc_head;
+    if (!loc_hash[hash]) {
+        return Q_strlcpy(output, base, output_length);
+    }
+    
+    const loc_string_t *str = loc_hash[hash];
 
-    for (; str != NULL; str = str->next) {
+    for (; str != NULL; str = str->hash_next) {
         if (!strcmp(str->key, base)) {
             break;
         }
@@ -87,7 +95,7 @@ size_t Loc_Localize(const char *base, const char **arguments, size_t num_argumen
     }
 
     // fill prefix if we have one
-    loc_arg_t *arg = &str->arguments[0];
+    const loc_arg_t *arg = &str->arguments[0];
 
     Q_strnlcpy(output, str->format, arg->start, output_length);
 
@@ -98,7 +106,7 @@ size_t Loc_Localize(const char *base, const char **arguments, size_t num_argumen
         Loc_Localize(arguments[arg->arg_index], NULL, 0, localized_arg, sizeof(localized_arg));
         Q_strlcat(output, localized_arg, output_length);
 
-        loc_arg_t *next_arg = &str->arguments[i + 1];
+        const loc_arg_t *next_arg = &str->arguments[i + 1];
 
         Q_strnlcat(output, str->format + arg->end, next_arg->start - arg->end, output_length);
 
@@ -109,48 +117,6 @@ size_t Loc_Localize(const char *base, const char **arguments, size_t num_argumen
     Q_strlcat(output, localized_arg, output_length);
 
     return Q_strlcat(output, str->format + arg->end, output_length);
-}
-
-static size_t find_start_of_utf8_codepoint(const char *str, size_t str_length, size_t pos)
-{
-    if (pos >= str_length) {
-        return npos;
-    }
-
-    for (ptrdiff_t i = pos; i >= 0; i--) {
-        char ch = str[i];
-
-        if ((ch & 0x80) == 0) {
-            return i;
-        } else if ((ch & 0xC0) == 0x80) {
-            continue;
-        } else {
-            return i;
-        }
-    }
-
-    return npos;
-}
-
-static size_t find_end_of_utf8_codepoint(const char *str, size_t str_length, size_t pos)
-{
-    if (pos >= str_length) {
-        return npos;
-    }
-
-    for (size_t i = pos; i < str_length; i++) {
-        char ch = str[i];
-
-        if ((ch & 0x80) == 0) {
-            return i;
-        } else if((ch & 0xC0) == 0x80) {
-            continue;
-        } else {
-            return i;
-        }
-    }
-
-    return str_length;
 }
 
 static int loccmpfnc(const void *_a, const void *_b)
@@ -173,6 +139,7 @@ static void Loc_Unload()
     }
 
     loc_head = NULL;
+    memset(loc_hash, 0, sizeof(loc_hash));
 }
 
 /*
@@ -198,186 +165,51 @@ void Loc_ReloadFile()
 
     loc_string_t **tail = &loc_head;
 
+    const char *parse_buf = buffer;
+
     while (true) {
-        // find the end of the current line; might be EOF
-        size_t line_end = line_start;
+        loc_string_t loc; 
 
-        while (true) {
-            if (!buffer[line_end] || buffer[line_end] == '\n') {
-                break;
-            }
-            
-            line_end = find_end_of_utf8_codepoint(buffer, len, line_end);
+        char *key = COM_ParseEx(&parse_buf, 0, loc.key, sizeof(loc.key));
 
-            if (line_end == npos) {
-                break;
-            }
-
-            line_end++;
-        }
-
-        if (line_end == npos) {
+        if (!*key) {
             break;
         }
 
-        char *line_ptr = buffer + line_start;
+        const char *equals = COM_Parse(&parse_buf);
+        bool has_platform_spec = false;
 
-        // cull whitespace from the end
-        {
-            size_t ws = line_end;
+        // check for console specs
+        if (!*equals) {
+            break;
+        } else if (*equals == '<') {
+            has_platform_spec = true;
 
-            while (true) {
-                if (ws <= line_start || ws == npos || !Q_isspace(buffer[ws])) {
-                    break;
-                }
-                
-                ws = find_start_of_utf8_codepoint(buffer, len, ws);
-
-                if (ws <= line_start || ws == npos) {
-                    break;
-                }
-
-                ws--;
+            // skip these for now
+            while (*equals && equals[strlen(equals) - 1] != '>') {
+                equals = COM_Parse(&parse_buf);
             }
 
-
-            // we are an entirely-whitespace line most likely
-            if (ws == npos || ws == line_start) {
-                goto skip_line;
-            }
-
-            for (ws++; ws <= line_end; ws++) {
-                buffer[ws] = '\0';
-            }
+            equals = COM_Parse(&parse_buf);
         }
 
-        // parse the key, luckily it's guaranteed to be ASCII
-        char *parse_ptr = line_ptr;
-
-        const char *token = COM_Parse(&parse_ptr);
-
-        // bad token?
-        if (!*token) {
-            goto skip_line;
+        // syntax error
+        if (strcmp(equals, "=")) {
+            break;
         }
 
-        // TODO skip these for now
-        if (parse_ptr[0] && parse_ptr[1] == '<') {
-            goto skip_line;
-        }
+        char *value = COM_ParseEx(&parse_buf, PARSE_FLAG_ESCAPE, loc.format, sizeof(loc.format));
 
-        loc_string_t loc; 
-
-        Q_strlcpy(loc.key, token, sizeof(loc.key));
-        loc.format[0] = '\0';
-
-        if (strncmp(parse_ptr, " = \"", 4)) {
-            goto skip_line;
-        }
-
-        parse_ptr += 4;
-
-        size_t quote_end = (parse_ptr - buffer);
-
-        // find the closing quote
-        while (true) {
-            if (quote_end == npos || !buffer[quote_end] || quote_end >= len) {
-                break;
-            }
-            
-            quote_end = find_end_of_utf8_codepoint(buffer, len, quote_end);
-
-            if (quote_end == npos) {
-                Com_SetLastError("EOF before quote end found");
-                goto skip_line;
-            }
-
-            quote_end++;
-
-            // skip escape sequences
-            if (buffer[quote_end] == '\\') {
-                quote_end = find_end_of_utf8_codepoint(buffer, len, quote_end);
-
-                if (quote_end == npos) {
-                    Com_SetLastError("EOF before quote end found");
-                    goto skip_line;
-                }
-
-                quote_end++;
-            } else if (buffer[quote_end] == '\"') {
-                break;
-            }
-        }
-
-        if (quote_end >= len || quote_end == npos) {
-            Com_SetLastError("EOF before quote end found");
-            goto skip_line;
-        }
-
-        buffer[quote_end] = '\0';
-
-        size_t parse_len = &buffer[quote_end] - line_ptr;
-
-        // handle escape sequences
-        size_t fmt_offset = 0;
-
-        while (true) {
-
-            if (!parse_ptr[fmt_offset]) {
-                break;
-            }
-
-            if (parse_ptr[fmt_offset] == '\\') {
-
-                fmt_offset = find_end_of_utf8_codepoint(parse_ptr, parse_len, fmt_offset);
-
-                if (fmt_offset == npos) {
-                    break;
-                }
-
-                fmt_offset++;
-                
-                bool eaten = false;
-
-                if (parse_ptr[fmt_offset] == 'n') {
-                    Q_strlcat(loc.format, "\n", sizeof(loc.format));
-                    eaten = true;
-                }
-
-                if (eaten) {
-                    
-                    fmt_offset = find_end_of_utf8_codepoint(parse_ptr, parse_len, fmt_offset);
-                    
-                    if (fmt_offset == npos) {
-                        break;
-                    }
-
-                    fmt_offset++;
-                    continue;
-                }
-            }
-
-            // copy entire codepoint
-            size_t next_offset = find_end_of_utf8_codepoint(parse_ptr, parse_len, fmt_offset);
-
-            if (next_offset == npos) {
-                break;
-            }
-
-            Q_strnlcat(loc.format, parse_ptr + fmt_offset, (next_offset - fmt_offset) + 1, sizeof(loc.format));
-
-            fmt_offset = next_offset + 1;
+        // skip platform specifiers
+        if (has_platform_spec) {
+            continue;
         }
 
         // if -1, a positional argument was encountered
         int32_t arg_index = 0;
 
         loc.num_arguments = 0;
-        loc.next = NULL;
-
-        parse_ptr = loc.format;
-
-        size_t arg_offset = 0;
+        loc.next = loc.hash_next = NULL;
 
         // parse out arguments
         size_t arg_rover = 0;
@@ -390,7 +222,7 @@ void Loc_ReloadFile()
             if (loc.format[arg_rover] == '{') {
                 size_t arg_start = arg_rover;
 
-                arg_rover = find_end_of_utf8_codepoint(loc.format, sizeof(loc.format), arg_rover) + 1;
+                arg_rover++;
 
                 if (loc.format[arg_rover] && loc.format[arg_rover] == '{') {
                     continue; // escape sequence
@@ -404,7 +236,7 @@ void Loc_ReloadFile()
 
                 loc_arg_t *arg = &loc.arguments[loc.num_arguments++];
 
-                arg->start = arg_start - arg_offset;
+                arg->start = arg_start;
 
                 // check if we have a numerical value
                 char *end_ptr;
@@ -435,13 +267,8 @@ void Loc_ReloadFile()
                 arg_rover = (end_ptr - loc.format) - 1;
 
                 while (true) {
-                    if (arg_rover >= sizeof(loc.format) || !loc.format[arg_rover]) {
-                        break;
-                    }
-                
-                    arg_rover = find_end_of_utf8_codepoint(loc.format, sizeof(loc.format), arg_rover);
 
-                    if (arg_rover == npos) {
+                    if (arg_rover >= sizeof(loc.format) || !loc.format[arg_rover]) {
                         Com_SetLastError("EOF before end of argument found");
                         goto line_error;
                     }
@@ -454,22 +281,16 @@ void Loc_ReloadFile()
 
                     size_t arg_end = arg_rover;
 
-                    arg_rover = find_end_of_utf8_codepoint(loc.format, sizeof(loc.format), arg_rover) + 1;
+                    arg_rover++;
 
                     if (loc.format[arg_rover] && loc.format[arg_rover] == '}') {
                         continue; // escape sequence
                     }
 
                     // we found it
-                    arg->end = (arg_end - arg_offset) + 1;
+                    arg->end = arg_end + 1;
                     break;
                 }
-            }
-
-            arg_rover = find_end_of_utf8_codepoint(loc.format, sizeof(loc.format), arg_rover);
-
-            if (arg_rover == npos) {
-                break;
             }
 
             arg_rover++;
@@ -483,17 +304,23 @@ void Loc_ReloadFile()
         // link us in and copy off
         *tail = Z_Malloc(sizeof(loc_string_t));
         memcpy(*tail, &loc, sizeof(loc));
+
+        // hash
+        uint32_t hash = Com_HashString(loc.key, LOC_HASH_SIZE) & (LOC_HASH_SIZE - 1);
+        if (!loc_hash[hash]) {
+            loc_hash[hash] = *tail;
+        } else {
+            (*tail)->hash_next = loc_hash[hash];
+            loc_hash[hash] = *tail;
+        }
+
         tail = &((*tail)->next);
 
         num_locs++;
-        goto skip_line;
+        continue;
 
 line_error:
-        Com_WPrintf("[%s:%i]: %s\n", loc_file->string, line_num, Com_GetLastError());
-
-skip_line:
-        line_start = line_end + 1;
-        line_num++;
+        Com_WPrintf("%s (%s): %s\n", loc_file->string, key, Com_GetLastError());
     }
 
 	FS_FreeFile(buffer);

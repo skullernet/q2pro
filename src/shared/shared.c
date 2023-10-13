@@ -139,15 +139,15 @@ void Quat_ComputeW (quat_t q)
     }
 }
 
-#define QUAT_EPSILON 0.9999f
+#define QUAT_EPSILON 0.000001f
 
 void Quat_SLerp (const quat_t qa, const quat_t qb, float backlerp, float frontlerp, quat_t out)
 {
 	if (backlerp <= 0.0) {
-        Vector4Copy(qa, out);
+        Vector4Copy(qb, out);
 		return;
     } else if (backlerp >= 1.0) {
-        Vector4Copy(qb, out);
+        Vector4Copy(qa, out);
 		return;
 	}
 
@@ -171,13 +171,10 @@ void Quat_SLerp (const quat_t qa, const quat_t qb, float backlerp, float frontle
 		cosOmega = -cosOmega;
 	}
 
-    // we should have two unit quaternions, so dot should be <= 1.0
-	Q_assert(cosOmega < (1.0f + (1.0f - QUAT_EPSILON)));
-
 	// compute interpolation fraction
 	float k0, k1;
 
-	if (cosOmega > QUAT_EPSILON) {
+	if (1.0f - cosOmega <= QUAT_EPSILON) {
         // very close - just use linear interpolation
 		k0 = backlerp;
 		k1 = frontlerp;
@@ -199,7 +196,7 @@ void Quat_SLerp (const quat_t qa, const quat_t qb, float backlerp, float frontle
 	out[Z] = (k0 * qa[2]) + (k1 * q1z);
 }
 
-void Quat_Normalize(quat_t q)
+float Quat_Normalize(quat_t q)
 {
 	float length = sqrtf(Dot4Product(q, q));
 
@@ -555,17 +552,23 @@ Parse a token out of a string.
 Handles C and C++ comments.
 ==============
 */
-char *COM_Parse(const char **data_p)
+char *COM_ParseEx(const char **data_p, int32_t flags, char *output, size_t output_length)
 {
     int         c;
     int         len;
     const char  *data;
-    char        *s = com_token[com_tokidx];
+    
+    if (!output) {
+        output = com_token[com_tokidx];
+        output_length = sizeof(com_token[0]);
+        com_tokidx = (com_tokidx + 1) & 3;
+    }
 
-    com_tokidx = (com_tokidx + 1) & 3;
+    Q_assert(output_length);
+        
+    char        *s = output;
 
     data = *data_p;
-    len = 0;
     s[0] = 0;
 
     if (!data) {
@@ -604,6 +607,8 @@ skipwhite:
         goto skipwhite;
     }
 
+    len = 0;
+
 // handle quoted strings specially
     if (c == '\"') {
         data++;
@@ -613,7 +618,19 @@ skipwhite:
                 goto finish;
             }
 
-            if (len < MAX_TOKEN_CHARS - 1) {
+            if (c == '\\' && (flags & PARSE_FLAG_ESCAPE)) {
+                c = *data++;
+
+                if (c == 'n') {
+                    c = '\n';
+                } else if (c == 't') {
+                    c = '\t';
+                } else if (c == '\0') {
+                    goto finish;
+                }
+            }
+
+            if (len < output_length - 1) {
                 s[len++] = c;
             }
         }
@@ -621,7 +638,22 @@ skipwhite:
 
 // parse a regular word
     do {
-        if (len < MAX_TOKEN_CHARS - 1) {
+
+        if (c == '\\' && (flags & PARSE_FLAG_ESCAPE)) {
+            c = *data++;
+
+            if (c == 'n') {
+                c = '\n';
+            } else if (c == 't') {
+                c = '\t';
+            } else if (c == 'r') {
+                c = '\r';
+            } else if (c == '\0') {
+                break;
+            }
+        }
+
+        if (len < output_length - 1) {
             s[len++] = c;
         }
         data++;
