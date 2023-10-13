@@ -611,10 +611,155 @@ static void draw_alias_mesh(const maliasmesh_t *mesh, tessfunc_t tessfunc)
 }
 
 #if USE_MD5
-void Quat_rotatePoint (const quat4_t q, const vec3_t in, vec3_t out);
-void Quat_invert(const quat4_t in, quat4_t out);
-float Quat_dotProduct (const quat4_t qa, const quat4_t qb);
-void Quat_slerp (const quat4_t qa, const quat4_t qb, float backlerp, float frontlerp, quat4_t out);
+// for the given vertex, set of weights & skeleton, calculate
+// the output vertex (and optionally normal).
+static inline void calculate_vertex_for_skeleton(const md5_vertex_t *vert, const md5_weight_t *weights, const md5_joint_t *skeleton, vec3_t out_position, vec3_t out_normal)
+{        
+    VectorClear(out_position);
+
+    if (out_normal) {
+        VectorClear(out_normal);
+    }
+
+	for (int32_t j = 0; j < vert->count; ++j) {
+		const md5_weight_t *weight = &weights[vert->start + j];
+		const md5_joint_t *joint = &skeleton[weight->joint];
+
+		vec3_t wv;
+		Quat_RotatePoint(joint->orient, weight->pos, wv);
+
+        VectorAdd(joint->pos, wv, wv);
+        VectorMA(out_position, weight->bias, wv, out_position);
+            
+        if (out_normal) {
+            quat_t orient_inv;
+            Quat_Invert(joint->orient, orient_inv);
+            Quat_RotatePoint(orient_inv, vert->normal, wv);
+            VectorScale(wv, weight->bias, wv);
+            VectorAdd(out_normal, wv, out_normal);
+        }
+	}
+}
+
+// skel preparation functions - shared with the specific tess funcs
+
+static void tess_plain_skel_prepare (const md5_model_t *mesh, const md5_joint_t *skeleton)
+{
+	for (int32_t i = 0; i < mesh->num_verts; ++i) {
+        vec3_t position;
+        calculate_vertex_for_skeleton(&mesh->vertices[i], mesh->weights, skeleton, position, NULL);
+
+		tess.vertices[(i * 4) + 0] = position[0];
+		tess.vertices[(i * 4) + 1] = position[1];
+		tess.vertices[(i * 4) + 2] = position[2];
+	}
+}
+
+static void tess_shade_skel_prepare(const md5_model_t *mesh, const md5_joint_t *skeleton)
+{
+	for (int32_t i = 0; i < mesh->num_verts; ++i) {
+        vec3_t position, normal;
+        calculate_vertex_for_skeleton(&mesh->vertices[i], mesh->weights, skeleton, position, normal);
+
+		tess.vertices[(i * VERTEX_SIZE) + 0] = position[0];
+		tess.vertices[(i * VERTEX_SIZE) + 1] = position[1];
+		tess.vertices[(i * VERTEX_SIZE) + 2] = position[2];
+
+        vec_t d = shadedot(normal);
+        tess.vertices[(i * VERTEX_SIZE) + 4] = shadelight[0] * d;
+        tess.vertices[(i * VERTEX_SIZE) + 5] = shadelight[1] * d;
+        tess.vertices[(i * VERTEX_SIZE) + 6] = shadelight[2] * d;
+        tess.vertices[(i * VERTEX_SIZE) + 7] = shadelight[3];
+	}
+}
+
+static void tess_shell_skel_prepare(const md5_model_t *mesh, const md5_joint_t *skeleton)
+{
+	for (int32_t i = 0; i < mesh->num_verts; ++i) {
+        vec3_t position, normal;
+        calculate_vertex_for_skeleton(&mesh->vertices[i], mesh->weights, skeleton, position, normal);
+
+        VectorMA(position, shellscale, normal, &tess.vertices[(i * 4) + 0]);
+	}
+}
+
+// static skel functions
+
+static void tess_static_plain_skel(const md5_model_t *mesh)
+{
+    const md5_joint_t *skeleton = &mesh->skeleton_frames[(oldframenum % mesh->num_frames) * mesh->num_joints];
+
+    tess_plain_skel_prepare(mesh, skeleton);
+}
+
+static void tess_static_shade_skel(const md5_model_t *mesh)
+{
+    const md5_joint_t *skeleton = &mesh->skeleton_frames[(oldframenum % mesh->num_frames) * mesh->num_joints];
+
+    tess_shade_skel_prepare(mesh, skeleton);
+}
+
+static void tess_static_shell_skel(const md5_model_t *mesh)
+{
+    const md5_joint_t *skeleton = &mesh->skeleton_frames[(oldframenum % mesh->num_frames) * mesh->num_joints];
+
+    tess_shell_skel_prepare(mesh, skeleton);
+}
+
+// interpolate skel_a and skel_b into the output skeleton
+static inline void tess_skel_interpolate_skeleton (const md5_joint_t *skel_a, const md5_joint_t *skel_b,
+	int num_joints, md5_joint_t *out)
+{
+	for (int32_t i = 0; i < num_joints; ++i) {
+		out[i].parent = skel_a[i].parent;
+
+        LerpVector2(skel_a[i].pos, skel_b[i].pos, backlerp, frontlerp, out[i].pos);
+		Quat_SLerp(skel_a[i].orient, skel_b[i].orient, backlerp, frontlerp, out[i].orient);
+	}
+}
+
+static void tess_lerped_plain_skel(const md5_model_t *mesh)
+{
+    int32_t frames[] = {
+        oldframenum % mesh->num_frames,
+        newframenum % mesh->num_frames
+    };
+
+	tess_skel_interpolate_skeleton(&mesh->skeleton_frames[frames[0] * mesh->num_joints],
+		&mesh->skeleton_frames[frames[1] * mesh->num_joints],
+		mesh->num_joints, temp_skeleton);
+
+    tess_plain_skel_prepare(mesh, temp_skeleton);
+}
+
+static void tess_lerped_shade_skel(const md5_model_t *mesh)
+{
+    int32_t frames[] = {
+        oldframenum % mesh->num_frames,
+        newframenum % mesh->num_frames
+    };
+
+	tess_skel_interpolate_skeleton(&mesh->skeleton_frames[frames[0] * mesh->num_joints],
+		&mesh->skeleton_frames[frames[1] * mesh->num_joints],
+		mesh->num_joints, temp_skeleton);
+
+    tess_shade_skel_prepare(mesh, temp_skeleton);
+}
+
+static void tess_lerped_shell_skel(const md5_model_t *mesh)
+{
+    int32_t frames[] = {
+        oldframenum % mesh->num_frames,
+        newframenum % mesh->num_frames
+    };
+
+    /* Interpolate skeletons between two frames */
+	tess_skel_interpolate_skeleton(&mesh->skeleton_frames[frames[0] * mesh->num_joints],
+		&mesh->skeleton_frames[frames[1] * mesh->num_joints],
+		mesh->num_joints, temp_skeleton);
+
+    tess_shell_skel_prepare(mesh, temp_skeleton);
+}
 
 static void draw_alias_skeleton(const md5_model_t *model, skeltessfunc_t tessfunc)
 {
@@ -667,218 +812,6 @@ static void draw_alias_skeleton(const md5_model_t *model, skeltessfunc_t tessfun
     draw_shadow(model->indices, model->num_indices);
 
     GL_UnlockArrays();
-}
-
-/**
- * Smoothly interpolate two skeletons
- */
-void InterpolateSkeletons (const md5_joint_t *skelA,
-	const md5_joint_t *skelB,
-	int num_joints,
-	md5_joint_t *out)
-{
-	int i;
-
-	for (i = 0; i < num_joints; ++i)
-	{
-	  /* Copy parent index */
-		out[i].parent = skelA[i].parent;
-
-		/* Linear interpolation for position */
-        LerpVector2(skelA[i].pos, skelB[i].pos,
-                    backlerp, frontlerp, out[i].pos);
-
-		/* Spherical linear interpolation for orientation */
-		Quat_slerp (skelA[i].orient, skelB[i].orient,
-            backlerp, frontlerp, out[i].orient);
-	}
-}
-
-/**
- * Prepare a mesh for drawing.  Compute mesh's final vertex positions
- * given a skeleton.  Put the vertices in vertex arrays.
- */
-static void PrepareMesh_Plain (const md5_model_t *mesh, const md5_joint_t *skeleton)
-{
-	int i, j;
-
-  /* Setup vertices */
-	for (i = 0; i < mesh->num_verts; ++i)
-	{
-		vec3_t finalVertex = { 0.0f, 0.0f, 0.0f };
-
-		/* Calculate final vertex to draw with weights */
-		for (j = 0; j < mesh->vertices[i].count; ++j)
-		{
-			const md5_weight_t *weight = &mesh->weights[mesh->vertices[i].start + j];
-			const md5_joint_t *joint = &skeleton[weight->joint];
-
-			  /* Calculate transformed vertex for this weight */
-			vec3_t wv;
-			Quat_rotatePoint (joint->orient, weight->pos, wv);
-
-			/* The sum of all weight->bias should be 1.0 */
-            VectorAdd(joint->pos, wv, wv);
-            VectorMA(finalVertex, weight->bias, wv, finalVertex);
-		}
-
-		tess.vertices[(i * 4) + 0] = finalVertex[0];
-		tess.vertices[(i * 4) + 1] = finalVertex[1];
-		tess.vertices[(i * 4) + 2] = finalVertex[2];
-	}
-}
-
-static void tess_static_plain_skel(const md5_model_t *mesh)
-{
-    const md5_joint_t *skeleton = &mesh->skeleton_frames[(oldframenum % mesh->num_frames) * mesh->num_joints];
-
-    PrepareMesh_Plain(mesh, skeleton);
-}
-
-static void tess_lerped_plain_skel(const md5_model_t *mesh)
-{
-    int32_t frames[] = {
-        oldframenum % mesh->num_frames,
-        newframenum % mesh->num_frames
-    };
-
-	  /* Interpolate skeletons between two frames */
-	InterpolateSkeletons (&mesh->skeleton_frames[frames[0]* mesh->num_joints],
-		&mesh->skeleton_frames[frames[1]* mesh->num_joints],
-		mesh->num_joints,
-		temp_skeleton);
-
-    PrepareMesh_Plain(mesh, temp_skeleton);
-}
-
-/**
- * Prepare a mesh for drawing.  Compute mesh's final vertex positions
- * given a skeleton.  Put the vertices in vertex arrays.
- */
-static void PrepareMesh_Shade (const md5_model_t *mesh, const md5_joint_t *skeleton)
-{
-	int i, j;
-
-  /* Setup vertices */
-	for (i = 0; i < mesh->num_verts; ++i)
-	{
-        vec3_t finalVertex = { 0 }, finalNormal = { 0 };
-
-		/* Calculate final vertex to draw with weights */
-		for (j = 0; j < mesh->vertices[i].count; ++j)
-		{
-			const md5_weight_t *weight = &mesh->weights[mesh->vertices[i].start + j];
-			const md5_joint_t *joint = &skeleton[weight->joint];
-
-			/* Calculate transformed vertex for this weight */
-			vec3_t wv;
-			Quat_rotatePoint (joint->orient, weight->pos, wv);
-
-			/* The sum of all weight->bias should be 1.0 */
-            VectorAdd(joint->pos, wv, wv);
-            VectorMA(finalVertex, weight->bias, wv, finalVertex);
-            
-            quat4_t orient_inv;
-            Quat_invert(joint->orient, orient_inv);
-            Quat_rotatePoint (orient_inv, mesh->vertices[i].normal, wv);
-            VectorScale(wv, weight->bias, wv);
-            VectorAdd(finalNormal, wv, finalNormal);
-		}
-
-        vec_t d = shadedot(finalNormal);
-
-		tess.vertices[(i * VERTEX_SIZE) + 0] = finalVertex[0];
-		tess.vertices[(i * VERTEX_SIZE) + 1] = finalVertex[1];
-		tess.vertices[(i * VERTEX_SIZE) + 2] = finalVertex[2];
-        tess.vertices[(i * VERTEX_SIZE) + 4] = shadelight[0] * d;
-        tess.vertices[(i * VERTEX_SIZE) + 5] = shadelight[1] * d;
-        tess.vertices[(i * VERTEX_SIZE) + 6] = shadelight[2] * d;
-        tess.vertices[(i * VERTEX_SIZE) + 7] = shadelight[3];
-	}
-}
-
-static void tess_static_shade_skel(const md5_model_t *mesh)
-{
-    const md5_joint_t *skeleton = &mesh->skeleton_frames[(oldframenum % mesh->num_frames) * mesh->num_joints];
-
-    PrepareMesh_Shade(mesh, skeleton);
-}
-
-static void tess_lerped_shade_skel(const md5_model_t *mesh)
-{
-    int32_t frames[] = {
-        oldframenum % mesh->num_frames,
-        newframenum % mesh->num_frames
-    };
-
-	  /* Interpolate skeletons between two frames */
-	InterpolateSkeletons (&mesh->skeleton_frames[frames[0] * mesh->num_joints],
-		&mesh->skeleton_frames[frames[1] * mesh->num_joints],
-		mesh->num_joints,
-		temp_skeleton);
-
-    PrepareMesh_Shade(mesh, temp_skeleton);
-}
-
-/**
- * Prepare a mesh for drawing.  Compute mesh's final vertex positions
- * given a skeleton.  Put the vertices in vertex arrays.
- */
-static void PrepareMesh_Shell (const md5_model_t *mesh, const md5_joint_t *skeleton)
-{
-	int i, j;
-
-  /* Setup vertices */
-	for (i = 0; i < mesh->num_verts; ++i)
-	{
-        vec3_t finalVertex = { 0 }, finalNormal = { 0 };
-
-		/* Calculate final vertex to draw with weights */
-		for (j = 0; j < mesh->vertices[i].count; ++j)
-		{
-			const md5_weight_t *weight = &mesh->weights[mesh->vertices[i].start + j];
-			const md5_joint_t *joint = &skeleton[weight->joint];
-
-			/* Calculate transformed vertex for this weight */
-			vec3_t wv;
-			Quat_rotatePoint (joint->orient, weight->pos, wv);
-
-			/* The sum of all weight->bias should be 1.0 */
-            VectorAdd(joint->pos, wv, wv);
-            VectorMA(finalVertex, weight->bias, wv, finalVertex);
-
-            quat4_t orient_inv;
-            Quat_invert(joint->orient, orient_inv);
-            Quat_rotatePoint (orient_inv, mesh->vertices[i].normal, wv);
-            VectorScale(wv, weight->bias, wv);
-            VectorAdd(finalNormal, wv, finalNormal);
-		}
-
-        VectorMA(finalVertex, shellscale, finalNormal, &tess.vertices[(i * 4) + 0]);
-	}
-}
-
-static void tess_static_shell_skel(const md5_model_t *mesh)
-{
-    const md5_joint_t *skeleton = &mesh->skeleton_frames[(oldframenum % mesh->num_frames) * mesh->num_joints];
-
-    PrepareMesh_Shell(mesh, skeleton);
-}
-
-static void tess_lerped_shell_skel(const md5_model_t *mesh)
-{
-    int32_t frames[] = {
-        oldframenum % mesh->num_frames,
-        newframenum % mesh->num_frames
-    };
-
-    /* Interpolate skeletons between two frames */
-	InterpolateSkeletons (&mesh->skeleton_frames[frames[0] * mesh->num_joints],
-		&mesh->skeleton_frames[frames[1] * mesh->num_joints],
-		mesh->num_joints,
-		temp_skeleton);
-
-    PrepareMesh_Shell(mesh, temp_skeleton);
 }
 #endif
 

@@ -789,208 +789,6 @@ static void COM_SplitPath(const char *path, char *file_name, size_t file_name_le
     Q_strnlcpy(path_name, path, name_ptr - path, path_name_len);
 }
 
-/* Joint info */
-struct joint_info_t
-{
-	char name[64];
-	int parent;
-	int flags;
-	int startIndex;
-};
-
-/* Base frame joint */
-struct baseframe_joint_t
-{
-	vec3_t pos;
-	quat4_t orient;
-};
-
-/**
- * More quaternion operations for skeletal animation.
- */
-
-#define X 0
-#define Y 1
-#define Z 2
-#define W 3
-
-float
-Quat_dotProduct (const quat4_t qa, const quat4_t qb)
-{
-	return ((qa[X] * qb[X]) + (qa[Y] * qb[Y]) + (qa[Z] * qb[Z]) + (qa[W] * qb[W]));
-}
-
-void
-Quat_slerp (const quat4_t qa, const quat4_t qb, float backlerp, float frontlerp, quat4_t out)
-{
-  /* Check for out-of range parameter and return edge points if so */
-	if (backlerp <= 0.0)
-	{
-		memcpy (out, qa, sizeof(quat4_t));
-		return;
-	}
-
-	if (backlerp >= 1.0)
-	{
-		memcpy (out, qb, sizeof (quat4_t));
-		return;
-	}
-
-  /* Compute "cosine of angle between quaternions" using dot product */
-	float cosOmega = Quat_dotProduct (qa, qb);
-
-	/* If negative dot, use -q1.  Two quaternions q and -q
-	   represent the same rotation, but may produce
-	   different slerp.  We chose q or -q to rotate using
-	   the acute angle. */
-	float q1w = qb[W];
-	float q1x = qb[X];
-	float q1y = qb[Y];
-	float q1z = qb[Z];
-
-	if (cosOmega < 0.0f)
-	{
-		q1w = -q1w;
-		q1x = -q1x;
-		q1y = -q1y;
-		q1z = -q1z;
-		cosOmega = -cosOmega;
-	}
-
-  /* We should have two unit quaternions, so dot should be <= 1.0 */
-	Q_assert (cosOmega < 1.1f);
-
-	/* Compute interpolation fraction, checking for quaternions
-	   almost exactly the same */
-	float k0, k1;
-
-	if (cosOmega > 0.9999f)
-	{
-	  /* Very close - just use linear interpolation,
-	 which will protect againt a divide by zero */
-
-		k0 = backlerp;
-		k1 = frontlerp;
-	}
-	else
-	{
-	  /* Compute the sin of the angle using the
-	 trig identity sin^2(omega) + cos^2(omega) = 1 */
-		float sinOmega = sqrt (1.0f - (cosOmega * cosOmega));
-
-		/* Compute the angle from its sin and cosine */
-		float omega = atan2 (sinOmega, cosOmega);
-
-		/* Compute inverse of denominator, so we only have
-	   to divide once */
-		float oneOverSinOmega = 1.0f / sinOmega;
-
-		/* Compute interpolation parameters */
-		k0 = sin (backlerp * omega) * oneOverSinOmega;
-		k1 = sin (frontlerp * omega) * oneOverSinOmega;
-	}
-
-  /* Interpolate and return new quaternion */
-	out[W] = (k0 * qa[3]) + (k1 * q1w);
-	out[X] = (k0 * qa[0]) + (k1 * q1x);
-	out[Y] = (k0 * qa[1]) + (k1 * q1y);
-	out[Z] = (k0 * qa[2]) + (k1 * q1z);
-}
-
-/**
- * Basic quaternion operations.
- */
-
-void
-Quat_computeW (quat4_t q)
-{
-	float t = 1.0f - (q[X] * q[X]) - (q[Y] * q[Y]) - (q[Z] * q[Z]);
-
-	if (t < 0.0f)
-		q[W] = 0.0f;
-	else
-		q[W] = -sqrt (t);
-}
-
-void
-Quat_normalize (quat4_t q)
-{
-  /* compute magnitude of the quaternion */
-	float mag = sqrt ((q[X] * q[X]) + (q[Y] * q[Y])
-		+ (q[Z] * q[Z]) + (q[W] * q[W]));
-
-/* check for bogus length, to protect against divide by zero */
-	if (mag > 0.0f)
-	{
-	  /* normalize it */
-		float oneOverMag = 1.0f / mag;
-
-		q[X] *= oneOverMag;
-		q[Y] *= oneOverMag;
-		q[Z] *= oneOverMag;
-		q[W] *= oneOverMag;
-	}
-}
-
-void
-Quat_multQuat (const quat4_t qa, const quat4_t qb, quat4_t out)
-{
-	out[W] = (qa[W] * qb[W]) - (qa[X] * qb[X]) - (qa[Y] * qb[Y]) - (qa[Z] * qb[Z]);
-	out[X] = (qa[X] * qb[W]) + (qa[W] * qb[X]) + (qa[Y] * qb[Z]) - (qa[Z] * qb[Y]);
-	out[Y] = (qa[Y] * qb[W]) + (qa[W] * qb[Y]) + (qa[Z] * qb[X]) - (qa[X] * qb[Z]);
-	out[Z] = (qa[Z] * qb[W]) + (qa[W] * qb[Z]) + (qa[X] * qb[Y]) - (qa[Y] * qb[X]);
-}
-
-void
-Quat_multVec (const quat4_t q, const vec3_t v, quat4_t out)
-{
-	out[W] = -(q[X] * v[X]) - (q[Y] * v[Y]) - (q[Z] * v[Z]);
-	out[X] = (q[W] * v[X]) + (q[Y] * v[Z]) - (q[Z] * v[Y]);
-	out[Y] = (q[W] * v[Y]) + (q[Z] * v[X]) - (q[X] * v[Z]);
-	out[Z] = (q[W] * v[Z]) + (q[X] * v[Y]) - (q[Y] * v[X]);
-}
-
-void
-Quat_rotatePoint (const quat4_t q, const vec3_t in, vec3_t out)
-{
-	quat4_t tmp, inv, final;
-
-	inv[X] = -q[X]; inv[Y] = -q[Y];
-	inv[Z] = -q[Z]; inv[W] = q[W];
-
-	Quat_normalize (inv);
-
-	Quat_multVec (q, in, tmp);
-	Quat_multQuat (tmp, inv, final);
-
-	out[X] = final[X];
-	out[Y] = final[Y];
-	out[Z] = final[Z];
-}
-
-void Quat_invert(const quat4_t in, quat4_t out)
-{
-    out[W] = in[W];
-    out[X] = -in[X];
-    out[Y] = -in[Y];
-    out[Z] = -in[Z];
-}
-
-static void FS_Gets(const char **in_buffer, char *out_buffer, size_t out_buffer_length)
-{
-	const char *eol = *in_buffer;
-
-	while (*eol && *eol != '\n')
-		eol++;
-
-    if (*eol)
-        eol++;
-
-	Q_strnlcpy(out_buffer, *in_buffer, eol - *in_buffer, out_buffer_length);
-
-    *in_buffer = eol;
-}
-
 #define MD5_Malloc(size)    Hunk_TryAlloc(&model->skeleton_hunk, size)
 
 // parse a token from the buffer, move the buffer ahead, and
@@ -1121,7 +919,7 @@ static int MOD_LoadMD5Mesh(model_t *model, const char *file_buffer)
                 MD5_CHECK(MD5_ParseFloat(&file_buffer, &joint->orient[2]));
                 MD5_CHECK(MD5_ParseExpect(&file_buffer, ")"));
 
-				Quat_computeW (joint->orient);
+				Quat_ComputeW (joint->orient);
 			}
 
             MD5_CHECK(MD5_ParseExpect(&file_buffer, "}"));
@@ -1305,18 +1103,16 @@ fail:
 }
 
 /* Joint info */
-typedef struct
-{
-	int parent;
-	int flags;
-	int startIndex;
+typedef struct {
+	int32_t parent;
+	int32_t flags;
+	int32_t start_index;
 } joint_info_t;
 
 /* Base frame joint */
-typedef struct
-{
+typedef struct {
 	vec3_t pos;
-	quat4_t orient;
+	quat_t orient;
 } baseframe_joint_t;
         
 #define MD5_COMPONENT_TX BIT(0)
@@ -1347,11 +1143,11 @@ static inline void MD5_BuildFrameSkeleton(const joint_info_t *joint_infos,
 
         for (int32_t c = 0, j = 0; c < MD5_NUM_ANIMATED_COMPONENT_BITS; c++) {
             if (joint_infos[i].flags & BIT(c)) {
-                components[c] = anim_frame_data[joint_infos[i].startIndex + j++];
+                components[c] = anim_frame_data[joint_infos[i].start_index + j++];
             }
         }
 
-		Quat_computeW (animated_quat);
+		Quat_ComputeW(animated_quat);
 
         // parent should already be calculated
 		md5_joint_t *thisJoint = &skeleton_frame[i];
@@ -1369,12 +1165,12 @@ static inline void MD5_BuildFrameSkeleton(const joint_info_t *joint_infos,
 
 		// add positions
 		vec3_t rotated_pos;
-		Quat_rotatePoint (parentJoint->orient, animated_position, rotated_pos);
+		Quat_RotatePoint(parentJoint->orient, animated_position, rotated_pos);
         VectorAdd(rotated_pos, parentJoint->pos, thisJoint->pos);
 
         // concat rotations
-		Quat_multQuat (parentJoint->orient, animated_quat, thisJoint->orient);
-		Quat_normalize (thisJoint->orient);
+		Quat_MultiplyQuat(parentJoint->orient, animated_quat, thisJoint->orient);
+		Quat_Normalize(thisJoint->orient);
 	}
 }
 
@@ -1407,7 +1203,7 @@ static void MD5_ComputeNormals (md5_weight_t *weights, md5_joint_t *base, md5_ve
 
 			      /* Calculate transformed vertex for this weight */
 			    vec3_t wv;
-			    Quat_rotatePoint (joint->orient, weight->pos, wv);
+			    Quat_RotatePoint(joint->orient, weight->pos, wv);
 
 			    /* The sum of all weight->bias should be 1.0 */
                 VectorAdd(joint->pos, wv, wv);
@@ -1455,7 +1251,7 @@ static void MD5_ComputeNormals (md5_weight_t *weights, md5_joint_t *base, md5_ve
 
 			    /* Calculate transformed vertex for this weight */
 			vec3_t wv;
-			Quat_rotatePoint (joint->orient, weight->pos, wv);
+			Quat_RotatePoint(joint->orient, weight->pos, wv);
 
 			/* The sum of all weight->bias should be 1.0 */
             VectorAdd(joint->pos, wv, wv);
@@ -1470,7 +1266,7 @@ static void MD5_ComputeNormals (md5_weight_t *weights, md5_joint_t *base, md5_ve
 			    const md5_weight_t *weight = &weights[vert[v].start + j];
 			    const md5_joint_t *joint = &base[weight->joint];
 			    vec3_t wv;
-			    Quat_rotatePoint (joint->orient, *norm, wv);
+			    Quat_RotatePoint(joint->orient, *norm, wv);
                 VectorMA(vert[v].normal, weight->bias, wv, vert[v].normal);
             }
         }
@@ -1568,7 +1364,7 @@ static int MOD_LoadMD5Anim(model_t *model, const char *anim_path, const char *fi
                 COM_Parse(&file_buffer); // ignore name
                 MD5_CHECK(MD5_ParseInt32(&file_buffer, &joint_info->parent));
                 MD5_CHECK(MD5_ParseInt32(&file_buffer, &joint_info->flags));
-                MD5_CHECK(MD5_ParseInt32(&file_buffer, &joint_info->startIndex));
+                MD5_CHECK(MD5_ParseInt32(&file_buffer, &joint_info->start_index));
 
                 // validate animated components
                 int32_t num_components = 0;
@@ -1579,8 +1375,8 @@ static int MOD_LoadMD5Anim(model_t *model, const char *anim_path, const char *fi
                     }
                 }
 
-                if (joint_info->startIndex < 0 || joint_info->startIndex >= num_animated_components ||
-                    (joint_info->startIndex + num_components) < 0 || (joint_info->startIndex + num_components) > num_animated_components) {
+                if (joint_info->start_index < 0 || joint_info->start_index >= num_animated_components ||
+                    (joint_info->start_index + num_components) < 0 || (joint_info->start_index + num_components) > num_animated_components) {
                     ret = Q_ERR_INVALID_FORMAT;
                     goto fail;
                 }
@@ -1629,7 +1425,7 @@ static int MOD_LoadMD5Anim(model_t *model, const char *anim_path, const char *fi
                 MD5_CHECK(MD5_ParseFloat(&file_buffer, &base_joint->orient[2]));
                 MD5_CHECK(MD5_ParseExpect(&file_buffer, ")"));
 
-                Quat_computeW (base_joint->orient);
+                Quat_ComputeW(base_joint->orient);
 			}
 
             MD5_CHECK(MD5_ParseExpect(&file_buffer, "}"));

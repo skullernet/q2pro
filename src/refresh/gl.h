@@ -292,8 +292,6 @@ typedef struct {
 
 #if USE_MD5
 
-typedef vec4_t quat4_t;
-
 // the total amount of joints the renderer will bother handling
 #define MAX_MD5_JOINTS  256
 
@@ -303,7 +301,7 @@ typedef struct
 	int parent;
 
 	vec3_t pos;
-	quat4_t orient;
+	quat_t orient;
 } md5_joint_t;
 
 /* Vertex */
