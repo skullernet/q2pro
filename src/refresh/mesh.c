@@ -715,7 +715,7 @@ static inline void tess_skel_interpolate_skeleton (const md5_joint_t *skel_a, co
 {
 	for (int32_t i = 0; i < num_joints; ++i) {
 		out[i].parent = skel_a[i].parent;
-        out[i].scale = skel_a[i].scale;
+        out[i].scale = skel_b[i].scale;
 
         LerpVector2(skel_a[i].pos, skel_b[i].pos, backlerp, frontlerp, out[i].pos);
 		Quat_SLerp(skel_a[i].orient, skel_b[i].orient, backlerp, frontlerp, out[i].orient);
