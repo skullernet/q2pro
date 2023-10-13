@@ -41,7 +41,7 @@ static GLfloat  shadowmatrix[16];
 #if USE_MD5
 typedef void (*skeltessfunc_t)(const md5_model_t *);
 
-static md5_joint_t  temp_skeleton[256];
+static md5_joint_t  temp_skeleton[MAX_MD5_JOINTS];
 #endif
 
 static void setup_dotshading(void)

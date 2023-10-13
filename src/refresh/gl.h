@@ -293,6 +293,9 @@ typedef struct {
 
 typedef vec4_t quat4_t;
 
+// the total amount of joints the renderer will bother handling
+#define MAX_MD5_JOINTS  256
+
 /* Joint */
 typedef struct
 {
@@ -349,7 +352,7 @@ typedef struct
     // animation data
 	int num_joints;
 	md5_joint_t *base_skeleton;
-	int num_frames;
+	int num_frames; // may not match model_t::numframes, but not fatal
 	md5_joint_t **skeleton_frames;
 
     int num_skins;
