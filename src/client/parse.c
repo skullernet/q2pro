@@ -839,12 +839,12 @@ static void CL_ParseTEntPacket(void)
     }
 }
 
-static void CL_ParseMuzzleFlashPacket(int mask, bool is_short)
+static void CL_ParseMuzzleFlashPacket(int mask)
 {
     int entity, weapon;
 
     entity = MSG_ReadWord();
-    weapon = is_short ? MSG_ReadWord() : MSG_ReadByte();
+    weapon = MSG_ReadByte();
 
     if (!mask && cl.csr.extended) {
         weapon |= entity >> ENTITYNUM_BITS << 8;
@@ -1306,12 +1306,12 @@ void CL_ParseServerMessage(void)
             break;
 
         case svc_muzzleflash:
-            CL_ParseMuzzleFlashPacket(MZ_SILENCED, false);
+            CL_ParseMuzzleFlashPacket(MZ_SILENCED);
             CL_MuzzleFlash();
             break;
 
         case svc_muzzleflash2:
-            CL_ParseMuzzleFlashPacket(0, false);
+            CL_ParseMuzzleFlashPacket(0);
             CL_MuzzleFlash2();
             break;
 
@@ -1465,11 +1465,11 @@ bool CL_SeekDemoMessage(void)
             break;
 
         case svc_muzzleflash:
-            CL_ParseMuzzleFlashPacket(MZ_SILENCED, false);
+            CL_ParseMuzzleFlashPacket(MZ_SILENCED);
             break;
 
         case svc_muzzleflash2:
-            CL_ParseMuzzleFlashPacket(0, false);
+            CL_ParseMuzzleFlashPacket(0);
             break;
 
         case svc_frame:

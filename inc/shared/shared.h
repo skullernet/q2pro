@@ -466,13 +466,7 @@ bool COM_IsUint(const char *s);
 bool COM_IsPath(const char *s);
 bool COM_IsWhite(const char *s);
 
-// extended parsing routine
-// if token_buffer is null, a temporary internal buffer will be used
-char *COM_ParseEx(const char **data_p, char *token_buffer, size_t token_buffer_size);
-
-#define COM_Parse(data_p) \
-    COM_ParseEx(data_p, NULL, 0)
-
+char *COM_Parse(const char **data_p);
 // data is an in/out parm, returns a parsed out token
 size_t COM_Compress(char *data);
 

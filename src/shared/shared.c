@@ -404,20 +404,14 @@ Parse a token out of a string.
 Handles C and C++ comments.
 ==============
 */
-char *COM_ParseEx(const char **data_p, char *token_buffer, size_t token_buffer_size)
+char *COM_Parse(const char **data_p)
 {
     int         c;
     int         len;
     const char  *data;
+    char        *s = com_token[com_tokidx];
 
-    if (token_buffer == NULL)
-    {
-        token_buffer = com_token[com_tokidx];
-        token_buffer_size = sizeof(com_token[0]);
-        com_tokidx = (com_tokidx + 1) & 3;
-    }
-
-    char *s = token_buffer;
+    com_tokidx = (com_tokidx + 1) & 3;
 
     data = *data_p;
     len = 0;
