@@ -1022,24 +1022,28 @@ static bool BSP_ParseLightgridHeader_(lightgrid_t *grid, sizebuf_t *s)
     grid->numstyles = SZ_ReadByte(s);
     if (grid->numstyles - 1 >= MAX_LIGHTMAPS)
         return false;
+
     grid->rootnode = SZ_ReadLong(s);
     grid->numnodes = SZ_ReadLong(s);
     if (grid->numnodes > SZ_Remaining(s) / 44)
         return false;
-    grid->nodepos = s->readcount;
+
     s->readcount += grid->numnodes * 44;
     grid->numleafs = SZ_ReadLong(s);
     if (grid->numleafs - 1 >= SZ_Remaining(s) / 24)
         return false;
-    grid->leafpos = s->readcount;
+
     for (i = 0; i < grid->numleafs; i++) {
         uint32_t x, y, z, numsamples;
+
         s->readcount += 12;
         x = SZ_ReadLong(s);
         y = SZ_ReadLong(s);
         z = SZ_ReadLong(s);
+
         numsamples = x * y * z;
         grid->numsamples += numsamples;
+
         while (numsamples--) {
             unsigned numstyles = SZ_ReadByte(s);
             if (numstyles == 255)
@@ -1105,6 +1109,7 @@ static void BSP_ParseLightgrid(bsp_t *bsp, const byte *in, size_t filelen)
     lightgrid_node_t *node;
     lightgrid_leaf_t *leaf;
     lightgrid_sample_t *sample;
+    uint32_t remaining;
     sizebuf_t s;
     byte *data;
     size_t size;
@@ -1113,7 +1118,7 @@ static void BSP_ParseLightgrid(bsp_t *bsp, const byte *in, size_t filelen)
     if (!grid->numleafs)
         return;
 
-    // no point loading if map isn't lit
+    // ignore if map isn't lit
     if (!bsp->lightmap) {
         Com_WPrintf("Ignoring LIGHTGRID_OCTREE, map isn't lit\n");
         memset(grid, 0, sizeof(*grid));
@@ -1126,7 +1131,7 @@ static void BSP_ParseLightgrid(bsp_t *bsp, const byte *in, size_t filelen)
     grid->nodes = ALLOC(sizeof(grid->nodes[0]) * grid->numnodes);
 
     // load children first
-    s.readcount = grid->nodepos;
+    s.readcount = 45;
     for (i = 0, node = grid->nodes; i < grid->numnodes; i++, node++) {
         s.readcount += 12;
         for (j = 0; j < 8; j++)
@@ -1141,7 +1146,7 @@ static void BSP_ParseLightgrid(bsp_t *bsp, const byte *in, size_t filelen)
     }
 
     // now load points
-    s.readcount = grid->nodepos;
+    s.readcount = 45;
     for (i = 0, node = grid->nodes; i < grid->numnodes; i++, node++) {
         for (j = 0; j < 3; j++)
             node->point[j] = SZ_ReadLong(&s);
@@ -1150,10 +1155,12 @@ static void BSP_ParseLightgrid(bsp_t *bsp, const byte *in, size_t filelen)
 
     grid->leafs = ALLOC(sizeof(grid->leafs[0]) * grid->numleafs);
 
+    // init samples to fully occluded
     size = sizeof(grid->samples[0]) * grid->numsamples * grid->numstyles;
     grid->samples = sample = memset(ALLOC(size), 255, size);
 
-    s.readcount = grid->leafpos;
+    remaining = grid->numsamples;
+    s.readcount += 4;
     for (i = 0, leaf = grid->leafs; i < grid->numleafs; i++, leaf++) {
         for (j = 0; j < 3; j++)
             leaf->mins[j] = SZ_ReadLong(&s);
@@ -1162,11 +1169,15 @@ static void BSP_ParseLightgrid(bsp_t *bsp, const byte *in, size_t filelen)
 
         leaf->firstsample = sample - grid->samples;
         leaf->numsamples = leaf->size[0] * leaf->size[1] * leaf->size[2];
-        Q_assert(leaf->numsamples <= grid->numsamples);
+
+        Q_assert(leaf->numsamples <= remaining);
+        remaining -= leaf->numsamples;
+
         for (j = 0; j < leaf->numsamples; j++, sample += grid->numstyles) {
             unsigned numstyles = SZ_ReadByte(&s);
             if (numstyles == 255)
                 continue;
+
             Q_assert(numstyles <= grid->numstyles);
             data = SZ_ReadData(&s, sizeof(*sample) * numstyles);
             Q_assert(data);

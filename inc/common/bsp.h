@@ -211,8 +211,6 @@ typedef struct {
     uint32_t numleafs;
     uint32_t numsamples;
     uint32_t rootnode;
-    uint32_t nodepos;
-    uint32_t leafpos;
     lightgrid_node_t *nodes;
     lightgrid_leaf_t *leafs;
     lightgrid_sample_t *samples;
