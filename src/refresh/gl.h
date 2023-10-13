@@ -347,7 +347,7 @@ typedef struct
     QGL_INDEX_TYPE *indices;
 
 	int num_verts;
-	int num_tris;
+	int num_indices;
 	int num_weights;
 
     // animation data

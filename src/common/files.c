@@ -604,6 +604,11 @@ int FS_CreatePath(char *path)
             }
         }
     }
+    
+    // check for drive path and skip N: part
+    if (Q_charascii(*path) && path[1] == ':') {
+        ofs = path + 2;
+    }
 #endif
 
     // skip leading slash(es)

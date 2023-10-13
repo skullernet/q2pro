@@ -425,7 +425,7 @@ static void setup_celshading(void)
     celscale = 1.0f - Distance(origin, glr.fd.vieworg) / 700.0f;
 }
 
-static void draw_celshading(const maliasmesh_t *mesh)
+static inline void draw_celshading(QGL_INDEX_TYPE *indices, size_t num_indices)
 {
     if (celscale < 0.01f || celscale > 1)
         return;
@@ -438,8 +438,8 @@ static void draw_celshading(const maliasmesh_t *mesh)
     qglPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     qglCullFace(GL_FRONT);
     GL_Color(0, 0, 0, color[3] * celscale);
-    qglDrawElements(GL_TRIANGLES, mesh->numindices, QGL_INDEX_ENUM,
-                    mesh->indices);
+    qglDrawElements(GL_TRIANGLES, num_indices, QGL_INDEX_ENUM,
+                    indices);
     qglCullFace(GL_BACK);
     qglPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     qglLineWidth(1);
@@ -598,7 +598,7 @@ static void draw_alias_mesh(const maliasmesh_t *mesh, tessfunc_t tessfunc)
     qglDrawElements(GL_TRIANGLES, mesh->numindices, QGL_INDEX_ENUM,
                     mesh->indices);
 
-    draw_celshading(mesh);
+    draw_celshading(mesh->indices, mesh->numindices);
 
     if (gl_showtris->integer) {
         GL_DrawOutlines(mesh->numindices, mesh->indices);
@@ -662,7 +662,7 @@ static void draw_alias_skeleton(const md5_model_t *model, skeltessfunc_t tessfun
 
     (*tessfunc)(model);
 
-    c.trisDrawn += model->num_tris;
+    c.trisDrawn += model->num_indices / 3;
 
     if (shadelight) {
         GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
@@ -678,16 +678,16 @@ static void draw_alias_skeleton(const md5_model_t *model, skeltessfunc_t tessfun
 
     GL_LockArrays(model->num_verts);
 
-    qglDrawElements(GL_TRIANGLES, model->num_tris * 3, QGL_INDEX_ENUM,
+    qglDrawElements(GL_TRIANGLES, model->num_indices, QGL_INDEX_ENUM,
                     model->indices);
 
-#if 0
-    draw_celshading(mesh);
+    draw_celshading(model->indices, model->num_indices);
 
     if (gl_showtris->integer) {
-        GL_DrawOutlines(mesh->numindices, mesh->indices);
+        GL_DrawOutlines(model->num_indices, model->indices);
     }
 
+#if 0
     // FIXME: unlock arrays before changing matrix?
     draw_shadow(mesh);
 #endif

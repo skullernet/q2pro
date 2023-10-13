@@ -1274,7 +1274,7 @@ static int MOD_LoadMD5Mesh(model_t *model, const char *file_buffer)
         }
     }
     
-    for (size_t i = 0; i < mdl->num_tris * 3; i++) {
+    for (size_t i = 0; i < mdl->num_indices; i++) {
         QGL_INDEX_TYPE *index = &index_data[i];
 
         if (*index < 0 || *index >= total_vertices) {
@@ -1294,7 +1294,7 @@ static int MOD_LoadMD5Mesh(model_t *model, const char *file_buffer)
     memcpy(mdl->weights, weight_data, sizeof(md5_weight_t) * total_weights);
 
     mdl->num_verts = total_vertices;
-    mdl->num_tris = total_indices / 3;
+    mdl->num_indices = total_indices;
     mdl->num_weights = total_weights;
 
 fail:
@@ -1731,7 +1731,7 @@ static void MOD_LoadMD5(model_t *model, const char *name)
 
     Hunk_End(&model->skeleton_hunk);
 
-    MD5_ComputeNormals(model->skeleton->weights, model->skeleton->base_skeleton, model->skeleton->vertices, model->skeleton->num_verts, model->skeleton->indices, model->skeleton->num_tris * 3);
+    MD5_ComputeNormals(model->skeleton->weights, model->skeleton->base_skeleton, model->skeleton->vertices, model->skeleton->num_verts, model->skeleton->indices, model->skeleton->num_indices);
 
     return;
 
