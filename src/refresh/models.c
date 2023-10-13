@@ -945,6 +945,14 @@ Quat_rotatePoint (const quat4_t q, const vec3_t in, vec3_t out)
 	out[Z] = final[Z];
 }
 
+void Quat_invert(const quat4_t in, quat4_t out)
+{
+    out[W] = in[W];
+    out[X] = -in[X];
+    out[Y] = -in[Y];
+    out[Z] = -in[Z];
+}
+
 static void FS_Gets(const char **in_buffer, char *out_buffer, size_t out_buffer_length)
 {
 	const char *eol = *in_buffer;
@@ -1278,7 +1286,6 @@ static void BuildFrameSkeleton (const joint_info_t *jointInfos,
 	}
 }
 
-
 /*
 ================
 MD5_ComputeNormals
@@ -1373,7 +1380,20 @@ static void MD5_ComputeNormals (md5_weight_t *weights, md5_joint_t *base, md5_ve
 
 		vec3_t *norm = HashMap_Lookup (vec3_t, pos_to_normal_map, &finalVertex);
 		if (norm)
-			VectorCopy (*norm, vert[v].normal);
+        {
+            // Put the bind-pose normal into joint-local space
+            // so the animated normal can be computed faster later
+            for ( int j = 0; j < vert[v].count; ++j )
+            {
+			    const md5_weight_t *weight = &weights[vert[v].start + j];
+			    const md5_joint_t *joint = &base[weight->joint];
+			    vec3_t wv;
+			    Quat_rotatePoint (joint->orient, *norm, wv);
+                vert[v].normal[0] += wv[0] * weight->bias;
+                vert[v].normal[1] += wv[1] * weight->bias;
+                vert[v].normal[2] += wv[2] * weight->bias;
+            }
+        }
 	}
 
 	HashMap_Destroy (pos_to_normal_map);

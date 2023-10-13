@@ -935,6 +935,7 @@ static void tess_lerped_shell_skel(const maliasskel_t *skel)
 #endif
 
 void Quat_rotatePoint (const quat4_t q, const vec3_t in, vec3_t out);
+void Quat_invert(const quat4_t in, quat4_t out);
 
 static void draw_alias_skeleton(const md5_model_t *model, skeltessfunc_t tessfunc)
 {
@@ -1107,7 +1108,9 @@ static void PrepareMesh_Shade (const md5_model_t *mesh, const md5_joint_t *skele
 			finalVertex[1] += (joint->pos[1] + wv[1]) * weight->bias;
 			finalVertex[2] += (joint->pos[2] + wv[2]) * weight->bias;
             
-			Quat_rotatePoint (joint->orient, mesh->vertices[i].normal, wv);
+            quat4_t orient_inv;
+            Quat_invert(joint->orient, orient_inv);
+            Quat_rotatePoint (orient_inv, mesh->vertices[i].normal, wv);
             VectorScale(wv, weight->bias, wv);
             VectorAdd(finalNormal, wv, finalNormal);
 		}
@@ -1175,8 +1178,10 @@ static void PrepareMesh_Shell (const md5_model_t *mesh, const md5_joint_t *skele
 			finalVertex[0] += (joint->pos[0] + wv[0]) * weight->bias;
 			finalVertex[1] += (joint->pos[1] + wv[1]) * weight->bias;
 			finalVertex[2] += (joint->pos[2] + wv[2]) * weight->bias;
-            
-			Quat_rotatePoint (joint->orient, mesh->vertices[i].normal, wv);
+
+            quat4_t orient_inv;
+            Quat_invert(joint->orient, orient_inv);
+            Quat_rotatePoint (orient_inv, mesh->vertices[i].normal, wv);
             VectorScale(wv, weight->bias, wv);
             VectorAdd(finalNormal, wv, finalNormal);
 		}
