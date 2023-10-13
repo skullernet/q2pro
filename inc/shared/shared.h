@@ -253,7 +253,7 @@ typedef vec4_t quat_t;
 
 void Quat_ComputeW(quat_t q);
 void Quat_SLerp(const quat_t qa, const quat_t qb, float backlerp, float frontlerp, quat_t out);
-void Quat_Normalize(quat_t q);
+float Quat_Normalize(quat_t q);
 void Quat_MultiplyQuat (const quat_t qa, const quat_t qb, quat_t out);
 void Quat_MultiplyVector (const quat_t q, const vec3_t v, quat_t out);
 void Quat_RotatePoint (const quat_t q, const vec3_t in, vec3_t out);

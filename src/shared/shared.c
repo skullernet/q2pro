@@ -139,15 +139,15 @@ void Quat_ComputeW (quat_t q)
     }
 }
 
-#define QUAT_EPSILON 0.9999f
+#define QUAT_EPSILON 0.000001f
 
 void Quat_SLerp (const quat_t qa, const quat_t qb, float backlerp, float frontlerp, quat_t out)
 {
 	if (backlerp <= 0.0) {
-        Vector4Copy(qa, out);
+        Vector4Copy(qb, out);
 		return;
     } else if (backlerp >= 1.0) {
-        Vector4Copy(qb, out);
+        Vector4Copy(qa, out);
 		return;
 	}
 
@@ -171,13 +171,10 @@ void Quat_SLerp (const quat_t qa, const quat_t qb, float backlerp, float frontle
 		cosOmega = -cosOmega;
 	}
 
-    // we should have two unit quaternions, so dot should be <= 1.0
-	Q_assert(cosOmega < (1.0f + (1.0f - QUAT_EPSILON)));
-
 	// compute interpolation fraction
 	float k0, k1;
 
-	if (cosOmega > QUAT_EPSILON) {
+	if (1.0f - cosOmega <= QUAT_EPSILON) {
         // very close - just use linear interpolation
 		k0 = backlerp;
 		k1 = frontlerp;
@@ -199,7 +196,7 @@ void Quat_SLerp (const quat_t qa, const quat_t qb, float backlerp, float frontle
 	out[Z] = (k0 * qa[2]) + (k1 * q1z);
 }
 
-void Quat_Normalize(quat_t q)
+float Quat_Normalize(quat_t q)
 {
 	float length = sqrtf(Dot4Product(q, q));
 
