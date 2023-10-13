@@ -821,16 +821,16 @@ Quat_dotProduct (const quat4_t qa, const quat4_t qb)
 }
 
 void
-Quat_slerp (const quat4_t qa, const quat4_t qb, float t, quat4_t out)
+Quat_slerp (const quat4_t qa, const quat4_t qb, float backlerp, float frontlerp, quat4_t out)
 {
   /* Check for out-of range parameter and return edge points if so */
-	if (t <= 0.0)
+	if (backlerp <= 0.0)
 	{
 		memcpy (out, qa, sizeof(quat4_t));
 		return;
 	}
 
-	if (t >= 1.0)
+	if (backlerp >= 1.0)
 	{
 		memcpy (out, qb, sizeof (quat4_t));
 		return;
@@ -869,8 +869,8 @@ Quat_slerp (const quat4_t qa, const quat4_t qb, float t, quat4_t out)
 	  /* Very close - just use linear interpolation,
 	 which will protect againt a divide by zero */
 
-		k0 = 1.0f - t;
-		k1 = t;
+		k0 = backlerp;
+		k1 = frontlerp;
 	}
 	else
 	{
@@ -886,8 +886,8 @@ Quat_slerp (const quat4_t qa, const quat4_t qb, float t, quat4_t out)
 		float oneOverSinOmega = 1.0f / sinOmega;
 
 		/* Compute interpolation parameters */
-		k0 = sin ((1.0f - t) * omega) * oneOverSinOmega;
-		k1 = sin (t * omega) * oneOverSinOmega;
+		k0 = sin (backlerp * omega) * oneOverSinOmega;
+		k1 = sin (frontlerp * omega) * oneOverSinOmega;
 	}
 
   /* Interpolate and return new quaternion */
@@ -1307,7 +1307,6 @@ fail:
 /* Joint info */
 typedef struct
 {
-	char name[64];
 	int parent;
 	int flags;
 	int startIndex;
@@ -1319,96 +1318,63 @@ typedef struct
 	vec3_t pos;
 	quat4_t orient;
 } baseframe_joint_t;
+        
+#define MD5_COMPONENT_TX BIT(0)
+#define MD5_COMPONENT_TY BIT(1)
+#define MD5_COMPONENT_TZ BIT(2)
+#define MD5_COMPONENT_QX BIT(3)
+#define MD5_COMPONENT_QY BIT(4)
+#define MD5_COMPONENT_QZ BIT(5)
+
+#define MD5_NUM_ANIMATED_COMPONENT_BITS 6
 
 /**
  * Build skeleton for a given frame data.
  */
-static void BuildFrameSkeleton (const joint_info_t *jointInfos,
-	const baseframe_joint_t *baseFrame,
-	const float *animFrameData,
-	md5_joint_t *skelFrame,
-	int num_joints)
+static inline void MD5_BuildFrameSkeleton(const joint_info_t *joint_infos,
+	const baseframe_joint_t *base_frame, const float *anim_frame_data,
+	md5_joint_t *skeleton_frame, int num_joints)
 {
-	int i;
+	for (int32_t i = 0; i < num_joints; ++i) {
+		const baseframe_joint_t *baseJoint = &base_frame[i];
+        float components[7];
 
-	for (i = 0; i < num_joints; ++i)
-	{
-		const baseframe_joint_t *baseJoint = &baseFrame[i];
-		vec3_t animatedPos;
-		quat4_t animatedOrient;
-		int j = 0;
+        float *animated_position = components + 0;
+        float *animated_quat = components + 3;
 
-		memcpy (animatedPos, baseJoint->pos, sizeof (vec3_t));
-		memcpy (animatedOrient, baseJoint->orient, sizeof (quat4_t));
+        VectorCopy(baseJoint->pos, animated_position);
+        VectorCopy(baseJoint->orient, animated_quat); // W will be re-calculated below
 
-		if (jointInfos[i].flags & 1) /* Tx */
-		{
-			animatedPos[0] = animFrameData[jointInfos[i].startIndex + j];
-			++j;
-		}
+        for (int32_t c = 0, j = 0; c < MD5_NUM_ANIMATED_COMPONENT_BITS; c++) {
+            if (joint_infos[i].flags & BIT(c)) {
+                components[c] = anim_frame_data[joint_infos[i].startIndex + j++];
+            }
+        }
 
-		if (jointInfos[i].flags & 2) /* Ty */
-		{
-			animatedPos[1] = animFrameData[jointInfos[i].startIndex + j];
-			++j;
-		}
+		Quat_computeW (animated_quat);
 
-		if (jointInfos[i].flags & 4) /* Tz */
-		{
-			animatedPos[2] = animFrameData[jointInfos[i].startIndex + j];
-			++j;
-		}
+        // parent should already be calculated
+		md5_joint_t *thisJoint = &skeleton_frame[i];
 
-		if (jointInfos[i].flags & 8) /* Qx */
-		{
-			animatedOrient[0] = animFrameData[jointInfos[i].startIndex + j];
-			++j;
-		}
+		int parent = thisJoint->parent = joint_infos[i].parent;
 
-		if (jointInfos[i].flags & 16) /* Qy */
-		{
-			animatedOrient[1] = animFrameData[jointInfos[i].startIndex + j];
-			++j;
-		}
-
-		if (jointInfos[i].flags & 32) /* Qz */
-		{
-			animatedOrient[2] = animFrameData[jointInfos[i].startIndex + j];
-			++j;
-		}
-
-        /* Compute orient quaternion's w value */
-		Quat_computeW (animatedOrient);
-
-		/* NOTE: we assume that this joint's parent has
-            already been calculated, i.e. joint's ID should
-            never be smaller than its parent ID. */
-		md5_joint_t *thisJoint = &skelFrame[i];
-
-		int parent = jointInfos[i].parent;
-		thisJoint->parent = parent;
-
-		/* Has parent? */
 		if (thisJoint->parent < 0)
 		{
-			memcpy (thisJoint->pos, animatedPos, sizeof (vec3_t));
-			memcpy (thisJoint->orient, animatedOrient, sizeof (quat4_t));
+			VectorCopy(animated_position, thisJoint->pos);
+			Vector4Copy(animated_quat, thisJoint->orient);
+            continue;
 		}
-		else
-		{
-			md5_joint_t *parentJoint = &skelFrame[parent];
-			vec3_t rpos; /* Rotated position */
 
-			/* Add positions */
-			Quat_rotatePoint (parentJoint->orient, animatedPos, rpos);
-			thisJoint->pos[0] = rpos[0] + parentJoint->pos[0];
-			thisJoint->pos[1] = rpos[1] + parentJoint->pos[1];
-			thisJoint->pos[2] = rpos[2] + parentJoint->pos[2];
+        md5_joint_t *parentJoint = &skeleton_frame[parent];
 
-			/* Concatenate rotations */
-			Quat_multQuat (parentJoint->orient, animatedOrient, thisJoint->orient);
-			Quat_normalize (thisJoint->orient);
-		}
+		// add positions
+		vec3_t rotated_pos;
+		Quat_rotatePoint (parentJoint->orient, animated_position, rotated_pos);
+        VectorAdd(rotated_pos, parentJoint->pos, thisJoint->pos);
+
+        // concat rotations
+		Quat_multQuat (parentJoint->orient, animated_quat, thisJoint->orient);
+		Quat_normalize (thisJoint->orient);
 	}
 }
 
@@ -1422,22 +1388,20 @@ static void MD5_ComputeNormals (md5_weight_t *weights, md5_joint_t *base, md5_ve
 	hash_map_t *pos_to_normal_map = HashMap_Create (vec3_t, vec3_t, &HashVec3, NULL);
 	HashMap_Reserve (pos_to_normal_map, numverts);
 
-	for (size_t v = 0; v < numverts; v++)
-		vert[v].normal[0] = vert[v].normal[1] = vert[v].normal[2] = 0;
+	for (size_t v = 0; v < numverts; v++) {
+        VectorClear(vert[v].normal);
+    }
 
-	for (size_t t = 0; t < numindexes; t += 3)
-	{
+	for (size_t t = 0; t < numindexes; t += 3) {
 		md5_vertex_t *verts[3] = {&vert[indexes[t + 0]], &vert[indexes[t + 1]], &vert[indexes[t + 2]]};
 
         vec3_t xyz[3];
 
-        for (size_t i = 0; i < 3; i++)
-        {
+        for (size_t i = 0; i < 3; i++) {
 		    vec3_t finalVertex = { 0.0f, 0.0f, 0.0f };
 
 		    /* Calculate final vertex to draw with weights */
-		    for (size_t j = 0; j < verts[i]->count; ++j)
-		    {
+		    for (size_t j = 0; j < verts[i]->count; ++j) {
 			    const md5_weight_t *weight = &weights[verts[i]->start + j];
 			    const md5_joint_t *joint = &base[weight->joint];
 
@@ -1446,9 +1410,8 @@ static void MD5_ComputeNormals (md5_weight_t *weights, md5_joint_t *base, md5_ve
 			    Quat_rotatePoint (joint->orient, weight->pos, wv);
 
 			    /* The sum of all weight->bias should be 1.0 */
-			    finalVertex[0] += (joint->pos[0] + wv[0]) * weight->bias;
-			    finalVertex[1] += (joint->pos[1] + wv[1]) * weight->bias;
-			    finalVertex[2] += (joint->pos[2] + wv[2]) * weight->bias;
+                VectorAdd(joint->pos, wv, wv);
+                VectorMA(finalVertex, weight->bias, wv, finalVertex);
 		    }
 
             VectorCopy(finalVertex, xyz[i]);
@@ -1468,8 +1431,7 @@ static void MD5_ComputeNormals (md5_weight_t *weights, md5_joint_t *base, md5_ve
 		VectorScale (norm, angle, norm);
 
 		vec3_t *found_normal;
-		for (int i = 0; i < 3; ++i)
-		{
+		for (int i = 0; i < 3; ++i) {
 			if ((found_normal = HashMap_Lookup (vec3_t, pos_to_normal_map, &xyz[i])))
 				VectorAdd (norm, *found_normal, *found_normal);
 			else
@@ -1478,19 +1440,16 @@ static void MD5_ComputeNormals (md5_weight_t *weights, md5_joint_t *base, md5_ve
 	}
 
 	const uint32_t map_size = HashMap_Size (pos_to_normal_map);
-	for (uint32_t i = 0; i < map_size; ++i)
-	{
+	for (uint32_t i = 0; i < map_size; ++i) {
 		vec3_t *norm = HashMap_GetValue (vec3_t, pos_to_normal_map, i);
 		VectorNormalize (*norm);
 	}
 
-	for (size_t v = 0; v < numverts; v++)
-	{
+	for (size_t v = 0; v < numverts; v++) {
 		vec3_t finalVertex = { 0.0f, 0.0f, 0.0f };
 
 		/* Calculate final vertex to draw with weights */
-		for (size_t j = 0; j < vert[v].count; ++j)
-		{
+		for (size_t j = 0; j < vert[v].count; ++j) {
 			const md5_weight_t *weight = &weights[vert[v].start + j];
 			const md5_joint_t *joint = &base[weight->joint];
 
@@ -1499,39 +1458,26 @@ static void MD5_ComputeNormals (md5_weight_t *weights, md5_joint_t *base, md5_ve
 			Quat_rotatePoint (joint->orient, weight->pos, wv);
 
 			/* The sum of all weight->bias should be 1.0 */
-			finalVertex[0] += (joint->pos[0] + wv[0]) * weight->bias;
-			finalVertex[1] += (joint->pos[1] + wv[1]) * weight->bias;
-			finalVertex[2] += (joint->pos[2] + wv[2]) * weight->bias;
+            VectorAdd(joint->pos, wv, wv);
+            VectorMA(finalVertex, weight->bias, wv, finalVertex);
 		}
 
 		vec3_t *norm = HashMap_Lookup (vec3_t, pos_to_normal_map, &finalVertex);
-		if (norm)
-        {
+		if (norm) {
             // Put the bind-pose normal into joint-local space
             // so the animated normal can be computed faster later
-            for ( int j = 0; j < vert[v].count; ++j )
-            {
+            for ( int j = 0; j < vert[v].count; ++j ) {
 			    const md5_weight_t *weight = &weights[vert[v].start + j];
 			    const md5_joint_t *joint = &base[weight->joint];
 			    vec3_t wv;
 			    Quat_rotatePoint (joint->orient, *norm, wv);
-                vert[v].normal[0] += wv[0] * weight->bias;
-                vert[v].normal[1] += wv[1] * weight->bias;
-                vert[v].normal[2] += wv[2] * weight->bias;
+                VectorMA(vert[v].normal, weight->bias, wv, vert[v].normal);
             }
         }
 	}
 
 	HashMap_Destroy (pos_to_normal_map);
 }
-        
-#define MD5_COMPONENT_TX BIT(0)
-#define MD5_COMPONENT_TY BIT(1)
-#define MD5_COMPONENT_TZ BIT(2)
-#define MD5_COMPONENT_QX BIT(3)
-#define MD5_COMPONENT_QY BIT(4)
-#define MD5_COMPONENT_QZ BIT(5)
-#define MD5_NUM_ANIMATED_COMPONENT_BITS 6
 
 /**
  * Load an MD5 animation from file.
@@ -1703,7 +1649,7 @@ static int MOD_LoadMD5Anim(model_t *model, const char *anim_path, const char *fi
             MD5_CHECK(MD5_ParseExpect(&file_buffer, "}"));
 
             /* Build frame skeleton from the collected data */
-			BuildFrameSkeleton(joint_infos, base_frame, anim_frame_data,
+			MD5_BuildFrameSkeleton(joint_infos, base_frame, anim_frame_data,
 				&anim->skeleton_frames[frame_index * anim->num_joints], anim->num_joints);
 		} else if (!*token) {
             // assume EOF; invalid tokens will just be ignored
@@ -1722,8 +1668,6 @@ fail:
 
 static void MOD_LoadMD5(model_t *model, const char *name)
 {
-    int ret = 0;
-
     char model_name[MAX_QPATH], mesh_path[MAX_QPATH];
     COM_SplitPath(name, model_name, sizeof(model_name), mesh_path, sizeof(mesh_path), true);
 
@@ -1748,6 +1692,8 @@ static void MOD_LoadMD5(model_t *model, const char *name)
 
     if (!buffer)
         goto fail;
+    
+    int ret = 0;
 
     // md5 exists!
     if (ret = MOD_LoadMD5Mesh(model, buffer))
@@ -1769,8 +1715,7 @@ static void MOD_LoadMD5(model_t *model, const char *name)
     model->skeleton->num_skins = model->meshes[0].numskins;
     CHECK(model->skeleton->skins = MD5_Malloc(sizeof(image_t *) * model->meshes[0].numskins));
 
-    for (size_t i = 0; i < model->meshes[0].numskins; i++)
-    {
+    for (size_t i = 0; i < model->meshes[0].numskins; i++) {
         // because skins are actually absolute and
         // not always relative to the model being used,
         // we have to stick to the same behavior.

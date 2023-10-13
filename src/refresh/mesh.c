@@ -638,7 +638,7 @@ static int texnum_for_skeleton(const md5_model_t *skel)
 void Quat_rotatePoint (const quat4_t q, const vec3_t in, vec3_t out);
 void Quat_invert(const quat4_t in, quat4_t out);
 float Quat_dotProduct (const quat4_t qa, const quat4_t qb);
-void Quat_slerp (const quat4_t qa, const quat4_t qb, float t, quat4_t out);
+void Quat_slerp (const quat4_t qa, const quat4_t qb, float backlerp, float frontlerp, quat4_t out);
 
 static void draw_alias_skeleton(const md5_model_t *model, skeltessfunc_t tessfunc)
 {
@@ -700,7 +700,7 @@ static void draw_alias_skeleton(const md5_model_t *model, skeltessfunc_t tessfun
  */
 void InterpolateSkeletons (const md5_joint_t *skelA,
 	const md5_joint_t *skelB,
-	int num_joints, float interp,
+	int num_joints,
 	md5_joint_t *out)
 {
 	int i;
@@ -711,12 +711,12 @@ void InterpolateSkeletons (const md5_joint_t *skelA,
 		out[i].parent = skelA[i].parent;
 
 		/* Linear interpolation for position */
-		out[i].pos[0] = skelA[i].pos[0] + interp * (skelB[i].pos[0] - skelA[i].pos[0]);
-		out[i].pos[1] = skelA[i].pos[1] + interp * (skelB[i].pos[1] - skelA[i].pos[1]);
-		out[i].pos[2] = skelA[i].pos[2] + interp * (skelB[i].pos[2] - skelA[i].pos[2]);
+        LerpVector2(skelA[i].pos, skelB[i].pos,
+                    backlerp, frontlerp, out[i].pos);
 
 		/* Spherical linear interpolation for orientation */
-		Quat_slerp (skelA[i].orient, skelB[i].orient, interp, out[i].orient);
+		Quat_slerp (skelA[i].orient, skelB[i].orient,
+            backlerp, frontlerp, out[i].orient);
 	}
 }
 
@@ -744,9 +744,8 @@ static void PrepareMesh_Plain (const md5_model_t *mesh, const md5_joint_t *skele
 			Quat_rotatePoint (joint->orient, weight->pos, wv);
 
 			/* The sum of all weight->bias should be 1.0 */
-			finalVertex[0] += (joint->pos[0] + wv[0]) * weight->bias;
-			finalVertex[1] += (joint->pos[1] + wv[1]) * weight->bias;
-			finalVertex[2] += (joint->pos[2] + wv[2]) * weight->bias;
+            VectorAdd(joint->pos, wv, wv);
+            VectorMA(finalVertex, weight->bias, wv, finalVertex);
 		}
 
 		tess.vertices[(i * 4) + 0] = finalVertex[0];
@@ -773,7 +772,6 @@ static void tess_lerped_plain_skel(const md5_model_t *mesh)
 	InterpolateSkeletons (&mesh->skeleton_frames[frames[0]* mesh->num_joints],
 		&mesh->skeleton_frames[frames[1]* mesh->num_joints],
 		mesh->num_joints,
-		frontlerp,
 		temp_skeleton);
 
     PrepareMesh_Plain(mesh, temp_skeleton);
@@ -803,9 +801,8 @@ static void PrepareMesh_Shade (const md5_model_t *mesh, const md5_joint_t *skele
 			Quat_rotatePoint (joint->orient, weight->pos, wv);
 
 			/* The sum of all weight->bias should be 1.0 */
-			finalVertex[0] += (joint->pos[0] + wv[0]) * weight->bias;
-			finalVertex[1] += (joint->pos[1] + wv[1]) * weight->bias;
-			finalVertex[2] += (joint->pos[2] + wv[2]) * weight->bias;
+            VectorAdd(joint->pos, wv, wv);
+            VectorMA(finalVertex, weight->bias, wv, finalVertex);
             
             quat4_t orient_inv;
             Quat_invert(joint->orient, orient_inv);
@@ -844,7 +841,6 @@ static void tess_lerped_shade_skel(const md5_model_t *mesh)
 	InterpolateSkeletons (&mesh->skeleton_frames[frames[0] * mesh->num_joints],
 		&mesh->skeleton_frames[frames[1] * mesh->num_joints],
 		mesh->num_joints,
-		frontlerp,
 		temp_skeleton);
 
     PrepareMesh_Shade(mesh, temp_skeleton);
@@ -874,9 +870,8 @@ static void PrepareMesh_Shell (const md5_model_t *mesh, const md5_joint_t *skele
 			Quat_rotatePoint (joint->orient, weight->pos, wv);
 
 			/* The sum of all weight->bias should be 1.0 */
-			finalVertex[0] += (joint->pos[0] + wv[0]) * weight->bias;
-			finalVertex[1] += (joint->pos[1] + wv[1]) * weight->bias;
-			finalVertex[2] += (joint->pos[2] + wv[2]) * weight->bias;
+            VectorAdd(joint->pos, wv, wv);
+            VectorMA(finalVertex, weight->bias, wv, finalVertex);
 
             quat4_t orient_inv;
             Quat_invert(joint->orient, orient_inv);
@@ -885,9 +880,7 @@ static void PrepareMesh_Shell (const md5_model_t *mesh, const md5_joint_t *skele
             VectorAdd(finalNormal, wv, finalNormal);
 		}
 
-		tess.vertices[(i * 4) + 0] = finalVertex[0] + (finalNormal[0] * shellscale);
-		tess.vertices[(i * 4) + 1] = finalVertex[1] + (finalNormal[1] * shellscale);
-		tess.vertices[(i * 4) + 2] = finalVertex[2] + (finalNormal[2] * shellscale);
+        VectorMA(finalVertex, shellscale, finalNormal, &tess.vertices[(i * 4) + 0]);
 	}
 }
 
@@ -909,7 +902,6 @@ static void tess_lerped_shell_skel(const md5_model_t *mesh)
 	InterpolateSkeletons (&mesh->skeleton_frames[frames[0] * mesh->num_joints],
 		&mesh->skeleton_frames[frames[1] * mesh->num_joints],
 		mesh->num_joints,
-		frontlerp,
 		temp_skeleton);
 
     PrepareMesh_Shell(mesh, temp_skeleton);
