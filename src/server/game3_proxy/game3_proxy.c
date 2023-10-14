@@ -865,34 +865,34 @@ static void wrap_Pmove_export(pmove_t *pmove)
     }
 }
 
-void *wrap_GetExtension_export(const char *name)
+static void *wrap_GetExtension_export(const char *name)
 {
     return NULL;
 }
 
-void wrap_Bot_SetWeapon(edict_t *botEdict, const int weaponIndex, const bool instantSwitch) {}
-void wrap_Bot_TriggerEdict(edict_t *botEdict, edict_t *edict) {}
-void wrap_Bot_UseItem(edict_t *botEdict, const int32_t itemID) {}
+static void wrap_Bot_SetWeapon(edict_t *botEdict, const int weaponIndex, const bool instantSwitch) {}
+static void wrap_Bot_TriggerEdict(edict_t *botEdict, edict_t *edict) {}
+static void wrap_Bot_UseItem(edict_t *botEdict, const int32_t itemID) {}
 
-int32_t wrap_Bot_GetItemID(const char *classname)
+static int32_t wrap_Bot_GetItemID(const char *classname)
 { /* FIXME: Can we get that info? */
     return 0;
 }
 
-void wrap_Edict_ForceLookAtPoint(edict_t *edict, const vec3_t point)
+static void wrap_Edict_ForceLookAtPoint(edict_t *edict, const vec3_t point)
 {
     // "is only used for the in-game nav editor"
 }
 
-bool wrap_Bot_PickedUpItem(edict_t *botEdict, edict_t *itemEdict) { return false; }
+static bool wrap_Bot_PickedUpItem(edict_t *botEdict, edict_t *itemEdict) { return false; }
 
-bool wrap_Entity_IsVisibleToPlayer(edict_t *ent, edict_t *player)
+static bool wrap_Entity_IsVisibleToPlayer(edict_t *ent, edict_t *player)
 {
     // "is only useful for split screen, can always return true"
     return true;
 }
 
-const shadow_light_data_t *wrap_GetShadowLightData(int32_t entity_number)
+static const shadow_light_data_t *wrap_GetShadowLightData(int32_t entity_number)
 {
     // currently not supported
     return NULL;
