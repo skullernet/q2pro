@@ -712,7 +712,7 @@ typedef struct cvar_s {
     char        *string;
     char        *latched_string;    // for CVAR_LATCH vars
     cvar_flags_t flags;
-    qboolean    modified;   // set each time the cvar is changed
+    int32_t     modified_count;   // set each time the cvar is changed
     float       value;
     struct cvar_s *next;
     int         integer;

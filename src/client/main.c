@@ -1571,7 +1571,7 @@ static void CL_FixUpGender(void)
         Cvar_Set("gender", "female");
     else
         Cvar_Set("gender", "none");
-    info_gender->modified = false;
+    info_gender->modified_count = 0;
 }
 
 void CL_UpdateUserinfo(cvar_t *var, from_t from)
@@ -2861,7 +2861,7 @@ static void CL_InitLocal(void)
     info_hand->changed = info_hand_changed;
     info_fov = Cvar_Get("fov", "90", CVAR_USERINFO | CVAR_ARCHIVE);
     info_gender = Cvar_Get("gender", "male", CVAR_USERINFO | CVAR_ARCHIVE);
-    info_gender->modified = false; // clear this so we know when user sets it manually
+    info_gender->modified_count = 0; // clear this so we know when user sets it manually
     info_uf = Cvar_Get("uf", "", CVAR_USERINFO);
 
 

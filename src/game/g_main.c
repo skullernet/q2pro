@@ -388,11 +388,13 @@ CheckNeedPass
 void CheckNeedPass(void)
 {
     int need;
+    static int32_t password_modified, spectator_password_modified;
 
     // if password or spectator_password has changed, update needpass
     // as needed
-    if (password->modified || spectator_password->modified) {
-        password->modified = spectator_password->modified = false;
+    if (password->modified_count != password_modified || spectator_password->modified_count != spectator_password_modified) {
+        password_modified = password->modified_count;
+        spectator_password_modified = spectator_password->modified_count;
 
         need = 0;
 

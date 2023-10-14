@@ -838,6 +838,8 @@ float S_GetEntityLoopDistMult(const entity_state_t *ent)
     return SOUND_LOOPATTENUATE;
 }
 
+int32_t volume_modified = 0;
+
 /*
 ============
 S_Update

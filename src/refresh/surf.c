@@ -357,7 +357,7 @@ LIGHTMAPS BUILDING
 static void LM_InitBlock(void)
 {
     memset(lm.inuse, 0, sizeof(lm.inuse));
-}
+    }
 
 static void LM_UploadBlock(void)
 {
@@ -521,18 +521,18 @@ static void LM_RebuildSurfaces(void)
         if (surf->light_m) {
             build_primary_lightmap(surf);
         }
-    }
+        }
 
     // upload all lightmaps
     for (i = 0, m = lm.lightmaps; i < lm.nummaps; i++, m++) {
         GL_ForceTexture(1, lm.texnums[i]);
-        qglTexImage2D(GL_TEXTURE_2D, 0, lm.comp,
+            qglTexImage2D(GL_TEXTURE_2D, 0, lm.comp,
                       lm.block_size, lm.block_size, 0,
                       GL_RGBA, GL_UNSIGNED_BYTE, m->buffer);
         clear_dirty_region(m);
-        c.texUploads++;
+            c.texUploads++;
+        }
     }
-}
 
 
 /*
@@ -547,6 +547,9 @@ POLYGONS BUILDING
     ((double)(x)[0]*(y)[0]+\
      (double)(x)[1]*(y)[1]+\
      (double)(x)[2]*(y)[2])
+
+static int32_t fullbright_modified;
+static int32_t vertexlight_modified;
 
 static uint32_t color_for_surface(mface_t *surf)
 {
@@ -924,8 +927,8 @@ static void upload_world_surfaces(void)
     // end building lightmaps
     LM_EndBuilding();
 
-    gl_fullbright->modified = false;
-    gl_vertexlight->modified = false;
+    fullbright_modified = gl_fullbright->modified_count;
+    vertexlight_modified = gl_vertexlight->modified_count;
 }
 
 static void set_world_size(void)
@@ -955,7 +958,7 @@ void GL_RebuildLighting(void)
         return;
 
     // rebuild all surfaces if toggling lightmaps off/on
-    if (gl_fullbright->modified || gl_vertexlight->modified) {
+    if (gl_fullbright->modified_count != fullbright_modified || gl_vertexlight->modified_count != vertexlight_modified) {
         upload_world_surfaces();
         return;
     }
