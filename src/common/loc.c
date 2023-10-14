@@ -20,6 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/cvar.h"
 #include "common/files.h"
 #include "common/common.h"
+#include "common/loc.h"
 
 static cvar_t *loc_file;
 
@@ -280,7 +281,7 @@ size_t Loc_Localize(const char *base, bool allow_in_place, const char **argument
     return Q_strlcat(output, str->format + arg->end, output_length);
 }
 
-static void Loc_Unload()
+static void Loc_Unload(void)
 {
     if (!loc_head) {
         return;
@@ -301,7 +302,7 @@ static void Loc_Unload()
 Loc_ReloadFile
 ================
 */
-void Loc_ReloadFile()
+void Loc_ReloadFile(void)
 {
     Loc_Unload();
 
@@ -398,7 +399,7 @@ line_error:
 Loc_Init
 ================
 */
-void Loc_Init()
+void Loc_Init(void)
 {
 	loc_file = Cvar_Get("loc_file", "localization/loc_english.txt", 0);
 
