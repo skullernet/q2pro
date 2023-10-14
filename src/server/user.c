@@ -220,46 +220,6 @@ static void write_baseline_stream(void)
     SV_ClientAddMessage(sv_client, MSG_GAMESTATE);
 }
 
-static void write_gamestate(void)
-{
-    entity_packed_t  *base;
-    int         i, j;
-    size_t      length;
-    char        *string;
-
-    MSG_WriteByte(svc_rr_gamestate);
-
-    // write configstrings
-    for (i = 0; i < sv_client->csr->end; i++) {
-        string = sv_client->configstrings[i];
-        if (!string[0]) {
-            continue;
-        }
-        length = Q_strnlen(string, MAX_QPATH);
-        MSG_WriteShort(i);
-        MSG_WriteData(string, length);
-        MSG_WriteByte(0);
-    }
-    MSG_WriteShort(i);      // end of configstrings
-
-    // write baselines
-    for (i = 0; i < SV_BASELINES_CHUNKS; i++) {
-        base = sv_client->baselines[i];
-        if (!base) {
-            continue;
-        }
-        for (j = 0; j < SV_BASELINES_PER_CHUNK; j++) {
-            if (base->number) {
-                write_baseline(base);
-            }
-            base++;
-        }
-    }
-    MSG_WriteShort(0);   // end of baselines
-
-    SV_ClientAddMessage(sv_client, MSG_GAMESTATE);
-}
-
 static void stuff_cmds(list_t *list)
 {
     stuffcmd_t *stuff;

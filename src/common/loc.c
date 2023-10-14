@@ -308,15 +308,13 @@ void Loc_ReloadFile(void)
 
 	char *buffer;
 
-	int64_t len = FS_LoadFile(loc_file->string, &buffer);
+	FS_LoadFile(loc_file->string, (void**)&buffer);
 
 	if (!buffer) {
 		return;
 	}
 
-    size_t line_start = 0;
     size_t num_locs = 0;
-    size_t line_num = 0;
 
     loc_string_t **tail = &loc_head;
 
@@ -353,7 +351,7 @@ void Loc_ReloadFile(void)
             break;
         }
 
-        char *value = COM_ParseEx(&parse_buf, PARSE_FLAG_ESCAPE, loc.format, sizeof(loc.format));
+        COM_ParseEx(&parse_buf, PARSE_FLAG_ESCAPE, loc.format, sizeof(loc.format));
 
         // skip platform specifiers
         if (has_platform_spec) {
