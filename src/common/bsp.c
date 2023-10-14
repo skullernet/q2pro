@@ -114,6 +114,7 @@ LOAD(Texinfo)
 {
     mtexinfo_t  *out;
     int         i;
+    char        material_file[MAX_QPATH];
 #if USE_REF
     int         j;
     int32_t     next;
@@ -137,10 +138,35 @@ LOAD(Texinfo)
 #endif
         out->c.flags = BSP_Long();
         out->c.value = BSP_Long();
+        out->c.id = i + 1; // Kex
 
         memcpy(out->c.name, in, sizeof(out->c.name) - 1);
         memcpy(out->name, in, sizeof(out->name) - 1);
         in += MAX_TEXNAME;
+
+        // check if we already loaded this material
+        for (j = i - 1; j >= 0; --j) {
+            if (!strcmp(out->name, bsp->texinfo[j].name)) {
+                Q_strlcpy(out->c.material, bsp->texinfo[j].c.material, sizeof(out->c.material));
+                break;
+            }
+        }
+
+        // didn't find it, load it
+        if (j == -1) {
+            Q_strlcpy(material_file, "textures/", sizeof(material_file));
+            Q_strlcat(material_file, out->name, sizeof(material_file));
+            Q_strlcat(material_file, ".mat", sizeof(material_file));
+
+            const char *buffer;
+
+            FS_LoadFile(material_file, &buffer);
+
+            if (buffer) {
+                Q_strlcpy(out->c.material, buffer, sizeof(out->c.material));
+                FS_FreeFile(buffer);
+            }
+        }
 
 #if USE_REF
         next = (int32_t)BSP_Long();
