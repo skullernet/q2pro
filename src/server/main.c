@@ -2168,7 +2168,7 @@ void SV_Init(void)
 
     Cvar_Get("sv_features", va("%d", SV_FEATURES), CVAR_ROM);
 
-    sv_tick_rate = Cvar_Get("sv_tick_rate", "40", 0);
+    sv_tick_rate = Cvar_Get("sv_tick_rate", "40", CVAR_LATCH);
 
     g_features = Cvar_Get("g_features", "0", CVAR_ROM);
 

@@ -148,7 +148,7 @@ typedef struct {
 // TODO cache these
 #define SV_FRAMERATE        (sv_tick_rate->integer)
 #define SV_FRAMETIME        ((1.0f / sv_tick_rate->integer) * 1000)
-#define SV_FRAMEDIV         4
+#define SV_FRAMEDIV         (sv_tick_rate->integer / 10)
 #define SV_FRAMESYNC        1
 #define SV_CLIENTSYNC(cl)   1
 #endif
