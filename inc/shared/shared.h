@@ -713,10 +713,10 @@ typedef struct cvar_s {
     qboolean    modified;   // set each time the cvar is changed
     float       value;
     struct cvar_s *next;
+    int         integer;
 
 // ------ new stuff ------
 #if USE_CLIENT || USE_SERVER
-    int         integer;
     char        *default_string;
     xchanged_t      changed;
     xgenerator_t    generator;
