@@ -221,6 +221,7 @@ size_t Loc_Localize(const char *base, bool allow_in_place, const char **argument
             base++;
             str = Loc_Find(base);
         } else if (Loc_HasArguments(base)) {
+            in_place_loc.num_arguments = 0;
             Q_strlcpy(in_place_loc.format, base, sizeof(in_place_loc.format));
 
             if (!Loc_Parse(&in_place_loc)) {
