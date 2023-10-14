@@ -293,6 +293,7 @@ void SV_WriteFrameToClient_Enhanced(client_t *client)
     }
 
     *b1 = svc_frame;
+    *b2 = suppressed;
     *bflags = extraflags;
 
     client->suppress_count = 0;
