@@ -139,6 +139,25 @@ static int CL_FindFootstepSurface(int entnum)
 
 /*
 =================
+CL_FindFootstepSurface
+=================
+*/
+static int CL_FindFootstepSurface(int entnum)
+{
+    centity_t *cent = &cl_entities[entnum];
+
+    // not in our frame so don't bother doing calculations
+    if (cent->serverframe != cl.frame.number) {
+        return FOOTSTEP_ID_DEFAULT;
+    }
+
+    // TODO: implement
+
+    return FOOTSTEP_ID_DEFAULT;
+}
+
+/*
+=================
 CL_PlayFootstepSfx
 =================
 */
