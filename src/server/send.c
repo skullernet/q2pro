@@ -515,7 +515,6 @@ static bool check_entity(client_t *client, int entnum)
 static void emit_snd(client_t *client, message_packet_t *msg)
 {
     int flags, entnum;
-    int i;
 
     entnum = msg->sendchan >> 3;
     flags = msg->flags;

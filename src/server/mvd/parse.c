@@ -452,7 +452,6 @@ static void MVD_ParseSound(mvd_t *mvd, int extrabits)
     mleaf_t     *leaf1, *leaf2;
     message_packet_t    *msg;
     edict_t     *entity;
-    int         i;
 
     flags = MSG_ReadByte();
     if (mvd->csr->extended && flags & SND_INDEX16)
