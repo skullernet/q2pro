@@ -251,7 +251,7 @@ size_t Loc_Localize(const char *base, bool allow_in_place, const char **argument
     
     for (size_t i = 0; i < num_arguments; i++) {
         if (!arguments[i]) {
-            Com_WPrintf("%s: invalid argument at position %u\n", __func__, i);
+            Com_WPrintf("%s: invalid argument at position %zu\n", __func__, i);
             return Q_strlcpy(output, base, output_length);
         }
     }
@@ -391,7 +391,7 @@ line_error:
 
 	FS_FreeFile(buffer);
 
-    Com_Printf("Loaded %u localization strings\n", num_locs);
+    Com_Printf("Loaded %zu localization strings\n", num_locs);
 }
 
 /*
