@@ -115,8 +115,9 @@ LOAD(Texinfo)
     mtexinfo_t  *out;
     int         i;
     char        material_file[MAX_QPATH];
-#if USE_REF
     int         j;
+#if USE_REF
+    int         highest_step_id = 2;
     int32_t     next;
     mtexinfo_t  *step;
 #endif
@@ -144,10 +145,13 @@ LOAD(Texinfo)
         memcpy(out->name, in, sizeof(out->name) - 1);
         in += MAX_TEXNAME;
 
-        // check if we already loaded this material
+        // check if we already loaded this textures' material
         for (j = i - 1; j >= 0; --j) {
             if (!strcmp(out->name, bsp->texinfo[j].name)) {
                 Q_strlcpy(out->c.material, bsp->texinfo[j].c.material, sizeof(out->c.material));
+#if USE_REF
+                out->step_id = bsp->texinfo[j].step_id;
+#endif
                 break;
             }
         }
@@ -158,7 +162,7 @@ LOAD(Texinfo)
             Q_strlcat(material_file, out->name, sizeof(material_file));
             Q_strlcat(material_file, ".mat", sizeof(material_file));
 
-            const char *buffer;
+            char *buffer;
 
             FS_LoadFile(material_file, &buffer);
 
@@ -166,6 +170,27 @@ LOAD(Texinfo)
                 Q_strlcpy(out->c.material, buffer, sizeof(out->c.material));
                 FS_FreeFile(buffer);
             }
+            
+#if USE_REF
+            // set footstep ID
+            if (!*out->c.material || !strcmp(out->c.material, "default")) {
+                out->step_id = FOOTSTEP_ID_DEFAULT;
+            } else if (!strcmp(out->c.material, "ladder")) {
+                out->step_id = FOOTSTEP_ID_LADDER;
+            } else {
+                // find a matching material from another texinfo
+                for (j = i - 1; j >= 0; --j) {
+                    if (!strcmp(out->c.material, bsp->texinfo[j].c.material)) {
+                        out->step_id = bsp->texinfo[j].step_id;
+                        break;
+                    }
+                }
+
+                if (j == -1) {
+                    out->step_id = highest_step_id++;
+                }
+            }
+#endif
         }
 
 #if USE_REF

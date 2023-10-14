@@ -45,6 +45,9 @@ typedef struct mtexinfo_s {  // used internally due to name len probs //ZOID
     csurface_t          c;
     char                name[MAX_TEXNAME];
 
+    // footstep ID; will be identical for matching c.materials.
+    int                 step_id;
+
 #if USE_REF
     vec3_t              axis[2];
     vec2_t              offset;
