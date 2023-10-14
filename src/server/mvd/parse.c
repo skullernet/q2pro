@@ -1045,7 +1045,7 @@ static void MVD_ParseServerData(mvd_t *mvd, int extrabits)
 
 bool MVD_ParseMessage(mvd_t *mvd)
 {
-    int     cmd, extrabits;
+    int     cmd, extrabits = 0;
     bool    ret = false;
 
 #if USE_DEBUG
