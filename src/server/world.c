@@ -503,7 +503,7 @@ static mnode_t *SV_WorldNodes(void)
 SV_PointContents
 =============
 */
-int SV_PointContents(const vec3_t p)
+contents_t SV_PointContents(const vec3_t p)
 {
     edict_t     *touch[MAX_EDICTS_OLD], *hit;
     int         i, num;
@@ -603,7 +603,7 @@ Passedict and edicts owned by passedict are explicitly not checked.
 */
 trace_t q_gameabi SV_Trace(const vec3_t start, const vec3_t mins,
                            const vec3_t maxs, const vec3_t end,
-                           edict_t *passedict, int contentmask)
+                           edict_t *passedict, contents_t contentmask)
 {
     trace_t     trace;
 
@@ -633,7 +633,7 @@ Can be used to clip to SOLID_TRIGGER by its BSP tree.
 */
 trace_t q_gameabi SV_Clip(const vec3_t start, const vec3_t mins,
                           const vec3_t maxs, const vec3_t end,
-                          edict_t *clip, int contentmask)
+                          edict_t *clip, contents_t contentmask)
 {
     trace_t     trace;
 

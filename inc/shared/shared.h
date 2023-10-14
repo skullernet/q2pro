@@ -774,6 +774,8 @@ COLLISION DETECTION
 #define CONTENTS_PROJECTILE     BIT(31)
 //KEX
 
+typedef uint32_t contents_t;
+
 #define SURF_LIGHT              BIT(0)      // value will hold the light strength
 #define SURF_SLICK              BIT(1)      // effects game physics
 #define SURF_SKY                BIT(2)      // don't draw, but add to skybox
@@ -841,7 +843,7 @@ typedef struct {
     vec3_t      endpos;     // final position
     cplane_t    plane;      // surface normal at impact
     csurface_t  *surface;   // surface hit
-    int         contents;   // contents on other side of surface hit
+    contents_t  contents;   // contents on other side of surface hit
     struct edict_s  *ent;   // not set by CM_*() functions
 
     // [Paril-KEX] the second-best surface hit from a trace
@@ -943,10 +945,10 @@ typedef struct {
     struct edict_s *player; // opaque handle
 
     // callbacks to test the world
-    trace_t     (* q_gameabi trace)(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, const struct edict_s* passent, int contentmask);
+    trace_t     (* q_gameabi trace)(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, const struct edict_s* passent, contents_t contentmask);
     // [Paril-KEX] clip against world only
-    trace_t     (* q_gameabi clip)(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int contentmask);
-    int         (*pointcontents)(const vec3_t point);
+    trace_t     (* q_gameabi clip)(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, contents_t contentmask);
+    contents_t  (*pointcontents)(const vec3_t point);
 
     // [KEX] variables (in)
     vec3_t viewoffset; // last viewoffset (for accurate calculation of blending)

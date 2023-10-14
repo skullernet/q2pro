@@ -819,13 +819,13 @@ size_t SV_AreaEdicts(const vec3_t mins, const vec3_t maxs, edict_t **list, size_
 //
 // functions that interact with everything apropriate
 //
-int SV_PointContents(const vec3_t p);
+contents_t SV_PointContents(const vec3_t p);
 // returns the CONTENTS_* value from the world at the given point.
 // Quake 2 extends this to also check entities, to allow moving liquids
 
 trace_t q_gameabi SV_Trace(const vec3_t start, const vec3_t mins,
                            const vec3_t maxs, const vec3_t end,
-                           edict_t *passedict, int contentmask);
+                           edict_t *passedict, contents_t contentmask);
 // mins and maxs are relative
 
 // if the entire move stays in a solid volume, trace.allsolid will be set,
@@ -838,4 +838,4 @@ trace_t q_gameabi SV_Trace(const vec3_t start, const vec3_t mins,
 
 trace_t q_gameabi SV_Clip(const vec3_t start, const vec3_t mins,
                           const vec3_t maxs, const vec3_t end,
-                          edict_t *clip, int contentmask);
+                          edict_t *clip, contents_t contentmask);

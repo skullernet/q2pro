@@ -286,7 +286,7 @@ static q_noreturn void PF_error(const char *msg)
     Com_Error(ERR_DROP, "Game Error: %s", msg);
 }
 
-static trace_t PF_Clip(edict_t *entity, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int contentmask)
+static trace_t PF_Clip(edict_t *entity, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, contents_t contentmask)
 {
     return SV_Clip(start, mins, maxs, end, entity, contentmask);
 }

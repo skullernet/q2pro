@@ -139,7 +139,7 @@ struct edict_s {
     vec3_t      mins, maxs;
     vec3_t      absmin, absmax, size;
     solid_t     solid;
-    int         clipmask;
+    contents_t  clipmask;
     edict_t     *owner;
 
     //================================
@@ -303,9 +303,9 @@ typedef struct {
     void (*setmodel)(edict_t *ent, const char *name);
 
     // collision detection
-    trace_t (* q_gameabi trace)(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, edict_t *passent, int contentmask);
-    trace_t (* q_gameabi clip)(edict_t *entity, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int contentmask);
-    int (*pointcontents)(const vec3_t point);
+    trace_t (* q_gameabi trace)(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, edict_t *passent, contents_t contentmask);
+    trace_t (* q_gameabi clip)(edict_t *entity, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, contents_t contentmask);
+    contents_t (*pointcontents)(const vec3_t point);
     qboolean (*inPVS)(const vec3_t p1, const vec3_t p2, bool portals);
     qboolean (*inPHS)(const vec3_t p1, const vec3_t p2, bool portals);
     void (*SetAreaPortalState)(int portalnum, bool open);

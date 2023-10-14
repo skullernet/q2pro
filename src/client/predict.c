@@ -115,7 +115,7 @@ static void CL_ClipMoveToEntities(trace_t *tr, const vec3_t start, const vec3_t 
 CL_Trace
 ================
 */
-void CL_Trace(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, const struct edict_s* passent, int contentmask)
+void CL_Trace(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, const struct edict_s* passent, contents_t contentmask)
 {
     // check against world
     CM_BoxTrace(tr, start, end, mins, maxs, cl.bsp->nodes, contentmask);
@@ -126,14 +126,14 @@ void CL_Trace(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t m
     CL_ClipMoveToEntities(tr, start, mins, maxs, end, contentmask);
 }
 
-static trace_t q_gameabi CL_PMTrace(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, const struct edict_s* passent, int contentmask)
+static trace_t q_gameabi CL_PMTrace(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, const struct edict_s* passent, contents_t contentmask)
 {
     trace_t t;
     CL_Trace(&t, start, mins, maxs, end, passent, contentmask);
     return t;
 }
 
-static trace_t q_gameabi CL_Clip(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int contentmask)
+static trace_t q_gameabi CL_Clip(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, contents_t contentmask)
 {
     trace_t     trace;
 
@@ -146,7 +146,7 @@ static trace_t q_gameabi CL_Clip(const vec3_t start, const vec3_t mins, const ve
     return trace;
 }
 
-static int CL_PointContents(const vec3_t point)
+static contents_t CL_PointContents(const vec3_t point)
 {
     int         i;
     centity_t   *ent;

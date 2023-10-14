@@ -251,6 +251,11 @@ static game3_trace_t wrap_trace(const vec3_t start, const vec3_t mins,
     return tr;
 }
 
+static int wrap_pointcontents(const vec3_t point)
+{
+    return game_import.pointcontents(point);
+}
+
 static void wrap_local_sound(game3_edict_t *target, const vec3_t origin, game3_edict_t *ent, int channel, int soundindex, float volume, float attenuation, float timeofs)
 {
     game_import.local_sound(translate_edict_from_game(target), origin, translate_edict_from_game(ent), channel, soundindex, volume, attenuation, timeofs, 0);
@@ -932,7 +937,7 @@ game_export_t *GetGame3Proxy(game_import_t *import, const game_import_ex_t *impo
     import3.unlinkentity = wrap_unlinkentity;
     import3.BoxEdicts = wrap_BoxEdicts;
     import3.trace = wrap_trace;
-    import3.pointcontents = import->pointcontents;
+    import3.pointcontents = wrap_pointcontents;
     import3.setmodel = wrap_setmodel;
     import3.inPVS = wrap_inPVS;
     import3.inPHS = wrap_inPHS;

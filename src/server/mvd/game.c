@@ -2080,7 +2080,7 @@ static mvd_player_t *MVD_HitPlayer(mvd_client_t *client)
     return target;
 }
 
-static trace_t q_gameabi MVD_Trace(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, const edict_t* passent, int contentmask)
+static trace_t q_gameabi MVD_Trace(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, const edict_t* passent, contents_t contentmask)
 {
     trace_t trace;
 
@@ -2091,7 +2091,7 @@ static trace_t q_gameabi MVD_Trace(const vec3_t start, const vec3_t mins, const 
     return trace;
 }
 
-static int MVD_PointContents(const vec3_t p)
+static contents_t MVD_PointContents(const vec3_t p)
 {
     return 0;
 }
