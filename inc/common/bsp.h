@@ -60,7 +60,9 @@ typedef struct {
 
 #define SURF_TRANS_MASK (SURF_TRANS33 | SURF_TRANS66)
 #define SURF_COLOR_MASK (SURF_TRANS_MASK | SURF_WARP)
-#define SURF_NOLM_MASK  (SURF_COLOR_MASK | SURF_FLOWING | SURF_SKY | SURF_NODRAW)
+
+#define SURF_NOLM_MASK_LIT_LIQUIDS  (SURF_SKY | SURF_NODRAW)
+#define SURF_NOLM_MASK_VANILLA      (SURF_COLOR_MASK | SURF_FLOWING | SURF_NOLM_MASK_LIT_LIQUIDS)
 
 #define DSURF_PLANEBACK     1
 
@@ -288,6 +290,8 @@ typedef struct bsp_s {
     lightgrid_t     lightgrid;
 
     bool            lm_decoupled;
+
+    int             nolm_mask;
 #endif
     bool            extended;
 
@@ -306,9 +310,9 @@ typedef struct {
     float       fraction;
 } lightpoint_t;
 
-void BSP_LightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end, mnode_t *headnode);
+void BSP_LightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end, mnode_t *headnode, int32_t nolm_mask);
 void BSP_TransformedLightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end,
-                               mnode_t *headnode, const vec3_t origin, const vec3_t angles);
+                               mnode_t *headnode, int32_t nolm_mask, const vec3_t origin, const vec3_t angles);
 
 lightgrid_sample_t *BSP_LookupLightgrid(lightgrid_t *grid, int32_t point[3]);
 #endif

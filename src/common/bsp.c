@@ -1360,6 +1360,28 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
             bspx_lumps[i].load(bsp, buf + ext[i].fileofs, ext[i].filelen);
         }
     }
+
+    // check if we have lit liquids/translucents; this is a bit
+    // messy because while empty lightmap surfaces are supposed
+    // to contain lightofs -1, the GPL release of qrad3 caused
+    // them to have lightofs 0 instead, which the engine ignored
+    // anyways because it had SURF_WARP; now that we support lit
+    // liquids, we have to detect this incorrect behavior.
+    bsp->nolm_mask = SURF_NOLM_MASK_VANILLA;
+    int num_lit_liquids = 0;
+    mface_t *face;
+    
+    // find at least two surfaces that contain lightmap data
+    for (i = 0, face = bsp->faces; num_lit_liquids < 2 && i < bsp->numfaces; i++, face++) {
+        if (face->texinfo->c.flags & (SURF_COLOR_MASK | SURF_FLOWING) &&
+            face->lightmap != bsp->lightmap) {
+            num_lit_liquids++;
+        }
+    }
+
+    if (num_lit_liquids == 2) {
+        bsp->nolm_mask = SURF_NOLM_MASK_LIT_LIQUIDS;
+    }
 #endif
 
     Hunk_End(&bsp->hunk);
@@ -1402,7 +1424,7 @@ HELPER FUNCTIONS
 
 static lightpoint_t *light_point;
 
-static bool BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, const vec3_t p1, const vec3_t p2)
+static bool BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, const vec3_t p1, const vec3_t p2, int nolm_mask)
 {
     vec_t d1, d2, frac, midf, s, t;
     vec3_t mid;
@@ -1427,13 +1449,13 @@ static bool BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, const v
         LerpVector(p1, p2, frac, mid);
 
         // check near side
-        if (BSP_RecursiveLightPoint(node->children[side], p1f, midf, p1, mid))
+        if (BSP_RecursiveLightPoint(node->children[side], p1f, midf, p1, mid, nolm_mask))
             return true;
 
         for (i = 0, surf = node->firstface; i < node->numfaces; i++, surf++) {
             if (!surf->lightmap)
                 continue;
-            if (surf->drawflags & SURF_NOLM_MASK)
+            if (surf->drawflags & nolm_mask)
                 continue;
 
             s = DotProduct(surf->lm_axis[0], mid) + surf->lm_offset[0];
@@ -1452,23 +1474,23 @@ static bool BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, const v
         }
 
         // check far side
-        return BSP_RecursiveLightPoint(node->children[side ^ 1], midf, p2f, mid, p2);
+        return BSP_RecursiveLightPoint(node->children[side ^ 1], midf, p2f, mid, p2, nolm_mask);
     }
 
     return false;
 }
 
-void BSP_LightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end, mnode_t *headnode)
+void BSP_LightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end, mnode_t *headnode, int nolm_mask)
 {
     light_point = point;
     light_point->surf = NULL;
     light_point->fraction = 1;
 
-    BSP_RecursiveLightPoint(headnode, 0, 1, start, end);
+    BSP_RecursiveLightPoint(headnode, 0, 1, start, end, nolm_mask);
 }
 
 void BSP_TransformedLightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end,
-                               mnode_t *headnode, const vec3_t origin, const vec3_t angles)
+                               mnode_t *headnode, int nolm_mask, const vec3_t origin, const vec3_t angles)
 {
     vec3_t start_l, end_l;
     vec3_t axis[3];
@@ -1489,7 +1511,7 @@ void BSP_TransformedLightPoint(lightpoint_t *point, const vec3_t start, const ve
     }
 
     // sweep the line through the model
-    if (!BSP_RecursiveLightPoint(headnode, 0, 1, start_l, end_l))
+    if (!BSP_RecursiveLightPoint(headnode, 0, 1, start_l, end_l, nolm_mask))
         return;
 
     // rotate plane normal into the worlds frame of reference

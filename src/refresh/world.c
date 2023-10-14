@@ -138,7 +138,7 @@ static bool _GL_LightPoint(const vec3_t start, vec3_t color)
     end[2] = start[2] - 8192;
 
     // get base lightpoint from world
-    BSP_LightPoint(&glr.lightpoint, start, end, bsp->nodes);
+    BSP_LightPoint(&glr.lightpoint, start, end, bsp->nodes, bsp->nolm_mask);
 
     // trace to other BSP models
     for (i = 0; i < glr.fd.num_entities; i++) {
@@ -173,7 +173,7 @@ static bool _GL_LightPoint(const vec3_t start, vec3_t color)
         }
 
         BSP_TransformedLightPoint(&pt, start, end, model->headnode,
-                                  ent->origin, angles);
+                                  gl_static.world.cache->nolm_mask, ent->origin, angles);
 
         if (pt.fraction < glr.lightpoint.fraction)
             glr.lightpoint = pt;
@@ -209,7 +209,7 @@ static void GL_MarkLights_r(mnode_t *node, dlight_t *light, uint64_t lightbit)
         face = node->firstface;
         count = node->numfaces;
         while (count--) {
-            if (!(face->drawflags & SURF_NOLM_MASK)) {
+            if (!(face->drawflags & gl_static.world.cache->nolm_mask)) {
                 if (face->dlightframe != glr.dlightframe) {
                     face->dlightframe = glr.dlightframe;
                     face->dlightbits = 0;

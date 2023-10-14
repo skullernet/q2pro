@@ -272,7 +272,7 @@ void GL_PushLights(mface_t *surf)
     if (!surf->lightmap) {
         return;
     }
-    if (surf->drawflags & SURF_NOLM_MASK) {
+    if (surf->drawflags & gl_static.world.cache->nolm_mask) {
         return;
     }
     if (!surf->texnum[1]) {
@@ -451,7 +451,7 @@ static void LM_RebuildSurfaces(void)
         if (!surf->lightmap) {
             continue;
         }
-        if (surf->drawflags & SURF_NOLM_MASK) {
+        if (surf->drawflags & gl_static.world.cache->nolm_mask) {
             continue;
         }
         if (!surf->texnum[1]) {
@@ -684,7 +684,7 @@ static void build_surface_light(mface_t *surf, vec_t *vbo)
     if (!surf->lightmap)
         return;
 
-    if (surf->drawflags & SURF_NOLM_MASK)
+    if (surf->drawflags & gl_static.world.cache->nolm_mask)
         return;
 
     smax = surf->lm_width;
