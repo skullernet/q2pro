@@ -696,6 +696,8 @@ CVARS (console variables)
                                 // but can be set from the command line
 #define CVAR_LATCH      BIT(4)  // save changes until server restart
 
+typedef uint32_t cvar_flags_t;
+
 #if USE_CLIENT || USE_SERVER
 struct cvar_s;
 struct genctx_s;
@@ -709,7 +711,7 @@ typedef struct cvar_s {
     char        *name;
     char        *string;
     char        *latched_string;    // for CVAR_LATCH vars
-    int         flags;
+    cvar_flags_t flags;
     qboolean    modified;   // set each time the cvar is changed
     float       value;
     struct cvar_s *next;
