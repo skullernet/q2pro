@@ -999,7 +999,10 @@ static void CL_SendBatchedCmd(void)
     Cvar_ClampInteger(cl_packetdup, 0, MAX_PACKET_FRAMES - 1);
     numDups = cl_packetdup->integer;
 
-    MSG_WriteByte(numDups);
+    if(cls.serverProtocol == PROTOCOL_VERSION_RERELEASE)
+        MSG_WriteByte(numDups);
+    else
+        *patch |= numDups << SVCMD_BITS;
 
     // send lightlevel
     MSG_WriteByte(cl.lightlevel);

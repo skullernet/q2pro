@@ -604,7 +604,7 @@ static void SVC_GetChallenge(void)
 
     // send it back
     Netchan_OutOfBand(NS_SERVER, &net_from,
-                      "challenge %u p=34,35,36", challenge);
+                      "challenge %u p=%d", challenge, PROTOCOL_VERSION_RERELEASE);
 }
 
 /*
@@ -643,14 +643,11 @@ static bool parse_basic_params(conn_params_t *p)
     p->qport = Q_atoi(Cmd_Argv(2)) ;
     p->challenge = Q_atoi(Cmd_Argv(3));
 
-    // check for invalid protocol version
-    if (p->protocol < PROTOCOL_VERSION_OLD ||
-        p->protocol > PROTOCOL_VERSION_Q2PRO)
-        return reject("Unsupported protocol version %d.\n", p->protocol);
-
-    // check for valid, but outdated protocol version
-    if (p->protocol < PROTOCOL_VERSION_DEFAULT)
-        return reject("You need Quake 2 version 3.19 or higher.\n");
+    /* Reject any client that doesn't support the rerelease features -
+     * Old clients can't support certain things, particularly
+     * game-controlled pmove. */
+    if (p->protocol != PROTOCOL_VERSION_RERELEASE)
+        return reject("You need a 'rerelease' capable client to connect to this server.\n");
 
     return true;
 }
@@ -766,52 +763,14 @@ static bool parse_enhanced_params(conn_params_t *p)
 {
     char *s;
 
-    if (p->protocol == PROTOCOL_VERSION_R1Q2) {
-        // set minor protocol version
-        s = Cmd_Argv(6);
-        if (*s) {
-            p->version = Q_clip(Q_atoi(s),
-                PROTOCOL_VERSION_R1Q2_MINIMUM,
-                PROTOCOL_VERSION_R1Q2_CURRENT);
-        } else {
-            p->version = PROTOCOL_VERSION_R1Q2_MINIMUM;
-        }
-        p->nctype = NETCHAN_OLD;
-        p->has_zlib = true;
-    } else if (p->protocol == PROTOCOL_VERSION_Q2PRO) {
-        // set netchan type
-        s = Cmd_Argv(6);
-        if (*s) {
-            p->nctype = Q_atoi(s);
-            if (p->nctype < NETCHAN_OLD || p->nctype > NETCHAN_NEW)
-                return reject("Invalid netchan type.\n");
-        } else {
-            p->nctype = NETCHAN_NEW;
-        }
+    p->nctype = NETCHAN_NEW;
 
-        // set zlib
-        s = Cmd_Argv(7);
-        p->has_zlib = !*s || Q_atoi(s);
+    // set zlib
+    s = Cmd_Argv(6);
+    p->has_zlib = !*s || atoi(s);
 
-        // set minor protocol version
-        s = Cmd_Argv(8);
-        if (*s) {
-            p->version = Q_clip(Q_atoi(s),
-                PROTOCOL_VERSION_Q2PRO_MINIMUM,
-                PROTOCOL_VERSION_Q2PRO_CURRENT);
-            if (p->version == PROTOCOL_VERSION_Q2PRO_RESERVED) {
-                p->version--; // never use this version
-            }
-        } else {
-            p->version = PROTOCOL_VERSION_Q2PRO_MINIMUM;
-        }
-    }
-
-    if (!CLIENT_COMPATIBLE(&svs.csr, p)) {
-        return reject("This is a protocol limit removing enhanced server.\n"
-                      "Your client version is not compatible. Make sure you are "
-                      "running latest Q2PRO client version.\n");
-    }
+    // set minor protocol version
+    p->version = PROTOCOL_VERSION_Q2PRO_EXTENDED_LIMITS;
 
     return true;
 }
@@ -972,49 +931,28 @@ static client_t *find_client_slot(conn_params_t *params)
 
 static void init_pmove_and_es_flags(client_t *newcl)
 {
-    int force;
-
     // copy default pmove parameters
     newcl->pmp = sv_pmp;
     newcl->pmp.airaccelerate = sv_airaccelerate->integer;
 
     // common extensions
-    force = 2;
-    if (newcl->protocol >= PROTOCOL_VERSION_R1Q2) {
-        newcl->pmp.speedmult = 2;
-        force = 1;
-    }
-    newcl->pmp.strafehack = sv_strafejump_hack->integer >= force;
-
-    // r1q2 extensions
-    if (newcl->protocol == PROTOCOL_VERSION_R1Q2) {
-        newcl->esFlags |= MSG_ES_BEAMORIGIN;
-        if (newcl->version >= PROTOCOL_VERSION_R1Q2_LONG_SOLID) {
-            newcl->esFlags |= MSG_ES_LONGSOLID;
-        }
-    }
+    newcl->pmp.speedmult = 2;
+    newcl->pmp.strafehack = sv_strafejump_hack->integer >= 1;
 
     // q2pro extensions
-    force = 2;
-    if (newcl->protocol == PROTOCOL_VERSION_Q2PRO) {
-        if (sv_qwmod->integer) {
-            PmoveEnableQW(&newcl->pmp);
-        }
-        newcl->pmp.flyhack = true;
-        newcl->pmp.flyfriction = 4;
-        newcl->esFlags |= MSG_ES_UMASK | MSG_ES_LONGSOLID;
-        if (newcl->version >= PROTOCOL_VERSION_Q2PRO_BEAM_ORIGIN) {
-            newcl->esFlags |= MSG_ES_BEAMORIGIN;
-        }
-        if (newcl->version >= PROTOCOL_VERSION_Q2PRO_SHORT_ANGLES) {
-            newcl->esFlags |= MSG_ES_SHORTANGLES;
-        }
-        if (svs.csr.extended) {
-            newcl->esFlags |= MSG_ES_EXTENSIONS;
-        }
-        force = 1;
+    if (sv_qwmod->integer) {
+        PmoveEnableQW(&newcl->pmp);
     }
-    newcl->pmp.waterhack = sv_waterjump_hack->integer >= force;
+    newcl->pmp.flyhack = true;
+    newcl->pmp.flyfriction = 4;
+    newcl->esFlags |= MSG_ES_UMASK | MSG_ES_LONGSOLID;
+    newcl->esFlags |= MSG_ES_BEAMORIGIN;
+    newcl->esFlags |= MSG_ES_SHORTANGLES;
+    if (svs.csr.extended) {
+        newcl->esFlags |= MSG_ES_EXTENSIONS;
+    }
+    newcl->esFlags |= MSG_ES_FLOAT_COORDS;
+    newcl->pmp.waterhack = sv_waterjump_hack->integer >= 1;
 }
 
 static void send_connect_packet(client_t *newcl, int nctype)
@@ -1024,12 +962,10 @@ static void send_connect_packet(client_t *newcl, int nctype)
     const char *dlstring1   = "";
     const char *dlstring2   = "";
 
-    if (newcl->protocol == PROTOCOL_VERSION_Q2PRO) {
-        if (nctype == NETCHAN_NEW)
-            ncstring = " nc=1";
-        else
-            ncstring = " nc=0";
-    }
+    if (nctype == NETCHAN_NEW)
+        ncstring = " nc=1";
+    else
+        ncstring = " nc=0";
 
     if (!sv_force_reconnect->string[0] || newcl->reconnect_var[0])
         acstring = AC_ClientConnect(newcl);
@@ -1153,11 +1089,7 @@ static void SVC_DirectConnect(void)
 
     SV_InitClientSend(newcl);
 
-    if (newcl->protocol == PROTOCOL_VERSION_DEFAULT) {
-        newcl->WriteFrame = SV_WriteFrameToClient_Default;
-    } else {
-        newcl->WriteFrame = SV_WriteFrameToClient_Enhanced;
-    }
+    newcl->WriteFrame = SV_WriteFrameToClient_Enhanced;
 
     // loopback client doesn't need to reconnect
     if (NET_IsLocalAddress(&net_from)) {
@@ -1515,15 +1447,7 @@ static void SV_PacketEvent(void)
 
         // read the qport out of the message so we can fix up
         // stupid address translating routers
-        if (client->protocol == PROTOCOL_VERSION_DEFAULT) {
-            if (msg_read.cursize < PACKET_HEADER) {
-                continue;
-            }
-            qport = RL16(&msg_read.data[8]);
-            if (netchan->qport != qport) {
-                continue;
-            }
-        } else if (netchan->qport) {
+        if (netchan->qport) {
             if (msg_read.cursize < PACKET_HEADER - 1) {
                 continue;
             }

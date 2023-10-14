@@ -183,7 +183,7 @@ void InitGame(void)
     // enable protocol extensions if supported
     if (sv_features && (int)sv_features->value & GMF_PROTOCOL_EXTENSIONS && (int)g_protocol_extensions->value) {
         features |= GMF_PROTOCOL_EXTENSIONS;
-        game.csr = cs_remap_new;
+        game.csr = cs_remap_q2pro_new;
     } else {
         game.csr = cs_remap_old;
     }

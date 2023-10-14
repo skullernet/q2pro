@@ -404,9 +404,8 @@ void CL_CheckForResend(void)
         strcpy(cls.servername, "localhost");
         cls.serverAddress.type = NA_LOOPBACK;
         cls.serverProtocol = cl_protocol->integer;
-        if (cls.serverProtocol < PROTOCOL_VERSION_DEFAULT ||
-            cls.serverProtocol > PROTOCOL_VERSION_Q2PRO) {
-            cls.serverProtocol = PROTOCOL_VERSION_Q2PRO;
+        if (cls.serverProtocol != PROTOCOL_VERSION_RERELEASE) {
+            cls.serverProtocol = PROTOCOL_VERSION_RERELEASE;
         }
 
         // we don't need a challenge on the localhost
@@ -462,6 +461,11 @@ void CL_CheckForResend(void)
         Q_snprintf(tail, sizeof(tail), " %d %d %d %d",
                    maxmsglen, net_chantype->integer, USE_ZLIB,
                    PROTOCOL_VERSION_Q2PRO_CURRENT);
+        cls.quakePort = net_qport->integer & 0xff;
+        break;
+    case PROTOCOL_VERSION_RERELEASE:
+        Q_snprintf(tail, sizeof(tail), " %d %d",
+                   maxmsglen, USE_ZLIB);
         cls.quakePort = net_qport->integer & 0xff;
         break;
     default:
@@ -1281,6 +1285,8 @@ static void CL_ConnectionlessPacket(void)
                         mask |= 1;
                     } else if (k == PROTOCOL_VERSION_Q2PRO) {
                         mask |= 2;
+                    } else if (k == PROTOCOL_VERSION_RERELEASE) {
+                        mask |= 4;
                     }
                     s = strchr(s, ',');
                     if (s == NULL) {
@@ -1292,11 +1298,17 @@ static void CL_ConnectionlessPacket(void)
         }
 
         if (!cls.serverProtocol) {
-            cls.serverProtocol = PROTOCOL_VERSION_Q2PRO;
+            cls.serverProtocol = PROTOCOL_VERSION_RERELEASE;
         }
 
         // choose supported protocol
         switch (cls.serverProtocol) {
+        case PROTOCOL_VERSION_RERELEASE:
+            if (mask & 4) {
+                break;
+            }
+            cls.serverProtocol = PROTOCOL_VERSION_Q2PRO;
+            // fall through
         case PROTOCOL_VERSION_Q2PRO:
             if (mask & 2) {
                 break;
@@ -1338,7 +1350,8 @@ static void CL_ConnectionlessPacket(void)
             return;
         }
 
-        if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO) {
+        if ((cls.serverProtocol == PROTOCOL_VERSION_Q2PRO)
+            || (cls.serverProtocol == PROTOCOL_VERSION_RERELEASE)){
             type = NETCHAN_NEW;
         } else {
             type = NETCHAN_OLD;

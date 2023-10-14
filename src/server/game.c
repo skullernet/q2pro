@@ -599,12 +599,6 @@ static void SV_StartSound(const vec3_t origin, edict_t *edict,
             continue;
         }
 
-        // default client doesn't know that bmodels have weird origins
-        if (edict->solid == SOLID_BSP && client->protocol == PROTOCOL_VERSION_DEFAULT) {
-            SV_ClientAddMessage(client, 0);
-            continue;
-        }
-
         if (LIST_EMPTY(&client->msg_free_list)) {
             Com_WPrintf("%s: %s: out of message slots\n",
                         __func__, client->name);
@@ -1087,7 +1081,7 @@ void SV_InitGameProgs(void)
 
     if (g_features->integer & GMF_PROTOCOL_EXTENSIONS) {
         Com_Printf("Game supports Q2PRO protocol extensions.\n");
-        svs.csr = cs_remap_new;
+        svs.csr = cs_remap_rerelease; // FIXME: Choose cs_remap_q2pro_new if appropriate
     }
 
     // sanitize edict_size

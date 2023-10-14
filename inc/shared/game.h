@@ -32,7 +32,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SVF_DEADMONSTER         BIT(1)      // treat as CONTENTS_DEADMONSTER for collision
 #define SVF_MONSTER             BIT(2)      // treat as CONTENTS_MONSTER for collision
 
-#if USE_PROTOCOL_EXTENSIONS
 #define SVF_PLAYER              BIT(3)
 #define SVF_BOT                 BIT(4)
 #define SVF_NOBOTS              BIT(5)
@@ -42,7 +41,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SVF_DOOR                BIT(9)
 #define SVF_NOCULL              BIT(10)
 #define SVF_HULL                BIT(11)
-#endif
 
 // edict->solid values
 

@@ -397,7 +397,7 @@ static void MVD_ParseUnicast(mvd_t *mvd, mvd_ops_t op, int extrabits)
     while (msg_read.readcount < last) {
         cmd = MSG_ReadByte();
 
-        SHOWNET(1, "%3u:%s\n", msg_read.readcount - 1, MSG_ServerCommandString(cmd));
+        SHOWNET(1, "%3zu:%s\n", msg_read.readcount - 1, MSG_ServerCommandString(cmd, PROTOCOL_VERSION_MVD));
 
         switch (cmd) {
         case svc_layout:
@@ -540,12 +540,6 @@ static void MVD_ParseSound(mvd_t *mvd, int extrabits)
         // as no one guarantees reliables to be delivered in time
         if (extrabits & 2) {
             SV_ClientAddMessage(cl, MSG_RELIABLE);
-            continue;
-        }
-
-        // default client doesn't know that bmodels have weird origins
-        if (entity->solid == SOLID_BSP && cl->protocol == PROTOCOL_VERSION_DEFAULT) {
-            SV_ClientAddMessage(cl, 0);
             continue;
         }
 
@@ -925,7 +919,7 @@ static void MVD_ParseServerData(mvd_t *mvd, int extrabits)
     if (mvd->version >= PROTOCOL_VERSION_MVD_EXTENDED_LIMITS && mvd->flags & MVF_EXTLIMITS) {
         mvd->esFlags |= MSG_ES_LONGSOLID | MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS;
         mvd->psFlags |= MSG_PS_EXTENSIONS;
-        mvd->csr = &cs_remap_new;
+        mvd->csr = &cs_remap_q2pro_new;
     }
 
 #if 0

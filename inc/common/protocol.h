@@ -29,6 +29,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define PROTOCOL_VERSION_R1Q2       35
 #define PROTOCOL_VERSION_Q2PRO      36
 #define PROTOCOL_VERSION_MVD        37 // not used for UDP connections
+#define PROTOCOL_VERSION_RERELEASE  1038
 #define PROTOCOL_VERSION_EXTENDED   3434
 
 #define PROTOCOL_VERSION_R1Q2_MINIMUM           1903    // b6377
@@ -84,9 +85,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define CMD_MASK        (CMD_BACKUP - 1)
 
 
-// PARIL TEMP: just move these "extra bits" to a second byte
-//#define SVCMD_BITS              5
-//#define SVCMD_MASK              (BIT(SVCMD_BITS) - 1)
+#define SVCMD_BITS              5
+#define SVCMD_MASK              (BIT(SVCMD_BITS) - 1)
 
 #define FRAMENUM_BITS           27
 #define FRAMENUM_MASK           (BIT(FRAMENUM_BITS) - 1)
@@ -162,16 +162,24 @@ typedef enum {
     svc_bot_chat,               // [Kex] bot specific chat
 // KEX
 
-// FIXME these got bumped
+    // Same meaning as "r1q2 specific operations" below, but different values
+    svc_rr_zpacket = 34,
+    svc_rr_zdownload,
+    svc_rr_gamestate,
+    svc_rr_setting,
+
+    svc_rr_configstringstream,
+    svc_rr_baselinestream,
+
     // r1q2 specific operations
-    svc_zpacket = 34 /* = 21 */,
-    svc_zdownload,
-    svc_gamestate, // q2pro specific, means svc_playerupdate in r1q2
-    svc_setting,
+    svc_q2pro_zpacket = 21,
+    svc_q2pro_zdownload,
+    svc_q2pro_gamestate, // q2pro specific, means svc_playerupdate in r1q2
+    svc_q2pro_setting,
 
     // q2pro specific operations
-    svc_configstringstream,
-    svc_baselinestream,
+    svc_q2pro_configstringstream,
+    svc_q2pro_baselinestream,
 
     svc_num_types
 } svc_ops_t;

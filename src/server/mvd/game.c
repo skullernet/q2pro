@@ -850,11 +850,6 @@ static void MVD_TrySwitchChannel(mvd_client_t *client, mvd_t *mvd)
                         "in the Waiting Room" : "on this channel");
         return; // nothing to do
     }
-    if (!CLIENT_COMPATIBLE(mvd->csr, client->cl)) {
-        SV_ClientPrintf(client->cl, PRINT_HIGH,
-                        "[MVD] This channel is not compatible with your client version.\n");
-        return;
-    }
 
     if (client->begin_time) {
         if (svs.realtime - client->begin_time < 2000) {
@@ -977,12 +972,7 @@ static void MVD_Say_f(mvd_client_t *client, int argnum)
             continue;
         }
 
-        if (cl->protocol == PROTOCOL_VERSION_Q2PRO &&
-            cl->version >= PROTOCOL_VERSION_Q2PRO_SERVER_STATE) {
-            SV_ClientPrintf(cl, PRINT_CHAT, "%s\n", text);
-        } else {
-            SV_ClientPrintf(cl, PRINT_HIGH, "%s\n", hightext);
-        }
+        SV_ClientPrintf(cl, PRINT_CHAT, "%s\n", text);
     }
 }
 
@@ -1906,7 +1896,7 @@ static bool MVD_GameClientConnect(edict_t *ent, char *userinfo, const char *soci
     if (LIST_SINGLE(&mvd_channel_list)) {
         mvd = LIST_FIRST(mvd_t, &mvd_channel_list, entry);
     }
-    if (!mvd || !CLIENT_COMPATIBLE(mvd->csr, client->cl)) {
+    if (!mvd) {
         mvd = &mvd_waitingRoom;
     }
     List_SeqAdd(&mvd->clients, &client->entry);

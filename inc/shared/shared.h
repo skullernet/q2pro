@@ -74,17 +74,10 @@ typedef int qhandle_t;
 // [Sam-KEX]
 #define MAX_SHADOW_LIGHTS   256
 
-#if USE_PROTOCOL_EXTENSIONS
 #define MAX_EDICTS          8192    // sent as ENTITYNUM_BITS, can't be increased
 #define MAX_MODELS          8192    // half is reserved for inline BSP models
 #define MAX_SOUNDS          2048
 #define MAX_IMAGES          512     // FIXME: Q2PRO extended protocol raises this to 2048
-#else
-#define MAX_EDICTS          MAX_EDICTS_OLD
-#define MAX_MODELS          MAX_MODELS_OLD
-#define MAX_SOUNDS          MAX_SOUNDS_OLD
-#define MAX_IMAGES          MAX_IMAGES_OLD
-#endif
 
 #define MODELINDEX_PLAYER   (MAX_MODELS_OLD - 1)
 
@@ -1247,6 +1240,7 @@ enum {
     STAT_CHASE,
     STAT_SPECTATOR,
 
+    MAX_STATS_OLD = 32,
     MAX_STATS = 64 // KEX
 };
 
@@ -1341,7 +1335,6 @@ enum {
 #define CS_GENERAL_OLD          (CS_PLAYERSKINS_OLD + MAX_CLIENTS)
 #define MAX_CONFIGSTRINGS_OLD   (CS_GENERAL_OLD + MAX_GENERAL)
 
-#if USE_PROTOCOL_EXTENSIONS
 // bound by number of things we can fit in two stats
 #define MAX_WHEEL_ITEMS     32
 
@@ -1362,21 +1355,6 @@ enum {
 #define CS_CD_LOOP_COUNT    (CS_WHEEL_POWERUPS + MAX_WHEEL_ITEMS) // [Paril-KEX] override default loop count
 #define CS_GAME_STYLE       (CS_CD_LOOP_COUNT + 1) // [Paril-KEX] see game_style_t
 #define MAX_CONFIGSTRINGS   (CS_GAME_STYLE + 1)
-#else
-#define CS_AIRACCEL         CS_AIRACCEL_OLD
-#define CS_MAXCLIENTS       CS_MAXCLIENTS_OLD
-#define CS_MAPCHECKSUM      CS_MAPCHECKSUM_OLD
-#define CS_MODELS           CS_MODELS_OLD
-#define CS_SOUNDS           CS_SOUNDS_OLD
-#define CS_IMAGES           CS_IMAGES_OLD
-#define CS_LIGHTS           CS_LIGHTS_OLD
-#define CS_ITEMS            CS_ITEMS_OLD
-#define CS_PLAYERSKINS      CS_PLAYERSKINS_OLD
-#define CS_GENERAL          CS_GENERAL_OLD
-#define MAX_CONFIGSTRINGS   MAX_CONFIGSTRINGS_OLD
-#endif
-
-#if USE_PROTOCOL_EXTENSIONS
 
 typedef struct {
     bool        extended;
@@ -1385,6 +1363,8 @@ typedef struct {
     uint16_t    max_models;
     uint16_t    max_sounds;
     uint16_t    max_images;
+    uint16_t    max_shadowlights;
+    uint16_t    max_wheelitems;
 
     uint16_t    airaccel;
     uint16_t    maxclients;
@@ -1394,17 +1374,25 @@ typedef struct {
     uint16_t    sounds;
     uint16_t    images;
     uint16_t    lights;
+    uint16_t    shadowlights;
     uint16_t    items;
     uint16_t    playerskins;
     uint16_t    general;
+    uint16_t    wheelweapons;
+    uint16_t    wheelammo;
+    uint16_t    wheelpowerups;
+    uint16_t    cdloopcount;
+    uint16_t    gamestyle;
 
     uint16_t    end;
 } cs_remap_t;
 
 extern const cs_remap_t     cs_remap_old;
-extern const cs_remap_t     cs_remap_new;
+extern const cs_remap_t     cs_remap_rerelease;
+extern const cs_remap_t     cs_remap_q2pro_new;
 
-#endif
+// Remap a configstring ID between different ranges
+extern int remap_cs_index(int index, const cs_remap_t *from, const cs_remap_t *to);
 
 //==============================================
 
@@ -1516,12 +1504,8 @@ typedef struct {
 
 //==============================================
 
-#if USE_PROTOCOL_EXTENSIONS
-
 #define ENTITYNUM_BITS      13
 #define ENTITYNUM_MASK      (BIT(ENTITYNUM_BITS) - 1)
 
 #define GUNINDEX_BITS       13  // upper 3 bits are skinnum
 #define GUNINDEX_MASK       (BIT(GUNINDEX_BITS) - 1)
-
-#endif

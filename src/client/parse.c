@@ -222,12 +222,10 @@ static void CL_ParseFrame(int extrabits)
             deltaframe = currentframe - delta;
         }
 
-        extraflags = MSG_ReadByte();
-
         bits = MSG_ReadByte();
 
         suppressed = bits & SUPPRESSCOUNT_MASK;
-        if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO) {
+        if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO || cls.serverProtocol == PROTOCOL_VERSION_RERELEASE) {
             if (suppressed & FF_CLIENTPRED) {
                 // CLIENTDROP is implied, don't draw both
                 suppressed &= ~FF_CLIENTDROP;
@@ -236,6 +234,11 @@ static void CL_ParseFrame(int extrabits)
         } else if (suppressed) {
             cl.frameflags |= FF_SUPPRESSED;
         }
+
+        if (cls.serverProtocol == PROTOCOL_VERSION_RERELEASE)
+            extraflags = MSG_ReadByte();
+        else
+            extraflags = (extrabits << 4) | (bits >> SUPPRESSCOUNT_BITS);
     } else {
         currentframe = MSG_ReadLong();
         deltaframe = MSG_ReadLong();
@@ -474,12 +477,12 @@ static void CL_ParseBaseline(int index, uint64_t bits)
 
 // instead of wasting space for svc_configstring and svc_spawnbaseline
 // bytes, entire game state is compressed into a single stream.
-static void CL_ParseGamestate(int cmd)
+static void CL_ParseGamestateQ2PRO(int cmd)
 {
     int         index;
     uint64_t    bits;
 
-    if (cmd == svc_gamestate || cmd == svc_configstringstream) {
+    if (cmd == svc_q2pro_gamestate || cmd == svc_q2pro_configstringstream) {
         while (1) {
             index = MSG_ReadWord();
             if (index == cl.csr.end) {
@@ -489,7 +492,7 @@ static void CL_ParseGamestate(int cmd)
         }
     }
 
-    if (cmd == svc_gamestate || cmd == svc_baselinestream) {
+    if (cmd == svc_q2pro_gamestate || cmd == svc_q2pro_baselinestream) {
         while (1) {
             index = MSG_ParseEntityBits(&bits, cl.esFlags);
             if (!index) {
@@ -497,6 +500,53 @@ static void CL_ParseGamestate(int cmd)
             }
             CL_ParseBaseline(index, bits);
         }
+    }
+}
+
+static void CL_ParseGamestateRR(int cmd)
+{
+    int         index;
+    uint64_t    bits;
+
+    if (cmd == svc_rr_gamestate || cmd == svc_rr_configstringstream) {
+        while (1) {
+            index = MSG_ReadWord();
+            if (index == cl.csr.end) {
+                break;
+            }
+            CL_ParseConfigstring(index);
+        }
+    }
+
+    if (cmd == svc_rr_gamestate || cmd == svc_rr_baselinestream) {
+        while (1) {
+            index = MSG_ParseEntityBits(&bits, cl.esFlags);
+            if (!index) {
+                break;
+            }
+            CL_ParseBaseline(index, bits);
+        }
+    }
+}
+
+static void read_q2pro_protocol_flags(void)
+{
+    int i = MSG_ReadWord();
+    if (i & Q2PRO_PF_STRAFEJUMP_HACK) {
+        Com_DPrintf("Q2PRO strafejump hack enabled\n");
+        cl.pmp.strafehack = true;
+    }
+    if (i & Q2PRO_PF_QW_MODE) {
+        Com_DPrintf("Q2PRO QW mode enabled\n");
+        PmoveEnableQW(&cl.pmp);
+    }
+    if (i & Q2PRO_PF_WATERJUMP_HACK) {
+        Com_DPrintf("Q2PRO waterjump hack enabled\n");
+        cl.pmp.waterhack = true;
+    }
+    if (i & Q2PRO_PF_EXTENSIONS) {
+        Com_DPrintf("Q2PRO protocol extensions enabled\n");
+        cl.csr = cs_remap_q2pro_new;
     }
 }
 
@@ -530,7 +580,7 @@ static void CL_ParseServerData(void)
         }
         // BIG HACK to let demos from release work with the 3.0x patch!!!
         if (protocol == PROTOCOL_VERSION_EXTENDED) {
-            cl.csr = cs_remap_new;
+            cl.csr = cs_remap_q2pro_new;
             protocol = PROTOCOL_VERSION_DEFAULT;
         } else if (protocol < PROTOCOL_VERSION_OLD || protocol > PROTOCOL_VERSION_DEFAULT) {
             Com_Error(ERR_DROP, "Demo uses unsupported protocol version %d.", protocol);
@@ -570,6 +620,9 @@ static void CL_ParseServerData(void)
     cl.frametime = Com_ComputeFrametime(BASE_FRAMERATE);
     cl.frametime_inv = cl.frametime.div * BASE_1_FRAMETIME;
 #endif
+    cl.sv_frametime = 100;
+    cl.sv_frametime_inv = 1.0f / cl.sv_frametime;
+    cl.sv_framediv = 1;
 
     // setup default server state
     cl.serverstate = ss_game;
@@ -620,28 +673,7 @@ static void CL_ParseServerData(void)
             cinematic = i == ss_pic || i == ss_cinematic;
         }
         if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_EXTENDED_LIMITS) {
-            i = MSG_ReadWord();
-            if (i & Q2PRO_PF_STRAFEJUMP_HACK) {
-                Com_DPrintf("Q2PRO strafejump hack enabled\n");
-                cl.pmp.strafehack = true;
-            }
-            if (i & Q2PRO_PF_QW_MODE) {
-                Com_DPrintf("Q2PRO QW mode enabled\n");
-                PmoveEnableQW(&cl.pmp);
-            }
-            if (i & Q2PRO_PF_WATERJUMP_HACK) {
-                Com_DPrintf("Q2PRO waterjump hack enabled\n");
-                cl.pmp.waterhack = true;
-            }
-            if (i & Q2PRO_PF_EXTENSIONS) {
-                Com_DPrintf("Q2PRO protocol extensions enabled\n");
-                cl.csr = cs_remap_new;
-
-                int32_t rate = MSG_ReadByte();
-                cl.sv_frametime = (1.0f / rate) * 1000;
-                cl.sv_frametime_inv = 1.0f / cl.sv_frametime;
-                cl.sv_framediv = rate / 10;
-            }
+            read_q2pro_protocol_flags();
         } else {
             if (MSG_ReadByte()) {
                 Com_DPrintf("Q2PRO strafejump hack enabled\n");
@@ -663,6 +695,23 @@ static void CL_ParseServerData(void)
         if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_SHORT_ANGLES) {
             cl.esFlags |= MSG_ES_SHORTANGLES;
         }
+        cl.pmp.speedmult = 2;
+        cl.pmp.flyhack = true; // fly hack is unconditionally enabled
+        cl.pmp.flyfriction = 4;
+    } else if (cls.serverProtocol == PROTOCOL_VERSION_RERELEASE) {
+        cls.protocolVersion = MSG_ReadWord();
+        cl.serverstate = MSG_ReadByte();
+        cinematic = cl.serverstate == ss_pic || cl.serverstate == ss_cinematic;
+        // FIXME: These shouldn't really matter, as pmove should be handled by the game/client library...
+        read_q2pro_protocol_flags();
+        cl.csr = cs_remap_rerelease;
+        cl.psFlags |= MSG_PS_FLOAT_COORDS | MSG_PS_NEW_STATS;
+        cl.esFlags |= MSG_ES_FLOAT_COORDS;
+        int32_t rate = MSG_ReadByte();
+        cl.sv_frametime = (1.0f / rate) * 1000;
+        cl.sv_frametime_inv = 1.0f / cl.sv_frametime;
+        cl.sv_framediv = rate / 10;
+
         cl.pmp.speedmult = 2;
         cl.pmp.flyhack = true; // fly hack is unconditionally enabled
         cl.pmp.flyfriction = 4;
@@ -714,6 +763,7 @@ snd_params_t    snd;
 
 static void CL_ParseTEntPacket(void)
 {
+    bool float_coords = cl.esFlags & MSG_ES_FLOAT_COORDS;
     te.type = MSG_ReadByte();
 
     switch (te.type) {
@@ -734,7 +784,7 @@ static void CL_ParseTEntPacket(void)
     case TE_ELECTRIC_SPARKS:
     case TE_BLUEHYPERBLASTER_2:
     case TE_BERSERK_SLAM:
-        MSG_ReadPos(te.pos1, cl.csr.extended);
+        MSG_ReadPos(te.pos1, float_coords);
         MSG_ReadDir(te.dir);
         break;
 
@@ -743,7 +793,7 @@ static void CL_ParseTEntPacket(void)
     case TE_WELDING_SPARKS:
     case TE_TUNNEL_SPARKS:
         te.count = MSG_ReadByte();
-        MSG_ReadPos(te.pos1, cl.csr.extended);
+        MSG_ReadPos(te.pos1, float_coords);
         MSG_ReadDir(te.dir);
         te.color = MSG_ReadByte();
         break;
@@ -756,8 +806,8 @@ static void CL_ParseTEntPacket(void)
     case TE_BUBBLETRAIL2:
     case TE_BFG_LASER:
     case TE_BFG_ZAP:
-        MSG_ReadPos(te.pos1, cl.csr.extended);
-        MSG_ReadPos(te.pos2, cl.csr.extended);
+        MSG_ReadPos(te.pos1, float_coords);
+        MSG_ReadPos(te.pos2, float_coords);
         break;
 
     case TE_GRENADE_EXPLOSION:
@@ -781,7 +831,7 @@ static void CL_ParseTEntPacket(void)
     case TE_NUKEBLAST:
     case TE_EXPLOSION1_NL:
     case TE_EXPLOSION2_NL:
-        MSG_ReadPos(te.pos1, cl.csr.extended);
+        MSG_ReadPos(te.pos1, float_coords);
         break;
 
     case TE_PARASITE_ATTACK:
@@ -791,39 +841,39 @@ static void CL_ParseTEntPacket(void)
     case TE_GRAPPLE_CABLE_2:
     case TE_LIGHTNING_BEAM:
         te.entity1 = MSG_ReadShort();
-        MSG_ReadPos(te.pos1, cl.csr.extended);
-        MSG_ReadPos(te.pos2, cl.csr.extended);
+        MSG_ReadPos(te.pos1, float_coords);
+        MSG_ReadPos(te.pos2, float_coords);
         break;
 
     case TE_GRAPPLE_CABLE:
         te.entity1 = MSG_ReadShort();
-        MSG_ReadPos(te.pos1, cl.csr.extended);
-        MSG_ReadPos(te.pos2, cl.csr.extended);
-        MSG_ReadPos(te.offset, cl.csr.extended);
+        MSG_ReadPos(te.pos1, float_coords);
+        MSG_ReadPos(te.pos2, float_coords);
+        MSG_ReadPos(te.offset, float_coords);
         break;
 
     case TE_LIGHTNING:
         te.entity1 = MSG_ReadShort();
         te.entity2 = MSG_ReadShort();
-        MSG_ReadPos(te.pos1, cl.csr.extended);
-        MSG_ReadPos(te.pos2, cl.csr.extended);
+        MSG_ReadPos(te.pos1, float_coords);
+        MSG_ReadPos(te.pos2, float_coords);
         break;
 
     case TE_FLASHLIGHT:
-        MSG_ReadPos(te.pos1, cl.csr.extended);
+        MSG_ReadPos(te.pos1, float_coords);
         te.entity1 = MSG_ReadShort();
         break;
 
     case TE_FORCEWALL:
-        MSG_ReadPos(te.pos1, cl.csr.extended);
-        MSG_ReadPos(te.pos2, cl.csr.extended);
+        MSG_ReadPos(te.pos1, float_coords);
+        MSG_ReadPos(te.pos2, float_coords);
         te.color = MSG_ReadByte();
         break;
 
     case TE_STEAM:
         te.entity1 = MSG_ReadShort();
         te.count = MSG_ReadByte();
-        MSG_ReadPos(te.pos1, cl.csr.extended);
+        MSG_ReadPos(te.pos1, float_coords);
         MSG_ReadDir(te.dir);
         te.color = MSG_ReadByte();
         te.entity2 = MSG_ReadShort();
@@ -834,7 +884,7 @@ static void CL_ParseTEntPacket(void)
 
     case TE_WIDOWBEAMOUT:
         te.entity1 = MSG_ReadShort();
-        MSG_ReadPos(te.pos1, cl.csr.extended);
+        MSG_ReadPos(te.pos1, float_coords);
         break;
 
     case TE_POWER_SPLASH:
@@ -914,7 +964,7 @@ static void CL_ParseStartSoundPacket(void)
 
     // positioned in space
     if (flags & SND_POS)
-        MSG_ReadPos(snd.pos, cl.csr.extended);
+        MSG_ReadPos(snd.pos, cl.esFlags & MSG_ES_FLOAT_COORDS);
 
     snd.flags = flags;
 
@@ -1117,6 +1167,8 @@ static void CL_ParseDownload(int cmd)
         return;
     }
 
+    svc_ops_t svc_zdownload = cls.serverProtocol == PROTOCOL_VERSION_RERELEASE ? svc_rr_zdownload : svc_q2pro_zdownload;
+
     // read optional decompressed packet size
     if (cmd == svc_zdownload) {
 #if USE_ZLIB
@@ -1303,15 +1355,175 @@ static void CL_SkipFog(void)
 CL_ParseServerMessage
 =====================
 */
+typedef enum svc_handle_result_e
+{
+    svch_unknown,
+    svch_handled,
+    svch_break_loop,
+    svch_continue_loop
+} svc_handle_result_t;
+
+static svc_handle_result_t handle_svc_common(int cmd, int extrabits)
+{
+    int index;
+    uint64_t    bits;
+
+    switch (cmd) {
+    case svc_nop:
+        return svch_handled;
+
+    case svc_disconnect:
+        Com_Error(ERR_DISCONNECT, "Server disconnected");
+        return svch_handled;
+
+    case svc_reconnect:
+        CL_ParseReconnect();
+        return svch_break_loop;
+
+    case svc_print:
+        CL_ParsePrint();
+        return svch_handled;
+
+    case svc_centerprint:
+        CL_ParseCenterPrint();
+        return svch_handled;
+
+    case svc_stufftext:
+        CL_ParseStuffText();
+        return svch_handled;
+
+    case svc_serverdata:
+        CL_ParseServerData();
+        return svch_continue_loop;
+
+    case svc_configstring:
+        index = MSG_ReadWord();
+        CL_ParseConfigstring(index);
+        return svch_handled;
+
+    case svc_sound:
+        CL_ParseStartSoundPacket();
+        S_ParseStartSound();
+        return svch_handled;
+
+    case svc_spawnbaseline:
+        index = MSG_ParseEntityBits(&bits, cl.esFlags);
+        CL_ParseBaseline(index, bits);
+        return svch_handled;
+
+    case svc_temp_entity:
+        CL_ParseTEntPacket();
+        CL_ParseTEnt();
+        return svch_handled;
+
+    case svc_muzzleflash:
+        CL_ParseMuzzleFlashPacket(MZ_SILENCED, false);
+        CL_MuzzleFlash();
+        return svch_handled;
+
+    case svc_muzzleflash2:
+        CL_ParseMuzzleFlashPacket(0, false);
+        CL_MuzzleFlash2();
+        return svch_handled;
+
+    case svc_download:
+        CL_ParseDownload(cmd);
+        return svch_continue_loop;
+
+    case svc_frame:
+        CL_ParseFrame(extrabits);
+        return svch_continue_loop;
+
+    case svc_inventory:
+        CL_ParseInventory();
+        return svch_handled;
+
+    case svc_layout:
+        CL_ParseLayout();
+        return svch_handled;
+
+    }
+
+    return svch_unknown;
+}
+
+static svc_handle_result_t handle_svc_q2pro(int cmd)
+{
+    int index;
+
+    switch (cmd) {
+    case svc_q2pro_zpacket:
+        CL_ParseZPacket();
+        return svch_continue_loop;
+
+    case svc_q2pro_zdownload:
+        CL_ParseDownload(cmd);
+        return svch_continue_loop;
+
+    case svc_q2pro_gamestate:
+    case svc_q2pro_configstringstream:
+    case svc_q2pro_baselinestream:
+        if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO) {
+            return svch_unknown;
+        }
+        CL_ParseGamestateQ2PRO(cmd);
+        return svch_continue_loop;
+
+    case svc_q2pro_setting:
+        CL_ParseSetting();
+        return svch_continue_loop;
+    }
+
+    return svch_unknown;
+}
+
+static svc_handle_result_t handle_svc_rerelease(int cmd)
+{
+    switch (cmd) {
+    case svc_rr_zpacket:
+        CL_ParseZPacket();
+        return svch_continue_loop;
+
+    case svc_rr_zdownload:
+        CL_ParseDownload(cmd);
+        return svch_continue_loop;
+
+    case svc_rr_gamestate:
+    case svc_rr_configstringstream:
+    case svc_rr_baselinestream:
+        CL_ParseGamestateRR(cmd);
+        return svch_continue_loop;
+
+    case svc_rr_setting:
+        CL_ParseSetting();
+        return svch_continue_loop;
+
+    // KEX
+    case svc_damage:
+        CL_SkipDamage();
+        return svch_continue_loop;
+    case svc_fog:
+        CL_SkipFog();
+        return svch_continue_loop;
+    case svc_muzzleflash3:
+        CL_ParseMuzzleFlashPacket(0, true);
+        CL_MuzzleFlash2();
+        break;
+    // KEX
+    }
+
+    return svch_unknown;
+}
+
 void CL_ParseServerMessage(void)
 {
     int         cmd, last_cmd = -1, index, extrabits;
-    uint32_t    readcount;
+    size_t      readcount;
     uint64_t    bits;
 
 #if USE_DEBUG
     if (cl_shownet->integer == 1) {
-        Com_LPrintf(PRINT_DEVELOPER, "%u ", msg_read.cursize);
+        Com_LPrintf(PRINT_DEVELOPER, "%zu ", msg_read.cursize);
     } else if (cl_shownet->integer > 1) {
         Com_LPrintf(PRINT_DEVELOPER, "------------------\n");
     }
@@ -1325,143 +1537,44 @@ void CL_ParseServerMessage(void)
     while (1) {
         readcount = msg_read.readcount;
         if (readcount == msg_read.cursize) {
-            SHOWNET(1, "%3u:END OF MESSAGE\n", readcount);
+            SHOWNET(1, "%3zu:END OF MESSAGE\n", readcount);
             break;
         }
 
         cmd = MSG_ReadByte();
-        if (cmd & 128 && (cls.serverProtocol < PROTOCOL_VERSION_R1Q2 || (cmd & ~128) != svc_frame))
-            goto badbyte;
+        if (cls.serverProtocol != PROTOCOL_VERSION_RERELEASE) {
+            if (cmd & ~SVCMD_MASK && (cls.serverProtocol < PROTOCOL_VERSION_R1Q2 || (cmd & SVCMD_MASK) != svc_frame))
+                goto badbyte;
+            extrabits = cmd >> SVCMD_BITS;
+            cmd &= SVCMD_MASK;
+        } else {
+            // extrabits are stored inside another byte in svc_frame
+            extrabits = 0;
+        }
 
-        if (cmd & 128)
-            extrabits = MSG_ReadByte();
+        SHOWNET(1, "%3zu:%s\n", msg_read.readcount - 1, MSG_ServerCommandString(cmd, cls.serverProtocol));
 
-        cmd &= ~128;
+        svc_handle_result_t handle_result = handle_svc_common(cmd, extrabits);
+        if (handle_result == svch_unknown) {
+            if (cls.serverProtocol == PROTOCOL_VERSION_RERELEASE)
+                handle_result = handle_svc_rerelease(cmd);
+            else if (cls.serverProtocol >= PROTOCOL_VERSION_R1Q2)
+                handle_result = handle_svc_q2pro(cmd);
+        }
 
-        SHOWNET(1, "%3u:%s\n", msg_read.readcount - 1, MSG_ServerCommandString(cmd));
-
-        // other commands
-        switch (cmd) {
+        switch(handle_result)
+        {
         default:
+        case svch_unknown:
         badbyte:
             Com_Error(ERR_DROP, "%s: illegible server message: %d, last good = %d", __func__, cmd, last_cmd);
             break;
-
-        case svc_nop:
+        case svch_handled:
             break;
-
-        case svc_disconnect:
-            Com_Error(ERR_DISCONNECT, "Server disconnected");
-            break;
-
-        case svc_reconnect:
-            CL_ParseReconnect();
+        case svch_break_loop:
             return;
-
-        case svc_print:
-            CL_ParsePrint();
-            break;
-
-        case svc_centerprint:
-            CL_ParseCenterPrint();
-            break;
-
-        case svc_stufftext:
-            CL_ParseStuffText();
-            break;
-
-        case svc_serverdata:
-            CL_ParseServerData();
+        case svch_continue_loop:
             continue;
-
-        case svc_configstring:
-            index = MSG_ReadWord();
-            CL_ParseConfigstring(index);
-            break;
-
-        case svc_sound:
-            CL_ParseStartSoundPacket();
-            S_ParseStartSound();
-            break;
-
-        case svc_spawnbaseline:
-            index = MSG_ParseEntityBits(&bits, cl.esFlags);
-            CL_ParseBaseline(index, bits);
-            break;
-
-        case svc_temp_entity:
-            CL_ParseTEntPacket();
-            CL_ParseTEnt();
-            break;
-
-        case svc_muzzleflash:
-            CL_ParseMuzzleFlashPacket(MZ_SILENCED, false);
-            CL_MuzzleFlash();
-            break;
-
-        case svc_muzzleflash2:
-            CL_ParseMuzzleFlashPacket(0, false);
-            CL_MuzzleFlash2();
-            break;
-
-        case svc_download:
-            CL_ParseDownload(cmd);
-            continue;
-
-        case svc_frame:
-            CL_ParseFrame(0);
-            continue;
-
-        case svc_inventory:
-            CL_ParseInventory();
-            break;
-
-        case svc_layout:
-            CL_ParseLayout();
-            break;
-
-        case svc_zpacket:
-            if (cls.serverProtocol < PROTOCOL_VERSION_R1Q2) {
-                goto badbyte;
-            }
-            CL_ParseZPacket();
-            continue;
-
-        case svc_zdownload:
-            if (cls.serverProtocol < PROTOCOL_VERSION_R1Q2) {
-                goto badbyte;
-            }
-            CL_ParseDownload(cmd);
-            continue;
-
-        case svc_gamestate:
-        case svc_configstringstream:
-        case svc_baselinestream:
-            if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO) {
-                goto badbyte;
-            }
-            CL_ParseGamestate(cmd);
-            continue;
-
-        case svc_setting:
-            if (cls.serverProtocol < PROTOCOL_VERSION_R1Q2) {
-                goto badbyte;
-            }
-            CL_ParseSetting();
-            continue;
-
-        // KEX
-        case svc_damage:
-            CL_SkipDamage();
-            continue;
-        case svc_fog:
-            CL_SkipFog();
-            continue;
-        case svc_muzzleflash3:
-            CL_ParseMuzzleFlashPacket(0, true);
-            CL_MuzzleFlash2();
-            break;
-        // KEX
         }
 
         // if recording demos, copy off protocol invariant stuff
@@ -1520,7 +1633,7 @@ bool CL_SeekDemoMessage(void)
         }
 
         cmd = MSG_ReadByte();
-        SHOWNET(1, "%3u:%s\n", msg_read.readcount - 1, MSG_ServerCommandString(cmd));
+        SHOWNET(1, "%3zu:%s\n", msg_read.readcount - 1, MSG_ServerCommandString(cmd, cls.serverProtocol));
 
         // other commands
         switch (cmd) {

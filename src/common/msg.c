@@ -751,9 +751,9 @@ void MSG_WriteDeltaEntity(const entity_packed_t *from,
     else if (bits & U_RENDERFX16)
         MSG_WriteShort(to->renderfx);
 
-    if (bits & U_ORIGIN1) MSG_WriteCoord(to->origin[0], flags & MSG_ES_EXTENSIONS);
-    if (bits & U_ORIGIN2) MSG_WriteCoord(to->origin[1], flags & MSG_ES_EXTENSIONS);
-    if (bits & U_ORIGIN3) MSG_WriteCoord(to->origin[2], flags & MSG_ES_EXTENSIONS);
+    if (bits & U_ORIGIN1) MSG_WriteCoord(to->origin[0], flags & MSG_ES_FLOAT_COORDS);
+    if (bits & U_ORIGIN2) MSG_WriteCoord(to->origin[1], flags & MSG_ES_FLOAT_COORDS);
+    if (bits & U_ORIGIN3) MSG_WriteCoord(to->origin[2], flags & MSG_ES_FLOAT_COORDS);
 
     if (bits & U_ANGLE16) {
         if (bits & U_ANGLE1) MSG_WriteShort(to->angles[0]);
@@ -766,9 +766,9 @@ void MSG_WriteDeltaEntity(const entity_packed_t *from,
     }
 
     if (bits & U_OLDORIGIN) {
-        MSG_WriteCoord(to->old_origin[0], flags & MSG_ES_EXTENSIONS);
-        MSG_WriteCoord(to->old_origin[1], flags & MSG_ES_EXTENSIONS);
-        MSG_WriteCoord(to->old_origin[2], flags & MSG_ES_EXTENSIONS);
+        MSG_WriteCoord(to->old_origin[0], flags & MSG_ES_FLOAT_COORDS);
+        MSG_WriteCoord(to->old_origin[1], flags & MSG_ES_FLOAT_COORDS);
+        MSG_WriteCoord(to->old_origin[2], flags & MSG_ES_FLOAT_COORDS);
     }
 
     if (bits & U_SOUND) {
@@ -917,11 +917,11 @@ void MSG_WriteDeltaPlayerstate_Default(const player_packed_t *from, const player
         MSG_WriteByte(to->pmove.pm_type);
 
     if (pflags & PS_M_ORIGIN) {
-        MSG_WritePos(to->pmove.origin, flags & MSG_PS_EXTENSIONS);
+        MSG_WritePos(to->pmove.origin, flags & MSG_PS_FLOAT_COORDS);
     }
 
     if (pflags & PS_M_VELOCITY) {
-        MSG_WritePos(to->pmove.velocity, flags & MSG_PS_EXTENSIONS);
+        MSG_WritePos(to->pmove.velocity, flags & MSG_PS_FLOAT_COORDS);
     }
 
     if (pflags & PS_M_TIME)
@@ -992,12 +992,12 @@ void MSG_WriteDeltaPlayerstate_Default(const player_packed_t *from, const player
 
     // send stats
     statbits = 0;
-    for (i = 0; i < MAX_STATS; i++)
+    for (i = 0; i < MAX_STATS_OLD; i++)
         if (to->stats[i] != from->stats[i])
             statbits |= BIT(i);
 
     MSG_WriteLong(statbits);
-    for (i = 0; i < MAX_STATS; i++)
+    for (i = 0; i < MAX_STATS_OLD; i++)
         if (statbits & BIT(i))
             MSG_WriteShort(to->stats[i]);
 }
@@ -1119,11 +1119,17 @@ int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
         VectorCopy(from->gunangles, to->gunangles);
     }
 
-    statbits = 0;
-    for (i = 0; i < MAX_STATS; i++)
-        if (to->stats[i] != from->stats[i])
-            statbits |= BIT_ULL(i);
-
+    if(flags & MSG_PS_NEW_STATS) {
+        statbits = 0;
+        for (i = 0; i < MAX_STATS; i++)
+            if (to->stats[i] != from->stats[i])
+                statbits |= BIT_ULL(i);
+    } else {
+        statbits = 0;
+        for (i = 0; i < MAX_STATS_OLD; i++)
+            if (to->stats[i] != from->stats[i])
+                statbits |= BIT(i);
+    }
     if (statbits)
         eflags |= EPS_STATS;
 
@@ -1149,20 +1155,20 @@ int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
         MSG_WriteByte(to->pmove.pm_type);
 
     if (pflags & PS_M_ORIGIN) {
-        MSG_WriteCoord(to->pmove.origin[0], flags & MSG_PS_EXTENSIONS);
-        MSG_WriteCoord(to->pmove.origin[1], flags & MSG_PS_EXTENSIONS);
+        MSG_WriteCoord(to->pmove.origin[0], flags & MSG_PS_FLOAT_COORDS);
+        MSG_WriteCoord(to->pmove.origin[1], flags & MSG_PS_FLOAT_COORDS);
     }
 
     if (eflags & EPS_M_ORIGIN2)
-        MSG_WriteCoord(to->pmove.origin[2], flags & MSG_PS_EXTENSIONS);
+        MSG_WriteCoord(to->pmove.origin[2], flags & MSG_PS_FLOAT_COORDS);
 
     if (pflags & PS_M_VELOCITY) {
-        MSG_WriteCoord(to->pmove.velocity[0], flags & MSG_PS_EXTENSIONS);
-        MSG_WriteCoord(to->pmove.velocity[1], flags & MSG_PS_EXTENSIONS);
+        MSG_WriteCoord(to->pmove.velocity[0], flags & MSG_PS_FLOAT_COORDS);
+        MSG_WriteCoord(to->pmove.velocity[1], flags & MSG_PS_FLOAT_COORDS);
     }
 
     if (eflags & EPS_M_VELOCITY2)
-        MSG_WriteCoord(to->pmove.velocity[2], flags & MSG_PS_EXTENSIONS);
+        MSG_WriteCoord(to->pmove.velocity[2], flags & MSG_PS_FLOAT_COORDS);
 
     if (pflags & PS_M_TIME)
         MSG_WriteByte(to->pmove.pm_time);
@@ -1239,10 +1245,17 @@ int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
 
     // send stats
     if (eflags & EPS_STATS) {
-        MSG_WriteLong64(statbits);
-        for (i = 0; i < MAX_STATS; i++)
-            if (statbits & BIT_ULL(i))
-                MSG_WriteShort(to->stats[i]);
+        if(flags & MSG_PS_NEW_STATS) {
+            MSG_WriteLong64(statbits);
+            for (i = 0; i < MAX_STATS; i++)
+                if (statbits & BIT_ULL(i))
+                    MSG_WriteShort(to->stats[i]);
+        } else{
+            MSG_WriteLong(statbits);
+            for (i = 0; i < MAX_STATS_OLD; i++)
+                if (statbits & BIT(i))
+                    MSG_WriteShort(to->stats[i]);
+        }
     }
 
 // KEX
@@ -1337,8 +1350,9 @@ void MSG_WriteDeltaPlayerstate_Packet(const player_packed_t *from,
             pflags |= PPS_GUNANGLES;
     }
 
+    // TODO: properly handle new MAX_STATS value
     statbits = 0;
-    for (i = 0; i < MAX_STATS; i++)
+    for (i = 0; i < MAX_STATS_OLD; i++)
         if (to->stats[i] != from->stats[i])
             statbits |= BIT(i);
 
@@ -1364,12 +1378,12 @@ void MSG_WriteDeltaPlayerstate_Packet(const player_packed_t *from,
         MSG_WriteByte(to->pmove.pm_type);
 
     if (pflags & PPS_M_ORIGIN) {
-        MSG_WriteCoord(to->pmove.origin[0], flags & MSG_PS_EXTENSIONS);
-        MSG_WriteCoord(to->pmove.origin[1], flags & MSG_PS_EXTENSIONS);
+        MSG_WriteCoord(to->pmove.origin[0], flags & MSG_PS_FLOAT_COORDS);
+        MSG_WriteCoord(to->pmove.origin[1], flags & MSG_PS_FLOAT_COORDS);
     }
 
     if (pflags & PPS_M_ORIGIN2)
-        MSG_WriteCoord(to->pmove.origin[2], flags & MSG_PS_EXTENSIONS);
+        MSG_WriteCoord(to->pmove.origin[2], flags & MSG_PS_FLOAT_COORDS);
 
     //
     // write the rest of the player_state_t
@@ -1432,7 +1446,7 @@ void MSG_WriteDeltaPlayerstate_Packet(const player_packed_t *from,
     // send stats
     if (pflags & PPS_STATS) {
         MSG_WriteLong(statbits);
-        for (i = 0; i < MAX_STATS; i++)
+        for (i = 0; i < MAX_STATS_OLD; i++)
             if (statbits & BIT(i))
                 MSG_WriteShort(to->stats[i]);
     }
@@ -1702,84 +1716,6 @@ void MSG_ReadDeltaUsercmd(const usercmd_t *from, usercmd_t *to)
     MSG_ReadByte();
 }
 
-void MSG_ReadDeltaUsercmd_Hacked(const usercmd_t *from, usercmd_t *to)
-{
-    int bits, buttons = from ? from->buttons & (BUTTON_JUMP | BUTTON_CROUCH) : 0;
-
-    Q_assert(to);
-
-    if (from) {
-        memcpy(to, from, sizeof(*to));
-    } else {
-        memset(to, 0, sizeof(*to));
-    }
-
-    bits = MSG_ReadByte();
-
-// read buttons
-    if (bits & CM_BUTTONS) {
-        buttons |= MSG_ReadByte();
-        to->buttons &= ~BUTTON_MASK;
-        to->buttons |= buttons & BUTTON_MASK;
-    }
-
-// read current angles
-    if (bits & CM_ANGLE1) {
-        if (buttons & BUTTON_ANGLE1) {
-            to->angles[0] = SHORT2ANGLE(MSG_ReadChar() * 64);
-        } else {
-            to->angles[0] = SHORT2ANGLE(MSG_ReadShort());
-        }
-    }
-    if (bits & CM_ANGLE2) {
-        if (buttons & BUTTON_ANGLE2) {
-            to->angles[1] = SHORT2ANGLE(MSG_ReadChar() * 256);
-        } else {
-            to->angles[1] = SHORT2ANGLE(MSG_ReadShort());
-        }
-    }
-    if (bits & CM_ANGLE3)
-        to->angles[2] = SHORT2ANGLE(MSG_ReadShort());
-
-// read movement
-    if (bits & CM_FORWARD) {
-        if (buttons & BUTTON_FORWARD) {
-            to->forwardmove = MSG_ReadChar() * 5;
-        } else {
-            to->forwardmove = MSG_ReadShort();
-        }
-    }
-    if (bits & CM_SIDE) {
-        if (buttons & BUTTON_SIDE) {
-            to->sidemove = MSG_ReadChar() * 5;
-        } else {
-            to->sidemove = MSG_ReadShort();
-        }
-    }
-    if (bits & CM_UP) {
-        short upmove = 0;
-        if (buttons & BUTTON_UP) {
-            upmove = MSG_ReadChar() * 5;
-        } else {
-            upmove = MSG_ReadShort();
-        }
-        to->buttons &= ~(BUTTON_JUMP | BUTTON_CROUCH);
-        if (upmove > 0)
-            to->buttons |= BUTTON_JUMP;
-        else if (upmove < 0)
-            to->buttons |= BUTTON_CROUCH;
-    }
-
-    if (bits & CM_IMPULSE)
-        MSG_ReadByte(); // Skip impulse
-
-// read time to run command
-    to->msec = MSG_ReadByte();
-
-// skip the light level
-    MSG_ReadByte();
-}
-
 int MSG_ReadBits(int bits)
 {
     bool sgn = false;
@@ -1980,9 +1916,9 @@ void MSG_ParseDeltaEntity(entity_state_t            *to,
     else if (bits & U_RENDERFX16)
         to->renderfx = MSG_ReadWord();
 
-    if (bits & U_ORIGIN1) to->origin[0] = MSG_ReadCoord(flags & MSG_ES_EXTENSIONS);
-    if (bits & U_ORIGIN2) to->origin[1] = MSG_ReadCoord(flags & MSG_ES_EXTENSIONS);
-    if (bits & U_ORIGIN3) to->origin[2] = MSG_ReadCoord(flags & MSG_ES_EXTENSIONS);
+    if (bits & U_ORIGIN1) to->origin[0] = MSG_ReadCoord(flags & MSG_ES_FLOAT_COORDS);
+    if (bits & U_ORIGIN2) to->origin[1] = MSG_ReadCoord(flags & MSG_ES_FLOAT_COORDS);
+    if (bits & U_ORIGIN3) to->origin[2] = MSG_ReadCoord(flags & MSG_ES_FLOAT_COORDS);
 
     if (flags & MSG_ES_SHORTANGLES && bits & U_ANGLE16) {
         if (bits & U_ANGLE1) to->angles[0] = MSG_ReadAngle16();
@@ -1995,7 +1931,7 @@ void MSG_ParseDeltaEntity(entity_state_t            *to,
     }
 
     if (bits & U_OLDORIGIN)
-        MSG_ReadPos(to->old_origin, flags & MSG_ES_EXTENSIONS);
+        MSG_ReadPos(to->old_origin, flags & MSG_ES_FLOAT_COORDS);
 
     if (bits & U_SOUND) {
         if (flags & MSG_ES_EXTENSIONS) {
@@ -2074,11 +2010,11 @@ void MSG_ParseDeltaPlayerstate_Default(const player_state_t *from,
         to->pmove.pm_type = MSG_ReadByte();
 
     if (flags & PS_M_ORIGIN) {
-        MSG_ReadPos(to->pmove.origin, flags & MSG_PS_EXTENSIONS);
+        MSG_ReadPos(to->pmove.origin, flags & MSG_PS_FLOAT_COORDS);
     }
 
     if (flags & PS_M_VELOCITY) {
-        MSG_ReadPos(to->pmove.velocity, flags & MSG_PS_EXTENSIONS);
+        MSG_ReadPos(to->pmove.velocity, flags & MSG_PS_FLOAT_COORDS);
     }
 
     if (flags & PS_M_TIME)
@@ -2150,7 +2086,7 @@ void MSG_ParseDeltaPlayerstate_Default(const player_state_t *from,
     // parse stats
     statbits = MSG_ReadLong();
     if (statbits) {
-        for (i = 0; i < MAX_STATS; i++)
+        for (i = 0; i < MAX_STATS_OLD; i++)
             if (statbits & BIT(i))
                 to->stats[i] = MSG_ReadShort();
     }
@@ -2187,20 +2123,20 @@ void MSG_ParseDeltaPlayerstate_Enhanced(const player_state_t    *from,
         to->pmove.pm_type = MSG_ReadByte();
 
     if (flags & PS_M_ORIGIN) {
-        to->pmove.origin[0] = MSG_ReadCoord(psflags & MSG_PS_EXTENSIONS);
-        to->pmove.origin[1] = MSG_ReadCoord(psflags & MSG_PS_EXTENSIONS);
+        to->pmove.origin[0] = MSG_ReadCoord(psflags & MSG_PS_FLOAT_COORDS);
+        to->pmove.origin[1] = MSG_ReadCoord(psflags & MSG_PS_FLOAT_COORDS);
     }
 
     if (extraflags & EPS_M_ORIGIN2)
-        to->pmove.origin[2] = MSG_ReadCoord(psflags & MSG_PS_EXTENSIONS);
+        to->pmove.origin[2] = MSG_ReadCoord(psflags & MSG_PS_FLOAT_COORDS);
 
     if (flags & PS_M_VELOCITY) {
-        to->pmove.velocity[0] = MSG_ReadCoord(psflags & MSG_PS_EXTENSIONS);
-        to->pmove.velocity[1] = MSG_ReadCoord(psflags & MSG_PS_EXTENSIONS);
+        to->pmove.velocity[0] = MSG_ReadCoord(psflags & MSG_PS_FLOAT_COORDS);
+        to->pmove.velocity[1] = MSG_ReadCoord(psflags & MSG_PS_FLOAT_COORDS);
     }
 
     if (extraflags & EPS_M_VELOCITY2)
-        to->pmove.velocity[2] = MSG_ReadCoord(psflags & MSG_PS_EXTENSIONS);
+        to->pmove.velocity[2] = MSG_ReadCoord(psflags & MSG_PS_FLOAT_COORDS);
 
     if (flags & PS_M_TIME)
         to->pmove.pm_time = MSG_ReadByte(); // FIXME: Make short
@@ -2277,10 +2213,17 @@ void MSG_ParseDeltaPlayerstate_Enhanced(const player_state_t    *from,
 
     // parse stats
     if (extraflags & EPS_STATS) {
-        statbits = MSG_ReadLong64();
-        for (i = 0; i < MAX_STATS; i++)
-            if (statbits & BIT_ULL(i))
-                to->stats[i] = MSG_ReadShort();
+        if (psflags & MSG_PS_NEW_STATS) {
+            statbits = MSG_ReadLong64();
+            for (i = 0; i < MAX_STATS; i++)
+                if (statbits & BIT_ULL(i))
+                    to->stats[i] = MSG_ReadShort();
+        } else {
+            statbits = MSG_ReadLong();
+            for (i = 0; i < MAX_STATS_OLD; i++)
+                if (statbits & BIT(i))
+                    to->stats[i] = MSG_ReadShort();
+        }
     }
 
 // KEX
@@ -2323,12 +2266,12 @@ void MSG_ParseDeltaPlayerstate_Packet(const player_state_t  *from,
         to->pmove.pm_type = MSG_ReadByte();
 
     if (flags & PPS_M_ORIGIN) {
-        to->pmove.origin[0] = MSG_ReadCoord(psflags & MSG_PS_EXTENSIONS);
-        to->pmove.origin[1] = MSG_ReadCoord(psflags & MSG_PS_EXTENSIONS);
+        to->pmove.origin[0] = MSG_ReadCoord(psflags & MSG_PS_FLOAT_COORDS);
+        to->pmove.origin[1] = MSG_ReadCoord(psflags & MSG_PS_FLOAT_COORDS);
     }
 
     if (flags & PPS_M_ORIGIN2)
-        to->pmove.origin[2] = MSG_ReadCoord(psflags & MSG_PS_EXTENSIONS);
+        to->pmove.origin[2] = MSG_ReadCoord(psflags & MSG_PS_FLOAT_COORDS);
 
     //
     // parse the rest of the player_state_t
@@ -2390,9 +2333,10 @@ void MSG_ParseDeltaPlayerstate_Packet(const player_state_t  *from,
 
     // parse stats
     if (flags & PPS_STATS) {
-        statbits = MSG_ReadLong64();
-        for (i = 0; i < MAX_STATS; i++)
-            if (statbits & BIT_ULL(i))
+        // TODO: properly handle new stats number (64)
+        statbits = MSG_ReadLong();
+        for (i = 0; i < MAX_STATS_OLD; i++)
+            if (statbits & BIT(i))
                 to->stats[i] = MSG_ReadShort();
     }
 }
@@ -2565,11 +2509,11 @@ void MSG_ShowDeltaPlayerstateBits_Packet(int flags)
 #undef S
 }
 
-const char *MSG_ServerCommandString(int cmd)
+const char *MSG_ServerCommandString(int cmd, int version)
 {
     switch (cmd) {
     case -1: return "END OF MESSAGE";
-    default: return "UNKNOWN COMMAND";
+    default: break;
 #define S(x) case svc_##x: return "svc_" #x;
         S(bad)
         S(muzzleflash)
@@ -2592,14 +2536,31 @@ const char *MSG_ServerCommandString(int cmd)
         S(packetentities)
         S(deltapacketentities)
         S(frame)
-        S(zpacket)
-        S(zdownload)
-        S(gamestate)
-        S(setting)
-        S(configstringstream)
-        S(baselinestream)
-#undef S
     }
+    if (version == PROTOCOL_VERSION_RERELEASE) {
+        switch (cmd) {
+        default: break;
+            S(rr_zpacket)
+            S(rr_zdownload)
+            S(rr_gamestate)
+            S(rr_setting)
+            S(rr_configstringstream)
+            S(rr_baselinestream)
+        }
+    } else {
+        switch (cmd) {
+        default: break;
+            S(q2pro_zpacket)
+            S(q2pro_zdownload)
+            S(q2pro_gamestate)
+            S(q2pro_setting)
+            S(q2pro_configstringstream)
+            S(q2pro_baselinestream)
+        }
+    }
+#undef S
+
+    return "UNKNOWN COMMAND";
 }
 
 #endif // USE_CLIENT || USE_MVD_CLIENT

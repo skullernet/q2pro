@@ -1182,7 +1182,7 @@ demoInfo_t *CL_GetDemoInfo(const char *path, demoInfo_t *info)
         }
         c = MSG_ReadLong();
         if (c == PROTOCOL_VERSION_EXTENDED) {
-            csr = &cs_remap_new;
+            csr = &cs_remap_q2pro_new;
         } else if (c < PROTOCOL_VERSION_OLD || c > PROTOCOL_VERSION_DEFAULT) {
             goto fail;
         }
@@ -1223,7 +1223,7 @@ demoInfo_t *CL_GetDemoInfo(const char *path, demoInfo_t *info)
             c &= ~128;
 
             if (extra & MVF_EXTLIMITS) {
-                csr = &cs_remap_new;
+                csr = &cs_remap_q2pro_new;
             }
         }
         MSG_ReadWord();

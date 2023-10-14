@@ -1502,8 +1502,6 @@ void Info_Print(const char *infostring)
 =====================================================================
 */
 
-#if USE_PROTOCOL_EXTENSIONS
-
 const cs_remap_t cs_remap_old = {
     .extended    = false,
 
@@ -1511,6 +1509,8 @@ const cs_remap_t cs_remap_old = {
     .max_models  = MAX_MODELS_OLD,
     .max_sounds  = MAX_SOUNDS_OLD,
     .max_images  = MAX_IMAGES_OLD,
+    .max_shadowlights = 0,
+    .max_wheelitems = 0,
 
     .airaccel    = CS_AIRACCEL_OLD,
     .maxclients  = CS_MAXCLIENTS_OLD,
@@ -1520,20 +1520,28 @@ const cs_remap_t cs_remap_old = {
     .sounds      = CS_SOUNDS_OLD,
     .images      = CS_IMAGES_OLD,
     .lights      = CS_LIGHTS_OLD,
+    .shadowlights = -1,
     .items       = CS_ITEMS_OLD,
     .playerskins = CS_PLAYERSKINS_OLD,
     .general     = CS_GENERAL_OLD,
+    .wheelweapons = -1,
+    .wheelammo   = -1,
+    .wheelpowerups = -1,
+    .cdloopcount = -1,
+    .gamestyle   = -1,
 
     .end         = MAX_CONFIGSTRINGS_OLD
 };
 
-const cs_remap_t cs_remap_new = {
+const cs_remap_t cs_remap_rerelease = {
     .extended    = true,
 
     .max_edicts  = MAX_EDICTS,
     .max_models  = MAX_MODELS,
     .max_sounds  = MAX_SOUNDS,
     .max_images  = MAX_IMAGES,
+    .max_shadowlights = MAX_SHADOW_LIGHTS,
+    .max_wheelitems = MAX_WHEEL_ITEMS,
 
     .airaccel    = CS_AIRACCEL,
     .maxclients  = CS_MAXCLIENTS,
@@ -1543,11 +1551,106 @@ const cs_remap_t cs_remap_new = {
     .sounds      = CS_SOUNDS,
     .images      = CS_IMAGES,
     .lights      = CS_LIGHTS,
+    .shadowlights = CS_SHADOWLIGHTS,
     .items       = CS_ITEMS,
     .playerskins = CS_PLAYERSKINS,
     .general     = CS_GENERAL,
+    .wheelweapons = CS_WHEEL_WEAPONS,
+    .wheelammo   = CS_WHEEL_AMMO,
+    .wheelpowerups = CS_WHEEL_POWERUPS,
+    .cdloopcount = CS_CD_LOOP_COUNT,
+    .gamestyle   = CS_GAME_STYLE,
 
     .end         = MAX_CONFIGSTRINGS
 };
 
-#endif
+#define MAX_IMAGES_EX           2048
+#define CS_AIRACCEL_EX          CS_AIRACCEL
+#define CS_MAXCLIENTS_EX        CS_MAXCLIENTS
+#define CS_MAPCHECKSUM_EX       CS_MAPCHECKSUM
+#define CS_MODELS_EX            CS_MODELS
+#define CS_SOUNDS_EX            CS_SOUNDS
+#define CS_IMAGES_EX            CS_IMAGES
+#define CS_LIGHTS_EX            (CS_IMAGES_EX + MAX_IMAGES_EX)
+#define CS_ITEMS_EX             (CS_LIGHTS_EX + MAX_LIGHTSTYLES)
+#define CS_PLAYERSKINS_EX       (CS_ITEMS_EX + MAX_ITEMS)
+#define CS_GENERAL_EX           (CS_PLAYERSKINS_EX + MAX_CLIENTS)
+#define MAX_CONFIGSTRINGS_EX    (CS_GENERAL_EX + MAX_GENERAL)
+
+const cs_remap_t cs_remap_q2pro_new = {
+    .extended    = true,
+
+    .max_edicts  = MAX_EDICTS,
+    .max_models  = MAX_MODELS,
+    .max_sounds  = MAX_SOUNDS,
+    .max_images  = MAX_IMAGES_EX,
+    .max_shadowlights = 0,
+    .max_wheelitems = 0,
+
+    .airaccel    = CS_AIRACCEL_EX,
+    .maxclients  = CS_MAXCLIENTS_EX,
+    .mapchecksum = CS_MAPCHECKSUM_EX,
+
+    .models      = CS_MODELS_EX,
+    .sounds      = CS_SOUNDS_EX,
+    .images      = CS_IMAGES_EX,
+    .lights      = CS_LIGHTS_EX,
+    .shadowlights = -1,
+    .items       = CS_ITEMS_EX,
+    .playerskins = CS_PLAYERSKINS_EX,
+    .general     = CS_GENERAL_EX,
+    .wheelweapons = -1,
+    .wheelammo   = -1,
+    .wheelpowerups = -1,
+    .cdloopcount = -1,
+    .gamestyle   = -1,
+
+    .end         = MAX_CONFIGSTRINGS_EX
+};
+
+static int index_remap(int index, int old_start, int new_start, int max_indices)
+{
+    int num = index - old_start;
+    if (num >= max_indices)
+        return -1;
+    return new_start + num;
+}
+
+int remap_cs_index(int index, const cs_remap_t *from, const cs_remap_t *to)
+{
+    if (index < from->airaccel)
+        return index; // no change
+    else if (index == from->airaccel)
+        return to->airaccel;
+    else if (index == from->maxclients)
+        return to->maxclients;
+    else if (index == from->mapchecksum)
+        return to->mapchecksum;
+    else if (index >= from->models && index < from->models + from->max_models)
+        return index_remap(index, from->models, to->models, to->max_models);
+    else if (index >= from->sounds && index < from->sounds + from->max_sounds)
+        return index_remap(index, from->sounds, to->sounds, to->max_sounds);
+    else if (index >= from->images && index < from->images + from->max_images)
+        return index_remap(index, from->images, to->images, to->max_images);
+    else if (index >= from->lights && index < from->lights + MAX_LIGHTSTYLES)
+        return index_remap(index, from->lights, to->lights, MAX_LIGHTSTYLES);
+    else if (index >= from->shadowlights && index < from->max_shadowlights)
+        return index_remap(index, from->shadowlights, to->shadowlights, to->max_shadowlights);
+    else if (index >= from->items && index < from->items + MAX_ITEMS)
+        return index_remap(index, from->items, to->items, MAX_ITEMS);
+    else if (index >= from->playerskins && index < from->playerskins + MAX_CLIENTS)
+        return index_remap(index, from->playerskins, to->playerskins, MAX_CLIENTS);
+    else if (index >= from->general && index < from->playerskins + MAX_GENERAL)
+        return index_remap(index, from->general, to->general, MAX_GENERAL);
+    else if (index >= from->wheelweapons && index < from->wheelweapons + from->max_wheelitems)
+        return index_remap(index, from->wheelweapons, to->wheelweapons, from->max_wheelitems);
+    else if (index >= from->wheelammo && index < from->wheelammo + from->max_wheelitems)
+        return index_remap(index, from->wheelammo, to->wheelammo, from->max_wheelitems);
+    else if (index >= from->wheelpowerups && index < from->wheelpowerups + from->max_wheelitems)
+        return index_remap(index, from->wheelpowerups, to->wheelpowerups, from->max_wheelitems);
+    else if (index == from->cdloopcount)
+        return to->cdloopcount;
+    else if (index == from->gamestyle)
+        return to->gamestyle;
+    return -1;
+}

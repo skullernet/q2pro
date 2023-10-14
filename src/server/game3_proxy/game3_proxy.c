@@ -26,6 +26,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <malloc.h>
 #include <stdlib.h>
 
+extern cvar_t *g_features;
+
 static void sync_single_edict_server_to_game(int index);
 static void sync_edicts_server_to_game(void);
 static void sync_single_edict_game_to_server(int index);
@@ -257,40 +259,25 @@ static void wrap_local_sound(game3_edict_t *target, const vec3_t origin, game3_e
 // Map configstring IDs from "old" to "new"
 static int map_configstring_id(int index)
 {
-    if (index < CS_AIRACCEL_OLD)
-        return index; // no change
-    else if (index == CS_AIRACCEL_OLD)
-        return svs.csr.airaccel;
-    else if (index == CS_MAXCLIENTS_OLD)
-        return svs.csr.maxclients;
-    else if (index == CS_MAPCHECKSUM_OLD)
-        return svs.csr.mapchecksum;
-    else if (index >= CS_MODELS_OLD && index < CS_SOUNDS_OLD)
-        return (index - CS_MODELS_OLD) + svs.csr.models;
-    else if (index >= CS_SOUNDS_OLD && index < CS_IMAGES_OLD)
-        return (index - CS_SOUNDS_OLD) + svs.csr.sounds;
-    else if (index >= CS_IMAGES_OLD && index < CS_LIGHTS_OLD)
-        return (index - CS_IMAGES_OLD) + svs.csr.images;
-    else if (index >= CS_LIGHTS_OLD && index < CS_ITEMS_OLD)
-        return (index - CS_LIGHTS_OLD) + svs.csr.lights;
-    else if (index >= CS_ITEMS_OLD && index < CS_PLAYERSKINS_OLD)
-        return (index - CS_ITEMS_OLD) + svs.csr.items;
-    else if (index >= CS_PLAYERSKINS_OLD && index < CS_GENERAL_OLD)
-        return (index - CS_PLAYERSKINS_OLD) + svs.csr.playerskins;
-    else /* (index >= CS_GENERAL_OLD) */ {
-        // note: if this should exceed MAX_CONFIGSTRINGS, let the target function handle it
-        return (index - CS_GENERAL_OLD) + svs.csr.general;
-    }
+    // Games with Q2PRO extensions use different limits/configstring IDs
+    const cs_remap_t *cs_remap_from = (g_features->integer & GMF_PROTOCOL_EXTENSIONS) ? &cs_remap_q2pro_new : &cs_remap_old;
+    return remap_cs_index(index, cs_remap_from, &cs_remap_rerelease);
 }
 
 static void wrap_configstring(int index, const char* str)
 {
-    game_import.configstring(map_configstring_id(index), str);
+    int mapped_idx = map_configstring_id(index);
+    if (mapped_idx < 0)
+        return;
+    game_import.configstring(mapped_idx, str);
 }
 
 static const char *wrap_get_configstring(int index)
 {
-    return game_import.get_configstring(map_configstring_id(index));
+    int mapped_idx = map_configstring_id(index);
+    if (mapped_idx < 0)
+        return "";
+    return game_import.get_configstring(mapped_idx);
 }
 
 static trace_t wrap_clip(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, game3_edict_t *clip, int contentmask)

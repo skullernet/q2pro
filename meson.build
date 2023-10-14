@@ -203,7 +203,7 @@ if system_wide
   homedir = get_option('homedir')
 endif
 
-common_args = ['-DHAVE_CONFIG_H', '-DUSE_PROTOCOL_EXTENSIONS=1']
+common_args = ['-DHAVE_CONFIG_H']
 if win32
   common_args += '-D_USE_MATH_DEFINES'
 else

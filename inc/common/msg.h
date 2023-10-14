@@ -78,8 +78,10 @@ typedef enum {
     MSG_PS_IGNORE_DELTAANGLES   = BIT(4),   // ignore delta_angles
     MSG_PS_IGNORE_PREDICTION    = BIT(5),   // mutually exclusive with IGNORE_VIEWANGLES
     MSG_PS_EXTENSIONS           = BIT(6),   // enable protocol extensions
-    MSG_PS_FORCE                = BIT(7),   // send even if unchanged (MVD stream only)
-    MSG_PS_REMOVE               = BIT(8),   // player is removed (MVD stream only)
+    MSG_PS_FLOAT_COORDS         = BIT(7),   // floating point coordinates
+    MSG_PS_NEW_STATS            = BIT(8),   // increased stats numbers
+    MSG_PS_FORCE                = BIT(9),   // send even if unchanged (MVD stream only)
+    MSG_PS_REMOVE               = BIT(10),  // player is removed (MVD stream only)
 } msgPsFlags_t;
 
 typedef enum {
@@ -91,7 +93,8 @@ typedef enum {
     MSG_ES_BEAMORIGIN   = BIT(5),   // client has RF_BEAM old_origin fix
     MSG_ES_SHORTANGLES  = BIT(6),   // higher precision angles encoding
     MSG_ES_EXTENSIONS   = BIT(7),   // enable protocol extensions
-    MSG_ES_REMOVE       = BIT(8),   // entity is removed (MVD stream only)
+    MSG_ES_FLOAT_COORDS = BIT(8),   // floating point coordinates
+    MSG_ES_REMOVE       = BIT(9),   // entity is removed (MVD stream only)
 } msgEsFlags_t;
 
 extern sizebuf_t    msg_write;
@@ -158,7 +161,6 @@ void    MSG_ReadDir(vec3_t vector);
 #endif
 int     MSG_ReadBits(int bits);
 void    MSG_ReadDeltaUsercmd(const usercmd_t *from, usercmd_t *cmd);
-void    MSG_ReadDeltaUsercmd_Hacked(const usercmd_t *from, usercmd_t *to);
 void    MSG_ReadDeltaUsercmd_Enhanced(const usercmd_t *from, usercmd_t *to);
 int     MSG_ParseEntityBits(uint64_t *bits, msgEsFlags_t flags);
 void    MSG_ParseDeltaEntity(entity_state_t *to, int number, uint64_t bits, msgEsFlags_t flags);
@@ -177,7 +179,7 @@ void    MSG_ShowDeltaUsercmdBits_Enhanced(int bits);
 #if USE_CLIENT || USE_MVD_CLIENT
 void    MSG_ShowDeltaEntityBits(uint64_t bits);
 void    MSG_ShowDeltaPlayerstateBits_Packet(int flags);
-const char *MSG_ServerCommandString(int cmd);
+const char *MSG_ServerCommandString(int cmd, int version);
 #endif // USE_CLIENT || USE_MVD_CLIENT
 #endif // USE_DEBUG
 
