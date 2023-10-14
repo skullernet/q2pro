@@ -259,6 +259,7 @@ if not zlib.found()
 endif
 
 png = dependency('libpng',
+  version:         '>= 1.6.11',
   required:        get_option('libpng'),
   default_options: fallback_opt,
 )
