@@ -20,4 +20,4 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 void Loc_Init();
 void Loc_ReloadFile();
-size_t Loc_Localize(const char *base, const char **arguments, size_t num_arguments, char *output, size_t output_length);
+size_t Loc_Localize(const char *base, bool allow_in_place, const char **arguments, size_t num_arguments, char *output, size_t output_length);

@@ -482,7 +482,7 @@ static void SV_StartSound(const vec3_t origin, edict_t *edict,
                           int channel, int soundindex, float volume,
                           float attenuation, float timeofs)
 {
-    int         i, ent, vol, att, ofs, flags, sendchan;
+    int         ent, vol, att, ofs, flags, sendchan;
     vec3_t      origin_v;
     client_t    *client;
     byte        mask[VIS_MAX_BYTES];
@@ -787,7 +787,7 @@ static void PF_Loc_Print(edict_t* ent, print_type_t level, const char* base, con
      * suggesting all other print functions should be wrappers of this one. */
 
     char string[MAX_STRING_CHARS];
-    Loc_Localize(base, args, num_args, string, sizeof(string));
+    Loc_Localize(base, true, args, num_args, string, sizeof(string));
     PF_Client_Print(ent, level, string);
 }
 

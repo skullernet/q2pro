@@ -48,30 +48,190 @@ typedef struct loc_string_s {
 static loc_string_t *loc_head;
 static loc_string_t *loc_hash[LOC_HASH_SIZE];
 
-size_t Loc_Localize(const char *base, const char **arguments, size_t num_arguments, char *output, size_t output_length)
+static int loccmpfnc(const void *_a, const void *_b)
 {
-    // skip $ prefix if it exists
-    if (*base == '$') {
-        base++;
+    const loc_arg_t *a = (const loc_arg_t *)_a;
+    const loc_arg_t *b = (const loc_arg_t *)_b;
+    return a->start - b->start;
+}
+
+/*
+================
+Loc_Parse
+================
+*/
+static bool Loc_Parse(loc_string_t *loc)
+{
+    // if -1, a positional argument was encountered
+    int32_t arg_index = 0;
+
+    // parse out arguments
+    size_t arg_rover = 0;
+
+    while (true) {
+        if (arg_rover >= sizeof(loc->format) || !loc->format[arg_rover]) {
+            break;
+        }
+
+        if (loc->format[arg_rover] == '{') {
+            size_t arg_start = arg_rover;
+
+            arg_rover++;
+
+            if (loc->format[arg_rover] && loc->format[arg_rover] == '{') {
+                continue; // escape sequence
+            }
+
+            // argument encountered
+            if (loc->num_arguments == MAX_LOC_ARGS) {
+                Com_SetLastError("too many arguments");
+                return false;
+            }
+
+            loc_arg_t *arg = &loc->arguments[loc->num_arguments++];
+
+            arg->start = arg_start;
+
+            // check if we have a numerical value
+            char *end_ptr;
+            arg->arg_index = strtol(&loc->format[arg_rover], &end_ptr, 10);
+
+            if (end_ptr == &loc->format[arg_rover]) {
+
+                if (arg_index == -1) {
+                    Com_SetLastError("encountered sequential argument, but has positional args");
+                    return false;
+                }
+
+                // sequential
+                arg->arg_index = arg_index++;
+            } else {
+
+                // positional
+                if (arg_index > 0) {
+                    Com_SetLastError("encountered positional argument, but has sequential args");
+                    return false;
+                }
+
+                // mark us off so we can't find sequentials
+                arg_index = -1;
+            }
+
+            // find the end of this argument
+            arg_rover = (end_ptr - loc->format) - 1;
+
+            while (true) {
+
+                if (arg_rover >= sizeof(loc->format) || !loc->format[arg_rover]) {
+                    Com_SetLastError("EOF before end of argument found");
+                    return false;
+                }
+
+                arg_rover++;
+                
+                if (loc->format[arg_rover] != '}') {
+                    continue;
+                }
+
+                size_t arg_end = arg_rover;
+
+                arg_rover++;
+
+                if (loc->format[arg_rover] && loc->format[arg_rover] == '}') {
+                    continue; // escape sequence
+                }
+
+                // we found it
+                arg->end = arg_end + 1;
+                break;
+            }
+        }
+
+        arg_rover++;
     }
-    
+
+    if (loc->num_arguments) {
+        // sort the arguments by start position
+        qsort(loc->arguments, loc->num_arguments, sizeof(loc_arg_t), loccmpfnc);
+    }
+
+    return true;
+}
+
+// just as best guess as to whether the given in-place string
+// has arguments to parse or not. fmt uses {{ as escape, so
+// we can assume any { that isn't followed by a { means we
+// have an arg.
+static bool Loc_HasArguments(const char *base)
+{
+    for (const char *rover = base; *rover; rover++) {
+        if (*rover == '{') {
+            rover++;
+
+            if (!*rover) {
+                return false;
+            } else if (*rover != '{') {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+// find the given loc_string_t from the hashed list of localized
+// strings
+static const loc_string_t *Loc_Find(const char *base)
+{
     // find loc via hash
     uint32_t hash = Com_HashString(base, LOC_HASH_SIZE) & (LOC_HASH_SIZE - 1);
 
     if (!loc_hash[hash]) {
-        return Q_strlcpy(output, base, output_length);
+        return NULL;
     }
-    
-    const loc_string_t *str = loc_hash[hash];
 
-    for (; str != NULL; str = str->hash_next) {
+    for (const loc_string_t *str = loc_hash[hash]; str != NULL; str = str->hash_next) {
         if (!strcmp(str->key, base)) {
-            break;
+            return str;
         }
     }
 
-    if (!str) {
-        return Q_strlcpy(output, base, output_length);
+    return NULL;
+}
+
+size_t Loc_Localize(const char *base, bool allow_in_place, const char **arguments, size_t num_arguments, char *output, size_t output_length)
+{
+    Q_assert(base);
+
+    static loc_string_t in_place_loc;
+    const loc_string_t *str;
+
+    // re-release supports two types of localizations - ones in
+    // the loc file (prefixed with $) and in-place localizations
+    // that are formatted at runtime.
+    if (!allow_in_place) {
+        if (*base != '$') {
+            return Q_strlcpy(output, base, output_length);
+        }
+
+        base++;
+        str = Loc_Find(base);
+    } else {
+        if (*base == '$') {
+            base++;
+            str = Loc_Find(base);
+        } else if (Loc_HasArguments(base)) {
+            Q_strlcpy(in_place_loc.format, base, sizeof(in_place_loc.format));
+
+            if (!Loc_Parse(&in_place_loc)) {
+                Com_WPrintf("in-place localization of \"%s\" failed: %s\n", base, Com_GetLastError());
+                return Q_strlcpy(output, base, output_length);
+            }
+
+            str = &in_place_loc;
+        } else {
+            return Q_strlcpy(output, base, output_length);
+        }
     }
 
     // easy case
@@ -103,7 +263,7 @@ size_t Loc_Localize(const char *base, const char **arguments, size_t num_argumen
 
     for (size_t i = 0; i < str->num_arguments - 1; i++) {
 
-        Loc_Localize(arguments[arg->arg_index], NULL, 0, localized_arg, sizeof(localized_arg));
+        Loc_Localize(arguments[arg->arg_index], false, NULL, 0, localized_arg, sizeof(localized_arg));
         Q_strlcat(output, localized_arg, output_length);
 
         const loc_arg_t *next_arg = &str->arguments[i + 1];
@@ -113,17 +273,10 @@ size_t Loc_Localize(const char *base, const char **arguments, size_t num_argumen
         arg = next_arg;
     }
     
-    Loc_Localize(arguments[arg->arg_index], NULL, 0, localized_arg, sizeof(localized_arg));
+    Loc_Localize(arguments[arg->arg_index], false, NULL, 0, localized_arg, sizeof(localized_arg));
     Q_strlcat(output, localized_arg, output_length);
 
     return Q_strlcat(output, str->format + arg->end, output_length);
-}
-
-static int loccmpfnc(const void *_a, const void *_b)
-{
-    const loc_arg_t *a = (const loc_arg_t *)_a;
-    const loc_arg_t *b = (const loc_arg_t *)_b;
-    return a->start - b->start;
 }
 
 static void Loc_Unload()
@@ -205,100 +358,11 @@ void Loc_ReloadFile()
             continue;
         }
 
-        // if -1, a positional argument was encountered
-        int32_t arg_index = 0;
-
         loc.num_arguments = 0;
         loc.next = loc.hash_next = NULL;
 
-        // parse out arguments
-        size_t arg_rover = 0;
-
-        while (true) {
-            if (arg_rover >= sizeof(loc.format) || !loc.format[arg_rover]) {
-                break;
-            }
-
-            if (loc.format[arg_rover] == '{') {
-                size_t arg_start = arg_rover;
-
-                arg_rover++;
-
-                if (loc.format[arg_rover] && loc.format[arg_rover] == '{') {
-                    continue; // escape sequence
-                }
-
-                // argument encountered
-                if (loc.num_arguments == MAX_LOC_ARGS) {
-                    Com_SetLastError("too many arguments");
-                    goto line_error; // no more room
-                }
-
-                loc_arg_t *arg = &loc.arguments[loc.num_arguments++];
-
-                arg->start = arg_start;
-
-                // check if we have a numerical value
-                char *end_ptr;
-                arg->arg_index = strtol(&loc.format[arg_rover], &end_ptr, 10);
-
-                if (end_ptr == &loc.format[arg_rover]) {
-
-                    if (arg_index == -1) {
-                        Com_SetLastError("encountered sequential argument, but has positional args");
-                        goto line_error;
-                    }
-
-                    // sequential
-                    arg->arg_index = arg_index++;
-                } else {
-
-                    // positional
-                    if (arg_index > 0) {
-                        Com_SetLastError("encountered positional argument, but has sequential args");
-                        goto line_error;
-                    }
-
-                    // mark us off so we can't find sequentials
-                    arg_index = -1;
-                }
-
-                // find the end of this argument
-                arg_rover = (end_ptr - loc.format) - 1;
-
-                while (true) {
-
-                    if (arg_rover >= sizeof(loc.format) || !loc.format[arg_rover]) {
-                        Com_SetLastError("EOF before end of argument found");
-                        goto line_error;
-                    }
-
-                    arg_rover++;
-                
-                    if (loc.format[arg_rover] != '}') {
-                        continue;
-                    }
-
-                    size_t arg_end = arg_rover;
-
-                    arg_rover++;
-
-                    if (loc.format[arg_rover] && loc.format[arg_rover] == '}') {
-                        continue; // escape sequence
-                    }
-
-                    // we found it
-                    arg->end = arg_end + 1;
-                    break;
-                }
-            }
-
-            arg_rover++;
-        }
-
-        if (loc.num_arguments) {
-            // sort the arguments by start position
-            qsort(loc.arguments, loc.num_arguments, sizeof(loc_arg_t), loccmpfnc);
+        if (!Loc_Parse(&loc)) {
+            goto line_error;
         }
 
         // link us in and copy off
