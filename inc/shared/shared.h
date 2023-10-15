@@ -1013,15 +1013,16 @@ typedef struct {
 #define EF_TRACKERTRAIL     BIT(31)
 //ROGUE
 
-// entity_state_t->morefx flags
 //KEX
-#define EFX_DUALFIRE            BIT(0)
-#define EFX_HOLOGRAM            BIT(1)
-#define EFX_FLASHLIGHT          BIT(2)
-#define EFX_BARREL_EXPLODING    BIT(3)
-#define EFX_TELEPORTER2         BIT(4)
-#define EFX_GRENADE_LIGHT       BIT(5)
+#define EF_DUALFIRE            BIT_ULL(32)
+#define EF_HOLOGRAM            BIT_ULL(33)
+#define EF_FLASHLIGHT          BIT_ULL(34)
+#define EF_BARREL_EXPLODING    BIT_ULL(35)
+#define EF_TELEPORTER2         BIT_ULL(36)
+#define EF_GRENADE_LIGHT       BIT_ULL(37)
 //KEX
+
+typedef uint64_t effects_t;
 
 // entity_state_t->renderfx flags
 #define RF_MINLIGHT         BIT(0)      // allways have some light (viewmodel)
@@ -1441,10 +1442,7 @@ typedef struct entity_state_s {
     int     modelindex2, modelindex3, modelindex4;  // weapons, CTF flags, etc
     int     frame;
     int     skinnum;
-    uint32_t effects;        // PGM - we're filling it, so it needs to be unsigned
-// KEX
-    uint32_t morefx;
-// KEX
+    effects_t effects;        // PGM - we're filling it, so it needs to be unsigned
     int     renderfx;
     int     solid;          // for client side prediction, 8*(bits 0-4) is x/y radius
                             // 8*(bits 5-9) is z down distance, 8(bits10-15) is z up

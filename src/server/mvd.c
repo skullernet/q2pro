@@ -700,7 +700,6 @@ static void copy_entity_state(entity_packed_t *dst, const entity_packed_t *src, 
     dst->sound = src->sound;
     dst->event = 0;
     if (svs.csr.extended) {
-        dst->morefx = src->morefx;
         dst->alpha = src->alpha;
         dst->scale = src->scale;
         dst->loop_volume = src->loop_volume;

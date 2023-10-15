@@ -509,7 +509,6 @@ void MSG_PackEntity(entity_packed_t *out, const entity_state_t *in, bool ext)
     out->sound = in->sound;
     out->event = in->event;
     if (ext) {
-        out->morefx = in->morefx;
         out->alpha = Q_clip_uint8(in->alpha * 255.0f);
         out->scale = Q_clip_uint8(in->scale * 16.0f);
         out->loop_volume = Q_clip_uint8(in->loop_volume * 255.0f);
@@ -652,10 +651,12 @@ void MSG_WriteDeltaEntity(const entity_packed_t *from,
             bits |= U_MODEL16;
         if (to->loop_volume != from->loop_volume || to->loop_attenuation != from->loop_attenuation)
             bits |= U_SOUND;
-        if (to->morefx != from->morefx) {
-            if (to->morefx & mask)
+        uint32_t from_morefx = from->effects >> 32;
+        uint32_t to_morefx = to->effects >> 32;
+        if (to_morefx != from_morefx) {
+            if (to_morefx & mask)
                 bits |= U_MOREFX32;
-            else if (to->morefx & 0x0000ff00)
+            else if (to_morefx & 0x0000ff00)
                 bits |= U_MOREFX16;
             else
                 bits |= U_MOREFX8;
@@ -801,12 +802,13 @@ void MSG_WriteDeltaEntity(const entity_packed_t *from,
     }
 
     if (flags & MSG_ES_EXTENSIONS) {
+        uint32_t to_morefx = to->effects >> 32;
         if ((bits & U_MOREFX32) == U_MOREFX32)
-            MSG_WriteLong(to->morefx);
+            MSG_WriteLong(to_morefx);
         else if (bits & U_MOREFX8)
-            MSG_WriteByte(to->morefx);
+            MSG_WriteByte(to_morefx);
         else if (bits & U_MOREFX16)
-            MSG_WriteShort(to->morefx);
+            MSG_WriteShort(to_morefx);
 
         if (bits & U_ALPHA)
             MSG_WriteByte(to->alpha);
@@ -1962,12 +1964,14 @@ void MSG_ParseDeltaEntity(entity_state_t            *to,
     }
 
     if (flags & MSG_ES_EXTENSIONS) {
+        uint32_t to_morefx = 0;
         if ((bits & U_MOREFX32) == U_MOREFX32)
-            to->morefx = MSG_ReadLong();
+            to_morefx = MSG_ReadLong();
         else if (bits & U_MOREFX8)
-            to->morefx = MSG_ReadByte();
+            to_morefx = MSG_ReadByte();
         else if (bits & U_MOREFX16)
-            to->morefx = MSG_ReadWord();
+            to_morefx = MSG_ReadWord();
+        to->effects |= ((effects_t)to_morefx) << 32;
 
         if (bits & U_ALPHA)
             to->alpha = MSG_ReadByte() / 255.0f;

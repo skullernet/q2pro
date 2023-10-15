@@ -35,11 +35,9 @@ typedef struct {
     uint16_t    modelindex3;
     uint16_t    modelindex4;
     uint32_t    skinnum;
-    uint32_t    effects;
+    effects_t   effects; // KEX
     uint32_t    renderfx;
     uint32_t    solid;
-// KEX
-    uint32_t    morefx;
 // KEX
     uint16_t    frame;
     uint16_t    sound;
