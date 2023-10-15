@@ -1270,15 +1270,44 @@ static void CL_ParseSetting(void)
     }
 }
 
-static void CL_SkipDamage(void)
+typedef struct {
+    uint8_t         damage : 5;
+    bool            health : 1;
+    bool            armor  : 1;
+    bool            power  : 1;
+} cl_svc_damage_t;
+
+static void CL_ParseDamage(void)
 {
     uint8_t count = MSG_ReadByte();
 
     for (uint8_t i = 0; i < count; i++)
     {
-        /*uint8_t encoded = */MSG_ReadByte();
+        union {
+            uint8_t         encoded;
+            cl_svc_damage_t decoded;
+        } data = { MSG_ReadByte() };
+
+        // direction that comes in is absolute in world coordinates
         vec3_t dir;
         MSG_ReadDir(dir);
+
+        vec3_t color = { 0.f, 0.f, 0.f };
+
+        if (data.decoded.health)
+            color[0] += 1.0f;
+        else if (data.decoded.power)
+            color[1] += 1.0f;
+        else if (data.decoded.armor)
+        {
+            color[0] += 1.0f;
+            color[1] += 1.0f;
+            color[2] += 1.0f;
+        }
+
+        VectorNormalize(color);
+
+        SCR_AddToDamageDisplay(data.decoded.damage, color, dir);
     }
 }
 
@@ -1518,7 +1547,7 @@ static svc_handle_result_t handle_svc_rerelease(int cmd)
 
     // KEX
     case svc_damage:
-        CL_SkipDamage();
+        CL_ParseDamage();
         return svch_continue_loop;
     case svc_fog:
         CL_SkipFog();

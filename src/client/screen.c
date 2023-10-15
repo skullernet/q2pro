@@ -29,6 +29,16 @@ typedef struct {
     uint16_t    crop;
 } cin_crop_t;
 
+typedef struct {
+    int         damage;
+    vec3_t      color;
+    vec3_t      dir;
+    int         time;
+} scr_damage_entry_t;
+
+#define MAX_DAMAGE_ENTRIES      32
+#define DAMAGE_ENTRY_BASE_SIZE  3
+
 static struct {
     bool        initialized;        // ready to draw
 
@@ -47,6 +57,10 @@ static struct {
     int         hit_marker_time;
     int         hit_marker_width, hit_marker_height;
     qhandle_t   hit_marker_sound;
+
+    qhandle_t   damage_display_pic;
+    int         damage_display_width, damage_display_height;
+    scr_damage_entry_t  damage_entries[MAX_DAMAGE_ENTRIES];
 
     qhandle_t   sb_pics[2][STAT_PICS];
     qhandle_t   inven_pic;
@@ -103,6 +117,9 @@ static cvar_t   *ch_y;
 
 static cvar_t   *scr_hit_markers; // 1 = sound + pic, 2 = pic
 static cvar_t   *scr_hit_marker_time;
+
+static cvar_t   *scr_damage_indicators;
+static cvar_t   *scr_damage_indicator_time;
 
 vrect_t     scr_vrect;      // position of render window on screen
 
@@ -416,7 +433,7 @@ for a few moments
 void SCR_CenterPrint(const char *str, bool typewrite)
 {
     centerprint_t *cp;
-    const char *s;
+    const char  *s;
 
     // refresh duplicate message
     cp = &scr_centerprints[(scr_centerhead - 1) & (MAX_CENTERPRINTS - 1)];
@@ -473,7 +490,7 @@ static void SCR_DrawCenterString(void)
 
     while (1) {
         if (scr_centertail == scr_centerhead)
-            return;
+        return;
         cp = &scr_centerprints[scr_centertail & (MAX_CENTERPRINTS - 1)];
         if (!cp->start)
             cp->start = cls.realtime;
@@ -1284,8 +1301,13 @@ void SCR_RegisterMedia(void)
     R_GetPicSize(&scr.hit_marker_width, &scr.hit_marker_height, scr.hit_marker_pic);
     scr.hit_marker_sound = S_RegisterSound("weapons/marker.wav");
 
+    scr.damage_display_pic = R_RegisterPic("damage_indicator");
+    R_GetPicSize(&scr.damage_display_width, &scr.damage_display_height, scr.damage_display_pic);
+
     scr.net_pic = R_RegisterPic("net");
     scr.font_pic = R_RegisterFont(scr_font->string);
+
+    memset(scr.damage_entries, 0, sizeof(scr.damage_entries));
 
     scr_crosshair_changed(scr_crosshair);
 }
@@ -1371,6 +1393,9 @@ void SCR_Init(void)
 
     scr_hit_markers = Cvar_Get("scr_hit_markers", "1", 0);
     scr_hit_marker_time = Cvar_Get("scr_hit_marker_time", "500", 0);
+    
+    scr_damage_indicators = Cvar_Get("scr_damage_indicators", "1", 0);
+    scr_damage_indicator_time = Cvar_Get("scr_damage_indicator_time", "1000", 0);
 
     Cmd_Register(scr_cmds);
 
@@ -2047,7 +2072,7 @@ static void SCR_DrawHitMarkers(void)
 
     if (cl.frame.ps.stats[STAT_HIT_MARKER] && cl.hit_marker_frame != cl.frame.number) {
         cl.hit_marker_frame = cl.frame.number;
-        cl.hit_marker_time = cls.realtime + scr_hit_marker_time->value;
+        cl.hit_marker_time = cls.realtime + scr_hit_marker_time->integer;
 
         if (scr_hit_markers->integer == 1) {
             S_StartLocalSound("weapons/marker.wav");
@@ -2074,6 +2099,76 @@ static void SCR_DrawHitMarkers(void)
     }
 }
 
+static scr_damage_entry_t *SCR_AllocDamageDisplay(const vec3_t dir)
+{
+    if (!scr_damage_indicators->integer) {
+        return;
+    }
+
+    scr_damage_entry_t *entry = scr.damage_entries;
+
+    for (int i = 0; i < MAX_DAMAGE_ENTRIES; i++, entry++) {
+        if (entry->time <= cls.realtime) {
+            goto new_entry;
+        }
+
+        float dot = DotProduct(entry->dir, dir);
+
+        if (dot >= 0.95f) {
+            return entry;
+        }
+    }
+
+    entry = scr.damage_entries;
+
+new_entry:
+    entry->damage = 0;
+    VectorClear(entry->color);
+    return entry;
+}
+
+void SCR_AddToDamageDisplay(int damage, const vec3_t color, const vec3_t dir)
+{
+    scr_damage_entry_t *entry = SCR_AllocDamageDisplay(dir);
+
+    entry->damage += damage;
+    VectorAdd(entry->color, color, entry->color);
+    VectorNormalize(entry->color);
+    VectorCopy(dir, entry->dir);
+    entry->time = cls.realtime + scr_damage_indicator_time->integer;
+}
+
+static void SCR_DrawDamageDisplays(void)
+{
+    for (int i = 0; i < MAX_DAMAGE_ENTRIES; i++) {
+        scr_damage_entry_t *entry = &scr.damage_entries[i];
+
+        if (entry->time <= cls.realtime)
+            continue;
+
+        float frac = (entry->time - cls.realtime) / scr_damage_indicator_time->value;
+
+        float my_yaw = cl.viewangles[YAW];
+        vec3_t angles;
+        vectoangles2(entry->dir, angles);
+        float damage_yaw = angles[YAW];
+        float yaw_diff = DEG2RAD(my_yaw - damage_yaw);
+
+        R_SetColor(MakeColor(
+            (int) (entry->color[0] * 255.f),
+            (int) (entry->color[1] * 255.f),
+            (int) (entry->color[2] * 255.f),
+            (int) (frac * 255.f)));
+
+        int x = scr.hud_width / 2;
+        int y = scr.hud_height / 2;
+
+        int size = min(scr.damage_display_width, (DAMAGE_ENTRY_BASE_SIZE * entry->damage));
+
+        R_DrawStretchRotatePic(x, y, size, scr.damage_display_height, yaw_diff, 0, -(scr.crosshair_height + (scr.damage_display_height / 2)), scr.damage_display_pic);
+    }
+}
+
 static void SCR_DrawCrosshair(void)
 {
     int x, y;
@@ -2095,6 +2190,8 @@ static void SCR_DrawCrosshair(void)
                      scr.crosshair_pic);
 
     SCR_DrawHitMarkers();
+
+    SCR_DrawDamageDisplays();
 }
 
 // The status bar is a small layout program that is based on the stats array

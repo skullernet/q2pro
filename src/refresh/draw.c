@@ -76,6 +76,78 @@ static inline void _GL_StretchPic(
 #define GL_StretchPic(x,y,w,h,s1,t1,s2,t2,color,image) \
     _GL_StretchPic(x,y,w,h,s1,t1,s2,t2,color,(image)->texnum,(image)->flags)
 
+static inline void _GL_StretchRotatePic(
+    float x, float y, float w, float h,
+    float s1, float t1, float s2, float t2,
+    float angle, float pivot_x, float pivot_y,
+    uint32_t color, int texnum, int flags)
+{
+    vec_t *dst_vert;
+    uint32_t *dst_color;
+    QGL_INDEX_TYPE *dst_indices;
+
+    if (tess.numverts + 4 > TESS_MAX_VERTICES ||
+        tess.numindices + 6 > TESS_MAX_INDICES ||
+        (tess.numverts && tess.texnum[0] != texnum)) {
+        GL_Flush2D();
+    }
+
+    tess.texnum[0] = texnum;
+
+    dst_vert = tess.vertices + tess.numverts * 4;
+    float hw = w / 2.0f;
+    float hh = h / 2.0f;
+
+    Vector4Set(dst_vert,      -hw + pivot_x, -hh + pivot_y, s1, t1);
+    Vector4Set(dst_vert +  4,  hw + pivot_x, -hh + pivot_y, s2, t1);
+    Vector4Set(dst_vert +  8,  hw + pivot_x,  hh + pivot_y, s2, t2);
+    Vector4Set(dst_vert + 12, -hw + pivot_x,  hh + pivot_y, s1, t2);
+
+    float s = sinf(angle);
+    float c = cosf(angle);
+    int i = 0;
+
+    for (dst_vert = tess.vertices + tess.numverts * 4; i < 4; dst_vert += 4, i++) {
+        float vert_x = *(dst_vert + 0);
+        float vert_y = *(dst_vert + 1);
+        
+        *(dst_vert + 0) = (vert_x * c - vert_y * s) + x;
+        *(dst_vert + 1) = (vert_x * s + vert_y * c) + y;
+    }
+
+    dst_color = (uint32_t *)tess.colors + tess.numverts;
+    dst_color[0] = color;
+    dst_color[1] = color;
+    dst_color[2] = color;
+    dst_color[3] = color;
+
+    dst_indices = tess.indices + tess.numindices;
+    dst_indices[0] = tess.numverts + 0;
+    dst_indices[1] = tess.numverts + 2;
+    dst_indices[2] = tess.numverts + 3;
+    dst_indices[3] = tess.numverts + 0;
+    dst_indices[4] = tess.numverts + 1;
+    dst_indices[5] = tess.numverts + 2;
+
+    if (flags & IF_TRANSPARENT) {
+        if ((flags & IF_PALETTED) && draw.scale == 1) {
+            tess.flags |= 1;
+        } else {
+            tess.flags |= 2;
+        }
+    }
+
+    if ((color & U32_ALPHA) != U32_ALPHA) {
+        tess.flags |= 2;
+    }
+
+    tess.numverts += 4;
+    tess.numindices += 6;
+}
+
+#define GL_StretchRotatePic(x,y,w,h,s1,t1,s2,t2,angle,px,py,color,image) \
+    _GL_StretchRotatePic(x,y,w,h,s1,t1,s2,t2,angle,px,py,color,(image)->texnum,(image)->flags)
+
 static void GL_DrawVignette(int distance, color_t color)
 {
     vec_t *dst_vert;
@@ -313,6 +385,14 @@ void R_DrawStretchPic(int x, int y, int w, int h, qhandle_t pic)
 
     GL_StretchPic(x, y, w, h, image->sl, image->tl, image->sh, image->th,
                   draw.colors[0].u32, image);
+}
+
+void R_DrawStretchRotatePic(int x, int y, int w, int h, float angle, int pivot_x, int pivot_y, qhandle_t pic)
+{
+    image_t *image = IMG_ForHandle(pic);
+
+    GL_StretchRotatePic(x, y, w, h, image->sl, image->tl, image->sh, image->th,
+                        angle, pivot_x, pivot_y, draw.colors[0].u32, image);
 }
 
 void R_DrawKeepAspectPic(int x, int y, int w, int h, qhandle_t pic)
