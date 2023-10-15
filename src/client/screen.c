@@ -43,6 +43,11 @@ static struct {
     int         loading_width, loading_height;
     bool        draw_loading;
 
+    qhandle_t   hit_marker_pic;
+    int         hit_marker_time;
+    int         hit_marker_width, hit_marker_height;
+    qhandle_t   hit_marker_sound;
+
     qhandle_t   sb_pics[2][STAT_PICS];
     qhandle_t   inven_pic;
     qhandle_t   field_pic;
@@ -95,6 +100,9 @@ static cvar_t   *ch_alpha;
 static cvar_t   *ch_scale;
 static cvar_t   *ch_x;
 static cvar_t   *ch_y;
+
+static cvar_t   *scr_hit_markers; // 1 = sound + pic, 2 = pic
+static cvar_t   *scr_hit_marker_time;
 
 vrect_t     scr_vrect;      // position of render window on screen
 
@@ -1272,6 +1280,10 @@ void SCR_RegisterMedia(void)
     scr.loading_pic = R_RegisterPic("loading");
     R_GetPicSize(&scr.loading_width, &scr.loading_height, scr.loading_pic);
 
+    scr.hit_marker_pic = R_RegisterPic("marker");
+    R_GetPicSize(&scr.hit_marker_width, &scr.hit_marker_height, scr.hit_marker_pic);
+    scr.hit_marker_sound = S_RegisterSound("weapons/marker.wav");
+
     scr.net_pic = R_RegisterPic("net");
     scr.font_pic = R_RegisterFont(scr_font->string);
 
@@ -1356,6 +1368,9 @@ void SCR_Init(void)
     scr_showstats = Cvar_Get("scr_showstats", "0", 0);
     scr_showpmove = Cvar_Get("scr_showpmove", "0", 0);
 #endif
+
+    scr_hit_markers = Cvar_Get("scr_hit_markers", "1", 0);
+    scr_hit_marker_time = Cvar_Get("scr_hit_marker_time", "500", 0);
 
     Cmd_Register(scr_cmds);
 
@@ -2024,6 +2039,41 @@ static void SCR_DrawLoading(void)
     R_SetScale(1.0f);
 }
 
+static void SCR_DrawHitMarkers(void)
+{
+    if (!cl.csr.extended || !scr_hit_markers->integer) {
+        return;
+    }
+
+    if (cl.frame.ps.stats[STAT_HIT_MARKER] && cl.hit_marker_frame != cl.frame.number) {
+        cl.hit_marker_frame = cl.frame.number;
+        cl.hit_marker_time = cls.realtime + scr_hit_marker_time->value;
+
+        if (scr_hit_markers->integer == 1) {
+            S_StartLocalSound("weapons/marker.wav");
+        }
+    }
+
+    if (cl.hit_marker_time > cls.realtime) {
+        float frac = 1.0f - ((cl.hit_marker_time - cls.realtime) / scr_hit_marker_time->value);
+        float alpha = 1.0f - (frac * frac);
+        float scale = frac;
+
+        scale = max(1.0f, 1.5f * (1.f - scale));
+        
+        int w = scr.hit_marker_width * scale;
+        int h = scr.hit_marker_height * scale;
+
+        int x = (scr.hud_width - w) / 2;
+        int y = (scr.hud_height - h) / 2;
+
+        R_SetColor(MakeColor(255, 0, 0, alpha * 255));
+
+        R_DrawStretchPic(x + ch_x->integer, y + ch_y->integer,
+            w, h, scr.hit_marker_pic);
+    }
+}
+
 static void SCR_DrawCrosshair(void)
 {
     int x, y;
@@ -2043,6 +2093,8 @@ static void SCR_DrawCrosshair(void)
                      scr.crosshair_width,
                      scr.crosshair_height,
                      scr.crosshair_pic);
+
+    SCR_DrawHitMarkers();
 }
 
 // The status bar is a small layout program that is based on the stats array

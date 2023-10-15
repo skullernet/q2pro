@@ -295,6 +295,8 @@ typedef struct client_state_s {
     int32_t sv_frametime;
     int32_t sv_framediv;
 
+    int     hit_marker_frame, hit_marker_time;
+
     // data for view weapon
     struct {
         struct {
