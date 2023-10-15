@@ -1431,7 +1431,7 @@ HELPER FUNCTIONS
 
 static lightpoint_t *light_point;
 
-static bool BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, const vec3_t p1, const vec3_t p2)
+static bool BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, const vec3_t p1, const vec3_t p2, int nolm_mask)
 {
     vec_t d1, d2, frac, midf, s, t;
     vec3_t mid;
@@ -1456,13 +1456,13 @@ static bool BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, const v
         LerpVector(p1, p2, frac, mid);
 
         // check near side
-        if (BSP_RecursiveLightPoint(node->children[side], p1f, midf, p1, mid))
+        if (BSP_RecursiveLightPoint(node->children[side], p1f, midf, p1, mid, nolm_mask))
             return true;
 
         for (i = 0, surf = node->firstface; i < node->numfaces; i++, surf++) {
             if (!surf->lightmap)
                 continue;
-            if (surf->drawflags & SURF_NOLM_MASK)
+            if (surf->drawflags & nolm_mask)
                 continue;
 
             s = DotProduct(surf->lm_axis[0], mid) + surf->lm_offset[0];
@@ -1481,23 +1481,23 @@ static bool BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, const v
         }
 
         // check far side
-        return BSP_RecursiveLightPoint(node->children[side ^ 1], midf, p2f, mid, p2);
+        return BSP_RecursiveLightPoint(node->children[side ^ 1], midf, p2f, mid, p2, nolm_mask);
     }
 
     return false;
 }
 
-void BSP_LightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end, mnode_t *headnode)
+void BSP_LightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end, mnode_t *headnode, int nolm_mask)
 {
     light_point = point;
     light_point->surf = NULL;
     light_point->fraction = 1;
 
-    BSP_RecursiveLightPoint(headnode, 0, 1, start, end);
+    BSP_RecursiveLightPoint(headnode, 0, 1, start, end, nolm_mask);
 }
 
 void BSP_TransformedLightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end,
-                               mnode_t *headnode, const vec3_t origin, const vec3_t angles)
+                               mnode_t *headnode, int nolm_mask, const vec3_t origin, const vec3_t angles)
 {
     vec3_t start_l, end_l;
     vec3_t axis[3];
@@ -1518,7 +1518,7 @@ void BSP_TransformedLightPoint(lightpoint_t *point, const vec3_t start, const ve
     }
 
     // sweep the line through the model
-    if (!BSP_RecursiveLightPoint(headnode, 0, 1, start_l, end_l))
+    if (!BSP_RecursiveLightPoint(headnode, 0, 1, start_l, end_l, nolm_mask))
         return;
 
     // rotate plane normal into the worlds frame of reference

@@ -272,7 +272,7 @@ void GL_PushLights(mface_t *surf)
     if (!surf->lightmap) {
         return;
     }
-    if (surf->drawflags & SURF_NOLM_MASK) {
+    if (surf->drawflags & gl_static.nolm_mask) {
         return;
     }
     if (!surf->texnum[1]) {
@@ -451,7 +451,7 @@ static void LM_RebuildSurfaces(void)
         if (!surf->lightmap) {
             continue;
         }
-        if (surf->drawflags & SURF_NOLM_MASK) {
+        if (surf->drawflags & gl_static.nolm_mask) {
             continue;
         }
         if (!surf->texnum[1]) {
@@ -530,7 +530,9 @@ static void build_surface_poly(mface_t *surf, vec_t *vbo)
         if (!(surf->drawflags & SURF_TRANS_MASK)) {
             surf->statebits |= GLS_TEXTURE_REPLACE;
         }
-        if (!(surf->drawflags & SURF_COLOR_MASK) ||
+        // always use intensity on lightmapped surfaces
+        if ((surf->lightmap && bsp->lm_decoupled) ||
+            !(surf->drawflags & SURF_COLOR_MASK) ||
             (!(surf->drawflags & SURF_TRANS_MASK) && strstr(texinfo->name, "lava"))) {
             surf->statebits |= GLS_INTENSITY_ENABLE;
         }
@@ -684,7 +686,7 @@ static void build_surface_light(mface_t *surf, vec_t *vbo)
     if (!surf->lightmap)
         return;
 
-    if (surf->drawflags & SURF_NOLM_MASK)
+    if (surf->drawflags & gl_static.nolm_mask)
         return;
 
     smax = surf->lm_width;
@@ -974,6 +976,15 @@ void GL_LoadWorld(const char *name)
         Hunk_End(&gl_static.world.hunk);
 
         Com_DPrintf("%s: %zu bytes of vertex data on hunk\n", __func__, size);
+    }
+
+    gl_static.nolm_mask = SURF_NOLM_MASK_DEFAULT;
+
+    // only supported in DECOUPLED_LM maps because vanilla maps have broken
+    // lightofs for liquids/alphas. legacy renderer doesn't support lightmapped
+    // liquids too.
+    if (bsp->lm_decoupled && gl_static.use_shaders) {
+        gl_static.nolm_mask = SURF_NOLM_MASK_REMASTER;
     }
 
     // begin building lightmaps
