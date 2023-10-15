@@ -1418,7 +1418,7 @@ extern int remap_cs_index(int index, const cs_remap_t *from, const cs_remap_t *t
 // ertity events are for effects that take place reletive
 // to an existing entities origin.  Very network efficient.
 // All muzzle flashes really should be converted to events...
-typedef enum {
+enum {
     EV_NONE,
     EV_ITEM_RESPAWN,
     EV_FOOTSTEP,
@@ -1431,7 +1431,9 @@ typedef enum {
     EV_OTHER_FOOTSTEP,
     EV_LADDER_STEP,
 // KEX
-} entity_event_t;
+};
+
+typedef uint8_t entity_event_t;
 
 // entity_state_t is the information conveyed from the server
 // in an update message about entities that the client will
@@ -1452,7 +1454,7 @@ typedef struct entity_state_s {
                             // 8*(bits 5-9) is z down distance, 8(bits10-15) is z up
                             // gi.linkentity sets this properly
     int     sound;          // for looping sounds, to guarantee shutoff
-    uint8_t     event;      // (KEX: uint8_t) impulse events -- muzzle flashes, footsteps, etc
+    entity_event_t event;      // (KEX: uint8_t) impulse events -- muzzle flashes, footsteps, etc
                             // events only go out for a single frame, they
                             // are automatically cleared each frame
 // KEX
