@@ -919,6 +919,9 @@ typedef struct usercmd_s {
     uint32_t server_frame;
 } usercmd_t;
 
+// For RDF_xxx values
+typedef uint8_t refdef_flags_t;
+
 #define MAXTOUCH    32
 
 typedef struct
@@ -961,7 +964,7 @@ typedef struct {
 
     // [KEX] results (out)
     vec4_t screen_blend;
-    int rdflags; // merged with rdflags from server
+    refdef_flags_t rdflags; // merged with rdflags from server
     bool jump_sound; // play jump sound
     bool step_clip; // we clipped on top of an object from below
     float impact_delta; // impact delta, for falling damage
@@ -1503,7 +1506,7 @@ typedef struct {
 
     float       fov;            // horizontal field of view
 
-    uint8_t     rdflags;        // KEX uint8_t, refdef flags
+    refdef_flags_t rdflags;        // KEX uint8_t, refdef flags
 
     short       stats[MAX_STATS];       // fast status bar updates
 
