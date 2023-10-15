@@ -736,7 +736,7 @@ void R_RenderFrame(refdef_t *fd)
         GL_WaterWarp();
     }
 
-    if (gl_polyblend->integer && glr.fd.blend[3] != 0) {
+    if (gl_polyblend->integer && (glr.fd.screen_blend[3] != 0 || glr.fd.damage_blend[3] != 0)) {
         GL_Blend();
     }
 

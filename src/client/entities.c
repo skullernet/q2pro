@@ -1379,8 +1379,17 @@ void CL_CalcViewValues(void)
         LerpAngles(ops->viewangles, ps->viewangles, lerp, cl.refdef.viewangles);
     }
 
-    // don't interpolate blend color
-    Vector4Copy(ps->blend, cl.refdef.blend);
+    if (cl.csr.extended) {
+        // interpolate blend colors if the last frame wasn't clear
+        float blendfrac = ops->screen_blend[3] ? cl.lerpfrac : 1;
+        float damageblendfrac = ops->damage_blend[3] ? cl.lerpfrac : 1;
+        
+        Vector4Lerp(ops->screen_blend, ps->screen_blend, blendfrac, cl.refdef.screen_blend);
+        Vector4Lerp(ops->damage_blend, ps->damage_blend, damageblendfrac, cl.refdef.damage_blend);
+    } else {
+        // don't interpolate blend color
+        Vector4Copy(ps->screen_blend, cl.refdef.screen_blend);
+    }
 
 #if USE_FPS
     ps = &cl.keyframe.ps;

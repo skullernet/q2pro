@@ -249,6 +249,11 @@ typedef struct vrect_s {
 #define Vector4Set(v, a, b, c, d)   ((v)[0]=(a),(v)[1]=(b),(v)[2]=(c),(v)[3]=(d))
 #define Vector4Compare(v1,v2)       ((v1)[0]==(v2)[0]&&(v1)[1]==(v2)[1]&&(v1)[2]==(v2)[2]&&(v1)[3]==(v2)[3])
 #define Dot4Product(x, y)           ((x)[0]*(y)[0]+(x)[1]*(y)[1]+(x)[2]*(y)[2]+(x)[3]*(y)[3])
+#define Vector4Lerp(a,b,c,d) \
+    ((d)[0]=(a)[0]+(c)*((b)[0]-(a)[0]), \
+     (d)[1]=(a)[1]+(c)*((b)[1]-(a)[1]), \
+     (d)[2]=(a)[2]+(c)*((b)[2]-(a)[2]), \
+     (d)[3]=(a)[3]+(c)*((b)[3]-(a)[3]))
 
 void AngleVectors(const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up);
 vec_t VectorNormalize(vec3_t v);        // returns vector length
@@ -1503,7 +1508,7 @@ typedef struct {
     int         gunrate;
 // KEX
 
-    float       blend[4];       // rgba full screen effect
+    float       screen_blend[4];       // rgba full screen effect
 // KEX
     float       damage_blend[4];
 // KEX

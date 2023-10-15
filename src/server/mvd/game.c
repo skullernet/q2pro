@@ -455,7 +455,7 @@ static void MVD_FollowStop(mvd_client_t *client)
     }
 
     VectorClear(client->ps.kick_angles);
-    Vector4Clear(client->ps.blend);
+    Vector4Clear(client->ps.screen_blend);
     client->ps.pmove.pm_flags = 0;
     client->ps.pmove.pm_type = mvd->pm_type;
     client->ps.rdflags = 0;
@@ -675,13 +675,13 @@ static void MVD_UpdateClient(mvd_client_t *client)
             client->ps.rdflags = 0;
 
         if (contents & (CONTENTS_SOLID | CONTENTS_LAVA))
-            Vector4Set(client->ps.blend, 1.0f, 0.3f, 0.0f, 0.6f);
+            Vector4Set(client->ps.screen_blend, 1.0f, 0.3f, 0.0f, 0.6f);
         else if (contents & CONTENTS_SLIME)
-            Vector4Set(client->ps.blend, 0.0f, 0.1f, 0.05f, 0.6f);
+            Vector4Set(client->ps.screen_blend, 0.0f, 0.1f, 0.05f, 0.6f);
         else if (contents & CONTENTS_WATER)
-            Vector4Set(client->ps.blend, 0.5f, 0.3f, 0.2f, 0.4f);
+            Vector4Set(client->ps.screen_blend, 0.5f, 0.3f, 0.2f, 0.4f);
         else
-            Vector4Clear(client->ps.blend);
+            Vector4Clear(client->ps.screen_blend);
     } else {
         // copy entire player state
         client->ps = target->ps;

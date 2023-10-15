@@ -106,7 +106,8 @@ typedef struct refdef_s {
     float       fov_x, fov_y;
     vec3_t      vieworg;
     vec3_t      viewangles;
-    vec4_t      blend;          // rgba 0-1 full screen blend
+    vec4_t      screen_blend;       // rgba 0-1 full screen blend
+    vec4_t      damage_blend;       // rgba 0-1 damage blend
     float       time;               // time is uesed to auto animate
     int         rdflags;            // RDF_UNDERWATER, etc
 

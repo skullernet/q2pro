@@ -311,7 +311,7 @@ static const save_field_t clientfields[] = {
     I(ps.gunindex),
     I(ps.gunframe),
 
-    FA(ps.blend, 4),
+    FA(ps.screen_blend, 4),
 
     F(ps.fov),
 

@@ -450,7 +450,7 @@ static void game_client_to_server(struct gclient_s *server_client, const struct 
     VectorCopy(game_client->ps.gunoffset, server_client->ps.gunoffset);
     server_client->ps.gunindex = game_client->ps.gunindex;
     server_client->ps.gunframe = game_client->ps.gunframe;
-    Vector4Copy(game_client->ps.blend, server_client->ps.blend);
+    Vector4Copy(game_client->ps.blend, server_client->ps.screen_blend);
     server_client->ps.fov = game_client->ps.fov;
     server_client->ps.rdflags = game_client->ps.rdflags;
     memcpy(&server_client->ps.stats, &game_client->ps.stats, sizeof(game_client->ps.stats));

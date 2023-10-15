@@ -59,12 +59,13 @@ typedef struct {
     int8_t          gunoffset[3];
     uint16_t        gunindex;
     uint8_t         gunframe;
-    uint8_t         blend[4];
+    uint8_t         screen_blend[4];
     uint8_t         fov;
     uint8_t         rdflags;
     int16_t         stats[MAX_STATS];
 // KEX
     int8_t          gunrate;
+    uint8_t         damage_blend[4];
 // KEX
 } player_packed_t;
 

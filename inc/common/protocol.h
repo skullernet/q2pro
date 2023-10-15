@@ -272,6 +272,15 @@ typedef enum {
 #define EPS_CLIENTNUM       BIT(6)
 // KEX
 #define EPS_GUNRATE         BIT(7)
+
+#define BLENDBITS_SCREEN_R  BIT(0)
+#define BLENDBITS_SCREEN_G  BIT(1)
+#define BLENDBITS_SCREEN_B  BIT(2)
+#define BLENDBITS_SCREEN_A  BIT(3)
+#define BLENDBITS_DAMAGE_R  BIT(4)
+#define BLENDBITS_DAMAGE_G  BIT(5)
+#define BLENDBITS_DAMAGE_B  BIT(6)
+#define BLENDBITS_DAMAGE_A  BIT(7)
 // KEX
 
 //==============================================
