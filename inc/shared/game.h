@@ -95,7 +95,7 @@ struct gclient_s {
 typedef struct sv_entity_s {
     bool                        init;
     uint64_t                    ent_flags;
-    uint8_t                     buttons;
+    button_t                    buttons;
     uint32_t                    spawnflags;
     int32_t                     item_id;
     int32_t                     armor_type;

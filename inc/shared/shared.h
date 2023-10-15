@@ -908,10 +908,12 @@ typedef struct {
 #define BUTTON_CROUCH   BIT(4)
 #define BUTTON_ANY      BIT(7)  // any key whatsoever
 
+typedef uint8_t button_t;
+
 // usercmd_t is sent to the server each client frame
 typedef struct usercmd_s {
     byte    msec;
-    uint8_t buttons;
+    button_t buttons;
     vec3_t  angles;
     float   forwardmove, sidemove;
     uint32_t server_frame;
