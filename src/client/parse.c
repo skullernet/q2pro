@@ -1350,6 +1350,26 @@ static void CL_SkipFog(void)
         MSG_ReadLong ();
 }
 
+static void CL_SkipHelpPath(void)
+{
+    MSG_ReadByte();
+    vec3_t p;
+    MSG_ReadPos(p, cl.esFlags & MSG_ES_FLOAT_COORDS);
+    MSG_ReadDir(p);
+}
+
+static void CL_SkipPOI(void)
+{
+    MSG_ReadShort();
+    MSG_ReadShort();
+    vec3_t p;
+    MSG_ReadPos(p, cl.esFlags & MSG_ES_FLOAT_COORDS);
+    MSG_ReadShort();
+    MSG_ReadByte();
+    MSG_ReadByte();
+
+}
+
 /*
 =====================
 CL_ParseServerMessage
@@ -1503,10 +1523,19 @@ static svc_handle_result_t handle_svc_rerelease(int cmd)
     case svc_fog:
         CL_SkipFog();
         return svch_continue_loop;
+    case svc_poi:
+        CL_SkipPOI();
+        return svch_continue_loop;
+    case svc_help_path:
+        CL_SkipHelpPath();
+        return svch_continue_loop;
     case svc_muzzleflash3:
         CL_ParseMuzzleFlashPacket(0, true);
         CL_MuzzleFlash2();
-        break;
+        return svch_continue_loop;
+    case svc_achievement:
+        while (MSG_ReadByte() > 0) ;
+        return svch_continue_loop;
     // KEX
     }
 
