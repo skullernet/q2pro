@@ -794,6 +794,8 @@ typedef uint32_t contents_t;
 #define SURF_N64_SCROLL_FLIP    BIT(31)
 //KEX
 
+typedef uint32_t surfflags_t;
+
 // content masks
 #define MASK_ALL                (-1)
 #define MASK_SOLID              (CONTENTS_SOLID|CONTENTS_WINDOW)
@@ -827,7 +829,7 @@ typedef struct cplane_s {
 
 typedef struct csurface_s {
     char        name[32]; // KEX 32
-    int32_t     flags;
+    surfflags_t flags;
     int32_t		value;
 
     // [Paril-KEX]
