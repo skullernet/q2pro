@@ -417,6 +417,7 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
         }
         FS_NormalizePath(skinname);
         mesh->skins[i] = IMG_Find(skinname, IT_SKIN, IF_NONE);
+
         src_skin += MD2_MAX_SKINNAME;
     }
 

@@ -109,6 +109,10 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
         GLSL(in vec2 v_lmtc;)
     }
 
+    if (bits & GLS_GLOWMAP_ENABLE) {
+        GLSL(uniform sampler2D u_glowmap;)
+    }
+
     if (!(bits & GLS_TEXTURE_REPLACE))
         GLSL(in vec4 v_color;)
 
@@ -135,6 +139,15 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
 
         if (!(bits & GLS_TEXTURE_REPLACE))
             GLSL(diffuse *= v_color;)
+
+        if (bits & GLS_GLOWMAP_ENABLE) {
+            GLSL(vec4 glowmap = texture(u_glowmap, tc);)
+            if (bits & GLS_INTENSITY_ENABLE) {
+                GLSL(diffuse.rgb += glowmap.rgb * u_intensity;)
+            } else {
+                GLSL(diffuse.rgb += glowmap.rgb;)
+            }
+        }
 
         GLSL(o_color = diffuse;)
     GLSF("}\n");
@@ -239,6 +252,8 @@ static GLuint create_and_use_program(GLbitfield bits)
     qglUniform1i(qglGetUniformLocation(program, "u_texture"), 0);
     if (bits & GLS_LIGHTMAP_ENABLE)
         qglUniform1i(qglGetUniformLocation(program, "u_lightmap"), 1);
+    if (bits & GLS_GLOWMAP_ENABLE)
+        qglUniform1i(qglGetUniformLocation(program, "u_glowmap"), 2);
 
     return program;
 }
@@ -383,6 +398,9 @@ static void shader_setup_3d(void)
 
 static void shader_clear_state(void)
 {
+    qglActiveTexture(GL_TEXTURE2);
+    qglBindTexture(GL_TEXTURE_2D, 0);
+
     qglActiveTexture(GL_TEXTURE1);
     qglBindTexture(GL_TEXTURE_2D, 0);
 

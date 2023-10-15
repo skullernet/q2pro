@@ -43,6 +43,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include <setjmp.h>
 
+static cvar_t       *r_glowmaps;
+
 #define R_COLORMAP_PCX    "pics/colormap.pcx"
 
 #define IMG_LOAD(x) \
@@ -1676,6 +1678,46 @@ static void print_error(const char *name, imageflags_t flags, int err)
     Com_LPrintf(level, "Couldn't load %s: %s\n", name, msg);
 }
 
+static int find_or_load_image_data(image_t *image, imageformat_t fmt, bool check_dimensions, byte **pic)
+{
+    int ret;
+
+#if USE_PNG || USE_JPG || USE_TGA
+    if (fmt == IM_MAX) {
+        // unknown extension, but give it a chance to load anyway
+        ret = try_other_formats(IM_MAX, image, pic);
+        if (ret == Q_ERR(ENOENT)) {
+            // not found, change error to invalid path
+            ret = Q_ERR_INVALID_PATH;
+        }
+    } else if (need_override_image(image->type, fmt)) {
+        // forcibly replace the extension
+        ret = try_other_formats(IM_MAX, image, pic);
+    } else {
+        // first try with original extension
+        ret = _try_image_format(fmt, image, pic);
+        if (ret == Q_ERR(ENOENT)) {
+            // retry with remaining extensions
+            ret = try_other_formats(fmt, image, pic);
+        }
+    }
+
+    // if we are replacing 8-bit texture with a higher resolution 32-bit
+    // texture, we need to recover original image dimensions
+    if (check_dimensions && fmt <= IM_WAL && ret > IM_WAL) {
+        get_image_dimensions(fmt, image);
+    }
+#else
+    if (fmt == IM_MAX) {
+        ret = Q_ERR_INVALID_PATH;
+    } else {
+        ret = _try_image_format(fmt, image, pic);
+    }
+#endif
+
+    return ret;
+}
+
 // finds or loads the given image, adding it to the hash table.
 static image_t *find_or_load_image(const char *name, size_t len,
                                    imagetype_t type, imageflags_t flags)
@@ -1730,38 +1772,7 @@ static image_t *find_or_load_image(const char *name, size_t len,
     // load the pic from disk
     pic = NULL;
 
-#if USE_PNG || USE_JPG || USE_TGA
-    if (fmt == IM_MAX) {
-        // unknown extension, but give it a chance to load anyway
-        ret = try_other_formats(IM_MAX, image, &pic);
-        if (ret == Q_ERR(ENOENT)) {
-            // not found, change error to invalid path
-            ret = Q_ERR_INVALID_PATH;
-        }
-    } else if (need_override_image(type, fmt)) {
-        // forcibly replace the extension
-        ret = try_other_formats(IM_MAX, image, &pic);
-    } else {
-        // first try with original extension
-        ret = _try_image_format(fmt, image, &pic);
-        if (ret == Q_ERR(ENOENT)) {
-            // retry with remaining extensions
-            ret = try_other_formats(fmt, image, &pic);
-        }
-    }
-
-    // if we are replacing 8-bit texture with a higher resolution 32-bit
-    // texture, we need to recover original image dimensions
-    if (fmt <= IM_WAL && ret > IM_WAL) {
-        get_image_dimensions(fmt, image);
-    }
-#else
-    if (fmt == IM_MAX) {
-        ret = Q_ERR_INVALID_PATH;
-    } else {
-        ret = _try_image_format(fmt, image, &pic);
-    }
-#endif
+    ret = find_or_load_image_data(image, fmt, true, &pic);
 
     if (ret < 0) {
         print_error(image->name, flags, ret);
@@ -1781,6 +1792,56 @@ static image_t *find_or_load_image(const char *name, size_t len,
 
     // upload the image
     IMG_Load(image, pic);
+
+    // check for glow maps
+    if (r_glowmaps->integer && (type == IT_SKIN || type == IT_WALL)) {
+        byte *glow_pic = NULL;
+
+        // use a temporary image_t to hold glow map stuff.
+        // it doesn't need to be registered.
+        image_t temporary;
+
+        Q_strnlcpy(temporary.name, image->name, COM_FileExtension(image->name) - image->name, sizeof(image->name));
+        temporary.baselen = Q_strlcat(temporary.name, "_glow.pcx", sizeof(image->name)) - 4;
+        temporary.type = IT_SKIN;
+        temporary.flags = 0;
+
+        ret = find_or_load_image_data(&temporary, fmt, true, &glow_pic);
+
+        if (!(ret < 0)) {
+            // post-process data;
+            // - model glowmaps should be premultiplied
+            // - wal glowmaps are only alpha, so we have to put
+            //   back in the diffuse map data then premultiply
+            if (type == IT_SKIN) {
+                int i = 0;
+                int s = temporary.upload_width * temporary.upload_height;
+
+                for (byte *dst = glow_pic; i < s; i++, dst += 4) {
+                    float alpha = *(dst + 3) / 255.f;
+                    *(dst + 0) *= alpha;
+                    *(dst + 1) *= alpha;
+                    *(dst + 2) *= alpha;
+                }
+            } else {
+                int i = 0;
+                int s = temporary.upload_width * temporary.upload_height;
+
+                for (byte *dst = glow_pic, *src = pic; i < s; i++, dst += 4, src += 4) {
+                    float alpha = *(dst + 3) / 255.f;
+                    *(dst + 0) = *(src + 0) * alpha;
+                    *(dst + 1) = *(src + 1) * alpha;
+                    *(dst + 2) = *(src + 2) * alpha;
+                }
+            }
+
+            IMG_LoadRaw(&temporary, glow_pic, temporary.upload_width, temporary.upload_height);
+
+            image->glow_texnum = temporary.texnum;
+        }
+
+        Z_Free(glow_pic);
+    }
 
     // don't need pics in memory after GL upload
     Z_Free(pic);
@@ -2036,6 +2097,8 @@ void IMG_Init(void)
 #endif
     r_screenshot_template = Cvar_Get("gl_screenshot_template", "quakeXXX", 0);
 #endif // USE_PNG || USE_JPG || USE_TGA
+
+    r_glowmaps = Cvar_Get("r_glowmaps", "1", CVAR_FILES);
 
     Cmd_Register(img_cmd);
 

@@ -64,7 +64,7 @@ typedef struct image_s {
     int16_t         width, height; // source image
     int16_t         upload_width, upload_height; // after power of two and picmip
     int             registration_sequence; // 0 = free
-    unsigned        texnum; // gl texture binding
+    unsigned        texnum, glow_texnum; // gl texture binding
     float           sl, sh, tl, th;
     float           aspect;
 } image_t;
@@ -76,7 +76,8 @@ extern int      r_numImages;
 
 extern int registration_sequence;
 
-#define R_NOTEXTURE &r_images[0]
+#define R_NOTEXTURE    &r_images[0]
+#define R_BLACKTEXTURE &r_images[5]
 
 extern uint32_t d_8to24table[256];
 
@@ -90,6 +91,7 @@ void IMG_GetPalette(void);
 image_t *IMG_ForHandle(qhandle_t h);
 
 void IMG_Unload(image_t *image);
+void IMG_LoadRaw(image_t *image, byte *pic, int width, int height);
 void IMG_Load(image_t *image, byte *pic);
 
 struct screenshot_s;

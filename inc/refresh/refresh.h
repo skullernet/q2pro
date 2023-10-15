@@ -159,7 +159,7 @@ typedef enum {
     IF_TURBULENT    = BIT(5),
     IF_REPEAT       = BIT(6),
     IF_NEAREST      = BIT(7),
-    IF_OPAQUE       = BIT(8),
+    IF_OPAQUE       = BIT(8)
 } imageflags_t;
 
 typedef enum {

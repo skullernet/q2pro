@@ -521,6 +521,7 @@ static void build_surface_poly(mface_t *surf, vec_t *vbo)
 
     surf->texnum[0] = texinfo->image->texnum;
     surf->texnum[1] = 0;
+    surf->texnum[2] = texinfo->image->glow_texnum;
 
     color = color_for_surface(surf);
 

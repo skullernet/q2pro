@@ -684,6 +684,37 @@ static void GL_SetFilterAndRepeat(imagetype_t type, imageflags_t flags)
 
 /*
 ================
+IMG_LoadRaw
+================
+*/
+void IMG_LoadRaw(image_t *image, byte *pic, int width, int height)
+{
+    qglGenTextures(1, &image->texnum);
+    GL_ForceTexture(0, image->texnum);
+
+    int maxlevel = GL_UpscaleLevel(width, height, image->type, image->flags);
+    if (maxlevel) {
+        GL_Upscale32(pic, width, height, maxlevel, image->type, image->flags);
+        image->flags |= IF_UPSCALED;
+    } else {
+        GL_Upload32(pic, width, height, maxlevel, image->type, image->flags);
+    }
+
+    GL_SetFilterAndRepeat(image->type, image->flags);
+
+    if (upload_alpha) {
+        image->flags |= IF_TRANSPARENT;
+    }
+    image->upload_width = upload_width << maxlevel;     // after power of 2 and scales
+    image->upload_height = upload_height << maxlevel;
+    image->sl = 0;
+    image->sh = 1;
+    image->tl = 0;
+    image->th = 1;
+}
+
+/*
+================
 IMG_Load
 ================
 */
@@ -720,28 +751,7 @@ void IMG_Load(image_t *image, byte *pic)
 
         scrap_dirty = true;
     } else {
-        qglGenTextures(1, &image->texnum);
-        GL_ForceTexture(0, image->texnum);
-
-        maxlevel = GL_UpscaleLevel(width, height, image->type, image->flags);
-        if (maxlevel) {
-            GL_Upscale32(pic, width, height, maxlevel, image->type, image->flags);
-            image->flags |= IF_UPSCALED;
-        } else {
-            GL_Upload32(pic, width, height, maxlevel, image->type, image->flags);
-        }
-
-        GL_SetFilterAndRepeat(image->type, image->flags);
-
-        if (upload_alpha) {
-            image->flags |= IF_TRANSPARENT;
-        }
-        image->upload_width = upload_width << maxlevel;     // after power of 2 and scales
-        image->upload_height = upload_height << maxlevel;
-        image->sl = 0;
-        image->sh = 1;
-        image->tl = 0;
-        image->th = 1;
+        IMG_LoadRaw(image, pic, width, height);
     }
 }
 
@@ -751,7 +761,10 @@ void IMG_Unload(image_t *image)
         if (gls.texnums[0] == image->texnum)
             gls.texnums[0] = 0;
         qglDeleteTextures(1, &image->texnum);
-        image->texnum = 0;
+        if (image->glow_texnum) {
+            qglDeleteTextures(1, &image->glow_texnum);
+        }
+        image->texnum = image->glow_texnum = 0;
     }
 }
 

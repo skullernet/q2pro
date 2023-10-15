@@ -65,6 +65,16 @@ static void legacy_state_bits(GLbitfield bits)
         }
     }
 
+    if (diff & GLS_GLOWMAP_ENABLE) {
+        GL_ActiveTexture(2);
+        if (bits & GLS_GLOWMAP_ENABLE) {
+            qglEnable(GL_TEXTURE_2D);
+            qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
+        } else {
+            qglDisable(GL_TEXTURE_2D);
+        }
+    }
+
     if ((diff & GLS_WARP_ENABLE) && gl_static.programs[0]) {
         if (bits & GLS_WARP_ENABLE) {
             vec4_t param = { glr.fd.time, glr.fd.time };
@@ -105,6 +115,13 @@ static void legacy_array_bits(GLbitfield bits)
         } else {
             qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
         }
+
+        GL_ClientActiveTexture(2);
+        if (bits & GLA_TC) {
+            qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
+        } else {
+            qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
+        }
     }
 
     if (diff & GLA_LMTC) {
@@ -133,6 +150,9 @@ static void legacy_vertex_pointer(GLint size, GLsizei stride, const GLfloat *poi
 static void legacy_tex_coord_pointer(GLint size, GLsizei stride, const GLfloat *pointer)
 {
     GL_ClientActiveTexture(0);
+    qglTexCoordPointer(size, GL_FLOAT, sizeof(GLfloat) * stride, pointer);
+
+    GL_ClientActiveTexture(2);
     qglTexCoordPointer(size, GL_FLOAT, sizeof(GLfloat) * stride, pointer);
 }
 

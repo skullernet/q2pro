@@ -681,6 +681,26 @@ size_t Q_strlcpy(char *dst, const char *src, size_t size)
 
 /*
 ===============
+Q_strnlcpy
+
+Returns `count`.
+===============
+*/
+size_t Q_strnlcpy(char *dst, const char *src, size_t count, size_t size)
+{
+    size_t ret = min(count, strlen(src));
+
+    if (size) {
+        size_t len = min(ret, size - 1);
+        memcpy(dst, src, len);
+        dst[len] = 0;
+    }
+
+    return ret;
+}
+
+/*
+===============
 Q_strlcat
 
 Returns length of the source and destinations strings combined.
