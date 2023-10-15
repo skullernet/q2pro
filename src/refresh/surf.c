@@ -496,6 +496,17 @@ POLYGONS BUILDING
 
 static uint32_t color_for_surface(mface_t *surf)
 {
+    if (surf->lightmap && gl_shaders->integer) {
+
+        if (surf->drawflags & SURF_TRANS33)
+            return MakeColor(255, 255, 255, 85);
+
+        if (surf->drawflags & SURF_TRANS66)
+            return MakeColor(255, 255, 255, 170);
+
+        return U32_WHITE;
+    }
+
     if (surf->drawflags & SURF_TRANS33)
         return gl_static.inverse_intensity_33;
 
@@ -530,7 +541,9 @@ static void build_surface_poly(mface_t *surf, vec_t *vbo)
         if (!(surf->drawflags & SURF_TRANS_MASK)) {
             surf->statebits |= GLS_TEXTURE_REPLACE;
         }
-        if (!(surf->drawflags & SURF_COLOR_MASK) ||
+        if (surf->lightmap) {
+            surf->statebits |= GLS_INTENSITY_ENABLE; // always use intensity on lightmapped surfaces
+        } else if (!(surf->drawflags & SURF_COLOR_MASK) ||
             (!(surf->drawflags & SURF_TRANS_MASK) && strstr(texinfo->name, "lava"))) {
             surf->statebits |= GLS_INTENSITY_ENABLE;
         }

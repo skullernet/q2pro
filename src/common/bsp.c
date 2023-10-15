@@ -1381,6 +1381,15 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
 
     if (num_lit_liquids == 2) {
         bsp->nolm_mask = SURF_NOLM_MASK_LIT_LIQUIDS;
+    } else {
+        // if the map wasn't meant to have lit liquids, unset the lightmap instead of
+        // pointing to the wrong lightmap.
+        for (i = 0, face = bsp->faces; num_lit_liquids < 2 && i < bsp->numfaces; i++, face++) {
+            if (face->texinfo->c.flags & (SURF_COLOR_MASK | SURF_FLOWING) &&
+                face->lightmap == bsp->lightmap) {
+                face->lightmap = NULL;
+            }
+        }
     }
 #endif
 
