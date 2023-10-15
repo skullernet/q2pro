@@ -282,9 +282,9 @@ typedef struct {
     // center-print to player (legacy function)
     void (*Center_Print)(edict_t *ent, const char *message);
 
-    void (*sound)(edict_t *ent, int channel, int soundindex, float volume, float attenuation, float timeofs);
-    void (*positioned_sound)(const vec3_t origin, edict_t *ent, int channel, int soundindex, float volume, float attenuation, float timeofs);
-    void (*local_sound)(edict_t *target, const vec3_t origin, edict_t *ent, int channel, int soundindex, float volume, float attenuation, float timeofs, uint32_t dupe_key);
+    void (*sound)(edict_t *ent, soundchan_t channel, int soundindex, float volume, float attenuation, float timeofs);
+    void (*positioned_sound)(const vec3_t origin, edict_t *ent, soundchan_t channel, int soundindex, float volume, float attenuation, float timeofs);
+    void (*local_sound)(edict_t *target, const vec3_t origin, edict_t *ent, soundchan_t channel, int soundindex, float volume, float attenuation, float timeofs, uint32_t dupe_key);
 
     // config strings hold all the index strings, the lightstyles,
     // and misc data like the sky definition and cdtrack.

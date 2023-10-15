@@ -479,7 +479,7 @@ or the midpoint of the entity box for bmodels.
 ==================
 */
 static void SV_StartSound(const vec3_t origin, edict_t *edict,
-                          int channel, int soundindex, float volume,
+                          soundchan_t channel, int soundindex, float volume,
                           float attenuation, float timeofs)
 {
     int         ent, vol, att, ofs, flags, sendchan;
@@ -627,7 +627,7 @@ static void SV_StartSound(const vec3_t origin, edict_t *edict,
     SV_MvdStartSound(ent, channel, flags, soundindex, vol, att, ofs);
 }
 
-static void PF_StartSound(edict_t *entity, int channel,
+static void PF_StartSound(edict_t *entity, soundchan_t channel,
                           int soundindex, float volume,
                           float attenuation, float timeofs)
 {
@@ -638,7 +638,7 @@ static void PF_StartSound(edict_t *entity, int channel,
 
 // TODO: support origin/entity/volume/attenuation/timeofs
 static void PF_LocalSound(edict_t *target, const vec3_t origin,
-                          edict_t *entity, int channel,
+                          edict_t *entity, soundchan_t channel,
                           int soundindex, float volume,
                           float attenuation, float timeofs,
                           uint32_t dupe_key)
