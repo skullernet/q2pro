@@ -35,7 +35,7 @@ FRAME PARSING
 // returns true if origin/angles update has been optimized out
 static inline bool entity_is_optimized(const entity_state_t *state)
 {
-    return cls.serverProtocol == PROTOCOL_VERSION_Q2PRO
+    return (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO || cls.serverProtocol == PROTOCOL_VERSION_RERELEASE)
         && state->number == cl.frame.clientNum + 1
         && cl.frame.ps.pmove.pm_type < PM_DEAD;
 }

@@ -28,6 +28,8 @@ Common between server and client so prediction matches
 ==============================================================
 */
 
+#define STEPSIZE    18
+
 typedef struct {
     bool        qwmode;
     bool        airaccelerate;

@@ -67,9 +67,6 @@ typedef struct {
 
 static cl_footstep_sfx_t    *cl_footstep_sfx;
 static int                  cl_num_footsteps;
-static qhandle_t            cl_last_footstep;
-
-extern mtexinfo_t nulltexinfo;
 
 /*
 =================
@@ -85,26 +82,29 @@ static int CL_FindFootstepSurface(int entnum)
     if (cl_num_footsteps <= FOOTSTEP_RESERVED_COUNT)
         return footstep_id;
 
+    // not in our frame so don't bother doing calculations
+    if (cent->serverframe != cl.frame.number) {
+        return footstep_id;
+    }
+
     // allow custom footsteps to be disabled
     if (cl_footsteps->integer >= 2)
         return footstep_id;
 
     // use an X/Y only mins/maxs copy of the entity,
     // since we don't want it to get caught inside of any geometry above or below
-    const vec3_t trace_mins = { cent->mins[0], cent->mins[1], 0 };
-    const vec3_t trace_maxs = { cent->maxs[0], cent->maxs[1], 0 };
+    const vec3_t trace_mins = {cent->mins[0], cent->mins[1], 0};
+    const vec3_t trace_maxs = {cent->maxs[0], cent->maxs[1], 0};
 
-    // trace start position is the entity's current origin + { 0 0 1 },
-    // so that entities with their mins at 0 won't get caught in the floor
     vec3_t trace_start;
-    VectorCopy(cent->current.origin, trace_start);
+    LerpVector(cent->prev.origin, cent->current.origin, cl.lerpfrac, trace_start);
     trace_start[2] += 1;
 
     // the end of the trace starts down by half of STEPSIZE
     vec3_t trace_end;
     VectorCopy(trace_start, trace_end);
-    trace_end[2] -= 9;
-    if (cent->current.solid && cent->current.solid != PACKED_BSP) {
+    trace_end[2] -= STEPSIZE / 2;
+    if(cent->current.solid && cent->current.solid != PACKED_BSP) {
         // if the entity is a bbox'd entity, the mins.z is added to the end point as well
         trace_end[2] += cent->mins[2];
     } else {
@@ -114,48 +114,29 @@ static int CL_FindFootstepSurface(int entnum)
 
     // first, a trace done solely against MASK_SOLID
     trace_t tr;
-    CL_Trace(&tr, trace_start, trace_mins, trace_maxs, trace_end, MASK_SOLID);
+    CL_Trace(&tr, trace_start, trace_mins, trace_maxs, trace_end, NULL, MASK_SOLID);
 
-    if (tr.fraction == 1.0f) {
+    if(tr.fraction == 1.0f) {
         // if we didn't hit anything, use default step ID
         return footstep_id;
     }
 
     if (tr.surface != &(nulltexinfo.c)) {
         // copy over the surfaces' step ID
-        footstep_id = ((mtexinfo_t *)tr.surface)->step_id;
+        footstep_id = cl.bsp->texinfo[tr.surface->id - 1].step_id;
 
         // do another trace that ends instead at endpos + { 0 0 1 }, and is against MASK_SOLID | MASK_WATER
         vec3_t new_end;
         VectorCopy(tr.endpos, new_end);
         new_end[2] += 1;
 
-        CL_Trace(&tr, trace_start, trace_mins, trace_maxs, new_end, MASK_SOLID | MASK_WATER);
+        CL_Trace(&tr, trace_start, trace_mins, trace_maxs, new_end, NULL, MASK_SOLID | MASK_WATER);
         // if we hit something else, use that new footstep id instead of the first traces' value
         if (tr.surface != &(nulltexinfo.c))
-            footstep_id = ((mtexinfo_t *)tr.surface)->step_id;
+            footstep_id = cl.bsp->texinfo[tr.surface->id - 1].step_id;
     }
 
     return footstep_id;
-}
-
-/*
-=================
-CL_FindFootstepSurface
-=================
-*/
-static int CL_FindFootstepSurface(int entnum)
-{
-    centity_t *cent = &cl_entities[entnum];
-
-    // not in our frame so don't bother doing calculations
-    if (cent->serverframe != cl.frame.number) {
-        return FOOTSTEP_ID_DEFAULT;
-    }
-
-    // TODO: implement
-
-    return FOOTSTEP_ID_DEFAULT;
 }
 
 /*

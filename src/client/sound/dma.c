@@ -402,6 +402,56 @@ PAINTFUNC(PaintStereoFull16)
     }
 }
 
+static float sample_24bit(const uint8_t *sample)
+{
+    // Sign-extend 24bit value to 32bit integer
+    int32_t value = sample[0] | (sample[1] << 8) | ((int16_t)(int8_t)(sample[2])) << 16;
+    return value / 256.f;
+}
+
+PAINTFUNC(PaintMono24)
+{
+    float leftvol = ch->leftvol * snd_vol;
+    float rightvol = ch->rightvol * snd_vol;
+    const uint8_t *sfx = (uint8_t *)sc->data + ch->pos * 3;
+
+    for (int i = 0; i < count; i++, samp++) {
+        float value = sample_24bit(sfx);
+        sfx += 3;
+        samp->left += value * leftvol;
+        samp->right += value * rightvol;
+    }
+}
+
+PAINTFUNC(PaintStereoDmix24)
+{
+    float leftvol = ch->leftvol * snd_vol * M_SQRT1_2;
+    float rightvol = ch->rightvol * snd_vol * M_SQRT1_2;
+    const uint8_t *sfx = (uint8_t *)sc->data + ch->pos * 3 * 2;
+
+    for (int i = 0; i < count; i++, samp++) {
+        int sum = sample_24bit(sfx);
+        sfx += 3;
+        sum += sample_24bit(sfx);
+        sfx += 3;
+        samp->left += sum * leftvol;
+        samp->right += sum * rightvol;
+    }
+}
+
+PAINTFUNC(PaintStereoFull24)
+{
+    float vol = ch->leftvol * snd_vol;
+    const uint8_t *sfx = (uint8_t *)sc->data + ch->pos * 3 * 2;
+
+    for (int i = 0; i < count; i++, samp++, sfx += 2) {
+        samp->left += sample_24bit(sfx) * vol;
+        sfx += 3;
+        samp->right += sample_24bit(sfx) * vol;
+        sfx += 3;
+    }
+}
+
 static const paintfunc_t paintfuncs[] = {
     PaintMono8,
     PaintStereoDmix8,
@@ -409,6 +459,9 @@ static const paintfunc_t paintfuncs[] = {
     PaintMono16,
     PaintStereoDmix16,
     PaintStereoFull16,
+    PaintMono24,
+    PaintStereoDmix24,
+    PaintStereoFull24,
 };
 
 static void PaintChannels(int endtime)
@@ -449,7 +502,7 @@ static void PaintChannels(int endtime)
                 if (!sc)
                     break;
 
-                Q_assert(sc->width == 1 || sc->width == 2);
+                Q_assert(sc->width >= 1 && sc->width <= 3);
                 Q_assert(sc->channels == 1 || sc->channels == 2);
 
                 // max painting is to the end of the buffer

@@ -329,7 +329,7 @@ static void CL_ParseFrame(int extrabits)
             Com_LPrintf(PRINT_DEVELOPER, "\n");
         }
 #endif
-        if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO) {
+        if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO || cls.serverProtocol == PROTOCOL_VERSION_RERELEASE) {
             // parse clientNum
             if (extraflags & EPS_CLIENTNUM) {
                 if (cls.protocolVersion < PROTOCOL_VERSION_Q2PRO_CLIENTNUM_SHORT) {

@@ -206,7 +206,7 @@ static void CL_UpdateGunSetting(void)
 
 static void CL_UpdateGibSetting(void)
 {
-    if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO) {
+    if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO && cls.serverProtocol != PROTOCOL_VERSION_RERELEASE) {
         return;
     }
 
@@ -218,7 +218,7 @@ static void CL_UpdateGibSetting(void)
 
 static void CL_UpdateFootstepsSetting(void)
 {
-    if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO) {
+    if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO && cls.serverProtocol != PROTOCOL_VERSION_RERELEASE) {
         return;
     }
 
@@ -230,7 +230,7 @@ static void CL_UpdateFootstepsSetting(void)
 
 static void CL_UpdatePredictSetting(void)
 {
-    if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO) {
+    if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO && cls.serverProtocol != PROTOCOL_VERSION_RERELEASE) {
         return;
     }
 
@@ -243,7 +243,7 @@ static void CL_UpdatePredictSetting(void)
 #if USE_FPS
 static void CL_UpdateRateSetting(void)
 {
-    if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO) {
+    if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO && cls.serverProtocol != PROTOCOL_VERSION_RERELEASE) {
         return;
     }
 
@@ -282,7 +282,7 @@ void CL_UpdateRecordingSetting(void)
 
 static void CL_UpdateFlaresSetting(void)
 {
-    if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO) {
+    if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO && cls.serverProtocol != PROTOCOL_VERSION_RERELEASE) {
         return;
     }
     if (!cl.csr.extended) {

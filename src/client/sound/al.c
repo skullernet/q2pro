@@ -160,8 +160,25 @@ static void AL_Shutdown(void)
 
 static sfxcache_t *AL_UploadSfx(sfx_t *s)
 {
-    ALsizei size = s_info.samples * s_info.width * s_info.channels;
-    ALenum format = AL_FORMAT_MONO8 + (s_info.channels - 1) * 2 + (s_info.width - 1);
+    byte *converted_data = NULL;
+    int sample_width = s_info.width;
+     if (s_info.width == 3) {
+        /* 24-bit sounds: Sample down to 16-bit.
+         * Alternatively, could use AL_EXT_float32 and upload as float. */
+        size_t numsamples = s_info.samples * s_info.channels;
+        converted_data = Z_Malloc(numsamples * sizeof(uint16_t));
+        const byte *input_ptr = s_info.data;
+        uint16_t *output_ptr = (uint16_t *)converted_data;
+        for (size_t i = 0; i < numsamples; i++) {
+            *output_ptr = input_ptr[1] | (input_ptr[2] << 8);
+            output_ptr++;
+            input_ptr += 3;
+        }
+        sample_width = 2;
+     }
+
+    ALsizei size = s_info.samples * sample_width * s_info.channels;
+    ALenum format = AL_FORMAT_MONO8 + (s_info.channels - 1) * 2 + (sample_width - 1);
     ALuint buffer = 0;
 
     qalGetError();
@@ -169,7 +186,7 @@ static sfxcache_t *AL_UploadSfx(sfx_t *s)
     if (qalGetError())
         goto fail;
 
-    qalBufferData(buffer, format, s_info.data, size, s_info.rate);
+    qalBufferData(buffer, format, converted_data ? converted_data : s_info.data, size, s_info.rate);
     if (qalGetError()) {
         qalDeleteBuffers(1, &buffer);
         goto fail;
@@ -185,7 +202,7 @@ static sfxcache_t *AL_UploadSfx(sfx_t *s)
     sfxcache_t *sc = s->cache = S_Malloc(sizeof(*sc));
     sc->length = s_info.samples * 1000LL / s_info.rate; // in msec
     sc->loopstart = s_info.loopstart;
-    sc->width = s_info.width;
+    sc->width = sample_width;
     sc->channels = s_info.channels;
     sc->size = size;
     sc->bufnum = buffer;
@@ -193,6 +210,7 @@ static sfxcache_t *AL_UploadSfx(sfx_t *s)
     return sc;
 
 fail:
+    Z_Free(converted_data);
     s->error = Q_ERR_LIBRARY_ERROR;
     return NULL;
 }
