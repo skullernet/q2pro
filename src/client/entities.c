@@ -753,7 +753,7 @@ static void CL_AddPacketEntities(void)
             LerpAngles(cent->prev.angles, cent->current.angles,
                        cl.lerpfrac, ent.angles);
             // mimic original ref_gl "leaning" bug (uuugly!)
-            if (s1->modelindex == MODELINDEX_PLAYER && cl_rollhack->integer)
+            if (s1->modelindex == MODELINDEX_PLAYER && cl_rollhack->integer && !cl.csr.extended)
                 ent.angles[ROLL] = -ent.angles[ROLL];
         }
 
