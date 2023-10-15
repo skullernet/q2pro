@@ -1270,11 +1270,14 @@ static void MD5_ComputeNormals (md5_weight_t *weights, md5_joint_t *base, md5_ve
 		if (norm) {
             // Put the bind-pose normal into joint-local space
             // so the animated normal can be computed faster later
+            // Done by transforming the vertex normal by the inverse joint's orientation quaternion of the weight
             for ( int j = 0; j < vert[v].count; ++j ) {
 			    const md5_weight_t *weight = &weights[vert[v].start + j];
 			    const md5_joint_t *joint = &base[weight->joint];
 			    vec3_t wv;
-			    Quat_RotatePoint(joint->orient, *norm, wv);
+                quat_t orient_inv;
+                Quat_Conjugate(joint->orient, orient_inv);
+                Quat_RotatePoint(orient_inv, *norm, wv);
                 VectorMA(vert[v].normal, weight->bias, wv, vert[v].normal);
             }
         }
