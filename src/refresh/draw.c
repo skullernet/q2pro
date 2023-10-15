@@ -76,6 +76,99 @@ static inline void _GL_StretchPic(
 #define GL_StretchPic(x,y,w,h,s1,t1,s2,t2,color,image) \
     _GL_StretchPic(x,y,w,h,s1,t1,s2,t2,color,(image)->texnum,(image)->flags)
 
+static void GL_DrawVignette(int distance, color_t color)
+{
+    vec_t *dst_vert;
+    uint32_t *dst_color;
+    QGL_INDEX_TYPE *dst_indices;
+
+    if (tess.numverts + 8 > TESS_MAX_VERTICES ||
+        tess.numindices + 24 > TESS_MAX_INDICES ||
+        (tess.numverts && tess.texnum[0] != TEXNUM_WHITE)) {
+        GL_Flush2D();
+    }
+
+    tess.texnum[0] = TEXNUM_WHITE;
+
+    int x = 0, y = 0;
+    int w = glr.fd.width, h = glr.fd.height;
+
+    // outer vertices
+    dst_vert = tess.vertices + tess.numverts * 4;
+    Vector2Set(dst_vert,      x,     y    );
+    Vector2Set(dst_vert +  4, x + w, y    );
+    Vector2Set(dst_vert +  8, x + w, y + h);
+    Vector2Set(dst_vert + 12, x,     y + h);
+
+    dst_color = (uint32_t *)tess.colors + tess.numverts;
+    dst_color[0] = color.u32;
+    dst_color[1] = color.u32;
+    dst_color[2] = color.u32;
+    dst_color[3] = color.u32;
+
+    // inner vertices
+    x += distance;
+    y += distance;
+    w -= distance * 2;
+    h -= distance * 2;
+    
+    dst_vert += 16;
+    Vector2Set(dst_vert,      x,     y    );
+    Vector2Set(dst_vert +  4, x + w, y    );
+    Vector2Set(dst_vert +  8, x + w, y + h);
+    Vector2Set(dst_vert + 12, x,     y + h);
+
+    /*
+    0             1
+    
+        4     5
+
+        7     6
+
+    3             2
+    */
+
+    dst_color += 4;
+    dst_color[0] = 0;
+    dst_color[1] = 0;
+    dst_color[2] = 0;
+    dst_color[3] = 0;
+
+    dst_indices = tess.indices + tess.numindices;
+    dst_indices[0] = tess.numverts + 0;
+    dst_indices[1] = tess.numverts + 5;
+    dst_indices[2] = tess.numverts + 4;
+    dst_indices[3] = tess.numverts + 0;
+    dst_indices[4] = tess.numverts + 1;
+    dst_indices[5] = tess.numverts + 5;
+
+    dst_indices[6]  = tess.numverts + 1;
+    dst_indices[7]  = tess.numverts + 6;
+    dst_indices[8]  = tess.numverts + 5;
+    dst_indices[9]  = tess.numverts + 1;
+    dst_indices[10] = tess.numverts + 2;
+    dst_indices[11] = tess.numverts + 6;
+
+    dst_indices[12] = tess.numverts + 6;
+    dst_indices[13] = tess.numverts + 2;
+    dst_indices[14] = tess.numverts + 3;
+    dst_indices[15] = tess.numverts + 6;
+    dst_indices[16] = tess.numverts + 3;
+    dst_indices[17] = tess.numverts + 7;
+
+    dst_indices[18] = tess.numverts + 0;
+    dst_indices[19] = tess.numverts + 7;
+    dst_indices[20] = tess.numverts + 3;
+    dst_indices[21] = tess.numverts + 0;
+    dst_indices[22] = tess.numverts + 4;
+    dst_indices[23] = tess.numverts + 7;
+
+    tess.flags |= 2;
+
+    tess.numverts += 8;
+    tess.numindices += 24;
+}
+
 void GL_Blend(void)
 {
     color_t color;
@@ -96,8 +189,12 @@ void GL_Blend(void)
         color.u8[2] = glr.fd.damage_blend[2] * 255;
         color.u8[3] = glr.fd.damage_blend[3] * 255;
 
-        _GL_StretchPic(glr.fd.x, glr.fd.y, glr.fd.width, glr.fd.height, 0, 0, 1, 1,
-                       color.u32, TEXNUM_WHITE, 0);
+        if (gl_damageblend_frac->value <= 0) {
+            _GL_StretchPic(glr.fd.x, glr.fd.y, glr.fd.width, glr.fd.height, 0, 0, 1, 1,
+                           color.u32, TEXNUM_WHITE, 0);
+        } else {
+            GL_DrawVignette(min(glr.fd.width * gl_damageblend_frac->value, glr.fd.height * gl_damageblend_frac->value), color);
+        }
     }
 }
 
