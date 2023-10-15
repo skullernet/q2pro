@@ -879,6 +879,8 @@ typedef enum {
 #define PMF_IGNORE_PLAYER_COLLISION     BIT(7)
 //KEX
 
+typedef uint16_t pmflags_t;
+
 // this structure needs to be communicated bit-accurate
 // from the server to the client to guarantee that
 // prediction stays in sync, so no floats are used.
@@ -889,7 +891,7 @@ typedef struct {
 
     vec3_t      origin;
     vec3_t      velocity;
-    uint16_t    pm_flags;       // ducked, jump_held, etc
+    pmflags_t   pm_flags;       // ducked, jump_held, etc
     uint16_t    pm_time;        // each unit = 8 ms
     int16_t     gravity;
     vec3_t      delta_angles;   // add to command angles to get view direction
