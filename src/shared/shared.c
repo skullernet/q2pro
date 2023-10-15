@@ -227,20 +227,20 @@ void Quat_MultiplyVector (const quat_t q, const vec3_t v, quat_t out)
 	out[Z] =  (q[W] * v[Z]) + (q[X] * v[Y]) - (q[Y] * v[X]);
 }
 
-void Quat_Invert(const quat_t in, quat_t out)
+void Quat_Conjugate(const quat_t in, quat_t out)
 {
+    out[W] = in[W];
     out[X] = -in[X];
     out[Y] = -in[Y];
     out[Z] = -in[Z];
-    out[W] = in[W];
 }
 
 void Quat_RotatePoint (const quat_t q, const vec3_t in, vec3_t out)
 {
 	quat_t tmp, inv, output;
 
-    Quat_Invert(q, inv);
-	Quat_Normalize (inv);
+    // Assume q is unit quaternion
+    Quat_Conjugate(q, inv);
 	Quat_MultiplyVector (q, in, tmp);
 	Quat_MultiplyQuat (tmp, inv, output);
 

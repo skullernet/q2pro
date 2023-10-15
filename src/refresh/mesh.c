@@ -636,7 +636,7 @@ static inline void calculate_vertex_for_skeleton(const md5_vertex_t *vert, const
             
         if (out_normal) {
             quat_t orient_inv;
-            Quat_Invert(joint->orient, orient_inv);
+            Quat_Conjugate(joint->orient, orient_inv);
             Quat_RotatePoint(orient_inv, vert->normal, wv);
             VectorScale(wv, weight->bias, wv);
             VectorAdd(out_normal, wv, out_normal);

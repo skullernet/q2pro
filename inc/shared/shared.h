@@ -257,7 +257,8 @@ float Quat_Normalize(quat_t q);
 void Quat_MultiplyQuat (const quat_t qa, const quat_t qb, quat_t out);
 void Quat_MultiplyVector (const quat_t q, const vec3_t v, quat_t out);
 void Quat_RotatePoint (const quat_t q, const vec3_t in, vec3_t out);
-void Quat_Invert(const quat_t in, quat_t out);
+// Conjugate quaternion. Also, inverse, for unit quaternions (which MD5 quats are)
+void Quat_Conjugate(const quat_t in, quat_t out);
 #endif
 
 void AngleVectors(const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up);
