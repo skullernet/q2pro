@@ -42,6 +42,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SVF_NOCULL              BIT(10)
 #define SVF_HULL                BIT(11)
 
+typedef uint32_t svflags_t;
+
 // edict->solid values
 
 typedef enum {
@@ -135,7 +137,7 @@ struct edict_s {
 
     //================================
 
-    int         svflags;            // SVF_NOCLIENT, SVF_DEADMONSTER, SVF_MONSTER, etc
+    svflags_t   svflags;            // SVF_NOCLIENT, SVF_DEADMONSTER, SVF_MONSTER, etc
     vec3_t      mins, maxs;
     vec3_t      absmin, absmax, size;
     solid_t     solid;
