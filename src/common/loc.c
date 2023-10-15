@@ -236,6 +236,10 @@ size_t Loc_Localize(const char *base, bool allow_in_place, const char **argument
         }
     }
 
+    if (!str) {
+        return Q_strlcpy(output, base, output_length);
+    }
+
     // easy case
     if (!str->num_arguments) {
         return Q_strlcpy(output, str->format, output_length);
