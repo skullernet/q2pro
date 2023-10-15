@@ -284,6 +284,8 @@ void GL_DrawBeams(void)
             continue;
         }
 
+        int num_segments = ((ent->flags & RF_BEAM_LIGHTNING) == RF_BEAM_LIGHTNING) ? (MIN_LIGHTNING_SEGMENTS + Q_rand_uniform(MAX_LIGHTNING_SEGMENTS - MIN_LIGHTNING_SEGMENTS)) : 1;
+
         start = ent->origin;
         end = ent->oldorigin;
 
