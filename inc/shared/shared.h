@@ -1063,6 +1063,8 @@ typedef uint64_t effects_t;
 #define RF_BEAM_LIGHTNING   (RF_BEAM | RF_GLOW)
 //KEX
 
+typedef uint32_t renderfx_t;
+
 // player_state_t->refdef flags
 #define RDF_UNDERWATER      BIT(0)      // warp the screen as apropriate
 #define RDF_NOWORLDMODEL    BIT(1)      // used for player configuration screen
@@ -1443,7 +1445,7 @@ typedef struct entity_state_s {
     int     frame;
     int     skinnum;
     effects_t effects;        // PGM - we're filling it, so it needs to be unsigned
-    int     renderfx;
+    renderfx_t renderfx;
     int     solid;          // for client side prediction, 8*(bits 0-4) is x/y radius
                             // 8*(bits 5-9) is z down distance, 8(bits10-15) is z up
                             // gi.linkentity sets this properly
