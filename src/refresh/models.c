@@ -1231,6 +1231,9 @@ static void MD5_ComputeNormals (md5_weight_t *weights, md5_joint_t *base, md5_ve
 		CrossProduct (d1, d2, norm);
 		VectorNormalize (norm);
 
+        /* Weight vertex normals by angle
+         * see eg https://help.autodesk.com/view/MAXDEV/2023/ENU/?guid=computing_vertex_normals_by_weig
+         * for reasoning */
 		const float angle = acos (DotProduct (d1, d2));
 		VectorScale (norm, angle, norm);
 
