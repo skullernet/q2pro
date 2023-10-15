@@ -1361,35 +1361,12 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
         }
     }
 
-    // check if we have lit liquids/translucents; this is a bit
-    // messy because while empty lightmap surfaces are supposed
-    // to contain lightofs -1, the GPL release of qrad3 caused
-    // them to have lightofs 0 instead, which the engine ignored
-    // anyways because it had SURF_WARP; now that we support lit
-    // liquids, we have to detect this incorrect behavior.
     bsp->nolm_mask = SURF_NOLM_MASK_VANILLA;
-    int num_lit_liquids = 0;
-    mface_t *face;
-    
-    // find at least two surfaces that contain lightmap data
-    for (i = 0, face = bsp->faces; num_lit_liquids < 2 && i < bsp->numfaces; i++, face++) {
-        if (face->texinfo->c.flags & (SURF_COLOR_MASK | SURF_FLOWING) &&
-            face->lightmap != bsp->lightmap) {
-            num_lit_liquids++;
-        }
-    }
 
-    if (num_lit_liquids == 2) {
+    // only supported in DECOUPLED_LM maps because vanilla
+    // maps have broken lightofs for liquids/alphas.
+    if (bsp->lm_decoupled) {
         bsp->nolm_mask = SURF_NOLM_MASK_LIT_LIQUIDS;
-    } else {
-        // if the map wasn't meant to have lit liquids, unset the lightmap instead of
-        // pointing to the wrong lightmap.
-        for (i = 0, face = bsp->faces; num_lit_liquids < 2 && i < bsp->numfaces; i++, face++) {
-            if (face->texinfo->c.flags & (SURF_COLOR_MASK | SURF_FLOWING) &&
-                face->lightmap == bsp->lightmap) {
-                face->lightmap = NULL;
-            }
-        }
     }
 #endif
 
