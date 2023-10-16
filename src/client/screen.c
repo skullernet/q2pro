@@ -136,6 +136,8 @@ static cvar_t   *scr_damage_indicators;
 static cvar_t   *scr_damage_indicator_time;
 
 static cvar_t   *scr_pois;
+static cvar_t   *scr_poi_edge_frac;
+static cvar_t   *scr_poi_max_scale;
 
 vrect_t     scr_vrect;      // position of render window on screen
 
@@ -1414,6 +1416,8 @@ void SCR_Init(void)
     scr_damage_indicator_time = Cvar_Get("scr_damage_indicator_time", "1000", 0);
 
     scr_pois = Cvar_Get("scr_pois", "1", 0);
+    scr_poi_edge_frac = Cvar_Get("scr_poi_edge_frac", "0.15", 0);
+    scr_poi_max_scale = Cvar_Get("scr_poi_max_scale", "2.5", 0);
 
     Cmd_Register(scr_cmds);
 
@@ -2417,7 +2421,9 @@ static void SCR_DrawPOIs(void)
         vec4_t sp = { poi->position[0], poi->position[1], poi->position[2], 1.0f };
         Matrix_TransformVec4(sp, projection_matrix, sp);
 
+        // behind camera
         if (sp[3] < 0.f) {
+            // FIXME render at appropriate screen edge
             continue;
         }
 
@@ -2428,13 +2434,39 @@ static void SCR_DrawPOIs(void)
 
         sp[0] = ((sp[0] * 0.5f) + 0.5f) * cl.refdef.width;
         sp[1] = ((-sp[1] * 0.5f) + 0.5f) * cl.refdef.height;
+
+        // scale the icon if they are closer to the edges of the screen
+        float scale = 1.0f;
+        float edge_dist = min(cl.refdef.width, cl.refdef.height) * scr_poi_edge_frac->value;
+
+        for (int x = 0; x < 2; x++) {
+            float extent = ((x == 0) ? cl.refdef.width : cl.refdef.height);
+            float frac;
+
+            if (sp[x] < edge_dist) {
+                frac = (sp[x] / edge_dist);
+            } else if (sp[x] > extent - edge_dist) {
+                frac = (extent - sp[x]) / edge_dist;
+            } else {
+                continue;
+            }
+
+            scale = constclamp(1.0f + (1.0f - frac) * (scr_poi_max_scale->value - 1.f), scale, scr_poi_max_scale->value);
+        }
+
+        // center & clamp
+        int hw = (poi->width * scale) / 2;
+        int hh = (poi->height * scale) / 2;
         
-        sp[0] -= (poi->width / 2);
-        sp[1] -= (poi->height / 2);
+        sp[0] -= hw;
+        sp[1] -= hh;
+        
+        clamp(sp[0], 0, cl.refdef.width - hw);
+        clamp(sp[1], 0, cl.refdef.height - hh);
 
         R_SetColor(d_8to24table[poi->color]);
 
-        R_DrawPic(sp[0], sp[1], poi->image);
+        R_DrawStretchPic(sp[0], sp[1], hw, hh, poi->image);
     }
 }
 
