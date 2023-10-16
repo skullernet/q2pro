@@ -2389,12 +2389,17 @@ static void Matrix_Multiply(const mat4_t a, const mat4_t b, mat4_t out)
     out[13] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
     out[14] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
     out[15] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
-    return out;
 }
 
 void GL_FrustumOut(float fov_x, float fov_y, float reflect_x, float *matrix);
 
 extern uint32_t d_8to24table[256];
+
+typedef enum
+{
+    POI_FLAG_NONE = 0,
+    POI_FLAG_HIDE_ON_AIM = 1, // hide the POI if we get close to it with our aim
+} svc_poi_flags;
 
 static void SCR_DrawPOIs(void)
 {
@@ -2432,15 +2437,15 @@ static void SCR_DrawPOIs(void)
             VectorScale(sp, sp[3], sp);
         }
 
-        sp[0] = ((sp[0] * 0.5f) + 0.5f) * cl.refdef.width;
-        sp[1] = ((-sp[1] * 0.5f) + 0.5f) * cl.refdef.height;
+        sp[0] = ((sp[0] * 0.5f) + 0.5f) * scr.hud_width;
+        sp[1] = ((-sp[1] * 0.5f) + 0.5f) * scr.hud_height;
 
         // scale the icon if they are closer to the edges of the screen
         float scale = 1.0f;
-        float edge_dist = min(cl.refdef.width, cl.refdef.height) * scr_poi_edge_frac->value;
+        float edge_dist = min(scr.hud_width, scr.hud_height) * scr_poi_edge_frac->value;
 
         for (int x = 0; x < 2; x++) {
-            float extent = ((x == 0) ? cl.refdef.width : cl.refdef.height);
+            float extent = ((x == 0) ? scr.hud_width : scr.hud_height);
             float frac;
 
             if (sp[x] < edge_dist) {
@@ -2461,10 +2466,20 @@ static void SCR_DrawPOIs(void)
         sp[0] -= hw;
         sp[1] -= hh;
         
-        clamp(sp[0], 0, cl.refdef.width - hw);
-        clamp(sp[1], 0, cl.refdef.height - hh);
+        clamp(sp[0], 0, scr.hud_width - hw);
+        clamp(sp[1], 0, scr.hud_height - hh);
 
-        R_SetColor(d_8to24table[poi->color]);
+        color_t c = { .u32 = d_8to24table[poi->color] };
+
+        // calculate alpha if necessary
+        if (poi->flags & POI_FLAG_HIDE_ON_AIM) {
+            vec3_t centered = { (scr.hud_width / 2) - sp[0], (scr.hud_height / 2) - sp[1], 0.f };
+            sp[2] = 0.f;
+            float len = VectorLength(centered);
+            c.u8[3] = constclamp(len / (hw * 6), 0.25f, 1.0f) * 255.f;
+        }
+
+        R_SetColor(c.u32);
 
         R_DrawStretchPic(sp[0], sp[1], hw, hh, poi->image);
     }
