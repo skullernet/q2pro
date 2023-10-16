@@ -1387,16 +1387,32 @@ static void CL_SkipHelpPath(void)
     MSG_ReadDir(p);
 }
 
-static void CL_SkipPOI(void)
+static void CL_ParsePOI(void)
 {
-    MSG_ReadShort();
-    MSG_ReadShort();
+    // POIs can be "keyed" and "unkeyed".
+    // Key'd POIs have a non-zero id and will replace others
+    // on the same key if re-added.
+    // POI IDs from 1 to (MAX_EDICTS - 1) inclusive are reserved
+    // by the client, and attach to the given entity (can be used
+    // for POIs that can follow an entity more accurately if it's
+    // in your frame).
+    // POI IDs above that are free for modders.
+    int id = MSG_ReadShort();
+    // time == USHRT_MAX is a special value for "delete this POI".
+    // it is only valid with a keyed POI.
+    // time == 0 is a special value for "infinite", and can only
+    // be used on reliable messages.
+    int time = MSG_ReadShort();
     vec3_t p;
     MSG_ReadPos(p, cl.esFlags & MSG_ES_FLOAT_COORDS);
-    MSG_ReadShort();
-    MSG_ReadByte();
-    MSG_ReadByte();
+    int image = MSG_ReadShort();
+    int color = MSG_ReadByte();
+    int flags = MSG_ReadByte();
 
+    if (time == USHRT_MAX)
+        SCR_RemovePOI(id);
+    else
+        SCR_AddPOI(id, time, p, image, color, flags);
 }
 
 /*
@@ -1553,7 +1569,7 @@ static svc_handle_result_t handle_svc_rerelease(int cmd)
         CL_SkipFog();
         return svch_continue_loop;
     case svc_poi:
-        CL_SkipPOI();
+        CL_ParsePOI();
         return svch_continue_loop;
     case svc_help_path:
         CL_SkipHelpPath();

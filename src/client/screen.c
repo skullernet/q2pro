@@ -39,6 +39,18 @@ typedef struct {
 #define MAX_DAMAGE_ENTRIES      32
 #define DAMAGE_ENTRY_BASE_SIZE  3
 
+typedef struct {
+    int         id;
+    int         time;
+    int         color;
+    int         flags;
+    qhandle_t   image;
+    int         width, height;
+    vec3_t      position;
+} scr_poi_t;
+
+#define MAX_TRACKED_POIS        32
+
 static struct {
     bool        initialized;        // ready to draw
 
@@ -61,6 +73,8 @@ static struct {
     qhandle_t   damage_display_pic;
     int         damage_display_width, damage_display_height;
     scr_damage_entry_t  damage_entries[MAX_DAMAGE_ENTRIES];
+
+    scr_poi_t   pois[MAX_TRACKED_POIS];
 
     qhandle_t   sb_pics[2][STAT_PICS];
     qhandle_t   inven_pic;
@@ -120,6 +134,8 @@ static cvar_t   *scr_hit_marker_time;
 
 static cvar_t   *scr_damage_indicators;
 static cvar_t   *scr_damage_indicator_time;
+
+static cvar_t   *scr_pois;
 
 vrect_t     scr_vrect;      // position of render window on screen
 
@@ -1397,6 +1413,8 @@ void SCR_Init(void)
     scr_damage_indicators = Cvar_Get("scr_damage_indicators", "1", 0);
     scr_damage_indicator_time = Cvar_Get("scr_damage_indicator_time", "1000", 0);
 
+    scr_pois = Cvar_Get("scr_pois", "1", 0);
+
     Cmd_Register(scr_cmds);
 
     scr_scale_changed(scr_scale);
@@ -2101,10 +2119,6 @@ static void SCR_DrawHitMarkers(void)
 
 static scr_damage_entry_t *SCR_AllocDamageDisplay(const vec3_t dir)
 {
-    if (!scr_damage_indicators->integer) {
-        return;
-    }
-
     scr_damage_entry_t *entry = scr.damage_entries;
 
     for (int i = 0; i < MAX_DAMAGE_ENTRIES; i++, entry++) {
@@ -2129,6 +2143,10 @@ new_entry:
 
 void SCR_AddToDamageDisplay(int damage, const vec3_t color, const vec3_t dir)
 {
+    if (!scr_damage_indicators->integer) {
+        return;
+    }
+
     scr_damage_entry_t *entry = SCR_AllocDamageDisplay(dir);
 
     entry->damage += damage;
@@ -2169,6 +2187,257 @@ static void SCR_DrawDamageDisplays(void)
     }
 }
 
+void SCR_RemovePOI(int id)
+{
+    if (!scr_pois->integer)
+        return;
+
+    if (id == 0) {
+        Com_WPrintf("tried to remove unkeyed POI\n");
+        return;
+    }
+    
+    scr_poi_t *poi = &scr.pois[0];
+
+    for (int i = 0; i < MAX_TRACKED_POIS; i++, poi++) {
+
+        if (poi->id == id) {
+            poi->id = 0;
+            poi->time = 0;
+            break;
+        }
+    }
+}
+
+void SCR_AddPOI(int id, int time, const vec3_t p, int image, int color, int flags)
+{
+    if (!scr_pois->integer)
+        return;
+
+    scr_poi_t *poi = NULL;
+
+    if (id == 0) {
+        // find any free non-key'd POI. we'll find
+        // the oldest POI as a fallback to replace.
+    
+        scr_poi_t *oldest_poi = NULL, *poi_rover = &scr.pois[0];
+
+        for (int i = 0; i < MAX_TRACKED_POIS; i++, poi_rover++) {
+            // not expired
+            if (poi_rover->time > cl.time) {
+                // keyed
+                if (poi_rover->id) {
+                    continue;
+                } else if (!oldest_poi || poi_rover->time < oldest_poi->time) {
+                    oldest_poi = poi_rover;
+                }
+            } else {
+                // expired
+                poi = poi_rover;
+                break;
+            }
+        }
+
+        if (!poi) {
+            poi = oldest_poi;
+        }
+
+    } else {
+        // we must replace a matching POI with the ID
+        // if one exists, otherwise we pick a free POI,
+        // and finally we pick the oldest non-key'd POI.
+
+        scr_poi_t *oldest_poi = NULL;
+        scr_poi_t *free_poi = NULL;
+        scr_poi_t *poi_rover = &scr.pois[0];
+
+        for (int i = 0; i < MAX_TRACKED_POIS; i++, poi_rover++) {
+            // found matching ID, just re-use that one
+            if (poi_rover->id == id) {
+                poi = poi_rover;
+                break;
+            }
+
+            if (poi_rover->time <= cl.time) {
+                // expired
+                if (!free_poi) {
+                    free_poi = poi_rover;
+                }
+            } else {
+                // not expired; we should only ever replace non-key'd POIs
+                if (!poi_rover->id) {
+                    if (!oldest_poi || poi_rover->time < oldest_poi->time) {
+                        oldest_poi = poi_rover;
+                    }
+                }
+            }
+        }
+
+        if (!poi) {
+            poi = free_poi ? free_poi : oldest_poi;
+        }
+    }
+
+    if (!poi) {
+        Com_WPrintf("couldn't add a POI\n");
+    }
+
+    poi->id = id;
+    poi->time = cl.time + time;
+    VectorCopy(p, poi->position);
+    poi->image = cl.image_precache[image];
+    R_GetPicSize(&poi->width, &poi->height, image);
+    poi->color = color;
+    poi->flags = flags;
+}
+
+static void CL_GetRefDefMatrix(mat4_t matrix)
+{
+    vec3_t viewaxis[3];
+
+    AnglesToAxis(cl.refdef.viewangles, viewaxis);
+
+    matrix[0] = -viewaxis[1][0];
+    matrix[4] = -viewaxis[1][1];
+    matrix[8] = -viewaxis[1][2];
+    matrix[12] = DotProduct(viewaxis[1], cl.refdef.vieworg);
+
+    matrix[1] = viewaxis[2][0];
+    matrix[5] = viewaxis[2][1];
+    matrix[9] = viewaxis[2][2];
+    matrix[13] = -DotProduct(viewaxis[2], cl.refdef.vieworg);
+
+    matrix[2] = -viewaxis[0][0];
+    matrix[6] = -viewaxis[0][1];
+    matrix[10] = -viewaxis[0][2];
+    matrix[14] = DotProduct(viewaxis[0], cl.refdef.vieworg);
+
+    matrix[3] = 0;
+    matrix[7] = 0;
+    matrix[11] = 0;
+    matrix[15] = 1;
+}
+
+static void Matrix_TransformVec4(const vec4_t a, const mat4_t m, vec4_t out)
+{
+    const float x = a[0];
+    const float y = a[1];
+    const float z = a[2];
+    const float w = a[3];
+    out[0] = m[0] * x + m[4] * y + m[8] * z + m[12] * w;
+    out[1] = m[1] * x + m[5] * y + m[9] * z + m[13] * w;
+    out[2] = m[2] * x + m[6] * y + m[10] * z + m[14] * w;
+    out[3] = m[3] * x + m[7] * y + m[11] * z + m[15] * w;
+}
+
+static void Matrix_Multiply(const mat4_t a, const mat4_t b, mat4_t out)
+{
+    const float a00 = a[0];
+    const float a01 = a[1];
+    const float a02 = a[2];
+    const float a03 = a[3];
+    const float a10 = a[4];
+    const float a11 = a[5];
+    const float a12 = a[6];
+    const float a13 = a[7];
+    const float a20 = a[8];
+    const float a21 = a[9];
+    const float a22 = a[10];
+    const float a23 = a[11];
+    const float a30 = a[12];
+    const float a31 = a[13];
+    const float a32 = a[14];
+    const float a33 = a[15];
+
+    // Cache only the current line of the second matrix
+    float b0 = b[0];
+    float b1 = b[1];
+    float b2 = b[2];
+    float b3 = b[3];
+    out[0] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+    out[1] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+    out[2] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+    out[3] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
+
+    b0 = b[4];
+    b1 = b[5];
+    b2 = b[6];
+    b3 = b[7];
+    out[4] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+    out[5] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+    out[6] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+    out[7] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
+
+    b0 = b[8];
+    b1 = b[9];
+    b2 = b[10];
+    b3 = b[11];
+    out[8] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+    out[9] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+    out[10] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+    out[11] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
+
+    b0 = b[12];
+    b1 = b[13];
+    b2 = b[14];
+    b3 = b[15];
+    out[12] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+    out[13] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+    out[14] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+    out[15] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
+    return out;
+}
+
+void GL_FrustumOut(float fov_x, float fov_y, float reflect_x, float *matrix);
+
+extern uint32_t d_8to24table[256];
+
+static void SCR_DrawPOIs(void)
+{
+    if (!scr_pois->integer)
+        return;
+
+    float projection_matrix[16];
+    GL_FrustumOut(cl.refdef.fov_x, cl.refdef.fov_y, 1.0f, projection_matrix);
+
+    float view_matrix[16];
+    CL_GetRefDefMatrix(view_matrix);
+
+    Matrix_Multiply(projection_matrix, view_matrix, projection_matrix);
+    
+    scr_poi_t *poi = &scr.pois[0];
+
+    for (int i = 0; i < MAX_TRACKED_POIS; i++, poi++) {
+
+        if (poi->time <= cl.time) {
+            continue;
+        }
+
+        // https://www.khronos.org/opengl/wiki/GluProject_and_gluUnProject_code
+        vec4_t sp = { poi->position[0], poi->position[1], poi->position[2], 1.0f };
+        Matrix_TransformVec4(sp, projection_matrix, sp);
+
+        if (sp[3] < 0.f) {
+            continue;
+        }
+
+        if (sp[3]) {
+            sp[3] = 1.0f / sp[3];
+            VectorScale(sp, sp[3], sp);
+        }
+
+        sp[0] = ((sp[0] * 0.5f) + 0.5f) * cl.refdef.width;
+        sp[1] = ((-sp[1] * 0.5f) + 0.5f) * cl.refdef.height;
+        
+        sp[0] -= (poi->width / 2);
+        sp[1] -= (poi->height / 2);
+
+        R_SetColor(d_8to24table[poi->color]);
+
+        R_DrawPic(sp[0], sp[1], poi->image);
+    }
+}
+
 static void SCR_DrawCrosshair(void)
 {
     int x, y;
@@ -2177,6 +2446,8 @@ static void SCR_DrawCrosshair(void)
         return;
     if (cl.frame.ps.stats[STAT_LAYOUTS] & (LAYOUTS_HIDE_HUD | LAYOUTS_HIDE_CROSSHAIR))
         return;
+
+    SCR_DrawPOIs();
 
     x = (scr.hud_width - scr.crosshair_width) / 2;
     y = (scr.hud_height - scr.crosshair_height) / 2;

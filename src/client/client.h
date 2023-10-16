@@ -995,6 +995,8 @@ void    SCR_AddToChatHUD(const char *text);
 int     SCR_GetCinematicCrop(unsigned framenum, int64_t filesize);
 
 void    SCR_AddToDamageDisplay(int damage, const vec3_t color, const vec3_t dir);
+void    SCR_RemovePOI(int id);
+void    SCR_AddPOI(int id, int time, const vec3_t p, int image, int color, int flags);
 
 //
 // cin.c

@@ -174,11 +174,10 @@ void GL_Setup2D(void)
     gl_static.backend.load_view_matrix(NULL);
 }
 
-void GL_Frustum(GLfloat fov_x, GLfloat fov_y, GLfloat reflect_x)
+void GL_FrustumOut(GLfloat fov_x, GLfloat fov_y, GLfloat reflect_x, float *matrix)
 {
     GLfloat xmin, xmax, ymin, ymax, zfar, znear;
     GLfloat width, height, depth;
-    GLfloat matrix[16];
 
     znear = gl_znear->value;
 
@@ -216,7 +215,12 @@ void GL_Frustum(GLfloat fov_x, GLfloat fov_y, GLfloat reflect_x)
     matrix[7] = 0;
     matrix[11] = -1;
     matrix[15] = 0;
+}
 
+void GL_Frustum(GLfloat fov_x, GLfloat fov_y, GLfloat reflect_x)
+{
+    GLfloat matrix[16];
+    GL_FrustumOut(fov_x, fov_y, reflect_x, matrix);
     gl_static.backend.load_proj_matrix(matrix);
 }
 
