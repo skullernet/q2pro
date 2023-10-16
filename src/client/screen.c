@@ -1417,7 +1417,7 @@ void SCR_Init(void)
 
     scr_pois = Cvar_Get("scr_pois", "1", 0);
     scr_poi_edge_frac = Cvar_Get("scr_poi_edge_frac", "0.15", 0);
-    scr_poi_max_scale = Cvar_Get("scr_poi_max_scale", "2.5", 0);
+    scr_poi_max_scale = Cvar_Get("scr_poi_max_scale", "1.0", 0);
 
     Cmd_Register(scr_cmds);
 
@@ -2320,6 +2320,8 @@ static void SCR_DrawPOIs(void)
     
     scr_poi_t *poi = &scr.pois[0];
 
+    float max_height = scr.hud_height * 0.75f;
+
     for (int i = 0; i < MAX_TRACKED_POIS; i++, poi++) {
 
         if (poi->time <= cl.time) {
@@ -2330,11 +2332,7 @@ static void SCR_DrawPOIs(void)
         vec4_t sp = { poi->position[0], poi->position[1], poi->position[2], 1.0f };
         Matrix_TransformVec4(sp, projection_matrix, sp);
 
-        // behind camera
-        if (sp[3] < 0.f) {
-            // FIXME render at appropriate screen edge
-            continue;
-        }
+        bool behind = sp[3] < 0.f;
 
         if (sp[3]) {
             sp[3] = 1.0f / sp[3];
@@ -2344,23 +2342,40 @@ static void SCR_DrawPOIs(void)
         sp[0] = ((sp[0] * 0.5f) + 0.5f) * scr.hud_width;
         sp[1] = ((-sp[1] * 0.5f) + 0.5f) * scr.hud_height;
 
+        if (behind) {
+            sp[0] = scr.hud_width - sp[0];
+            sp[1] = scr.hud_height - sp[1];
+
+            if (sp[1] > 0) {
+                if (sp[0] < scr.hud_width / 2)
+                    sp[0] = 0;
+                else
+                    sp[0] = scr.hud_width - 1;
+
+                sp[1] = min(sp[1], max_height);
+            }
+        }
+
         // scale the icon if they are closer to the edges of the screen
         float scale = 1.0f;
-        float edge_dist = min(scr.hud_width, scr.hud_height) * scr_poi_edge_frac->value;
 
-        for (int x = 0; x < 2; x++) {
-            float extent = ((x == 0) ? scr.hud_width : scr.hud_height);
-            float frac;
+        if (scr_poi_max_scale->value != 1.0f) {
+            float edge_dist = min(scr.hud_width, scr.hud_height) * scr_poi_edge_frac->value;
 
-            if (sp[x] < edge_dist) {
-                frac = (sp[x] / edge_dist);
-            } else if (sp[x] > extent - edge_dist) {
-                frac = (extent - sp[x]) / edge_dist;
-            } else {
-                continue;
+            for (int x = 0; x < 2; x++) {
+                float extent = ((x == 0) ? scr.hud_width : scr.hud_height);
+                float frac;
+
+                if (sp[x] < edge_dist) {
+                    frac = (sp[x] / edge_dist);
+                } else if (sp[x] > extent - edge_dist) {
+                    frac = (extent - sp[x]) / edge_dist;
+                } else {
+                    continue;
+                }
+
+                scale = constclamp(1.0f + (1.0f - frac) * (scr_poi_max_scale->value - 1.f), scale, scr_poi_max_scale->value);
             }
-
-            scale = constclamp(1.0f + (1.0f - frac) * (scr_poi_max_scale->value - 1.f), scale, scr_poi_max_scale->value);
         }
 
         // center & clamp
