@@ -174,53 +174,18 @@ void GL_Setup2D(void)
     gl_static.backend.load_view_matrix(NULL);
 }
 
-void GL_FrustumOut(GLfloat fov_x, GLfloat fov_y, GLfloat reflect_x, float *matrix)
+void GL_Frustum(GLfloat fov_x, GLfloat fov_y, GLfloat reflect_x)
 {
-    GLfloat xmin, xmax, ymin, ymax, zfar, znear;
-    GLfloat width, height, depth;
+    GLfloat matrix[16];
 
-    znear = gl_znear->value;
+    float znear = gl_znear->value, zfar;
 
     if (glr.fd.rdflags & RDF_NOWORLDMODEL)
         zfar = 2048;
     else
         zfar = gl_static.world.size * 2;
 
-    xmax = znear * tan(fov_x * (M_PI / 360));
-    xmin = -xmax;
-
-    ymax = znear * tan(fov_y * (M_PI / 360));
-    ymin = -ymax;
-
-    width = xmax - xmin;
-    height = ymax - ymin;
-    depth = zfar - znear;
-
-    matrix[0] = reflect_x * 2 * znear / width;
-    matrix[4] = 0;
-    matrix[8] = (xmax + xmin) / width;
-    matrix[12] = 0;
-
-    matrix[1] = 0;
-    matrix[5] = 2 * znear / height;
-    matrix[9] = (ymax + ymin) / height;
-    matrix[13] = 0;
-
-    matrix[2] = 0;
-    matrix[6] = 0;
-    matrix[10] = -(zfar + znear) / depth;
-    matrix[14] = -2 * zfar * znear / depth;
-
-    matrix[3] = 0;
-    matrix[7] = 0;
-    matrix[11] = -1;
-    matrix[15] = 0;
-}
-
-void GL_Frustum(GLfloat fov_x, GLfloat fov_y, GLfloat reflect_x)
-{
-    GLfloat matrix[16];
-    GL_FrustumOut(fov_x, fov_y, reflect_x, matrix);
+    Matrix_Frustum(fov_x, fov_y, reflect_x, znear, zfar, matrix);
     gl_static.backend.load_proj_matrix(matrix);
 }
 
@@ -230,25 +195,7 @@ static void GL_RotateForViewer(void)
 
     AnglesToAxis(glr.fd.viewangles, glr.viewaxis);
 
-    matrix[0] = -glr.viewaxis[1][0];
-    matrix[4] = -glr.viewaxis[1][1];
-    matrix[8] = -glr.viewaxis[1][2];
-    matrix[12] = DotProduct(glr.viewaxis[1], glr.fd.vieworg);
-
-    matrix[1] = glr.viewaxis[2][0];
-    matrix[5] = glr.viewaxis[2][1];
-    matrix[9] = glr.viewaxis[2][2];
-    matrix[13] = -DotProduct(glr.viewaxis[2], glr.fd.vieworg);
-
-    matrix[2] = -glr.viewaxis[0][0];
-    matrix[6] = -glr.viewaxis[0][1];
-    matrix[10] = -glr.viewaxis[0][2];
-    matrix[14] = DotProduct(glr.viewaxis[0], glr.fd.vieworg);
-
-    matrix[3] = 0;
-    matrix[7] = 0;
-    matrix[11] = 0;
-    matrix[15] = 1;
+    Matrix_FromOriginAxis(glr.fd.vieworg, glr.viewaxis, matrix);
 
     GL_ForceMatrix(matrix);
 }

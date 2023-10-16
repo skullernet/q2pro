@@ -2295,104 +2295,6 @@ void SCR_AddPOI(int id, int time, const vec3_t p, int image, int color, int flag
     poi->flags = flags;
 }
 
-static void CL_GetRefDefMatrix(mat4_t matrix)
-{
-    vec3_t viewaxis[3];
-
-    AnglesToAxis(cl.refdef.viewangles, viewaxis);
-
-    matrix[0] = -viewaxis[1][0];
-    matrix[4] = -viewaxis[1][1];
-    matrix[8] = -viewaxis[1][2];
-    matrix[12] = DotProduct(viewaxis[1], cl.refdef.vieworg);
-
-    matrix[1] = viewaxis[2][0];
-    matrix[5] = viewaxis[2][1];
-    matrix[9] = viewaxis[2][2];
-    matrix[13] = -DotProduct(viewaxis[2], cl.refdef.vieworg);
-
-    matrix[2] = -viewaxis[0][0];
-    matrix[6] = -viewaxis[0][1];
-    matrix[10] = -viewaxis[0][2];
-    matrix[14] = DotProduct(viewaxis[0], cl.refdef.vieworg);
-
-    matrix[3] = 0;
-    matrix[7] = 0;
-    matrix[11] = 0;
-    matrix[15] = 1;
-}
-
-static void Matrix_TransformVec4(const vec4_t a, const mat4_t m, vec4_t out)
-{
-    const float x = a[0];
-    const float y = a[1];
-    const float z = a[2];
-    const float w = a[3];
-    out[0] = m[0] * x + m[4] * y + m[8] * z + m[12] * w;
-    out[1] = m[1] * x + m[5] * y + m[9] * z + m[13] * w;
-    out[2] = m[2] * x + m[6] * y + m[10] * z + m[14] * w;
-    out[3] = m[3] * x + m[7] * y + m[11] * z + m[15] * w;
-}
-
-static void Matrix_Multiply(const mat4_t a, const mat4_t b, mat4_t out)
-{
-    const float a00 = a[0];
-    const float a01 = a[1];
-    const float a02 = a[2];
-    const float a03 = a[3];
-    const float a10 = a[4];
-    const float a11 = a[5];
-    const float a12 = a[6];
-    const float a13 = a[7];
-    const float a20 = a[8];
-    const float a21 = a[9];
-    const float a22 = a[10];
-    const float a23 = a[11];
-    const float a30 = a[12];
-    const float a31 = a[13];
-    const float a32 = a[14];
-    const float a33 = a[15];
-
-    // Cache only the current line of the second matrix
-    float b0 = b[0];
-    float b1 = b[1];
-    float b2 = b[2];
-    float b3 = b[3];
-    out[0] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
-    out[1] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
-    out[2] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
-    out[3] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
-
-    b0 = b[4];
-    b1 = b[5];
-    b2 = b[6];
-    b3 = b[7];
-    out[4] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
-    out[5] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
-    out[6] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
-    out[7] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
-
-    b0 = b[8];
-    b1 = b[9];
-    b2 = b[10];
-    b3 = b[11];
-    out[8] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
-    out[9] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
-    out[10] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
-    out[11] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
-
-    b0 = b[12];
-    b1 = b[13];
-    b2 = b[14];
-    b3 = b[15];
-    out[12] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
-    out[13] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
-    out[14] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
-    out[15] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
-}
-
-void GL_FrustumOut(float fov_x, float fov_y, float reflect_x, float *matrix);
-
 extern uint32_t d_8to24table[256];
 
 typedef enum
@@ -2407,10 +2309,12 @@ static void SCR_DrawPOIs(void)
         return;
 
     float projection_matrix[16];
-    GL_FrustumOut(cl.refdef.fov_x, cl.refdef.fov_y, 1.0f, projection_matrix);
+    Matrix_Frustum(cl.refdef.fov_x, cl.refdef.fov_y, 1.0f, 0.01f, 8192.f, projection_matrix);
 
     float view_matrix[16];
-    CL_GetRefDefMatrix(view_matrix);
+    vec3_t viewaxis[3];
+    AnglesToAxis(cl.refdef.viewangles, viewaxis);
+    Matrix_FromOriginAxis(cl.refdef.vieworg, viewaxis, view_matrix);
 
     Matrix_Multiply(projection_matrix, view_matrix, projection_matrix);
     
