@@ -19,6 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #pragma once
 
 #include "shared/list.h"
+#include "shared/m_flash.h"
 
 //
 // game.h -- game dll information visible to server
@@ -92,6 +93,7 @@ struct gclient_s {
 
 #define MAX_NETNAME         32
 #define MAX_ARMOR_TYPES     3
+#define MAX_ITEMS           256
 
 // Rerelease: Used by AI/Tools on the engine side...
 typedef struct sv_entity_s {
@@ -530,3 +532,166 @@ typedef struct {
 } game_export_ex_t;
 
 typedef const game_export_ex_t *(*game_entry_ex_t)(const game_import_ex_t *);
+
+//===============================================================
+
+#define CGAME_API_VERSION   2022
+
+typedef enum
+{
+    LEFT,
+    CENTER,
+    RIGHT
+} text_align_t;
+
+typedef struct
+{
+    float x, y;
+} cg_vec2_t;
+
+typedef struct
+{
+    char layout[1024];
+    int16_t inventory[MAX_ITEMS];
+} cg_server_data_t;
+
+//
+// functions provided by main engine for client
+//
+typedef struct
+{
+    uint32_t    tick_rate;
+    float       frame_time_s;
+    uint32_t    frame_time_ms;
+
+    // print to appropriate places (console, log file, etc)
+    void (*Com_Print)(const char *msg);
+    
+    // config strings hold all the index strings, the lightstyles,
+    // and misc data like the sky definition and cdtrack.
+    // All of the current configstrings are sent to clients when
+    // they connect, and changes are sent to all connected clients.
+    const char *(*get_configstring)(int num);
+
+    void (*Com_Error)(const char *message);
+
+    // managed memory allocation
+    void *(*TagMalloc)(size_t size, int tag);
+    void (*TagFree)(void *block);
+    void (*FreeTags)(int tag);
+
+    // console variable interaction
+    cvar_t *(*cvar)(const char *var_name, const char *value, cvar_flags_t flags);
+    cvar_t *(*cvar_set)(const char *var_name, const char *value);
+    cvar_t *(*cvar_forceset)(const char *var_name, const char *value);
+
+    // add commands to the server console as if they were typed in
+    // for map changing, etc
+    void (*AddCommandString)(const char *text);
+
+    // Fetch named extension from engine.
+    void *(*GetExtension)(const char *name);
+
+    // Check whether current frame is valid
+    bool (*CL_FrameValid) (void);
+
+    // Get client frame time delta
+    float (*CL_FrameTime) (void);
+
+    // [Paril-KEX] cgame-specific stuff
+    uint64_t (*CL_ClientTime) (void);
+    uint64_t (*CL_ClientRealTime) (void);
+    int32_t (*CL_ServerFrame) (void);
+    int32_t (*CL_ServerProtocol) (void);
+    const char *(*CL_GetClientName) (int32_t index);
+    const char *(*CL_GetClientPic) (int32_t index);
+    const char *(*CL_GetClientDogtag) (int32_t index);
+    const char *(*CL_GetKeyBinding) (const char *binding); // fetch key bind for key, or empty string
+    bool (*Draw_RegisterPic) (const char *name);
+    void (*Draw_GetPicSize) (int *w, int *h, const char *name); // will return 0 0 if not found
+    void (*SCR_DrawChar)(int x, int y, int scale, int num, bool shadow);
+    void (*SCR_DrawPic) (int x, int y, int w, int h, const char *name);
+    void (*SCR_DrawColorPic)(int x, int y, int w, int h, const char* name, const rgba_t *color);
+
+    // [Paril-KEX] kfont stuff
+    void(*SCR_SetAltTypeface)(bool enabled);
+    void (*SCR_DrawFontString)(const char *str, int x, int y, int scale, const rgba_t *color, bool shadow, text_align_t align);
+    cg_vec2_t (*SCR_MeasureFontString)(const char *str, int scale);
+    float (*SCR_FontLineHeight)(int scale);
+
+    // [Paril-KEX] for legacy text input (not used in lobbies)
+    bool (*CL_GetTextInput)(const char **msg, bool *is_team);
+
+    // [Paril-KEX] FIXME this probably should be an export instead...
+    int32_t (*CL_GetWarnAmmoCount)(int32_t weapon_id);
+
+    // === [KEX] Additional APIs ===
+    // returns a *temporary string* ptr to a localized input
+    const char* (*Localize) (const char *base, const char **args, size_t num_args);
+
+    // [Paril-KEX] Draw binding, for centerprint; returns y offset
+    int32_t (*SCR_DrawBind) (int32_t isplit, const char *binding, const char *purpose, int x, int y, int scale);
+
+    // [Paril-KEX]
+    bool (*CL_InAutoDemoLoop) (void);
+} cgame_import_t;
+
+//
+// functions exported for client by game subsystem
+//
+typedef struct
+{
+    int         apiversion;
+
+    // the init/shutdown functions will be called between levels/connections
+    // and when the client initially loads.
+    void (*Init)(void);
+    void (*Shutdown)(void);
+
+    // [Paril-KEX] hud drawing
+    void (*DrawHUD) (int32_t isplit, const cg_server_data_t *data, vrect_t hud_vrect, vrect_t hud_safe, int32_t scale, int32_t playernum, const player_state_t *ps);
+    // [Paril-KEX] precache special pics used by hud
+    void (*TouchPics) (void);
+
+    // [Paril-KEX] layout flags; see layout_flags_t
+    layout_flags_t (*LayoutFlags) (const player_state_t *ps);
+
+    // [Paril-KEX] fetch the current wheel weapon ID in use
+    int32_t (*GetActiveWeaponWheelWeapon) (const player_state_t *ps);
+
+    // [Paril-KEX] fetch owned weapon IDs
+    uint32_t (*GetOwnedWeaponWheelWeapons) (const player_state_t *ps);
+
+    // [Paril-KEX] fetch ammo count for given ammo id
+    int16_t (*GetWeaponWheelAmmoCount)(const player_state_t *ps, int32_t ammo_id);
+
+    // [Paril-KEX] fetch powerup count for given powerup id
+    int16_t (*GetPowerupWheelCount)(const player_state_t *ps, int32_t powerup_id);
+
+    // [Paril-KEX] fetch how much damage was registered by these stats
+    int16_t (*GetHitMarkerDamage)(const player_state_t *ps);
+
+    // [KEX]: Pmove as export
+    void (*Pmove)(pmove_t *pmove); // player movement code called by server & client
+
+    // [Paril-KEX] allow cgame to react to configstring changes
+    void (*ParseConfigString)(int32_t i, const char *s);
+
+    // [Paril-KEX] parse centerprint-like messages
+    void (*ParseCenterPrint)(const char *str, int isplit, bool instant);
+
+    // [Paril-KEX] tell the cgame to clear notify stuff
+    void (*ClearNotify)(int32_t isplit);
+
+    // [Paril-KEX] tell the cgame to clear centerprint state
+    void (*ClearCenterprint)(int32_t isplit);
+
+    // [Paril-KEX] be notified by the game DLL of a message of some sort
+    void (*NotifyMessage)(int32_t isplit, const char *msg, bool is_chat);
+
+    // [Paril-KEX]
+    void (*GetMonsterFlashOffset)(monster_muzzleflash_id_t id, vec3_t offset);
+
+    // Fetch named extension from cgame DLL.
+    void *(*GetExtension)(const char *name);
+} cgame_export_t;

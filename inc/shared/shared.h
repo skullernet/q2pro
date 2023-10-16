@@ -1301,6 +1301,8 @@ enum {
 #define LAYOUTS_HELP            BIT(4)
 #define LAYOUTS_HIDE_CROSSHAIR  BIT(5)
 
+typedef int16_t layout_flags_t;
+
 // dmflags->value flags
 #define DF_NO_HEALTH        BIT(0)
 #define DF_NO_ITEMS         BIT(1)
