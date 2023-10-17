@@ -681,6 +681,12 @@ void GL_DrawAlphaFaces(void);
 void GL_DrawSolidFaces(void);
 void GL_ClearSolidFaces(void);
 
+// gl_debug.c
+void GL_ClearDebugLines(void);
+void GL_AddDebugLine(const vec3_t start, const vec3_t end, color_t color, int time, float width, bool depth_test);
+void GL_DrawDebugLines(void);
+void GL_DebugInit(void);
+
 /*
  * gl_world.c
  *

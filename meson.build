@@ -96,6 +96,7 @@ refresh_src = [
   'src/refresh/tess.c',
   'src/refresh/texture.c',
   'src/refresh/world.c',
+  'src/refresh/debug.c',
 ]
 
 server_src = [
