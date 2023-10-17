@@ -200,6 +200,10 @@ extern cvar_t *gl_modulate_entities;
 extern cvar_t *gl_doublelight_entities;
 extern cvar_t *gl_fontshadow;
 extern cvar_t *gl_shaders;
+#if USE_MD5
+extern cvar_t *gl_md5_load;
+extern cvar_t *gl_md5_use;
+#endif
 
 // development variables
 extern cvar_t *gl_znear;
@@ -263,6 +267,8 @@ typedef struct {
     vec_t   radius;
 } maliasframe_t;
 
+typedef char maliasskinname_t[MAX_QPATH];
+
 typedef struct {
     int             numverts;
     int             numtris;
@@ -271,6 +277,9 @@ typedef struct {
     QGL_INDEX_TYPE  *indices;
     maliasvert_t    *verts;
     maliastc_t      *tcoords;
+#if USE_MD5
+    maliasskinname_t *skinnames;
+#endif
     image_t         **skins;
 } maliasmesh_t;
 
@@ -281,6 +290,75 @@ typedef struct {
     int             origin_y;
     image_t         *image;
 } mspriteframe_t;
+
+#if USE_MD5
+
+// the total amount of joints the renderer will bother handling
+#define MD5_MAX_JOINTS      256
+#define MD5_MAX_JOINTNAME   32
+#define MD5_MAX_MESHES      32
+#define MD5_MAX_WEIGHTS     4096
+#define MD5_MAX_FRAMES      1024
+
+typedef char md5_jointname_t[MD5_MAX_JOINTNAME];
+
+/* Joint */
+typedef struct {
+    int parent;
+
+    vec3_t pos;
+    quat_t orient;
+    float scale;
+} md5_joint_t;
+
+/* Vertex */
+typedef struct {
+    vec2_t st;
+    vec3_t normal;
+
+    uint32_t start; /* start weight */
+    uint32_t count; /* weight count */
+} md5_vertex_t;
+
+/* Triangle */
+typedef struct {
+    int index[3];
+} md5_triangle_t;
+
+/* Weight */
+typedef struct {
+    int joint;
+    float bias;
+
+    vec3_t pos;
+} md5_weight_t;
+
+/* Mesh */
+typedef struct {
+    int num_verts;
+    int num_indices;
+    int num_weights;
+
+    md5_vertex_t *vertices;
+    QGL_INDEX_TYPE *indices;
+    md5_weight_t *weights;
+} md5_mesh_t;
+
+/* MD5 model + animation structure */
+typedef struct {
+    int num_meshes;
+    int num_joints;
+    int num_frames; // may not match model_t::numframes, but not fatal
+    int num_skins;
+
+    md5_mesh_t *meshes;
+    md5_joint_t *base_skeleton;
+    md5_joint_t *skeleton_frames; // [num_joints][num_frames]
+    md5_jointname_t *jointnames;
+    image_t **skins;
+} md5_model_t;
+
+#endif
 
 typedef struct {
     enum {
@@ -297,7 +375,11 @@ typedef struct {
     int nummeshes;
     int numframes;
 
-    maliasmesh_t *meshes;
+    maliasmesh_t *meshes; // md2 / md3
+#if USE_MD5
+    md5_model_t *skeleton; // md5
+    memhunk_t skeleton_hunk; // md5
+#endif
     union {
         maliasframe_t *frames;
         mspriteframe_t *spriteframes;
