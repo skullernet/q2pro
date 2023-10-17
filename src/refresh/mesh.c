@@ -634,8 +634,7 @@ static void calculate_vertex_for_skeleton(const md5_vertex_t *vert, const md5_we
 
         if (out_normal) {
             Quat_RotatePoint(joint->orient, vert->normal, wv);
-            VectorScale(wv, weight->bias, wv);
-            VectorAdd(out_normal, wv, out_normal);
+            VectorMA(out_normal, weight->bias, wv, out_normal);
         }
     }
 }
@@ -735,7 +734,7 @@ static void draw_skeleton_mesh(const md5_model_t *model, const md5_mesh_t *mesh,
         GL_Color(color[0], color[1], color[2], color[3]);
     }
 
-    GL_TexCoordPointer(2, sizeof(md5_vertex_t) / sizeof(float), mesh->vertices->st);
+    GL_TexCoordPointer(2, sizeof(mesh->vertices[0]) / sizeof(float), mesh->vertices->st);
 
     GL_LockArrays(mesh->num_verts);
 

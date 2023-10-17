@@ -1310,7 +1310,7 @@ static void MOD_LoadMD5(model_t *model)
         goto fail;
 
     model->skeleton->num_skins = model->meshes[0].numskins;
-    if (!(model->skeleton->skins = MD5_Malloc(sizeof(image_t *) * model->meshes[0].numskins)))
+    if (!(model->skeleton->skins = MD5_Malloc(sizeof(model->skeleton->skins[0]) * model->meshes[0].numskins)))
         goto fail;
 
     for (int i = 0; i < model->meshes[0].numskins; i++) {
