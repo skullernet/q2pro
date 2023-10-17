@@ -1115,3 +1115,13 @@ void CL_GTV_Shutdown(void);
 // crc.c
 //
 byte COM_BlockSequenceCRCByte(byte *base, size_t length, int sequence);
+
+//
+// cgame.c
+//
+
+extern const cgame_export_t *cgame;
+
+void CG_Init(void);
+void CG_Load(const char* new_game);
+void CG_Unload(void);

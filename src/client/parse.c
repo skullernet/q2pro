@@ -726,6 +726,10 @@ static void CL_ParseServerData(void)
 
     cls.demo.esFlags = cl.csr.extended ? CL_ES_EXTENDED_MASK : 0;
 
+    // Load cgame (after we know all the timings)
+    CG_Load(cl.gamedir);
+    cgame->Init();
+
     if (cinematic) {
         SCR_PlayCinematic(levelname);
     } else {

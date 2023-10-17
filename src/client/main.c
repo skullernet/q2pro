@@ -764,6 +764,10 @@ void CL_Disconnect(error_type_t type)
 
     CL_GTV_Suspend();
 
+    // Shutdown client game
+    if (cgame)
+        cgame->Shutdown();
+
     cls.state = ca_disconnected;
     cls.userinfo_modified = 0;
 
@@ -3463,6 +3467,7 @@ void CL_Shutdown(void)
     Con_Shutdown();
     CL_ShutdownRefresh();
     CL_WriteConfig();
+    CG_Unload();
 
     memset(&cls, 0, sizeof(cls));
 
