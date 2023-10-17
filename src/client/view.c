@@ -526,6 +526,19 @@ static void cl_add_blend_changed(cvar_t *self)
     CL_UpdateBlendSetting();
 }
 
+static void CL_Fog_f(void)
+{
+    fog_params_t p;
+    p.global.r = atof(Cmd_Argv(1));
+    p.global.g = atof(Cmd_Argv(2));
+    p.global.b = atof(Cmd_Argv(3));
+    p.global.density = atof(Cmd_Argv(4));
+    p.global.sky_factor = atof(Cmd_Argv(5));
+    int time = atoi(Cmd_Argv(6));
+
+    V_FogParamsChanged(FOG_BIT_R | FOG_BIT_G | FOG_BIT_B | FOG_BIT_DENSITY, &p, time);
+}
+
 /*
 =============
 V_Init
@@ -551,6 +564,8 @@ void V_Init(void)
     cl_add_blend->changed = cl_add_blend_changed;
 
     cl_adjustfov = Cvar_Get("cl_adjustfov", "1", 0);
+
+    Cmd_AddCommand("fog", CL_Fog_f);
 }
 
 void V_Shutdown(void)
