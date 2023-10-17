@@ -29,7 +29,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define MOD_Malloc(size)    Hunk_TryAlloc(&model->hunk, size)
 
-#define CHECK(x)    if (!(x)) { ret = Q_ERR(ENOMEM); goto fail; }
+#define OOM_CHECK(x)    if (!(x)) { ret = Q_ERR(ENOMEM); goto fail; }
 #define ENSURE(x, e)    if (!(x)) return e
 
 // this used to be MAX_MODELS * 2, but not anymore. MAX_MODELS is 8192 now and
@@ -363,20 +363,20 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
     model->type = MOD_ALIAS;
     model->nummeshes = 1;
     model->numframes = header.num_frames;
-    CHECK(model->meshes = MOD_Malloc(sizeof(model->meshes[0])));
-    CHECK(model->frames = MOD_Malloc(header.num_frames * sizeof(model->frames[0])));
+    OOM_CHECK(model->meshes = MOD_Malloc(sizeof(model->meshes[0])));
+    OOM_CHECK(model->frames = MOD_Malloc(header.num_frames * sizeof(model->frames[0])));
 
     mesh = model->meshes;
     mesh->numtris = numindices / 3;
     mesh->numindices = numindices;
     mesh->numverts = numverts;
     mesh->numskins = header.num_skins;
-    CHECK(mesh->verts = MOD_Malloc(numverts * header.num_frames * sizeof(mesh->verts[0])));
-    CHECK(mesh->tcoords = MOD_Malloc(numverts * sizeof(mesh->tcoords[0])));
-    CHECK(mesh->indices = MOD_Malloc(numindices * sizeof(mesh->indices[0])));
-    CHECK(mesh->skins = MOD_Malloc(header.num_skins * sizeof(mesh->skins[0])));
+    OOM_CHECK(mesh->verts = MOD_Malloc(numverts * header.num_frames * sizeof(mesh->verts[0])));
+    OOM_CHECK(mesh->tcoords = MOD_Malloc(numverts * sizeof(mesh->tcoords[0])));
+    OOM_CHECK(mesh->indices = MOD_Malloc(numindices * sizeof(mesh->indices[0])));
+    OOM_CHECK(mesh->skins = MOD_Malloc(header.num_skins * sizeof(mesh->skins[0])));
 #if USE_MD5
-    CHECK(mesh->skinnames = MOD_Malloc(header.num_skins * sizeof(mesh->skinnames[0])));
+    OOM_CHECK(mesh->skinnames = MOD_Malloc(header.num_skins * sizeof(mesh->skinnames[0])));
 #endif
 
     if (mesh->numtris != header.num_tris) {
@@ -534,12 +534,12 @@ static int MOD_LoadMD3Mesh(model_t *model, maliasmesh_t *mesh,
     mesh->numindices = header.num_tris * 3;
     mesh->numverts = header.num_verts;
     mesh->numskins = header.num_skins;
-    CHECK(mesh->verts = MOD_Malloc(sizeof(mesh->verts[0]) * header.num_verts * model->numframes));
-    CHECK(mesh->tcoords = MOD_Malloc(sizeof(mesh->tcoords[0]) * header.num_verts));
-    CHECK(mesh->indices = MOD_Malloc(sizeof(mesh->indices[0]) * header.num_tris * 3));
-    CHECK(mesh->skins = MOD_Malloc(sizeof(mesh->skins[0]) * header.num_skins));
+    OOM_CHECK(mesh->verts = MOD_Malloc(sizeof(mesh->verts[0]) * header.num_verts * model->numframes));
+    OOM_CHECK(mesh->tcoords = MOD_Malloc(sizeof(mesh->tcoords[0]) * header.num_verts));
+    OOM_CHECK(mesh->indices = MOD_Malloc(sizeof(mesh->indices[0]) * header.num_tris * 3));
+    OOM_CHECK(mesh->skins = MOD_Malloc(sizeof(mesh->skins[0]) * header.num_skins));
 #if USE_MD5
-    CHECK(mesh->skinnames = MOD_Malloc(sizeof(mesh->skinnames[0]) * header.num_skins));
+    OOM_CHECK(mesh->skinnames = MOD_Malloc(sizeof(mesh->skinnames[0]) * header.num_skins));
 #endif
 
     // load all skins
@@ -654,8 +654,8 @@ static int MOD_LoadMD3(model_t *model, const void *rawdata, size_t length)
     model->type = MOD_ALIAS;
     model->numframes = header.num_frames;
     model->nummeshes = header.num_meshes;
-    CHECK(model->meshes = MOD_Malloc(sizeof(model->meshes[0]) * header.num_meshes));
-    CHECK(model->frames = MOD_Malloc(sizeof(model->frames[0]) * header.num_frames));
+    OOM_CHECK(model->meshes = MOD_Malloc(sizeof(model->meshes[0]) * header.num_meshes));
+    OOM_CHECK(model->frames = MOD_Malloc(sizeof(model->frames[0]) * header.num_frames));
 
     // load all frames
     src_frame = (dmd3frame_t *)((byte *)rawdata + header.ofs_frames);
@@ -879,7 +879,7 @@ static bool MOD_LoadMD5Mesh(model_t *model, const char *path)
     // allocate data storage, now that we're definitely an MD5
     Hunk_Begin(&model->skeleton_hunk, 0x800000);
 
-    CHECK(model->skeleton = mdl = MD5_Malloc(sizeof(*mdl)));
+    OOM_CHECK(model->skeleton = mdl = MD5_Malloc(sizeof(*mdl)));
 
     MD5_EXPECT("commandline");
     COM_Parse(&s);
@@ -888,15 +888,15 @@ static bool MOD_LoadMD5Mesh(model_t *model, const char *path)
     MD5_UINT(&num_joints);
     MD5_ENSURE(num_joints, "no joints");
     MD5_ENSURE(num_joints <= MD5_MAX_JOINTS, "too many joints");
-    CHECK(mdl->base_skeleton = MD5_Malloc(num_joints * sizeof(mdl->base_skeleton[0])));
-    CHECK(mdl->jointnames = MD5_Malloc(num_joints * sizeof(mdl->jointnames[0])));
+    OOM_CHECK(mdl->base_skeleton = MD5_Malloc(num_joints * sizeof(mdl->base_skeleton[0])));
+    OOM_CHECK(mdl->jointnames = MD5_Malloc(num_joints * sizeof(mdl->jointnames[0])));
     mdl->num_joints = num_joints;
 
     MD5_EXPECT("numMeshes");
     MD5_UINT(&num_meshes);
     MD5_ENSURE(num_meshes, "no meshes");
     MD5_ENSURE(num_meshes <= MD5_MAX_MESHES, "too many meshes");
-    CHECK(mdl->meshes = MD5_Malloc(num_meshes * sizeof(mdl->meshes[0])));
+    OOM_CHECK(mdl->meshes = MD5_Malloc(num_meshes * sizeof(mdl->meshes[0])));
     mdl->num_meshes = num_meshes;
 
     MD5_EXPECT("joints");
@@ -934,7 +934,7 @@ static bool MOD_LoadMD5Mesh(model_t *model, const char *path)
         MD5_EXPECT("numverts");
         MD5_UINT(&num_verts);
         MD5_ENSURE(num_verts <= TESS_MAX_VERTICES, "too many verts");
-        CHECK(mesh->vertices = MD5_Malloc(num_verts * sizeof(mesh->vertices[0])));
+        OOM_CHECK(mesh->vertices = MD5_Malloc(num_verts * sizeof(mesh->vertices[0])));
         mesh->num_verts = num_verts;
 
         for (j = 0; j < num_verts; j++) {
@@ -958,7 +958,7 @@ static bool MOD_LoadMD5Mesh(model_t *model, const char *path)
         MD5_EXPECT("numtris");
         MD5_UINT(&num_tris);
         MD5_ENSURE(num_tris <= TESS_MAX_INDICES / 3, "too many tris");
-        CHECK(mesh->indices = MD5_Malloc(num_tris * 3 * sizeof(mesh->indices[0])));
+        OOM_CHECK(mesh->indices = MD5_Malloc(num_tris * 3 * sizeof(mesh->indices[0])));
         mesh->num_indices = num_tris * 3;
 
         for (j = 0; j < num_tris; j++) {
@@ -979,7 +979,7 @@ static bool MOD_LoadMD5Mesh(model_t *model, const char *path)
         MD5_EXPECT("numweights");
         MD5_UINT(&num_weights);
         MD5_ENSURE(num_weights <= MD5_MAX_WEIGHTS, "too many weights");
-        CHECK(mesh->weights = MD5_Malloc(num_weights * sizeof(mesh->weights[0])));
+        OOM_CHECK(mesh->weights = MD5_Malloc(num_weights * sizeof(mesh->weights[0])));
         mesh->num_weights = num_weights;
 
         for (j = 0; j < num_weights; j++) {
@@ -1193,7 +1193,7 @@ static bool MOD_LoadMD5Anim(model_t *model, const char *path)
 
     MD5_EXPECT("}");
 
-    CHECK(mdl->skeleton_frames = MD5_Malloc(sizeof(mdl->skeleton_frames[0]) * mdl->num_frames * mdl->num_joints));
+    OOM_CHECK(mdl->skeleton_frames = MD5_Malloc(sizeof(mdl->skeleton_frames[0]) * mdl->num_frames * mdl->num_joints));
 
     for (i = 0; i < mdl->num_frames; i++) {
         MD5_EXPECT("frame");
