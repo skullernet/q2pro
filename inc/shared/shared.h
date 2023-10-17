@@ -176,6 +176,13 @@ typedef struct vrect_s {
 #define SWAP(type, a, b) \
     do { type SWAP_tmp = a; a = b; b = SWAP_tmp; } while (0)
 
+// slightly faster lerp that may not be as precise
+#define FASTLERP(a, b, c)   ((a)+(c)*((b)-(a)))
+// slower lerp, but you specify back & front lerp separately
+#define LERP2(a, b, c, d)   ((a)*(c)+(b)*(d))
+// slower lerp but is more mathematically precise
+#define LERP(a, b, c)       LERP2((a), (b), (1.0f - (c)), (c))
+
 #define DotProduct(x,y)         ((x)[0]*(y)[0]+(x)[1]*(y)[1]+(x)[2]*(y)[2])
 #define CrossProduct(v1,v2,cross) \
         ((cross)[0]=(v1)[1]*(v2)[2]-(v1)[2]*(v2)[1], \

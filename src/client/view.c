@@ -490,7 +490,23 @@ void V_RenderView(void)
         // sort entities for better cache locality
         qsort(cl.refdef.entities, cl.refdef.num_entities, sizeof(cl.refdef.entities[0]), entitycmpfnc);
 
-        cl.refdef.fog = cl.fog.end;
+        if (cl.fog.lerp_time == 0 || cl.time > cl.fog.lerp_time_start + cl.fog.lerp_time) {
+            cl.refdef.fog = cl.fog.end;
+        } else {
+            float fog_frontlerp = (cl.time - cl.fog.lerp_time_start) / (float) cl.fog.lerp_time;
+            float fog_backlerp = 1.0f - fog_frontlerp;
+
+#define Q_FP(p) \
+                cl.refdef.fog.##p = LERP2(cl.fog.start.##p, cl.fog.end.##p, fog_backlerp, fog_frontlerp)
+            
+            Q_FP(global.r);
+            Q_FP(global.g);
+            Q_FP(global.b);
+            Q_FP(global.density);
+            Q_FP(global.sky_factor);
+
+#undef Q_FP
+        }
     }
 
     R_RenderFrame(&cl.refdef);
