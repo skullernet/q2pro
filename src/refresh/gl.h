@@ -52,7 +52,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define TAB_COS(x) gl_static.sintab[((x) + 64) & 255]
 
 // must match GLS_ bit size
-#define MAX_PROGRAMS    256
+#define MAX_PROGRAMS    512
 #define NUM_TEXNUMS     7
 
 typedef struct {
@@ -234,6 +234,7 @@ extern cvar_t *gl_vertexlight;
 extern cvar_t *gl_lightgrid;
 extern cvar_t *gl_showerrors;
 extern cvar_t *gl_damageblend_frac;
+extern cvar_t *gl_clamppointlight;
 
 typedef enum {
     CULL_OUT,
@@ -463,12 +464,13 @@ typedef enum {
     GLS_INTENSITY_ENABLE    = BIT(11),
     GLS_GLOWMAP_ENABLE      = BIT(12),
     GLS_FOG_ENABLE          = BIT(13),
+    GLS_SKY_FOG             = BIT(14),
 
-    GLS_SHADE_SMOOTH        = BIT(13),
-    GLS_SCROLL_X            = BIT(14),
-    GLS_SCROLL_Y            = BIT(15),
-    GLS_SCROLL_FLIP         = BIT(16),
-    GLS_SCROLL_SLOW         = BIT(17),
+    GLS_SHADE_SMOOTH        = BIT(15),
+    GLS_SCROLL_X            = BIT(16),
+    GLS_SCROLL_Y            = BIT(17),
+    GLS_SCROLL_FLIP         = BIT(18),
+    GLS_SCROLL_SLOW         = BIT(19),
 
     GLS_BLEND_MASK  = GLS_BLEND_BLEND | GLS_BLEND_ADD | GLS_BLEND_MODULATE,
     GLS_COMMON_MASK = GLS_DEPTHMASK_FALSE | GLS_DEPTHTEST_DISABLE | GLS_CULL_DISABLE | GLS_BLEND_MASK,
@@ -476,7 +478,7 @@ typedef enum {
         GLS_LIGHTMAP_ENABLE | GLS_WARP_ENABLE | GLS_INTENSITY_ENABLE | GLS_GLOWMAP_ENABLE |
         GLS_FOG_ENABLE,
     GLS_SCROLL_MASK = GLS_SCROLL_ENABLE | GLS_SCROLL_X | GLS_SCROLL_Y | GLS_SCROLL_FLIP | GLS_SCROLL_SLOW,
-    GLS_UBLOCK_MASK = GLS_SCROLL_MASK | GLS_FOG_ENABLE
+    GLS_UBLOCK_MASK = GLS_SCROLL_MASK | GLS_FOG_ENABLE | GLS_SKY_FOG,
 } glStateBits_t;
 
 typedef enum {
@@ -506,7 +508,8 @@ typedef struct {
         GLfloat     w_amp[2];
         GLfloat     w_phase[2];
         GLfloat     scroll[2];
-        GLfloat     pad[2];
+        GLfloat     fog_sky_factor;
+        GLfloat     pad;
         GLfloat     global_fog[4];
     } u_block;
 } glState_t;

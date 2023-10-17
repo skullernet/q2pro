@@ -60,7 +60,7 @@ static void write_block(char *buf)
         vec2 w_amp;
         vec2 w_phase;
         vec2 u_scroll;
-        vec2 pad;
+        vec2 fog_sky_factor;
         vec4 global_fog;
     )
     GLSF("};\n");
@@ -81,9 +81,8 @@ static void write_vertex_shader(char *buf, GLbitfield bits)
         GLSL(in vec4 a_color;)
         GLSL(out vec4 v_color;)
     }
-    if (bits & GLS_FOG_ENABLE) {
+    if (bits & GLS_FOG_ENABLE)
         GLSL(out vec3 v_wpos;)
-    }
     GLSF("void main() {\n");
         GLSL(vec2 tc = a_tc;)
         if (bits & GLS_SCROLL_ENABLE)
@@ -94,9 +93,8 @@ static void write_vertex_shader(char *buf, GLbitfield bits)
         if (!(bits & GLS_TEXTURE_REPLACE))
             GLSL(v_color = a_color;)
         GLSL(gl_Position = m_proj * m_view * a_pos;)
-        if (bits & GLS_FOG_ENABLE) {
+        if (bits & GLS_FOG_ENABLE)
             GLSL(v_wpos = (m_view * a_pos).xyz;)
-        }
     GLSF("}\n");
 }
 
@@ -107,7 +105,7 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
     if (gl_config.ver_es)
         GLSL(precision mediump float;)
 
-    if (bits & (GLS_WARP_ENABLE | GLS_LIGHTMAP_ENABLE | GLS_INTENSITY_ENABLE | GLS_FOG_ENABLE))
+    if (bits & (GLS_WARP_ENABLE | GLS_LIGHTMAP_ENABLE | GLS_INTENSITY_ENABLE | GLS_FOG_ENABLE | GLS_SKY_FOG))
         write_block(buf);
 
     GLSL(uniform sampler2D u_texture;)
@@ -168,6 +166,10 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
         if (bits & GLS_FOG_ENABLE) {
             GLSL(float fog = 1.0f - exp(-pow(global_fog.w * length(v_wpos), 2.0f)););
             GLSL(diffuse.rgb = mix(diffuse.rgb, global_fog.rgb, fog);)
+        }
+        
+        if (bits & GLS_SKY_FOG) {
+            GLSL(diffuse.rgb = mix(diffuse.rgb, global_fog.rgb, fog_sky_factor.r);)
         }
 
         GLSL(o_color = diffuse;)
@@ -286,6 +288,11 @@ static void shader_state_bits(GLbitfield bits)
         if (!gl_fog->integer ||
             !glr.fd.fog.global.density) {
             bits &= ~GLS_FOG_ENABLE;
+        }
+    } else if (bits & GLS_SKY_FOG) {
+        if (!gl_fog->integer ||
+            !glr.fd.fog.global.sky_factor) {
+            bits &= ~GLS_SKY_FOG;
         }
     }
 
@@ -433,6 +440,9 @@ static void shader_setup_3d(void)
     gls.u_block.global_fog[1] = glr.fd.fog.global.g;
     gls.u_block.global_fog[2] = glr.fd.fog.global.b;
     gls.u_block.global_fog[3] = glr.fd.fog.global.density;
+
+    // FIXME I can't match the exact color as Kex but this is close...?
+    gls.u_block.fog_sky_factor = glr.fd.fog.global.sky_factor * 1.5f;
 }
 
 static void shader_clear_state(void)

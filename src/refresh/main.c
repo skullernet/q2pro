@@ -86,6 +86,7 @@ cvar_t *gl_lightgrid;
 cvar_t *gl_polyblend;
 cvar_t *gl_showerrors;
 cvar_t *gl_damageblend_frac;
+cvar_t *gl_clamppointlight;
 
 // ==============================================================================
 
@@ -955,6 +956,7 @@ static void GL_Register(void)
     gl_polyblend = Cvar_Get("gl_polyblend", "1", 0);
     gl_showerrors = Cvar_Get("gl_showerrors", "1", 0);
     gl_damageblend_frac = Cvar_Get("gl_damageblend_frac", "0.2", 0);
+    gl_clamppointlight = Cvar_Get("gl_clamppointlight", "1", 0);
 
     gl_lightmap_changed(NULL);
     gl_modulate_entities_changed(NULL);

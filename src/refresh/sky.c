@@ -340,7 +340,7 @@ void R_DrawSkyBox(void)
     if (!skyfaces)
         return; // nothing visible
 
-    GL_StateBits(GLS_TEXTURE_REPLACE);
+    GL_StateBits(GLS_SKY_FOG);
     GL_ArrayBits(GLA_VERTEX | GLA_TC);
     GL_VertexPointer(3, 5, &verts[0][0]);
     GL_TexCoordPointer(2, 5, &verts[0][3]);
