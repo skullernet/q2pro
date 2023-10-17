@@ -306,6 +306,11 @@ typedef struct client_state_s {
             vec3_t      offset;
         } muzzle;
     } weapon;
+
+    struct {
+        fog_params_t        start, end;
+        int                 lerp_time, lerp_time_start;
+    } fog;
 } client_state_t;
 
 extern client_state_t   cl;
@@ -751,6 +756,29 @@ void CL_GetEntitySoundOrigin(unsigned entnum, vec3_t org);
 extern int          gun_frame;
 extern qhandle_t    gun_model;
 
+typedef enum
+{
+    // global fog
+    FOG_BIT_DENSITY     = BIT(0),
+    FOG_BIT_R           = BIT(1),
+    FOG_BIT_G           = BIT(2),
+    FOG_BIT_B           = BIT(3),
+    FOG_BIT_TIME        = BIT(4), // if set, the transition takes place over N milliseconds
+
+    // height fog
+    FOG_BIT_HEIGHTFOG_FALLOFF   = BIT(5),
+    FOG_BIT_HEIGHTFOG_DENSITY   = BIT(6),
+    FOG_BIT_MORE_BITS           = BIT(7), // read additional bit
+    FOG_BIT_HEIGHTFOG_START_R   = BIT(8),
+    FOG_BIT_HEIGHTFOG_START_G   = BIT(9),
+    FOG_BIT_HEIGHTFOG_START_B   = BIT(10),
+    FOG_BIT_HEIGHTFOG_START_DIST= BIT(11),
+    FOG_BIT_HEIGHTFOG_END_R     = BIT(12),
+    FOG_BIT_HEIGHTFOG_END_G     = BIT(13),
+    FOG_BIT_HEIGHTFOG_END_B     = BIT(14),
+    FOG_BIT_HEIGHTFOG_END_DIST  = BIT(15)
+} fog_bits_t;
+
 void V_Init(void);
 void V_Shutdown(void);
 void V_RenderView(void);
@@ -759,6 +787,7 @@ void V_AddParticle(particle_t *p);
 void V_AddLight(const vec3_t org, float intensity, float r, float g, float b);
 void V_AddLightStyle(int style, float value);
 void CL_UpdateBlendSetting(void);
+void V_FogParamsChanged(fog_bits_t bits, const fog_params_t *params, int time);
 
 
 //

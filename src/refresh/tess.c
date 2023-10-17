@@ -95,7 +95,7 @@ void GL_DrawParticles(void)
     GL_TexCoordPointer(2, 5, tess.vertices + 3);
     GL_ColorBytePointer(4, 0, tess.colors);
 
-    bits = (gl_partstyle->integer ? GLS_BLEND_ADD : GLS_BLEND_BLEND) | GLS_DEPTHMASK_FALSE;
+    bits = (gl_partstyle->integer ? GLS_BLEND_ADD : GLS_BLEND_BLEND) | GLS_DEPTHMASK_FALSE | GLS_FOG_ENABLE;
 
     p = glr.fd.particles;
     total = glr.fd.num_particles;
@@ -272,7 +272,7 @@ void GL_DrawBeams(void)
 
     GL_LoadMatrix(glr.viewmatrix);
     GL_BindTexture(0, TEXNUM_BEAM);
-    GL_StateBits(GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE);
+    GL_StateBits(GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE | GLS_FOG_ENABLE);
     GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
 
     GL_VertexPointer(3, 5, tess.vertices);
@@ -453,7 +453,7 @@ static void GL_DrawFace(mface_t *surf)
     tess.texnum[0] = texnum[0];
     tess.texnum[1] = texnum[1];
     tess.texnum[2] = texnum[2];
-    tess.flags = surf->statebits;
+    tess.flags = surf->statebits | GLS_FOG_ENABLE;
 
     if (q_unlikely(gl_static.world.vertices)) {
         j = GL_CopyVerts(surf);

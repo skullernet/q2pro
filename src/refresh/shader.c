@@ -60,6 +60,8 @@ static void write_block(char *buf)
         vec2 w_amp;
         vec2 w_phase;
         vec2 u_scroll;
+        vec2 pad;
+        vec4 global_fog;
     )
     GLSF("};\n");
 }
@@ -79,6 +81,9 @@ static void write_vertex_shader(char *buf, GLbitfield bits)
         GLSL(in vec4 a_color;)
         GLSL(out vec4 v_color;)
     }
+    if (bits & GLS_FOG_ENABLE) {
+        GLSL(out vec3 v_wpos;)
+    }
     GLSF("void main() {\n");
         GLSL(vec2 tc = a_tc;)
         if (bits & GLS_SCROLL_ENABLE)
@@ -89,6 +94,9 @@ static void write_vertex_shader(char *buf, GLbitfield bits)
         if (!(bits & GLS_TEXTURE_REPLACE))
             GLSL(v_color = a_color;)
         GLSL(gl_Position = m_proj * m_view * a_pos;)
+        if (bits & GLS_FOG_ENABLE) {
+            GLSL(v_wpos = (m_view * a_pos).xyz;)
+        }
     GLSF("}\n");
 }
 
@@ -99,7 +107,7 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
     if (gl_config.ver_es)
         GLSL(precision mediump float;)
 
-    if (bits & (GLS_WARP_ENABLE | GLS_LIGHTMAP_ENABLE | GLS_INTENSITY_ENABLE))
+    if (bits & (GLS_WARP_ENABLE | GLS_LIGHTMAP_ENABLE | GLS_INTENSITY_ENABLE | GLS_FOG_ENABLE))
         write_block(buf);
 
     GLSL(uniform sampler2D u_texture;)
@@ -115,6 +123,9 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
 
     if (!(bits & GLS_TEXTURE_REPLACE))
         GLSL(in vec4 v_color;)
+
+    if (bits & GLS_FOG_ENABLE)
+        GLSL(in vec4 v_wpos;);
 
     GLSL(out vec4 o_color;)
 
@@ -152,6 +163,11 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
                 GLSL(diffuse.rgb += glowmap.rgb * u_intensity2;)
             else
                 GLSL(diffuse.rgb += glowmap.rgb;)
+        }
+
+        if (bits & GLS_FOG_ENABLE) {
+            GLSL(float fog = 1.0f - exp(-pow(global_fog.w * length(v_wpos), 2.0f)););
+            GLSL(diffuse.rgb = mix(diffuse.rgb, global_fog.rgb, fog);)
         }
 
         GLSL(o_color = diffuse;)
@@ -265,6 +281,14 @@ static GLuint create_and_use_program(GLbitfield bits)
 
 static void shader_state_bits(GLbitfield bits)
 {
+    // check if we actually need fog
+    if (bits & GLS_FOG_ENABLE) {
+        if (!gl_fog->integer ||
+            !glr.fd.fog.global.density) {
+            bits &= ~GLS_FOG_ENABLE;
+        }
+    }
+
     GLbitfield diff = bits ^ gls.state_bits;
 
     if (diff & GLS_COMMON_MASK)
@@ -279,8 +303,11 @@ static void shader_state_bits(GLbitfield bits)
             gl_static.programs[i] = create_and_use_program(bits);
     }
 
-    if (diff & GLS_SCROLL_MASK && bits & GLS_SCROLL_ENABLE) {
-        GL_ScrollSpeed(gls.u_block.scroll, bits);
+    if (diff & GLS_UBLOCK_MASK) {
+        if (bits & GLS_SCROLL_ENABLE) {
+            GL_ScrollSpeed(gls.u_block.scroll, bits);
+        }
+
         upload_u_block();
     }
 }
@@ -401,6 +428,11 @@ static void shader_setup_3d(void)
     gls.u_block.w_amp[1] = 0.0625f;
     gls.u_block.w_phase[0] = 4;
     gls.u_block.w_phase[1] = 4;
+    
+    gls.u_block.global_fog[0] = glr.fd.fog.global.r;
+    gls.u_block.global_fog[1] = glr.fd.fog.global.g;
+    gls.u_block.global_fog[2] = glr.fd.fog.global.b;
+    gls.u_block.global_fog[3] = glr.fd.fog.global.density;
 }
 
 static void shader_clear_state(void)

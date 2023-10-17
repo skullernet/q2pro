@@ -1311,72 +1311,54 @@ static void CL_ParseDamage(void)
     }
 }
 
-static void CL_SkipFog(void)
+static void CL_ParseFog(void)
 {
-    typedef enum
+    fog_bits_t bits = (fog_bits_t) MSG_ReadByte ();
+
+    if (bits & FOG_BIT_MORE_BITS)
+        bits |= (fog_bits_t) (MSG_ReadByte () << 8);
+
+    fog_params_t params;
+    int time = 0;
+
+    if (bits & FOG_BIT_DENSITY)
     {
-        // global fog
-        BIT_DENSITY     = BIT(0),
-        BIT_R           = BIT(1),
-        BIT_G           = BIT(2),
-        BIT_B           = BIT(3),
-        BIT_TIME        = BIT(4), // if set, the transition takes place over N milliseconds
-
-        // height fog
-        BIT_HEIGHTFOG_FALLOFF   = BIT(5),
-        BIT_HEIGHTFOG_DENSITY   = BIT(6),
-        BIT_MORE_BITS           = BIT(7), // read additional bit
-        BIT_HEIGHTFOG_START_R   = BIT(8),
-        BIT_HEIGHTFOG_START_G   = BIT(9),
-        BIT_HEIGHTFOG_START_B   = BIT(10),
-        BIT_HEIGHTFOG_START_DIST= BIT(11),
-        BIT_HEIGHTFOG_END_R     = BIT(12),
-        BIT_HEIGHTFOG_END_G     = BIT(13),
-        BIT_HEIGHTFOG_END_B     = BIT(14),
-        BIT_HEIGHTFOG_END_DIST  = BIT(15)
-    } bits_t;
-
-    bits_t bits = (bits_t) MSG_ReadByte ();
-
-    if (bits & BIT_MORE_BITS)
-        bits |= (bits_t) (MSG_ReadByte () << 8);
-
-    if (bits & BIT_DENSITY)
-    {
-        MSG_ReadFloat ();
-        MSG_ReadByte ();
+        params.global.density = MSG_ReadFloat ();
+        params.global.sky_factor = MSG_ReadByte () / 255.f;
     }
-    if (bits & BIT_R)
-        MSG_ReadByte ();
-    if (bits & BIT_G)
-        MSG_ReadByte ();
-    if (bits & BIT_B)
-        MSG_ReadByte ();
-    if (bits & BIT_TIME)
-        MSG_ReadWord ();
+    if (bits & FOG_BIT_R)
+        params.global.r = MSG_ReadByte () / 255.f;
+    if (bits & FOG_BIT_G)
+        params.global.g = MSG_ReadByte () / 255.f;
+    if (bits & FOG_BIT_B)
+        params.global.b = MSG_ReadByte () / 255.f;
+    if (bits & FOG_BIT_TIME)
+        time = MSG_ReadWord ();
 
-    if (bits & BIT_HEIGHTFOG_FALLOFF)
-        MSG_ReadFloat ();
-    if (bits & BIT_HEIGHTFOG_DENSITY)
-        MSG_ReadFloat ();
+    if (bits & FOG_BIT_HEIGHTFOG_FALLOFF)
+        params.height.falloff = MSG_ReadFloat ();
+    if (bits & FOG_BIT_HEIGHTFOG_DENSITY)
+        params.height.density = MSG_ReadFloat ();
 
-    if (bits & BIT_HEIGHTFOG_START_R)
-        MSG_ReadByte ();
-    if (bits & BIT_HEIGHTFOG_START_G)
-        MSG_ReadByte ();
-    if (bits & BIT_HEIGHTFOG_START_B)
-        MSG_ReadByte ();
-    if (bits & BIT_HEIGHTFOG_START_DIST)
-        MSG_ReadLong ();
+    if (bits & FOG_BIT_HEIGHTFOG_START_R)
+        params.height.start.r = MSG_ReadByte () / 255.f;
+    if (bits & FOG_BIT_HEIGHTFOG_START_G)
+        params.height.start.g = MSG_ReadByte () / 255.f;
+    if (bits & FOG_BIT_HEIGHTFOG_START_B)
+        params.height.start.b = MSG_ReadByte () / 255.f;
+    if (bits & FOG_BIT_HEIGHTFOG_START_DIST)
+        params.height.start.dist = MSG_ReadLong ();
 
-    if (bits & BIT_HEIGHTFOG_END_R)
-        MSG_ReadByte ();
-    if (bits & BIT_HEIGHTFOG_END_G)
-        MSG_ReadByte ();
-    if (bits & BIT_HEIGHTFOG_END_B)
-        MSG_ReadByte ();
-    if (bits & BIT_HEIGHTFOG_END_DIST)
-        MSG_ReadLong ();
+    if (bits & FOG_BIT_HEIGHTFOG_END_R)
+        params.height.end.r = MSG_ReadByte () / 255.f;
+    if (bits & FOG_BIT_HEIGHTFOG_END_G)
+        params.height.end.g = MSG_ReadByte () / 255.f;
+    if (bits & FOG_BIT_HEIGHTFOG_END_B)
+        params.height.end.b = MSG_ReadByte () / 255.f;
+    if (bits & FOG_BIT_HEIGHTFOG_END_DIST)
+        params.height.end.dist = MSG_ReadLong ();
+
+    V_FogParamsChanged(bits, &params, time);
 }
 
 static void CL_SkipHelpPath(void)
@@ -1566,7 +1548,7 @@ static svc_handle_result_t handle_svc_rerelease(int cmd)
         CL_ParseDamage();
         return svch_continue_loop;
     case svc_fog:
-        CL_SkipFog();
+        CL_ParseFog();
         return svch_continue_loop;
     case svc_poi:
         CL_ParsePOI();

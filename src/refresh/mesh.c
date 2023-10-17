@@ -389,7 +389,7 @@ static void setup_color(void)
         color[0] = Q_clipf(color[0], 0, 1);
         color[1] = Q_clipf(color[1], 0, 1);
         color[2] = Q_clipf(color[2], 0, 1);
-    }
+        }
 
     if (flags & RF_TRANSLUCENT) {
         color[3] = glr.ent->alpha;
@@ -422,7 +422,7 @@ static void draw_celshading(const QGL_INDEX_TYPE *indices, int num_indices)
         return;
 
     GL_BindTexture(0, TEXNUM_BLACK);
-    GL_StateBits(GLS_BLEND_BLEND);
+    GL_StateBits(GLS_BLEND_BLEND | GLS_FOG_ENABLE);
     GL_ArrayBits(GLA_VERTEX);
 
     qglLineWidth(gl_celshading->value * celscale);
@@ -504,7 +504,7 @@ static void draw_shadow(const QGL_INDEX_TYPE *indices, int num_indices)
         qglStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
     }
 
-    GL_StateBits(GLS_BLEND_BLEND);
+    GL_StateBits(GLS_BLEND_BLEND | GLS_FOG_ENABLE);
     GL_BindTexture(0, TEXNUM_WHITE);
     GL_ArrayBits(GLA_VERTEX);
 
@@ -554,7 +554,7 @@ static void draw_alias_mesh(const QGL_INDEX_TYPE *indices, int num_indices,
                             const maliastc_t *tcoords, int num_verts,
                             image_t **skins, int num_skins)
 {
-    glStateBits_t state = GLS_INTENSITY_ENABLE;
+    glStateBits_t state = GLS_INTENSITY_ENABLE | GLS_FOG_ENABLE;
     image_t *skin = skin_for_mesh(skins, num_skins);
 
     // fall back to entity matrix
@@ -713,7 +713,7 @@ static void draw_skeleton_mesh(const md5_model_t *model, const md5_mesh_t *mesh,
     draw_alias_mesh(mesh->indices, mesh->num_indices,
                     mesh->tcoords, mesh->num_verts,
                     model->skins, model->num_skins);
-}
+    }
 
 static void draw_alias_skeleton(const md5_model_t *model)
 {

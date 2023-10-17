@@ -101,6 +101,23 @@ typedef struct lightstyle_s {
     float           white;          // highest of RGB
 } lightstyle_t;
 
+// rendered fog parameters
+typedef struct {
+    struct {
+        float       r, g, b;
+        float       density;
+        float       sky_factor;
+    } global;
+    struct {
+        struct {
+            float   r, g, b;
+            float   dist;
+        } start, end;
+        float   falloff;
+        float   density;
+    } height;
+} fog_params_t;
+
 typedef struct refdef_s {
     int         x, y, width, height;// in virtual screen coordinates
     float       fov_x, fov_y;
@@ -123,6 +140,8 @@ typedef struct refdef_s {
 
     int         num_particles;
     particle_t  *particles;
+
+    fog_params_t    fog;
 } refdef_t;
 
 typedef struct {

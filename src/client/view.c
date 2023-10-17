@@ -344,6 +344,60 @@ float V_CalcFov(float fov_x, float width, float height)
     return a;
 }
 
+/*
+==================
+V_RenderView
+
+==================
+*/
+void V_FogParamsChanged(fog_bits_t bits, const fog_params_t *params, int time)
+{
+    if (time != 0) {
+        // shift the current fog values back to start
+        cl.fog.start = cl.fog.end;
+        cl.fog.lerp_time = time;
+        cl.fog.lerp_time_start = cl.time;
+    } else {
+        // no lerp, just disable lerp entirely
+        cl.fog.lerp_time = 0;
+    }
+
+    fog_params_t *cur = &cl.fog.end;
+
+    // fill in updated values in end
+    if (bits & FOG_BIT_DENSITY) {
+        cur->global.density = params->global.density / 64.f; // Kex divides the density by 64, prob because of exp2
+        cur->global.sky_factor = params->global.sky_factor;
+    }
+
+    if (bits & FOG_BIT_R)
+        cur->global.r = params->global.r;
+    if (bits & FOG_BIT_G)
+        cur->global.g = params->global.g;
+    if (bits & FOG_BIT_B)
+        cur->global.b = params->global.b;
+    
+    if (bits & FOG_BIT_HEIGHTFOG_FALLOFF)
+        cur->height.falloff = params->height.falloff;
+    if (bits & FOG_BIT_HEIGHTFOG_DENSITY)
+        cur->height.density = params->height.density;
+    if (bits & FOG_BIT_HEIGHTFOG_START_R)
+        cur->height.start.r = params->height.start.r;
+    if (bits & FOG_BIT_HEIGHTFOG_START_G)
+        cur->height.start.g = params->height.start.g;
+    if (bits & FOG_BIT_HEIGHTFOG_START_B)
+        cur->height.start.b = params->height.start.b;
+    if (bits & FOG_BIT_HEIGHTFOG_START_DIST)
+        cur->height.start.dist = params->height.start.dist;
+    if (bits & FOG_BIT_HEIGHTFOG_END_R)
+        cur->height.end.r = params->height.end.r;
+    if (bits & FOG_BIT_HEIGHTFOG_END_G)
+        cur->height.end.g = params->height.end.g;
+    if (bits & FOG_BIT_HEIGHTFOG_END_B)
+        cur->height.end.b = params->height.end.b;
+    if (bits & FOG_BIT_HEIGHTFOG_END_DIST)
+        cur->height.end.dist = params->height.end.dist;
+}
 
 /*
 ==================
@@ -435,6 +489,8 @@ void V_RenderView(void)
 
         // sort entities for better cache locality
         qsort(cl.refdef.entities, cl.refdef.num_entities, sizeof(cl.refdef.entities[0]), entitycmpfnc);
+
+        cl.refdef.fog = cl.fog.end;
     }
 
     R_RenderFrame(&cl.refdef);

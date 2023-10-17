@@ -57,6 +57,7 @@ cvar_t *gl_md5_use;
 #endif
 cvar_t *gl_waterwarp;
 cvar_t *gl_swapinterval;
+cvar_t *gl_fog;
 
 // development variables
 cvar_t *gl_znear;
@@ -921,6 +922,7 @@ static void GL_Register(void)
     gl_waterwarp = Cvar_Get("gl_waterwarp", "0", 0);
     gl_swapinterval = Cvar_Get("gl_swapinterval", "1", CVAR_ARCHIVE);
     gl_swapinterval->changed = gl_swapinterval_changed;
+    gl_fog = Cvar_Get("gl_fog", "1", 0);
 
     // development variables
     gl_znear = Cvar_Get("gl_znear", "2", CVAR_CHEAT);

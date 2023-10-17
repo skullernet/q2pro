@@ -51,7 +51,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define TAB_SIN(x) gl_static.sintab[(x) & 255]
 #define TAB_COS(x) gl_static.sintab[((x) + 64) & 255]
 
-#define MAX_PROGRAMS    128
+// must match GLS_ bit size
+#define MAX_PROGRAMS    256
 #define NUM_TEXNUMS     7
 
 typedef struct {
@@ -213,6 +214,7 @@ extern cvar_t *gl_shaders;
 extern cvar_t *gl_md5_load;
 extern cvar_t *gl_md5_use;
 #endif
+extern cvar_t *gl_fog;
 
 // development variables
 extern cvar_t *gl_znear;
@@ -451,6 +453,8 @@ typedef enum {
     GLS_BLEND_BLEND         = BIT(3),
     GLS_BLEND_ADD           = BIT(4),
     GLS_BLEND_MODULATE      = BIT(5),
+
+    // shader bits
     GLS_ALPHATEST_ENABLE    = BIT(6),
     GLS_TEXTURE_REPLACE     = BIT(7),
     GLS_SCROLL_ENABLE       = BIT(8),
@@ -458,6 +462,8 @@ typedef enum {
     GLS_WARP_ENABLE         = BIT(10),
     GLS_INTENSITY_ENABLE    = BIT(11),
     GLS_GLOWMAP_ENABLE      = BIT(12),
+    GLS_FOG_ENABLE          = BIT(13),
+
     GLS_SHADE_SMOOTH        = BIT(13),
     GLS_SCROLL_X            = BIT(14),
     GLS_SCROLL_Y            = BIT(15),
@@ -467,8 +473,10 @@ typedef enum {
     GLS_BLEND_MASK  = GLS_BLEND_BLEND | GLS_BLEND_ADD | GLS_BLEND_MODULATE,
     GLS_COMMON_MASK = GLS_DEPTHMASK_FALSE | GLS_DEPTHTEST_DISABLE | GLS_CULL_DISABLE | GLS_BLEND_MASK,
     GLS_SHADER_MASK = GLS_ALPHATEST_ENABLE | GLS_TEXTURE_REPLACE | GLS_SCROLL_ENABLE |
-        GLS_LIGHTMAP_ENABLE | GLS_WARP_ENABLE | GLS_INTENSITY_ENABLE | GLS_GLOWMAP_ENABLE,
+        GLS_LIGHTMAP_ENABLE | GLS_WARP_ENABLE | GLS_INTENSITY_ENABLE | GLS_GLOWMAP_ENABLE |
+        GLS_FOG_ENABLE,
     GLS_SCROLL_MASK = GLS_SCROLL_ENABLE | GLS_SCROLL_X | GLS_SCROLL_Y | GLS_SCROLL_FLIP | GLS_SCROLL_SLOW,
+    GLS_UBLOCK_MASK = GLS_SCROLL_MASK | GLS_FOG_ENABLE
 } glStateBits_t;
 
 typedef enum {
@@ -498,6 +506,8 @@ typedef struct {
         GLfloat     w_amp[2];
         GLfloat     w_phase[2];
         GLfloat     scroll[2];
+        GLfloat     pad[2];
+        GLfloat     global_fog[4];
     } u_block;
 } glState_t;
 
@@ -685,7 +695,7 @@ void GL_ClearSolidFaces(void);
 void GL_ClearDebugLines(void);
 void GL_AddDebugLine(const vec3_t start, const vec3_t end, color_t color, int time, float width, bool depth_test);
 void GL_DrawDebugLines(void);
-void GL_DebugInit(void);
+void GL_InitDebugDraw(void);
 
 /*
  * gl_world.c

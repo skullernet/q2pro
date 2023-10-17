@@ -84,6 +84,21 @@ static void legacy_state_bits(GLbitfield bits)
             qglShadeModel(GL_FLAT);
         }
     }
+
+    if (diff & GLS_FOG_ENABLE) {
+        if (bits & GLS_FOG_ENABLE) {
+            if (gl_fog->integer && glr.fd.fog.global.density) {
+                qglEnable(GL_FOG);
+                qglFogi(GL_FOG_MODE, GL_EXP2);
+                qglFogf(GL_FOG_DENSITY, glr.fd.fog.global.density);
+                qglFogfv(GL_FOG_COLOR, (const vec4_t) {
+                    glr.fd.fog.global.r, glr.fd.fog.global.g, glr.fd.fog.global.b, 1.0f
+                });
+            }
+        } else {
+            qglDisable(GL_FOG);
+        }
+    }
 }
 
 static void legacy_array_bits(GLbitfield bits)
