@@ -131,6 +131,15 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
 
         if (bits & GLS_LIGHTMAP_ENABLE) {
             GLSL(vec4 lightmap = texture(u_lightmap, v_lmtc);)
+
+            if (bits & GLS_GLOWMAP_ENABLE) {
+                GLSL(vec4 glowmap = texture(u_glowmap, tc);)
+                // this doesn't match Kex exactly, but it's close enough
+                // and IMO looks better on lava especially - lava doesn't
+                // get over-saturated to red any more.
+                GLSL(lightmap.rgb = mix(lightmap.rgb, vec3(1.0f), glowmap.a);)
+            }
+
             GLSL(diffuse.rgb *= (lightmap.rgb + u_add) * u_modulate;)
         }
 
@@ -140,7 +149,7 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
         if (!(bits & GLS_TEXTURE_REPLACE))
             GLSL(diffuse *= v_color;)
 
-        if (bits & GLS_GLOWMAP_ENABLE) {
+        if (!(bits & GLS_LIGHTMAP_ENABLE) && (bits & GLS_GLOWMAP_ENABLE)) {
             GLSL(vec4 glowmap = texture(u_glowmap, tc);)
             if (bits & GLS_INTENSITY_ENABLE) {
                 GLSL(diffuse.rgb += glowmap.rgb * u_intensity;)

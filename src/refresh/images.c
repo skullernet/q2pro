@@ -1808,8 +1808,8 @@ static image_t *find_or_load_image(const char *name, size_t len,
         if (!(ret < 0)) {
             // post-process data;
             // - model glowmaps should be premultiplied
-            // - wal glowmaps are only alpha, so we have to put
-            //   back in the diffuse map data then premultiply
+            // - wal glowmaps just use the alpha, so the RGB channels are ignored
+            //   except in the legacy path.
             if (type == IT_SKIN) {
                 int i = 0;
                 int s = temporary.upload_width * temporary.upload_height;
