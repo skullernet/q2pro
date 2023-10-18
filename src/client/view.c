@@ -498,13 +498,25 @@ void V_RenderView(void)
 
 #define Q_FP(p) \
                 cl.refdef.fog.##p = LERP2(cl.fog.start.##p, cl.fog.end.##p, fog_backlerp, fog_frontlerp)
-            
+
             Q_FP(global.r);
             Q_FP(global.g);
             Q_FP(global.b);
             Q_FP(global.density);
             Q_FP(global.sky_factor);
 
+            Q_FP(height.start.r);
+            Q_FP(height.start.g);
+            Q_FP(height.start.b);
+            Q_FP(height.start.dist);
+
+            Q_FP(height.end.r);
+            Q_FP(height.end.g);
+            Q_FP(height.end.b);
+            Q_FP(height.end.dist);
+            
+            Q_FP(height.density);
+            Q_FP(height.falloff);
 #undef Q_FP
         }
     }

@@ -499,6 +499,7 @@ typedef struct {
     struct {
         GLfloat     view[16];
         GLfloat     proj[16];
+
         GLfloat     time;
         GLfloat     modulate;
         GLfloat     add;
@@ -509,8 +510,15 @@ typedef struct {
         GLfloat     w_phase[2];
         GLfloat     scroll[2];
         GLfloat     fog_sky_factor;
-        GLfloat     pad;
+        GLfloat     pad0;
+
         GLfloat     global_fog[4];
+        GLfloat     height_fog_start[4];
+        GLfloat     height_fog_end[4];
+        GLfloat     height_fog_falloff;
+        GLfloat     height_fog_density;
+        GLfloat     view_height;
+        GLfloat     pad1;
     } u_block;
 } glState_t;
 

@@ -62,6 +62,9 @@ static void write_block(char *buf)
         vec2 u_scroll;
         vec2 fog_sky_factor;
         vec4 global_fog;
+        vec4 height_fog_start;
+        vec4 height_fog_end;
+        float height_fog_falloff; float height_fog_density; float view_height; float pad2;
     )
     GLSF("};\n");
 }
@@ -82,7 +85,7 @@ static void write_vertex_shader(char *buf, GLbitfield bits)
         GLSL(out vec4 v_color;)
     }
     if (bits & GLS_FOG_ENABLE)
-        GLSL(out vec3 v_wpos;)
+        GLSL(out vec3 v_wpos; out vec3 world_pos;)
     GLSF("void main() {\n");
         GLSL(vec2 tc = a_tc;)
         if (bits & GLS_SCROLL_ENABLE)
@@ -94,7 +97,7 @@ static void write_vertex_shader(char *buf, GLbitfield bits)
             GLSL(v_color = a_color;)
         GLSL(gl_Position = m_proj * m_view * a_pos;)
         if (bits & GLS_FOG_ENABLE)
-            GLSL(v_wpos = (m_view * a_pos).xyz;)
+            GLSL(v_wpos = (m_view * a_pos).xyz; world_pos = a_pos.xyz;)
     GLSF("}\n");
 }
 
@@ -123,7 +126,7 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
         GLSL(in vec4 v_color;)
 
     if (bits & GLS_FOG_ENABLE)
-        GLSL(in vec4 v_wpos;);
+        GLSL(in vec3 v_wpos; in vec3 world_pos;);
 
     GLSL(out vec4 o_color;)
 
@@ -164,12 +167,30 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
         }
 
         if (bits & GLS_FOG_ENABLE) {
-            GLSL(float fog = 1.0f - exp(-pow(global_fog.w * length(v_wpos), 2.0f)););
+            // global fog
+            GLSL(float dist_to_camera = length(v_wpos);)
+            GLSL(float fog = 1.0f - exp(-pow(global_fog.w * dist_to_camera, 2.0f)););
             GLSL(diffuse.rgb = mix(diffuse.rgb, global_fog.rgb, fog);)
+
+            // height fog
+            GLSL(if (height_fog_density > 0.0f) {)
+                GLSL(float altitude = view_height - height_fog_start.w - 64.f;);
+                GLSL(vec3 view_dir = -normalize(v_wpos - world_pos);)
+                GLSL(float view_sign = step(0.1f, sign(view_dir.z)) * 2.0f - 1.0f;);
+                GLSL(float dy = view_dir.z + (0.00001f * view_sign););
+                GLSL(float frag_depth = gl_FragCoord.z / gl_FragCoord.w;);
+                GLSL(float altitude_dist = altitude + frag_depth * dy;);
+                GLSL(float density = (exp(-height_fog_falloff * altitude) - exp(-height_fog_falloff * altitude_dist)) / (height_fog_falloff * dy););
+                GLSL(float extinction = 1.0f - clamp(exp(-density), 0.0f, 1.0f););
+                GLSL(float normalized_height = clamp((altitude_dist - height_fog_start.w) / (height_fog_end.w - height_fog_start.w), 0.0f, 1.0f););
+                GLSL(vec3 color = (extinction * mix(height_fog_start.rgb, height_fog_end.rgb, normalized_height)););
+                GLSL(float alpha = extinction * (1.0f - exp(-(height_fog_density * frag_depth))););
+                GLSL(diffuse.rgb = mix(diffuse.rgb, color, alpha););
+            GLSL(})
         }
         
         if (bits & GLS_SKY_FOG) {
-            GLSL(diffuse.rgb = mix(diffuse.rgb, global_fog.rgb, fog_sky_factor.r);)
+            GLSL(diffuse.rgb = mix(diffuse.rgb, global_fog.rgb, fog_sky_factor);)
         }
 
         GLSL(o_color = diffuse;)
@@ -443,6 +464,21 @@ static void shader_setup_3d(void)
 
     // FIXME I can't match the exact color as Kex but this is close...?
     gls.u_block.fog_sky_factor = glr.fd.fog.global.sky_factor * 1.5f;
+    
+    gls.u_block.height_fog_start[0] = glr.fd.fog.height.start.r;
+    gls.u_block.height_fog_start[1] = glr.fd.fog.height.start.g;
+    gls.u_block.height_fog_start[2] = glr.fd.fog.height.start.b;
+    gls.u_block.height_fog_start[3] = glr.fd.fog.height.start.dist;
+    
+    gls.u_block.height_fog_end[0] = glr.fd.fog.height.end.r;
+    gls.u_block.height_fog_end[1] = glr.fd.fog.height.end.g;
+    gls.u_block.height_fog_end[2] = glr.fd.fog.height.end.b;
+    gls.u_block.height_fog_end[3] = glr.fd.fog.height.end.dist;
+    
+    gls.u_block.height_fog_falloff = glr.fd.fog.height.falloff;
+    gls.u_block.height_fog_density = glr.fd.fog.height.density;
+
+    gls.u_block.view_height = glr.fd.vieworg[2];
 }
 
 static void shader_clear_state(void)
