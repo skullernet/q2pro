@@ -375,7 +375,7 @@ void GL_DrawFace(mface_t *surf)
     } else {
         image_t *tex = GL_TextureAnimation(surf->texinfo);
         texnum[0] = tex->texnum;
-        texnum[2] = tex->glow_texnum;
+        texnum[2] = surf->texnum[1] ? tex->glow_texnum : 0;
     }
     texnum[1] = surf->texnum[1];
 
