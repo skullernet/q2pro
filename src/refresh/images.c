@@ -1790,9 +1790,6 @@ static image_t *find_or_load_image(const char *name, size_t len,
 
     List_Append(&r_imageHash[hash], &image->entry);
 
-    // upload the image
-    IMG_Load(image, pic);
-
     // check for glow maps
     if (r_glowmaps->integer && (type == IT_SKIN || type == IT_WALL)) {
         byte *glow_pic = NULL;
@@ -1842,6 +1839,9 @@ static image_t *find_or_load_image(const char *name, size_t len,
 
         Z_Free(glow_pic);
     }
+
+    // upload the image
+    IMG_Load(image, pic);
 
     // don't need pics in memory after GL upload
     Z_Free(pic);

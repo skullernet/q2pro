@@ -142,7 +142,11 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
 
         if (bits & GLS_GLOWMAP_ENABLE) {
             GLSL(vec4 glowmap = texture(u_glowmap, tc);)
-            GLSL(diffuse.rgb += glowmap.rgb;)
+            if (bits & GLS_INTENSITY_ENABLE) {
+                GLSL(diffuse.rgb += glowmap.rgb * u_intensity;)
+            } else {
+                GLSL(diffuse.rgb += glowmap.rgb;)
+            }
         }
 
         GLSL(o_color = diffuse;)
