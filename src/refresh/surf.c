@@ -583,7 +583,7 @@ static void build_surface_poly(mface_t *surf, vec_t *vbo)
     color = color_for_surface(surf);
 
     // convert surface flags to state bits
-    surf->statebits = GLS_DEFAULT;
+    surf->statebits = GLS_DEFAULT | GLS_FOG_ENABLE;
     if (gl_static.use_shaders) {
         if (!(surf->drawflags & SURF_TRANS_MASK)) {
             surf->statebits |= GLS_TEXTURE_REPLACE;
