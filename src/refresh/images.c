@@ -1680,7 +1680,7 @@ static void print_error(const char *name, imageflags_t flags, int err)
     Com_LPrintf(level, "Couldn't load %s: %s\n", name, msg);
 }
 
-static int find_or_load_image_data(image_t *image, imageformat_t fmt, bool check_dimensions, byte **pic)
+static int load_image_data(image_t *image, imageformat_t fmt, bool check_dimensions, byte **pic)
 {
     int ret;
 
@@ -1749,7 +1749,7 @@ static void check_for_glow_map(image_t *image)
     // load the pic from disk
     glow_pic = NULL;
 
-    ret = find_or_load_image_data(&temporary, IM_PCX, false, &glow_pic);
+    ret = load_image_data(&temporary, IM_PCX, false, &glow_pic);
     if (ret < 0) {
         print_error(temporary.name, 0, ret);
         return;
@@ -1830,7 +1830,7 @@ static image_t *find_or_load_image(const char *name, size_t len,
     // load the pic from disk
     pic = NULL;
 
-    ret = find_or_load_image_data(image, fmt, true, &pic);
+    ret = load_image_data(image, fmt, true, &pic);
 
     if (ret < 0) {
         print_error(image->name, flags, ret);
