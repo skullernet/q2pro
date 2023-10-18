@@ -58,11 +58,11 @@ typedef enum {
 typedef struct image_s {
     list_t          entry;
     char            name[MAX_QPATH]; // game path
-    int             baselen; // without extension
-    imagetype_t     type;
+    uint8_t         baselen; // without extension
+    uint8_t         type;
     imageflags_t    flags;
-    int16_t         width, height; // source image
-    int16_t         upload_width, upload_height; // after power of two and picmip
+    uint16_t        width, height; // source image
+    uint16_t        upload_width, upload_height; // after power of two and picmip
     int             registration_sequence; // 0 = free
     unsigned        texnum, glow_texnum; // gl texture binding
     float           sl, sh, tl, th;
