@@ -537,37 +537,38 @@ static inline void texnums_for_model(int num_skins, image_t **skins, int *diffus
 
     if (ent->flags & RF_SHELL_MASK) {
         *diffuse_skin = TEXNUM_WHITE;
-        *glow_skin = TEXNUM_BLACK;
+        *glow_skin = 0;
         return;
     }
 
     if (ent->skin) {
-        *diffuse_skin = IMG_ForHandle(ent->skin)->texnum;
-        *glow_skin = TEXNUM_BLACK;
+        image_t *img = IMG_ForHandle(ent->skin);
+        *diffuse_skin = img->texnum;
+        *glow_skin = img->glow_texnum;
         return;
     }
 
     if (!num_skins) {
         *diffuse_skin = TEXNUM_DEFAULT;
-        *glow_skin = TEXNUM_BLACK;
+        *glow_skin = 0;
         return;
     }
 
     if (ent->skinnum < 0 || ent->skinnum >= num_skins) {
         Com_DPrintf("%s: no such skin: %d\n", "GL_DrawAliasModel", ent->skinnum);
         *diffuse_skin = skins[0]->texnum;
-        *glow_skin = skins[0]->glow_texnum ? skins[0]->glow_texnum : TEXNUM_BLACK;
+        *glow_skin = skins[0]->glow_texnum;
         return;
     }
 
     if (skins[ent->skinnum]->texnum == TEXNUM_DEFAULT) {
         *diffuse_skin = skins[0]->texnum;
-        *glow_skin = skins[0]->glow_texnum ? skins[0]->glow_texnum : TEXNUM_BLACK;
+        *glow_skin = skins[0]->glow_texnum;
         return;
     }
     
     *diffuse_skin = skins[ent->skinnum]->texnum;
-    *glow_skin = skins[ent->skinnum]->glow_texnum ? skins[ent->skinnum]->glow_texnum : TEXNUM_BLACK;
+    *glow_skin = skins[ent->skinnum]->glow_texnum;
 }
 
 static void draw_alias_mesh(const maliasmesh_t *mesh)
@@ -590,7 +591,7 @@ static void draw_alias_mesh(const maliasmesh_t *mesh)
     texnums_for_model(mesh->numskins, mesh->skins, &diffuse, &glow);
     GL_BindTexture(0, diffuse);
 
-    if (glow != TEXNUM_BLACK) {
+    if (glow) {
         state |= GLS_GLOWMAP_ENABLE;
         GL_BindTexture(2, glow);
     }
@@ -734,9 +735,16 @@ static void draw_skeleton_mesh(const md5_model_t *model, const md5_mesh_t *mesh,
     if ((glr.ent->flags & (RF_TRANSLUCENT | RF_WEAPONMODEL)) == RF_TRANSLUCENT)
         state |= GLS_DEPTHMASK_FALSE;
 
-    GL_StateBits(state);
+    int diffuse, glow;
+    texnums_for_model(model->num_skins, model->skins, &diffuse, &glow);
+    GL_BindTexture(0, diffuse);
 
-    GL_BindTexture(0, texnum_for_model(model->skins, model->num_skins));
+    if (glow) {
+        state |= GLS_GLOWMAP_ENABLE;
+        GL_BindTexture(2, glow);
+    }
+
+    GL_StateBits(state);
 
     if (glr.ent->flags & RF_SHELL_MASK)
         tess_shell_skel(mesh, skel);
