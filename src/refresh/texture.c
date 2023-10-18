@@ -750,8 +750,10 @@ void IMG_Unload(image_t *image)
     if (image->texnum && !(image->flags & IF_SCRAP)) {
         if (gls.texnums[0] == image->texnum)
             gls.texnums[0] = 0;
-        qglDeleteTextures(1, &image->texnum);
-        image->texnum = 0;
+        if (gls.texnums[2] == image->glow_texnum)
+            gls.texnums[2] = 0;
+        qglDeleteTextures(2, (GLuint[2]){ image->texnum, image->glow_texnum });
+        image->texnum = image->glow_texnum = 0;
     }
 }
 

@@ -84,7 +84,7 @@ typedef struct mface_s {
     int             lm_width;
     int             lm_height;
 
-    int             texnum[2];
+    int             texnum[3]; // FIXME MAX_TMUS
     int             statebits;
     int             firstvert;
     int             light_s, light_t;

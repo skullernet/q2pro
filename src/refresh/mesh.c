@@ -531,33 +531,37 @@ static void draw_shadow(QGL_INDEX_TYPE *indices, int num_indices)
     }
 }
 
-static int texnum_for_model(image_t **skins, int num_skins)
+static image_t *skin_for_mesh(image_t **skins, int num_skins)
 {
     const entity_t *ent = glr.ent;
 
-    if (ent->flags & RF_SHELL_MASK)
-        return TEXNUM_WHITE;
+    if (ent->flags & RF_SHELL_MASK) {
+        static image_t shell_texture;
+        shell_texture.texnum = TEXNUM_WHITE;
+        return &shell_texture;
+    }
 
     if (ent->skin)
-        return IMG_ForHandle(ent->skin)->texnum;
+        return IMG_ForHandle(ent->skin);
 
     if (!num_skins)
-        return TEXNUM_DEFAULT;
+        return R_NOTEXTURE;
 
     if (ent->skinnum < 0 || ent->skinnum >= num_skins) {
         Com_DPrintf("%s: no such skin: %d\n", "GL_DrawAliasModel", ent->skinnum);
-        return skins[0]->texnum;
+        return skins[0];
     }
 
-    if (skins[ent->skinnum]->texnum == TEXNUM_DEFAULT)
-        return skins[0]->texnum;
+    if (skins[ent->skinnum] == R_NOTEXTURE)
+        return skins[0];
 
-    return skins[ent->skinnum]->texnum;
+    return skins[ent->skinnum];
 }
 
 static void draw_alias_mesh(const maliasmesh_t *mesh)
 {
     glStateBits_t state = GLS_INTENSITY_ENABLE;
+    image_t *skin = skin_for_mesh(mesh->skins, mesh->numskins);
 
     // fall back to entity matrix
     GL_LoadMatrix(glr.entmatrix);
@@ -571,9 +575,15 @@ static void draw_alias_mesh(const maliasmesh_t *mesh)
     if ((glr.ent->flags & (RF_TRANSLUCENT | RF_WEAPONMODEL)) == RF_TRANSLUCENT)
         state |= GLS_DEPTHMASK_FALSE;
 
+    if (skin->glow_texnum)
+        state |= GLS_GLOWMAP_ENABLE;
+
     GL_StateBits(state);
 
-    GL_BindTexture(0, texnum_for_model(mesh->skins, mesh->numskins));
+    GL_BindTexture(0, skin->texnum);
+
+    if (skin->glow_texnum)
+        GL_BindTexture(2, skin->glow_texnum);
 
     (*tessfunc)(mesh);
     c.trisDrawn += mesh->numtris;
@@ -698,6 +708,7 @@ static void lerp_alias_skeleton(const md5_model_t *model)
 static void draw_skeleton_mesh(const md5_model_t *model, const md5_mesh_t *mesh, const md5_joint_t *skel)
 {
     glStateBits_t state = GLS_INTENSITY_ENABLE;
+    image_t *skin = skin_for_mesh(model->skins, model->num_skins);
 
     // fall back to entity matrix
     GL_LoadMatrix(glr.entmatrix);
@@ -711,9 +722,15 @@ static void draw_skeleton_mesh(const md5_model_t *model, const md5_mesh_t *mesh,
     if ((glr.ent->flags & (RF_TRANSLUCENT | RF_WEAPONMODEL)) == RF_TRANSLUCENT)
         state |= GLS_DEPTHMASK_FALSE;
 
+    if (skin->glow_texnum)
+        state |= GLS_GLOWMAP_ENABLE;
+
     GL_StateBits(state);
 
-    GL_BindTexture(0, texnum_for_model(model->skins, model->num_skins));
+    GL_BindTexture(0, skin->texnum);
+
+    if (skin->glow_texnum)
+        GL_BindTexture(2, skin->glow_texnum);
 
     if (glr.ent->flags & RF_SHELL_MASK)
         tess_shell_skel(mesh, skel);

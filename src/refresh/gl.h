@@ -45,12 +45,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define QGL_INDEX_ENUM  GL_UNSIGNED_INT
 #endif
 
-#define MAX_TMUS        2
+#define MAX_TMUS        3
 
 #define TAB_SIN(x) gl_static.sintab[(x) & 255]
 #define TAB_COS(x) gl_static.sintab[((x) + 64) & 255]
 
-#define MAX_PROGRAMS    64
+#define MAX_PROGRAMS    128
 #define NUM_TEXNUMS     7
 
 typedef struct {
@@ -446,16 +446,17 @@ typedef enum {
     GLS_LIGHTMAP_ENABLE     = BIT(9),
     GLS_WARP_ENABLE         = BIT(10),
     GLS_INTENSITY_ENABLE    = BIT(11),
-    GLS_SHADE_SMOOTH        = BIT(12),
-    GLS_SCROLL_X            = BIT(13),
-    GLS_SCROLL_Y            = BIT(14),
-    GLS_SCROLL_FLIP         = BIT(15),
-    GLS_SCROLL_SLOW         = BIT(16),
+    GLS_GLOWMAP_ENABLE      = BIT(12),
+    GLS_SHADE_SMOOTH        = BIT(13),
+    GLS_SCROLL_X            = BIT(14),
+    GLS_SCROLL_Y            = BIT(15),
+    GLS_SCROLL_FLIP         = BIT(16),
+    GLS_SCROLL_SLOW         = BIT(17),
 
     GLS_BLEND_MASK  = GLS_BLEND_BLEND | GLS_BLEND_ADD | GLS_BLEND_MODULATE,
     GLS_COMMON_MASK = GLS_DEPTHMASK_FALSE | GLS_DEPTHTEST_DISABLE | GLS_CULL_DISABLE | GLS_BLEND_MASK,
     GLS_SHADER_MASK = GLS_ALPHATEST_ENABLE | GLS_TEXTURE_REPLACE | GLS_SCROLL_ENABLE |
-        GLS_LIGHTMAP_ENABLE | GLS_WARP_ENABLE | GLS_INTENSITY_ENABLE,
+        GLS_LIGHTMAP_ENABLE | GLS_WARP_ENABLE | GLS_INTENSITY_ENABLE | GLS_GLOWMAP_ENABLE,
     GLS_SCROLL_MASK = GLS_SCROLL_ENABLE | GLS_SCROLL_X | GLS_SCROLL_Y | GLS_SCROLL_FLIP | GLS_SCROLL_SLOW,
 } glStateBits_t;
 

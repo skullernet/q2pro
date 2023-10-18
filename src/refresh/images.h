@@ -64,7 +64,7 @@ typedef struct image_s {
     int16_t         width, height; // source image
     int16_t         upload_width, upload_height; // after power of two and picmip
     int             registration_sequence; // 0 = free
-    unsigned        texnum; // gl texture binding
+    unsigned        texnum, glow_texnum; // gl texture binding
     float           sl, sh, tl, th;
     float           aspect;
 } image_t;

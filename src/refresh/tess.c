@@ -288,6 +288,10 @@ void GL_Flush3D(void)
         }
     }
 
+    if (tess.texnum[2]) {
+        state |= GLS_GLOWMAP_ENABLE;
+    }
+
     if (!(state & GLS_TEXTURE_REPLACE)) {
         array |= GLA_COLOR;
     }
@@ -298,6 +302,9 @@ void GL_Flush3D(void)
     GL_BindTexture(0, tess.texnum[0]);
     if (q_likely(tess.texnum[1])) {
         GL_BindTexture(1, tess.texnum[1]);
+    }
+    if (tess.texnum[2]) {
+        GL_BindTexture(2, tess.texnum[2]);
     }
 
     if (gl_static.world.vertices) {
@@ -316,7 +323,7 @@ void GL_Flush3D(void)
 
     c.batchesDrawn++;
 
-    tess.texnum[0] = tess.texnum[1] = 0;
+    tess.texnum[0] = tess.texnum[1] = tess.texnum[2] = 0;
     tess.numindices = 0;
     tess.numverts = 0;
     tess.flags = 0;
@@ -340,7 +347,7 @@ static int GL_CopyVerts(mface_t *surf)
     return firstvert;
 }
 
-static int GL_TextureAnimation(mtexinfo_t *tex)
+static image_t *GL_TextureAnimation(mtexinfo_t *tex)
 {
     if (q_unlikely(tex->next)) {
         unsigned c = (unsigned)glr.ent->frame % tex->numframes;
@@ -351,26 +358,30 @@ static int GL_TextureAnimation(mtexinfo_t *tex)
         }
     }
 
-    return tex->image->texnum;
+    return tex->image;
 }
 
 void GL_DrawFace(mface_t *surf)
 {
     int numtris = surf->numsurfedges - 2;
     int numindices = numtris * 3;
-    GLuint texnum[2];
+    GLuint texnum[MAX_TMUS];
     QGL_INDEX_TYPE *dst_indices;
     int i, j;
 
     if (q_unlikely(gl_lightmap->integer && surf->texnum[1])) {
         texnum[0] = TEXNUM_WHITE;
+        texnum[2] = 0;
     } else {
-        texnum[0] = GL_TextureAnimation(surf->texinfo);
+        image_t *tex = GL_TextureAnimation(surf->texinfo);
+        texnum[0] = tex->texnum;
+        texnum[2] = tex->glow_texnum;
     }
     texnum[1] = surf->texnum[1];
 
     if (tess.texnum[0] != texnum[0] ||
         tess.texnum[1] != texnum[1] ||
+        tess.texnum[2] != texnum[2] ||
         tess.flags != surf->statebits ||
         tess.numindices + numindices > TESS_MAX_INDICES) {
         GL_Flush3D();
@@ -378,6 +389,7 @@ void GL_DrawFace(mface_t *surf)
 
     tess.texnum[0] = texnum[0];
     tess.texnum[1] = texnum[1];
+    tess.texnum[2] = texnum[2];
     tess.flags = surf->statebits;
 
     if (q_unlikely(gl_static.world.vertices)) {
@@ -453,7 +465,7 @@ void GL_AddSolidFace(mface_t *face)
 {
     unsigned hash;
 
-    hash = face->texnum[0] ^ face->texnum[1] ^ face->statebits;
+    hash = face->texnum[0] ^ face->texnum[1] ^ face->texnum[2] ^ face->statebits;
     hash ^= hash >> FACE_HASH_BITS;
     hash ^= hash >> (FACE_HASH_BITS * 2);
     hash &= FACE_HASH_MASK;
