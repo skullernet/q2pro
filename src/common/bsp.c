@@ -947,10 +947,15 @@ static void BSP_ParseDecoupledLM(bsp_t *bsp, const byte *in, size_t filelen)
     mface_t *out;
     uint32_t offset;
 
-    if (filelen % 40)
+    if (filelen % 40) {
+        Com_WPrintf("DECOUPLED_LM lump has odd size\n");
         return;
-    if (bsp->numfaces > filelen / 40)
+    }
+
+    if (bsp->numfaces > filelen / 40) {
+        Com_WPrintf("DECOUPLED_LM lump too short\n");
         return;
+    }
 
     out = bsp->faces;
     for (int i = 0; i < bsp->numfaces; i++, out++) {
@@ -1022,24 +1027,28 @@ static bool BSP_ParseLightgridHeader_(lightgrid_t *grid, sizebuf_t *s)
     grid->numstyles = SZ_ReadByte(s);
     if (grid->numstyles - 1 >= MAX_LIGHTMAPS)
         return false;
+
     grid->rootnode = SZ_ReadLong(s);
     grid->numnodes = SZ_ReadLong(s);
     if (grid->numnodes > SZ_Remaining(s) / 44)
         return false;
-    grid->nodepos = s->readcount;
+
     s->readcount += grid->numnodes * 44;
     grid->numleafs = SZ_ReadLong(s);
     if (grid->numleafs - 1 >= SZ_Remaining(s) / 24)
         return false;
-    grid->leafpos = s->readcount;
+
     for (i = 0; i < grid->numleafs; i++) {
         uint32_t x, y, z, numsamples;
+
         s->readcount += 12;
         x = SZ_ReadLong(s);
         y = SZ_ReadLong(s);
         z = SZ_ReadLong(s);
+
         numsamples = x * y * z;
         grid->numsamples += numsamples;
+
         while (numsamples--) {
             unsigned numstyles = SZ_ReadByte(s);
             if (numstyles == 255)
@@ -1105,6 +1114,7 @@ static void BSP_ParseLightgrid(bsp_t *bsp, const byte *in, size_t filelen)
     lightgrid_node_t *node;
     lightgrid_leaf_t *leaf;
     lightgrid_sample_t *sample;
+    uint32_t remaining;
     sizebuf_t s;
     byte *data;
     size_t size;
@@ -1113,7 +1123,7 @@ static void BSP_ParseLightgrid(bsp_t *bsp, const byte *in, size_t filelen)
     if (!grid->numleafs)
         return;
 
-    // no point loading if map isn't lit
+    // ignore if map isn't lit
     if (!bsp->lightmap) {
         Com_WPrintf("Ignoring LIGHTGRID_OCTREE, map isn't lit\n");
         memset(grid, 0, sizeof(*grid));
@@ -1126,7 +1136,7 @@ static void BSP_ParseLightgrid(bsp_t *bsp, const byte *in, size_t filelen)
     grid->nodes = ALLOC(sizeof(grid->nodes[0]) * grid->numnodes);
 
     // load children first
-    s.readcount = grid->nodepos;
+    s.readcount = 45;
     for (i = 0, node = grid->nodes; i < grid->numnodes; i++, node++) {
         s.readcount += 12;
         for (j = 0; j < 8; j++)
@@ -1141,7 +1151,7 @@ static void BSP_ParseLightgrid(bsp_t *bsp, const byte *in, size_t filelen)
     }
 
     // now load points
-    s.readcount = grid->nodepos;
+    s.readcount = 45;
     for (i = 0, node = grid->nodes; i < grid->numnodes; i++, node++) {
         for (j = 0; j < 3; j++)
             node->point[j] = SZ_ReadLong(&s);
@@ -1150,10 +1160,12 @@ static void BSP_ParseLightgrid(bsp_t *bsp, const byte *in, size_t filelen)
 
     grid->leafs = ALLOC(sizeof(grid->leafs[0]) * grid->numleafs);
 
+    // init samples to fully occluded
     size = sizeof(grid->samples[0]) * grid->numsamples * grid->numstyles;
     grid->samples = sample = memset(ALLOC(size), 255, size);
 
-    s.readcount = grid->leafpos;
+    remaining = grid->numsamples;
+    s.readcount += 4;
     for (i = 0, leaf = grid->leafs; i < grid->numleafs; i++, leaf++) {
         for (j = 0; j < 3; j++)
             leaf->mins[j] = SZ_ReadLong(&s);
@@ -1162,11 +1174,15 @@ static void BSP_ParseLightgrid(bsp_t *bsp, const byte *in, size_t filelen)
 
         leaf->firstsample = sample - grid->samples;
         leaf->numsamples = leaf->size[0] * leaf->size[1] * leaf->size[2];
-        Q_assert(leaf->numsamples <= grid->numsamples);
+
+        Q_assert(leaf->numsamples <= remaining);
+        remaining -= leaf->numsamples;
+
         for (j = 0; j < leaf->numsamples; j++, sample += grid->numstyles) {
             unsigned numstyles = SZ_ReadByte(&s);
             if (numstyles == 255)
                 continue;
+
             Q_assert(numstyles <= grid->numstyles);
             data = SZ_ReadData(&s, sizeof(*sample) * numstyles);
             Q_assert(data);
@@ -1180,7 +1196,7 @@ static const xlump_info_t bspx_lumps[] = {
     { "LIGHTGRID_OCTREE", BSP_ParseLightgrid, BSP_ParseLightgridHeader },
 };
 
-// returns amount of extra data to allocate
+// returns amount of extra space to allocate
 static size_t BSP_ParseExtensionHeader(bsp_t *bsp, lump_t *out, const byte *buf, uint32_t pos, uint32_t filelen)
 {
     pos = ALIGN(pos, 4);
@@ -1199,21 +1215,34 @@ static size_t BSP_ParseExtensionHeader(bsp_t *bsp, lump_t *out, const byte *buf,
     size_t extrasize = 0;
     xlump_t *l = (xlump_t *)(buf + pos);
     for (int i = 0; i < numlumps; i++, l++) {
-        uint32_t ofs = LittleLong(l->fileofs);
-        uint32_t len = LittleLong(l->filelen);
-        uint32_t end = ofs + len;
-        if (end <= ofs || end > filelen)
-            continue;
         for (int j = 0; j < q_countof(bspx_lumps); j++) {
             const xlump_info_t *e = &bspx_lumps[j];
+            uint32_t ofs, len, end;
+
             if (strcmp(l->name, e->name))
                 continue;
-            if (out[j].filelen) {
-                Com_WPrintf("Duplicate %s lump\n", e->name);
+
+            ofs = LittleLong(l->fileofs);
+            len = LittleLong(l->filelen);
+            if (len == 0) {
+                Com_WPrintf("Ignoring empty %s lump\n", e->name);
                 break;
             }
+
+            end = ofs + len;
+            if (end < ofs || end > filelen) {
+                Com_WPrintf("Ignoring out of bounds %s lump\n", e->name);
+                break;
+            }
+
+            if (out[j].filelen) {
+                Com_WPrintf("Ignoring duplicate %s lump\n", e->name);
+                break;
+            }
+
             if (e->parse_header)
                 extrasize += e->parse_header(bsp, buf + ofs, len);
+
             out[j].fileofs = ofs;
             out[j].filelen = len;
             break;
@@ -1402,7 +1431,7 @@ HELPER FUNCTIONS
 
 static lightpoint_t *light_point;
 
-static bool BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, const vec3_t p1, const vec3_t p2)
+static bool BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, const vec3_t p1, const vec3_t p2, int nolm_mask)
 {
     vec_t d1, d2, frac, midf, s, t;
     vec3_t mid;
@@ -1427,13 +1456,13 @@ static bool BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, const v
         LerpVector(p1, p2, frac, mid);
 
         // check near side
-        if (BSP_RecursiveLightPoint(node->children[side], p1f, midf, p1, mid))
+        if (BSP_RecursiveLightPoint(node->children[side], p1f, midf, p1, mid, nolm_mask))
             return true;
 
         for (i = 0, surf = node->firstface; i < node->numfaces; i++, surf++) {
             if (!surf->lightmap)
                 continue;
-            if (surf->drawflags & SURF_NOLM_MASK)
+            if (surf->drawflags & nolm_mask)
                 continue;
 
             s = DotProduct(surf->lm_axis[0], mid) + surf->lm_offset[0];
@@ -1452,23 +1481,23 @@ static bool BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, const v
         }
 
         // check far side
-        return BSP_RecursiveLightPoint(node->children[side ^ 1], midf, p2f, mid, p2);
+        return BSP_RecursiveLightPoint(node->children[side ^ 1], midf, p2f, mid, p2, nolm_mask);
     }
 
     return false;
 }
 
-void BSP_LightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end, mnode_t *headnode)
+void BSP_LightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end, mnode_t *headnode, int nolm_mask)
 {
     light_point = point;
     light_point->surf = NULL;
     light_point->fraction = 1;
 
-    BSP_RecursiveLightPoint(headnode, 0, 1, start, end);
+    BSP_RecursiveLightPoint(headnode, 0, 1, start, end, nolm_mask);
 }
 
 void BSP_TransformedLightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end,
-                               mnode_t *headnode, const vec3_t origin, const vec3_t angles)
+                               mnode_t *headnode, int nolm_mask, const vec3_t origin, const vec3_t angles)
 {
     vec3_t start_l, end_l;
     vec3_t axis[3];
@@ -1489,7 +1518,7 @@ void BSP_TransformedLightPoint(lightpoint_t *point, const vec3_t start, const ve
     }
 
     // sweep the line through the model
-    if (!BSP_RecursiveLightPoint(headnode, 0, 1, start_l, end_l))
+    if (!BSP_RecursiveLightPoint(headnode, 0, 1, start_l, end_l, nolm_mask))
         return;
 
     // rotate plane normal into the worlds frame of reference

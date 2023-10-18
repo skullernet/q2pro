@@ -823,6 +823,14 @@ gl_screenshot_template::
     component. Template may contain slashes to save under subdirectory. Default
     value is "quakeXXX".
 
+gl_md5_load::
+    Enables loading of MD5 replacement models as found in re-release. Default
+    value is 1.
+
+gl_md5_use::
+    Enables use of MD5 replacement models as found in re-release. Only
+    effective if ‘gl_md5_load’ is enabled. Default value is 1.
+
 r_override_textures::
     Enables automatic overriding of palettized textures (in WAL or PCX format)
     with truecolor replacements (in PNG, JPG or TGA format) by stripping off
@@ -853,7 +861,8 @@ When Q2PRO attempts to load an alias model from disk, it determines actual
 model format by file contents, rather than by filename extension. Therefore, if
 you wish to override MD2 model with MD3 replacement, simply rename the MD3
 model to ‘tris.md2’ and place it in appropriate packfile to make sure it gets
-loaded first.
+loaded first. Note that MD5 models can't be loaded this way, see ‘gl_md5_’
+variables.
 ********************
 
 

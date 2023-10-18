@@ -69,6 +69,11 @@ option('md3',
   value: true,
   description: 'MD3 models support')
 
+option('md5',
+  type: 'boolean',
+  value: true,
+  description: 'MD5 (re-release) models support')
+
 option('mvd-client',
   type: 'boolean',
   value: true,

@@ -202,6 +202,26 @@ size_t COM_DefaultExtension(char *path, const char *ext, size_t size)
 }
 
 /*
+============
+COM_SplitPath
+
+Splits an input filename into file name and path components
+============
+*/
+void COM_SplitPath(const char *in, char *name, size_t name_size,
+                   char *path, size_t path_size, bool strip_ext)
+{
+    const char *p = COM_SkipPath(in);
+
+    if (strip_ext)
+        COM_StripExtension(name, p, name_size);
+    else
+        Q_strlcpy(name, p, name_size);
+
+    Q_strlcpy(path, in, min(path_size, p - in + 1));
+}
+
+/*
 ==================
 COM_IsFloat
 
