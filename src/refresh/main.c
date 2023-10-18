@@ -492,7 +492,7 @@ static void GL_DrawFlare(const entity_t *e)
 
     GL_LoadMatrix(glr.viewmatrix);
     GL_BindTexture(0, IMG_ForHandle(e->skin)->texnum);
-    GL_StateBits(GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE | GLS_BLEND_BLEND);
+    GL_StateBits(GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE | GLS_BLEND_ADD);
     GL_ArrayBits(GLA_VERTEX | GLA_TC);
     GL_Color(e->rgba.u8[0] / 255.0f,
              e->rgba.u8[1] / 255.0f,
