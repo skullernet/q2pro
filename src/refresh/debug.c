@@ -18,7 +18,24 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "gl.h"
 #include "client/client.h"
+#include "debug_fonts/cursive.h"
 #include "debug_fonts/futural.h"
+#include "debug_fonts/futuram.h"
+#include "debug_fonts/gothgbt.h"
+#include "debug_fonts/gothgrt.h"
+#include "debug_fonts/gothiceng.h"
+#include "debug_fonts/gothicger.h"
+#include "debug_fonts/gothicita.h"
+#include "debug_fonts/gothitt.h"
+#include "debug_fonts/rowmand.h"
+#include "debug_fonts/rowmans.h"
+#include "debug_fonts/rowmant.h"
+#include "debug_fonts/scriptc.h"
+#include "debug_fonts/scripts.h"
+#include "debug_fonts/timesi.h"
+#include "debug_fonts/timesib.h"
+#include "debug_fonts/timesr.h"
+#include "debug_fonts/timesrb.h"
 
 typedef struct debug_font_s {
     // Number of glyphs
@@ -35,15 +52,44 @@ typedef struct debug_font_s {
     const char **glyph_data;
 } debug_font_t;
 
-static const debug_font_t dbg_font_futural = {
-    futural_count,
-    futural_height,
-    futural_width,
-    futural_realwidth,
-    futural_size,
-    futural
+#define DEBUG_FONT(NAME)    \
+    #NAME,                  \
+    {                       \
+        NAME##_count,       \
+        NAME##_height,      \
+        NAME##_width,       \
+        NAME##_realwidth,   \
+        NAME##_size,        \
+        NAME                \
+    }
+
+static const struct {
+    const char *name;
+    debug_font_t font;
+} debug_fonts[] = {
+    DEBUG_FONT(futural),
+    DEBUG_FONT(cursive),
+    DEBUG_FONT(futuram),
+    DEBUG_FONT(gothgbt),
+    DEBUG_FONT(gothgrt),
+    DEBUG_FONT(gothiceng),
+    DEBUG_FONT(gothicger),
+    DEBUG_FONT(gothicita),
+    DEBUG_FONT(gothitt),
+    DEBUG_FONT(rowmand),
+    DEBUG_FONT(rowmans),
+    DEBUG_FONT(rowmant),
+    DEBUG_FONT(scriptc),
+    DEBUG_FONT(scripts),
+    DEBUG_FONT(timesi),
+    DEBUG_FONT(timesib),
+    DEBUG_FONT(timesr),
+    DEBUG_FONT(timesrb),
 };
 
+static const debug_font_t *dbg_font;
+
+static cvar_t *r_debug_font;
 static cvar_t *r_debug_linewidth;
 
 #define MAX_DEBUG_LINES		8192
@@ -356,7 +402,7 @@ void R_AddDebugCircle(const vec3_t origin, float radius, color_t color, int time
 void R_AddDebugText(const vec3_t origin, const char *text, float size, const vec3_t angles, color_t color, int time, bool depth_test)
 {
     int total_lines = 1;
-    float scale = (1.0f / dbg_font_futural.height) * (size * 32);
+    float scale = (1.0f / dbg_font->height) * (size * 32);
 
     int l = strlen(text);
 
@@ -378,7 +424,7 @@ void R_AddDebugText(const vec3_t origin, const char *text, float size, const vec
     vec3_t right, up;
     AngleVectors(angles, NULL, right, up);
 
-    float y_offset = -((dbg_font_futural.height * scale) * 0.5f) * total_lines;
+    float y_offset = -((dbg_font->height * scale) * 0.5f) * total_lines;
 
     const char *c = text;
     for (int line = 0; line < total_lines; line++) {
@@ -386,16 +432,16 @@ void R_AddDebugText(const vec3_t origin, const char *text, float size, const vec
         float width = 0;
 
         for (; *c_end && *c_end != '\n'; c_end++) {
-            width += dbg_font_futural.width[*c_end - ' '] * scale;
+            width += dbg_font->width[*c_end - ' '] * scale;
         }
         
         float x_offset = (width * 0.5f);
 
         for (const char *rc = c; rc != c_end; rc++) {
             char c = *rc - ' ';
-            const float char_width = dbg_font_futural.width[(int)c] * scale;
-            const int char_size = dbg_font_futural.size[(int)c];
-            const char *char_data = dbg_font_futural.glyph_data[(int)c];
+            const float char_width = dbg_font->width[(int)c] * scale;
+            const int char_size = dbg_font->size[(int)c];
+            const char *char_data = dbg_font->glyph_data[(int)c];
 
             for (int i = 0; i < char_size; i += 4) {
                 vec3_t s;
@@ -414,7 +460,7 @@ void R_AddDebugText(const vec3_t origin, const char *text, float size, const vec
             x_offset -= char_width;
         }
 
-        y_offset += dbg_font_futural.height * scale;
+        y_offset += dbg_font->height * scale;
 
         c = c_end + 1;
     }
@@ -489,9 +535,36 @@ void GL_DrawDebugLines(void)
     GL_Color(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
+static void r_debug_font_changed(cvar_t* cvar)
+{
+    int font_idx = -1;
+    for (int i = 0; i < q_countof(debug_fonts); i++) {
+        if (Q_strcasecmp(cvar->string, debug_fonts[i].name) == 0) {
+            font_idx = i;
+            break;
+        }
+    }
+    if (font_idx < 0) {
+        Com_WPrintf("unknown debug font: %s\n", cvar->string);
+        font_idx = 0;
+    }
+    dbg_font = &debug_fonts[font_idx].font;
+}
+
+static void r_debug_font_generator(struct genctx_s *gen)
+{
+    for (int i = 0; i < q_countof(debug_fonts); i++) {
+        Prompt_AddMatch(gen, debug_fonts[i].name);
+    }
+}
+
 void GL_InitDebugDraw(void)
 {
     GL_ClearDebugLines();
 
     r_debug_linewidth = Cvar_Get("r_debug_linewidth", "2", 0);
+    r_debug_font = Cvar_Get("r_debug_font", debug_fonts[0].name, 0);
+    r_debug_font->changed = r_debug_font_changed;
+    r_debug_font->generator = r_debug_font_generator;
+    r_debug_font_changed(r_debug_font);
 }
