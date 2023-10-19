@@ -198,6 +198,7 @@ extern cvar_t *gl_dynamic;
 extern cvar_t *gl_dlight_falloff;
 extern cvar_t *gl_modulate_entities;
 extern cvar_t *gl_doublelight_entities;
+extern cvar_t *gl_glowmap_intensity;
 extern cvar_t *gl_fontshadow;
 extern cvar_t *gl_shaders;
 #if USE_MD5
@@ -482,10 +483,11 @@ typedef struct {
         GLfloat     modulate;
         GLfloat     add;
         GLfloat     intensity;
+        GLfloat     intensity2;
+        GLfloat     pad;
         GLfloat     w_amp[2];
         GLfloat     w_phase[2];
         GLfloat     scroll[2];
-        GLfloat     pad[2];
     } u_block;
 } glState_t;
 

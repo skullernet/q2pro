@@ -831,6 +831,9 @@ gl_md5_use::
     Enables use of MD5 replacement models as found in re-release. Only
     effective if ‘gl_md5_load’ is enabled. Default value is 1.
 
+gl_glowmap_intensity::
+    Intensity factor for entity glowmaps. Default value is 0.75.
+
 r_glowmaps::
     Enables loading of glowmap images as found in re-release. Only effective if
     ‘gl_shaders’ is enabled. Default value is 1.
