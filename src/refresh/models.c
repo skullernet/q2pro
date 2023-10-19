@@ -1357,10 +1357,13 @@ static void MOD_Reference(model_t *model)
                 mesh->skins[j]->registration_sequence = registration_sequence;
             }
         }
+#if USE_MD5
         if (model->skeleton) {
             for (j = 0; j < model->skeleton->num_skins; j++) {
                 model->skeleton->skins[j]->registration_sequence = registration_sequence;
             }
+        }
+#endif
         break;
     case MOD_SPRITE:
         for (i = 0; i < model->numframes; i++) {
@@ -1483,21 +1486,6 @@ qhandle_t R_RegisterModel(const char *name)
 #endif
 
 done:
-#if USE_MD5
-    // check for an MD5; this requires the MD2/MD3
-    // to have loaded first, since we need it for skin names
-    if (gl_load_md5models->integer && model->type == MOD_ALIAS) {
-        maliasskinname_t *joint_names = NULL;
-
-        if (MOD_LoadMD5(model, normalized, &joint_names)) {
-            MOD_LoadMD5Scale(model, normalized, joint_names);
-        }
-
-        Z_Free(joint_names);
-    }
-#endif
-
-
     index = (model - r_models) + 1;
     return index;
 

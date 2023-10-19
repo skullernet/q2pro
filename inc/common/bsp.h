@@ -307,8 +307,6 @@ typedef struct bsp_s {
     lightgrid_t     lightgrid;
 
     bool            lm_decoupled;
-
-    int             nolm_mask;
 #endif
     bool            extended;
 

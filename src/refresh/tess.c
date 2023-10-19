@@ -351,7 +351,7 @@ void GL_Flush3D(void)
         }
     }
 
-    if (tess.texnum[2] && !gl_lightmap->integer) {
+    if (tess.texnum[2]) {
         state |= GLS_GLOWMAP_ENABLE;
     }
 
