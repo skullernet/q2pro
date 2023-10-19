@@ -137,17 +137,6 @@ void R_AddDebugBounds(const vec3_t absmins, const vec3_t absmaxs, color_t color,
 
 typedef struct { int a, b; } line_t;
 
-static int linecmp(const void *a_, const void *b_)
-{
-    const line_t *a = a_;
-    const line_t *b = b_;
-
-    if (a->a == b->a)
-        return a->b - b->b;
-
-    return a->a - b->a;
-}
-
 void R_AddDebugSphere(const vec3_t origin, float radius, color_t color, int time, bool depth_test)
 {
     // https://danielsieger.com/blog/2021/03/27/generating-spheres.html
