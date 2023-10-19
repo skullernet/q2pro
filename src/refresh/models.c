@@ -23,9 +23,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "format/md3.h"
 #endif
 #include "format/sp2.h"
-#if USE_MD5
-#include "common/hash_map.h"
-#endif
 
 #define MOD_Malloc(size)    Hunk_TryAlloc(&model->hunk, size)
 

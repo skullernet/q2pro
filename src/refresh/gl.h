@@ -24,6 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/common.h"
 #include "common/cvar.h"
 #include "common/files.h"
+#include "common/hash_map.h"
 #include "common/math.h"
 #include "client/video.h"
 #include "client/client.h"
@@ -77,6 +78,12 @@ typedef struct {
 } glbackend_t;
 
 typedef struct {
+    GLuint query;
+    bool pending;
+    bool visible;
+} glquery_t;
+
+typedef struct {
     bool            registering;
     bool            use_shaders;
     glbackend_t     backend;
@@ -93,7 +100,6 @@ typedef struct {
     GLuint          u_bufnum;
     GLuint          programs[MAX_PROGRAMS];
     GLuint          texnums[NUM_TEXNUMS];
-    GLuint          queries[MAX_EDICTS];
     GLenum          samples_passed;
     GLbitfield      stencil_buffer_bit;
     float           entity_modulate;
@@ -104,6 +110,7 @@ typedef struct {
     float           sintab[256];
     byte            latlngtab[NUMVERTEXNORMALS][2];
     byte            lightstylemap[MAX_LIGHTSTYLES];
+    hash_map_t      *queries;
 } glStatic_t;
 
 typedef struct {
@@ -127,7 +134,6 @@ typedef struct {
     int             framebuffer_width;
     int             framebuffer_height;
     bool            framebuffer_ok;
-    byte            queryflags[MAX_EDICTS];
 } glRefdef_t;
 
 enum {
