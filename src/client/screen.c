@@ -1612,7 +1612,7 @@ static void SCR_DrawInventory(void)
         if (i == selected) {
             selected_num = num;
         }
-        if (cl.inventory[i]) {
+        if (cl.cgame_data.inventory[i]) {
             index[num++] = i;
         }
     }
@@ -1646,7 +1646,7 @@ static void SCR_DrawInventory(void)
         bind = Key_GetBinding(string);
 
         Q_snprintf(string, sizeof(string), "%6s %3i %s",
-                   bind, cl.inventory[item], cl.configstrings[cl.csr.items + item]);
+                   bind, cl.cgame_data.inventory[item], cl.configstrings[cl.csr.items + item]);
 
         if (item != selected) {
             HUD_DrawAltString(x, y, string);
@@ -2463,7 +2463,7 @@ static void SCR_DrawLayout(void)
         return;
 
 draw:
-    SCR_ExecuteLayoutString(cl.layout);
+    SCR_ExecuteLayoutString(cl.cgame_data.layout);
 }
 
 static void SCR_Draw2D(void)

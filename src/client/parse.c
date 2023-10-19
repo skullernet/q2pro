@@ -1138,8 +1138,8 @@ static void CL_ParseStuffText(void)
 
 static void CL_ParseLayout(void)
 {
-    MSG_ReadString(cl.layout, sizeof(cl.layout));
-    SHOWNET(2, "    \"%s\"\n", Com_MakePrintable(cl.layout));
+    MSG_ReadString(cl.cgame_data.layout, sizeof(cl.cgame_data.layout));
+    SHOWNET(2, "    \"%s\"\n", Com_MakePrintable(cl.cgame_data.layout));
 }
 
 static void CL_ParseInventory(void)
@@ -1147,7 +1147,7 @@ static void CL_ParseInventory(void)
     int        i;
 
     for (i = 0; i < MAX_ITEMS; i++) {
-        cl.inventory[i] = MSG_ReadShort();
+        cl.cgame_data.inventory[i] = MSG_ReadShort();
     }
 }
 

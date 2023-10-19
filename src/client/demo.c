@@ -850,7 +850,7 @@ void CL_EmitDemoSnapshot(void)
 
     // write layout
     MSG_WriteByte(svc_layout);
-    MSG_WriteString(cl.layout);
+    MSG_WriteString(cl.cgame_data.layout);
 
     snap = Z_Malloc(sizeof(*snap) + msg_write.cursize - 1);
     snap->framenum = cls.demo.frames_read;

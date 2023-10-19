@@ -2101,7 +2101,7 @@ static void CL_DumpStatusbar_f(void)
 
 static void CL_DumpLayout_f(void)
 {
-    dump_program(cl.layout, "layout");
+    dump_program(cl.cgame_data.layout, "layout");
 }
 
 static const cmd_option_t o_writeconfig[] = {

@@ -22,6 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "shared/shared.h"
 #include "shared/list.h"
+#include "shared/game.h"
 
 #include "common/bsp.h"
 #include "common/cmd.h"
@@ -243,8 +244,7 @@ typedef struct client_state_s {
     //
     // transient data from server
     //
-    char        layout[MAX_NET_STRING];     // general 2D overlay
-    int         inventory[MAX_ITEMS];
+    cg_server_data_t cgame_data;
 
     //
     // server state information
