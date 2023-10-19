@@ -507,7 +507,7 @@ void V_RenderView(void)
             float fog_backlerp = 1.0f - fog_frontlerp;
 
 #define Q_FP(p) \
-                cl.refdef.fog.##p = LERP2(cl.fog.start.##p, cl.fog.end.##p, fog_backlerp, fog_frontlerp)
+                cl.refdef.fog.p = LERP2(cl.fog.start.p, cl.fog.end.p, fog_backlerp, fog_frontlerp)
 
             Q_FP(global.r);
             Q_FP(global.g);
