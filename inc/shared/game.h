@@ -154,6 +154,10 @@ struct edict_s {
 
 //===============================================================
 
+// [Paril-KEX] max number of arguments (not including the base) for
+// localization prints
+#define MAX_LOCALIZATION_ARGS   8
+
 typedef enum BoxEdictsResult_e
 {
     BoxEdictsResult_Keep, // keep the given entity in the result and keep looping
