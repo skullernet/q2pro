@@ -72,26 +72,29 @@ void GL_SampleLightPoint(vec3_t color)
 
 static bool GL_LightGridPoint(lightgrid_t *grid, const vec3_t start, vec3_t color)
 {
+    vec3_t point, avg;
     int point_i[3];
-    int i, j, samples;
+    vec3_t samples[8];
+    int i, j, mask, numsamples;
 
     if (!grid->numleafs || !gl_lightgrid->integer)
         return false;
 
-    point_i[0] = (start[0] - grid->mins[0]) * grid->scale[0];
-    point_i[1] = (start[1] - grid->mins[1]) * grid->scale[1];
-    point_i[2] = (start[2] - grid->mins[2]) * grid->scale[2];
+    point[0] = (start[0] - grid->mins[0]) * grid->scale[0];
+    point[1] = (start[1] - grid->mins[1]) * grid->scale[1];
+    point[2] = (start[2] - grid->mins[2]) * grid->scale[2];
 
-    VectorClear(color);
+    VectorCopy(point, point_i);
+    VectorClear(avg);
 
-    // TODO: needs interpolation. just average for now.
-    samples = 0;
-    for (i = 0; i < 8; i++) {
+    for (i = mask = numsamples = 0; i < 8; i++) {
         int32_t tmp[3];
 
         tmp[0] = point_i[0] + ((i >> 0) & 1);
         tmp[1] = point_i[1] + ((i >> 1) & 1);
         tmp[2] = point_i[2] + ((i >> 2) & 1);
+
+        VectorClear(samples[i]);
 
         lightgrid_sample_t *s = BSP_LookupLightgrid(grid, tmp);
         if (!s)
@@ -99,20 +102,54 @@ static bool GL_LightGridPoint(lightgrid_t *grid, const vec3_t start, vec3_t colo
 
         for (j = 0; j < grid->numstyles && s->style != 255; j++, s++) {
             lightstyle_t *style = LIGHT_STYLE(s->style);
-            color[0] += s->rgb[0] * style->white;
-            color[1] += s->rgb[1] * style->white;
-            color[2] += s->rgb[2] * style->white;
+            VectorMA(samples[i], style->white, s->rgb, samples[i]);
         }
 
-        if (j)
-            samples++;
+        // count non-occluded samples
+        if (j) {
+            mask |= BIT(i);
+            VectorAdd(avg, samples[i], avg);
+            numsamples++;
+        }
     }
 
-    if (!samples)
+    if (!mask)
         return false;
 
-    VectorScale(color, 1.0f / samples, color);
+    // replace occluded samples with average
+    if (mask != 255) {
+        VectorScale(avg, 1.0f / numsamples, avg);
+        for (i = 0; i < 8; i++)
+            if (!(mask & BIT(i)))
+                VectorCopy(avg, samples[i]);
+    }
+
+    // trilinear interpolation
+    float fx, fy, fz;
+    float bx, by, bz;
+    vec3_t lerp_x[4];
+    vec3_t lerp_y[2];
+
+    fx = point[0] - point_i[0];
+    fy = point[1] - point_i[1];
+    fz = point[2] - point_i[2];
+
+    bx = 1.0f - fx;
+    by = 1.0f - fy;
+    bz = 1.0f - fz;
+
+    LerpVector2(samples[0], samples[1], bx, fx, lerp_x[0]);
+    LerpVector2(samples[2], samples[3], bx, fx, lerp_x[1]);
+    LerpVector2(samples[4], samples[5], bx, fx, lerp_x[2]);
+    LerpVector2(samples[6], samples[7], bx, fx, lerp_x[3]);
+
+    LerpVector2(lerp_x[0], lerp_x[1], by, fy, lerp_y[0]);
+    LerpVector2(lerp_x[2], lerp_x[3], by, fy, lerp_y[1]);
+
+    LerpVector2(lerp_y[0], lerp_y[1], bz, fz, color);
+
     GL_AdjustColor(color);
+
     return true;
 }
 
