@@ -18,12 +18,90 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "client.h"
 #include "cgame_classic.h"
+#include "common/loc.h"
 
-void CG_Init(void) {}
+static struct {
+    qhandle_t font_pic;
+} scr;
+
+static cvar_t   *scr_font;
+
+static void scr_font_changed(cvar_t *self)
+{
+    scr.font_pic = R_RegisterFont(self->string);
+}
+
+void CG_Init(void)
+{
+    scr_font = Cvar_Get("scr_font", "conchars", 0);
+    scr_font->changed = scr_font_changed;
+    scr_font_changed(scr_font);
+}
 
 static void CG_Print(const char *msg)
 {
     Com_Printf("%s", msg);
+}
+
+static const char *CG_get_configstring(int index)
+{
+    if (index < 0 || index >= cs_remap_rerelease.end)
+        Com_Error(ERR_DROP, "%s: bad index: %d", __func__, index);
+
+    return cl.configstrings[remap_cs_index(index, &cs_remap_rerelease, &cl.csr)];
+}
+
+static cvar_t *CG_cvar(const char *var_name, const char *value, cvar_flags_t flags)
+{
+    if (flags & CVAR_EXTENDED_MASK) {
+        Com_WPrintf("CGame attemped to set extended flags on '%s', masked out.\n", var_name);
+        flags &= ~CVAR_EXTENDED_MASK;
+    }
+
+    return Cvar_Get(var_name, value, flags | CVAR_GAME);
+}
+
+static uint64_t CG_CL_ClientTime(void)
+{
+    return cl.time;
+}
+
+static void CG_Draw_GetPicSize (int *w, int *h, const char *name)
+{
+    qhandle_t img = R_RegisterImage(name, IT_PIC, IF_NONE);
+    if (img == 0) {
+        *w = *h = 0;
+        return;
+    }
+    R_GetPicSize(w, h, img);
+}
+
+static void CG_SCR_DrawChar(int x, int y, int scale, int num, bool shadow)
+{
+    int draw_flags = shadow ? UI_DROPSHADOW : 0;
+    R_DrawChar(x, y, draw_flags, num, scr.font_pic);
+}
+
+static void CG_SCR_DrawPic (int x, int y, int w, int h, const char *name)
+{
+    qhandle_t img = R_RegisterImage(name, IT_PIC, IF_NONE);
+    if (img == 0)
+        return;
+
+    R_DrawStretchPic(x, y, w, h, img);
+}
+
+#define NUM_LOC_STRINGS     8
+#define LOC_STRING_LENGTH   MAX_STRING_CHARS
+static char cg_loc_strings[NUM_LOC_STRINGS][LOC_STRING_LENGTH];
+static int cg_loc_string_num = 0;
+
+static const char* CG_Localize (const char *base, const char **args, size_t num_args)
+{
+    char *out_str = cg_loc_strings[cg_loc_string_num];
+    cg_loc_string_num = (cg_loc_string_num + 1) % NUM_LOC_STRINGS;
+    Loc_Localize(base, true, args, num_args, out_str, LOC_STRING_LENGTH);
+    return out_str;
 }
 
 const cgame_export_t *cgame = NULL;
@@ -38,6 +116,17 @@ void CG_Load(const char* new_game)
             .frame_time_ms = CL_FRAMETIME,
 
             .Com_Print = CG_Print,
+
+            .get_configstring = CG_get_configstring,
+
+            .cvar = CG_cvar,
+
+            .CL_ClientTime = CG_CL_ClientTime,
+            .Draw_GetPicSize = CG_Draw_GetPicSize,
+            .SCR_DrawChar = CG_SCR_DrawChar,
+            .SCR_DrawPic = CG_SCR_DrawPic,
+
+            .Localize = CG_Localize,
         };
 
         cgame = GetClassicCGameAPI(&cgame_imports);
