@@ -29,22 +29,27 @@ typedef struct debug_line_s {
     color_t		color;
     int			time; // 0 = one frame only
     bool		depth_test;
-
-    struct debug_line_s	*next;
+    
+    list_t      entry;
 } debug_line_t;
 
 static debug_line_t debug_lines[MAX_DEBUG_LINES];
-static debug_line_t *active_lines, *free_lines;
+static list_t debug_lines_free;
+static list_t debug_lines_active;
+static int num_lines = 0;
+
+#define DEBUG_FIRST(list)      LIST_FIRST(debug_line_t, list, entry)
+#define DEBUG_TERM(l, list)   LIST_TERM(l, list, entry)
 
 void GL_ClearDebugLines(void)
 {
-    free_lines = debug_lines;
-    active_lines = NULL;
+    memset(debug_lines, 0, sizeof(debug_lines));
 
-    int i = 0;
-    for (; i < MAX_DEBUG_LINES - 1; i++)
-        debug_lines[i].next = &debug_lines[i + 1];
-    debug_lines[i].next = NULL;
+    List_Init(&debug_lines_free);
+    List_Init(&debug_lines_active);
+
+    for (int i = 0; i < MAX_DEBUG_LINES; i++)
+        List_Append(&debug_lines_free, &debug_lines[i].entry);
 }
 
 static int R_GetTime()
@@ -54,13 +59,32 @@ static int R_GetTime()
 
 void R_AddDebugLine(const vec3_t start, const vec3_t end, color_t color, int time, bool depth_test)
 {
-    if (!free_lines)
-        return;
-    
-    debug_line_t *l = free_lines;
-    free_lines = l->next;
-    l->next = active_lines;
-    active_lines = l;
+    debug_line_t *l = DEBUG_FIRST(&debug_lines_free);
+
+    if (DEBUG_TERM(l, &debug_lines_free)) {
+        debug_line_t *nl, *next;
+        bool found = false;
+
+        LIST_FOR_EACH_SAFE(debug_line_t, nl, next, &debug_lines_active, entry) {
+            
+            if (nl->time <= R_GetTime()) {
+                List_Remove(&nl->entry);
+                List_Insert(&debug_lines_free, &nl->entry);
+                found = true;
+            }
+        }
+
+        if (!found) {
+            l = DEBUG_FIRST(&debug_lines_active);
+        } else {
+            l = DEBUG_FIRST(&debug_lines_free);
+        }
+    }
+
+    // unlink from freelist
+    List_Remove(&l->entry);
+
+    List_Append(&debug_lines_active, &l->entry);
 
     VectorCopy(start, l->start);
     VectorCopy(end, l->end);
@@ -385,9 +409,6 @@ void R_AddDebugText(const vec3_t origin, const char *text, float size, const vec
 
 void GL_DrawDebugLines(void)
 {
-    if (!active_lines)
-        return;
-
     GL_LoadMatrix(glr.viewmatrix);
     GL_BindTexture(0, TEXNUM_WHITE);
     GL_ArrayBits(GLA_VERTEX);
@@ -401,12 +422,17 @@ void GL_DrawDebugLines(void)
 
     int last_bits = -1;
     color_t last_color = { 0 };
-    
-    debug_line_t *active = NULL, *tail = NULL, *next = NULL;
 
-    for (debug_line_t *l = active_lines; l; l = next) {
+    debug_line_t *l, *next;
+    int count = 0;
 
-        next = l->next;
+    LIST_FOR_EACH_SAFE(debug_line_t, l, next, &debug_lines_active, entry) {
+        if (l->time < R_GetTime()) {
+            // expired
+            List_Remove(&l->entry);
+            List_Insert(&debug_lines_free, &l->entry);
+            continue;
+        }
 
         int bits = GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE;
 
@@ -437,22 +463,7 @@ void GL_DrawDebugLines(void)
         pos_out += 6;
 
         tess.numverts += 2;
-
-        if (!l->time || l->time < R_GetTime()) {
-            l->next = free_lines;
-            free_lines = l;
-        } else {
-            l->next = NULL;
-            if (!tail) {
-                active = tail = l;
-            } else {
-                tail->next = l;
-                tail = l;
-            }
-        }
     }
-
-    active_lines = active;
 
     if (tess.numverts) {
         GL_LockArrays(tess.numverts);
