@@ -369,9 +369,9 @@ void R_AddDebugText(const vec3_t origin, const char *text, float size, const vec
 
         for (const char *rc = c; rc != c_end; rc++) {
             char c = *rc - ' ';
-            const float char_width = futural_width[c] * scale;
-            const int char_size = futural_size[c];
-            const char *char_data = futural[c];
+            const float char_width = futural_width[(int)c] * scale;
+            const int char_size = futural_size[(int)c];
+            const char *char_data = futural[(int)c];
 
             for (int i = 0; i < char_size; i += 4) {
                 vec3_t s;
