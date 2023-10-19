@@ -17,8 +17,32 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "gl.h"
-#include "refresh/futural.h"
 #include "client/client.h"
+#include "debug_fonts/futural.h"
+
+typedef struct debug_font_s {
+    // Number of glyphs
+    int count;
+    // Font height
+    char height;
+    // Widths of the glyphs
+    const char* width;
+    // Real widths of the glyphs (calculated from data)
+    const char* realwidth;
+    // Number of chars in each glyph
+    const int* size;
+    // Pointers to glyph data
+    const char **glyph_data;
+} debug_font_t;
+
+static const debug_font_t dbg_font_futural = {
+    futural_count,
+    futural_height,
+    futural_width,
+    futural_realwidth,
+    futural_size,
+    futural
+};
 
 static cvar_t *r_debug_linewidth;
 
@@ -332,7 +356,7 @@ void R_AddDebugCircle(const vec3_t origin, float radius, color_t color, int time
 void R_AddDebugText(const vec3_t origin, const char *text, float size, const vec3_t angles, color_t color, int time, bool depth_test)
 {
     int total_lines = 1;
-    float scale = (1.0f / futural_height) * (size * 32);
+    float scale = (1.0f / dbg_font_futural.height) * (size * 32);
 
     int l = strlen(text);
 
@@ -354,7 +378,7 @@ void R_AddDebugText(const vec3_t origin, const char *text, float size, const vec
     vec3_t right, up;
     AngleVectors(angles, NULL, right, up);
 
-    float y_offset = -((futural_height * scale) * 0.5f) * total_lines;
+    float y_offset = -((dbg_font_futural.height * scale) * 0.5f) * total_lines;
 
     const char *c = text;
     for (int line = 0; line < total_lines; line++) {
@@ -362,16 +386,16 @@ void R_AddDebugText(const vec3_t origin, const char *text, float size, const vec
         float width = 0;
 
         for (; *c_end && *c_end != '\n'; c_end++) {
-            width += futural_width[*c_end - ' '] * scale;
+            width += dbg_font_futural.width[*c_end - ' '] * scale;
         }
         
         float x_offset = (width * 0.5f);
 
         for (const char *rc = c; rc != c_end; rc++) {
             char c = *rc - ' ';
-            const float char_width = futural_width[(int)c] * scale;
-            const int char_size = futural_size[(int)c];
-            const char *char_data = futural[(int)c];
+            const float char_width = dbg_font_futural.width[(int)c] * scale;
+            const int char_size = dbg_font_futural.size[(int)c];
+            const char *char_data = dbg_font_futural.glyph_data[(int)c];
 
             for (int i = 0; i < char_size; i += 4) {
                 vec3_t s;
@@ -390,7 +414,7 @@ void R_AddDebugText(const vec3_t origin, const char *text, float size, const vec
             x_offset -= char_width;
         }
 
-        y_offset += futural_height * scale;
+        y_offset += dbg_font_futural.height * scale;
 
         c = c_end + 1;
     }

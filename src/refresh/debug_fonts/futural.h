@@ -1552,9 +1552,9 @@ static const char futural_96[132] = {
 
 
 // Number of glyphs
-const int futural_count = 96;
+enum { futural_count = 96 };
 // Font height
-const char futural_height = 32;
+enum { futural_height = 32 };
 // Widths of the glyphs
 const char futural_width[96] = {futural_1_width, futural_2_width, futural_3_width, futural_4_width, futural_5_width, futural_6_width, futural_7_width, futural_8_width, futural_9_width, futural_10_width, futural_11_width, futural_12_width, futural_13_width, futural_14_width, futural_15_width, futural_16_width, futural_17_width, futural_18_width, futural_19_width, futural_20_width, futural_21_width, futural_22_width, futural_23_width, futural_24_width, futural_25_width, futural_26_width, futural_27_width, futural_28_width, futural_29_width, futural_30_width, futural_31_width, futural_32_width, futural_33_width, futural_34_width, futural_35_width, futural_36_width, futural_37_width, futural_38_width, futural_39_width, futural_40_width, futural_41_width, futural_42_width, futural_43_width, futural_44_width, futural_45_width, futural_46_width, futural_47_width, futural_48_width, futural_49_width, futural_50_width, futural_51_width, futural_52_width, futural_53_width, futural_54_width, futural_55_width, futural_56_width, futural_57_width, futural_58_width, futural_59_width, futural_60_width, futural_61_width, futural_62_width, futural_63_width, futural_64_width, futural_65_width, futural_66_width, futural_67_width, futural_68_width, futural_69_width, futural_70_width, futural_71_width, futural_72_width, futural_73_width, futural_74_width, futural_75_width, futural_76_width, futural_77_width, futural_78_width, futural_79_width, futural_80_width, futural_81_width, futural_82_width, futural_83_width, futural_84_width, futural_85_width, futural_86_width, futural_87_width, futural_88_width, futural_89_width, futural_90_width, futural_91_width, futural_92_width, futural_93_width, futural_94_width, futural_95_width, futural_96_width};
 // Real widths of the glyphs (calculated from data)
