@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "gl.h"
 #include "refresh/futural.h"
+#include "client/client.h"
 
 static cvar_t *r_debug_linewidth;
 
@@ -46,7 +47,12 @@ void GL_ClearDebugLines(void)
     debug_lines[i].next = NULL;
 }
 
-void GL_AddDebugLine(const vec3_t start, const vec3_t end, color_t color, int time, bool depth_test)
+static int R_GetTime()
+{
+    return CL_ServerTime();
+}
+
+void R_AddDebugLine(const vec3_t start, const vec3_t end, color_t color, int time, bool depth_test)
 {
     if (!free_lines)
         return;
@@ -59,16 +65,16 @@ void GL_AddDebugLine(const vec3_t start, const vec3_t end, color_t color, int ti
     VectorCopy(start, l->start);
     VectorCopy(end, l->end);
     l->color = color;
-    l->time = (glr.fd.time * 1000) + time;
+    l->time = R_GetTime() + time;
     l->depth_test = depth_test;
 }
 
 #define GL_DRAWLINE(sx, sy, sz, ex, ey, ez) \
-    GL_AddDebugLine((const vec3_t) { (sx), (sy), (sz) }, (const vec3_t) { (ex), (ey), (ez) }, color, time, depth_test)
+    R_AddDebugLine((const vec3_t) { (sx), (sy), (sz) }, (const vec3_t) { (ex), (ey), (ez) }, color, time, depth_test)
 #define GL_DRAWLINEV(s, e) \
     GL_DRAWLINE((s)[0], (s)[1], (s)[2], (e)[0], (e)[1], (e)[2])
 
-void GL_AddDebugPoint(const vec3_t point, float size, color_t color, int time, bool depth_test)
+void R_AddDebugPoint(const vec3_t point, float size, color_t color, int time, bool depth_test)
 {
     size *= 0.5f;
     
@@ -77,7 +83,7 @@ void GL_AddDebugPoint(const vec3_t point, float size, color_t color, int time, b
     GL_DRAWLINE(point[0], point[1], point[2] - size, point[0], point[1], point[2] + size);
 }
 
-void GL_AddDebugAxis(const vec3_t point, float size, int time, bool depth_test)
+void R_AddDebugAxis(const vec3_t point, float size, int time, bool depth_test)
 {
     color_t color = { .u32 = U32_RED };
     GL_DRAWLINE(point[0], point[1], point[2], point[0] + size, point[1], point[2]);
@@ -87,7 +93,7 @@ void GL_AddDebugAxis(const vec3_t point, float size, int time, bool depth_test)
     GL_DRAWLINE(point[0], point[1], point[2], point[0], point[1], point[2] + size);
 }
 
-void GL_AddDebugBounds(const vec3_t absmins, const vec3_t absmaxs, color_t color, int time, bool depth_test)
+void R_AddDebugBounds(const vec3_t absmins, const vec3_t absmaxs, color_t color, int time, bool depth_test)
 {
     for (int i = 0; i < 4; i++) {
         // draw column
@@ -118,7 +124,7 @@ static int linecmp(const void *a_, const void *b_)
     return a->a - b->a;
 }
 
-void GL_AddDebugSphere(const vec3_t origin, float radius, color_t color, int time, bool depth_test)
+void R_AddDebugSphere(const vec3_t origin, float radius, color_t color, int time, bool depth_test)
 {
     // https://danielsieger.com/blog/2021/03/27/generating-spheres.html
     radius *= 0.5f;
@@ -201,7 +207,7 @@ void GL_AddDebugSphere(const vec3_t origin, float radius, color_t color, int tim
     }
 }
 
-void GL_AddDebugCylinder(const vec3_t origin, float half_height, float radius, color_t color, int time, bool depth_test)
+void R_AddDebugCylinder(const vec3_t origin, float half_height, float radius, color_t color, int time, bool depth_test)
 {
     radius *= 0.5f;
 
@@ -265,9 +271,9 @@ static void GL_DrawArrowCap(const vec3_t apex, const vec3_t dir, float size, col
     }
 }
 
-void GL_AddDebugArrow(const vec3_t start, const vec3_t end, float size, color_t line_color, color_t arrow_color, int time, bool depth_test)
+void R_AddDebugArrow(const vec3_t start, const vec3_t end, float size, color_t line_color, color_t arrow_color, int time, bool depth_test)
 {
-    GL_AddDebugLine(start, end, line_color, time, depth_test);
+    R_AddDebugLine(start, end, line_color, time, depth_test);
 
     vec3_t dir;
     VectorSubtract(end, start, dir);
@@ -275,16 +281,16 @@ void GL_AddDebugArrow(const vec3_t start, const vec3_t end, float size, color_t 
     GL_DrawArrowCap(end, dir, size, arrow_color, time, depth_test);
 }
 
-void GL_AddDebugRay(const vec3_t start, const vec3_t dir, float length, float size, color_t line_color, color_t arrow_color, int time, bool depth_test)
+void R_AddDebugRay(const vec3_t start, const vec3_t dir, float length, float size, color_t line_color, color_t arrow_color, int time, bool depth_test)
 {
     vec3_t end;
     VectorMA(start, length, dir, end);
 
-    GL_AddDebugLine(start, end, line_color, time, depth_test);
+    R_AddDebugLine(start, end, line_color, time, depth_test);
     GL_DrawArrowCap(end, dir, size, arrow_color, time, depth_test);
 }
 
-void GL_AddDebugCircle(const vec3_t origin, float radius, color_t color, int time, bool depth_test)
+void R_AddDebugCircle(const vec3_t origin, float radius, color_t color, int time, bool depth_test)
 {
     radius *= 0.5f;
 
@@ -310,10 +316,10 @@ void GL_AddDebugCircle(const vec3_t origin, float radius, color_t color, int tim
     }
 }
 
-void GL_AddDebugText(const vec3_t origin, const char *text, const vec3_t angles, color_t color, int time, bool depth_test)
+void R_AddDebugText(const vec3_t origin, const char *text, float size, const vec3_t angles, color_t color, int time, bool depth_test)
 {
     int total_lines = 1;
-    float scale = (1.0f / futural_height) * 1.0f;
+    float scale = (1.0f / futural_height) * (size * 32);
 
     int l = strlen(text);
 
@@ -346,7 +352,7 @@ void GL_AddDebugText(const vec3_t origin, const char *text, const vec3_t angles,
             width += futural_width[*c_end - ' '] * scale;
         }
         
-        float x_offset = -(width * 0.5f);
+        float x_offset = (width * 0.5f);
 
         for (const char *rc = c; rc != c_end; rc++) {
             char c = *rc - ' ';
@@ -356,19 +362,19 @@ void GL_AddDebugText(const vec3_t origin, const char *text, const vec3_t angles,
 
             for (int i = 0; i < char_size; i += 4) {
                 vec3_t s;
-                float r = char_data[i] * scale + x_offset;
+                float r = -char_data[i] * scale + x_offset;
                 float u = -(char_data[i + 1] * scale + y_offset);
                 VectorMA(origin, -r, right, s);
                 VectorMA(s, u, up, s);
                 vec3_t e;
-                r = char_data[i + 2] * scale + x_offset;
+                r = -char_data[i + 2] * scale + x_offset;
                 u = -(char_data[i + 3] * scale + y_offset);
                 VectorMA(origin, -r, right, e);
                 VectorMA(e, u, up, e);
                 GL_DRAWLINEV(s, e);
             }
 
-            x_offset += char_width;
+            x_offset -= char_width;
         }
 
         y_offset += futural_height * scale;
@@ -432,7 +438,7 @@ void GL_DrawDebugLines(void)
 
         tess.numverts += 2;
 
-        if (!l->time || l->time < glr.fd.time * 1000) {
+        if (!l->time || l->time < R_GetTime()) {
             l->next = free_lines;
             free_lines = l;
         } else {

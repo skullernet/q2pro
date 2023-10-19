@@ -129,6 +129,8 @@ bool SCR_ParseColor(const char *s, color_t *color);
 
 float V_CalcFov(float fov_x, float width, float height);
 
+int CL_ServerTime(void);
+
 #else // USE_CLIENT
 
 #define CL_Init()                       (void)0

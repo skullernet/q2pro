@@ -704,19 +704,6 @@ void GL_ClearSolidFaces(void);
 
 // gl_debug.c
 void GL_ClearDebugLines(void);
-
-void GL_AddDebugLine(const vec3_t start, const vec3_t end, color_t color, int time, bool depth_test);
-void GL_AddDebugPoint(const vec3_t point, float size, color_t color, int time, bool depth_test);
-void GL_AddDebugAxis(const vec3_t point, float size, int time, bool depth_test);
-void GL_AddDebugCircle(const vec3_t origin, float radius, color_t color, int time, bool depth_test);
-void GL_AddDebugBounds(const vec3_t absmins, const vec3_t absmaxs, color_t color, int time, bool depth_test);
-void GL_AddDebugSphere(const vec3_t origin, float radius, color_t color, int time, bool depth_test);
-// angles = null to make oriented text
-void GL_AddDebugText(const vec3_t origin, const char *text, const vec3_t angles, color_t color, int time, bool depth_test);
-void GL_AddDebugCylinder(const vec3_t origin, float half_height, float radius, color_t color, int time, bool depth_test);
-void GL_AddDebugRay(const vec3_t start, const vec3_t dir, float length, float size, color_t line_color, color_t arrow_color, int time, bool depth_test);
-void GL_AddDebugArrow(const vec3_t start, const vec3_t end, float size, color_t line_color, color_t arrow_color, int time, bool depth_test);
-
 void GL_DrawDebugLines(void);
 void GL_InitDebugDraw(void);
 

@@ -345,6 +345,16 @@ float V_CalcFov(float fov_x, float width, float height)
 }
 
 /*
+====================
+CL_ServerTime
+====================
+*/
+int CL_ServerTime(void)
+{
+    return cl.servertime;
+}
+
+/*
 ==================
 V_RenderView
 
