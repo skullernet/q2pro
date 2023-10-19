@@ -164,7 +164,7 @@ LOAD(Texinfo)
 
             char *buffer;
 
-            FS_LoadFile(material_file, &buffer);
+            FS_LoadFile(material_file, (void**)&buffer);
 
             if (buffer) {
                 Q_strlcpy(out->c.material, buffer, sizeof(out->c.material));
