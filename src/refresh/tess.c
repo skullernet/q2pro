@@ -20,7 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 tesselator_t tess;
 
-#define FACE_HASH_BITS  5
+#define FACE_HASH_BITS  8
 #define FACE_HASH_SIZE  (1 << FACE_HASH_BITS)
 #define FACE_HASH_MASK  (FACE_HASH_SIZE - 1)
 
@@ -463,17 +463,10 @@ void GL_DrawAlphaFaces(void)
 
 void GL_AddSolidFace(mface_t *face)
 {
-    unsigned hash;
-
-    hash = face->texnum[0] ^ face->texnum[1] ^ face->texnum[2] ^ face->statebits;
-    hash ^= hash >> FACE_HASH_BITS;
-    hash ^= hash >> (FACE_HASH_BITS * 2);
-    hash &= FACE_HASH_MASK;
-
     // preserve front-to-back ordering
     face->next = NULL;
-    *faces_next[hash] = face;
-    faces_next[hash] = &face->next;
+    *faces_next[face->hash] = face;
+    faces_next[face->hash] = &face->next;
 }
 
 void GL_AddAlphaFace(mface_t *face, entity_t *ent)

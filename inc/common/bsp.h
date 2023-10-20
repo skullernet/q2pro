@@ -75,7 +75,9 @@ typedef struct mface_s {
 
     byte            *lightmap;
     byte            styles[MAX_LIGHTMAPS];
-    int             numstyles;
+    byte            numstyles;
+
+    byte            hash;
 
     mtexinfo_t      *texinfo;
     vec3_t          lm_axis[2];

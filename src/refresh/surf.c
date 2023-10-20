@@ -21,6 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
  *
  */
 #include "gl.h"
+#include "common/mdfour.h"
 
 lightmap_builder_t lm;
 
@@ -748,6 +749,21 @@ static void duplicate_surface_lmtc(mface_t *surf, vec_t *vbo)
     }
 }
 
+static void calc_surface_hash(mface_t *surf)
+{
+    uint32_t args[] = { surf->texnum[0], surf->texnum[1], surf->texnum[2], surf->statebits };
+    struct mdfour md;
+    uint8_t out[16];
+
+    mdfour_begin(&md);
+    mdfour_update(&md, (uint8_t *)args, sizeof(args));
+    mdfour_result(&md, out);
+
+    surf->hash = 0;
+    for (int i = 0; i < 16; i++)
+        surf->hash ^= out[i];
+}
+
 static bool create_surface_vbo(size_t size)
 {
     GLuint buf = 0;
@@ -833,6 +849,8 @@ static void upload_world_surfaces(void)
             normalize_surface_lmtc(surf, vbo);
         else
             duplicate_surface_lmtc(surf, vbo);
+
+        calc_surface_hash(surf);
 
         currvert += surf->numsurfedges;
     }
