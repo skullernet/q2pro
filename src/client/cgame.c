@@ -111,6 +111,22 @@ static uint64_t CG_CL_ClientTime(void)
     return cl.time;
 }
 
+static const char* CG_CL_GetClientName(int32_t index)
+{
+    if (index < 0 || index >= MAX_CLIENTS) {
+        Com_Error(ERR_DROP, "%s: invalid client index", __func__);
+    }
+    return cl.clientinfo[index].name;
+}
+
+static const char* CG_CL_GetClientPic(int32_t index)
+{
+    if (index < 0 || index >= MAX_CLIENTS) {
+        Com_Error(ERR_DROP, "%s: invalid client index", __func__);
+    }
+    return cl.clientinfo[index].icon_name;
+}
+
 static void CG_Draw_GetPicSize (int *w, int *h, const char *name)
 {
     qhandle_t img = R_RegisterImage(name, IT_PIC, IF_NONE);
@@ -169,6 +185,8 @@ void CG_Load(const char* new_game)
             .GetExtension = CG_GetExtension,
 
             .CL_ClientTime = CG_CL_ClientTime,
+            .CL_GetClientName = CG_CL_GetClientName,
+            .CL_GetClientPic = CG_CL_GetClientPic,
             .Draw_GetPicSize = CG_Draw_GetPicSize,
             .SCR_DrawChar = CG_SCR_DrawChar,
             .SCR_DrawPic = CG_SCR_DrawPic,
