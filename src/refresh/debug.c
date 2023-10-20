@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "gl.h"
 #include "client/client.h"
+#include "common/prompt.h"
 #include "debug_fonts/cursive.h"
 #include "debug_fonts/futural.h"
 #include "debug_fonts/futuram.h"
@@ -52,15 +53,17 @@ typedef struct debug_font_s {
     const char **glyph_data;
 } debug_font_t;
 
-#define DEBUG_FONT(NAME)    \
-    #NAME,                  \
-    {                       \
-        NAME##_count,       \
-        NAME##_height,      \
-        NAME##_width,       \
-        NAME##_realwidth,   \
-        NAME##_size,        \
-        NAME                \
+#define DEBUG_FONT(NAME)        \
+    {                           \
+        #NAME,                  \
+        {                       \
+            NAME##_count,       \
+            NAME##_height,      \
+            NAME##_width,       \
+            NAME##_realwidth,   \
+            NAME##_size,        \
+            NAME                \
+        }                       \
     }
 
 static const struct {
@@ -87,6 +90,8 @@ static const struct {
     DEBUG_FONT(timesrb),
 };
 
+#undef DEBUG_FONT
+
 static const debug_font_t *dbg_font;
 
 static cvar_t *r_debug_font;
@@ -106,7 +111,6 @@ typedef struct debug_line_s {
 static debug_line_t debug_lines[MAX_DEBUG_LINES];
 static list_t debug_lines_free;
 static list_t debug_lines_active;
-static int num_lines = 0;
 
 #define DEBUG_FIRST(list)      LIST_FIRST(debug_line_t, list, entry)
 #define DEBUG_TERM(l, list)   LIST_TERM(l, list, entry)
@@ -122,7 +126,7 @@ void GL_ClearDebugLines(void)
         List_Append(&debug_lines_free, &debug_lines[i].entry);
 }
 
-static int R_GetTime()
+static int R_GetTime(void)
 {
     return CL_ServerTime();
 }
@@ -483,7 +487,6 @@ void GL_DrawDebugLines(void)
     color_t last_color = { 0 };
 
     debug_line_t *l, *next;
-    int count = 0;
 
     LIST_FOR_EACH_SAFE(debug_line_t, l, next, &debug_lines_active, entry) {
         if (l->time < R_GetTime()) {
