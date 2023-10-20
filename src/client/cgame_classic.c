@@ -162,6 +162,9 @@ static void CG_DrawStringMulti(int x, int y, int flags, size_t maxlen, const cha
 #define HUD_DrawAltRightString(x, y, string) \
     CG_DrawStringEx(x, y, UI_RIGHT | UI_XORCOLOR, MAX_STRING_CHARS, string)
 
+static const char field_pic[] = "field_3";
+static const char inven_pic[] = "inventory";
+
 #define DIGIT_WIDTH 16
 #define STAT_PICS       11
 #define STAT_MINUS      (STAT_PICS - 1)  // num frame for '-' stats digit
@@ -261,8 +264,6 @@ static void SCR_SkipToEndif(const char **s)
         }
     }
 }
-
-static const char field_pic[] = "field_3";
 
 static inline int flash_frame(void)
 {
@@ -707,6 +708,80 @@ static void SCR_DrawLayout(vrect_t hud_vrect, const cg_server_data_t *data, int3
     SCR_ExecuteLayoutString(hud_vrect, data->layout, playernum, ps);
 }
 
+#define DISPLAY_ITEMS   17
+
+static void SCR_DrawInventory(vrect_t hud_vrect, const cg_server_data_t *data, const player_state_t *ps)
+{
+    int     i;
+    int     num, selected_num, item;
+    int     index[MAX_ITEMS];
+    char    string[MAX_STRING_CHARS];
+    int     x, y;
+    const char  *bind;
+    int     selected;
+    int     top;
+
+    if (!(ps->stats[STAT_LAYOUTS] & LAYOUTS_INVENTORY))
+        return;
+
+    selected = ps->stats[STAT_SELECTED_ITEM];
+
+    num = 0;
+    selected_num = 0;
+    for (i = 0; i < MAX_ITEMS; i++) {
+        if (i == selected) {
+            selected_num = num;
+        }
+        if (data->inventory[i]) {
+            index[num++] = i;
+        }
+    }
+
+    // determine scroll point
+    top = selected_num - DISPLAY_ITEMS / 2;
+    if (top > num - DISPLAY_ITEMS) {
+        top = num - DISPLAY_ITEMS;
+    }
+    if (top < 0) {
+        top = 0;
+    }
+
+    x = hud_vrect.x + (hud_vrect.width - 256) / 2;
+    y = hud_vrect.y + (hud_vrect.height - 240) / 2;
+
+    DrawPic(x, y + 8, inven_pic);
+    y += 24;
+    x += 24;
+
+    HUD_DrawString(x, y, "hotkey ### item");
+    y += CHAR_HEIGHT;
+
+    HUD_DrawString(x, y, "------ --- ----");
+    y += CHAR_HEIGHT;
+
+    for (i = top; i < num && i < top + DISPLAY_ITEMS; i++) {
+        item = index[i];
+        // search for a binding
+        Q_concat(string, sizeof(string), "use ", cgi.get_configstring(cs_remap_rerelease.items + item));
+        bind = cgi.CL_GetKeyBinding(string);
+
+        Q_snprintf(string, sizeof(string), "%6s %3i %s",
+                   bind, data->inventory[item],
+                   cgi.Localize(cgi.get_configstring(cs_remap_rerelease.items + item), NULL, 0));
+
+        if (item != selected) {
+            HUD_DrawAltString(x, y, string);
+        } else {    // draw a blinky cursor by the selected item
+            HUD_DrawString(x, y, string);
+            if ((cgi.CL_ClientRealTime() >> 8) & 1) {
+                cgi.SCR_DrawChar(x - CHAR_WIDTH, y, 1, 15, false);
+            }
+        }
+
+        y += CHAR_HEIGHT;
+    }
+}
+
 static void CGC_DrawHUD (int32_t isplit, const cg_server_data_t *data, vrect_t hud_vrect, vrect_t hud_safe, int32_t scale, int32_t playernum, const player_state_t *ps)
 {
     // Note: isplit is ignored, due to missing split screen support
@@ -714,6 +789,8 @@ static void CGC_DrawHUD (int32_t isplit, const cg_server_data_t *data, vrect_t h
     SCR_DrawStats(hud_vrect, playernum, ps);
 
     SCR_DrawLayout(hud_vrect, data, playernum, ps);
+
+    SCR_DrawInventory(hud_vrect, data, ps);
 }
 
 const char cgame_q2pro_extended_support_ext[] = "q2pro:extended_support";
