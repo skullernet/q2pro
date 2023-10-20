@@ -782,7 +782,19 @@ static void PF_Loc_Print(edict_t* ent, print_type_t level, const char* base, con
 
     char string[MAX_STRING_CHARS];
     Loc_Localize(base, true, args, num_args, string, sizeof(string));
-    PF_Client_Print(ent, level, string);
+
+    if (level & PRINT_BROADCAST) {
+        print_type_t broadcast_level = level & ~(PRINT_BROADCAST | PRINT_NO_NOTIFY);
+        // restrict to print levels support by by svc_print
+        broadcast_level = min(broadcast_level, PRINT_CHAT);
+        PF_Broadcast_Print(broadcast_level, string);
+    } else {
+        level &= ~PRINT_NO_NOTIFY; // TODO implement
+        if (level == PRINT_CENTER || level == PRINT_TYPEWRITER)
+            PF_Center_Print(ent, string);
+        else
+            PF_Client_Print(ent, level, string);
+    }
 }
 
 #if USE_REF
