@@ -126,6 +126,7 @@ enum {
 };
 #define PRINT_TYPEWRITER    4       // centerprint but typed out one char at a time
 #define PRINT_CENTER        5       // centerprint without a separate function (loc variants only)
+#define PRINT_TTS           6       // PRINT_HIGH but will speak for players with narration on
 #define PRINT_BROADCAST     BIT(3)  // Bitflag, add to message to broadcast print to all clients.
 #define PRINT_NO_NOTIFY     BIT(4)  // Bitflag, don't put on notify
 

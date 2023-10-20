@@ -786,7 +786,8 @@ static void PF_Loc_Print(edict_t* ent, print_type_t level, const char* base, con
     if (level & PRINT_BROADCAST) {
         print_type_t broadcast_level = level & ~(PRINT_BROADCAST | PRINT_NO_NOTIFY);
         // restrict to print levels support by by svc_print
-        broadcast_level = min(broadcast_level, PRINT_CHAT);
+        if (broadcast_level > PRINT_CHAT && broadcast_level != PRINT_TTS)
+            broadcast_level = PRINT_CHAT;
         PF_Broadcast_Print(broadcast_level, string);
     } else {
         level &= ~PRINT_NO_NOTIFY; // TODO implement
