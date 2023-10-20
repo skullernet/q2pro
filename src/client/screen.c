@@ -1837,10 +1837,10 @@ static void SCR_ExecuteLayoutString(const char *s)
             Q_snprintf(buffer, sizeof(buffer), "Time:  %i", time);
             HUD_DrawString(x + 32, y + 3 * CHAR_HEIGHT, buffer);
 
-            if (!ci->icon) {
+            if (!ci->icon_name[0]) {
                 ci = &cl.baseclientinfo;
             }
-            R_DrawPic(x, y, ci->icon);
+            R_DrawPic(x, y, R_RegisterPic2(ci->icon_name));
             continue;
         }
 

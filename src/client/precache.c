@@ -169,7 +169,7 @@ void CL_LoadClientinfo(clientinfo_t *ci, const char *s)
     // icon file
     Q_concat(icon_filename, sizeof(icon_filename),
              "/players/", model_name, "/", skin_name, "_i.pcx");
-    ci->icon = R_RegisterTempPic(icon_filename);
+    Q_strlcpy(ci->icon_name, icon_filename, sizeof(ci->icon_name));
 
     strcpy(ci->model_name, model_name);
     strcpy(ci->skin_name, skin_name);
@@ -179,9 +179,9 @@ void CL_LoadClientinfo(clientinfo_t *ci, const char *s)
         return;
 
     // must have loaded all data types to be valid
-    if (!ci->skin || !ci->icon || !ci->model || !ci->weaponmodel[0]) {
+    if (!ci->skin || !ci->model || !ci->weaponmodel[0]) {
         ci->skin = 0;
-        ci->icon = 0;
+        ci->icon_name[0] = 0;
         ci->model = 0;
         ci->weaponmodel[0] = 0;
         ci->model_name[0] = 0;
