@@ -19,6 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "shared/shared.h"
 #include "cgame_classic.h"
 
+#include "common/cvar.h"
 #include "common/utils.h"
 
 #include <malloc.h>
@@ -35,6 +36,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define UI_DROPSHADOW       BIT(4)
 #define UI_XORCOLOR         BIT(7)
 
+float SCR_FadeAlpha(unsigned startTime, unsigned visTime, unsigned fadeTime);
 bool SCR_ParseColor(const char *s, color_t *color);
 
 // ==========================================================================
@@ -42,14 +44,20 @@ bool SCR_ParseColor(const char *s, color_t *color);
 static cgame_import_t cgi;
 static cgame_q2pro_extended_support_ext_t cgix;
 
+static cvar_t   *scr_centertime;
 static cvar_t   *scr_draw2d;
 
 static cvar_t   *ch_scale;
 static cvar_t   *ch_x;
 static cvar_t   *ch_y;
 
+static char     scr_centerstring[MAX_STRING_CHARS];
+static unsigned scr_centertime_start;   // for slow victory printing
+static int      scr_center_lines;
+
 static void CGC_Init(void)
 {
+    scr_centertime = cgi.cvar("scr_centertime", "2.5", 0);
     scr_draw2d = cgi.cvar("scr_draw2d", "2", 0);
 
     ch_scale = cgi.cvar("ch_scale", "1", 0);
@@ -782,6 +790,28 @@ static void SCR_DrawInventory(vrect_t hud_vrect, const cg_server_data_t *data, c
     }
 }
 
+static void SCR_DrawCenterString(vrect_t hud_vrect)
+{
+    int y;
+    float alpha;
+
+    Cvar_ClampValue(scr_centertime, 0.3f, 10.0f);
+
+    alpha = SCR_FadeAlpha(scr_centertime_start, scr_centertime->value * 1000, 300);
+    if (!alpha) {
+        return;
+    }
+
+    cgix.SetAlpha(alpha);
+
+    y = hud_vrect.height / 4 - scr_center_lines * 8 / 2;
+
+    CG_DrawStringMulti(hud_vrect.width / 2, y, UI_CENTER,
+                       MAX_STRING_CHARS, scr_centerstring);
+
+    cgix.ClearColor();
+}
+
 static void CGC_DrawHUD (int32_t isplit, const cg_server_data_t *data, vrect_t hud_vrect, vrect_t hud_safe, int32_t scale, int32_t playernum, const player_state_t *ps)
 {
     // Note: isplit is ignored, due to missing split screen support
@@ -791,6 +821,38 @@ static void CGC_DrawHUD (int32_t isplit, const cg_server_data_t *data, vrect_t h
     SCR_DrawLayout(hud_vrect, data, playernum, ps);
 
     SCR_DrawInventory(hud_vrect, data, ps);
+
+    SCR_DrawCenterString(hud_vrect);
+}
+
+static void CGC_ParseCenterPrint(const char *str, int isplit, bool instant)
+{
+    const char  *s;
+
+    scr_centertime_start = cgi.CL_ClientRealTime();
+    if (!strcmp(scr_centerstring, str)) {
+        return;
+    }
+
+    Q_strlcpy(scr_centerstring, str, sizeof(scr_centerstring));
+
+    // count the number of lines for centering
+    scr_center_lines = 1;
+    s = str;
+    while (*s) {
+        if (*s == '\n')
+            scr_center_lines++;
+        s++;
+    }
+
+    // echo it to the console
+    cgi.Com_Print(va("%s\n", scr_centerstring));
+    // Con_ClearNotify_f();
+}
+
+static void CGC_ClearCenterprint(int32_t isplit)
+{
+    scr_centerstring[0] = 0;
 }
 
 const char cgame_q2pro_extended_support_ext[] = "q2pro:extended_support";
@@ -802,6 +864,9 @@ cgame_export_t cgame_classic = {
     .Shutdown = CGC_Shutdown,
 
     .DrawHUD = CGC_DrawHUD,
+
+    .ParseCenterPrint = CGC_ParseCenterPrint,
+    .ClearCenterprint = CGC_ClearCenterprint,
 };
 
 cgame_export_t *GetClassicCGameAPI(cgame_import_t *import)
