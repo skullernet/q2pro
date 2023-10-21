@@ -19,6 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client.h"
 #include "cgame_classic.h"
 #include "common/loc.h"
+#include "common/gamedll.h"
 
 static struct {
     qhandle_t font_pic;
@@ -251,6 +252,9 @@ static bool CG_CL_InAutoDemoLoop(void)
 
 const cgame_export_t *cgame = NULL;
 static char *current_game = NULL;
+static void *cgame_library;
+
+typedef cgame_export_t *(*cgame_entry_t)(cgame_import_t *);
 
 void CG_Load(const char* new_game)
 {
@@ -291,7 +295,20 @@ void CG_Load(const char* new_game)
             .CL_InAutoDemoLoop = CG_CL_InAutoDemoLoop,
         };
 
-        cgame = GetClassicCGameAPI(&cgame_imports);
+        cgame_entry_t entry = NULL;
+        if (cgame_library)
+            Sys_FreeLibrary(cgame_library);
+        cgame_library = GameDll_Load();
+        if (cgame_library)
+            entry = Sys_GetProcAddress(cgame_library, "GetCGameAPI");
+
+        if(!entry) {
+            // FIXME: Should probably be a fatal error
+            Com_Printf("cgame functions not available, falling back to built-in cgame\n");
+            entry = GetClassicCGameAPI;
+        }
+
+        cgame = entry(&cgame_imports);
         current_game = Z_CopyString(new_game);
     }
 }
@@ -300,4 +317,7 @@ void CG_Unload(void)
 {
     cgame = NULL;
     Z_Freep(&current_game);
+
+    Sys_FreeLibrary(cgame_library);
+    cgame_library = NULL;
 }
