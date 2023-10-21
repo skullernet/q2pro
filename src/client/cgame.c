@@ -32,6 +32,11 @@ static void scr_font_changed(cvar_t *self)
     scr.font_pic = R_RegisterFont(self->string);
 }
 
+static inline uint32_t color_to_u32(const rgba_t* color)
+{
+    return MakeColor(color->r, color->g, color->b, color->a);
+}
+
 static bool CGX_IsExtendedServer(void)
 {
     return cl.csr.extended;
@@ -116,6 +121,11 @@ static uint64_t CG_CL_ClientRealTime(void)
     return cls.realtime;
 }
 
+static int32_t CG_CL_ServerProtocol(void)
+{
+    return cls.serverProtocol;
+}
+
 static const char* CG_CL_GetClientName(int32_t index)
 {
     if (index < 0 || index >= MAX_CLIENTS) {
@@ -130,6 +140,15 @@ static const char* CG_CL_GetClientPic(int32_t index)
         Com_Error(ERR_DROP, "%s: invalid client index", __func__);
     }
     return cl.clientinfo[index].icon_name;
+}
+
+static const char * CG_CL_GetClientDogtag (int32_t index)
+{
+    if (index < 0 || index >= MAX_CLIENTS) {
+        Com_Error(ERR_DROP, "%s: invalid client index", __func__);
+    }
+    // TODO: This may be a userinfo or so?
+    return "default.pcx";
 }
 
 static const char* CG_CL_GetKeyBinding(const char *binding)
@@ -162,6 +181,55 @@ static void CG_SCR_DrawPic (int x, int y, int w, int h, const char *name)
     R_DrawStretchPic(x, y, w, h, img);
 }
 
+static void CG_SCR_SetAltTypeface(bool enabled)
+{
+    // We don't support alternate type faces.
+}
+
+static void CG_SCR_DrawFontString(const char *str, int x, int y, int scale, const rgba_t *color, bool shadow, text_align_t align)
+{
+    // TODO: 'str' may contain UTF-8, handle that.
+    // FIXME: Can it contain linebreaks?
+
+    int draw_x = x;
+    if (align != LEFT) {
+        int text_width = (strlen(str) * CHAR_WIDTH) * scale;
+        if (align == CENTER)
+            draw_x -= text_width / 2;
+        else if (align == RIGHT)
+            draw_x -= text_width;
+    }
+
+    CGX_SetColor(color_to_u32(color));
+    int draw_flags = shadow ? UI_DROPSHADOW : 0;
+    while (*str) {
+        R_DrawStretchChar(x, y, CHAR_WIDTH * scale, CHAR_HEIGHT * scale, draw_flags, *str++, scr.font_pic);
+        x += CHAR_WIDTH * scale;
+    }
+    CGX_ClearColor();
+}
+
+cg_vec2_t CG_SCR_MeasureFontString(const char *str, int scale)
+{
+    // TODO: 'str' may contain UTF-8, handle that.
+    // FIXME: Can it contain linebreaks?
+
+    cg_vec2_t text_dim = {.x = strlen(str) * CHAR_WIDTH * scale, .y = CHAR_HEIGHT * scale};
+    return text_dim;
+}
+
+static bool CG_CL_GetTextInput(const char **msg, bool *is_team)
+{
+    // FIXME: Hook up with chat prompt
+    return false;
+}
+
+static int32_t CG_CL_GetWarnAmmoCount(int32_t weapon_id)
+{
+    // FIXME: Where to get this?
+    return 0;
+}
+
 #define NUM_LOC_STRINGS     8
 #define LOC_STRING_LENGTH   MAX_STRING_CHARS
 static char cg_loc_strings[NUM_LOC_STRINGS][LOC_STRING_LENGTH];
@@ -173,6 +241,12 @@ static const char* CG_Localize (const char *base, const char **args, size_t num_
     cg_loc_string_num = (cg_loc_string_num + 1) % NUM_LOC_STRINGS;
     Loc_Localize(base, true, args, num_args, out_str, LOC_STRING_LENGTH);
     return out_str;
+}
+
+static bool CG_CL_InAutoDemoLoop(void)
+{
+    // FIXME: implement
+    return false;
 }
 
 const cgame_export_t *cgame = NULL;
@@ -196,14 +270,25 @@ void CG_Load(const char* new_game)
 
             .CL_ClientTime = CG_CL_ClientTime,
             .CL_ClientRealTime = CG_CL_ClientRealTime,
+            .CL_ServerProtocol = CG_CL_ServerProtocol,
             .CL_GetClientName = CG_CL_GetClientName,
             .CL_GetClientPic = CG_CL_GetClientPic,
+            .CL_GetClientDogtag = CG_CL_GetClientDogtag,
             .CL_GetKeyBinding = CG_CL_GetKeyBinding,
             .Draw_GetPicSize = CG_Draw_GetPicSize,
             .SCR_DrawChar = CG_SCR_DrawChar,
             .SCR_DrawPic = CG_SCR_DrawPic,
 
+            .SCR_SetAltTypeface = CG_SCR_SetAltTypeface,
+            .SCR_DrawFontString = CG_SCR_DrawFontString,
+            .SCR_MeasureFontString = CG_SCR_MeasureFontString,
+
+            .CL_GetTextInput = CG_CL_GetTextInput,
+
+            .CL_GetWarnAmmoCount = CG_CL_GetWarnAmmoCount,
+
             .Localize = CG_Localize,
+            .CL_InAutoDemoLoop = CG_CL_InAutoDemoLoop,
         };
 
         cgame = GetClassicCGameAPI(&cgame_imports);
