@@ -1030,7 +1030,7 @@ void GL_InitImages(void)
     gl_gamma_scale_pics = Cvar_Get("gl_gamma_scale_pics", "0", CVAR_FILES);
     gl_upscale_pcx = Cvar_Get("gl_upscale_pcx", "0", CVAR_FILES);
     gl_saturation = Cvar_Get("gl_saturation", "1", CVAR_FILES);
-    gl_intensity = Cvar_Get("intensity", "2", 0);
+    gl_intensity = Cvar_Get("intensity", "1", 0);
     gl_invert = Cvar_Get("gl_invert", "0", CVAR_FILES);
     gl_gamma = Cvar_Get("vid_gamma", "1", CVAR_ARCHIVE);
     gl_partshape = Cvar_Get("gl_partshape", "0", 0);

@@ -86,7 +86,6 @@ cvar_t *gl_lightgrid;
 cvar_t *gl_polyblend;
 cvar_t *gl_showerrors;
 cvar_t *gl_damageblend_frac;
-cvar_t *gl_clamppointlight;
 
 // ==============================================================================
 
@@ -899,7 +898,7 @@ static void GL_Register(void)
     gl_celshading = Cvar_Get("gl_celshading", "0", 0);
     gl_dotshading = Cvar_Get("gl_dotshading", "1", 0);
     gl_shadows = Cvar_Get("gl_shadows", "0", CVAR_ARCHIVE);
-    gl_modulate = Cvar_Get("gl_modulate", "1", CVAR_ARCHIVE);
+    gl_modulate = Cvar_Get("gl_modulate", "2", CVAR_ARCHIVE);
     gl_modulate->changed = gl_modulate_changed;
     gl_modulate_world = Cvar_Get("gl_modulate_world", "1", 0);
     gl_modulate_world->changed = gl_lightmap_changed;
@@ -956,7 +955,6 @@ static void GL_Register(void)
     gl_polyblend = Cvar_Get("gl_polyblend", "1", 0);
     gl_showerrors = Cvar_Get("gl_showerrors", "1", 0);
     gl_damageblend_frac = Cvar_Get("gl_damageblend_frac", "0.2", 0);
-    gl_clamppointlight = Cvar_Get("gl_clamppointlight", "1", 0);
 
     gl_lightmap_changed(NULL);
     gl_modulate_entities_changed(NULL);
