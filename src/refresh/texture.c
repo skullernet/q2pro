@@ -826,43 +826,33 @@ static void gl_gamma_changed(cvar_t *self)
         vid.update_gamma(gammatable);
 }
 
-static const byte dottexture[8][8] = {
-    {0, 0, 0, 0, 0, 0, 0, 0},
-    {0, 0, 1, 1, 0, 0, 0, 0},
-    {0, 1, 1, 1, 1, 0, 0, 0},
-    {0, 1, 1, 1, 1, 0, 0, 0},
-    {0, 0, 1, 1, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0},
-};
-
 static void GL_InitDefaultTexture(void)
 {
     int i, j;
-    byte pixels[8 * 8 * 4];
+    byte pixels[32 * 32 * 4];
     byte *dst;
     image_t *ntx;
 
     dst = pixels;
-    for (i = 0; i < 8; i++) {
-        for (j = 0; j < 8; j++) {
-            dst[0] = dottexture[i & 3][j & 3] * 255;
+    for (i = 0; i < 32; i++) {
+        for (j = 0; j < 32; j++) {
+            int c = ((i < 16 && j < 16) || (i > 16 && j > 16)) ? 255 : 0;
+            dst[0] = c;
             dst[1] = 0;
-            dst[2] = 0;
+            dst[2] = c;
             dst[3] = 255;
             dst += 4;
         }
     }
 
     GL_ForceTexture(0, TEXNUM_DEFAULT);
-    GL_Upload32(pixels, 8, 8, 0, IT_WALL, IF_TURBULENT);
+    GL_Upload32(pixels, 32, 32, 0, IT_WALL, IF_TURBULENT);
     GL_SetFilterAndRepeat(IT_WALL, IF_TURBULENT);
 
     // fill in notexture image
     ntx = R_NOTEXTURE;
-    ntx->width = ntx->upload_width = 8;
-    ntx->height = ntx->upload_height = 8;
+    ntx->width = ntx->upload_width = 32;
+    ntx->height = ntx->upload_height = 32;
     ntx->type = IT_WALL;
     ntx->flags = 0;
     ntx->texnum = TEXNUM_DEFAULT;
