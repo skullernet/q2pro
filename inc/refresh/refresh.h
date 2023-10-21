@@ -235,6 +235,7 @@ void    R_SetClipRect(const clipRect_t *clip);
 float   R_ClampScale(cvar_t *var);
 void    R_SetScale(float scale);
 void    R_DrawChar(int x, int y, int flags, int ch, qhandle_t font);
+void    R_DrawStretchChar(int x, int y, int w, int h, int flags, int ch, qhandle_t font);
 int     R_DrawString(int x, int y, int flags, size_t maxChars,
                      const char *string, qhandle_t font);  // returns advanced x coord
 bool    R_GetPicSize(int *w, int *h, qhandle_t pic);   // returns transparency bit
