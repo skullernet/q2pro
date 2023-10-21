@@ -22,6 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "cgame_classic.h"
 
 static cgame_import_t cgi;
+static cgame_q2pro_extended_support_ext_t cgix;
 
 static void CGC_Init(void) {}
 
@@ -31,6 +32,8 @@ static void CGC_DrawHUD (int32_t isplit, const cg_server_data_t *data, vrect_t h
 {
     // Note: isplit is ignored, due to missing split screen support
 }
+
+const char cgame_q2pro_extended_support_ext[] = "q2pro:extended_support";
 
 cgame_export_t cgame_classic = {
     .apiversion = CGAME_API_VERSION,
@@ -44,5 +47,6 @@ cgame_export_t cgame_classic = {
 cgame_export_t *GetClassicCGameAPI(cgame_import_t *import)
 {
     cgi = *import;
+    cgix = *((cgame_q2pro_extended_support_ext_t*)import->GetExtension(cgame_q2pro_extended_support_ext));
     return &cgame_classic;
 }

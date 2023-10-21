@@ -24,6 +24,7 @@ static struct {
     qhandle_t font_pic;
 } scr;
 
+static cvar_t   *scr_alpha;
 static cvar_t   *scr_font;
 
 static void scr_font_changed(cvar_t *self)
@@ -31,8 +32,44 @@ static void scr_font_changed(cvar_t *self)
     scr.font_pic = R_RegisterFont(self->string);
 }
 
+static bool CGX_IsExtendedServer(void)
+{
+    return cl.csr.extended;
+}
+
+static void CGX_ClearColor(void)
+{
+    color_t clear_color;
+    clear_color.u8[0] = clear_color.u8[1] = clear_color.u8[2] = 255;
+    clear_color.u8[3] = 255 * Cvar_ClampValue(scr_alpha, 0, 1);
+    R_SetColor(clear_color.u32);
+}
+
+static void CGX_SetAlpha(float alpha)
+{
+    R_SetAlpha(alpha * Cvar_ClampValue(scr_alpha, 0, 1));
+}
+
+static void CGX_SetColor(uint32_t color)
+{
+    color_t new_color;
+    new_color.u32 = color;
+    new_color.u8[3] *= Cvar_ClampValue(scr_alpha, 0, 1);
+    R_SetColor(new_color.u32);
+}
+
+static cgame_q2pro_extended_support_ext_t cgame_q2pro_extended_support = {
+    .api_version = 1,
+
+    .IsExtendedServer = CGX_IsExtendedServer,
+    .ClearColor = CGX_ClearColor,
+    .SetAlpha = CGX_SetAlpha,
+    .SetColor = CGX_SetColor,
+};
+
 void CG_Init(void)
 {
+    scr_alpha = Cvar_Get("scr_alpha", "1", 0);
     scr_font = Cvar_Get("scr_font", "conchars", 0);
     scr_font->changed = scr_font_changed;
     scr_font_changed(scr_font);
@@ -59,6 +96,14 @@ static cvar_t *CG_cvar(const char *var_name, const char *value, cvar_flags_t fla
     }
 
     return Cvar_Get(var_name, value, flags | CVAR_GAME);
+}
+
+static void * CG_GetExtension(const char *name)
+{
+    if (strcmp(name, cgame_q2pro_extended_support_ext) == 0) {
+        return &cgame_q2pro_extended_support;
+    }
+    return NULL;
 }
 
 static uint64_t CG_CL_ClientTime(void)
@@ -120,6 +165,8 @@ void CG_Load(const char* new_game)
             .get_configstring = CG_get_configstring,
 
             .cvar = CG_cvar,
+
+            .GetExtension = CG_GetExtension,
 
             .CL_ClientTime = CG_CL_ClientTime,
             .Draw_GetPicSize = CG_Draw_GetPicSize,

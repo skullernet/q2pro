@@ -18,4 +18,20 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "shared/game.h"
 
+// Extension structure to give classic cgame some extended features
+typedef struct {
+    int api_version;
+
+    // Whether server is using "extended" protocol
+    bool (*IsExtendedServer)(void);
+
+    // Drawing color support
+    void (*ClearColor)(void);
+    void (*SetAlpha)(float alpha);
+    void (*SetColor)(uint32_t color);
+} cgame_q2pro_extended_support_ext_t;
+
+// Extension name
+extern const char cgame_q2pro_extended_support_ext[];
+
 extern cgame_export_t *GetClassicCGameAPI(cgame_import_t *import);
