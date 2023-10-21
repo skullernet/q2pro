@@ -314,8 +314,8 @@ void CL_MuzzleFlash(void)
             S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/nail1.wav"), volume, ATTN_NORM, 0);
             CL_AddWeaponMuzzleFX(MFLASH_ETF_RIFLE, (const vec3_t) { 18.0f, 3.0f, -4.5f }, 4.0f);
         } else {
-            VectorSet(dl->color, 1, 1, 0);
-            S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/shotg2.wav"), volume, ATTN_NORM, 0);
+        VectorSet(dl->color, 1, 1, 0);
+        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/shotg2.wav"), volume, ATTN_NORM, 0);
         }
         break;
     case MZ_HEATBEAM:

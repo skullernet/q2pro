@@ -310,6 +310,9 @@ void CL_RegisterTEntModels(void)
     len = FS_LoadFile("models/items/armor/effect/tris.md2", &data);
     cl.need_powerscreen_scale = len == 2300 && Com_BlockChecksum(data, len) == 0x19fca65b;
     FS_FreeFile(data);
+    
+    cl_mod_muzzles[MFLASH_BLASTER] = R_RegisterModel("models/weapons/v_blast/flash/tris.md2");
+    cl_mod_muzzles[MFLASH_MACHINEGUN] = R_RegisterModel("models/weapons/v_machn/flash/tris.md2");
 }
 
 /*
@@ -410,52 +413,24 @@ static void CL_BFGExplosion(const vec3_t pos)
     ex->frames = 4;
 }
 
-void CL_AddWeaponMuzzleFX(cl_muzzlefx_t fx, const vec3_t offset, float scale)
+// muzleflashes
+void CL_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, float scale, float rotate)
 {
-    if (!cl_muzzleflashes->integer)
-        return;
-    if (mz.entity != cl.frame.clientNum + 1)
-        return;
+    Q_assert(fx > MFLASH_NONE && fx < MFLASH_TOTAL);
 
-    Q_assert(fx < q_countof(cl_mod_muzzles));
-
-    if (!cl_mod_muzzles[fx])
-        return;
-
-    cl.weapon.muzzle.model = cl_mod_muzzles[fx];
-    cl.weapon.muzzle.scale = scale;
-    if (fx == MFLASH_MACHN || fx == MFLASH_BEAMER)
-        cl.weapon.muzzle.roll = Q_rand() % 360;
-    else
-        cl.weapon.muzzle.roll = 0;
-    VectorCopy(offset, cl.weapon.muzzle.offset);
-    cl.weapon.muzzle.time = cl.servertime - CL_FRAMETIME;
-}
-
-void CL_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, int skin, float scale)
-{
-    explosion_t *ex;
-
-    if (!cl_muzzleflashes->integer)
-        return;
-
-    Q_assert(fx < q_countof(cl_mod_muzzles));
-
-    if (!cl_mod_muzzles[fx])
-        return;
-
-    ex = CL_AllocExplosion();
+    explosion_t *ex = CL_AllocExplosion();
     VectorCopy(origin, ex->ent.origin);
     VectorCopy(angles, ex->ent.angles);
     ex->type = ex_mflash;
+    ex->frames = 2;
     ex->ent.flags = RF_TRANSLUCENT | RF_NOSHADOW | RF_FULLBRIGHT;
     ex->ent.alpha = 1.0f;
     ex->start = cl.servertime - CL_FRAMETIME;
     ex->ent.model = cl_mod_muzzles[fx];
-    ex->ent.skinnum = skin;
     ex->ent.scale = scale;
-    if (fx != MFLASH_BOOMER)
-        ex->ent.angles[2] = Q_rand() % 360;
+    // FIXME
+    ex->ent.angles[1] += 180;
+    ex->ent.angles[2] += rotate;
 }
 
 /*
