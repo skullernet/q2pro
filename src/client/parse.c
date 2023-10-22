@@ -1123,7 +1123,7 @@ static void CL_ParseCenterPrint(void)
 
     MSG_ReadString(s, sizeof(s));
     SHOWNET(2, "    \"%s\"\n", Com_MakePrintable(s));
-    SCR_CenterPrint(s, false);
+    cgame->ParseCenterPrint(s, 0, false);
 
     if (!cls.demo.playback && cl.serverstate != ss_broadcast) {
         COM_strclr(s);

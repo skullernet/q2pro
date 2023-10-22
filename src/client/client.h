@@ -1018,6 +1018,8 @@ void    SCR_Shutdown(void);
 void    SCR_UpdateScreen(void);
 void    SCR_CenterPrint(const char *str, bool typewrite);
 void    SCR_ClearCenterPrints(void);
+void    SCR_SizeUp(void);
+void    SCR_SizeDown(void);
 void    SCR_BeginLoadingPlaque(void);
 void    SCR_EndLoadingPlaque(void);
 void    SCR_RegisterMedia(void);
