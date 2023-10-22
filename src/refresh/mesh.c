@@ -392,7 +392,7 @@ static void setup_color(void)
 	        color[0] = Q_clipf(color[0], 0, 1);
 	        color[1] = Q_clipf(color[1], 0, 1);
 	        color[2] = Q_clipf(color[2], 0, 1);
-        }
+    }
     }
 
     if (flags & RF_TRANSLUCENT) {
