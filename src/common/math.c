@@ -409,10 +409,10 @@ void Quat_ComputeW(quat_t q)
 
 void Quat_SLerp(const quat_t qa, const quat_t qb, float backlerp, float frontlerp, quat_t out)
 {
-    if (backlerp <= 0.0) {
+    if (backlerp <= 0.0f) {
         Vector4Copy(qb, out);
         return;
-    } else if (backlerp >= 1.0) {
+    } else if (backlerp >= 1.0f) {
         Vector4Copy(qa, out);
         return;
     }
