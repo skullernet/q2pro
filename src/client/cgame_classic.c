@@ -692,11 +692,28 @@ static void SCR_DrawStats(vrect_t hud_vrect, int32_t playernum, const player_sta
     SCR_ExecuteLayoutString(hud_vrect, cgi.get_configstring(CS_STATUSBAR), playernum, ps);
 }
 
+static void SCR_DrawLayout(vrect_t hud_vrect, const cg_server_data_t *data, int32_t playernum, const player_state_t *ps)
+{
+    if (scr_draw2d->integer == 3 /*&& !Key_IsDown(K_F1)*/)
+        return;     // turn off for GTV
+
+    /*if (cls.demo.playback && Key_IsDown(K_F1))
+        goto draw;*/
+
+    if (!(ps->stats[STAT_LAYOUTS] & LAYOUTS_LAYOUT))
+        return;
+
+//draw:
+    SCR_ExecuteLayoutString(hud_vrect, data->layout, playernum, ps);
+}
+
 static void CGC_DrawHUD (int32_t isplit, const cg_server_data_t *data, vrect_t hud_vrect, vrect_t hud_safe, int32_t scale, int32_t playernum, const player_state_t *ps)
 {
     // Note: isplit is ignored, due to missing split screen support
 
     SCR_DrawStats(hud_vrect, playernum, ps);
+
+    SCR_DrawLayout(hud_vrect, data, playernum, ps);
 }
 
 const char cgame_q2pro_extended_support_ext[] = "q2pro:extended_support";
