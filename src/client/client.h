@@ -311,6 +311,18 @@ typedef struct client_state_s {
         fog_params_t        start, end;
         int                 lerp_time, lerp_time_start;
     } fog;
+
+    // data for view weapon
+    struct {
+        int32_t frame, last_frame;
+        int32_t server_time;
+
+        qhandle_t muzzle_model;
+        int32_t muzzle_time;
+        float muzzle_roll, muzzle_scale;
+        int32_t muzzle_skin;
+        vec3_t muzzle_offset;
+    } weapon;
 } client_state_t;
 
 extern client_state_t   cl;

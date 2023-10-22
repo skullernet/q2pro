@@ -424,6 +424,18 @@ static void CL_BFGExplosion(const vec3_t pos)
 }
 
 // muzzleflashes
+void CL_AddWeaponMuzzleFX(cl_muzzlefx_t fx, const vec3_t offset, int skin, float scale, float rotate)
+{
+    Q_assert(fx > MFLASH_NONE && fx < MFLASH_TOTAL);
+
+    cl.weapon.muzzle_model = cl_mod_muzzles[fx];
+    cl.weapon.muzzle_skin = skin;
+    cl.weapon.muzzle_scale = scale;
+    cl.weapon.muzzle_roll = rotate;
+    VectorCopy(offset, cl.weapon.muzzle_offset);
+    cl.weapon.muzzle_time = cl.time + 50;
+}
+
 void CL_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, int skin, float scale, float rotate)
 {
     Q_assert(fx > MFLASH_NONE && fx < MFLASH_TOTAL);
@@ -438,9 +450,7 @@ void CL_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, 
     ex->ent.model = cl_mod_muzzles[fx];
     ex->ent.skinnum = skin;
     ex->ent.scale = scale;
-    // FIXME
-    ex->ent.angles[1] += 180;
-    ex->ent.angles[2] += rotate;
+    ex->ent.angles[2] = rotate;
 }
 
 /*
