@@ -345,6 +345,26 @@ static void SV_GameMap_f(void)
     SV_Map(false);
 }
 
+static bool is_in_safe_state(void)
+{
+    // if we're not running an online game this doesn't matter
+    if (sv_maxclients->integer == 1)
+        return true;
+
+    // otherwise only bother showing this warning if it's actually
+    // going to affect anybody
+    client_t *cl;
+
+    for (int i = 0; i < sv_maxclients->integer; i++) {
+        cl = &svs.client_pool[i];
+        if (cl->state >= cs_assigned && cl->netchan.remote_address.type != NA_LOOPBACK) {            
+            return false;
+        }
+    }
+
+    return true;
+}
+
 static int should_really_restart(void)
 {
     static bool warned;
@@ -362,6 +382,9 @@ static int should_really_restart(void)
 
     if (!strcmp(Cmd_Argv(2), "force"))
         return 1;   // forced restart
+
+    if (is_in_safe_state())
+        return 1; // doesn't matter
 
     if (sv_allow_map->integer == 1)
         return 1;   // `map' warning disabled
