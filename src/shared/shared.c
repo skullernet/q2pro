@@ -1512,7 +1512,7 @@ int remap_cs_index(int index, const cs_remap_t *from, const cs_remap_t *to)
         return index_remap(index, from->items, to->items, MAX_ITEMS);
     else if (index >= from->playerskins && index < from->playerskins + MAX_CLIENTS)
         return index_remap(index, from->playerskins, to->playerskins, MAX_CLIENTS);
-    else if (index >= from->general && index < from->playerskins + MAX_GENERAL)
+    else if (index >= from->general && index < from->general + MAX_GENERAL)
         return index_remap(index, from->general, to->general, MAX_GENERAL);
     else if (index >= from->wheelweapons && index < from->wheelweapons + from->max_wheelitems)
         return index_remap(index, from->wheelweapons, to->wheelweapons, from->max_wheelitems);
