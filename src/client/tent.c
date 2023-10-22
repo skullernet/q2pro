@@ -311,8 +311,18 @@ void CL_RegisterTEntModels(void)
     cl.need_powerscreen_scale = len == 2300 && Com_BlockChecksum(data, len) == 0x19fca65b;
     FS_FreeFile(data);
     
-    cl_mod_muzzles[MFLASH_BLASTER] = R_RegisterModel("models/weapons/v_blast/flash/tris.md2");
-    cl_mod_muzzles[MFLASH_MACHINEGUN] = R_RegisterModel("models/weapons/v_machn/flash/tris.md2");
+    cl_mod_muzzles[MFLASH_MACHN] = R_RegisterModel("models/weapons/v_machn/flash/tris.md2");
+    cl_mod_muzzles[MFLASH_SHOTG2] = R_RegisterModel("models/weapons/v_shotg2/flash/tris.md2");
+    cl_mod_muzzles[MFLASH_SHOTG] = R_RegisterModel("models/weapons/v_shotg/flash/tris.md2");
+    cl_mod_muzzles[MFLASH_ROCKET] = R_RegisterModel("models/weapons/v_rocket/flash/tris.md2");
+    cl_mod_muzzles[MFLASH_RAIL] = R_RegisterModel("models/weapons/v_rail/flash/tris.md2");
+    cl_mod_muzzles[MFLASH_LAUNCH] = R_RegisterModel("models/weapons/v_launch/flash/tris.md2");
+    cl_mod_muzzles[MFLASH_ETF_RIFLE] = R_RegisterModel("models/weapons/v_etf_rifle/flash/tris.md2");
+    cl_mod_muzzles[MFLASH_DIST] = R_RegisterModel("models/weapons/v_dist/flash/tris.md2");
+    cl_mod_muzzles[MFLASH_BOOMER] = R_RegisterModel("models/weapons/v_boomer/flash/tris.md2");
+    cl_mod_muzzles[MFLASH_BLAST] = R_RegisterModel("models/weapons/v_blast/flash/tris.md2");
+    cl_mod_muzzles[MFLASH_BFG] = R_RegisterModel("models/weapons/v_bfg/flash/tris.md2");
+    cl_mod_muzzles[MFLASH_BEAMER] = R_RegisterModel("models/weapons/v_beamer/flash/tris.md2");
 }
 
 /*
@@ -414,7 +424,7 @@ static void CL_BFGExplosion(const vec3_t pos)
 }
 
 // muzzleflashes
-void CL_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, float scale, float rotate)
+void CL_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, int skin, float scale, float rotate)
 {
     Q_assert(fx > MFLASH_NONE && fx < MFLASH_TOTAL);
 
@@ -422,11 +432,11 @@ void CL_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, 
     VectorCopy(origin, ex->ent.origin);
     VectorCopy(angles, ex->ent.angles);
     ex->type = ex_mflash;
-    ex->frames = 2;
     ex->ent.flags = RF_TRANSLUCENT | RF_NOSHADOW | RF_FULLBRIGHT;
     ex->ent.alpha = 1.0f;
     ex->start = cl.servertime - CL_FRAMETIME;
     ex->ent.model = cl_mod_muzzles[fx];
+    ex->ent.skinnum = skin;
     ex->ent.scale = scale;
     // FIXME
     ex->ent.angles[1] += 180;
