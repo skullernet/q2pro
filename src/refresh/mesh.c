@@ -621,8 +621,8 @@ static void draw_alias_mesh(const maliasmesh_t *mesh)
 
 // for the given vertex, set of weights & skeleton, calculate
 // the output vertex (and optionally normal).
-static void calculate_vertex_for_skeleton(const md5_vertex_t *vert, const md5_weight_t *weights,
-                                          const md5_joint_t *skeleton, vec3_t out_position, vec3_t out_normal)
+static void calc_skel_vert(const md5_vertex_t *vert, const md5_weight_t *weights,
+                           const md5_joint_t *skeleton, vec3_t out_position, vec3_t out_normal)
 {
     VectorClear(out_position);
 
@@ -653,7 +653,7 @@ static void tess_plain_skel(const md5_mesh_t *mesh, const md5_joint_t *skeleton)
 {
     for (int i = 0; i < mesh->num_verts; i++) {
         vec3_t position;
-        calculate_vertex_for_skeleton(&mesh->vertices[i], mesh->weights, skeleton, position, NULL);
+        calc_skel_vert(&mesh->vertices[i], mesh->weights, skeleton, position, NULL);
 
         tess.vertices[(i * 4) + 0] = position[0];
         tess.vertices[(i * 4) + 1] = position[1];
@@ -665,7 +665,7 @@ static void tess_shade_skel(const md5_mesh_t *mesh, const md5_joint_t *skeleton)
 {
     for (int i = 0; i < mesh->num_verts; i++) {
         vec3_t position, normal;
-        calculate_vertex_for_skeleton(&mesh->vertices[i], mesh->weights, skeleton, position, normal);
+        calc_skel_vert(&mesh->vertices[i], mesh->weights, skeleton, position, normal);
 
         tess.vertices[(i * VERTEX_SIZE) + 0] = position[0];
         tess.vertices[(i * VERTEX_SIZE) + 1] = position[1];
@@ -683,7 +683,7 @@ static void tess_shell_skel(const md5_mesh_t *mesh, const md5_joint_t *skeleton)
 {
     for (int i = 0; i < mesh->num_verts; i++) {
         vec3_t position, normal;
-        calculate_vertex_for_skeleton(&mesh->vertices[i], mesh->weights, skeleton, position, normal);
+        calc_skel_vert(&mesh->vertices[i], mesh->weights, skeleton, position, normal);
 
         VectorMA(position, shellscale, normal, &tess.vertices[(i * 4) + 0]);
     }
