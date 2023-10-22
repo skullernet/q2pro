@@ -906,7 +906,7 @@ static bool MOD_LoadMD5Mesh(model_t *model, const char *path)
 
         uint32_t parent;
         MD5_UINT(&parent);
-        MD5_ENSURE(parent == -1 || parent < num_joints, "bad parent joint");
+        MD5_ENSURE(parent == -1 || (parent < num_joints && parent != i), "bad parent joint");
         joint->parent = parent;
 
         MD5_VECTOR(joint->pos);
