@@ -456,10 +456,10 @@ void Quat_SLerp(const quat_t qa, const quat_t qb, float backlerp, float frontler
         k1 = sinf(frontlerp * omega) * oneOverSinOmega;
     }
 
-    out[W] = (k0 * qa[3]) + (k1 * q1w);
-    out[X] = (k0 * qa[0]) + (k1 * q1x);
-    out[Y] = (k0 * qa[1]) + (k1 * q1y);
-    out[Z] = (k0 * qa[2]) + (k1 * q1z);
+    out[W] = (k0 * qa[W]) + (k1 * q1w);
+    out[X] = (k0 * qa[X]) + (k1 * q1x);
+    out[Y] = (k0 * qa[Y]) + (k1 * q1y);
+    out[Z] = (k0 * qa[Z]) + (k1 * q1z);
 }
 
 float Quat_Normalize(quat_t q)
@@ -475,44 +475,6 @@ float Quat_Normalize(quat_t q)
     }
 
     return length;
-}
-
-void Quat_MultiplyQuat(const quat_t qa, const quat_t qb, quat_t out)
-{
-    out[W] = (qa[W] * qb[W]) - (qa[X] * qb[X]) - (qa[Y] * qb[Y]) - (qa[Z] * qb[Z]);
-    out[X] = (qa[X] * qb[W]) + (qa[W] * qb[X]) + (qa[Y] * qb[Z]) - (qa[Z] * qb[Y]);
-    out[Y] = (qa[Y] * qb[W]) + (qa[W] * qb[Y]) + (qa[Z] * qb[X]) - (qa[X] * qb[Z]);
-    out[Z] = (qa[Z] * qb[W]) + (qa[W] * qb[Z]) + (qa[X] * qb[Y]) - (qa[Y] * qb[X]);
-}
-
-void Quat_MultiplyVector(const quat_t q, const vec3_t v, quat_t out)
-{
-    out[W] = -(q[X] * v[X]) - (q[Y] * v[Y]) - (q[Z] * v[Z]);
-    out[X] = (q[W] * v[X]) + (q[Y] * v[Z]) - (q[Z] * v[Y]);
-    out[Y] = (q[W] * v[Y]) + (q[Z] * v[X]) - (q[X] * v[Z]);
-    out[Z] = (q[W] * v[Z]) + (q[X] * v[Y]) - (q[Y] * v[X]);
-}
-
-void Quat_Conjugate(const quat_t in, quat_t out)
-{
-    out[W] = in[W];
-    out[X] = -in[X];
-    out[Y] = -in[Y];
-    out[Z] = -in[Z];
-}
-
-void Quat_RotatePoint(const quat_t q, const vec3_t in, vec3_t out)
-{
-    quat_t tmp, inv, output;
-
-    // Assume q is unit quaternion
-    Quat_Conjugate(q, inv);
-    Quat_MultiplyVector(q, in, tmp);
-    Quat_MultiplyQuat(tmp, inv, output);
-
-    out[X] = output[X];
-    out[Y] = output[Y];
-    out[Z] = output[Z];
 }
 
 #endif  // USE_MD5
