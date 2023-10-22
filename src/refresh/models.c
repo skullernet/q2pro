@@ -859,7 +859,7 @@ static bool MOD_LoadMD5Mesh(model_t *model, const char *path)
 {
     md5_model_t *mdl;
     int i, j, k, ret;
-    uint32_t version, num_joints, num_meshes;
+    uint32_t num_joints, num_meshes;
     void *buffer;
     const char *s;
 
@@ -870,8 +870,7 @@ static bool MOD_LoadMD5Mesh(model_t *model, const char *path)
 
     // parse header
     MD5_EXPECT("MD5Version");
-    MD5_UINT(&version);
-    MD5_ENSURE(version == 10, "bad version");
+    MD5_EXPECT("10");
 
     // allocate data storage, now that we're definitely an MD5
     Hunk_Begin(&model->skeleton_hunk, 0x800000);
@@ -1090,7 +1089,7 @@ static bool MOD_LoadMD5Anim(model_t *model, const char *path)
     joint_info_t joint_infos[MD5_MAX_JOINTS];
     baseframe_joint_t base_frame[MD5_MAX_JOINTS];
     float anim_frame_data[MD5_MAX_JOINTS * MD5_NUM_ANIMATED_COMPONENT_BITS];
-    uint32_t version, num_frames, num_joints, num_animated_components;
+    uint32_t num_frames, num_joints, num_animated_components;
     md5_model_t *mdl = model->skeleton;
     int i, j, ret;
     void *buffer;
@@ -1103,8 +1102,7 @@ static bool MOD_LoadMD5Anim(model_t *model, const char *path)
 
     // parse header
     MD5_EXPECT("MD5Version");
-    MD5_UINT(&version);
-    MD5_ENSURE(version == 10, "bad version");
+    MD5_EXPECT("10");
 
     MD5_EXPECT("commandline");
     COM_Parse(&s);
