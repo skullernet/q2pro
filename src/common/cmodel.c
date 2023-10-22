@@ -567,10 +567,6 @@ static void CM_ClipBoxToBrush(const vec3_t p1, const vec3_t p2, trace_t *trace, 
     }
     if (enterfrac[0] < leavefrac) {
         if (enterfrac[0] > -1 && enterfrac[0] < trace->fraction) {
-            if (trace->surface != &(nulltexinfo.c)) {
-                trace->plane2 = trace->plane;
-                trace->surface2 = trace->surface;
-            }
 
             trace->fraction = enterfrac[0];
             trace->plane = *clipplane[0];

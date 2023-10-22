@@ -413,7 +413,7 @@ static void CL_BFGExplosion(const vec3_t pos)
     ex->frames = 4;
 }
 
-// muzleflashes
+// muzzleflashes
 void CL_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, float scale, float rotate)
 {
     Q_assert(fx > MFLASH_NONE && fx < MFLASH_TOTAL);
