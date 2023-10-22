@@ -189,17 +189,7 @@ static void CG_SCR_DrawPic (int x, int y, int w, int h, const char *name)
     R_DrawStretchPic(x, y, w, h, img);
 }
 
-static void CG_SCR_DrawColorPic (int x, int y, int w, int h, const char *name, const rgba_t *color)
-{
-    qhandle_t img = R_RegisterImage(name, IT_PIC, IF_NONE);
-
-    if (img == 0)
-        return;
-
-    R_SetColor(MakeColor(color->r, color->g, color->b, color->a));
-    R_DrawStretchPic(x, y, w, h, img);
-}
-
+CG_SCR_DrawColorPic(intchar*name,CGX_SetColor(color_to_u32(color));    CGX_ClearColor();
 static void CG_SCR_SetAltTypeface(bool enabled)
 {
     // We don't support alternate type faces.
@@ -237,7 +227,7 @@ cg_vec2_t CG_SCR_MeasureFontString(const char *str, int scale)
     return text_dim;
 }
 
-float CG_SCR_FontLineHeight(int scale)
+static float CG_SCR_FontLineHeight(int scale)
 {
     return CHAR_HEIGHT * scale;
 }
