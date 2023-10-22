@@ -860,7 +860,7 @@ void CL_MuzzleFlash2(void)
         CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_LAUNCH, 0, 18.0f * scale);
         break;
     }
-}
+    }
 
 /*
 ==============================================================
