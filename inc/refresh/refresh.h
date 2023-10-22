@@ -180,6 +180,7 @@ typedef enum {
     IF_REPEAT       = BIT(6),
     IF_NEAREST      = BIT(7),
     IF_OPAQUE       = BIT(8),
+    IF_SPECIAL      = BIT(9),
 } imageflags_t;
 
 typedef enum {

@@ -697,7 +697,7 @@ void IMG_Load(image_t *image, byte *pic)
     height = image->upload_height;
 
     // load small pics onto the scrap
-    if (image->type == IT_PIC && width < 64 && height < 64 &&
+    if (image->type == IT_PIC && !(image->flags & IF_SPECIAL) && width < 64 && height < 64 &&
         gl_noscrap->integer == 0 && Scrap_AllocBlock(width, height, &s, &t)) {
         src = pic;
         dst = &scrap_data[(t * SCRAP_BLOCK_WIDTH + s) * 4];
@@ -1056,6 +1056,9 @@ void GL_InitImages(void)
 
     max_texture_size = min(integer, MAX_TEXTURE_SIZE);
 
+    // need to load this first for IMG_Init
+    gl_texturebits_changed(gl_texturebits);
+
     IMG_Init();
 
     IMG_GetPalette();
@@ -1076,7 +1079,6 @@ void GL_InitImages(void)
     colorscale = Cvar_ClampValue(gl_saturation, 0, 1);
 
     gl_texturemode_changed(gl_texturemode);
-    gl_texturebits_changed(gl_texturebits);
     gl_anisotropy_changed(gl_anisotropy);
     gl_bilerp_chars_changed(gl_bilerp_chars);
     gl_bilerp_pics_changed(gl_bilerp_pics);

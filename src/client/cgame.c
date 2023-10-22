@@ -157,6 +157,13 @@ static const char* CG_CL_GetKeyBinding(const char *binding)
     return Key_GetBinding(binding);
 }
 
+static bool CG_Draw_RegisterPic(const char *name)
+{
+    // FIXME: need to return false if the image didn't load
+    R_RegisterPic(name);
+    return true;
+}
+
 static void CG_Draw_GetPicSize (int *w, int *h, const char *name)
 {
     qhandle_t img = R_RegisterImage(name, IT_PIC, IF_NONE);
@@ -179,6 +186,17 @@ static void CG_SCR_DrawPic (int x, int y, int w, int h, const char *name)
     if (img == 0)
         return;
 
+    R_DrawStretchPic(x, y, w, h, img);
+}
+
+static void CG_SCR_DrawColorPic (int x, int y, int w, int h, const char *name, const rgba_t *color)
+{
+    qhandle_t img = R_RegisterImage(name, IT_PIC, IF_NONE);
+
+    if (img == 0)
+        return;
+
+    R_SetColor(MakeColor(color->r, color->g, color->b, color->a));
     R_DrawStretchPic(x, y, w, h, img);
 }
 
@@ -217,6 +235,11 @@ cg_vec2_t CG_SCR_MeasureFontString(const char *str, int scale)
 
     cg_vec2_t text_dim = {.x = strlen(str) * CHAR_WIDTH * scale, .y = CHAR_HEIGHT * scale};
     return text_dim;
+}
+
+float CG_SCR_FontLineHeight(int scale)
+{
+    return CHAR_HEIGHT * scale;
 }
 
 static bool CG_CL_GetTextInput(const char **msg, bool *is_team)
@@ -279,13 +302,16 @@ void CG_Load(const char* new_game)
             .CL_GetClientPic = CG_CL_GetClientPic,
             .CL_GetClientDogtag = CG_CL_GetClientDogtag,
             .CL_GetKeyBinding = CG_CL_GetKeyBinding,
+            .Draw_RegisterPic = CG_Draw_RegisterPic,
             .Draw_GetPicSize = CG_Draw_GetPicSize,
             .SCR_DrawChar = CG_SCR_DrawChar,
             .SCR_DrawPic = CG_SCR_DrawPic,
+            .SCR_DrawColorPic = CG_SCR_DrawColorPic,
 
             .SCR_SetAltTypeface = CG_SCR_SetAltTypeface,
             .SCR_DrawFontString = CG_SCR_DrawFontString,
             .SCR_MeasureFontString = CG_SCR_MeasureFontString,
+            .SCR_FontLineHeight = CG_SCR_FontLineHeight,
 
             .CL_GetTextInput = CG_CL_GetTextInput,
 
