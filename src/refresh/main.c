@@ -512,7 +512,7 @@ static void GL_DrawFlare(const entity_t *e)
     qglDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
-static void GL_DrawEntities(int mask)
+static void GL_DrawEntities(int musthave, int canthave)
 {
     entity_t *ent, *last;
     model_t *model;
@@ -528,7 +528,7 @@ static void GL_DrawEntities(int mask)
             glr.num_beams++;
             continue;
         }
-        if ((ent->flags & RF_TRANSLUCENT) != mask) {
+        if ((ent->flags & musthave) != musthave || (ent->flags & canthave)) {
             continue;
         }
         if (ent->flags & RF_FLARE) {
@@ -711,17 +711,19 @@ void R_RenderFrame(refdef_t *fd)
         GL_DrawWorld();
     }
 
-    GL_DrawEntities(0);
+    GL_DrawEntities(0, RF_TRANSLUCENT);
 
     GL_DrawBeams();
 
     GL_DrawParticles();
 
-    GL_DrawEntities(RF_TRANSLUCENT);
+    GL_DrawEntities(RF_TRANSLUCENT, RF_WEAPONMODEL);
 
     if (!(glr.fd.rdflags & RDF_NOWORLDMODEL)) {
         GL_DrawAlphaFaces();
     }
+
+    GL_DrawEntities(RF_TRANSLUCENT | RF_WEAPONMODEL, 0);
 
     if (waterwarp) {
         qglBindFramebuffer(GL_FRAMEBUFFER, 0);
