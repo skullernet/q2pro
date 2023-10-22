@@ -621,8 +621,11 @@ static void draw_alias_mesh(const maliasmesh_t *mesh)
 
 // for the given vertex, set of weights & skeleton, calculate
 // the output vertex (and optionally normal).
-static void calc_skel_vert(const md5_vertex_t *vert, const md5_weight_t *weights,
-                           const md5_joint_t *skeleton, vec3_t out_position, vec3_t out_normal)
+static inline void calc_skel_vert(const md5_vertex_t *vert,
+                                  const md5_weight_t *weights,
+                                  const md5_joint_t *skeleton,
+                                  float *restrict out_position,
+                                  float *restrict out_normal)
 {
     VectorClear(out_position);
 
@@ -651,31 +654,25 @@ static void calc_skel_vert(const md5_vertex_t *vert, const md5_weight_t *weights
 
 static void tess_plain_skel(const md5_mesh_t *mesh, const md5_joint_t *skeleton)
 {
-    for (int i = 0; i < mesh->num_verts; i++) {
-        vec3_t position;
-        calc_skel_vert(&mesh->vertices[i], mesh->weights, skeleton, position, NULL);
-
-        tess.vertices[(i * 4) + 0] = position[0];
-        tess.vertices[(i * 4) + 1] = position[1];
-        tess.vertices[(i * 4) + 2] = position[2];
-    }
+    for (int i = 0; i < mesh->num_verts; i++)
+        calc_skel_vert(&mesh->vertices[i], mesh->weights, skeleton, &tess.vertices[i * 4], NULL);
 }
 
 static void tess_shade_skel(const md5_mesh_t *mesh, const md5_joint_t *skeleton)
 {
-    for (int i = 0; i < mesh->num_verts; i++) {
-        vec3_t position, normal;
-        calc_skel_vert(&mesh->vertices[i], mesh->weights, skeleton, position, normal);
+    vec_t *dst_vert = tess.vertices;
 
-        tess.vertices[(i * VERTEX_SIZE) + 0] = position[0];
-        tess.vertices[(i * VERTEX_SIZE) + 1] = position[1];
-        tess.vertices[(i * VERTEX_SIZE) + 2] = position[2];
+    for (int i = 0; i < mesh->num_verts; i++) {
+        vec3_t normal;
+        calc_skel_vert(&mesh->vertices[i], mesh->weights, skeleton, dst_vert, normal);
 
         vec_t d = shadedot(normal);
-        tess.vertices[(i * VERTEX_SIZE) + 4] = shadelight[0] * d;
-        tess.vertices[(i * VERTEX_SIZE) + 5] = shadelight[1] * d;
-        tess.vertices[(i * VERTEX_SIZE) + 6] = shadelight[2] * d;
-        tess.vertices[(i * VERTEX_SIZE) + 7] = shadelight[3];
+        dst_vert[4] = shadelight[0] * d;
+        dst_vert[5] = shadelight[1] * d;
+        dst_vert[6] = shadelight[2] * d;
+        dst_vert[7] = shadelight[3];
+
+        dst_vert += VERTEX_SIZE;
     }
 }
 
@@ -685,7 +682,7 @@ static void tess_shell_skel(const md5_mesh_t *mesh, const md5_joint_t *skeleton)
         vec3_t position, normal;
         calc_skel_vert(&mesh->vertices[i], mesh->weights, skeleton, position, normal);
 
-        VectorMA(position, shellscale, normal, &tess.vertices[(i * 4) + 0]);
+        VectorMA(position, shellscale, normal, &tess.vertices[i * 4]);
     }
 }
 
