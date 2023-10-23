@@ -309,6 +309,25 @@ static const char* CG_Localize (const char *base, const char **args, size_t num_
     return out_str;
 }
 
+static const rgba_t rgba_white = {255, 255, 255, 255};
+
+static int32_t CG_SCR_DrawBind(int32_t isplit, const char *binding, const char *purpose, int x, int y, int scale)
+{
+    /* - 'binding' is the name of the action/command (eg "+moveup") whose binding should be displayed
+     * - 'purpose' is a string describing what that action/key does. Needs localization.
+     * - Rerelease has some fancy graphics for keys and such. We ... don't ¯\_(ツ)_/¯
+     */
+    const char *key = Key_GetBinding(binding);
+
+    char str[MAX_STRING_CHARS];
+    if (!*key)
+        Q_snprintf(str, sizeof(str), "<unbound> %s", CG_Localize(purpose, NULL, 0));
+    else
+        Q_snprintf(str, sizeof(str), "[%s] %s", key, CG_Localize(purpose, NULL, 0));
+    CG_SCR_DrawFontString(str, x, y, scale, &rgba_white, false, CENTER);
+    return CHAR_HEIGHT;
+}
+
 static bool CG_CL_InAutoDemoLoop(void)
 {
     // FIXME: implement
@@ -375,6 +394,9 @@ void CG_Load(const char* new_game)
             .CL_GetWarnAmmoCount = CG_CL_GetWarnAmmoCount,
 
             .Localize = CG_Localize,
+
+            .SCR_DrawBind = CG_SCR_DrawBind,
+
             .CL_InAutoDemoLoop = CG_CL_InAutoDemoLoop,
         };
 
