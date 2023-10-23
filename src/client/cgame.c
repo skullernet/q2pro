@@ -159,9 +159,8 @@ static const char* CG_CL_GetKeyBinding(const char *binding)
 
 static bool CG_Draw_RegisterPic(const char *name)
 {
-    // FIXME: need to return false if the image didn't load
-    R_RegisterPic(name);
-    return true;
+    qhandle_t img = R_RegisterPic(name);
+    return img != 0;
 }
 
 static void CG_Draw_GetPicSize (int *w, int *h, const char *name)
