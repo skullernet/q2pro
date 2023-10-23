@@ -94,6 +94,11 @@ static const char *CG_get_configstring(int index)
     return cl.configstrings[remap_cs_index(index, &cs_remap_rerelease, &cl.csr)];
 }
 
+static void CG_Com_Error(const char *message)
+{
+    Com_Error(ERR_DROP, "%s", message);
+}
+
 static cvar_t *CG_cvar(const char *var_name, const char *value, cvar_flags_t flags)
 {
     if (flags & CVAR_EXTENDED_MASK) {
@@ -289,6 +294,8 @@ void CG_Load(const char* new_game)
             .Com_Print = CG_Print,
 
             .get_configstring = CG_get_configstring,
+
+            .Com_Error = CG_Com_Error,
 
             .cvar = CG_cvar,
 
