@@ -189,7 +189,17 @@ static void CG_SCR_DrawPic (int x, int y, int w, int h, const char *name)
     R_DrawStretchPic(x, y, w, h, img);
 }
 
-CG_SCR_DrawColorPic(intchar*name,CGX_SetColor(color_to_u32(color));    CGX_ClearColor();
+static void CG_SCR_DrawColorPic(int x, int y, int w, int h, const char* name, const rgba_t *color)
+{
+    qhandle_t img = R_RegisterImage(name, IT_PIC, IF_NONE);
+    if (img == 0)
+        return;
+
+    CGX_SetColor(color_to_u32(color));
+    R_DrawStretchPic(x, y, w, h, img);
+    CGX_ClearColor();
+}
+
 static void CG_SCR_SetAltTypeface(bool enabled)
 {
     // We don't support alternate type faces.
