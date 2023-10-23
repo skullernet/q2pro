@@ -1063,6 +1063,12 @@ static void CL_ParsePrint(void)
 
     SHOWNET(2, "    %i \"%s\"\n", level, Com_MakePrintable(s));
 
+    /* We need to distinguish between "typewriter" and "instant" centerprints,
+     * so have some center print handling here as well ... */
+    if(level == PRINT_CENTER || level == PRINT_TYPEWRITER) {
+        cgame->ParseCenterPrint(s, 0, level == PRINT_CENTER);
+    }
+
     if (level != PRINT_CHAT) {
         if (cl.csr.extended && (level == PRINT_TYPEWRITER || level == PRINT_CENTER))
             SCR_CenterPrint(s, level == PRINT_TYPEWRITER);

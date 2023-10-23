@@ -792,10 +792,7 @@ static void PF_Loc_Print(edict_t* ent, print_type_t level, const char* base, con
         PF_Broadcast_Print(broadcast_level, string);
     } else {
         level &= ~PRINT_NO_NOTIFY; // TODO implement
-        if (level == PRINT_CENTER || level == PRINT_TYPEWRITER)
-            PF_Center_Print(ent, string);
-        else
-            PF_Client_Print(ent, level, string);
+        PF_Client_Print(ent, level, string);
     }
 }
 
