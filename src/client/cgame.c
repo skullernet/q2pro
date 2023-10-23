@@ -318,6 +318,8 @@ void CG_Load(const char* new_game)
             .FreeTags = CG_FreeTags,
 
             .cvar = CG_cvar,
+            .cvar_set = Cvar_UserSet,
+            .cvar_forceset = Cvar_Set,
 
             .GetExtension = CG_GetExtension,
 
