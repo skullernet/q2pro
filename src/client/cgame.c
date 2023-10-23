@@ -140,6 +140,16 @@ static void * CG_GetExtension(const char *name)
     return NULL;
 }
 
+static bool CG_CL_FrameValid(void)
+{
+    return cl.frame.valid;
+}
+
+static float CG_CL_FrameTime(void)
+{
+    return cls.frametime;
+}
+
 static uint64_t CG_CL_ClientTime(void)
 {
     return cl.time;
@@ -331,6 +341,10 @@ void CG_Load(const char* new_game)
             .AddCommandString = CG_AddCommandString,
 
             .GetExtension = CG_GetExtension,
+
+            .CL_FrameValid = CG_CL_FrameValid,
+
+            .CL_FrameTime = CG_CL_FrameTime,
 
             .CL_ClientTime = CG_CL_ClientTime,
             .CL_ClientRealTime = CG_CL_ClientRealTime,
