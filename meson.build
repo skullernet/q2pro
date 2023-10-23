@@ -217,6 +217,7 @@ if cc.get_argument_syntax() == 'gcc'
   test_args = [
     '-fsigned-char',
     '-fms-extensions',
+    '-fno-math-errno',
     '-Wno-microsoft-anon-tag',
     '-Wno-tautological-constant-out-of-range-compare',
     '-Wpointer-arith',
