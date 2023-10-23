@@ -1517,11 +1517,11 @@ static void SCR_DrawDamageDisplays(void)
 
         float frac = (entry->time - cls.realtime) / scr_damage_indicator_time->value;
 
-        float my_yaw = cl.viewangles[YAW];
+        float my_yaw = cl.predicted_angles[YAW];
         vec3_t angles;
         vectoangles2(entry->dir, angles);
         float damage_yaw = angles[YAW];
-        float yaw_diff = DEG2RAD(my_yaw - damage_yaw);
+        float yaw_diff = DEG2RAD((my_yaw - damage_yaw) - 180);
 
         R_SetColor(MakeColor(
             (int) (entry->color[0] * 255.f),
@@ -1660,7 +1660,7 @@ static void SCR_DrawPOIs(void)
 
     float view_matrix[16];
     vec3_t viewaxis[3];
-    AnglesToAxis(cl.refdef.viewangles, viewaxis);
+    AnglesToAxis(cl.predicted_angles, viewaxis);
     Matrix_FromOriginAxis(cl.refdef.vieworg, viewaxis, view_matrix);
 
     Matrix_Multiply(projection_matrix, view_matrix, projection_matrix);
