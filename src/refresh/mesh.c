@@ -32,8 +32,8 @@ static vec_t    shellscale;
 static tessfunc_t tessfunc;
 static vec4_t   color;
 
-static const vec_t  *shadelight;
-static vec3_t       shadedir;
+static vec3_t   shadedir;
+static bool     dotshading;
 
 static float    celscale;
 
@@ -48,7 +48,7 @@ static void setup_dotshading(void)
     float cp, cy, sp, sy;
     vec_t yaw;
 
-    shadelight = NULL;
+    dotshading = false;
 
     if (!gl_dotshading->integer)
         return;
@@ -56,7 +56,7 @@ static void setup_dotshading(void)
     if (glr.ent->flags & RF_SHELL_MASK)
         return;
 
-    shadelight = color;
+    dotshading = true;
 
     // matches the anormtab.h precalculations
     yaw = -DEG2RAD(glr.ent->angles[YAW]);
@@ -128,10 +128,10 @@ static void tess_static_shade(const maliasmesh_t *mesh)
         dst_vert[0] = src_vert->pos[0] * newscale[0] + translate[0];
         dst_vert[1] = src_vert->pos[1] * newscale[1] + translate[1];
         dst_vert[2] = src_vert->pos[2] * newscale[2] + translate[2];
-        dst_vert[4] = shadelight[0] * d;
-        dst_vert[5] = shadelight[1] * d;
-        dst_vert[6] = shadelight[2] * d;
-        dst_vert[7] = shadelight[3];
+        dst_vert[4] = color[0] * d;
+        dst_vert[5] = color[1] * d;
+        dst_vert[6] = color[2] * d;
+        dst_vert[7] = color[3];
         dst_vert += VERTEX_SIZE;
 
         src_vert++;
@@ -220,10 +220,10 @@ static void tess_lerped_shade(const maliasmesh_t *mesh)
         dst_vert[2] =
             src_oldvert->pos[2] * oldscale[2] +
             src_newvert->pos[2] * newscale[2] + translate[2];
-        dst_vert[4] = shadelight[0] * d;
-        dst_vert[5] = shadelight[1] * d;
-        dst_vert[6] = shadelight[2] * d;
-        dst_vert[7] = shadelight[3];
+        dst_vert[4] = color[0] * d;
+        dst_vert[5] = color[1] * d;
+        dst_vert[6] = color[2] * d;
+        dst_vert[7] = color[3];
         dst_vert += VERTEX_SIZE;
 
         src_oldvert++;
@@ -566,7 +566,7 @@ static void draw_alias_mesh(const maliasmesh_t *mesh)
     // fall back to entity matrix
     GL_LoadMatrix(glr.entmatrix);
 
-    if (shadelight)
+    if (dotshading)
         state |= GLS_SHADE_SMOOTH;
 
     if (glr.ent->flags & RF_TRANSLUCENT)
@@ -588,7 +588,7 @@ static void draw_alias_mesh(const maliasmesh_t *mesh)
     (*tessfunc)(mesh);
     c.trisDrawn += mesh->numtris;
 
-    if (shadelight) {
+    if (dotshading) {
         GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
         GL_VertexPointer(3, VERTEX_SIZE, tess.vertices);
         GL_ColorFloatPointer(4, VERTEX_SIZE, tess.vertices + 4);
@@ -667,10 +667,10 @@ static void tess_shade_skel(const md5_mesh_t *mesh, const md5_joint_t *skeleton)
         calc_skel_vert(&mesh->vertices[i], mesh->weights, skeleton, dst_vert, normal);
 
         vec_t d = shadedot(normal);
-        dst_vert[4] = shadelight[0] * d;
-        dst_vert[5] = shadelight[1] * d;
-        dst_vert[6] = shadelight[2] * d;
-        dst_vert[7] = shadelight[3];
+        dst_vert[4] = color[0] * d;
+        dst_vert[5] = color[1] * d;
+        dst_vert[6] = color[2] * d;
+        dst_vert[7] = color[3];
 
         dst_vert += VERTEX_SIZE;
     }
@@ -710,7 +710,7 @@ static void draw_skeleton_mesh(const md5_model_t *model, const md5_mesh_t *mesh,
     // fall back to entity matrix
     GL_LoadMatrix(glr.entmatrix);
 
-    if (shadelight)
+    if (dotshading)
         state |= GLS_SHADE_SMOOTH;
 
     if (glr.ent->flags & RF_TRANSLUCENT)
@@ -731,14 +731,14 @@ static void draw_skeleton_mesh(const md5_model_t *model, const md5_mesh_t *mesh,
 
     if (glr.ent->flags & RF_SHELL_MASK)
         tess_shell_skel(mesh, skel);
-    else if (shadelight)
+    else if (dotshading)
         tess_shade_skel(mesh, skel);
     else
         tess_plain_skel(mesh, skel);
 
     c.trisDrawn += mesh->num_indices / 3;
 
-    if (shadelight) {
+    if (dotshading) {
         GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
         GL_VertexPointer(3, VERTEX_SIZE, tess.vertices);
         GL_ColorFloatPointer(4, VERTEX_SIZE, tess.vertices + 4);
@@ -860,7 +860,7 @@ void GL_DrawAliasModel(const model_t *model)
             WEAPONSHELL_SCALE : POWERSUIT_SCALE;
         tessfunc = newframenum == oldframenum ?
             tess_static_shell : tess_lerped_shell;
-    } else if (shadelight) {
+    } else if (dotshading) {
         tessfunc = newframenum == oldframenum ?
             tess_static_shade : tess_lerped_shade;
     } else {
