@@ -125,6 +125,13 @@ static cvar_t *CG_cvar(const char *var_name, const char *value, cvar_flags_t fla
     return Cvar_Get(var_name, value, flags | CVAR_GAME);
 }
 
+static void CG_AddCommandString(const char *string)
+{
+    if (!strcmp(string, "menu_loadgame\n"))
+        string = "pushmenu loadgame\n";
+    Cbuf_AddText(&cmd_buffer, string);
+}
+
 static void * CG_GetExtension(const char *name)
 {
     if (strcmp(name, cgame_q2pro_extended_support_ext) == 0) {
@@ -320,6 +327,8 @@ void CG_Load(const char* new_game)
             .cvar = CG_cvar,
             .cvar_set = Cvar_UserSet,
             .cvar_forceset = Cvar_Set,
+
+            .AddCommandString = CG_AddCommandString,
 
             .GetExtension = CG_GetExtension,
 
