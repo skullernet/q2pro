@@ -719,6 +719,8 @@ void R_RenderFrame(refdef_t *fd)
 
     GL_DrawEntities(RF_TRANSLUCENT, RF_WEAPONMODEL);
 
+    GL_OccludeFlares();
+
     if (!(glr.fd.rdflags & RDF_NOWORLDMODEL)) {
         GL_DrawAlphaFaces();
     }
@@ -728,8 +730,6 @@ void R_RenderFrame(refdef_t *fd)
     if (waterwarp) {
         qglBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
-
-    GL_OccludeFlares();
 
     // go back into 2D mode
     GL_Setup2D();
