@@ -264,8 +264,8 @@ static void CG_SCR_DrawFontString(const char *str, int x, int y, int scale, cons
     CGX_SetColor(color_to_u32(color));
     int draw_flags = shadow ? UI_DROPSHADOW : 0;
     while (*str) {
-        R_DrawStretchChar(x, y, CHAR_WIDTH * scale, CHAR_HEIGHT * scale, draw_flags, *str++, scr.font_pic);
-        x += CHAR_WIDTH * scale;
+        R_DrawStretchChar(draw_x, y, CHAR_WIDTH * scale, CHAR_HEIGHT * scale, draw_flags, *str++, scr.font_pic);
+        draw_x += CHAR_WIDTH * scale;
     }
     CGX_ClearColor();
 }
