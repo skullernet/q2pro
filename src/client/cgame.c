@@ -99,6 +99,22 @@ static void CG_Com_Error(const char *message)
     Com_Error(ERR_DROP, "%s", message);
 }
 
+static void *CG_TagMalloc(size_t size, int tag)
+{
+    if (tag > UINT16_MAX - TAG_MAX) {
+        Com_Error(ERR_DROP, "%s: bad tag", __func__);
+    }
+    return Z_TagMallocz(size, tag + TAG_MAX);
+}
+
+static void CG_FreeTags(int tag)
+{
+    if (tag > UINT16_MAX - TAG_MAX) {
+        Com_Error(ERR_DROP, "%s: bad tag", __func__);
+    }
+    Z_FreeTags(tag + TAG_MAX);
+}
+
 static cvar_t *CG_cvar(const char *var_name, const char *value, cvar_flags_t flags)
 {
     if (flags & CVAR_EXTENDED_MASK) {
@@ -296,6 +312,10 @@ void CG_Load(const char* new_game)
             .get_configstring = CG_get_configstring,
 
             .Com_Error = CG_Com_Error,
+
+            .TagMalloc = CG_TagMalloc,
+            .TagFree = Z_Free,
+            .FreeTags = CG_FreeTags,
 
             .cvar = CG_cvar,
 
