@@ -160,6 +160,11 @@ static uint64_t CG_CL_ClientRealTime(void)
     return cls.realtime;
 }
 
+int32_t CG_CL_ServerFrame(void)
+{
+    return cl.frame.number;
+}
+
 static int32_t CG_CL_ServerProtocol(void)
 {
     return cls.serverProtocol;
@@ -348,6 +353,7 @@ void CG_Load(const char* new_game)
 
             .CL_ClientTime = CG_CL_ClientTime,
             .CL_ClientRealTime = CG_CL_ClientRealTime,
+            .CL_ServerFrame = CG_CL_ServerFrame,
             .CL_ServerProtocol = CG_CL_ServerProtocol,
             .CL_GetClientName = CG_CL_GetClientName,
             .CL_GetClientPic = CG_CL_GetClientPic,
