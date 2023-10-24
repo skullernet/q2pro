@@ -110,6 +110,8 @@ typedef struct {
     vec3_t      maxs;
 } nav_edict_t;
 
+typedef struct nav_ctx_s nav_ctx_t;
+
 static struct {
     bool	loaded;
     char	filename[MAX_QPATH];
@@ -128,6 +130,8 @@ static struct {
     nav_link_t      *links;
     nav_traversal_t *traversals;
     nav_edict_t     *edicts;
+
+    nav_ctx_t   *ctx;
 } nav_data;
 
 // invalid value used for most of the system
@@ -202,6 +206,161 @@ struct edict
 edict[num_edicts] edicts
 */
 
+typedef float (*nav_heuristic_func_t) (const nav_ctx_t *ctx, const nav_node_t *node);
+typedef float (*nav_weight_func_t) (const nav_ctx_t *ctx, const nav_node_t *a, const nav_node_t *b);
+typedef bool (*nav_link_accessible_func_t) (const nav_ctx_t *ctx, const nav_node_t *node, const nav_link_t *link);
+
+typedef struct nav_ctx_s {
+    const nav_node_t            *start, *end;
+
+    nav_heuristic_func_t        heuristic;
+    nav_weight_func_t           weight;
+    nav_link_accessible_func_t  link_accessible;
+
+    int16_t     open_set[1024];
+
+    int16_t     *came_from;
+    float       *g_score, *f_score;
+} nav_ctx_t;
+
+static nav_ctx_t *Nav_AllocCtx(void)
+{
+    size_t size = sizeof(nav_ctx_t) +
+        (sizeof(float) * nav_data.num_nodes) +
+        (sizeof(float) * nav_data.num_nodes) +
+        sizeof(int16_t) * nav_data.num_nodes;
+    nav_ctx_t *ctx = Z_TagMalloc(size, TAG_NAV);
+    ctx->g_score = (float *) (ctx + 1);
+    ctx->f_score = (float *) (ctx->g_score + nav_data.num_nodes);
+    ctx->came_from = (int16_t *) (ctx->f_score + nav_data.num_nodes);
+
+    return ctx;
+}
+
+static void Nav_FreeCtx(nav_ctx_t *ctx)
+{
+    Z_Free(ctx);
+}
+
+static float Nav_Heuristic(const nav_ctx_t *ctx, const nav_node_t *node)
+{
+    vec3_t v;
+    VectorSubtract(ctx->end->origin, node->origin, v);
+    return VectorLengthSquared(v);
+}
+
+static float Nav_Weight(const nav_ctx_t *ctx, const nav_node_t *a, const nav_node_t *b)
+{
+    vec3_t v;
+    VectorSubtract(a->origin, b->origin, v);
+    return VectorLengthSquared(v);
+}
+
+static bool Nav_NodeAccessible(const nav_node_t *node)
+{
+    return !(node->flags & NodeFlag_Disabled);
+}
+
+static bool Nav_LinkAccessible(const nav_ctx_t *ctx, const nav_node_t *node, const nav_link_t *link)
+{
+    return Nav_NodeAccessible(&nav_data.nodes[link->target]);
+}
+
+static nav_node_t *Nav_ClosestNodeTo(const vec3_t p)
+{
+    float w = INFINITY;
+    nav_node_t *c = NULL;
+
+    for (int i = 0; i < nav_data.num_nodes; i++) {
+        vec3_t v;
+        VectorSubtract(nav_data.nodes[i].origin, p, v);
+        float l = VectorLengthSquared(v);
+
+        if (l < w) {
+            w = l;
+            c = &nav_data.nodes[i];
+        }
+    }
+
+    return c;
+}
+
+static bool Nav_Path(nav_ctx_t *ctx)
+{
+    int16_t start_id = ctx->start - nav_data.nodes;
+    int16_t end_id = ctx->end - nav_data.nodes;
+
+    memset(&ctx->open_set, 0xFF, sizeof(ctx->open_set));
+
+    for (int i = 0; i < nav_data.num_nodes; i++)
+        ctx->g_score[i] = ctx->f_score[i] = INFINITY;
+    
+    ctx->open_set[0] = start_id;
+    ctx->came_from[start_id] = -1;
+    ctx->g_score[start_id] = 0;
+    ctx->f_score[start_id] = ctx->heuristic(ctx, ctx->start);
+
+    while (true) {
+        int16_t current_id = -1;
+
+        for (int i = 0; i < 1024; i++) {
+            if (ctx->open_set[i] == -1) {
+                continue;
+            } else if (current_id == -1) {
+                current_id = i;
+            } else if (ctx->f_score[ctx->open_set[i]] < ctx->f_score[ctx->open_set[current_id]]) {
+                current_id = i;
+            }
+        }
+
+        if (current_id == -1)
+            break;
+
+        int16_t current = ctx->open_set[current_id];
+
+        if (current == end_id)
+            return true;
+
+        ctx->open_set[current_id] = -1;
+
+        const nav_node_t *current_node = &nav_data.nodes[current];
+
+        for (int l = current_node->first_link; l < current_node->first_link + current_node->num_links; l++) {
+            const nav_link_t *link = &nav_data.links[l];
+
+            if (!ctx->link_accessible(ctx, current_node, link))
+                continue;
+
+            const nav_node_t *link_target_node = &nav_data.nodes[link->target];
+
+            float temp_g_score = ctx->g_score[current] + ctx->weight(ctx, current_node, link_target_node);
+
+            if (temp_g_score >= ctx->g_score[link->target])
+                continue;
+
+            ctx->came_from[link->target] = current;
+            ctx->g_score[link->target] = temp_g_score;
+            ctx->f_score[link->target] = temp_g_score + ctx->heuristic(ctx, link_target_node);
+
+            int i;
+
+            for (i = 0; i < 1024; i++)
+                if (ctx->open_set[i] == link->target)
+                    break;
+
+            if (i == 1024) {
+                for (i = 0; i < 1024; i++) {
+                    if (ctx->open_set[i] == -1) {
+                        ctx->open_set[i] = link->target;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    return false;
+}
 
 void Nav_Load(const char *map_name)
 {
@@ -307,6 +466,9 @@ void Nav_Load(const char *map_name)
 
     Com_DPrintf("Bot navigation file (%s) loaded:\n %i nodes\n %i links\n %i traversals\n %i edicts\n",
         nav_data.filename, nav_data.num_nodes, nav_data.num_links, nav_data.num_traversals, nav_data.num_edicts);
+
+    nav_data.ctx = Nav_AllocCtx();
+
     return;
 
 fail:
@@ -342,11 +504,35 @@ static void Nav_Debug(void)
     if (!nav_debug->integer) {
         return;
     }
+    
+    nav_node_t *closest = Nav_ClosestNodeTo(glr.fd.vieworg);
+    nav_node_t *closest_org = Nav_ClosestNodeTo(vec3_origin);
+
+    nav_data.ctx->start = closest;
+    nav_data.ctx->end = closest_org;
+    nav_data.ctx->weight = Nav_Weight;
+    nav_data.ctx->heuristic = Nav_Heuristic;
+    nav_data.ctx->link_accessible = Nav_LinkAccessible;
+
+    if (nav_data.ctx->start != nav_data.ctx->end && Nav_Path(nav_data.ctx)) {
+        int16_t n = nav_data.ctx->end - nav_data.nodes;
+
+        while (true) {
+            int16_t to = n;
+            n = nav_data.ctx->came_from[n];
+
+            if (n == -1)
+                break;
+
+            R_AddDebugLine(nav_data.nodes[to].origin, nav_data.nodes[n].origin, ColorFromU32A(U32_RED, 255), SV_FRAMETIME, true);
+        }
+    }
 
     for (int i = 0; i < nav_data.num_nodes; i++) {
+        const nav_node_t *node = &nav_data.nodes[i];
         float len;
         vec3_t d;
-        VectorSubtract(nav_data.nodes[i].origin, glr.fd.vieworg, d);
+        VectorSubtract(node->origin, glr.fd.vieworg, d);
         len = VectorNormalize(d);
 
         if (len > nav_debug_range->value) {
@@ -355,37 +541,43 @@ static void Nav_Debug(void)
 
         uint8_t alpha = constclamp((1.0f - ((len - 32.f) / (nav_debug_range->value - 32.f))), 0.0f, 1.0f) * 255.f;
 
-        R_AddDebugCircle(nav_data.nodes[i].origin, nav_data.nodes[i].radius, ColorFromU32A(U32_CYAN, alpha), SV_FRAMETIME, true);
+        R_AddDebugCircle(node->origin, node->radius, ColorFromU32A(U32_CYAN, alpha), SV_FRAMETIME, true);
+        
+        if (i == nav_data.ctx->start - nav_data.nodes)
+            R_AddDebugSphere(node->origin, 32, ColorFromU32A(U32_BLUE, alpha), SV_FRAMETIME, true);
+        else if (i == nav_data.ctx->end - nav_data.nodes)
+            R_AddDebugSphere(node->origin, 32, ColorFromU32A(U32_RED, alpha), SV_FRAMETIME, true);
 
         vec3_t mins = { -16, -16, -24 }, maxs = { 16, 16, 32 };
 
-        if (nav_data.nodes[i].flags & NodeFlag_Crouch) {
+        if (node->flags & NodeFlag_Crouch) {
             maxs[2] = 4.0f;
         }
         
-        VectorAdd(mins, nav_data.nodes[i].origin, mins);
-        VectorAdd(maxs, nav_data.nodes[i].origin, maxs);
+        VectorAdd(mins, node->origin, mins);
+        VectorAdd(maxs, node->origin, maxs);
         mins[2] += 24.f;
         maxs[2] += 24.f;
 
         R_AddDebugBounds(mins, maxs, ColorFromU32A(U32_YELLOW, alpha), SV_FRAMETIME, true);
 
         vec3_t s;
-        VectorCopy(nav_data.nodes[i].origin, s);
+        VectorCopy(node->origin, s);
         s[2] += 24;
 
-        R_AddDebugLine(nav_data.nodes[i].origin, s, ColorFromU32A(U32_CYAN, alpha), SV_FRAMETIME, true);
+        R_AddDebugLine(node->origin, s, ColorFromU32A(U32_CYAN, alpha), SV_FRAMETIME, true);
         
-        for (int l = nav_data.nodes[i].first_link; l < nav_data.nodes[i].first_link + nav_data.nodes[i].num_links; l++) {
-            nav_link_t *link = &nav_data.links[l];
-            byte *bits = nav_data.node_link_bitmap + (nav_data.node_link_bitmap_size * i);
+        for (int l = node->first_link; l < node->first_link + node->num_links; l++) {
+            const nav_link_t *link = &nav_data.links[l];
+            const nav_node_t *target_node = &nav_data.nodes[link->target];
+            const byte *bits = nav_data.node_link_bitmap + (nav_data.node_link_bitmap_size * i);
 
             vec3_t e;
-            VectorCopy(nav_data.nodes[link->target].origin, e);
+            VectorCopy(target_node->origin, e);
             e[2] += 24;
 
             // two-way link
-            byte *target_bits = nav_data.node_link_bitmap + (nav_data.node_link_bitmap_size * link->target);
+            const byte *target_bits = nav_data.node_link_bitmap + (nav_data.node_link_bitmap_size * link->target);
 
             if (Q_IsBitSet(target_bits, i)) {
                 if (i < link->target) {
@@ -398,6 +590,7 @@ static void Nav_Debug(void)
             }
         }
     }
+
 }
 #endif
 
