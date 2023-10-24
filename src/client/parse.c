@@ -66,8 +66,11 @@ static void CL_ParseDeltaEntity(server_frame_t           *frame,
         Com_Error(ERR_DROP, "%s: bad sound", __func__);
 
     // mask off high bits for non-extended servers
-    if (!cl.csr.extended)
+    if (!cl.csr.extended) {
         state->renderfx &= RF_SHELL_LITE_GREEN - 1;
+        if (state->renderfx & RF_BEAM)
+            state->renderfx &= ~RF_GLOW;
+    }
 }
 
 static void CL_ParsePacketEntities(server_frame_t *oldframe,
