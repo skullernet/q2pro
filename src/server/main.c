@@ -1689,6 +1689,9 @@ static void SV_RunGameFrame(void)
         time_before_game = Sys_Milliseconds();
 #endif
 
+    // run nav stuff before frame runs
+    Nav_Frame();
+
     ge->RunFrame(true);
 
 #if USE_CLIENT
@@ -2183,6 +2186,8 @@ void SV_Init(void)
     // set up default pmove parameters
     PmoveInit(&sv_pmp);
 
+    Nav_Init();
+
 #if USE_SYSCON
     SV_SetConsoleTitle();
 #endif
@@ -2282,6 +2287,7 @@ void SV_Shutdown(const char *finalmsg, error_type_t type)
 
     // free current level
     CM_FreeMap(&sv.cm);
+    Nav_Unload();
     memset(&sv, 0, sizeof(sv));
 
     // free server static data

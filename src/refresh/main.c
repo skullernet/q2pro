@@ -725,6 +725,8 @@ void R_RenderFrame(refdef_t *fd)
         GL_DrawAlphaFaces();
     }
 
+    GL_DrawEntities(RF_WEAPONMODEL, RF_TRANSLUCENT);
+
     GL_DrawEntities(RF_TRANSLUCENT | RF_WEAPONMODEL, 0);
 
     if (waterwarp) {

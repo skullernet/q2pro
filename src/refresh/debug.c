@@ -330,58 +330,56 @@ static inline void GL_TransformVec3(vec3_t out, const vec3_t *matrix, const vec3
 
 static void GL_DrawArrowCap(const vec3_t apex, const vec3_t dir, float size, color_t color, int time, bool depth_test)
 {
-    vec3_t d2, d3;
-    VectorSubtract(glr.fd.vieworg, apex, d2);
-    VectorNormalize(d2);
-    CrossProduct(dir, d2, d3);
-    VectorNormalize(d3);
-    VectorScale(d3, size, d3);
+    vec3_t cap_end;
+    VectorMA(apex, size, dir, cap_end);
 
-    vec3_t matrix[3];
-    SetupRotationMatrix(matrix, d2, 90);
-    
-    vec3_t d32;
-    GL_TransformVec3(d32, matrix, d3);
+    R_AddDebugLine(apex, cap_end, color, time, depth_test);
 
-    const vec3_t corner_points[] = {
-        { apex[0] + d3[0] - (dir[0] * size), apex[1] + d3[1] - (dir[1] * size), apex[2] + d3[2] - (dir[2] * size) },
-        { apex[0] + d32[0] - (dir[0] * size), apex[1] + d32[1] - (dir[1] * size), apex[2] + d32[2] - (dir[2] * size) },
-        { apex[0] - d3[0] - (dir[0] * size), apex[1] - d3[1] - (dir[1] * size), apex[2] - d3[2] - (dir[2] * size) },
-        { apex[0] - d32[0] - (dir[0] * size), apex[1] - d32[1] - (dir[1] * size), apex[2] - d32[2] - (dir[2] * size) }
-    };
+    vec3_t right, up;
+    MakeNormalVectors(dir, right, up);
 
-    for (int i = 0; i < 4; i++) {
-        GL_DRAWLINEV(apex, corner_points[i]);
+    vec3_t l;
+    VectorMA(apex, size, right, l);
+    R_AddDebugLine(l, cap_end, color, time, depth_test);
 
-        int n = (i + 1) % 4;
-        GL_DRAWLINEV(corner_points[i], corner_points[n]);
-    }
+    VectorMA(apex, -size, right, l);
+    R_AddDebugLine(l, cap_end, color, time, depth_test);
 }
 
 void R_AddDebugArrow(const vec3_t start, const vec3_t end, float size, color_t line_color, color_t arrow_color, int time, bool depth_test)
 {
-    R_AddDebugLine(start, end, line_color, time, depth_test);
-
     vec3_t dir;
     VectorSubtract(end, start, dir);
-    VectorNormalize(dir);
-    GL_DrawArrowCap(end, dir, size, arrow_color, time, depth_test);
+    float len = VectorNormalize(dir);
+
+    if (len > size) {
+        vec3_t line_end;
+        VectorMA(start, len - size, dir, line_end);
+        R_AddDebugLine(start, line_end, line_color, time, depth_test);
+        GL_DrawArrowCap(line_end, dir, size, arrow_color, time, depth_test);
+    } else {
+        GL_DrawArrowCap(end, dir, len, arrow_color, time, depth_test);
+    }
 }
 
 void R_AddDebugRay(const vec3_t start, const vec3_t dir, float length, float size, color_t line_color, color_t arrow_color, int time, bool depth_test)
 {
-    vec3_t end;
-    VectorMA(start, length, dir, end);
+    if (length > size) {
+        vec3_t line_end;
+        VectorMA(start, length - size, dir, line_end);
 
-    R_AddDebugLine(start, end, line_color, time, depth_test);
-    GL_DrawArrowCap(end, dir, size, arrow_color, time, depth_test);
+        R_AddDebugLine(start, line_end, line_color, time, depth_test);
+        GL_DrawArrowCap(line_end, dir, size, arrow_color, time, depth_test);
+    } else {
+        GL_DrawArrowCap(start, dir, length, arrow_color, time, depth_test);
+    }
 }
 
 void R_AddDebugCircle(const vec3_t origin, float radius, color_t color, int time, bool depth_test)
 {
     radius *= 0.5f;
 
-    int vert_count = (int) min(5 + (radius / 16.f), 16.0f);
+    int vert_count = (int) min(5 + (radius / 8.f), 16.0f);
     float rads = DEG2RAD(360.0f / vert_count);
 
     float irad = -radius;

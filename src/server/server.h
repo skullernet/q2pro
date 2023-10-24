@@ -785,6 +785,13 @@ void SV_RegisterSavegames(void);
 #define SV_RegisterSavegames()          (void)0
 #endif
 
+// nav.c
+void Nav_Load(const char *map_name);
+void Nav_Unload(void);
+void Nav_Frame(void);
+void Nav_Init(void);
+void Nav_Shutdown(void);
+
 //============================================================
 
 //
