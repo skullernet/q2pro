@@ -69,8 +69,10 @@ static bool Loc_Parse(loc_string_t *loc)
     // parse out arguments
     size_t arg_rover = 0;
 
+    size_t format_len = sizeof(loc->format);
+
     while (true) {
-        if (arg_rover >= sizeof(loc->format) || !loc->format[arg_rover]) {
+        if (arg_rover >= format_len || !loc->format[arg_rover]) {
             break;
         }
 
@@ -123,7 +125,7 @@ static bool Loc_Parse(loc_string_t *loc)
 
             while (true) {
 
-                if (arg_rover >= sizeof(loc->format) || !loc->format[arg_rover]) {
+                if (arg_rover >= format_len || !loc->format[arg_rover]) {
                     Com_SetLastError("EOF before end of argument found");
                     return false;
                 }
