@@ -140,7 +140,7 @@ const int32_t NAV_MAGIC = MakeLittleLong('N', 'A', 'V', '3');
 const int32_t NAV_VERSION = 6;
 
 #define NAV_VERIFY(condition, error) \
-    if (!(condition)) { Com_SetLastError("bad data"); goto fail; }
+    if (!(condition)) { Com_SetLastError(error); goto fail; }
 
 #define NAV_VERIFY_READ(v) \
     NAV_VERIFY(FS_Read(&v, sizeof(v), f) == sizeof(v), "bad data")
@@ -239,6 +239,7 @@ void Nav_Load(const char *map_name)
         NAV_VERIFY_READ(node->flags);
         NAV_VERIFY_READ(node->num_links);
         NAV_VERIFY_READ(node->first_link);
+        NAV_VERIFY(node->first_link >= 0 && node->first_link + node->num_links <= nav_data.num_links, "bad node link extents");
         NAV_VERIFY_READ(node->radius);
     }
 
@@ -254,9 +255,13 @@ void Nav_Load(const char *map_name)
         nav_link_t *link = nav_data.links + i;
         
         NAV_VERIFY_READ(link->target);
+        NAV_VERIFY(link->target >= 0 && link->target < nav_data.num_nodes, "bad link target");
         NAV_VERIFY_READ(link->type);
         NAV_VERIFY_READ(link->flags);
         NAV_VERIFY_READ(link->traversal);
+
+        if (link->traversal != -1)
+            NAV_VERIFY(link->traversal < nav_data.num_traversals, "bad link traversal");
     }
 
     NAV_VERIFY(nav_data.traversals = Z_TagMalloc(sizeof(nav_traversal_t) * nav_data.num_traversals, TAG_NAV), "out of memory");
@@ -278,6 +283,7 @@ void Nav_Load(const char *map_name)
         nav_edict_t *edict = nav_data.edicts + i;
         
         NAV_VERIFY_READ(edict->link);
+        NAV_VERIFY(edict->link >= 0 && edict->link < nav_data.num_links, "bad edict link");
         NAV_VERIFY_READ(edict->model);
         NAV_VERIFY_READ(edict->mins);
         NAV_VERIFY_READ(edict->maxs);
@@ -351,8 +357,18 @@ static void Nav_Debug(void)
 
         R_AddDebugCircle(nav_data.nodes[i].origin, nav_data.nodes[i].radius, ColorFromU32A(U32_CYAN, alpha), SV_FRAMETIME, true);
 
-        if (nav_data.nodes[i].flags & NodeFlag_CheckInSolid) {
+        vec3_t mins = { -16, -16, -24 }, maxs = { 16, 16, 32 };
+
+        if (nav_data.nodes[i].flags & NodeFlag_Crouch) {
+            maxs[2] = 4.0f;
         }
+        
+        VectorAdd(mins, nav_data.nodes[i].origin, mins);
+        VectorAdd(maxs, nav_data.nodes[i].origin, maxs);
+        mins[2] += 24.f;
+        maxs[2] += 24.f;
+
+        R_AddDebugBounds(mins, maxs, ColorFromU32A(U32_YELLOW, alpha), SV_FRAMETIME, true);
 
         vec3_t s;
         VectorCopy(nav_data.nodes[i].origin, s);

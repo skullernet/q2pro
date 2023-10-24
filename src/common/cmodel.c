@@ -183,6 +183,30 @@ void CM_FreeMap(cm_t *cm)
     memset(cm, 0, sizeof(*cm));
 }
 
+// fixes a bug in old map compilers,
+// required for Kex PMove to work (ladders, etc)
+static void fix_incorrect_leaf_contents(cm_t *cm)
+{
+    int i, k;
+    int fixed = 0;
+
+    for (i = 0; i < cm->cache->numleafs; i++) {
+        mleaf_t *leaf = &cm->cache->leafs[i];
+        contents_t contents = 0;
+
+        for (k = 0; k < leaf->numleafbrushes; k++) {
+            contents |= leaf->firstleafbrush[k]->contents;
+        }
+
+        if ((contents | leaf->contents) != leaf->contents) {
+            fixed++;
+            leaf->contents |= contents;
+        }
+    }
+
+    Com_DPrintf("Fixed %i leaves with incorrect contents\n", fixed);
+}
+
 /*
 ==================
 CM_LoadMap
@@ -207,6 +231,8 @@ int CM_LoadMap(cm_t *cm, const char *name)
     cm->floodnums = Z_TagMallocz(sizeof(cm->floodnums[0]) * cm->cache->numareas, TAG_CMODEL);
     cm->portalopen = Z_TagMallocz(sizeof(cm->portalopen[0]) * cm->cache->numportals, TAG_CMODEL);
     FloodAreaConnections(cm);
+
+    fix_incorrect_leaf_contents(cm);
 
     return Q_ERR_SUCCESS;
 }
