@@ -68,9 +68,7 @@ color_index_t Com_ParseColor(const char *s);
 unsigned Com_ParseExtensionString(const char *s, const char *const extnames[]);
 #endif
 
-#if USE_DEBUG
 char *Com_MakePrintable(const char *s);
-#endif
 
 // Some mods actually exploit CS_STATUSBAR to take space up to CS_AIRACCEL
 static inline size_t CS_SIZE(const cs_remap_t *csr, int cs)
