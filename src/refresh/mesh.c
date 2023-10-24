@@ -374,14 +374,11 @@ static void setup_color(void)
         GL_LightPoint(origin, color);
 
         if (flags & RF_MINLIGHT) {
-            for (i = 0; i < 3; i++) {
-                if (color[i] > 0.1f) {
-                    break;
-                }
-            }
-            if (i == 3) {
+            f = VectorLength(color);
+            if (!f)
                 VectorSet(color, 0.1f, 0.1f, 0.1f);
-            }
+            else if (f < 0.1f)
+                VectorScale(color, 0.1f / f, color);
         }
 
         if (flags & RF_GLOW) {
