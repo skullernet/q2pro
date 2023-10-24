@@ -349,9 +349,7 @@ static void setup_color(void)
             VectorSet(color, 0.56f, 0.93f, 0.56f);
         }
         if (flags & RF_SHELL_HALF_DAM) {
-            color[0] = 0.56f;
-            color[1] = 0.59f;
-            color[2] = 0.45f;
+            VectorSet(color, 0.56f, 0.59f, 0.45f);
         }
         if (flags & RF_SHELL_DOUBLE) {
             color[0] = 0.9f;
