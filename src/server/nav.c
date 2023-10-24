@@ -21,6 +21,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/error.h"
 #if USE_REF
 #include "refresh/refresh.h"
+// ugly but necessary to hook into nav system without
+// exposing this into a mess of spaghetti
+#include "../refresh/gl.h"
+
+static cvar_t *nav_debug;
+static cvar_t *nav_debug_range;
 #endif
 
 enum {
@@ -312,17 +318,47 @@ void Nav_Unload(void)
     memset(&nav_data, 0, sizeof(nav_data));
 }
 
-void Nav_Frame(void)
-{
 #if USE_REF
+static inline color_t ColorFromU32(uint32_t c)
+{
+    return (color_t) { .u32 = c };
+}
+
+static inline color_t ColorFromU32A(uint32_t c, uint8_t alpha)
+{
+    color_t color = { .u32 = c };
+    color.u8[3] = alpha;
+    return color;
+}
+
+static void Nav_Debug(void)
+{
+    if (!nav_debug->integer) {
+        return;
+    }
+
     for (int i = 0; i < nav_data.num_nodes; i++) {
-        R_AddDebugCircle(nav_data.nodes[i].origin, nav_data.nodes[i].radius, (color_t) { .u32 = U32_CYAN }, SV_FRAMETIME, true);
+        float len;
+        vec3_t d;
+        VectorSubtract(nav_data.nodes[i].origin, glr.fd.vieworg, d);
+        len = VectorNormalize(d);
+
+        if (len > nav_debug_range->value) {
+            continue;
+        }
+
+        uint8_t alpha = constclamp((1.0f - ((len - 32.f) / (nav_debug_range->value - 32.f))), 0.0f, 1.0f) * 255.f;
+
+        R_AddDebugCircle(nav_data.nodes[i].origin, nav_data.nodes[i].radius, ColorFromU32A(U32_CYAN, alpha), SV_FRAMETIME, true);
+
+        if (nav_data.nodes[i].flags & NodeFlag_CheckInSolid) {
+        }
 
         vec3_t s;
         VectorCopy(nav_data.nodes[i].origin, s);
         s[2] += 24;
 
-        R_AddDebugLine(nav_data.nodes[i].origin, s, (color_t) { .u32 = U32_CYAN }, SV_FRAMETIME, true);
+        R_AddDebugLine(nav_data.nodes[i].origin, s, ColorFromU32A(U32_CYAN, alpha), SV_FRAMETIME, true);
         
         for (int l = nav_data.nodes[i].first_link; l < nav_data.nodes[i].first_link + nav_data.nodes[i].num_links; l++) {
             nav_link_t *link = &nav_data.links[l];
@@ -340,17 +376,28 @@ void Nav_Frame(void)
                     continue;
                 }
 
-                R_AddDebugLine(s, e, (color_t) { .u32 = U32_WHITE }, SV_FRAMETIME, true);
+                R_AddDebugLine(s, e, ColorFromU32A(U32_WHITE, alpha), SV_FRAMETIME, true);
             } else {
-                R_AddDebugArrow(s, e, 8.0f, (color_t) { .u32 = U32_CYAN }, (color_t) { .u32 = U32_RED }, SV_FRAMETIME, true);
+                R_AddDebugArrow(s, e, 8.0f, ColorFromU32A(U32_CYAN, alpha), ColorFromU32A(U32_RED, alpha), SV_FRAMETIME, true);
             }
         }
     }
+}
+#endif
+
+void Nav_Frame(void)
+{
+#if USE_REF
+    Nav_Debug();
 #endif
 }
 
 void Nav_Init(void)
 {
+#if USE_REF
+    nav_debug = Cvar_Get("nav_debug", "0", 0);
+    nav_debug_range = Cvar_Get("nav_debug_range", "512", 0);
+#endif
 }
 
 void Nav_Shutdown(void)

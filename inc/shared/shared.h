@@ -672,9 +672,9 @@ static inline int32_t SignExtend(uint32_t v, int bits)
      (b)[2]=LittleFloat((a)[2]))
 
 #if USE_BGRA
-#define MakeColor(r, g, b, a)   MakeRawLong(b, g, r, a)
+#define MakeColor(r, g, b, a)   MakeRawLong((b), (g), (r), (a))
 #else
-#define MakeColor(r, g, b, a)   MakeRawLong(r, g, b, a)
+#define MakeColor(r, g, b, a)   MakeRawLong((r), (g), (b), (a))
 #endif
 
 //=============================================
