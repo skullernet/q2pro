@@ -560,7 +560,6 @@ void Nav_Load(const char *map_name)
     NAV_VERIFY(nav_data.nodes = Z_TagMalloc(sizeof(nav_node_t) * nav_data.num_nodes, TAG_NAV), "out of memory");
     NAV_VERIFY(nav_data.links = Z_TagMalloc(sizeof(nav_link_t) * nav_data.num_links, TAG_NAV), "out of memory");
     NAV_VERIFY(nav_data.traversals = Z_TagMalloc(sizeof(nav_traversal_t) * nav_data.num_traversals, TAG_NAV), "out of memory");
-    NAV_VERIFY(nav_data.edicts = Z_TagMalloc(sizeof(nav_traversal_t) * nav_data.num_traversals, TAG_NAV), "out of memory");
 
     nav_data.num_conditional_nodes = 0;
 
@@ -580,7 +579,8 @@ void Nav_Load(const char *map_name)
             nav_data.num_conditional_nodes++;
     }
 
-    NAV_VERIFY(nav_data.conditional_nodes = Z_TagMalloc(sizeof(nav_node_t *) * nav_data.num_conditional_nodes, TAG_NAV), "out of memory");
+    if (nav_data.num_conditional_nodes)
+        NAV_VERIFY(nav_data.conditional_nodes = Z_TagMalloc(sizeof(nav_node_t *) * nav_data.num_conditional_nodes, TAG_NAV), "out of memory");
 
     for (int i = 0, c = 0; i < nav_data.num_nodes; i++) {
         nav_node_t *node = nav_data.nodes + i;
@@ -622,18 +622,22 @@ void Nav_Load(const char *map_name)
     
     NAV_VERIFY_READ(nav_data.num_edicts);
 
-    for (int i = 0; i < nav_data.num_edicts; i++) {
-        nav_edict_t *edict = nav_data.edicts + i;
+    if (nav_data.num_edicts) {
+        NAV_VERIFY(nav_data.edicts = Z_TagMalloc(sizeof(nav_edict_t) * nav_data.num_edicts, TAG_NAV), "out of memory");
+
+        for (int i = 0; i < nav_data.num_edicts; i++) {
+            nav_edict_t *edict = nav_data.edicts + i;
         
-        int16_t link;
-        NAV_VERIFY_READ(link);
-        NAV_VERIFY(link >= 0 && link < nav_data.num_links, "bad edict link");
-        edict->link = &nav_data.links[link];
-        edict->link->edict = edict;
-        edict->game_edict = NULL;
-        NAV_VERIFY_READ(edict->model);
-        NAV_VERIFY_READ(edict->mins);
-        NAV_VERIFY_READ(edict->maxs);
+            int16_t link;
+            NAV_VERIFY_READ(link);
+            NAV_VERIFY(link >= 0 && link < nav_data.num_links, "bad edict link");
+            edict->link = &nav_data.links[link];
+            edict->link->edict = edict;
+            edict->game_edict = NULL;
+            NAV_VERIFY_READ(edict->model);
+            NAV_VERIFY_READ(edict->mins);
+            NAV_VERIFY_READ(edict->maxs);
+        }
     }
 
     nav_data.node_link_bitmap_size = nav_data.num_nodes / CHAR_BIT;
