@@ -545,6 +545,8 @@ void Sys_SetConsoleColor(color_index_t color)
     }
 }
 
+// hack'd version of OutputDebugStringA that can
+// be given a specific size rather than strlen'ing the input
 static void __stdcall QOutputDebugStringA(LPCSTR lpOutputString, size_t len)
 {
     ULONG_PTR args[2];
@@ -553,7 +555,7 @@ static void __stdcall QOutputDebugStringA(LPCSTR lpOutputString, size_t len)
  
     __try
     {
-        RaiseException(0x40010006, 0, 2, args);//DBG_PRINTEXCEPTION_C
+        RaiseException(DBG_PRINTEXCEPTION_C, 0, 2, args);
     }
     __except(EXCEPTION_EXECUTE_HANDLER)
     {
