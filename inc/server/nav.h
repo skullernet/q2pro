@@ -93,20 +93,24 @@ typedef struct {
     vec3_t  ladder_plane;
 } nav_traversal_t;
 
+typedef struct nav_edict_s nav_edict_t;
+
 // cached link data
 typedef struct nav_link_s {
     nav_node_t          *target;
     nav_link_type_t     type;
     nav_link_flags_t    flags;
     nav_traversal_t     *traversal;
+    nav_edict_t         *edict;
 } nav_link_t;
 
 // cached entity data
-typedef struct {
-    nav_link_t     *link;
-    int32_t        model;
-    vec3_t         mins;
-    vec3_t         maxs;
+typedef struct nav_edict_s {
+    nav_link_t       *link;
+    int32_t          model;
+    vec3_t           mins;
+    vec3_t           maxs;
+    const edict_t    *game_edict;
 } nav_edict_t;
 
 // navigation context; holds data specific to pathing.

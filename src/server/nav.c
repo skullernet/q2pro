@@ -58,6 +58,9 @@ static struct {
     // entity stuff; TODO efficiently
     const edict_t     *registered_edicts[MAX_EDICTS];
     size_t            num_registered_edicts;
+
+    bool              setup_entities;
+    int32_t           nav_frame;
 } nav_data;
 
 // invalid value used for most of the system
@@ -600,6 +603,7 @@ void Nav_Load(const char *map_name)
         int16_t traversal;
         NAV_VERIFY_READ(traversal);
         link->traversal = NULL;
+        link->edict = NULL;
 
         if (traversal != -1) {
             NAV_VERIFY(traversal < nav_data.num_traversals, "bad link traversal");
@@ -625,6 +629,8 @@ void Nav_Load(const char *map_name)
         NAV_VERIFY_READ(link);
         NAV_VERIFY(link >= 0 && link < nav_data.num_links, "bad edict link");
         edict->link = &nav_data.links[link];
+        edict->link->edict = edict;
+        edict->game_edict = NULL;
         NAV_VERIFY_READ(edict->model);
         NAV_VERIFY_READ(edict->mins);
         NAV_VERIFY_READ(edict->maxs);
@@ -878,6 +884,7 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
 
         if (tr.startsolid || tr.allsolid) {
             node->flags |= NodeFlag_Disabled;
+            return;
         }
     }
 
@@ -886,6 +893,7 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
 
         if (!(tr.startsolid || tr.allsolid)) {
             node->flags |= NodeFlag_Disabled;
+            return;
         }
     }
 
@@ -914,12 +922,12 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
 
                     if (IntersectBoundLine(absmin, absmax, e->s.origin, e->s.old_origin)) {
                         node->flags |= NodeFlag_Disabled;
-                        break;
+                        return;
                     }
                 } else if (e->solid == SOLID_TRIGGER) {
                     if (IntersectBounds(e->absmin, e->absmax, absmin, absmax)) {
                         node->flags |= NodeFlag_Disabled;
-                        break;
+                        return;
                     }
                 }
             }
@@ -942,12 +950,64 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
 
         if (tr.fraction == 1.0f) {
             node->flags |= NodeFlag_Disabled;
+            return;
         }
+    }
+
+    if (node->flags & NodeFlag_CheckDoorLinks) {
+        for (nav_link_t *link = node->links; link != node->links + node->num_links; link++) {
+            if (!link->edict)
+                continue;
+            else if (!link->edict->game_edict)
+                continue;
+            
+            const edict_t *game_edict = link->edict->game_edict;
+
+            if (!game_edict->inuse)
+                continue;
+
+            if (game_edict->sv.ent_flags & SVFL_IS_LOCKED_DOOR) {
+                node->flags |= NodeFlag_Disabled;
+                return;
+            }
+        }
+    }
+}
+
+static void Nav_SetupEntities(void)
+{
+    nav_data.setup_entities = true;
+
+    for (int i = 0; i < nav_data.num_edicts; i++) {
+        nav_edict_t *e = &nav_data.edicts[i];
+
+        for (int n = 0; n < ge->num_edicts; n++) {
+            edict_t *game_e = EDICT_NUM(n);
+
+            if (!game_e->inuse)
+                continue;
+            else if (game_e->solid != SOLID_TRIGGER && game_e->solid != SOLID_BSP)
+                continue;
+
+            if (game_e->s.modelindex == e->model) {
+                e->game_edict = game_e;
+                break;
+            }
+        }
+
+        if (!e->game_edict)
+            Com_WPrintf("Nav entity %i appears to be missing (needs entity with model %i)\n", i, e->model);
     }
 }
 
 void Nav_Frame(void)
 {
+    nav_data.nav_frame++;
+
+    if (nav_data.nav_frame > sv_tick_rate->integer)
+        if (!nav_data.setup_entities)
+            Nav_SetupEntities();
+
     for (int i = 0; i < nav_data.num_conditional_nodes; i++)
         Nav_UpdateConditionalNode(nav_data.conditional_nodes[i]);
 
@@ -989,6 +1049,13 @@ void Nav_RegisterEdict(const edict_t *edict)
 
 void Nav_UnRegisterEdict(const edict_t *edict)
 {
+    for (int i = 0; i < nav_data.num_edicts; i++) {
+        if (nav_data.edicts[i].game_edict == edict) {
+            nav_data.edicts[i].game_edict = NULL;
+            break;
+        }
+    }
+
     for (size_t i = 0; i < nav_data.num_registered_edicts; i++) {
         if (nav_data.registered_edicts[i] == edict) {
             nav_data.registered_edicts[i] = NULL;
