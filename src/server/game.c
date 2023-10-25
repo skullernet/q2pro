@@ -26,6 +26,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client/video.h"
 #endif
 
+#include "server/nav.h"
+
 const game_export_t     *ge;
 const game_export_ex_t  *gex;
 
@@ -769,7 +771,10 @@ static GoalReturnCode PF_Bot_FollowActor(const edict_t * bot, const edict_t * ac
 
 static bool PF_GetPathToGoal(const PathRequest* request, PathInfo* info)
 {
-    PathInfo result = Nav_Path(request);
+    nav_path_t path = { 0 };
+    path.request = request;
+
+    PathInfo result = Nav_Path(&path);
 
     if (info)
         *info = result;

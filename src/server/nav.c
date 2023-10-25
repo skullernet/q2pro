@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // nav.c -- Kex navigation node support
 
 #include "server.h"
+#include "server/nav.h"
 #include "common/error.h"
 #if USE_REF
 #include "refresh/refresh.h"
@@ -28,89 +29,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 static cvar_t *nav_debug;
 static cvar_t *nav_debug_range;
 #endif
-
-enum {
-    NodeFlag_Normal             = 0,
-    NodeFlag_Teleporter         = BIT(0),
-    NodeFlag_Pusher             = BIT(1),
-    NodeFlag_Elevator           = BIT(2),
-    NodeFlag_Ladder             = BIT(3),
-    NodeFlag_UnderWater         = BIT(4),
-    NodeFlag_CheckForHazard     = BIT(5),
-    NodeFlag_CheckHasFloor      = BIT(6),
-    NodeFlag_CheckInSolid       = BIT(7),
-    NodeFlag_NoMonsters         = BIT(8),
-    NodeFlag_Crouch             = BIT(9),
-    NodeFlag_NoPOI              = BIT(10),
-    NodeFlag_CheckInLiquid      = BIT(11),
-    NodeFlag_CheckDoorLinks     = BIT(12),
-    NodeFlag_Disabled           = BIT(13)
-};
-
-typedef uint16_t nav_node_flags_t;
-
-typedef struct {
-    nav_node_flags_t	flags;
-    int16_t             num_links;
-    int16_t             first_link;
-    int16_t             radius;
-    vec3_t              origin;
-} nav_node_t;
-
-enum {
-    NavLinkType_Walk,
-    NavLinkType_LongJump,
-    NavLinkType_Teleport,
-    NavLinkType_WalkOffLedge,
-    NavLinkType_Pusher,
-    NavLinkType_BarrierJump,
-    NavLinkType_Elevator,
-    NavLinkType_Train,
-    NavLinkType_Manual_LongJump,
-    NavLinkType_Crouch,
-    NavLinkType_Ladder,
-    NavLinkType_Manual_BarrierJump,
-    NavLinkType_PivotAndJump,
-    NavLinkType_RocketJump,
-    NavLinkType_Unknown
-};
-
-typedef uint8_t nav_link_type_t;
-
-enum {
-    NavLinkFlag_TeamRed         = BIT(0),
-    NavLinkFlag_TeamBlue        = BIT(1),
-    NavLinkFlag_ExitAtTarget    = BIT(2),
-    NavLinkFlag_WalkOnly        = BIT(3),
-    NavLinkFlag_EaseIntoTarget  = BIT(4),
-    NavLinkFlag_InstantTurn     = BIT(5),
-    NavLinkFlag_Disabled        = BIT(6)
-};
-
-typedef uint8_t nav_link_flags_t;
-
-typedef struct {
-    int16_t             target;
-    nav_link_type_t     type;
-    nav_link_flags_t    flags;
-    int16_t             traversal;
-} nav_link_t;
-
-typedef struct {
-    vec3_t  funnel;
-    vec3_t  start;
-    vec3_t  end;
-    vec3_t  ladder_plane;
-} nav_traversal_t;
-
-typedef struct {
-    int16_t     link;
-    int32_t     model;
-    vec3_t      mins;
-    vec3_t      maxs;
-} nav_edict_t;
-
-typedef struct nav_ctx_s nav_ctx_t;
 
 static struct {
     bool	loaded;
@@ -131,6 +49,7 @@ static struct {
     nav_traversal_t *traversals;
     nav_edict_t     *edicts;
 
+    // built-in context
     nav_ctx_t   *ctx;
 } nav_data;
 
@@ -206,19 +125,7 @@ struct edict
 edict[num_edicts] edicts
 */
 
-typedef float (*nav_heuristic_func_t) (const nav_ctx_t *ctx, const nav_node_t *node);
-typedef float (*nav_weight_func_t) (const nav_ctx_t *ctx, const nav_node_t *node, const nav_link_t *link);
-typedef bool (*nav_link_accessible_func_t) (const nav_ctx_t *ctx, const nav_node_t *node, const nav_link_t *link);
-
 typedef struct nav_ctx_s {
-    const PathRequest           *request;
-
-    const nav_node_t            *start, *end;
-
-    nav_heuristic_func_t        heuristic;
-    nav_weight_func_t           weight;
-    nav_link_accessible_func_t  link_accessible;
-
     // TODO: min-heap or priority queue ordered by f_score
     int16_t     open_set[1024];
 
@@ -228,7 +135,7 @@ typedef struct nav_ctx_s {
     float       *g_score, *f_score;
 } nav_ctx_t;
 
-static nav_ctx_t *Nav_AllocCtx(void)
+nav_ctx_t *Nav_AllocCtx(void)
 {
     size_t size = sizeof(nav_ctx_t) +
         (sizeof(float) * nav_data.num_nodes) +
@@ -244,23 +151,23 @@ static nav_ctx_t *Nav_AllocCtx(void)
     return ctx;
 }
 
-static void Nav_FreeCtx(nav_ctx_t *ctx)
+void Nav_FreeCtx(nav_ctx_t *ctx)
 {
     Z_Free(ctx);
 }
 
-static float Nav_Heuristic(const nav_ctx_t *ctx, const nav_node_t *node)
+// built-in path functions
+static float Nav_Heuristic(const nav_path_t *path, const nav_node_t *node)
 {
-    return VectorDistanceSquared(ctx->end->origin, node->origin);
+    return VectorDistanceSquared(path->goal->origin, node->origin);
 }
 
-static float Nav_Weight(const nav_ctx_t *ctx, const nav_node_t *node, const nav_link_t *link)
+static float Nav_Weight(const nav_path_t *path, const nav_node_t *node, const nav_link_t *link)
 {
     if (link->type == NavLinkType_Teleport)
-        return 0;
+        return 1.0f;
 
-    const nav_node_t *target = &nav_data.nodes[link->target];
-    return VectorDistanceSquared(node->origin, target->origin);
+    return VectorDistanceSquared(node->origin, link->target->origin);
 }
 
 static bool Nav_NodeAccessible(const nav_node_t *node)
@@ -268,12 +175,12 @@ static bool Nav_NodeAccessible(const nav_node_t *node)
     return !(node->flags & NodeFlag_Disabled);
 }
 
-static bool Nav_LinkAccessible(const nav_ctx_t *ctx, const nav_node_t *node, const nav_link_t *link)
+static bool Nav_LinkAccessible(const nav_path_t *path, const nav_node_t *node, const nav_link_t *link)
 {
-    return Nav_NodeAccessible(&nav_data.nodes[link->target]);
+    return Nav_NodeAccessible(link->target);
 }
 
-static nav_node_t *Nav_ClosestNodeTo(nav_ctx_t *ctx, const vec3_t p)
+static nav_node_t *Nav_ClosestNodeTo(const vec3_t p)
 {
     float w = INFINITY;
     nav_node_t *c = NULL;
@@ -294,14 +201,9 @@ const float PATH_POINT_TOO_CLOSE = 64.f * 64.f;
 
 static const nav_link_t *Nav_GetLink(const nav_node_t *a, const nav_node_t *b)
 {
-    int16_t id = b - nav_data.nodes;
-
-    for (int16_t i = a->first_link; i < a->first_link + a->num_links; i++) {
-        const nav_link_t *link = &nav_data.links[i];
-
-        if (link->target == id)
+    for (const nav_link_t *link = a->links; link != a->links + a->num_links; link++)
+        if (link->target == b)
             return link;
-    }
 
     Q_assert(false);
     return NULL;
@@ -311,11 +213,11 @@ static bool Nav_TouchingNode(const vec3_t pos, float move_dist, const nav_node_t
 {
     float touch_radius = node->radius + move_dist;
     return fabsf(pos[0] - node->origin[0]) < touch_radius &&
-        fabsf(pos[1] - node->origin[1]) < touch_radius &&
-        fabsf(pos[2] - node->origin[2]) < touch_radius * 4;
+           fabsf(pos[1] - node->origin[1]) < touch_radius &&
+           fabsf(pos[2] - node->origin[2]) < touch_radius * 4;
 }
 
-static PathInfo Nav_PathCtx(const PathRequest *request, nav_ctx_t *ctx)
+static PathInfo Nav_Path_(nav_path_t *path)
 {
     PathInfo info = { 0 };
 
@@ -324,29 +226,35 @@ static PathInfo Nav_PathCtx(const PathRequest *request, nav_ctx_t *ctx)
         return info;
     }
 
-    ctx->start = Nav_ClosestNodeTo(ctx, request->start);
+    const PathRequest *request = path->request;
 
-    if (!ctx->start) {
+    path->start = Nav_ClosestNodeTo(request->start);
+
+    if (!path->start) {
         info.returnCode = PathReturnCode_NoStartNode;
         return info;
     }
 
-    ctx->end = Nav_ClosestNodeTo(ctx, request->goal);
+    path->goal = Nav_ClosestNodeTo(request->goal);
 
-    if (!ctx->end) {
+    if (!path->goal) {
         info.returnCode = PathReturnCode_NoGoalNode;
         return info;
     }
 
-    if (ctx->start == ctx->end) {
+    if (path->start == path->goal) {
         info.returnCode = PathReturnCode_ReachedGoal;
         return info;
     }
 
-    ctx->request = request;
+    int16_t start_id = path->start->id;
+    int16_t goal_id = path->goal->id;
+    
+    nav_weight_func_t weight_func = path->weight ? path->weight : Nav_Weight;
+    nav_heuristic_func_t heuristic_func = path->heuristic ? path->heuristic : Nav_Heuristic;
+    nav_link_accessible_func_t link_accessible_func = path->link_accessible ? path->link_accessible : Nav_LinkAccessible;
 
-    int16_t start_id = ctx->start - nav_data.nodes;
-    int16_t end_id = ctx->end - nav_data.nodes;
+    nav_ctx_t *ctx = path->context ? path->context : nav_data.ctx;
 
     memset(&ctx->open_set, 0xFF, sizeof(ctx->open_set));
 
@@ -356,7 +264,7 @@ static PathInfo Nav_PathCtx(const PathRequest *request, nav_ctx_t *ctx)
     ctx->open_set[0] = start_id;
     ctx->came_from[start_id] = -1;
     ctx->g_score[start_id] = 0;
-    ctx->f_score[start_id] = ctx->heuristic(ctx, ctx->start);
+    ctx->f_score[start_id] = heuristic_func(path, path->start);
 
     while (true) {
         int16_t current_id = -1;
@@ -376,7 +284,7 @@ static PathInfo Nav_PathCtx(const PathRequest *request, nav_ctx_t *ctx)
 
         int16_t current = ctx->open_set[current_id];
 
-        if (current == end_id) {
+        if (current == goal_id) {
             int64_t num_points = 0;
 
             // reverse the order of came_from into went_to
@@ -444,9 +352,9 @@ static PathInfo Nav_PathCtx(const PathRequest *request, nav_ctx_t *ctx)
             }
 
             // store move point info
-            if (link->traversal != -1) {
-                VectorCopy(nav_data.traversals[link->traversal].start, info.firstMovePoint);
-                VectorCopy(nav_data.traversals[link->traversal].end, info.secondMovePoint);
+            if (link->traversal != NULL) {
+                VectorCopy(link->traversal->start, info.firstMovePoint);
+                VectorCopy(link->traversal->end, info.secondMovePoint);
                 info.returnCode = PathReturnCode_TraversalPending;
             } else {
                 VectorCopy(nav_data.nodes[ctx->went_to[first_point]].origin, info.firstMovePoint);
@@ -462,33 +370,31 @@ static PathInfo Nav_PathCtx(const PathRequest *request, nav_ctx_t *ctx)
 
         const nav_node_t *current_node = &nav_data.nodes[current];
 
-        for (int l = current_node->first_link; l < current_node->first_link + current_node->num_links; l++) {
-            const nav_link_t *link = &nav_data.links[l];
-
-            if (!ctx->link_accessible(ctx, current_node, link))
+        for (const nav_link_t *link = current_node->links; link != current_node->links + current_node->num_links; link++) {
+            if (!link_accessible_func(path, current_node, link))
                 continue;
 
-            const nav_node_t *link_target_node = &nav_data.nodes[link->target];
+            int16_t target_id = link->target->id;
 
-            float temp_g_score = ctx->g_score[current] + ctx->weight(ctx, current_node, link);
+            float temp_g_score = ctx->g_score[current] + weight_func(path, current_node, link);
 
-            if (temp_g_score >= ctx->g_score[link->target])
+            if (temp_g_score >= ctx->g_score[target_id])
                 continue;
 
-            ctx->came_from[link->target] = current;
-            ctx->g_score[link->target] = temp_g_score;
-            ctx->f_score[link->target] = temp_g_score + ctx->heuristic(ctx, link_target_node);
+            ctx->came_from[target_id] = current;
+            ctx->g_score[target_id] = temp_g_score;
+            ctx->f_score[target_id] = temp_g_score + heuristic_func(path, link->target);
 
             int i;
 
             for (i = 0; i < 1024; i++)
-                if (ctx->open_set[i] == link->target)
+                if (ctx->open_set[i] == target_id)
                     break;
 
             if (i == 1024) {
                 for (i = 0; i < 1024; i++) {
                     if (ctx->open_set[i] == -1) {
-                        ctx->open_set[i] = link->target;
+                        ctx->open_set[i] = target_id;
                         break;
                     }
                 }
@@ -538,17 +444,13 @@ static void Nav_DebugPath(const PathInfo *path, const PathRequest *request)
 }
 #endif
 
-PathInfo Nav_Path(const PathRequest *request)
+PathInfo Nav_Path(nav_path_t *path)
 {
-    nav_data.ctx->weight = Nav_Weight;
-    nav_data.ctx->heuristic = Nav_Heuristic;
-    nav_data.ctx->link_accessible = Nav_LinkAccessible;
-
-    PathInfo result = Nav_PathCtx(request, nav_data.ctx);
+    PathInfo result = Nav_Path_(path);
     
 #if USE_REF
-    if (request->debugging.drawTime)
-        Nav_DebugPath(&result, request);
+    if (path->request->debugging.drawTime)
+        Nav_DebugPath(&result, path->request);
 #endif
 
     return result;
@@ -583,14 +485,20 @@ void Nav_Load(const char *map_name)
     NAV_VERIFY_READ(nav_data.heuristic);
 
     NAV_VERIFY(nav_data.nodes = Z_TagMalloc(sizeof(nav_node_t) * nav_data.num_nodes, TAG_NAV), "out of memory");
+    NAV_VERIFY(nav_data.links = Z_TagMalloc(sizeof(nav_link_t) * nav_data.num_links, TAG_NAV), "out of memory");
+    NAV_VERIFY(nav_data.traversals = Z_TagMalloc(sizeof(nav_traversal_t) * nav_data.num_traversals, TAG_NAV), "out of memory");
+    NAV_VERIFY(nav_data.edicts = Z_TagMalloc(sizeof(nav_traversal_t) * nav_data.num_traversals, TAG_NAV), "out of memory");
 
     for (int i = 0; i < nav_data.num_nodes; i++) {
         nav_node_t *node = nav_data.nodes + i;
         
+        node->id = i;
         NAV_VERIFY_READ(node->flags);
         NAV_VERIFY_READ(node->num_links);
-        NAV_VERIFY_READ(node->first_link);
-        NAV_VERIFY(node->first_link >= 0 && node->first_link + node->num_links <= nav_data.num_links, "bad node link extents");
+        int16_t first_link;
+        NAV_VERIFY_READ(first_link);
+        NAV_VERIFY(first_link >= 0 && first_link + node->num_links <= nav_data.num_links, "bad node link extents");
+        node->links = &nav_data.links[first_link];
         NAV_VERIFY_READ(node->radius);
     }
 
@@ -600,22 +508,24 @@ void Nav_Load(const char *map_name)
         NAV_VERIFY_READ(node->origin);
     }
 
-    NAV_VERIFY(nav_data.links = Z_TagMalloc(sizeof(nav_link_t) * nav_data.num_links, TAG_NAV), "out of memory");
-
     for (int i = 0; i < nav_data.num_links; i++) {
         nav_link_t *link = nav_data.links + i;
         
-        NAV_VERIFY_READ(link->target);
-        NAV_VERIFY(link->target >= 0 && link->target < nav_data.num_nodes, "bad link target");
+        int16_t target;
+        NAV_VERIFY_READ(target);
+        NAV_VERIFY(target >= 0 && target < nav_data.num_nodes, "bad link target");
+        link->target = &nav_data.nodes[target];
         NAV_VERIFY_READ(link->type);
         NAV_VERIFY_READ(link->flags);
-        NAV_VERIFY_READ(link->traversal);
+        int16_t traversal;
+        NAV_VERIFY_READ(traversal);
+        link->traversal = NULL;
 
-        if (link->traversal != -1)
-            NAV_VERIFY(link->traversal < nav_data.num_traversals, "bad link traversal");
+        if (traversal != -1) {
+            NAV_VERIFY(traversal < nav_data.num_traversals, "bad link traversal");
+            link->traversal = &nav_data.traversals[traversal];
+        }
     }
-
-    NAV_VERIFY(nav_data.traversals = Z_TagMalloc(sizeof(nav_traversal_t) * nav_data.num_traversals, TAG_NAV), "out of memory");
 
     for (int i = 0; i < nav_data.num_traversals; i++) {
         nav_traversal_t *traversal = nav_data.traversals + i;
@@ -627,14 +537,14 @@ void Nav_Load(const char *map_name)
     }
     
     NAV_VERIFY_READ(nav_data.num_edicts);
-    
-    NAV_VERIFY(nav_data.edicts = Z_TagMalloc(sizeof(nav_traversal_t) * nav_data.num_traversals, TAG_NAV), "out of memory");
 
     for (int i = 0; i < nav_data.num_edicts; i++) {
         nav_edict_t *edict = nav_data.edicts + i;
         
-        NAV_VERIFY_READ(edict->link);
-        NAV_VERIFY(edict->link >= 0 && edict->link < nav_data.num_links, "bad edict link");
+        int16_t link;
+        NAV_VERIFY_READ(link);
+        NAV_VERIFY(link >= 0 && link < nav_data.num_links, "bad edict link");
+        edict->link = &nav_data.links[link];
         NAV_VERIFY_READ(edict->model);
         NAV_VERIFY_READ(edict->mins);
         NAV_VERIFY_READ(edict->maxs);
@@ -647,12 +557,8 @@ void Nav_Load(const char *map_name)
         nav_node_t *node = nav_data.nodes + i;
         byte *bits = nav_data.node_link_bitmap + (nav_data.node_link_bitmap_size * i);
 
-        for (int l = node->first_link; l < node->first_link + node->num_links; l++) {
-            nav_link_t *link = &nav_data.links[l];
-
-            Q_assert(link->target >= 0);
-            
-            Q_SetBit(bits, link->target);
+        for (nav_link_t *link = node->links; link != node->links + node->num_links; link++) {
+            Q_SetBit(bits, link->target->id);
         }
     }
 
@@ -699,11 +605,6 @@ static void Nav_Debug(void)
         uint8_t alpha = constclamp((1.0f - ((len - 32.f) / (nav_debug_range->value - 32.f))), 0.0f, 1.0f) * 255.f;
 
         R_AddDebugCircle(node->origin, node->radius, ColorFromU32A(U32_CYAN, alpha), SV_FRAMETIME, true);
-        
-        if (i == nav_data.ctx->start - nav_data.nodes)
-            R_AddDebugSphere(node->origin, 32, ColorFromU32A(U32_BLUE, alpha), SV_FRAMETIME, true);
-        else if (i == nav_data.ctx->end - nav_data.nodes)
-            R_AddDebugSphere(node->origin, 32, ColorFromU32A(U32_RED, alpha), SV_FRAMETIME, true);
 
         vec3_t mins = { -16, -16, -24 }, maxs = { 16, 16, 32 };
 
@@ -730,20 +631,18 @@ static void Nav_Debug(void)
 
         R_AddDebugText(t, va("%i", node - nav_data.nodes), 0.25f, NULL, ColorFromU32A(U32_CYAN, alpha), SV_FRAMETIME, true);
         
-        for (int l = node->first_link; l < node->first_link + node->num_links; l++) {
-            const nav_link_t *link = &nav_data.links[l];
-            const nav_node_t *target_node = &nav_data.nodes[link->target];
+        for (const nav_link_t *link = node->links; link != node->links + node->num_links; link++) {
             const byte *bits = nav_data.node_link_bitmap + (nav_data.node_link_bitmap_size * i);
 
             vec3_t e;
-            VectorCopy(target_node->origin, e);
+            VectorCopy(link->target->origin, e);
             e[2] += 24;
 
             // two-way link
-            const byte *target_bits = nav_data.node_link_bitmap + (nav_data.node_link_bitmap_size * link->target);
+            const byte *target_bits = nav_data.node_link_bitmap + (nav_data.node_link_bitmap_size * link->target->id);
 
             if (Q_IsBitSet(target_bits, i)) {
-                if (i < link->target) {
+                if (i < link->target->id) {
                     continue;
                 }
 

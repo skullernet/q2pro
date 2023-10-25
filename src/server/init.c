@@ -17,6 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "server.h"
+#include "server/nav.h"
 
 server_static_t svs;                // persistant server info
 server_t        sv;                 // local server
