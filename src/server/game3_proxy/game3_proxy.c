@@ -487,11 +487,11 @@ static void sync_single_edict_game_to_server(int index)
 
     if (game_edict->client) {
         if(!server_edict->client) {
-            server_edict->client = malloc(sizeof(struct gclient_s));
+            server_edict->client = Z_Malloc(sizeof(struct gclient_s));
         }
         game_client_to_server(server_edict->client, game_edict->client);
     } else if (server_edict->client) {
-        free(server_edict->client);
+        Z_Free(server_edict->client);
         server_edict->client = NULL;
     }
 
@@ -553,7 +553,7 @@ static void wrap_Shutdown(void)
     game3_export->Shutdown();
 
     for (int i = 0; i < game3_export->max_edicts; i++) {
-        free(server_edicts[i].client);
+        Z_Free(server_edicts[i].client);
     }
     Z_Free(server_edicts);
     server_edicts = NULL;
@@ -579,13 +579,13 @@ static char* make_temp_directory(void)
         if (errno != EEXIST)
             return NULL;
     }
-    return strdup(temp_name);
+    return Z_CopyString(temp_name);
 #else
     char temp_dir[MAX_OSPATH];
     Q_strlcpy(temp_dir, "/tmp/q2game-XXXXXXXX", sizeof(temp_dir));
     if (!mkdtemp(temp_dir))
         Com_Error(ERR_DROP, "Couldn't get temp directory");
-    return strdup(temp_dir);
+    return Z_CopyString(temp_dir);
 #endif
 }
 
@@ -656,7 +656,7 @@ static char* wrap_WriteGameJson(bool autosave, size_t* json_size)
 
     os_unlink(game_fn);
     os_rmdir(save_dir);
-    free(save_dir);
+    Z_Free(save_dir);
 
     return result;
 }
@@ -678,7 +678,7 @@ static void wrap_ReadGameJson(const char *json)
 
     os_unlink(game_fn);
     os_rmdir(save_dir);
-    free(save_dir);
+    Z_Free(save_dir);
 
     sync_edicts_game_to_server();
 }
@@ -702,7 +702,7 @@ static char* wrap_WriteLevelJson(bool transition, size_t* json_size)
 
     os_unlink(level_fn);
     os_rmdir(save_dir);
-    free(save_dir);
+    Z_Free(save_dir);
 
     return result;
 }
@@ -721,7 +721,7 @@ static void wrap_ReadLevelJson(const char *json)
 
     os_unlink(level_fn);
     os_rmdir(save_dir);
-    free(save_dir);
+    Z_Free(save_dir);
 
     sync_edicts_game_to_server();
 }

@@ -19,6 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "shared/shared.h"
 #include "common/gamedll.h"
 #include "system/system.h"
+#include "common/common.h"
 
 extern cvar_t   *fs_game;
 

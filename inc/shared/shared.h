@@ -250,6 +250,16 @@ typedef struct vrect_s {
      (e)[2]=(a)[2]*(c)+(b)[2]*(d))
 #define PlaneDiff(v,p)   (DotProduct(v,(p)->normal)-(p)->dist)
 
+static inline float VectorDistanceSquared(const vec3_t a, const vec3_t b)
+{
+    vec3_t t;
+    VectorSubtract(a, b, t);
+    return VectorLengthSquared(t);
+}
+
+#define VectorDistance(a, b) (sqrtf(VectorDistanceSquared((a), (b))))
+    
+
 #define Vector2Set(v, x, y)   ((v)[0]=(x),(v)[1]=(y))
 
 #define Vector4Subtract(a,b,c)      ((c)[0]=(a)[0]-(b)[0],(c)[1]=(a)[1]-(b)[1],(c)[2]=(a)[2]-(b)[2],(c)[3]=(a)[3]-(b)[3])

@@ -416,7 +416,7 @@ void R_AddDebugText(const vec3_t origin, const char *text, float size, const vec
     if (!angles)
     {
         vec3_t d;
-        VectorSubtract(glr.fd.vieworg, origin, d);
+        VectorSubtract(origin, glr.fd.vieworg, d);
         VectorNormalize(d);
         d[2] = 0.0f;
         vectoangles2(d, d);
@@ -559,6 +559,11 @@ static void r_debug_font_generator(struct genctx_s *gen)
     }
 }
 
+static void GL_DebugClear_f(void)
+{
+    GL_ClearDebugLines();
+}
+
 void GL_InitDebugDraw(void)
 {
     GL_ClearDebugLines();
@@ -568,4 +573,6 @@ void GL_InitDebugDraw(void)
     r_debug_font->changed = r_debug_font_changed;
     r_debug_font->generator = r_debug_font_generator;
     r_debug_font_changed(r_debug_font);
+
+    Cmd_AddCommand("debug_clear", GL_DebugClear_f);
 }

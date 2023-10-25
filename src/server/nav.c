@@ -251,9 +251,7 @@ static void Nav_FreeCtx(nav_ctx_t *ctx)
 
 static float Nav_Heuristic(const nav_ctx_t *ctx, const nav_node_t *node)
 {
-    vec3_t v;
-    VectorSubtract(ctx->end->origin, node->origin, v);
-    return VectorLengthSquared(v);
+    return VectorDistanceSquared(ctx->end->origin, node->origin);
 }
 
 static float Nav_Weight(const nav_ctx_t *ctx, const nav_node_t *node, const nav_link_t *link)
@@ -262,9 +260,7 @@ static float Nav_Weight(const nav_ctx_t *ctx, const nav_node_t *node, const nav_
         return 0;
 
     const nav_node_t *target = &nav_data.nodes[link->target];
-    vec3_t v;
-    VectorSubtract(node->origin, target->origin, v);
-    return VectorLengthSquared(v);
+    return VectorDistanceSquared(node->origin, target->origin);
 }
 
 static bool Nav_NodeAccessible(const nav_node_t *node)
@@ -283,9 +279,7 @@ static nav_node_t *Nav_ClosestNodeTo(nav_ctx_t *ctx, const vec3_t p)
     nav_node_t *c = NULL;
 
     for (int i = 0; i < nav_data.num_nodes; i++) {
-        vec3_t v;
-        VectorSubtract(nav_data.nodes[i].origin, p, v);
-        float l = VectorLengthSquared(v);
+        float l = VectorDistanceSquared(nav_data.nodes[i].origin, p);
 
         if (l < w) {
             w = l;
@@ -294,6 +288,31 @@ static nav_node_t *Nav_ClosestNodeTo(nav_ctx_t *ctx, const vec3_t p)
     }
 
     return c;
+}
+
+const float PATH_POINT_TOO_CLOSE = 64.f * 64.f;
+
+static const nav_link_t *Nav_GetLink(const nav_node_t *a, const nav_node_t *b)
+{
+    int16_t id = b - nav_data.nodes;
+
+    for (int16_t i = a->first_link; i < a->first_link + a->num_links; i++) {
+        const nav_link_t *link = &nav_data.links[i];
+
+        if (link->target == id)
+            return link;
+    }
+
+    Q_assert(false);
+    return NULL;
+}
+
+static bool Nav_TouchingNode(const vec3_t pos, float move_dist, const nav_node_t *node)
+{
+    float touch_radius = node->radius + move_dist;
+    return fabsf(pos[0] - node->origin[0]) < touch_radius &&
+        fabsf(pos[1] - node->origin[1]) < touch_radius &&
+        fabsf(pos[2] - node->origin[2]) < touch_radius * 4;
 }
 
 static PathInfo Nav_PathCtx(const PathRequest *request, nav_ctx_t *ctx)
@@ -358,34 +377,81 @@ static PathInfo Nav_PathCtx(const PathRequest *request, nav_ctx_t *ctx)
         int16_t current = ctx->open_set[current_id];
 
         if (current == end_id) {
+            int64_t num_points = 0;
+
+            // reverse the order of came_from into went_to
+            // to make stuff below a bit easier to work with
+            int16_t n = current;
+            while (ctx->came_from[n] != -1) {
+                num_points++;
+                n = ctx->came_from[n];
+            }
+
+            n = current;
+            int64_t p = 0;
+            while (ctx->came_from[n] != -1) {
+                n = ctx->went_to[num_points - p - 1] = ctx->came_from[n];
+                p++;
+            }
+
+            // num_points now contains points between start
+            // and current; it will be at least 2, since start can't
+            // be the same as end, but may be less once we start clipping.
+            Q_assert(num_points >= 2);
+            Q_assert(ctx->went_to[0] != -1);
+
+            int64_t first_point = 0;
+
+            // if the node isn't a traversal, we may want
+            // to skip the first node if we're either past it
+            // or touching it
+            const nav_link_t *link = Nav_GetLink(&nav_data.nodes[ctx->went_to[0]], &nav_data.nodes[ctx->went_to[1]]);
+
+            if (link->type == NavLinkType_Walk || link->type == NavLinkType_Crouch) {
+                if (Nav_TouchingNode(request->start, request->moveDist, &nav_data.nodes[ctx->went_to[0]])) {
+                    first_point++;
+                }
+            }
+
+            // store resulting path for compass, etc
             if (request->pathPoints.count) {
-                info.numPathPoints = 0;
-                int16_t n = current;
+                // if we're too far from the first node, add in our current position.
+                float dist = VectorDistanceSquared(request->start, nav_data.nodes[ctx->went_to[first_point]].origin);
 
-                while (ctx->came_from[n] != -1) {
+                if (dist > PATH_POINT_TOO_CLOSE) {
+                    if (info.numPathPoints < request->pathPoints.count)
+                        VectorCopy(request->start, request->pathPoints.posArray[info.numPathPoints]);
                     info.numPathPoints++;
-                    n = ctx->came_from[n];
                 }
 
-                n = current;
-                int64_t p = 0;
+                // crawl forwards and add nodes
+                for (p = first_point; p < num_points; p++) {
 
-                while (ctx->came_from[n] != -1) {
+                    if (info.numPathPoints < request->pathPoints.count)
+                        VectorCopy(nav_data.nodes[ctx->went_to[p]].origin, request->pathPoints.posArray[info.numPathPoints]);
 
-                    int64_t id = info.numPathPoints - p - 1;
-                    p++;
-
-                    if (id < request->pathPoints.count)
-                        VectorCopy(nav_data.nodes[ctx->came_from[n]].origin, request->pathPoints.posArray[id]);
-
-                    n = ctx->came_from[n];
+                    info.numPathPoints++;
                 }
 
-                if (info.numPathPoints < request->pathPoints.count)
-                    VectorCopy(ctx->end->origin, request->pathPoints.posArray[info.numPathPoints]);
+                // add the end point if we have room
+                dist = VectorDistanceSquared(request->goal, nav_data.nodes[ctx->went_to[current]].origin);
 
-                info.numPathPoints++;
+                if (dist > PATH_POINT_TOO_CLOSE) {
+                    if (info.numPathPoints < request->pathPoints.count)
+                        VectorCopy(request->goal, request->pathPoints.posArray[info.numPathPoints]);
+                    info.numPathPoints++;
+                }
+            }
 
+            // store move point info
+            if (link->traversal != -1) {
+                VectorCopy(nav_data.traversals[link->traversal].start, info.firstMovePoint);
+                VectorCopy(nav_data.traversals[link->traversal].end, info.secondMovePoint);
+                info.returnCode = PathReturnCode_TraversalPending;
+            } else {
+                VectorCopy(nav_data.nodes[ctx->went_to[first_point]].origin, info.firstMovePoint);
+                Q_assert(first_point + 1 < num_points);
+                VectorCopy(nav_data.nodes[ctx->went_to[first_point + 1]].origin, info.secondMovePoint);
                 info.returnCode = PathReturnCode_InProgress;
             }
 
@@ -410,7 +476,6 @@ static PathInfo Nav_PathCtx(const PathRequest *request, nav_ctx_t *ctx)
                 continue;
 
             ctx->came_from[link->target] = current;
-            ctx->went_to[current] = link->target;
             ctx->g_score[link->target] = temp_g_score;
             ctx->f_score[link->target] = temp_g_score + ctx->heuristic(ctx, link_target_node);
 
@@ -435,13 +500,58 @@ static PathInfo Nav_PathCtx(const PathRequest *request, nav_ctx_t *ctx)
     return info;
 }
 
+#if USE_REF
+static inline color_t ColorFromU32(uint32_t c)
+{
+    return (color_t) { .u32 = c };
+}
+
+static inline color_t ColorFromU32A(uint32_t c, uint8_t alpha)
+{
+    color_t color = { .u32 = c };
+    color.u8[3] = alpha;
+    return color;
+}
+
+static void Nav_DebugPath(const PathInfo *path, const PathRequest *request)
+{
+    GL_ClearDebugLines();
+
+    int time = (request->debugging.drawTime * 1000) + 6000;
+
+    R_AddDebugSphere(request->start, 8.0f, ColorFromU32A(U32_RED, 64), time, false);
+    R_AddDebugSphere(request->goal, 8.0f, ColorFromU32A(U32_RED, 64), time, false);
+
+    if (request->pathPoints.count) {
+        R_AddDebugArrow(request->start, request->pathPoints.posArray[0], 8.0f, ColorFromU32A(U32_YELLOW, 64), ColorFromU32A(U32_YELLOW, 64), time, false);
+
+        for (int64_t i = 0; i < request->pathPoints.count - 1; i++)
+            R_AddDebugArrow(request->pathPoints.posArray[i], request->pathPoints.posArray[i + 1], 8.0f, ColorFromU32A(U32_YELLOW, 64), ColorFromU32A(U32_YELLOW, 64), time, false);
+
+        R_AddDebugArrow(request->pathPoints.posArray[request->pathPoints.count - 1], request->goal, 8.0f, ColorFromU32A(U32_YELLOW, 64), ColorFromU32A(U32_YELLOW, 64), time, false);
+    } else {
+        R_AddDebugArrow(request->start, request->goal, 8.0f, ColorFromU32A(U32_YELLOW, 64), ColorFromU32A(U32_YELLOW, 64), time, false);
+    }
+
+    R_AddDebugSphere(path->firstMovePoint, 16.0f, ColorFromU32A(U32_RED, 64), time, false);
+    R_AddDebugArrow(path->firstMovePoint, path->secondMovePoint, 16.0f, ColorFromU32A(U32_RED, 64), ColorFromU32A(U32_RED, 64), time, false);
+}
+#endif
+
 PathInfo Nav_Path(const PathRequest *request)
 {
     nav_data.ctx->weight = Nav_Weight;
     nav_data.ctx->heuristic = Nav_Heuristic;
     nav_data.ctx->link_accessible = Nav_LinkAccessible;
 
-    return Nav_PathCtx(request, nav_data.ctx);
+    PathInfo result = Nav_PathCtx(request, nav_data.ctx);
+    
+#if USE_REF
+    if (request->debugging.drawTime)
+        Nav_DebugPath(&result, request);
+#endif
+
+    return result;
 }
 
 void Nav_Load(const char *map_name)
@@ -569,45 +679,10 @@ void Nav_Unload(void)
 }
 
 #if USE_REF
-static inline color_t ColorFromU32(uint32_t c)
-{
-    return (color_t) { .u32 = c };
-}
-
-static inline color_t ColorFromU32A(uint32_t c, uint8_t alpha)
-{
-    color_t color = { .u32 = c };
-    color.u8[3] = alpha;
-    return color;
-}
-
 static void Nav_Debug(void)
 {
     if (!nav_debug->integer) {
         return;
-    }
-
-    static vec3_t path_buffer[128];
-    PathRequest request = { 0 };
-    VectorCopy(glr.fd.vieworg, request.start);
-    VectorCopy(vec3_origin, request.goal);
-    request.pathFlags = PathFlags_All;
-    request.nodeSearch.ignoreNodeFlags = true;
-    request.nodeSearch.radius = 128.f;
-    request.pathPoints.posArray = &path_buffer[0];
-    request.pathPoints.count = q_countof(path_buffer);
-
-    nav_data.ctx->weight = Nav_Weight;
-    nav_data.ctx->heuristic = Nav_Heuristic;
-    nav_data.ctx->link_accessible = Nav_LinkAccessible;
-
-    PathInfo info = Nav_Path(&request);
-
-    if (info.returnCode < PathReturnCode_StartPathErrors) {
-
-        for (int64_t i = 0; i < info.numPathPoints - 1; i++) {
-            R_AddDebugLine(request.pathPoints.posArray[i], request.pathPoints.posArray[i + 1], ColorFromU32A(U32_RED, 255), SV_FRAMETIME, true);
-        }
     }
 
     for (int i = 0; i < nav_data.num_nodes; i++) {
@@ -648,6 +723,12 @@ static void Nav_Debug(void)
         s[2] += 24;
 
         R_AddDebugLine(node->origin, s, ColorFromU32A(U32_CYAN, alpha), SV_FRAMETIME, true);
+
+        vec3_t t;
+        VectorCopy(node->origin, t);
+        t[2] += 48;
+
+        R_AddDebugText(t, va("%i", node - nav_data.nodes), 0.25f, NULL, ColorFromU32A(U32_CYAN, alpha), SV_FRAMETIME, true);
         
         for (int l = node->first_link; l < node->first_link + node->num_links; l++) {
             const nav_link_t *link = &nav_data.links[l];
