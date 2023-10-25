@@ -49,6 +49,9 @@ static struct {
     nav_traversal_t *traversals;
     nav_edict_t     *edicts;
 
+    int32_t     num_conditional_nodes;
+    nav_node_t  **conditional_nodes;
+
     // built-in context
     nav_ctx_t   *ctx;
 } nav_data;
@@ -179,14 +182,32 @@ static float Nav_Weight(const nav_path_t *path, const nav_node_t *node, const na
     return VectorDistanceSquared(node->origin, link->target->origin);
 }
 
-static bool Nav_NodeAccessible(const nav_node_t *node)
+static bool Nav_NodeAccessible(const nav_path_t *path, const nav_node_t *node)
 {
-    return !(node->flags & NodeFlag_Disabled);
+    if (node->flags & NodeFlag_Disabled) {
+        return false;
+    }
+
+    if (path->request->nodeSearch.ignoreNodeFlags) {
+        if (node->flags & NodeFlag_NoPOI) {
+            return false;
+        }
+    } else {
+        if (node->flags & (NodeFlag_NoMonsters | NodeFlag_Crouch)) {
+            return false;
+        } else if ((node->flags & NodeFlag_UnderWater) && (path->request->pathFlags & (PathFlags_Walk | PathFlags_Water)) == PathFlags_Walk) {
+            return false;
+        } else if (!(node->flags & NodeFlag_UnderWater) && (path->request->pathFlags & (PathFlags_Walk | PathFlags_Water)) == PathFlags_Water) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 static bool Nav_LinkAccessible(const nav_path_t *path, const nav_node_t *node, const nav_link_t *link)
 {
-    return Nav_NodeAccessible(link->target);
+    return Nav_NodeAccessible(path, link->target);
 }
 
 static nav_node_t *Nav_ClosestNodeTo(const vec3_t p)
@@ -259,6 +280,11 @@ static PathInfo Nav_Path_(nav_path_t *path)
         return info;
     }
 
+    if ((path->request->pathFlags & (PathFlags_Walk | PathFlags_Water)) == 0) {
+        info.returnCode = PathReturnCode_MissingWalkOrSwimFlag;
+        return info;
+    }
+
     const PathRequest *request = path->request;
 
     path->start = Nav_ClosestNodeTo(request->start);
@@ -275,9 +301,21 @@ static PathInfo Nav_Path_(nav_path_t *path)
         return info;
     }
 
-    if (path->start == path->goal) {
+    if (path->start == path->goal ||
+        Nav_TouchingNode(request->start, request->moveDist, path->goal)) {
         info.returnCode = PathReturnCode_ReachedGoal;
         return info;
+    }
+
+    if (!path->request->nodeSearch.ignoreNodeFlags) {
+        if (SV_PointContents(path->request->start) & MASK_SOLID) {
+            info.returnCode = PathReturnCode_InvalidStart;
+            return info;
+        }
+        if (SV_PointContents(path->request->goal) & MASK_SOLID) {
+            info.returnCode = PathReturnCode_InvalidGoal;
+            return info;
+        }
     }
 
     int16_t start_id = path->start->id;
@@ -340,15 +378,16 @@ static PathInfo Nav_Path_(nav_path_t *path)
             Q_assert(ctx->went_to[0] != -1);
 
             int64_t first_point = 0;
+             const nav_link_t *link = Nav_GetLink(&nav_data.nodes[ctx->went_to[0]], &nav_data.nodes[ctx->went_to[1]]);
 
-            // if the node isn't a traversal, we may want
-            // to skip the first node if we're either past it
-            // or touching it
-            const nav_link_t *link = Nav_GetLink(&nav_data.nodes[ctx->went_to[0]], &nav_data.nodes[ctx->went_to[1]]);
-
-            if (link->type == NavLinkType_Walk || link->type == NavLinkType_Crouch) {
-                if (Nav_TouchingNode(request->start, request->moveDist, &nav_data.nodes[ctx->went_to[0]])) {
-                    first_point++;
+            if (!path->request->nodeSearch.ignoreNodeFlags) {
+                // if the node isn't a traversal, we may want
+                // to skip the first node if we're either past it
+                // or touching it
+                if (link->type == NavLinkType_Walk || link->type == NavLinkType_Crouch) {
+                    if (Nav_TouchingNode(request->start, request->moveDist, &nav_data.nodes[ctx->went_to[0]])) {
+                        first_point++;
+                    }
                 }
             }
 
@@ -382,6 +421,11 @@ static PathInfo Nav_Path_(nav_path_t *path)
                 }
             }
 
+            if (path->request->nodeSearch.ignoreNodeFlags) {
+                info.returnCode = PathReturnCode_RawPathFound;
+                return info;
+            }
+
             // store move point info
             if (link->traversal != NULL) {
                 VectorCopy(link->traversal->start, info.firstMovePoint);
@@ -389,8 +433,10 @@ static PathInfo Nav_Path_(nav_path_t *path)
                 info.returnCode = PathReturnCode_TraversalPending;
             } else {
                 VectorCopy(nav_data.nodes[ctx->went_to[first_point]].origin, info.firstMovePoint);
-                Q_assert(first_point + 1 < num_points);
-                VectorCopy(nav_data.nodes[ctx->went_to[first_point + 1]].origin, info.secondMovePoint);
+                if (first_point + 1 < num_points)
+                    VectorCopy(nav_data.nodes[ctx->went_to[first_point + 1]].origin, info.secondMovePoint);
+                else
+                    VectorCopy(path->request->goal, info.secondMovePoint);
                 info.returnCode = PathReturnCode_InProgress;
             }
 
@@ -471,6 +517,11 @@ PathInfo Nav_Path(nav_path_t *path)
     return result;
 }
 
+static bool Nav_NodeIsConditional(const nav_node_t *node)
+{
+    return node->flags & (NodeFlag_CheckDoorLinks | NodeFlag_CheckForHazard | NodeFlag_CheckHasFloor | NodeFlag_CheckInLiquid | NodeFlag_CheckInSolid);
+}
+
 void Nav_Load(const char *map_name)
 {
     Q_assert(!nav_data.loaded);
@@ -504,6 +555,8 @@ void Nav_Load(const char *map_name)
     NAV_VERIFY(nav_data.traversals = Z_TagMalloc(sizeof(nav_traversal_t) * nav_data.num_traversals, TAG_NAV), "out of memory");
     NAV_VERIFY(nav_data.edicts = Z_TagMalloc(sizeof(nav_traversal_t) * nav_data.num_traversals, TAG_NAV), "out of memory");
 
+    nav_data.num_conditional_nodes = 0;
+
     for (int i = 0; i < nav_data.num_nodes; i++) {
         nav_node_t *node = nav_data.nodes + i;
         
@@ -515,12 +568,20 @@ void Nav_Load(const char *map_name)
         NAV_VERIFY(first_link >= 0 && first_link + node->num_links <= nav_data.num_links, "bad node link extents");
         node->links = &nav_data.links[first_link];
         NAV_VERIFY_READ(node->radius);
+
+        if (Nav_NodeIsConditional(node))
+            nav_data.num_conditional_nodes++;
     }
 
-    for (int i = 0; i < nav_data.num_nodes; i++) {
+    NAV_VERIFY(nav_data.conditional_nodes = Z_TagMalloc(sizeof(nav_node_t *) * nav_data.num_conditional_nodes, TAG_NAV), "out of memory");
+
+    for (int i = 0, c = 0; i < nav_data.num_nodes; i++) {
         nav_node_t *node = nav_data.nodes + i;
 
         NAV_VERIFY_READ(node->origin);
+
+        if (Nav_NodeIsConditional(node))
+            nav_data.conditional_nodes[c++] = node;
     }
 
     for (int i = 0; i < nav_data.num_links; i++) {
@@ -599,6 +660,24 @@ void Nav_Unload(void)
     memset(&nav_data, 0, sizeof(nav_data));
 }
 
+static void Nav_GetNodeBounds(const nav_node_t *node, vec3_t mins, vec3_t maxs)
+{
+    VectorSet(mins, -16, -16, -24);
+    VectorSet(maxs, 16, 16, 32);
+
+    if (node->flags & NodeFlag_Crouch) {
+        maxs[2] = 4.0f;
+    }
+}
+
+static void Nav_GetNodeTraceOrigin(const nav_node_t *node, vec3_t origin)
+{
+    VectorCopy(node->origin, origin);
+    origin[2] += 24.0f;
+}
+
+const float NavFloorDistance = 96.0f;
+
 #if USE_REF
 static void Nav_Debug(void)
 {
@@ -618,18 +697,26 @@ static void Nav_Debug(void)
 
         R_AddDebugCircle(node->origin, node->radius, ColorFromU32A(U32_CYAN, alpha), SV_FRAMETIME, true);
 
-        vec3_t mins = { -16, -16, -24 }, maxs = { 16, 16, 32 };
-
-        if (node->flags & NodeFlag_Crouch) {
-            maxs[2] = 4.0f;
-        }
+        vec3_t mins, maxs, origin;
+        Nav_GetNodeBounds(node, mins, maxs);
+        Nav_GetNodeTraceOrigin(node, origin);
         
-        VectorAdd(mins, node->origin, mins);
-        VectorAdd(maxs, node->origin, maxs);
-        mins[2] += 24.f;
-        maxs[2] += 24.f;
+        VectorAdd(mins, origin, mins);
+        VectorAdd(maxs, origin, maxs);
 
-        R_AddDebugBounds(mins, maxs, ColorFromU32A(U32_YELLOW, alpha), SV_FRAMETIME, true);
+        R_AddDebugBounds(mins, maxs, ColorFromU32A((node->flags & NodeFlag_Disabled) ? U32_RED : U32_YELLOW, alpha), SV_FRAMETIME, true);
+
+        if (node->flags & NodeFlag_CheckHasFloor) {
+            vec3_t floormins, floormaxs;
+            VectorCopy(mins, floormins);
+            VectorCopy(maxs, floormaxs);
+
+            float mins_z = floormins[2];
+            floormins[2] = origin[2] - NavFloorDistance;
+            floormaxs[2] = mins_z;
+
+            R_AddDebugBounds(floormins, floormaxs, ColorFromU32A(U32_RED, alpha * 0.5f), SV_FRAMETIME, true);
+        }
 
         vec3_t s;
         VectorCopy(node->origin, s);
@@ -639,9 +726,46 @@ static void Nav_Debug(void)
 
         vec3_t t;
         VectorCopy(node->origin, t);
-        t[2] += 48;
+        t[2] += 64;
 
         R_AddDebugText(t, va("%i", node - nav_data.nodes), 0.25f, NULL, ColorFromU32A(U32_CYAN, alpha), SV_FRAMETIME, true);
+
+        t[2] -= 18;
+
+        static char node_text_buffer[128];
+        *node_text_buffer = 0;
+        
+        if (node->flags & NodeFlag_Disabled)
+            Q_strlcat(node_text_buffer, "DISABLED\n\n", sizeof(node_text_buffer));
+        if (node->flags & NodeFlag_Teleporter)
+            Q_strlcat(node_text_buffer, "TELEPORTER\n", sizeof(node_text_buffer));
+        if (node->flags & NodeFlag_Pusher)
+            Q_strlcat(node_text_buffer, "PUSHER\n", sizeof(node_text_buffer));
+        if (node->flags & NodeFlag_Elevator)
+            Q_strlcat(node_text_buffer, "ELEVATOR\n", sizeof(node_text_buffer));
+        if (node->flags & NodeFlag_Ladder)
+            Q_strlcat(node_text_buffer, "LADDER\n", sizeof(node_text_buffer));
+        if (node->flags & NodeFlag_UnderWater)
+            Q_strlcat(node_text_buffer, "UNDERWATER\n", sizeof(node_text_buffer));
+        if (node->flags & NodeFlag_CheckForHazard)
+            Q_strlcat(node_text_buffer, "CHECK HAZARD\n", sizeof(node_text_buffer));
+        if (node->flags & NodeFlag_CheckHasFloor)
+            Q_strlcat(node_text_buffer, "CHECK FLOOR\n", sizeof(node_text_buffer));
+        if (node->flags & NodeFlag_CheckInSolid)
+            Q_strlcat(node_text_buffer, "CHECK SOLID\n", sizeof(node_text_buffer));
+        if (node->flags & NodeFlag_NoMonsters)
+            Q_strlcat(node_text_buffer, "NO MOBS\n", sizeof(node_text_buffer));
+        if (node->flags & NodeFlag_Crouch)
+            Q_strlcat(node_text_buffer, "CROUCH\n", sizeof(node_text_buffer));
+        if (node->flags & NodeFlag_NoPOI)
+            Q_strlcat(node_text_buffer, "NO POI\n", sizeof(node_text_buffer));
+        if (node->flags & NodeFlag_CheckInLiquid)
+            Q_strlcat(node_text_buffer, "CHECK LIQUID\n", sizeof(node_text_buffer));
+        if (node->flags & NodeFlag_CheckDoorLinks)
+            Q_strlcat(node_text_buffer, "CHECK DOORS\n", sizeof(node_text_buffer));
+
+        if (*node_text_buffer)
+            R_AddDebugText(t, node_text_buffer, 0.1f, NULL, ColorFromU32A(U32_GREEN, alpha), SV_FRAMETIME, true);
         
         for (const nav_link_t *link = node->links; link != node->links + node->num_links; link++) {
             const byte *bits = nav_data.node_link_bitmap + (nav_data.node_link_bitmap_size * i);
@@ -650,17 +774,84 @@ static void Nav_Debug(void)
             VectorCopy(link->target->origin, e);
             e[2] += 24;
 
-            // two-way link
             const byte *target_bits = nav_data.node_link_bitmap + (nav_data.node_link_bitmap_size * link->target->id);
+            bool link_disabled = ((node->flags | link->target->flags) & NodeFlag_Disabled);
+            uint8_t link_alpha = link_disabled ? (alpha * 0.5f) : alpha;
 
             if (Q_IsBitSet(target_bits, i)) {
+                // two-way link
                 if (i < link->target->id) {
                     continue;
                 }
 
-                R_AddDebugLine(s, e, ColorFromU32A(U32_WHITE, alpha), SV_FRAMETIME, true);
+                const nav_link_t *other_link = Nav_GetLink(link->target, node);
+
+                Q_assert(other_link);
+
+                // simple link
+                if (!link->traversal && !other_link->traversal) {
+                    R_AddDebugLine(s, e, ColorFromU32A(link_disabled ? U32_RED : U32_WHITE, link_alpha), SV_FRAMETIME, true);
+                } else {
+                    // one or both are traversals
+                    // render a->b
+                    if (!link->traversal) {
+                        R_AddDebugArrow(s, e, 8.0f, ColorFromU32A(link_disabled ? U32_RED : U32_WHITE, link_alpha), ColorFromU32A(U32_RED, link_alpha), SV_FRAMETIME, true);
+                    } else {
+                        vec3_t ctrl;
+
+                        if (s[2] > e[2]) {
+                            VectorCopy(e, ctrl);
+                            ctrl[2] = s[2];
+                        } else {
+                            VectorCopy(s, ctrl);
+                            ctrl[2] = e[2];
+                        }
+
+                        R_AddDebugCurveArrow(s, ctrl, e, 8.0f, ColorFromU32A(link_disabled ? U32_RED : U32_BLUE, link_alpha), ColorFromU32A(U32_RED, link_alpha), SV_FRAMETIME, true);
+                    }
+
+                    // render b->a
+                    if (!other_link->traversal) {
+                        R_AddDebugArrow(e, s, 8.0f, ColorFromU32A(link_disabled ? U32_RED : U32_WHITE, link_alpha), ColorFromU32A(U32_RED, link_alpha), SV_FRAMETIME, true);
+                    } else {
+                        vec3_t ctrl;
+
+                        if (s[2] > e[2]) {
+                            VectorCopy(e, ctrl);
+                            ctrl[2] = s[2];
+                        } else {
+                            VectorCopy(s, ctrl);
+                            ctrl[2] = e[2];
+                        }
+
+                        // raise the other side's points slightly
+                        s[2] += 32.f;
+                        ctrl[2] += 32.f;
+                        e[2] += 32.f;
+
+                        R_AddDebugCurveArrow(e, ctrl, s, 8.0f, ColorFromU32A(link_disabled ? U32_RED : U32_BLUE, link_alpha), ColorFromU32A(U32_RED, link_alpha), SV_FRAMETIME, true);
+
+                        s[2] -= 32.f;
+                        e[2] -= 32.f;
+                    }
+                }
             } else {
-                R_AddDebugArrow(s, e, 8.0f, ColorFromU32A(U32_CYAN, alpha), ColorFromU32A(U32_RED, alpha), SV_FRAMETIME, true);
+                // one-way link
+                if (link->traversal) {
+                    vec3_t ctrl;
+
+                    if (s[2] > e[2]) {
+                        VectorCopy(e, ctrl);
+                        ctrl[2] = s[2];
+                    } else {
+                        VectorCopy(s, ctrl);
+                        ctrl[2] = e[2];
+                    }
+
+                    R_AddDebugCurveArrow(s, ctrl, e, 8.0f, ColorFromU32A(link_disabled ? U32_RED : U32_BLUE, link_alpha), ColorFromU32A(U32_RED, link_alpha), SV_FRAMETIME, true);
+                } else {
+                    R_AddDebugArrow(s, e, 8.0f, ColorFromU32A(link_disabled ? U32_RED : U32_CYAN, link_alpha), ColorFromU32A(U32_RED, link_alpha), SV_FRAMETIME, true);
+                }
             }
         }
     }
@@ -668,8 +859,49 @@ static void Nav_Debug(void)
 }
 #endif
 
+static void Nav_UpdateConditionalNode(nav_node_t *node)
+{
+    node->flags &= ~NodeFlag_Disabled;
+
+    //NodeFlag_CheckDoorLinks | NodeFlag_CheckForHazard | NodeFlag_CheckHasFloor | NodeFlag_CheckInLiquid | NodeFlag_CheckInSolid
+
+    vec3_t mins, maxs, origin;
+    Nav_GetNodeBounds(node, mins, maxs);
+    Nav_GetNodeTraceOrigin(node, origin);
+
+    if (node->flags & NodeFlag_CheckInSolid) {
+        trace_t tr = SV_Trace(origin, mins, maxs, origin, NULL, MASK_SOLID);
+
+        if (tr.startsolid || tr.allsolid) {
+            node->flags |= NodeFlag_Disabled;
+        }
+    }
+
+    if (node->flags & NodeFlag_CheckHasFloor) {
+        vec3_t flat_mins, flat_maxs;
+        flat_mins[0] = mins[0];
+        flat_mins[1] = mins[1];
+        flat_maxs[0] = maxs[0];
+        flat_maxs[1] = maxs[1];
+        flat_mins[2] = flat_maxs[2] = 0.f;
+
+        vec3_t floor_end;
+        VectorCopy(origin, floor_end);
+        floor_end[2] -= NavFloorDistance;
+
+        trace_t tr = SV_Trace(origin, flat_mins, flat_maxs, floor_end, NULL, MASK_SOLID);
+
+        if (tr.fraction == 1.0f) {
+            node->flags |= NodeFlag_Disabled;
+        }
+    }
+}
+
 void Nav_Frame(void)
 {
+    for (int i = 0; i < nav_data.num_conditional_nodes; i++)
+        Nav_UpdateConditionalNode(nav_data.conditional_nodes[i]);
+
 #if USE_REF
     Nav_Debug();
 #endif

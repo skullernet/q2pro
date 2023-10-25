@@ -262,6 +262,8 @@ void    R_AddDebugCylinder(const vec3_t origin, float half_height, float radius,
 void    R_AddDebugRay(const vec3_t start, const vec3_t dir, float length, float size, color_t line_color, color_t arrow_color, int time, bool depth_test);
 void    R_AddDebugArrow(const vec3_t start, const vec3_t end, float size, color_t line_color, color_t arrow_color, int time, bool depth_test);
 
+void    R_AddDebugCurveArrow(const vec3_t start, const vec3_t ctrl, const vec3_t end, float size, color_t line_color, color_t arrow_color, int time, bool depth_test);
+
 // video mode and refresh state management entry points
 void    R_BeginFrame(void);
 void    R_EndFrame(void);

@@ -362,6 +362,35 @@ void R_AddDebugArrow(const vec3_t start, const vec3_t end, float size, color_t l
     }
 }
 
+void R_AddDebugCurveArrow(const vec3_t start, const vec3_t ctrl, const vec3_t end, float size, color_t line_color, color_t arrow_color, int time, bool depth_test)
+{
+    size_t num_points = constclamp(VectorDistance(start, end) / 32.0f, 3, 24);
+    vec3_t last_point;
+
+    for (size_t i = 0; i <= num_points; i++) {
+        float t = i / (float) num_points;
+        float it = (1.0f - t);
+
+        float a = powf(it, 2.0f);
+        float b = 2.0f * t * it;
+        float c = powf(t, 2.0f);
+
+        vec3_t p = {
+            a * start[0] + b * ctrl[0] + c * end[0],
+            a * start[1] + b * ctrl[1] + c * end[1],
+            a * start[2] + b * ctrl[2] + c * end[2]
+        };
+
+        if (i == num_points) {
+            R_AddDebugArrow(last_point, p, size, line_color, arrow_color, time, depth_test);
+        } else if (i != 0) {
+            R_AddDebugLine(last_point, p, line_color, time, depth_test);
+        }
+
+        VectorCopy(p, last_point);
+    }
+}
+
 void R_AddDebugRay(const vec3_t start, const vec3_t dir, float length, float size, color_t line_color, color_t arrow_color, int time, bool depth_test)
 {
     if (length > size) {
