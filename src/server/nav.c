@@ -54,6 +54,10 @@ static struct {
 
     // built-in context
     nav_ctx_t   *ctx;
+
+    // entity stuff; TODO efficiently
+    const edict_t     *registered_edicts[MAX_EDICTS];
+    size_t            num_registered_edicts;
 } nav_data;
 
 // invalid value used for most of the system
@@ -877,6 +881,51 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
         }
     }
 
+    if (node->flags & NodeFlag_CheckInLiquid) {
+        trace_t tr = SV_Trace(origin, mins, maxs, origin, NULL, MASK_WATER);
+
+        if (!(tr.startsolid || tr.allsolid)) {
+            node->flags |= NodeFlag_Disabled;
+        }
+    }
+
+    if (node->flags & NodeFlag_CheckForHazard) {
+        trace_t tr = SV_Trace(origin, mins, maxs, origin, NULL, CONTENTS_SLIME | CONTENTS_LAVA);
+
+        if (tr.startsolid || tr.allsolid) {
+            node->flags |= NodeFlag_Disabled;
+        } else {
+            vec3_t absmin, absmax;
+            VectorAdd(origin, mins, absmin);
+            VectorAdd(origin, maxs, absmax);
+
+            for (size_t i = 0; i < nav_data.num_registered_edicts; i++) {
+                const edict_t *e = nav_data.registered_edicts[i];
+
+                if (!e)
+                    continue;
+
+                if (!(e->sv.ent_flags & SVFL_TRAP_DANGER))
+                    continue;
+
+                if (e->s.renderfx & RF_BEAM) {
+                    if (e->svflags & SVF_NOCLIENT)
+                        continue;
+
+                    if (IntersectBoundLine(absmin, absmax, e->s.origin, e->s.old_origin)) {
+                        node->flags |= NodeFlag_Disabled;
+                        break;
+                    }
+                } else if (e->solid == SOLID_TRIGGER) {
+                    if (IntersectBounds(e->absmin, e->absmax, absmin, absmax)) {
+                        node->flags |= NodeFlag_Disabled;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     if (node->flags & NodeFlag_CheckHasFloor) {
         vec3_t flat_mins, flat_maxs;
         flat_mins[0] = mins[0];
@@ -917,4 +966,42 @@ void Nav_Init(void)
 
 void Nav_Shutdown(void)
 {
+}
+
+void Nav_RegisterEdict(const edict_t *edict)
+{
+    size_t free_slot = nav_data.num_registered_edicts;
+
+    for (size_t i = 0; i < nav_data.num_registered_edicts; i++) {
+        if (nav_data.registered_edicts[i] == edict) {
+            return;
+        } else if (nav_data.registered_edicts[i] == NULL) {
+            free_slot = i;
+        }
+    }
+
+    nav_data.registered_edicts[free_slot] = edict;
+
+    if (free_slot == nav_data.num_registered_edicts) {
+        nav_data.num_registered_edicts++;
+    }
+}
+
+void Nav_UnRegisterEdict(const edict_t *edict)
+{
+    for (size_t i = 0; i < nav_data.num_registered_edicts; i++) {
+        if (nav_data.registered_edicts[i] == edict) {
+            nav_data.registered_edicts[i] = NULL;
+
+            for (i = nav_data.num_registered_edicts - 1; i >= 0; --i) {
+                if (nav_data.registered_edicts[i] == NULL) {
+                    nav_data.num_registered_edicts--;
+                    continue;
+                }
+
+                return;
+            }
+            break;
+        }
+    }
 }

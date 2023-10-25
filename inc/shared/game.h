@@ -91,6 +91,41 @@ struct gclient_s {
     // this point in the structure
 };
 
+enum {
+    SVFL_NONE               = 0, // no flags
+    SVFL_ONGROUND           = BIT_ULL(0),
+    SVFL_HAS_DMG_BOOST      = BIT_ULL(1),
+    SVFL_HAS_PROTECTION     = BIT_ULL(2),
+    SVFL_HAS_INVISIBILITY   = BIT_ULL(3),
+    SVFL_IS_JUMPING         = BIT_ULL(4),
+    SVFL_IS_CROUCHING       = BIT_ULL(5),
+    SVFL_IS_ITEM            = BIT_ULL(6),
+    SVFL_IS_OBJECTIVE       = BIT_ULL(7),
+    SVFL_HAS_TELEPORTED     = BIT_ULL(8),
+    SVFL_TAKES_DAMAGE       = BIT_ULL(9),
+    SVFL_IS_HIDDEN          = BIT_ULL(10),
+    SVFL_IS_NOCLIP          = BIT_ULL(11),
+    SVFL_IN_WATER           = BIT_ULL(12),
+    SVFL_NO_TARGET          = BIT_ULL(13),
+    SVFL_GOD_MODE           = BIT_ULL(14),
+    SVFL_IS_FLIPPING_OFF    = BIT_ULL(15),
+    SVFL_IS_SALUTING        = BIT_ULL(16),
+    SVFL_IS_TAUNTING        = BIT_ULL(17),
+    SVFL_IS_WAVING          = BIT_ULL(18),
+    SVFL_IS_POINTING        = BIT_ULL(19),
+    SVFL_ON_LADDER          = BIT_ULL(20),
+    SVFL_MOVESTATE_TOP      = BIT_ULL(21),
+    SVFL_MOVESTATE_BOTTOM   = BIT_ULL(22),
+    SVFL_MOVESTATE_MOVING   = BIT_ULL(23),
+    SVFL_IS_LOCKED_DOOR     = BIT_ULL(24),
+    SVFL_CAN_GESTURE        = BIT_ULL(25),
+    SVFL_WAS_TELEFRAGGED    = BIT_ULL(26),
+    SVFL_TRAP_DANGER        = BIT_ULL(27),
+    SVFL_ACTIVE             = BIT_ULL(28),
+    SVFL_IS_SPECTATOR       = BIT_ULL(29),
+    SVFL_IN_TEAM            = BIT_ULL(30)
+};
+
 #define MAX_NETNAME         32
 #define MAX_ARMOR_TYPES     3
 #define MAX_ITEMS           256

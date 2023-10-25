@@ -283,6 +283,8 @@ void ClearBounds(vec3_t mins, vec3_t maxs);
 void AddPointToBounds(const vec3_t v, vec3_t mins, vec3_t maxs);
 vec_t RadiusFromBounds(const vec3_t mins, const vec3_t maxs);
 void UnionBounds(const vec3_t a[2], const vec3_t b[2], vec3_t c[2]);
+bool IntersectBounds(const vec3_t amins, const vec3_t amaxs, const vec3_t bmins, const vec3_t bmaxs);
+bool IntersectBoundLine(const vec3_t mins, const vec3_t maxs, const vec3_t start, const vec3_t end);
 
 static inline void AnglesToAxis(const vec3_t angles, vec3_t axis[3])
 {

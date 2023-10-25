@@ -755,9 +755,15 @@ static void *PF_TagRealloc(void *ptr, size_t size)
 
 static void *PF_GetExtension(const char *name);
 
-static void PF_Bot_RegisterEdict(const edict_t * edict) {}
+static void PF_Bot_RegisterEdict(const edict_t * edict)
+{
+    Nav_RegisterEdict(edict);
+}
 
-static void PF_Bot_UnRegisterEdict(const edict_t * edict) {}
+static void PF_Bot_UnRegisterEdict(const edict_t * edict)
+{
+    Nav_UnRegisterEdict(edict);
+}
 
 static GoalReturnCode PF_Bot_MoveToPoint(const edict_t * bot, const vec3_t point, const float moveTolerance)
 {

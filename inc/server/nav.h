@@ -151,3 +151,7 @@ void Nav_Unload(void);
 void Nav_Frame(void);
 void Nav_Init(void);
 void Nav_Shutdown(void);
+
+// entity stuff
+void Nav_RegisterEdict(const edict_t *edict);
+void Nav_UnRegisterEdict(const edict_t *edict);

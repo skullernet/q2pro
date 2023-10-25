@@ -102,6 +102,53 @@ void UnionBounds(const vec3_t a[2], const vec3_t b[2], vec3_t c[2])
     }
 }
 
+bool IntersectBounds(const vec3_t amins, const vec3_t amaxs, const vec3_t bmins, const vec3_t bmaxs)
+{
+	return amins[0] <= bmaxs[0] &&
+		   amaxs[0] >= bmins[0] &&
+		   amins[1] <= bmaxs[1] &&
+		   amaxs[1] >= bmins[1] &&
+		   amins[2] <= bmaxs[2] &&
+		   amaxs[2] >= bmins[2];
+}
+
+// adapted from https://github.com/svkaiser/PowerslaveEX/tree/master
+bool IntersectBoundLine(const vec3_t mins, const vec3_t maxs, const vec3_t start, const vec3_t end)
+{
+    vec3_t center;
+    VectorAdd(maxs, mins, center);
+    VectorScale(center, 0.5f, center);
+    vec3_t extents;
+    VectorSubtract(maxs, center, extents);
+    vec3_t lineDir;
+    VectorSubtract(end, start, lineDir);
+    VectorScale(lineDir, 0.5f, lineDir);
+    vec3_t lineCenter;
+    VectorAdd(lineDir, start, lineCenter);
+    vec3_t dir;
+    VectorSubtract(lineCenter, center, dir);
+    
+    vec3_t ld;
+
+    for (int i = 0; i < 3; i++) {
+        ld[i] = fabsf(lineDir[i]);
+        if (fabsf(dir[i]) > extents[i] + ld[i])
+            return false;
+    }
+
+    vec3_t cross;
+    CrossProduct(lineDir, dir, cross);
+
+    if (fabsf(cross[0]) > extents[1] * ld[2] + extents[2] * ld[1])
+        return false;
+    if (fabsf(cross[1]) > extents[0] * ld[2] + extents[2] * ld[0])
+        return false;
+    if (fabsf(cross[2]) > extents[0] * ld[1] + extents[1] * ld[0])
+        return false;
+
+    return true;
+}
+
 /*
 =================
 RadiusFromBounds
