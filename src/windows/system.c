@@ -45,6 +45,7 @@ cvar_t  *sys_basedir;
 cvar_t  *sys_libdir;
 cvar_t  *sys_homedir;
 cvar_t  *sys_forcegamelib;
+cvar_t  *sys_debugprint;
 
 /*
 ===============================================================================
@@ -544,6 +545,21 @@ void Sys_SetConsoleColor(color_index_t color)
     }
 }
 
+static void __stdcall QOutputDebugStringA(LPCSTR lpOutputString, size_t len)
+{
+    ULONG_PTR args[2];
+    args[0] = (ULONG_PTR)len;
+    args[1] = (ULONG_PTR)lpOutputString;
+ 
+    __try
+    {
+        RaiseException(0x40010006, 0, 2, args);//DBG_PRINTEXCEPTION_C
+    }
+    __except(EXCEPTION_EXECUTE_HANDLER)
+    {
+    }
+}
+
 /*
 ================
 Sys_ConsoleOutput
@@ -553,6 +569,11 @@ Print text to the dedicated console
 */
 void Sys_ConsoleOutput(const char *text, size_t len)
 {
+    if (sys_debugprint && sys_debugprint->integer) {
+        QOutputDebugStringA(text, len);
+        QOutputDebugStringA("\r\n", 2);
+    }
+
     if (houtput == INVALID_HANDLE_VALUE) {
         return;
     }
@@ -900,6 +921,8 @@ Sys_Init
 */
 void Sys_Init(void)
 {
+    sys_debugprint = Cvar_Get("sys_debugprint", "0", CVAR_NOSET);
+
     if (!QueryPerformanceFrequency(&timer_freq))
         Sys_Error("QueryPerformanceFrequency failed");
 
@@ -932,6 +955,8 @@ void Sys_Init(void)
     if (dedicated->integer || sys_viewlog->integer)
 #endif
         Sys_ConsoleInit();
+#if USE_CLIENT
+#endif
 #endif // USE_SYSCON
 
 #if USE_DBGHELP

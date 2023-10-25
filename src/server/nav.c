@@ -125,14 +125,22 @@ struct edict
 edict[num_edicts] edicts
 */
 
+typedef struct nav_open_s {
+    const nav_node_t  *node;
+    float             f_score;
+    list_t            entry;
+} nav_open_t;
+
 typedef struct nav_ctx_s {
-    // TODO: min-heap or priority queue ordered by f_score
-    int16_t     open_set[1024];
+    // TODO: min-heap or priority queue ordered by f_score?
+    // currently using linked list which is a bit slow for insertion
+    nav_open_t     *open_set;
+    list_t          open_set_head, open_set_free;
 
     // TODO: figure out a way to get rid of "came_from"
     // and track start -> end off the bat
     int16_t     *came_from, *went_to;
-    float       *g_score, *f_score;
+    float       *g_score;
 } nav_ctx_t;
 
 nav_ctx_t *Nav_AllocCtx(void)
@@ -140,13 +148,14 @@ nav_ctx_t *Nav_AllocCtx(void)
     size_t size = sizeof(nav_ctx_t) +
         (sizeof(float) * nav_data.num_nodes) +
         (sizeof(float) * nav_data.num_nodes) +
-        sizeof(int16_t) * nav_data.num_nodes +
-        sizeof(int16_t) * nav_data.num_nodes;
+        (sizeof(int16_t) * nav_data.num_nodes) +
+        (sizeof(int16_t) * nav_data.num_nodes) +
+        (sizeof(nav_open_t) * nav_data.num_nodes);
     nav_ctx_t *ctx = Z_TagMalloc(size, TAG_NAV);
     ctx->g_score = (float *) (ctx + 1);
-    ctx->f_score = (float *) (ctx->g_score + nav_data.num_nodes);
-    ctx->came_from = (int16_t *) (ctx->f_score + nav_data.num_nodes);
+    ctx->came_from = (int16_t *) (ctx->g_score + nav_data.num_nodes);
     ctx->went_to = (int16_t *) (ctx->came_from + nav_data.num_nodes);
+    ctx->open_set = (nav_open_t *) (ctx->went_to + nav_data.num_nodes);
 
     return ctx;
 }
@@ -217,6 +226,30 @@ static bool Nav_TouchingNode(const vec3_t pos, float move_dist, const nav_node_t
            fabsf(pos[2] - node->origin[2]) < touch_radius * 4;
 }
 
+static inline void Nav_PushOpenSet(nav_ctx_t *ctx, const nav_node_t *node, float f)
+{
+    // grab free entry
+    nav_open_t *o = LIST_FIRST(nav_open_t, &ctx->open_set_free, entry);
+    List_Remove(&o->entry);
+
+    o->node = node;
+    o->f_score = f;
+
+    nav_open_t *open_where = LIST_FIRST(nav_open_t, &ctx->open_set_head, entry);
+
+    while (!LIST_TERM(open_where, &ctx->open_set_head, entry)) {
+
+        if (f < open_where->f_score) {
+            List_Insert(open_where->entry.prev, &o->entry);
+            return;
+        }
+
+        open_where = LIST_NEXT(nav_open_t, open_where, entry);
+    }
+
+    List_Insert(&ctx->open_set_head, &o->entry);
+}
+
 static PathInfo Nav_Path_(nav_path_t *path)
 {
     PathInfo info = { 0 };
@@ -256,33 +289,31 @@ static PathInfo Nav_Path_(nav_path_t *path)
 
     nav_ctx_t *ctx = path->context ? path->context : nav_data.ctx;
 
-    memset(&ctx->open_set, 0xFF, sizeof(ctx->open_set));
+    for (int i = 0; i < nav_data.num_nodes; i++)
+        ctx->g_score[i] = INFINITY;
+    
+    List_Init(&ctx->open_set_head);
+    List_Init(&ctx->open_set_free);
 
     for (int i = 0; i < nav_data.num_nodes; i++)
-        ctx->g_score[i] = ctx->f_score[i] = INFINITY;
+        List_Append(&ctx->open_set_free, &ctx->open_set[i].entry);
     
-    ctx->open_set[0] = start_id;
     ctx->came_from[start_id] = -1;
     ctx->g_score[start_id] = 0;
-    ctx->f_score[start_id] = heuristic_func(path, path->start);
+    Nav_PushOpenSet(ctx, path->start, heuristic_func(path, path->start));
 
     while (true) {
-        int16_t current_id = -1;
+        nav_open_t *cursor = LIST_FIRST(nav_open_t, &ctx->open_set_head, entry);
 
-        for (int i = 0; i < 1024; i++) {
-            if (ctx->open_set[i] == -1) {
-                continue;
-            } else if (current_id == -1) {
-                current_id = i;
-            } else if (ctx->f_score[ctx->open_set[i]] < ctx->f_score[ctx->open_set[current_id]]) {
-                current_id = i;
-            }
-        }
-
-        if (current_id == -1)
+        // end of open set
+        if (LIST_TERM(cursor, &ctx->open_set_head, entry))
             break;
 
-        int16_t current = ctx->open_set[current_id];
+        // shift off the head, insert into free
+        List_Remove(&cursor->entry);
+        List_Insert(&ctx->open_set_free, &cursor->entry);
+        
+        int16_t current = cursor->node->id;
 
         if (current == goal_id) {
             int64_t num_points = 0;
@@ -366,8 +397,6 @@ static PathInfo Nav_Path_(nav_path_t *path)
             return info;
         }
 
-        ctx->open_set[current_id] = -1;
-
         const nav_node_t *current_node = &nav_data.nodes[current];
 
         for (const nav_link_t *link = current_node->links; link != current_node->links + current_node->num_links; link++) {
@@ -383,22 +412,8 @@ static PathInfo Nav_Path_(nav_path_t *path)
 
             ctx->came_from[target_id] = current;
             ctx->g_score[target_id] = temp_g_score;
-            ctx->f_score[target_id] = temp_g_score + heuristic_func(path, link->target);
 
-            int i;
-
-            for (i = 0; i < 1024; i++)
-                if (ctx->open_set[i] == target_id)
-                    break;
-
-            if (i == 1024) {
-                for (i = 0; i < 1024; i++) {
-                    if (ctx->open_set[i] == -1) {
-                        ctx->open_set[i] = target_id;
-                        break;
-                    }
-                }
-            }
+            Nav_PushOpenSet(ctx, link->target, temp_g_score + heuristic_func(path, link->target));
         }
     }
     
@@ -593,10 +608,7 @@ static void Nav_Debug(void)
 
     for (int i = 0; i < nav_data.num_nodes; i++) {
         const nav_node_t *node = &nav_data.nodes[i];
-        float len;
-        vec3_t d;
-        VectorSubtract(node->origin, glr.fd.vieworg, d);
-        len = VectorNormalize(d);
+        float len = VectorDistance(node->origin, glr.fd.vieworg);
 
         if (len > nav_debug_range->value) {
             continue;

@@ -112,7 +112,7 @@ static debug_line_t debug_lines[MAX_DEBUG_LINES];
 static list_t debug_lines_free;
 static list_t debug_lines_active;
 
-#define DEBUG_FIRST(list)      LIST_FIRST(debug_line_t, list, entry)
+#define DEBUG_FIRST(list)     LIST_FIRST(debug_line_t, list, entry)
 #define DEBUG_TERM(l, list)   LIST_TERM(l, list, entry)
 
 void GL_ClearDebugLines(void)
