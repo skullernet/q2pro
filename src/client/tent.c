@@ -605,7 +605,7 @@ static void CL_AddExplosions(void)
                 ex->ent.origin[2] = ex->lightcolor[0];
             }
 
-            ent->alpha = 1.0f - frac;
+            ent->alpha = (1.0f - frac) * 0.5f;
             f = 0.0f;
             break;
         }
