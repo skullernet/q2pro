@@ -31,6 +31,55 @@ common_src = [
   'src/common/utils.c',
   'src/common/zone.c',
   'src/shared/shared.c',
+
+  'inc/shared/atomic.h',
+  'inc/shared/base85.h',
+  'inc/shared/files.h',
+  'inc/shared/game.h',
+  'inc/shared/list.h',
+  'inc/shared/m_flash.h',
+  'inc/shared/platform.h',
+  'inc/shared/shared.h',
+
+  'inc/common/async.h',
+  'inc/common/bsp.h',
+  'inc/common/cmd.h',
+  'inc/common/cmodel.h',
+  'inc/common/common.h',
+  'inc/common/cvar.h',
+  'inc/common/error.h',
+  'inc/common/field.h',
+  'inc/common/fifo.h',
+  'inc/common/files.h',
+  'inc/common/gamedll.h',
+  'inc/common/hash_map.h',
+  'inc/common/intreadwrite.h',
+  'inc/common/loc.h',
+  'inc/common/math.h',
+  'inc/common/mdfour.h',
+  'inc/common/msg.h',
+  'inc/common/pmove.h',
+  'inc/common/prompt.h',
+  'inc/common/protocol.h',
+  'inc/common/sizebuf.h',
+  'inc/common/tests.h',
+  'inc/common/utils.h',
+  'inc/common/zone.h',
+
+  'inc/common/net/chan.h',
+  'inc/common/net/net.h',
+
+  'inc/format/bsp.h',
+  'inc/format/md2.h',
+  'inc/format/md3.h',
+  'inc/format/pak.h',
+  'inc/format/pcx.h',
+  'inc/format/sp2.h',
+  'inc/format/wal.h',
+
+  'inc/system/hunk.h',
+  'inc/system/pthread.h',
+  'inc/system/system.h',
 ]
 
 client_src = [
@@ -71,6 +120,15 @@ client_src = [
   'src/server/world.c',
   'src/shared/base85.c',
   'src/shared/m_flash.c',
+
+  'inc/client/client.h',
+  'inc/client/input.h',
+  'inc/client/keys.h',
+  'inc/client/ui.h',
+  'inc/client/video.h',
+
+  'inc/client/sound/dma.h',
+  'inc/client/sound/sound.h',
 ]
 
 ui_src = [
@@ -100,6 +158,8 @@ refresh_src = [
   'src/refresh/texture.c',
   'src/refresh/world.c',
   'src/refresh/debug.c',
+
+  'inc/refresh/refresh.h',
 ]
 
 server_src = [
@@ -117,6 +177,8 @@ server_src = [
   'src/server/nav.c',
   'src/server/world.c',
   'src/shared/base85.c',
+
+  'inc/server/server.h',
 ]
 
 game_src = [
@@ -388,7 +450,11 @@ if get_option('anticheat-server')
 endif
 
 if get_option('mvd-server')
-  common_src += 'src/server/mvd.c'
+  common_src += [
+    'src/server/mvd.c',
+    'inc/server/mvd/client.h',
+    'inc/server/mvd/protocol.h'
+  ]
   config.set10('USE_MVD_SERVER', true)
 endif
 
