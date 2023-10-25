@@ -70,6 +70,8 @@ typedef struct {
 static cl_footstep_sfx_t    *cl_footstep_sfx;
 static int                  cl_num_footsteps;
 
+static cvar_t *cl_compass_time;
+
 /*
 =================
 CL_FindFootstepSurface
@@ -461,6 +463,18 @@ void CL_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, 
 // help stuff
 void CL_AddHelpPath(const vec3_t origin, const vec3_t dir, bool first)
 {
+    if (first) {
+        int i;
+        explosion_t *ex;
+        
+        for (i = 0, ex = cl_explosions; i < MAX_EXPLOSIONS; i++, ex++) {
+            if (ex->type == ex_marker) {
+                ex->type = ex_free;
+                continue;
+            }
+        }
+    }
+
     explosion_t *ex = CL_AllocExplosion();
     VectorCopy(origin, ex->ent.origin);
     ex->ent.origin[2] += 16.0f;
@@ -571,18 +585,22 @@ static void CL_AddExplosions(void)
             ent->skinnum = 0;
             ent->flags |= RF_TRANSLUCENT;
             break;
-        case ex_marker:
-            frac = (cl.time - ex->start) / 20000.f;
+        case ex_marker: {
+            frac = (cl.time - ex->start) / (cl_compass_time->value * 1000);
 
             if (frac > 1.0f) {
                 ex->type = ex_free;
                 break;
-            } else if (frac < 0.03f) {
-                float pf = (frac / 0.03f);
-                pf = 1.0f - pf;
-                pf = pf * pf * pf * pf;
-                pf = 1.0f - pf;
-                ex->ent.origin[2] = FASTLERP(ex->lightcolor[0] + 1024.f, ex->lightcolor[0], pf);
+            }
+
+            float z_frac = (cl.time - ex->start) / 1000.f;
+            
+            if (z_frac < 1) {
+                z_frac = 1.0f - z_frac;
+                z_frac = z_frac * z_frac * z_frac * z_frac;
+                z_frac *= z_frac;
+                z_frac = 1.0f - z_frac;
+                ex->ent.origin[2] = FASTLERP(ex->lightcolor[0] + 512.f, ex->lightcolor[0], z_frac);
             } else {
                 ex->ent.origin[2] = ex->lightcolor[0];
             }
@@ -591,6 +609,7 @@ static void CL_AddExplosions(void)
             ent->flags |= RF_TRANSLUCENT;
             f = 0.0f;
             break;
+        }
         default:
             Q_assert(!"bad type");
         }
@@ -1682,4 +1701,5 @@ void CL_InitTEnts(void)
     cl_railspiral_color->generator = Com_Color_g;
     cl_railspiral_color_changed(cl_railspiral_color);
     cl_railspiral_radius = Cvar_Get("cl_railspiral_radius", "3", 0);
+    cl_compass_time = Cvar_Get("cl_compass_time", "10", 0);
 }
