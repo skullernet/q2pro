@@ -207,19 +207,24 @@ edict[num_edicts] edicts
 */
 
 typedef float (*nav_heuristic_func_t) (const nav_ctx_t *ctx, const nav_node_t *node);
-typedef float (*nav_weight_func_t) (const nav_ctx_t *ctx, const nav_node_t *a, const nav_node_t *b);
+typedef float (*nav_weight_func_t) (const nav_ctx_t *ctx, const nav_node_t *node, const nav_link_t *link);
 typedef bool (*nav_link_accessible_func_t) (const nav_ctx_t *ctx, const nav_node_t *node, const nav_link_t *link);
 
 typedef struct nav_ctx_s {
+    const PathRequest           *request;
+
     const nav_node_t            *start, *end;
 
     nav_heuristic_func_t        heuristic;
     nav_weight_func_t           weight;
     nav_link_accessible_func_t  link_accessible;
 
+    // TODO: min-heap or priority queue ordered by f_score
     int16_t     open_set[1024];
 
-    int16_t     *came_from;
+    // TODO: figure out a way to get rid of "came_from"
+    // and track start -> end off the bat
+    int16_t     *came_from, *went_to;
     float       *g_score, *f_score;
 } nav_ctx_t;
 
@@ -228,11 +233,13 @@ static nav_ctx_t *Nav_AllocCtx(void)
     size_t size = sizeof(nav_ctx_t) +
         (sizeof(float) * nav_data.num_nodes) +
         (sizeof(float) * nav_data.num_nodes) +
+        sizeof(int16_t) * nav_data.num_nodes +
         sizeof(int16_t) * nav_data.num_nodes;
     nav_ctx_t *ctx = Z_TagMalloc(size, TAG_NAV);
     ctx->g_score = (float *) (ctx + 1);
     ctx->f_score = (float *) (ctx->g_score + nav_data.num_nodes);
     ctx->came_from = (int16_t *) (ctx->f_score + nav_data.num_nodes);
+    ctx->went_to = (int16_t *) (ctx->came_from + nav_data.num_nodes);
 
     return ctx;
 }
@@ -249,10 +256,14 @@ static float Nav_Heuristic(const nav_ctx_t *ctx, const nav_node_t *node)
     return VectorLengthSquared(v);
 }
 
-static float Nav_Weight(const nav_ctx_t *ctx, const nav_node_t *a, const nav_node_t *b)
+static float Nav_Weight(const nav_ctx_t *ctx, const nav_node_t *node, const nav_link_t *link)
 {
+    if (link->type == NavLinkType_Teleport)
+        return 0;
+
+    const nav_node_t *target = &nav_data.nodes[link->target];
     vec3_t v;
-    VectorSubtract(a->origin, b->origin, v);
+    VectorSubtract(node->origin, target->origin, v);
     return VectorLengthSquared(v);
 }
 
@@ -266,7 +277,7 @@ static bool Nav_LinkAccessible(const nav_ctx_t *ctx, const nav_node_t *node, con
     return Nav_NodeAccessible(&nav_data.nodes[link->target]);
 }
 
-static nav_node_t *Nav_ClosestNodeTo(const vec3_t p)
+static nav_node_t *Nav_ClosestNodeTo(nav_ctx_t *ctx, const vec3_t p)
 {
     float w = INFINITY;
     nav_node_t *c = NULL;
@@ -285,8 +296,36 @@ static nav_node_t *Nav_ClosestNodeTo(const vec3_t p)
     return c;
 }
 
-static bool Nav_Path(nav_ctx_t *ctx)
+static PathInfo Nav_PathCtx(const PathRequest *request, nav_ctx_t *ctx)
 {
+    PathInfo info = { 0 };
+
+    if (!nav_data.loaded) {
+        info.returnCode = PathReturnCode_NoNavAvailable;
+        return info;
+    }
+
+    ctx->start = Nav_ClosestNodeTo(ctx, request->start);
+
+    if (!ctx->start) {
+        info.returnCode = PathReturnCode_NoStartNode;
+        return info;
+    }
+
+    ctx->end = Nav_ClosestNodeTo(ctx, request->goal);
+
+    if (!ctx->end) {
+        info.returnCode = PathReturnCode_NoGoalNode;
+        return info;
+    }
+
+    if (ctx->start == ctx->end) {
+        info.returnCode = PathReturnCode_ReachedGoal;
+        return info;
+    }
+
+    ctx->request = request;
+
     int16_t start_id = ctx->start - nav_data.nodes;
     int16_t end_id = ctx->end - nav_data.nodes;
 
@@ -318,8 +357,40 @@ static bool Nav_Path(nav_ctx_t *ctx)
 
         int16_t current = ctx->open_set[current_id];
 
-        if (current == end_id)
-            return true;
+        if (current == end_id) {
+            if (request->pathPoints.count) {
+                info.numPathPoints = 0;
+                int16_t n = current;
+
+                while (ctx->came_from[n] != -1) {
+                    info.numPathPoints++;
+                    n = ctx->came_from[n];
+                }
+
+                n = current;
+                int64_t p = 0;
+
+                while (ctx->came_from[n] != -1) {
+
+                    int64_t id = info.numPathPoints - p - 1;
+                    p++;
+
+                    if (id < request->pathPoints.count)
+                        VectorCopy(nav_data.nodes[ctx->came_from[n]].origin, request->pathPoints.posArray[id]);
+
+                    n = ctx->came_from[n];
+                }
+
+                if (info.numPathPoints < request->pathPoints.count)
+                    VectorCopy(ctx->end->origin, request->pathPoints.posArray[info.numPathPoints]);
+
+                info.numPathPoints++;
+
+                info.returnCode = PathReturnCode_InProgress;
+            }
+
+            return info;
+        }
 
         ctx->open_set[current_id] = -1;
 
@@ -333,12 +404,13 @@ static bool Nav_Path(nav_ctx_t *ctx)
 
             const nav_node_t *link_target_node = &nav_data.nodes[link->target];
 
-            float temp_g_score = ctx->g_score[current] + ctx->weight(ctx, current_node, link_target_node);
+            float temp_g_score = ctx->g_score[current] + ctx->weight(ctx, current_node, link);
 
             if (temp_g_score >= ctx->g_score[link->target])
                 continue;
 
             ctx->came_from[link->target] = current;
+            ctx->went_to[current] = link->target;
             ctx->g_score[link->target] = temp_g_score;
             ctx->f_score[link->target] = temp_g_score + ctx->heuristic(ctx, link_target_node);
 
@@ -358,8 +430,18 @@ static bool Nav_Path(nav_ctx_t *ctx)
             }
         }
     }
+    
+    info.returnCode = PathReturnCode_NoPathFound;
+    return info;
+}
 
-    return false;
+PathInfo Nav_Path(const PathRequest *request)
+{
+    nav_data.ctx->weight = Nav_Weight;
+    nav_data.ctx->heuristic = Nav_Heuristic;
+    nav_data.ctx->link_accessible = Nav_LinkAccessible;
+
+    return Nav_PathCtx(request, nav_data.ctx);
 }
 
 void Nav_Load(const char *map_name)
@@ -504,27 +586,27 @@ static void Nav_Debug(void)
     if (!nav_debug->integer) {
         return;
     }
-    
-    nav_node_t *closest = Nav_ClosestNodeTo(glr.fd.vieworg);
-    nav_node_t *closest_org = Nav_ClosestNodeTo(vec3_origin);
 
-    nav_data.ctx->start = closest;
-    nav_data.ctx->end = closest_org;
+    static vec3_t path_buffer[128];
+    PathRequest request = { 0 };
+    VectorCopy(glr.fd.vieworg, request.start);
+    VectorCopy(vec3_origin, request.goal);
+    request.pathFlags = PathFlags_All;
+    request.nodeSearch.ignoreNodeFlags = true;
+    request.nodeSearch.radius = 128.f;
+    request.pathPoints.posArray = &path_buffer[0];
+    request.pathPoints.count = q_countof(path_buffer);
+
     nav_data.ctx->weight = Nav_Weight;
     nav_data.ctx->heuristic = Nav_Heuristic;
     nav_data.ctx->link_accessible = Nav_LinkAccessible;
 
-    if (nav_data.ctx->start != nav_data.ctx->end && Nav_Path(nav_data.ctx)) {
-        int16_t n = nav_data.ctx->end - nav_data.nodes;
+    PathInfo info = Nav_Path(&request);
 
-        while (true) {
-            int16_t to = n;
-            n = nav_data.ctx->came_from[n];
+    if (info.returnCode < PathReturnCode_StartPathErrors) {
 
-            if (n == -1)
-                break;
-
-            R_AddDebugLine(nav_data.nodes[to].origin, nav_data.nodes[n].origin, ColorFromU32A(U32_RED, 255), SV_FRAMETIME, true);
+        for (int64_t i = 0; i < info.numPathPoints - 1; i++) {
+            R_AddDebugLine(request.pathPoints.posArray[i], request.pathPoints.posArray[i + 1], ColorFromU32A(U32_RED, 255), SV_FRAMETIME, true);
         }
     }
 

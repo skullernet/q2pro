@@ -769,9 +769,12 @@ static GoalReturnCode PF_Bot_FollowActor(const edict_t * bot, const edict_t * ac
 
 static bool PF_GetPathToGoal(const PathRequest* request, PathInfo* info)
 {
-    memset(info, 0, sizeof(*info));
-    info->returnCode = PathReturnCode_NoPathFound;
-    return false;
+    PathInfo result = Nav_Path(request);
+
+    if (info)
+        *info = result;
+
+    return result.returnCode < PathReturnCode_StartPathErrors;
 }
 
 static void PF_Loc_Print(edict_t* ent, print_type_t level, const char* base, const char** args, size_t num_args)

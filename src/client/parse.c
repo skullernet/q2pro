@@ -1376,7 +1376,13 @@ static void CL_SkipHelpPath(void)
     MSG_ReadByte();
     vec3_t p;
     MSG_ReadPos(p, cl.esFlags & MSG_ES_FLOAT_COORDS);
-    MSG_ReadDir(p);
+    vec3_t d;
+    MSG_ReadDir(d);
+
+    p[2] += 8.f;
+    vec3_t arrow_end;
+    VectorMA(p, 32.f, d, arrow_end);
+    R_AddDebugArrow(p, arrow_end, 8.f, (color_t) { .u32 = U32_GREEN }, (color_t) { .u32 = U32_GREEN }, 20000, true);
 }
 
 static void CL_ParsePOI(void)

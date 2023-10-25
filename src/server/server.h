@@ -787,6 +787,7 @@ void SV_RegisterSavegames(void);
 
 // nav.c
 void Nav_Load(const char *map_name);
+PathInfo Nav_Path(const PathRequest *request);
 void Nav_Unload(void);
 void Nav_Frame(void);
 void Nav_Init(void);

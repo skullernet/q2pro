@@ -235,7 +235,7 @@ typedef struct {
     } traversals;
 
     struct PathArray {
-        vec3_t * array /*= nullptr*/;  // array to store raw path points
+        vec3_t * posArray /*= nullptr*/;  // array to store raw path points
         int64_t           count /*= 0*/;        // number of elements in array
     } pathPoints;
 }  PathRequest;
