@@ -54,6 +54,8 @@ qhandle_t   cl_mod_explo4_big;
 
 qhandle_t   cl_mod_muzzles[MFLASH_TOTAL];
 
+static qhandle_t   cl_mod_marker;
+
 qhandle_t   cl_img_flare;
 
 static cvar_t   *cl_muzzleflashes;
@@ -305,6 +307,8 @@ void CL_RegisterTEntModels(void)
     cl_mod_muzzles[MFLASH_BFG] = R_RegisterModel("models/weapons/v_bfg/flash/tris.md2");
     cl_mod_muzzles[MFLASH_BEAMER] = R_RegisterModel("models/weapons/v_beamer/flash/tris.md2");
 
+    cl_mod_marker = R_RegisterModel("models/objects/pointer/tris.md2");
+
     cl_img_flare = R_RegisterSprite("misc/flare.tga");
     // check for remaster powerscreen model (ugly!)
     len = FS_LoadFile("models/items/armor/effect/tris.md2", &data);
@@ -343,7 +347,8 @@ typedef struct {
         ex_mflash,
         ex_poly,
         ex_poly2,
-        ex_light
+        ex_light,
+        ex_marker
     } type;
 
     entity_t    ent;
@@ -453,6 +458,22 @@ void CL_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, 
     ex->ent.angles[2] = rotate;
 }
 
+// help stuff
+void CL_AddHelpPath(const vec3_t origin, const vec3_t dir, bool first)
+{
+    explosion_t *ex = CL_AllocExplosion();
+    VectorCopy(origin, ex->ent.origin);
+    ex->ent.origin[2] += 16.0f;
+    ex->lightcolor[0] = ex->ent.origin[2];
+    vectoangles2(dir, ex->ent.angles);
+    ex->type = ex_marker;
+    ex->ent.flags = RF_NOSHADOW | RF_FULLBRIGHT;
+    ex->ent.alpha = 1.0f;
+    ex->start = cl.servertime - CL_FRAMETIME;
+    ex->ent.model = cl_mod_marker;
+    ex->ent.scale = 2.5f;
+}
+
 /*
 =================
 CL_SmokeAndFlash
@@ -549,6 +570,26 @@ static void CL_AddExplosions(void)
             ent->alpha = (5.0f - (float)f) / 5.0f;
             ent->skinnum = 0;
             ent->flags |= RF_TRANSLUCENT;
+            break;
+        case ex_marker:
+            frac = (cl.time - ex->start) / 20000.f;
+
+            if (frac > 1.0f) {
+                ex->type = ex_free;
+                break;
+            } else if (frac < 0.03f) {
+                float pf = (frac / 0.03f);
+                pf = 1.0f - pf;
+                pf = pf * pf * pf * pf;
+                pf = 1.0f - pf;
+                ex->ent.origin[2] = FASTLERP(ex->lightcolor[0] + 1024.f, ex->lightcolor[0], pf);
+            } else {
+                ex->ent.origin[2] = ex->lightcolor[0];
+            }
+
+            ent->alpha = 1.0f - frac;
+            ent->flags |= RF_TRANSLUCENT;
+            f = 0.0f;
             break;
         default:
             Q_assert(!"bad type");

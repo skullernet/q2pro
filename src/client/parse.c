@@ -1371,18 +1371,15 @@ static void CL_ParseFog(void)
     V_FogParamsChanged(bits, &params, time);
 }
 
-static void CL_SkipHelpPath(void)
+static void CL_ParseHelpPath(void)
 {
-    MSG_ReadByte();
-    vec3_t p;
-    MSG_ReadPos(p, cl.esFlags & MSG_ES_FLOAT_COORDS);
-    vec3_t d;
-    MSG_ReadDir(d);
+    bool first_entry = !!MSG_ReadByte();
+    vec3_t pos;
+    MSG_ReadPos(pos, cl.esFlags & MSG_ES_FLOAT_COORDS);
+    vec3_t dir;
+    MSG_ReadDir(dir);
 
-    p[2] += 8.f;
-    vec3_t arrow_end;
-    VectorMA(p, 32.f, d, arrow_end);
-    R_AddDebugArrow(p, arrow_end, 8.f, (color_t) { .u32 = U32_GREEN }, (color_t) { .u32 = U32_GREEN }, 20000, true);
+    CL_AddHelpPath(pos, dir, first_entry);
 }
 
 static void CL_ParsePOI(void)
@@ -1570,7 +1567,7 @@ static svc_handle_result_t handle_svc_rerelease(int cmd)
         CL_ParsePOI();
         return svch_continue_loop;
     case svc_help_path:
-        CL_SkipHelpPath();
+        CL_ParseHelpPath();
         return svch_continue_loop;
     case svc_muzzleflash3:
         CL_ParseMuzzleFlashPacket(0, true);
