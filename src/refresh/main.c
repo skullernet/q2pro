@@ -672,6 +672,7 @@ void R_RenderFrame(refdef_t *fd)
     Q_assert(gl_static.world.cache || (fd->rdflags & RDF_NOWORLDMODEL));
 
     glr.drawframe++;
+    glr.rand_seed = fd->time * 20;
 
     glr.fd = *fd;
     glr.num_beams = 0;

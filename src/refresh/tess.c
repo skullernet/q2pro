@@ -171,8 +171,8 @@ static void GL_DrawBeamSegment(const vec3_t start, const vec3_t end, color_t col
     if (length < 0.1f)
         return;
 
-    if (tess.numverts + 4 > TESS_MAX_VERTICES ||
-        tess.numindices + 6 > TESS_MAX_INDICES) {
+    if (q_unlikely(tess.numverts + 4 > TESS_MAX_VERTICES ||
+                   tess.numindices + 6 > TESS_MAX_INDICES)) {
         qglDrawElements(GL_TRIANGLES, tess.numindices,
                         QGL_INDEX_ENUM, tess.indices);
         tess.numverts = tess.numindices = 0;
@@ -211,11 +211,27 @@ static void GL_DrawBeamSegment(const vec3_t start, const vec3_t end, color_t col
 #define MAX_LIGHTNING_SEGMENTS      7
 #define MIN_SEGMENT_LENGTH          10
 
+static uint32_t GL_rand(void)
+{
+    uint32_t x = glr.rand_seed;
+
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+
+    return glr.rand_seed = x;
+}
+
+static float GL_frand(void)
+{
+    return (int32_t)GL_rand() * 0x1p-32f + 0.5f;
+}
+
 static void GL_DrawLightningBeam(const vec3_t start, const vec3_t end, color_t color, float width)
 {
     vec3_t d1, segments[MAX_LIGHTNING_SEGMENTS - 1];
     vec_t length;
-    int i, num_segments = MIN_LIGHTNING_SEGMENTS + Q_rand_uniform(MAX_LIGHTNING_SEGMENTS - MIN_LIGHTNING_SEGMENTS);
+    int i, num_segments = MIN_LIGHTNING_SEGMENTS + GL_rand() % (MAX_LIGHTNING_SEGMENTS - MIN_LIGHTNING_SEGMENTS);
 
     VectorSubtract(end, start, d1);
     length = VectorNormalize(d1);
@@ -227,8 +243,8 @@ static void GL_DrawLightningBeam(const vec3_t start, const vec3_t end, color_t c
     }
 
     for (i = 0; i < num_segments - 1; i++) {
-        int dir = Q_rand_uniform(q_countof(bytedirs));
-        float dist = 4 + crand() * 16;
+        int dir = GL_rand() % q_countof(bytedirs);
+        float dist = GL_frand() * 20;
         float frac = (float)(i + 1) / num_segments;
         VectorMA(start, frac * length, d1, segments[i]);
         VectorMA(segments[i], dist, bytedirs[dir], segments[i]);
