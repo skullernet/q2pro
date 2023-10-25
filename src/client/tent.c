@@ -481,7 +481,7 @@ void CL_AddHelpPath(const vec3_t origin, const vec3_t dir, bool first)
     ex->lightcolor[0] = ex->ent.origin[2];
     vectoangles2(dir, ex->ent.angles);
     ex->type = ex_marker;
-    ex->ent.flags = RF_NOSHADOW | RF_FULLBRIGHT;
+    ex->ent.flags = RF_NOSHADOW | RF_MINLIGHT | RF_TRANSLUCENT;
     ex->ent.alpha = 1.0f;
     ex->start = cl.servertime - CL_FRAMETIME;
     ex->ent.model = cl_mod_marker;
@@ -606,7 +606,6 @@ static void CL_AddExplosions(void)
             }
 
             ent->alpha = 1.0f - frac;
-            ent->flags |= RF_TRANSLUCENT;
             f = 0.0f;
             break;
         }

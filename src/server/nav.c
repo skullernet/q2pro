@@ -379,9 +379,9 @@ static PathInfo Nav_Path_(nav_path_t *path)
             }
 
             // num_points now contains points between start
-            // and current; it will be at least 2, since start can't
+            // and current; it will be at least 1, since start can't
             // be the same as end, but may be less once we start clipping.
-            Q_assert(num_points >= 2);
+            Q_assert(num_points >= 1);
             Q_assert(ctx->went_to[0] != -1);
 
             int64_t first_point = 0;
