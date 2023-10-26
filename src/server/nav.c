@@ -388,7 +388,7 @@ static PathInfo Nav_Path_(nav_path_t *path)
             const nav_link_t *link = NULL;
             
             if (num_points > 1) {
-                Nav_GetLink(&nav_data.nodes[ctx->went_to[0]], &nav_data.nodes[ctx->went_to[1]]);
+                link = Nav_GetLink(&nav_data.nodes[ctx->went_to[0]], &nav_data.nodes[ctx->went_to[1]]);
 
                 if (!path->request->nodeSearch.ignoreNodeFlags) {
                     // if the node isn't a traversal, we may want
