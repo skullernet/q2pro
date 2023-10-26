@@ -164,7 +164,7 @@ static uint64_t CG_CL_ClientRealTime(void)
     return cls.realtime;
 }
 
-int32_t CG_CL_ServerFrame(void)
+static int32_t CG_CL_ServerFrame(void)
 {
     return cl.frame.number;
 }
@@ -259,7 +259,7 @@ static float CG_SCR_FontLineHeight(int scale)
     return scr.kfont.line_height;
 }
 
-cg_vec2_t CG_SCR_MeasureFontString(const char *str, int scale)
+static cg_vec2_t CG_SCR_MeasureFontString(const char *str, int scale)
 {
     // TODO: 'str' may contain UTF-8, handle that.
     // FIXME: can contain line breaks
