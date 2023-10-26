@@ -561,7 +561,7 @@ static void CL_AddExplosions(void)
                 break;
             }
 
-            ent->alpha = (16.0f - (float)f) / 16.0f;
+            ent->alpha = (16.0f - frac) / 16.0f;
 
             if (f < 10) {
                 ent->skinnum = (f >> 1);
@@ -581,7 +581,7 @@ static void CL_AddExplosions(void)
                 break;
             }
 
-            ent->alpha = (5.0f - (float)f) / 5.0f;
+            ent->alpha = (5.0f - frac) / 5.0f;
             ent->skinnum = 0;
             ent->flags |= RF_TRANSLUCENT;
             break;
