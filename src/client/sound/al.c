@@ -38,7 +38,283 @@ static ALuint       s_underwater_filter;
 static bool         s_underwater_flag;
 
 // reverb stuff
+typedef struct {
+    char    material[16];
+    int16_t step_id;
+} al_reverb_material_t;
 
+typedef struct {
+    al_reverb_material_t    *materials; // if null, matches everything
+    size_t                  num_materials;
+    uint8_t                 preset;
+} al_reverb_entry_t;
+
+typedef struct {
+    float               dimension; // squared
+    al_reverb_entry_t   *reverbs;
+    size_t              num_reverbs;
+} al_reverb_environment_t;
+
+static size_t                   s_num_reverb_environments;
+static al_reverb_environment_t  *s_reverb_environments;
+
+static ALuint       s_reverb_effect;
+static ALuint       s_reverb_slot;
+
+static const EFXEAXREVERBPROPERTIES s_reverb_parameters[] = {
+    EFX_REVERB_PRESET_GENERIC,
+    EFX_REVERB_PRESET_PADDEDCELL,
+    EFX_REVERB_PRESET_ROOM,
+    EFX_REVERB_PRESET_BATHROOM,
+    EFX_REVERB_PRESET_LIVINGROOM,
+    EFX_REVERB_PRESET_STONEROOM,
+    EFX_REVERB_PRESET_AUDITORIUM,
+    EFX_REVERB_PRESET_CONCERTHALL,
+    EFX_REVERB_PRESET_CAVE,
+    EFX_REVERB_PRESET_ARENA,
+    EFX_REVERB_PRESET_HANGAR,
+    EFX_REVERB_PRESET_CARPETEDHALLWAY,
+    EFX_REVERB_PRESET_HALLWAY,
+    EFX_REVERB_PRESET_STONECORRIDOR,
+    EFX_REVERB_PRESET_ALLEY,
+    EFX_REVERB_PRESET_FOREST,
+    EFX_REVERB_PRESET_CITY,
+    EFX_REVERB_PRESET_MOUNTAINS,
+    EFX_REVERB_PRESET_QUARRY,
+    EFX_REVERB_PRESET_PLAIN,
+    EFX_REVERB_PRESET_PARKINGLOT,
+    EFX_REVERB_PRESET_SEWERPIPE,
+    EFX_REVERB_PRESET_UNDERWATER,
+    EFX_REVERB_PRESET_DRUGGED,
+    EFX_REVERB_PRESET_DIZZY,
+    EFX_REVERB_PRESET_PSYCHOTIC
+};
+
+static EFXEAXREVERBPROPERTIES   s_active_reverb;
+static EFXEAXREVERBPROPERTIES   s_reverb_lerp_to, s_reverb_lerp_result;
+static int                      s_reverb_lerp_start, s_reverb_lerp_time;
+static uint8_t                  s_reverb_current_preset;
+
+static const char *const s_reverb_names[] = {
+    "generic",
+    "padded_cell",
+    "room",
+    "bathroom",
+    "living_room",
+    "stone_room",
+    "auditorium",
+    "concert_hall",
+    "cave",
+    "arena",
+    "hangar",
+    "carpeted_hallway",
+    "hallway",
+    "stone_corridor",
+    "alley",
+    "forest",
+    "city",
+    "mountains",
+    "quarry",
+    "plain",
+    "parking_lot",
+    "sewer_pipe",
+    "underwater",
+    "drugged",
+    "dizzy",
+    "psychotic"
+};
+
+static void AL_LoadEffect(const EFXEAXREVERBPROPERTIES *reverb)
+{
+    qalEffectf(s_reverb_effect, AL_EAXREVERB_DENSITY, reverb->flDensity);
+    qalEffectf(s_reverb_effect, AL_EAXREVERB_DIFFUSION, reverb->flDiffusion);
+    qalEffectf(s_reverb_effect, AL_EAXREVERB_GAIN, reverb->flGain);
+    qalEffectf(s_reverb_effect, AL_EAXREVERB_GAINHF, reverb->flGainHF);
+    qalEffectf(s_reverb_effect, AL_EAXREVERB_GAINLF, reverb->flGainLF);
+    qalEffectf(s_reverb_effect, AL_EAXREVERB_DECAY_TIME, reverb->flDecayTime);
+    qalEffectf(s_reverb_effect, AL_EAXREVERB_DECAY_HFRATIO, reverb->flDecayHFRatio);
+    qalEffectf(s_reverb_effect, AL_EAXREVERB_DECAY_LFRATIO, reverb->flDecayLFRatio);
+    qalEffectf(s_reverb_effect, AL_EAXREVERB_REFLECTIONS_GAIN, reverb->flReflectionsGain);
+    qalEffectf(s_reverb_effect, AL_EAXREVERB_REFLECTIONS_DELAY, reverb->flReflectionsDelay);
+    qalEffectfv(s_reverb_effect, AL_EAXREVERB_REFLECTIONS_PAN, reverb->flReflectionsPan);
+    qalEffectf(s_reverb_effect, AL_EAXREVERB_LATE_REVERB_GAIN, reverb->flLateReverbGain);
+    qalEffectf(s_reverb_effect, AL_EAXREVERB_LATE_REVERB_DELAY, reverb->flLateReverbDelay);
+    qalEffectfv(s_reverb_effect, AL_EAXREVERB_LATE_REVERB_PAN, reverb->flLateReverbPan);
+    qalEffectf(s_reverb_effect, AL_EAXREVERB_ECHO_TIME, reverb->flEchoTime);
+    qalEffectf(s_reverb_effect, AL_EAXREVERB_ECHO_DEPTH, reverb->flEchoDepth);
+    qalEffectf(s_reverb_effect, AL_EAXREVERB_MODULATION_TIME, reverb->flModulationTime);
+    qalEffectf(s_reverb_effect, AL_EAXREVERB_MODULATION_DEPTH, reverb->flModulationDepth);
+    qalEffectf(s_reverb_effect, AL_EAXREVERB_AIR_ABSORPTION_GAINHF, reverb->flAirAbsorptionGainHF);
+    qalEffectf(s_reverb_effect, AL_EAXREVERB_HFREFERENCE, reverb->flHFReference);
+    qalEffectf(s_reverb_effect, AL_EAXREVERB_LFREFERENCE, reverb->flLFReference);
+    qalEffectf(s_reverb_effect, AL_EAXREVERB_ROOM_ROLLOFF_FACTOR, reverb->flRoomRolloffFactor);
+    qalEffecti(s_reverb_effect, AL_EAXREVERB_DECAY_HFLIMIT, reverb->iDecayHFLimit);
+
+    qalAuxiliaryEffectSloti(s_reverb_slot, AL_EFFECTSLOT_EFFECT, s_reverb_effect);
+}
+
+static const vec3_t             s_reverb_probes[] = {
+    { 0.00000000f,    0.00000000f,     1.00000000f },
+    { 0.707106769f,   0.00000000f,     0.707106769f },
+    { 0.353553385f,   0.612372458f,    0.707106769f },
+    { -0.353553444f,  0.612372458f,    0.707106769f },
+    { -0.707106769f, -6.18172393e-08f, 0.707106769f },
+    { -0.353553325f, -0.612372518f,    0.707106769f },
+    { 0.353553355f,  -0.612372458f,    0.707106769f },
+    { 1.00000000f,   0.00000000f,      -4.37113883e-08f },
+    { 0.499999970f,  0.866025448f,     -4.37113883e-08f },
+    { -0.500000060f, 0.866025388f,     -4.37113883e-08f },
+    { -1.00000000f,  -8.74227766e-08f, -4.37113883e-08f },
+    { -0.499999911f, -0.866025448f,    -4.37113883e-08f },
+    { 0.499999911f,  -0.866025448f,    -4.37113883e-08f },
+};
+static int                      s_reverb_probe_time;
+static int                      s_reverb_probe_index;
+static float                    s_reverb_probe_results[q_countof(s_reverb_probes)];
+static float                    s_reverb_probe_avg;
+
+static const al_reverb_environment_t  *s_reverb_active_environment;
+
+static bool AL_EstimateDimensions(void)
+{
+    if (s_reverb_probe_time > cl.time)
+        return false;
+
+    s_reverb_probe_time = cl.time + 50;
+    vec3_t end;
+    VectorMA(listener_origin, 8192.0f, s_reverb_probes[s_reverb_probe_index], end);
+
+    trace_t tr;
+    CL_Trace(&tr, listener_origin, vec3_origin, vec3_origin, end, NULL, MASK_SOLID);
+
+    s_reverb_probe_results[s_reverb_probe_index] = VectorDistanceSquared(tr.endpos, listener_origin);
+
+    if (s_reverb_probe_index == 0 && tr.surface->flags & SURF_SKY)
+        s_reverb_probe_results[s_reverb_probe_index] += 2048 * 2048;
+
+    s_reverb_probe_avg = 0;
+
+    for (size_t i = 0; i < q_countof(s_reverb_probes); i++)
+        s_reverb_probe_avg += s_reverb_probe_results[i];
+
+    s_reverb_probe_avg /= q_countof(s_reverb_probes);
+
+    s_reverb_probe_index = (s_reverb_probe_index + 1) % q_countof(s_reverb_probes);
+
+    // check if we expanded or shrank the environment
+    bool changed = false;
+
+    while (s_reverb_active_environment != s_reverb_environments + s_num_reverb_environments - 1 &&
+        s_reverb_probe_avg > s_reverb_active_environment->dimension) {
+        s_reverb_active_environment++;
+        changed = true;
+    }
+
+    if (!changed) {
+        while (s_reverb_active_environment != s_reverb_environments && s_reverb_probe_avg < (s_reverb_active_environment - 1)->dimension) {
+            s_reverb_active_environment--;
+            changed = true;
+        }
+    }
+
+    return changed;
+}
+
+static void AL_UpdateReverb(void)
+{
+    if (!cl.bsp)
+        return;
+
+    AL_EstimateDimensions();
+
+    trace_t tr;
+    const vec3_t mins = { -16, -16, 0 };
+    const vec3_t maxs = { 16, 16, 0 };
+    const vec3_t listener_down = { listener_origin[0], listener_origin[1], listener_origin[2] - 256.0f };
+    CL_Trace(&tr, listener_origin, mins, maxs, listener_down, NULL, MASK_SOLID);
+
+    uint8_t new_preset = s_reverb_current_preset;
+
+    if (tr.fraction < 1.0f) {
+        const mtexinfo_t *surf_info = cl.bsp->texinfo + (tr.surface->id - 1);
+        int16_t id = surf_info->step_id;
+
+        for (size_t i = 0; i < s_reverb_active_environment->num_reverbs; i++) {
+            const al_reverb_entry_t *entry = &s_reverb_active_environment->reverbs[i];
+
+            if (!entry->num_materials) {
+                new_preset = entry->preset;
+                break;
+            }
+
+            size_t m = 0;
+
+            for (; m < entry->num_materials; m++)
+                if (entry->materials[m].step_id == id) {
+                    new_preset = entry->preset;
+                    break;
+                }
+
+            if (m != entry->num_materials)
+                break;
+        }
+    }
+
+    if (new_preset != s_reverb_current_preset) {
+        s_reverb_current_preset = new_preset;
+
+        if (s_reverb_lerp_time) {
+            memcpy(&s_active_reverb, &s_reverb_lerp_result, sizeof(s_reverb_lerp_result));
+        }
+
+        s_reverb_lerp_start = cl.time;
+        s_reverb_lerp_time = cl.time + 250;
+        memcpy(&s_reverb_lerp_to, &s_reverb_parameters[s_reverb_current_preset], sizeof(s_active_reverb));
+    }
+
+    if (s_reverb_lerp_time) {
+        if (cl.time >= s_reverb_lerp_time) {
+            s_reverb_lerp_time = 0;
+            memcpy(&s_active_reverb, &s_reverb_lerp_to, sizeof(s_active_reverb));
+            AL_LoadEffect(&s_active_reverb);
+        } else {
+            float f = constclamp((cl.time - (float) s_reverb_lerp_start) / (s_reverb_lerp_time - (float) s_reverb_lerp_start), 0.0f, 1.0f);
+
+#define AL_LERP(prop) \
+                s_reverb_lerp_result.prop = FASTLERP(s_active_reverb.prop, s_reverb_lerp_to.prop, f)
+            
+            AL_LERP(flDensity);
+            AL_LERP(flDiffusion);
+            AL_LERP(flGain);
+            AL_LERP(flGainHF);
+            AL_LERP(flGainLF);
+            AL_LERP(flDecayTime);
+            AL_LERP(flDecayHFRatio);
+            AL_LERP(flDecayLFRatio);
+            AL_LERP(flReflectionsGain);
+            AL_LERP(flReflectionsDelay);
+            AL_LERP(flReflectionsPan[0]);
+            AL_LERP(flReflectionsPan[1]);
+            AL_LERP(flReflectionsPan[2]);
+            AL_LERP(flLateReverbGain);
+            AL_LERP(flLateReverbDelay);
+            AL_LERP(flLateReverbPan[0]);
+            AL_LERP(flLateReverbPan[1]);
+            AL_LERP(flLateReverbPan[2]);
+            AL_LERP(flEchoTime);
+            AL_LERP(flEchoDepth);
+            AL_LERP(flModulationTime);
+            AL_LERP(flModulationDepth);
+            AL_LERP(flAirAbsorptionGainHF);
+            AL_LERP(flHFReference);
+            AL_LERP(flLFReference);
+            AL_LERP(flRoomRolloffFactor);
+            AL_LERP(iDecayHFLimit);
+
+            AL_LoadEffect(&s_reverb_lerp_result);
+        }
+    }
+}
 
 // skips the current token entirely, making sure that
 // current_token will point to the actual next logical
@@ -122,26 +398,6 @@ static inline void JSON_Free(jsmntok_t *tokens)
 #define JSON_STRCMP(s) \
     strncmp(buffer + t->start, s, t->end - t->start)
 
-typedef struct {
-    char    material[16];
-    int16_t step_id;
-} al_reverb_material_t;
-
-typedef struct {
-    al_reverb_material_t    *materials; // if null, matches everything
-    size_t                  num_materials;
-    char                    preset[16]; // TEMP
-} al_reverb_entry_t;
-
-typedef struct {
-    float               dimension; // squared
-    al_reverb_entry_t   *reverbs;
-    size_t              num_reverbs;
-} al_reverb_environment_t;
-
-static size_t                   s_num_reverb_environments;
-static al_reverb_environment_t  *s_reverb_environments;
-
 static int AL_LoadReverbEntry(const char *buffer, jsmntok_t *tokens, size_t num_tokens, jsmntok_t **t_out, al_reverb_entry_t *out_entry)
 {
     int ret = 0;
@@ -178,7 +434,21 @@ static int AL_LoadReverbEntry(const char *buffer, jsmntok_t *tokens, size_t num_
             t++;
 
             JSON_ENSURE(JSMN_STRING);
-            Q_strnlcpy(out_entry->preset, buffer + t->start, t->end - t->start, sizeof(out_entry->preset));
+            size_t p = 0;
+
+            for (; p < q_countof(s_reverb_names); p++) {
+                if (!JSON_STRCMP(s_reverb_names[p])) {
+                    break;
+                }
+            }
+
+            if (p == q_countof(s_reverb_names)) {
+                Com_WPrintf("missing sound environment preset\n");
+                out_entry->preset = 19; // plain
+            } else {
+                out_entry->preset = p;
+            }
+
             t++;
         } else {
             t++;
@@ -412,6 +682,12 @@ static bool AL_Init(void)
         s_underwater_gain_hf_changed(s_underwater_gain_hf);
     }
 
+    if (qalGenEffects && qalGetEnumValue("AL_EFFECT_EAXREVERB")) {
+        qalGenEffects(1, &s_reverb_effect);
+        qalGenAuxiliaryEffectSlots(1, &s_reverb_slot);
+        qalEffecti(s_reverb_effect, AL_EFFECT_TYPE, AL_EFFECT_EAXREVERB);
+    }
+
     Com_Printf("OpenAL initialized.\n");
     return true;
 
@@ -442,6 +718,16 @@ static void AL_Shutdown(void)
     if (s_underwater_filter) {
         qalDeleteFilters(1, &s_underwater_filter);
         s_underwater_filter = 0;
+    }
+
+    if (s_reverb_effect) {
+        qalDeleteEffects(1, &s_reverb_effect);
+        s_reverb_effect = 0;
+    }
+
+    if (s_reverb_slot) {
+        qalDeleteAuxiliaryEffectSlots(1, &s_reverb_slot);
+        s_reverb_slot = 0;
     }
 
     AL_FreeReverbEnvironments(s_reverb_environments, s_num_reverb_environments);
@@ -579,6 +865,12 @@ static void AL_PlayChannel(channel_t *ch)
     qalSourcef(ch->srcnum, AL_REFERENCE_DISTANCE, SOUND_FULLVOLUME);
     qalSourcef(ch->srcnum, AL_MAX_DISTANCE, 8192);
     qalSourcef(ch->srcnum, AL_ROLLOFF_FACTOR, ch->dist_mult * (8192 - SOUND_FULLVOLUME));
+
+    if (cl.bsp) {
+        qalSource3i(ch->srcnum, AL_AUXILIARY_SEND_FILTER, s_reverb_slot, 0, AL_FILTER_NULL);
+    } else {
+        qalSource3i(ch->srcnum, AL_AUXILIARY_SEND_FILTER, AL_EFFECT_NULL, 0, AL_FILTER_NULL);
+    }
 
     AL_Spatialize(ch);
 
@@ -791,6 +1083,8 @@ static void AL_Update(void)
     qalDistanceModel(AL_LINEAR_DISTANCE_CLAMPED);
 
     AL_UpdateUnderWater();
+    
+    AL_UpdateReverb();
 
     // update spatialization for dynamic sounds
     for (i = 0, ch = s_channels; i < s_numchannels; i++, ch++) {
@@ -840,6 +1134,18 @@ static void AL_EndRegistration(void)
     s_num_reverb_environments = 0;
 
     AL_LoadReverbEnvironments();
+    
+    s_reverb_current_preset = 19;
+    memcpy(&s_active_reverb, &s_reverb_parameters[s_reverb_current_preset], sizeof(s_active_reverb));
+    AL_LoadEffect(&s_active_reverb);
+    s_reverb_lerp_start = s_reverb_lerp_time = 0;
+
+    s_reverb_probe_time = 0;
+    s_reverb_probe_index = 0;
+    for (int i = 0; i < q_countof(s_reverb_probes); i++)
+        s_reverb_probe_results[i] = 99999999;
+    s_reverb_probe_avg = 99999999;
+    s_reverb_active_environment = &s_reverb_environments[s_num_reverb_environments - 1];
 
     if (cl.bsp)
         AL_SetReverbStepIDs();
