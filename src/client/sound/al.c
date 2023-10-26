@@ -27,6 +27,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // OpenAL implementation should support at least this number of sources
 #define MIN_CHANNELS    16
 
+static cvar_t       *al_reverb;
+
 static ALuint       s_srcnums[MAX_CHANNELS];
 static ALuint       s_stream;
 static ALuint       s_stream_buffers;
@@ -190,7 +192,7 @@ static bool AL_EstimateDimensions(void)
     s_reverb_probe_results[s_reverb_probe_index] = VectorDistanceSquared(tr.endpos, listener_origin);
 
     if (s_reverb_probe_index == 0 && tr.surface->flags & SURF_SKY)
-        s_reverb_probe_results[s_reverb_probe_index] += 2048 * 2048;
+        s_reverb_probe_results[s_reverb_probe_index] += 8192 * 8192;
 
     s_reverb_probe_avg = 0;
 
@@ -620,6 +622,11 @@ static void s_underwater_gain_hf_changed(cvar_t *self)
     qalFilterf(s_underwater_filter, AL_LOWPASS_GAINHF, Cvar_ClampValue(self, 0, 1));
 }
 
+static void al_reverb_changed(cvar_t *self)
+{
+    S_StopAllSounds();
+}
+
 static bool AL_Init(void)
 {
     int i;
@@ -687,6 +694,9 @@ static bool AL_Init(void)
         qalGenAuxiliaryEffectSlots(1, &s_reverb_slot);
         qalEffecti(s_reverb_effect, AL_EFFECT_TYPE, AL_EFFECT_EAXREVERB);
     }
+
+    al_reverb = Cvar_Get("al_reverb", "1", 0);
+    al_reverb->changed = al_reverb_changed;
 
     Com_Printf("OpenAL initialized.\n");
     return true;
@@ -866,7 +876,7 @@ static void AL_PlayChannel(channel_t *ch)
     qalSourcef(ch->srcnum, AL_MAX_DISTANCE, 8192);
     qalSourcef(ch->srcnum, AL_ROLLOFF_FACTOR, ch->dist_mult * (8192 - SOUND_FULLVOLUME));
 
-    if (cl.bsp) {
+    if (cl.bsp && s_reverb_slot && al_reverb->integer) {
         qalSource3i(ch->srcnum, AL_AUXILIARY_SEND_FILTER, s_reverb_slot, 0, AL_FILTER_NULL);
     } else {
         qalSource3i(ch->srcnum, AL_AUXILIARY_SEND_FILTER, AL_EFFECT_NULL, 0, AL_FILTER_NULL);
@@ -1084,7 +1094,9 @@ static void AL_Update(void)
 
     AL_UpdateUnderWater();
     
-    AL_UpdateReverb();
+    if (al_reverb->integer) {
+        AL_UpdateReverb();
+    }
 
     // update spatialization for dynamic sounds
     for (i = 0, ch = s_channels; i < s_numchannels; i++, ch++) {
