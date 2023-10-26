@@ -385,15 +385,19 @@ static PathInfo Nav_Path_(nav_path_t *path)
             Q_assert(ctx->went_to[0] != -1);
 
             int64_t first_point = 0;
-             const nav_link_t *link = Nav_GetLink(&nav_data.nodes[ctx->went_to[0]], &nav_data.nodes[ctx->went_to[1]]);
+            const nav_link_t *link = NULL;
+            
+            if (num_points > 1) {
+                Nav_GetLink(&nav_data.nodes[ctx->went_to[0]], &nav_data.nodes[ctx->went_to[1]]);
 
-            if (!path->request->nodeSearch.ignoreNodeFlags) {
-                // if the node isn't a traversal, we may want
-                // to skip the first node if we're either past it
-                // or touching it
-                if (link->type == NavLinkType_Walk || link->type == NavLinkType_Crouch) {
-                    if (Nav_TouchingNode(request->start, request->moveDist, &nav_data.nodes[ctx->went_to[0]])) {
-                        first_point++;
+                if (!path->request->nodeSearch.ignoreNodeFlags) {
+                    // if the node isn't a traversal, we may want
+                    // to skip the first node if we're either past it
+                    // or touching it
+                    if (link->type == NavLinkType_Walk || link->type == NavLinkType_Crouch) {
+                        if (Nav_TouchingNode(request->start, request->moveDist, &nav_data.nodes[ctx->went_to[0]])) {
+                            first_point++;
+                        }
                     }
                 }
             }
@@ -434,7 +438,7 @@ static PathInfo Nav_Path_(nav_path_t *path)
             }
 
             // store move point info
-            if (link->traversal != NULL) {
+            if (link && link->traversal != NULL) {
                 VectorCopy(link->traversal->start, info.firstMovePoint);
                 VectorCopy(link->traversal->end, info.secondMovePoint);
                 info.returnCode = PathReturnCode_TraversalPending;
