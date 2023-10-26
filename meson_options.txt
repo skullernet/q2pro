@@ -112,8 +112,8 @@ option('sdl2',
   description: 'SDL2 video and audio drivers')
 
 option('software-sound',
-  type: 'boolean',
-  value: true,
+  type: 'feature',
+  value: 'auto',
   description: 'Software sound backend')
 
 option('system-console',

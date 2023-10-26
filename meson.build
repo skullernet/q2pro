@@ -354,7 +354,7 @@ if get_option('client-ui')
   endif
 endif
 
-if get_option('software-sound')
+if get_option('software-sound').require(win32 or sdl2.found()).allowed()
   client_src += 'src/client/sound/dma.c'
   if sdl2.found()
     client_src += 'src/unix/sound/sdl.c'
