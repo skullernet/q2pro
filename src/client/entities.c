@@ -1390,6 +1390,16 @@ void CL_CalcViewValues(void)
         // don't interpolate blend color
         Vector4Copy(ps->screen_blend, cl.refdef.screen_blend);
     }
+    // Mix in screen_blend from cgame pmove
+    // FIXME: Should also be interpolated?...
+    if(cl.predicted_screen_blend[3] > 0) {
+        float a2 = cl.refdef.screen_blend[3] + (1 - cl.refdef.screen_blend[3]) * cl.predicted_screen_blend[3]; // new total alpha
+        float a3 = cl.refdef.screen_blend[3] / a2;					// fraction of color from old
+
+        LerpVector(cl.predicted_screen_blend, cl.refdef.screen_blend, a3, cl.refdef.screen_blend);
+        cl.refdef.screen_blend[3] = a2;
+    }
+
 
 #if USE_FPS
     ps = &cl.keyframe.ps;

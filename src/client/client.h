@@ -175,6 +175,7 @@ typedef struct client_state_s {
     vec3_t      predicted_angles;
     vec3_t      predicted_velocity;
     float       predicted_viewheight;
+    vec4_t      predicted_screen_blend;
     refdef_flags_t predicted_rdflags;
     vec3_t      prediction_error;
 

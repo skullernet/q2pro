@@ -291,5 +291,6 @@ void CL_PredictMovement(void)
     VectorCopy(pm.s.velocity, cl.predicted_velocity);
     VectorCopy(pm.viewangles, cl.predicted_angles);
     cl.predicted_viewheight = pm.s.viewheight;
+    Vector4Copy(pm.screen_blend, cl.predicted_screen_blend);
     cl.predicted_rdflags = pm.rdflags;
 }
