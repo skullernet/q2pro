@@ -200,7 +200,7 @@ static bool Nav_NodeAccessible(const nav_path_t *path, const nav_node_t *node)
             return false;
         }
     } else {
-        if (node->flags & (NodeFlag_NoMonsters | NodeFlag_Crouch)) {
+        if (node->flags & (NodeFlag_NoMonsters | NodeFlag_Crouch | NodeFlag_Ladder | NodeFlag_Elevator | NodeFlag_Pusher | NodeFlag_Teleporter)) {
             return false;
         } else if ((node->flags & NodeFlag_UnderWater) && (path->request->pathFlags & (PathFlags_Walk | PathFlags_Water)) == PathFlags_Walk) {
             return false;
@@ -214,6 +214,14 @@ static bool Nav_NodeAccessible(const nav_path_t *path, const nav_node_t *node)
 
 static bool Nav_LinkAccessible(const nav_path_t *path, const nav_node_t *node, const nav_link_t *link)
 {
+    if (!path->request->nodeSearch.ignoreNodeFlags) {
+        if (link->type == NavLinkType_LongJump || link->type == NavLinkType_Teleport ||
+            link->type == NavLinkType_Pusher || link->type == NavLinkType_Elevator ||
+            link->type == NavLinkType_Train || link->type == NavLinkType_Crouch ||
+            link->type == NavLinkType_Ladder || link->type == NavLinkType_RocketJump)
+            return false;
+    }
+
     return Nav_NodeAccessible(path, link->target);
 }
 
