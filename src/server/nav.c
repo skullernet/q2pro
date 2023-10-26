@@ -782,8 +782,6 @@ static void Nav_Debug(void)
             R_AddDebugText(t, node_text_buffer, 0.1f, NULL, ColorFromU32A(U32_GREEN, alpha), SV_FRAMETIME, true);
         
         for (const nav_link_t *link = node->links; link != node->links + node->num_links; link++) {
-            const byte *bits = nav_data.node_link_bitmap + (nav_data.node_link_bitmap_size * i);
-
             vec3_t e;
             VectorCopy(link->target->origin, e);
             e[2] += 24;
