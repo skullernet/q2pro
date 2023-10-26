@@ -165,6 +165,7 @@ static int AL_LoadReverbEntry(const char *buffer, jsmntok_t *tokens, size_t num_
             } else {
                 size_t n = t->size;
                 JSON_ENSURE_NEXT(JSMN_ARRAY);
+                out_entry->num_materials = n;
                 out_entry->materials = Z_TagMalloc(sizeof(*out_entry->materials) * n, TAG_SOUND);
 
                 for (size_t m = 0; m < n; m++, t++) {
@@ -240,6 +241,39 @@ static void AL_FreeReverbEnvironments(al_reverb_environment_t *environments, siz
     }
 
     Z_Free(environments);
+}
+
+static int16_t AL_FindStepID(const char *material)
+{
+    if (!strcmp(material, "") || !strcmp(material, "default"))
+        return FOOTSTEP_ID_DEFAULT;
+    else if (!strcmp(material, "ladder"))
+        return FOOTSTEP_ID_LADDER;
+
+    mtexinfo_t *out;
+    int i;
+
+    // FIXME: can speed this up later with a hash map of some sort
+    for (i = 0, out = cl.bsp->texinfo; i < cl.bsp->numtexinfo; i++, out++) {
+        if (!strcmp(out->c.material, material)) {
+            return out->step_id;
+        }
+    }
+
+    return FOOTSTEP_ID_DEFAULT;
+}
+
+static void AL_SetReverbStepIDs(void)
+{
+    for (size_t i = 0; i < s_num_reverb_environments; i++) {
+        for (size_t n = 0; n < s_reverb_environments[i].num_reverbs; n++) {
+            al_reverb_entry_t *entry = &s_reverb_environments[i].reverbs[n];
+
+            for (size_t e = 0; e < entry->num_materials; e++) {
+                entry->materials[e].step_id = AL_FindStepID(entry->materials[e].material);
+            }
+        }
+    }
 }
 
 static void AL_LoadReverbEnvironments(void)
@@ -806,6 +840,9 @@ static void AL_EndRegistration(void)
     s_num_reverb_environments = 0;
 
     AL_LoadReverbEnvironments();
+
+    if (cl.bsp)
+        AL_SetReverbStepIDs();
 }
 
 const sndapi_t snd_openal = {

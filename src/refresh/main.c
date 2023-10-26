@@ -898,7 +898,7 @@ static void GL_Register(void)
     gl_partscale = Cvar_Get("gl_partscale", "2", 0);
     gl_partstyle = Cvar_Get("gl_partstyle", "0", 0);
     gl_celshading = Cvar_Get("gl_celshading", "0", 0);
-    gl_dotshading = Cvar_Get("gl_dotshading", "1", 0);
+    gl_dotshading = Cvar_Get("gl_dotshading", "0", 0);
     gl_shadows = Cvar_Get("gl_shadows", "0", CVAR_ARCHIVE);
     gl_modulate = Cvar_Get("gl_modulate", "2", CVAR_ARCHIVE);
     gl_modulate->changed = gl_modulate_changed;
