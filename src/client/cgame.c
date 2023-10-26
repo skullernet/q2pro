@@ -23,6 +23,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 static struct {
     qhandle_t font_pic;
+    
+    kfont_t kfont;
 } scr;
 
 static cvar_t   *scr_alpha;
@@ -79,6 +81,8 @@ void CG_Init(void)
     scr_font = Cvar_Get("scr_font", "conchars", 0);
     scr_font->changed = scr_font_changed;
     scr_font_changed(scr_font);
+
+    SCR_LoadKFont(&scr.kfont, "fonts/qconfont.kfont");
 }
 
 static void CG_Print(const char *msg)
@@ -247,41 +251,65 @@ static void CG_SCR_SetAltTypeface(bool enabled)
     // We don't support alternate type faces.
 }
 
-static void CG_SCR_DrawFontString(const char *str, int x, int y, int scale, const rgba_t *color, bool shadow, text_align_t align)
+static float CG_SCR_FontLineHeight(int scale)
+{
+    if (!scr.kfont.pic)
+        return CHAR_HEIGHT * scale;
+
+    return scr.kfont.line_height;
+}
+
+cg_vec2_t CG_SCR_MeasureFontString(const char *str, int scale)
 {
     // TODO: 'str' may contain UTF-8, handle that.
-    // FIXME: Can it contain linebreaks?
+    // FIXME: can contain line breaks
+    int x, y = CG_SCR_FontLineHeight(scale);
+
+    if (!scr.kfont.pic)
+        x = strlen(str) * CHAR_WIDTH * scale;
+    else {
+        x = 0;
+
+        for (const char *r = str; *r; r++) {
+            const kfont_char_t *ch = SCR_KFontLookup(&scr.kfont, *r);
+
+            if (ch)
+                x += ch->w;
+        }
+    }
+
+    return (cg_vec2_t) { x, y };
+}
+
+static void CG_SCR_DrawFontString(const char *str, int x, int y, int scale, const rgba_t *color, bool shadow, text_align_t align)
+{
+    CGX_SetColor(color_to_u32(color));
 
     int draw_x = x;
     if (align != LEFT) {
-        int text_width = (strlen(str) * CHAR_WIDTH) * scale;
+        int text_width = CG_SCR_MeasureFontString(str, scale).x;
         if (align == CENTER)
             draw_x -= text_width / 2;
         else if (align == RIGHT)
             draw_x -= text_width;
     }
 
-    CGX_SetColor(color_to_u32(color));
     int draw_flags = shadow ? UI_DROPSHADOW : 0;
-    while (*str) {
-        R_DrawStretchChar(draw_x, y, CHAR_WIDTH * scale, CHAR_HEIGHT * scale, draw_flags, *str++, scr.font_pic);
-        draw_x += CHAR_WIDTH * scale;
-    }
-    CGX_ClearColor();
-}
 
-cg_vec2_t CG_SCR_MeasureFontString(const char *str, int scale)
-{
     // TODO: 'str' may contain UTF-8, handle that.
-    // FIXME: Can it contain linebreaks?
+    // FIXME: can contain line breaks
+    if (!scr.kfont.pic) {
+        while (*str) {
+            R_DrawStretchChar(draw_x, y, CHAR_WIDTH * scale, CHAR_HEIGHT * scale, draw_flags, *str++, scr.font_pic);
+            draw_x += CHAR_WIDTH * scale;
+        }
+    } else {
+        while (*str) {
+            draw_x += R_DrawKFontChar(draw_x, y, scale, draw_flags, *str++, &scr.kfont);
+        }
+    }
 
-    cg_vec2_t text_dim = {.x = strlen(str) * CHAR_WIDTH * scale, .y = CHAR_HEIGHT * scale};
-    return text_dim;
-}
-
-static float CG_SCR_FontLineHeight(int scale)
-{
-    return CHAR_HEIGHT * scale;
+    CGX_ClearColor();
 }
 
 static bool CG_CL_GetTextInput(const char **msg, bool *is_team)

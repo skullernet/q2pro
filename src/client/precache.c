@@ -380,6 +380,8 @@ void CL_PrepRefresh(void)
         }
         cl.image_precache[i] = CL_RegisterImage(name);
     }
+    
+    cgame->TouchPics();
 
     CL_LoadState(LOAD_CLIENTS);
     for (i = 0; i < MAX_CLIENTS; i++) {

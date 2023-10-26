@@ -239,6 +239,26 @@ void    R_DrawChar(int x, int y, int flags, int ch, qhandle_t font);
 void    R_DrawStretchChar(int x, int y, int w, int h, int flags, int ch, qhandle_t font);
 int     R_DrawString(int x, int y, int flags, size_t maxChars,
                      const char *string, qhandle_t font);  // returns advanced x coord
+
+// kfont stuff
+typedef struct {
+    uint16_t    x, y, w, h;
+} kfont_char_t;
+
+#define KFONT_ASCII_MIN         32
+#define KFONT_ASCII_MAX         126
+
+typedef struct {
+    qhandle_t       pic;
+    kfont_char_t    chars[KFONT_ASCII_MAX - KFONT_ASCII_MIN + 1];
+    uint16_t        line_height;
+    float           sw, sh;
+} kfont_t;
+
+const kfont_char_t *SCR_KFontLookup(const kfont_t *kfont, uint32_t codepoint);
+void    SCR_LoadKFont(kfont_t *font, const char *filename);
+int     R_DrawKFontChar(int x, int y, int scale, int flags, uint32_t codepoint, const kfont_t *kfont);
+
 bool    R_GetPicSize(int *w, int *h, qhandle_t pic);   // returns transparency bit
 void    R_DrawPic(int x, int y, qhandle_t pic);
 void    R_DrawStretchPic(int x, int y, int w, int h, qhandle_t pic);
