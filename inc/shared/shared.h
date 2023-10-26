@@ -964,19 +964,18 @@ typedef struct {
 
     // command (in)
     usercmd_t       cmd;
-    qboolean        snapinitial;    // if s has been changed outside pmove
+    bool            snapinitial;    // if s has been changed outside pmove
 
     // results (out)
     touch_list_t touch;
 
     vec3_t      viewangles;         // clamped
-    float       viewheight;
 
     vec3_t      mins, maxs;         // bounding box size
 
     struct edict_s  *groundentity;
     cplane_t    groundplane;
-    int         watertype;
+    contents_t  watertype;
     int         waterlevel;
 
     struct edict_s *player; // opaque handle

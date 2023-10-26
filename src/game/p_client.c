@@ -1649,7 +1649,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         client->ps.pmove = pm.s;
         client->old_pmove = pm.s;
 
-        ent->viewheight = pm.viewheight;
+        ent->viewheight = pm.s.viewheight;
         ent->waterlevel = pm.waterlevel;
         ent->watertype = pm.watertype;
         ent->groundentity = pm.groundentity;
