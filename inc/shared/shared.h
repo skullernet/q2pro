@@ -922,7 +922,7 @@ typedef struct {
     vec3_t      origin;
     vec3_t      velocity;
     pmflags_t   pm_flags;       // ducked, jump_held, etc
-    uint16_t    pm_time;        // each unit = 8 ms
+    uint16_t    pm_time;        // each unit = 1 ms (was 8 ms in vanilla)
     int16_t     gravity;
     vec3_t      delta_angles;   // add to command angles to get view direction
                                 // changed by spawns, rotating objects, and teleporters
