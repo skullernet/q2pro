@@ -163,7 +163,7 @@ typedef struct client_state_s {
     usercmd_t    cmd;
     usercmd_t    cmds[CMD_BACKUP];    // each mesage will send several old cmds
     unsigned     cmdNumber;
-    short        predicted_origins[CMD_BACKUP][3];    // for debug comparing against server
+    vec3_t       predicted_origins[CMD_BACKUP];    // for debug comparing against server
     client_history_t    history[CMD_BACKUP];
     int         initialSeq;
 
