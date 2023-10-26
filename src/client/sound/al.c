@@ -52,7 +52,7 @@ typedef struct {
 } al_reverb_entry_t;
 
 typedef struct {
-    float               dimension; // squared
+    float               dimension;
     al_reverb_entry_t   *reverbs;
     size_t              num_reverbs;
 } al_reverb_environment_t;
@@ -172,7 +172,7 @@ static const vec3_t             s_reverb_probes[] = {
 };
 static int                      s_reverb_probe_time;
 static int                      s_reverb_probe_index;
-static float                    s_reverb_probe_results[q_countof(s_reverb_probes)];
+static vec3_t                   s_reverb_probe_results[q_countof(s_reverb_probes)];
 static float                    s_reverb_probe_avg;
 
 static const al_reverb_environment_t  *s_reverb_active_environment;
@@ -182,24 +182,29 @@ static bool AL_EstimateDimensions(void)
     if (s_reverb_probe_time > cl.time)
         return false;
 
-    s_reverb_probe_time = cl.time + 50;
+    s_reverb_probe_time = cl.time + 13;
     vec3_t end;
     VectorMA(listener_origin, 8192.0f, s_reverb_probes[s_reverb_probe_index], end);
 
     trace_t tr;
     CL_Trace(&tr, listener_origin, vec3_origin, vec3_origin, end, NULL, MASK_SOLID);
 
-    s_reverb_probe_results[s_reverb_probe_index] = VectorDistanceSquared(tr.endpos, listener_origin);
+    VectorSubtract(tr.endpos, listener_origin, s_reverb_probe_results[s_reverb_probe_index]);
 
-    if (s_reverb_probe_index == 0 && tr.surface->flags & SURF_SKY)
-        s_reverb_probe_results[s_reverb_probe_index] += 8192 * 8192;
+    if (s_reverb_probe_index == 0 && (tr.surface->flags & SURF_SKY)) {
+        s_reverb_probe_results[s_reverb_probe_index][2] += 4096.f;
+    }
 
-    s_reverb_probe_avg = 0;
+    vec3_t mins, maxs;
+    ClearBounds(mins, maxs);
 
     for (size_t i = 0; i < q_countof(s_reverb_probes); i++)
-        s_reverb_probe_avg += s_reverb_probe_results[i];
+        AddPointToBounds(s_reverb_probe_results[i], mins, maxs);
 
-    s_reverb_probe_avg /= q_countof(s_reverb_probes);
+    vec3_t extents;
+    VectorSubtract(maxs, mins, extents);
+
+    s_reverb_probe_avg = (extents[0] + extents[1] + extents[2]) / 3.0f;
 
     s_reverb_probe_index = (s_reverb_probe_index + 1) % q_countof(s_reverb_probes);
 
@@ -270,7 +275,7 @@ static void AL_UpdateReverb(void)
         }
 
         s_reverb_lerp_start = cl.time;
-        s_reverb_lerp_time = cl.time + 250;
+        s_reverb_lerp_time = cl.time + 1000;
         memcpy(&s_reverb_lerp_to, &s_reverb_parameters[s_reverb_current_preset], sizeof(s_active_reverb));
     }
 
@@ -476,7 +481,6 @@ static int AL_LoadReverbEnvironment(const char *buffer, jsmntok_t *tokens, size_
             t++;
             JSON_ENSURE(JSMN_PRIMITIVE);
             out_environment->dimension = atof(buffer + t->start);
-            out_environment->dimension *= out_environment->dimension;
             t++;
         } else if (!JSON_STRCMP("reverbs")) {
             t++;
@@ -1155,7 +1159,7 @@ static void AL_EndRegistration(void)
     s_reverb_probe_time = 0;
     s_reverb_probe_index = 0;
     for (int i = 0; i < q_countof(s_reverb_probes); i++)
-        s_reverb_probe_results[i] = 99999999;
+        VectorClear(s_reverb_probe_results[i]);
     s_reverb_probe_avg = 99999999;
     s_reverb_active_environment = &s_reverb_environments[s_num_reverb_environments - 1];
 
