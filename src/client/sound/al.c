@@ -393,12 +393,17 @@ static void AL_StreamStop(void)
     Q_assert(!s_stream_buffers);
 }
 
+static bool AL_NeedRawSamples(void)
+{
+    return s_stream_buffers < 48;
+}
+
 static bool AL_RawSamples(int samples, int rate, int width, int channels, const byte *data, float volume)
 {
     ALenum format = AL_FORMAT_MONO8 + (channels - 1) * 2 + (width - 1);
     ALuint buffer = 0;
 
-    if (s_stream_buffers < 16) {
+    if (AL_NeedRawSamples()) {
         qalGetError();
         qalGenBuffers(1, &buffer);
         if (qalGetError())
@@ -425,11 +430,6 @@ static bool AL_RawSamples(int samples, int rate, int width, int channels, const 
     if (state != AL_PLAYING)
         qalSourcePlay(s_stream);
     return true;
-}
-
-static bool AL_NeedRawSamples(void)
-{
-    return s_stream_buffers < 16;
 }
 
 static void AL_UpdateUnderWater(void)
