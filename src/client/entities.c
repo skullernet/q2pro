@@ -1413,7 +1413,12 @@ void CL_CalcViewValues(void)
     cl.fov_y = V_CalcFov(cl.fov_x, 4, 3);
 
     LerpVector(ops->viewoffset, ps->viewoffset, lerp, viewoffset);
-    viewoffset[2] += cl.predicted_viewheight;
+
+    // Smooth out view height over 100ms
+    float viewheight_lerp = (cl.time - cl.viewheight_change_time);
+    viewheight_lerp = 100 - min(viewheight_lerp, 100);
+    float predicted_viewheight = cl.current_viewheight + (float)(cl.prev_viewheight - cl.current_viewheight) * viewheight_lerp * 0.01f;
+    viewoffset[2] += predicted_viewheight;
 
     AngleVectors(cl.refdef.viewangles, cl.v_forward, cl.v_right, cl.v_up);
 

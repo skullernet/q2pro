@@ -290,7 +290,13 @@ void CL_PredictMovement(void)
     VectorCopy(pm.s.origin, cl.predicted_origin);
     VectorCopy(pm.s.velocity, cl.predicted_velocity);
     VectorCopy(pm.viewangles, cl.predicted_angles);
-    cl.predicted_viewheight = pm.s.viewheight;
     Vector4Copy(pm.screen_blend, cl.predicted_screen_blend);
     cl.predicted_rdflags = pm.rdflags;
+
+    // Record viewheight changes
+    if (cl.current_viewheight != pm.s.viewheight) {
+        cl.prev_viewheight = cl.current_viewheight;
+        cl.current_viewheight = pm.s.viewheight;
+        cl.viewheight_change_time = cl.time;
+    }
 }
