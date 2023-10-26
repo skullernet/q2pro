@@ -25,6 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/tests.h"
 #include "refresh/refresh.h"
 #include "system/system.h"
+#include "client/client.h"
 #include "client/sound/sound.h"
 
 // test error shutdown procedures
@@ -37,6 +38,26 @@ static void Com_ErrorDrop_f(void)
 {
     Com_Error(ERR_DROP, "%s", Cmd_Argv(1));
 }
+
+#if USE_CLIENT
+static void Com_Activate_f(void)
+{
+    active_t act;
+
+    if (Cmd_Argc() < 2) {
+        Com_Printf("Usage: %s <mode>\n", Cmd_Argv(0));
+        return;
+    }
+
+    act = atoi(Cmd_Argv(1));
+    if (act < ACT_MINIMIZED || act > ACT_ACTIVATED) {
+        Com_Printf("Bad mode\n");
+        return;
+    }
+
+    CL_Activate(act);
+}
+#endif
 
 static void Com_Freeze_f(void)
 {
@@ -807,6 +828,7 @@ static const cmdreg_t c_test[] = {
 #endif
 #if USE_CLIENT
     { "soundtest", Com_TestSounds_f },
+    { "activate", Com_Activate_f },
 #endif
     { "mdfourtest", Com_MdfourTest_f },
     { "mdfoursum", Com_MdfourSum_f },
