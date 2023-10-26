@@ -243,6 +243,7 @@ void CL_PredictMovement(void)
     pm.clip = CL_Clip;
     pm.pointcontents = CL_PointContents;
     pm.s = cl.frame.ps.pmove;
+    VectorCopy(cl.frame.ps.viewoffset, pm.viewoffset);
 
     // run frames
     while (++ack <= current) {
