@@ -742,7 +742,7 @@ static void Nav_Debug(void)
         VectorCopy(node->origin, t);
         t[2] += 64;
 
-        R_AddDebugText(t, va("%i", node - nav_data.nodes), 0.25f, NULL, ColorFromU32A(U32_CYAN, alpha), SV_FRAMETIME, true);
+        R_AddDebugText(t, va("%td", node - nav_data.nodes), 0.25f, NULL, ColorFromU32A(U32_CYAN, alpha), SV_FRAMETIME, true);
 
         t[2] -= 18;
 
