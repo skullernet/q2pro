@@ -409,7 +409,7 @@ openal = dependency('openal',
   default_options: fallback_opt,
 )
 if openal.found()
-  client_src += [ 'src/client/sound/al.c', 'src/client/sound/qal.c' ]
+  client_src += [ 'src/client/sound/al.c', 'src/client/sound/qal.c', 'inc/common/jsmn.h' ]
   client_deps += openal.partial_dependency(compile_args: true, includes: true)
   config.set10('USE_OPENAL', true)
 endif

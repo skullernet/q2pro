@@ -514,6 +514,9 @@ void S_EndRegistration(void)
         S_LoadSound(sfx);
     }
 
+    if (s_api.end_registration)
+        s_api.end_registration();
+
     s_registering = false;
 }
 

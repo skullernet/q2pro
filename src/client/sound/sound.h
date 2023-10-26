@@ -124,6 +124,7 @@ typedef struct {
     void (*stop_channel)(channel_t *ch);
     void (*stop_all_sounds)(void);
     int (*get_sample_rate)(void);
+    void (*end_registration)(void);
 } sndapi_t;
 
 #if USE_SNDDMA

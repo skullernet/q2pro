@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "sound.h"
 #include "qal.h"
+#include "common/jsmn.h"
 
 // translates from AL coordinate system to quake
 #define AL_UnpackVector(v)  -v[1],v[2],-v[0]
@@ -35,6 +36,263 @@ static unsigned     s_framecount;
 
 static ALuint       s_underwater_filter;
 static bool         s_underwater_flag;
+
+// reverb stuff
+
+
+// skips the current token entirely, making sure that
+// current_token will point to the actual next logical
+// token to be parsed.
+static void JSON_SkipToken(jsmntok_t *tokens, size_t num_tokens, jsmntok_t **current_token)
+{
+    // just in case...
+    if ((*current_token - tokens) >= num_tokens) {
+        return;
+    }
+
+    size_t num_to_parse;
+
+    switch ((*current_token)->type) {
+    case JSMN_UNDEFINED:
+    case JSMN_STRING:
+    case JSMN_PRIMITIVE:
+        (*current_token)++;
+        break;
+    case JSMN_ARRAY: {
+        size_t num_to_parse = (*current_token)->size;
+        (*current_token)++;
+        for (size_t i = 0; i < num_to_parse; i++) {
+            JSON_SkipToken(tokens, num_tokens, current_token);
+        }
+        break;
+    }
+    case JSMN_OBJECT:
+        num_to_parse = (*current_token)->size;
+        (*current_token)++;
+        for (size_t i = 0; i < num_to_parse; i++) {
+            (*current_token)++;
+            JSON_SkipToken(tokens, num_tokens, current_token);
+        }
+        break;
+    }
+}
+
+static inline bool JSON_Load(const char *filename, const char **buffer, jsmntok_t **tokens, size_t *num_tokens)
+{
+    *tokens = NULL;
+
+    int64_t buffer_len;
+
+    if ((buffer_len = FS_LoadFile(filename, (void **) buffer)) < 0)
+        return false;
+    
+    // calculate the total token size so we can grok all of them.
+    jsmn_parser p;
+        
+    jsmn_init(&p);
+    *num_tokens = jsmn_parse(&p, *buffer, buffer_len, NULL, 0);
+        
+    *tokens = Z_Malloc(sizeof(jsmntok_t) * (*num_tokens));
+
+    if (!*tokens)
+        goto fail;
+
+    // decode all tokens
+    jsmn_init(&p);
+    jsmn_parse(&p, *buffer, buffer_len, *tokens, (*num_tokens));
+
+    return true;
+
+fail:
+    return false;
+}
+
+static inline void JSON_Free(jsmntok_t *tokens)
+{
+    Z_Free(tokens);
+}
+
+#define JSON_ENSURE(id) \
+    if ((t - tokens) >= num_tokens) { ret = Q_ERR_INVALID_FORMAT; goto fail; } \
+    if (t->type != id) { ret = Q_ERR_INVALID_FORMAT; goto fail; }
+
+#define JSON_ENSURE_NEXT(id) \
+    JSON_ENSURE(id); t++;
+
+#define JSON_STRCMP(s) \
+    strncmp(buffer + t->start, s, t->end - t->start)
+
+typedef struct {
+    char    material[16];
+    int16_t step_id;
+} al_reverb_material_t;
+
+typedef struct {
+    al_reverb_material_t    *materials; // if null, matches everything
+    size_t                  num_materials;
+    char                    preset[16]; // TEMP
+} al_reverb_entry_t;
+
+typedef struct {
+    float               dimension; // squared
+    al_reverb_entry_t   *reverbs;
+    size_t              num_reverbs;
+} al_reverb_environment_t;
+
+static size_t                   s_num_reverb_environments;
+static al_reverb_environment_t  *s_reverb_environments;
+
+static int AL_LoadReverbEntry(const char *buffer, jsmntok_t *tokens, size_t num_tokens, jsmntok_t **t_out, al_reverb_entry_t *out_entry)
+{
+    int ret = 0;
+    jsmntok_t *t = *t_out;
+
+    size_t fields = t->size;
+    JSON_ENSURE_NEXT(JSMN_OBJECT);
+
+    for (size_t i = 0; i < fields; i++) {
+        if (!JSON_STRCMP("materials")) {
+            t++;
+
+            if (t->type == JSMN_STRING) {
+
+                if (buffer[t->start] != '*') {
+                    ret = -1;
+                    goto fail;
+                }
+
+                t++;
+            } else {
+                size_t n = t->size;
+                JSON_ENSURE_NEXT(JSMN_ARRAY);
+                out_entry->materials = Z_TagMalloc(sizeof(*out_entry->materials) * n, TAG_SOUND);
+
+                for (size_t m = 0; m < n; m++, t++) {
+                    JSON_ENSURE(JSMN_STRING);
+                    Q_strnlcpy(out_entry->materials[m].material, buffer + t->start, t->end - t->start, sizeof(out_entry->materials[m].material));
+                }
+            }
+
+        } else if (!JSON_STRCMP("preset")) {
+            t++;
+
+            JSON_ENSURE(JSMN_STRING);
+            Q_strnlcpy(out_entry->preset, buffer + t->start, t->end - t->start, sizeof(out_entry->preset));
+            t++;
+        } else {
+            t++;
+            JSON_SkipToken(tokens, num_tokens, &t);
+        }
+    }
+
+fail:
+    *t_out = t;
+    return ret;
+}
+
+static int AL_LoadReverbEnvironment(const char *buffer, jsmntok_t *tokens, size_t num_tokens, jsmntok_t **t_out, al_reverb_environment_t *out_environment)
+{
+    int ret = 0;
+    jsmntok_t *t = *t_out;
+
+    size_t fields = t->size;
+    JSON_ENSURE_NEXT(JSMN_OBJECT);
+
+    for (size_t i = 0; i < fields; i++) {
+        if (!JSON_STRCMP("dimension")) {
+            t++;
+            JSON_ENSURE(JSMN_PRIMITIVE);
+            out_environment->dimension = atof(buffer + t->start);
+            out_environment->dimension *= out_environment->dimension;
+            t++;
+        } else if (!JSON_STRCMP("reverbs")) {
+            t++;
+
+            out_environment->num_reverbs = t->size;
+            JSON_ENSURE_NEXT(JSMN_ARRAY);
+            out_environment->reverbs = Z_TagMallocz(sizeof(al_reverb_entry_t) * out_environment->num_reverbs, TAG_SOUND);
+
+            for (size_t r = 0; r < out_environment->num_reverbs; r++) {
+                ret = AL_LoadReverbEntry(buffer, tokens, num_tokens, &t, &out_environment->reverbs[r]);
+
+                if (ret < 0)
+                    goto fail;
+            }
+        } else {
+            t++;
+            JSON_SkipToken(tokens, num_tokens, &t);
+        }
+    }
+
+fail:
+    *t_out = t;
+    return ret;
+}
+
+static void AL_FreeReverbEnvironments(al_reverb_environment_t *environments, size_t num_environments)
+{
+    for (size_t i = 0; i < num_environments; i++) {
+        for (size_t n = 0; n < environments[i].num_reverbs; n++) {
+            Z_Free(environments[i].reverbs[n].materials);
+        }
+
+        Z_Free(environments[i].reverbs);
+    }
+
+    Z_Free(environments);
+}
+
+static void AL_LoadReverbEnvironments(void)
+{
+    const char *buffer;
+    jsmntok_t *tokens;
+    size_t num_tokens;
+    int ret = 0;
+
+    if (!JSON_Load("sound/default.environments", &buffer, &tokens, &num_tokens)) {
+        ret = Q_ERR_INVALID_FORMAT;
+        goto fail;
+    }
+
+    jsmntok_t *t = tokens;
+
+    JSON_ENSURE_NEXT(JSMN_OBJECT);
+
+    if (JSON_STRCMP("environments")) {
+        ret = Q_ERR_INVALID_FORMAT;
+        goto fail;
+    }
+
+    t++;
+
+    size_t n = t->size;
+    JSON_ENSURE_NEXT(JSMN_ARRAY);
+
+    al_reverb_environment_t *environments = Z_TagMallocz(sizeof(al_reverb_environment_t) * n, TAG_SOUND);
+
+    for (size_t i = 0; i < n; i++) {
+        ret = AL_LoadReverbEnvironment(buffer, tokens, num_tokens, &t, &environments[i]);
+
+        if (ret < 0)
+            goto fail;
+    }
+
+    s_reverb_environments = environments;
+    s_num_reverb_environments = n;
+
+    goto free_temp;
+
+fail:
+    if (ret < 0) {
+        Com_WPrintf("Couldn't load sound/default.environments; invalid JSON\n");
+    }
+
+    AL_FreeReverbEnvironments(environments, n);
+
+free_temp:
+    FS_FreeFile((void *) buffer);
+    JSON_Free(tokens);
+}
 
 static void AL_StreamStop(void);
 
@@ -151,6 +409,10 @@ static void AL_Shutdown(void)
         qalDeleteFilters(1, &s_underwater_filter);
         s_underwater_filter = 0;
     }
+
+    AL_FreeReverbEnvironments(s_reverb_environments, s_num_reverb_environments);
+    s_reverb_environments = NULL;
+    s_num_reverb_environments = 0;
 
     s_underwater_flag = false;
     s_underwater_gain_hf->changed = NULL;
@@ -537,6 +799,15 @@ static void AL_Update(void)
     AL_StreamUpdate();
 }
 
+static void AL_EndRegistration(void)
+{
+    AL_FreeReverbEnvironments(s_reverb_environments, s_num_reverb_environments);
+    s_reverb_environments = NULL;
+    s_num_reverb_environments = 0;
+
+    AL_LoadReverbEnvironments();
+}
+
 const sndapi_t snd_openal = {
     .init = AL_Init,
     .shutdown = AL_Shutdown,
@@ -552,4 +823,5 @@ const sndapi_t snd_openal = {
     .play_channel = AL_PlayChannel,
     .stop_channel = AL_StopChannel,
     .stop_all_sounds = AL_StopAllSounds,
+    .end_registration = AL_EndRegistration,
 };
