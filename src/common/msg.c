@@ -2044,11 +2044,11 @@ void MSG_ParseDeltaPlayerstate_Default(const player_state_t *from,
         to->pmove.pm_type = MSG_ReadByte();
 
     if (flags & PS_M_ORIGIN) {
-        MSG_ReadPos(to->pmove.origin, flags & MSG_PS_FLOAT_COORDS);
+        MSG_ReadPos(to->pmove.origin, psflags & MSG_PS_FLOAT_COORDS);
     }
 
     if (flags & PS_M_VELOCITY) {
-        MSG_ReadPos(to->pmove.velocity, flags & MSG_PS_FLOAT_COORDS);
+        MSG_ReadPos(to->pmove.velocity, psflags & MSG_PS_FLOAT_COORDS);
     }
 
     if (flags & PS_M_TIME)
