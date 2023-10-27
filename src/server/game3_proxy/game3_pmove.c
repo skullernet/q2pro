@@ -660,7 +660,7 @@ static void PM_CheckJump(void)
     if (pm->s.pm_flags & PMF_JUMP_HELD)
         return;
 
-    if (pm->s.pm_type == PM_DEAD)
+    if (pm->s.pm_type == G3PM_DEAD)
         return;
 
     if (pm->waterlevel >= 2) {
@@ -841,7 +841,7 @@ static void PM_CheckDuck(void)
     pm->maxs[0] = 16;
     pm->maxs[1] = 16;
 
-    if (pm->s.pm_type == PM_GIB) {
+    if (pm->s.pm_type == G3PM_GIB) {
         pm->mins[2] = 0;
         pm->maxs[2] = 16;
         pm->viewheight = 8;
@@ -850,7 +850,7 @@ static void PM_CheckDuck(void)
 
     pm->mins[2] = -24;
 
-    if (pm->s.pm_type == PM_DEAD) {
+    if (pm->s.pm_type == G3PM_DEAD) {
         pm->s.pm_flags |= PMF_DUCKED;
     } else if (pm->cmd.upmove < 0 && (pm->s.pm_flags & PMF_ON_GROUND)) {
         // duck
@@ -904,7 +904,7 @@ static bool PM_GoodPosition(void)
     vec3_t  origin, end;
     int     i;
 
-    if (pm->s.pm_type == PM_SPECTATOR)
+    if (pm->s.pm_type == G3PM_SPECTATOR)
         return true;
 
     for (i = 0; i < 3; i++)
@@ -1051,7 +1051,7 @@ void game3_Pmove(game3_pmove_t *pmove, pmoveParams_t *params)
 
     PM_ClampAngles();
 
-    if (pm->s.pm_type == PM_SPECTATOR) {
+    if (pm->s.pm_type == G3PM_SPECTATOR) {
         pml.frametime = pmp->speedmult * pm->cmd.msec * 0.001f;
         PM_FlyMove();
         PM_SnapPosition();
@@ -1060,13 +1060,13 @@ void game3_Pmove(game3_pmove_t *pmove, pmoveParams_t *params)
 
     pml.frametime = pm->cmd.msec * 0.001f;
 
-    if (pm->s.pm_type >= PM_DEAD) {
+    if (pm->s.pm_type >= G3PM_DEAD) {
         pm->cmd.forwardmove = 0;
         pm->cmd.sidemove = 0;
         pm->cmd.upmove = 0;
     }
 
-    if (pm->s.pm_type == PM_FREEZE)
+    if (pm->s.pm_type == G3PM_FREEZE)
         return;     // no movement at all
 
     // set mins, maxs, and viewheight
@@ -1078,7 +1078,7 @@ void game3_Pmove(game3_pmove_t *pmove, pmoveParams_t *params)
     // set groundentity, watertype, and waterlevel
     PM_CategorizePosition();
 
-    if (pm->s.pm_type == PM_DEAD)
+    if (pm->s.pm_type == G3PM_DEAD)
         PM_DeadMove();
 
     PM_CheckSpecialMovement();

@@ -20,21 +20,59 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 typedef struct game3_edict_s game3_edict_t;
 
-/* TODO: These are pmtype, pmflags as defined by Q2PRO;
- * need translation to "new" values */
-#if 0
 // pmove_state_t is the information necessary for client side movement
 // prediction
 typedef enum {
     // can accelerate and turn
-    PM_NORMAL,
-    PM_SPECTATOR,
+    G3PM_NORMAL,
+    G3PM_SPECTATOR,
     // no acceleration or turning
-    PM_DEAD,
-    PM_GIB,     // different bounding box
-    PM_FREEZE
-} pmtype_t;
+    G3PM_DEAD,
+    G3PM_GIB,     // different bounding box
+    G3PM_FREEZE
+} game3_pmtype_t;
 
+static inline pmtype_t pmtype_from_game3(game3_pmtype_t pmtype)
+{
+    switch(pmtype)
+    {
+    case G3PM_NORMAL:
+        return PM_NORMAL;
+    case G3PM_SPECTATOR:
+        return PM_SPECTATOR;
+    case G3PM_DEAD:
+        return PM_DEAD;
+    case G3PM_GIB:
+        return PM_GIB;
+    case G3PM_FREEZE:
+        return PM_FREEZE;
+    }
+    return (pmtype_t)pmtype;
+}
+
+static inline game3_pmtype_t pmtype_to_game3(pmtype_t pmtype)
+{
+    switch(pmtype)
+    {
+    case PM_NORMAL:
+        return G3PM_NORMAL;
+    case PM_GRAPPLE:
+    case PM_NOCLIP:
+    case PM_SPECTATOR:
+        return G3PM_SPECTATOR;
+    case PM_DEAD:
+        return G3PM_DEAD;
+    case PM_GIB:
+        return G3PM_GIB;
+    case PM_FREEZE:
+        return G3PM_FREEZE;
+    }
+    return (game3_pmtype_t)pmtype;
+}
+
+/* TODO: These are pmflags as defined by Q2PRO;
+ * need translation to "new" values */
+#if 0
 // pmove->pm_flags
 #define PMF_DUCKED          BIT(0)
 #define PMF_JUMP_HELD       BIT(1)
@@ -47,7 +85,7 @@ typedef enum {
 #endif
 
 typedef struct {
-    pmtype_t    pm_type;
+    game3_pmtype_t pm_type;
 
     short       origin[3];      // 12.3
     short       velocity[3];    // 12.3

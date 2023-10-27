@@ -427,7 +427,7 @@ static void sync_edicts_server_to_game(void)
 
 static void game_pmove_state_to_server(pmove_state_t* server_pmove_state, const game3_pmove_state_t* game_pmove_state)
 {
-    server_pmove_state->pm_type = game_pmove_state->pm_type;
+    server_pmove_state->pm_type = pmtype_from_game3(game_pmove_state->pm_type);
     VectorScale(game_pmove_state->origin, 0.125f, server_pmove_state->origin);
     VectorScale(game_pmove_state->velocity, 0.125f, server_pmove_state->velocity);
     server_pmove_state->pm_flags = game_pmove_state->pm_flags;
