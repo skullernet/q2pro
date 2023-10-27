@@ -500,7 +500,7 @@ static void PM_AirMove(void)
 //
 // clamp to server defined max speed
 //
-    maxspeed = (pm->s.pm_flags & PMF_DUCKED) ? pm_duckspeed : pmp->maxspeed;
+    maxspeed = (pm->s.pm_flags & G3PMF_DUCKED) ? pm_duckspeed : pmp->maxspeed;
 
     if (wishspeed > maxspeed) {
         VectorScale(wishvel, maxspeed / wishspeed, wishvel);
@@ -570,7 +570,7 @@ static void PM_CategorizePosition(void)
     point[1] = pml.origin[1];
     point[2] = pml.origin[2] - 0.25f;
     if (pml.velocity[2] > 180) { //!!ZOID changed from 100 to 180 (ramp accel)
-        pm->s.pm_flags &= ~PMF_ON_GROUND;
+        pm->s.pm_flags &= ~G3PMF_ON_GROUND;
         pm->groundentity = NULL;
     } else {
         trace = pm->trace(pml.origin, pm->mins, pm->maxs, point);
@@ -580,22 +580,22 @@ static void PM_CategorizePosition(void)
 
         if (!trace.ent || (trace.plane.normal[2] < 0.7f && !trace.startsolid)) {
             pm->groundentity = NULL;
-            pm->s.pm_flags &= ~PMF_ON_GROUND;
+            pm->s.pm_flags &= ~G3PMF_ON_GROUND;
         } else {
             pm->groundentity = trace.ent;
 
             // hitting solid ground will end a waterjump
-            if (pm->s.pm_flags & PMF_TIME_WATERJUMP) {
-                pm->s.pm_flags &= ~(PMF_TIME_WATERJUMP | PMF_TIME_LAND | PMF_TIME_TELEPORT);
+            if (pm->s.pm_flags & G3PMF_TIME_WATERJUMP) {
+                pm->s.pm_flags &= ~(G3PMF_TIME_WATERJUMP | G3PMF_TIME_LAND | G3PMF_TIME_TELEPORT);
                 pm->s.pm_time = 0;
             }
 
-            if (!(pm->s.pm_flags & PMF_ON_GROUND)) {
+            if (!(pm->s.pm_flags & G3PMF_ON_GROUND)) {
                 // just hit the ground
-                pm->s.pm_flags |= PMF_ON_GROUND;
+                pm->s.pm_flags |= G3PMF_ON_GROUND;
                 // don't do landing time if we were just going down a slope
                 if (pml.velocity[2] < -200 && !pmp->strafehack) {
-                    pm->s.pm_flags |= PMF_TIME_LAND;
+                    pm->s.pm_flags |= G3PMF_TIME_LAND;
                     // don't allow another jump for a little while
                     if (pml.velocity[2] < -400)
                         pm->s.pm_time = 25;
@@ -645,19 +645,19 @@ PM_CheckJump
 */
 static void PM_CheckJump(void)
 {
-    if (pm->s.pm_flags & PMF_TIME_LAND) {
+    if (pm->s.pm_flags & G3PMF_TIME_LAND) {
         // hasn't been long enough since landing to jump again
         return;
     }
 
     if (pm->cmd.upmove < 10) {
         // not holding jump
-        pm->s.pm_flags &= ~PMF_JUMP_HELD;
+        pm->s.pm_flags &= ~G3PMF_JUMP_HELD;
         return;
     }
 
     // must wait for jump to be released
-    if (pm->s.pm_flags & PMF_JUMP_HELD)
+    if (pm->s.pm_flags & G3PMF_JUMP_HELD)
         return;
 
     if (pm->s.pm_type == G3PM_DEAD)
@@ -687,10 +687,10 @@ static void PM_CheckJump(void)
     if (pm->groundentity == NULL)
         return;     // in air, so no effect
 
-    pm->s.pm_flags |= PMF_JUMP_HELD;
+    pm->s.pm_flags |= G3PMF_JUMP_HELD;
 
     pm->groundentity = NULL;
-    pm->s.pm_flags &= ~PMF_ON_GROUND;
+    pm->s.pm_flags &= ~G3PMF_ON_GROUND;
     pml.velocity[2] += 270;
     if (pml.velocity[2] < 270)
         pml.velocity[2] = 270;
@@ -742,7 +742,7 @@ static void PM_CheckSpecialMovement(void)
     VectorScale(flatforward, 50, pml.velocity);
     pml.velocity[2] = 350;
 
-    pm->s.pm_flags |= PMF_TIME_WATERJUMP;
+    pm->s.pm_flags |= G3PMF_TIME_WATERJUMP;
     pm->s.pm_time = 255;
 }
 
@@ -851,22 +851,22 @@ static void PM_CheckDuck(void)
     pm->mins[2] = -24;
 
     if (pm->s.pm_type == G3PM_DEAD) {
-        pm->s.pm_flags |= PMF_DUCKED;
-    } else if (pm->cmd.upmove < 0 && (pm->s.pm_flags & PMF_ON_GROUND)) {
+        pm->s.pm_flags |= G3PMF_DUCKED;
+    } else if (pm->cmd.upmove < 0 && (pm->s.pm_flags & G3PMF_ON_GROUND)) {
         // duck
-        pm->s.pm_flags |= PMF_DUCKED;
+        pm->s.pm_flags |= G3PMF_DUCKED;
     } else {
         // stand up if possible
-        if (pm->s.pm_flags & PMF_DUCKED) {
+        if (pm->s.pm_flags & G3PMF_DUCKED) {
             // try to stand up
             pm->maxs[2] = 32;
             trace = pm->trace(pml.origin, pm->mins, pm->maxs, pml.origin);
             if (!trace.allsolid)
-                pm->s.pm_flags &= ~PMF_DUCKED;
+                pm->s.pm_flags &= ~G3PMF_DUCKED;
         }
     }
 
-    if (pm->s.pm_flags & PMF_DUCKED) {
+    if (pm->s.pm_flags & G3PMF_DUCKED) {
         pm->maxs[2] = 4;
         pm->viewheight = -2;
     } else {
@@ -1002,7 +1002,7 @@ static void PM_ClampAngles(void)
     short   temp;
     int     i;
 
-    if (pm->s.pm_flags & PMF_TIME_TELEPORT) {
+    if (pm->s.pm_flags & G3PMF_TIME_TELEPORT) {
         pm->viewangles[YAW] = SHORT2ANGLE(pm->cmd.angles[YAW] + pm->s.delta_angles[YAW]);
         pm->viewangles[PITCH] = 0;
         pm->viewangles[ROLL] = 0;
@@ -1091,20 +1091,20 @@ void game3_Pmove(game3_pmove_t *pmove, pmoveParams_t *params)
         if (!msec)
             msec = 1;
         if (msec >= pm->s.pm_time) {
-            pm->s.pm_flags &= ~(PMF_TIME_WATERJUMP | PMF_TIME_LAND | PMF_TIME_TELEPORT);
+            pm->s.pm_flags &= ~(G3PMF_TIME_WATERJUMP | G3PMF_TIME_LAND | G3PMF_TIME_TELEPORT);
             pm->s.pm_time = 0;
         } else
             pm->s.pm_time -= msec;
     }
 
-    if (pm->s.pm_flags & PMF_TIME_TELEPORT) {
+    if (pm->s.pm_flags & G3PMF_TIME_TELEPORT) {
         // teleport pause stays exactly in place
-    } else if (pm->s.pm_flags & PMF_TIME_WATERJUMP) {
+    } else if (pm->s.pm_flags & G3PMF_TIME_WATERJUMP) {
         // waterjump has no control, but falls
         pml.velocity[2] -= pm->s.gravity * pml.frametime;
         if (pml.velocity[2] < 0) {
             // cancel as soon as we are falling down again
-            pm->s.pm_flags &= ~(PMF_TIME_WATERJUMP | PMF_TIME_LAND | PMF_TIME_TELEPORT);
+            pm->s.pm_flags &= ~(G3PMF_TIME_WATERJUMP | G3PMF_TIME_LAND | G3PMF_TIME_TELEPORT);
             pm->s.pm_time = 0;
         }
 

@@ -70,19 +70,59 @@ static inline game3_pmtype_t pmtype_to_game3(pmtype_t pmtype)
     return (game3_pmtype_t)pmtype;
 }
 
-/* TODO: These are pmflags as defined by Q2PRO;
- * need translation to "new" values */
-#if 0
 // pmove->pm_flags
-#define PMF_DUCKED          BIT(0)
-#define PMF_JUMP_HELD       BIT(1)
-#define PMF_ON_GROUND       BIT(2)
-#define PMF_TIME_WATERJUMP  BIT(3)      // pm_time is waterjump
-#define PMF_TIME_LAND       BIT(4)      // pm_time is time before rejump
-#define PMF_TIME_TELEPORT   BIT(5)      // pm_time is non-moving time
-#define PMF_NO_PREDICTION   BIT(6)      // temporarily disables prediction (used for grappling hook)
-#define PMF_TELEPORT_BIT    BIT(7)      // used by Q2PRO (non-extended servers)
-#endif
+#define G3PMF_DUCKED          BIT(0)
+#define G3PMF_JUMP_HELD       BIT(1)
+#define G3PMF_ON_GROUND       BIT(2)
+#define G3PMF_TIME_WATERJUMP  BIT(3)      // pm_time is waterjump
+#define G3PMF_TIME_LAND       BIT(4)      // pm_time is time before rejump
+#define G3PMF_TIME_TELEPORT   BIT(5)      // pm_time is non-moving time
+#define G3PMF_NO_PREDICTION   BIT(6)      // temporarily disables prediction (used for grappling hook)
+#define G3PMF_TELEPORT_BIT    BIT(7)      // used by Q2PRO (non-extended servers)
+
+static inline pmflags_t pmflags_from_game3(byte pmflags)
+{
+    pmflags_t new_pmflags = 0;
+    if(pmflags & G3PMF_DUCKED)
+        new_pmflags |= PMF_DUCKED;
+    if(pmflags & G3PMF_JUMP_HELD)
+        new_pmflags |= PMF_JUMP_HELD;
+    if(pmflags & G3PMF_ON_GROUND)
+        new_pmflags |= PMF_ON_GROUND;
+    if(pmflags & G3PMF_TIME_WATERJUMP)
+        new_pmflags |= PMF_TIME_WATERJUMP;
+    if(pmflags & G3PMF_TIME_LAND)
+        new_pmflags |= PMF_TIME_LAND;
+    if(pmflags & G3PMF_TIME_TELEPORT)
+        new_pmflags |= PMF_TIME_TELEPORT;
+    if(pmflags & G3PMF_NO_PREDICTION)
+        new_pmflags |= PMF_NO_PREDICTION;
+    if(pmflags & G3PMF_TELEPORT_BIT)
+        new_pmflags |= PMF_TELEPORT_BIT;
+    return new_pmflags;
+}
+
+static inline byte pmflags_to_game3(pmflags_t pmflags)
+{
+    byte new_pmflags = 0;
+    if(pmflags & PMF_DUCKED)
+        new_pmflags |= G3PMF_DUCKED;
+    if(pmflags & PMF_JUMP_HELD)
+        new_pmflags |= G3PMF_JUMP_HELD;
+    if(pmflags & PMF_ON_GROUND)
+        new_pmflags |= G3PMF_ON_GROUND;
+    if(pmflags & PMF_TIME_WATERJUMP)
+        new_pmflags |= G3PMF_TIME_WATERJUMP;
+    if(pmflags & PMF_TIME_LAND)
+        new_pmflags |= G3PMF_TIME_LAND;
+    if(pmflags & PMF_TIME_TELEPORT)
+        new_pmflags |= G3PMF_TIME_TELEPORT;
+    if(pmflags & PMF_NO_PREDICTION)
+        new_pmflags |= G3PMF_NO_PREDICTION;
+    if(pmflags & PMF_TELEPORT_BIT)
+        new_pmflags |= G3PMF_TELEPORT_BIT;
+    return new_pmflags;
+}
 
 typedef struct {
     game3_pmtype_t pm_type;
