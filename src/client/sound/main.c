@@ -149,7 +149,7 @@ void S_Init(void)
 #if USE_DEBUG
     s_show = Cvar_Get("s_show", "0", 0);
 #endif
-    s_auto_focus = Cvar_Get("s_auto_focus", "0", 0);
+    s_auto_focus = Cvar_Get("s_auto_focus", "2", 0);
     s_underwater = Cvar_Get("s_underwater", "1", 0);
     s_underwater_gain_hf = Cvar_Get("s_underwater_gain_hf", "0.25", 0);
 
