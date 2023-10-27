@@ -190,7 +190,7 @@ void CL_PredictMovement(void)
 {
     unsigned    ack, current, frame;
     pmove_t     pm;
-    int         step, oldz;
+    int         step;
 
     if (cls.state != ca_active) {
         return;
@@ -273,9 +273,9 @@ void CL_PredictMovement(void)
 
     if (pm.s.pm_type != PM_SPECTATOR) {
         // Step detection
-        oldz = cl.predicted_origins[first_ack & CMD_MASK][2];
+        float oldz = cl.predicted_origins[frame & CMD_MASK][2];
         step = pm.s.origin[2] - oldz;
-        float fabsStep = fabs( step );
+        float fabsStep = fabsf( step );
         // Consider a Z change being "stepping" if...
         bool step_detected = (fabsStep > 1 && fabsStep < 20) // absolute change is in this limited range
             && ((cl.frame.ps.pmove.pm_flags & PMF_ON_GROUND) || pm.step_clip) // and we started off on the ground
