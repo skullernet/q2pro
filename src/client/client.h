@@ -148,6 +148,10 @@ typedef struct {
 #define CL_KEYLERPFRAC  cl.lerpfrac
 #endif
 
+// Time over which step climbing is smoothed
+#define STEP_TIME       100
+
+
 //
 // the client_state_t structure is wiped completely at every
 // server map change
@@ -181,6 +185,9 @@ typedef struct client_state_s {
     int8_t      current_viewheight; // current viewheight from client Pmove()
     int8_t      prev_viewheight;    // viewheight before last change
     int         viewheight_change_time; // time when a viewheight change was detected
+
+    edict_t     *last_groundentity; // last groundentity reported by pmove
+    cplane_t    last_groundplane; // last groundplane reported by pmove
 
     // rebuilt each valid frame
     centity_t       *solidEntities[MAX_PACKET_ENTITIES];

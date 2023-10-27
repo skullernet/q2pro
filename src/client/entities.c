@@ -1343,11 +1343,11 @@ void CL_CalcViewValues(void)
         VectorMA(cl.predicted_origin, backlerp, cl.prediction_error, cl.refdef.vieworg);
 
         // smooth out stair climbing
-        if (cl.predicted_step < 127 * 0.125f) {
+        if (fabsf(cl.predicted_step) < (127 * 0.125f) / cl.sv_framediv) {
             delta <<= 1; // small steps
         }
-        if (delta < 100) {
-            cl.refdef.vieworg[2] -= cl.predicted_step * (100 - delta) * 0.01f;
+        if (delta < STEP_TIME) {
+            cl.refdef.vieworg[2] -= cl.predicted_step * (STEP_TIME - delta) * (1.f / STEP_TIME);
         }
     } else {
         int i;

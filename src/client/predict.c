@@ -188,6 +188,8 @@ void CL_PredictAngles(void)
     cl.predicted_angles[2] = cl.viewangles[2] + cl.frame.ps.pmove.delta_angles[2];
 }
 
+#define	MAX_STEP_CHANGE 32
+
 void CL_PredictMovement(void)
 {
     unsigned    ack, current, frame;
@@ -272,13 +274,31 @@ void CL_PredictMovement(void)
         frame = current - 1;
     }
 
-    if (pm.s.pm_type != PM_SPECTATOR && (pm.s.pm_flags & PMF_ON_GROUND)) {
+    if (pm.s.pm_type != PM_SPECTATOR) {
+        // Step detection
         oldz = cl.predicted_origins[cl.predicted_step_frame & CMD_MASK][2];
-        step = (pm.s.origin[2] - oldz) * 8;
-        if (step > 63 && step < 160) {
-            cl.predicted_step = step * 0.125f;
+        step = pm.s.origin[2] - oldz;
+        float fabsStep = fabs( step );
+        // Consider a Z change being "stepping" if...
+        bool step_detected = (fabsStep > 1 && fabsStep < 20) // absolute change is in this limited range
+            && ((cl.frame.ps.pmove.pm_flags & PMF_ON_GROUND) || pm.step_clip) // and we started off on the ground
+            && ((pm.s.pm_flags & PMF_ON_GROUND) && pm.s.pm_type <= PM_GRAPPLE) // and are still predicted to be on the ground
+            && (memcmp(&cl.last_groundplane, &pm.groundplane, sizeof(cplane_t)) != 0
+                || cl.last_groundentity != pm.groundentity);                   // and don't stand on another plane or entity
+        if (step_detected) {
+            // Code below adapted from Q3A.
+            // check for stepping up before a previous step is completed
+            float delta = cls.realtime - cl.predicted_step_time;
+            float old_step;
+            if (delta < STEP_TIME) {
+                old_step = cl.predicted_step * (STEP_TIME - delta) / STEP_TIME;
+            } else {
+                old_step = 0;
+            }
+
+            // add this amount
+            cl.predicted_step = constclamp(old_step + step, -MAX_STEP_CHANGE, MAX_STEP_CHANGE);
             cl.predicted_step_time = cls.realtime;
-            cl.predicted_step_frame = frame + 1;    // don't double step
         }
     }
 
@@ -299,4 +319,7 @@ void CL_PredictMovement(void)
         cl.current_viewheight = pm.s.viewheight;
         cl.viewheight_change_time = cl.time;
     }
+
+    cl.last_groundplane = pm.groundplane;
+    cl.last_groundentity = pm.groundentity;
 }
