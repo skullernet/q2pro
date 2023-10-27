@@ -331,37 +331,33 @@ static void KeyClear(kbutton_t *b)
 
 static void IN_KLookDown(void) { KeyDown(&in_klook); }
 static void IN_KLookUp(void) { KeyUp(&in_klook); }
-static void IN_UpDown(void)
-{
-    KeyDown(&in_up);
 
+static inline void CL_CheckInstantPacket(void)
+{
     if (cl_instantpacket->integer && cls.state == ca_active && !cls.demo.playback) {
         cl.sendPacketNow = true;
     }
+}
+
+static void IN_UpDown(void)
+{
+    KeyDown(&in_up);
+    CL_CheckInstantPacket();
 }
 static void IN_UpUp(void)
 {
     KeyUp(&in_up);
-
-    if (cl_instantpacket->integer && cls.state == ca_active && !cls.demo.playback) {
-        cl.sendPacketNow = true;
-    }
+    CL_CheckInstantPacket();
 }
 static void IN_DownDown(void)
 {
     KeyDown(&in_down);
-
-    if (cl_instantpacket->integer && cls.state == ca_active && !cls.demo.playback) {
-        cl.sendPacketNow = true;
-    }
+    CL_CheckInstantPacket();
 }
 static void IN_DownUp(void)
 {
     KeyUp(&in_down);
-
-    if (cl_instantpacket->integer && cls.state == ca_active && !cls.demo.playback) {
-        cl.sendPacketNow = true;
-    }
+    CL_CheckInstantPacket();
 }
 static void IN_LeftDown(void) { KeyDown(&in_left); }
 static void IN_LeftUp(void) { KeyUp(&in_left); }
@@ -387,10 +383,7 @@ static void IN_StrafeUp(void) { KeyUp(&in_strafe); }
 static void IN_AttackDown(void)
 {
     KeyDown(&in_attack);
-
-    if (cl_instantpacket->integer && cls.state == ca_active && !cls.demo.playback) {
-        cl.sendPacketNow = true;
-    }
+    CL_CheckInstantPacket();
 }
 
 static void IN_AttackUp(void)
@@ -401,10 +394,7 @@ static void IN_AttackUp(void)
 static void IN_UseDown(void)
 {
     KeyDown(&in_use);
-
-    if (cl_instantpacket->integer && cls.state == ca_active && !cls.demo.playback) {
-        cl.sendPacketNow = true;
-    }
+    CL_CheckInstantPacket();
 }
 
 static void IN_UseUp(void)
