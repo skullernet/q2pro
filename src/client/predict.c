@@ -60,10 +60,6 @@ void CL_CheckPredictionError(void)
     SHOWMISS("prediction miss on %i: %i (%d %d %d)\n",
              cl.frame.number, len, delta[0], delta[1], delta[2]);
 
-    // don't predict steps against server returned data
-    if (cl.predicted_step_frame <= cmd)
-        cl.predicted_step_frame = cmd + 1;
-
     VectorCopy(cl.frame.ps.pmove.origin, cl.predicted_origins[cmd & CMD_MASK]);
 
     // save for error interpolation
@@ -216,6 +212,7 @@ void CL_PredictMovement(void)
 
     ack = cl.history[cls.netchan.incoming_acknowledged & CMD_MASK].cmdNumber;
     current = cl.cmdNumber;
+    unsigned int first_ack = ack;
 
     // if we are too far out of date, just freeze
     if (current - ack > CMD_BACKUP - 1) {
@@ -276,7 +273,7 @@ void CL_PredictMovement(void)
 
     if (pm.s.pm_type != PM_SPECTATOR) {
         // Step detection
-        oldz = cl.predicted_origins[cl.predicted_step_frame & CMD_MASK][2];
+        oldz = cl.predicted_origins[first_ack & CMD_MASK][2];
         step = pm.s.origin[2] - oldz;
         float fabsStep = fabs( step );
         // Consider a Z change being "stepping" if...
@@ -300,10 +297,6 @@ void CL_PredictMovement(void)
             cl.predicted_step = constclamp(old_step + step, -MAX_STEP_CHANGE, MAX_STEP_CHANGE);
             cl.predicted_step_time = cls.realtime;
         }
-    }
-
-    if (cl.predicted_step_frame < frame) {
-        cl.predicted_step_frame = frame;
     }
 
     // copy results out for rendering
