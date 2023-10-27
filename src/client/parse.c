@@ -705,8 +705,8 @@ static void CL_ParseServerData(void)
         // FIXME: These shouldn't really matter, as pmove should be handled by the game/client library...
         read_q2pro_protocol_flags();
         cl.csr = cs_remap_rerelease;
-        cl.psFlags |= MSG_PS_FLOAT_COORDS | MSG_PS_NEW_STATS;
-        cl.esFlags |= MSG_ES_FLOAT_COORDS;
+        cl.psFlags |= MSG_PS_RERELEASE;
+        cl.esFlags |= MSG_ES_RERELEASE;
         int32_t rate = MSG_ReadByte();
         cl.sv_frametime = (1.0f / rate) * 1000;
         cl.sv_frametime_inv = 1.0f / cl.sv_frametime;
@@ -767,7 +767,7 @@ snd_params_t    snd;
 
 static void CL_ParseTEntPacket(void)
 {
-    bool float_coords = cl.esFlags & MSG_ES_FLOAT_COORDS;
+    bool float_coords = cl.esFlags & MSG_ES_RERELEASE;
     te.type = MSG_ReadByte();
 
     switch (te.type) {
@@ -968,7 +968,7 @@ static void CL_ParseStartSoundPacket(void)
 
     // positioned in space
     if (flags & SND_POS)
-        MSG_ReadPos(snd.pos, cl.esFlags & MSG_ES_FLOAT_COORDS);
+        MSG_ReadPos(snd.pos, cl.esFlags & MSG_ES_RERELEASE);
 
     snd.flags = flags;
 
@@ -1375,7 +1375,7 @@ static void CL_ParseHelpPath(void)
 {
     bool first_entry = !!MSG_ReadByte();
     vec3_t pos;
-    MSG_ReadPos(pos, cl.esFlags & MSG_ES_FLOAT_COORDS);
+    MSG_ReadPos(pos, cl.esFlags & MSG_ES_RERELEASE);
     vec3_t dir;
     MSG_ReadDir(dir);
 
@@ -1399,7 +1399,7 @@ static void CL_ParsePOI(void)
     // be used on reliable messages.
     int time = MSG_ReadShort();
     vec3_t p;
-    MSG_ReadPos(p, cl.esFlags & MSG_ES_FLOAT_COORDS);
+    MSG_ReadPos(p, cl.esFlags & MSG_ES_RERELEASE);
     int image = MSG_ReadShort();
     int color = MSG_ReadByte();
     int flags = MSG_ReadByte();

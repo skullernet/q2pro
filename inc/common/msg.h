@@ -77,10 +77,11 @@ typedef enum {
     MSG_PS_IGNORE_DELTAANGLES   = BIT(4),   // ignore delta_angles
     MSG_PS_IGNORE_PREDICTION    = BIT(5),   // mutually exclusive with IGNORE_VIEWANGLES
     MSG_PS_EXTENSIONS           = BIT(6),   // enable protocol extensions
-    MSG_PS_FLOAT_COORDS         = BIT(7),   // floating point coordinates
-    MSG_PS_NEW_STATS            = BIT(8),   // increased stats numbers
-    MSG_PS_FORCE                = BIT(9),   // send even if unchanged (MVD stream only)
-    MSG_PS_REMOVE               = BIT(10),  // player is removed (MVD stream only)
+    MSG_PS_RERELEASE            = BIT(7),   // rerelease extensions: floating point coordinates,
+                                            // increased stats numbers,
+                                            // wider pm_time and pm_flags
+    MSG_PS_FORCE                = BIT(8),   // send even if unchanged (MVD stream only)
+    MSG_PS_REMOVE               = BIT(9),  // player is removed (MVD stream only)
 } msgPsFlags_t;
 
 typedef enum {
@@ -92,7 +93,7 @@ typedef enum {
     MSG_ES_BEAMORIGIN   = BIT(5),   // client has RF_BEAM old_origin fix
     MSG_ES_SHORTANGLES  = BIT(6),   // higher precision angles encoding
     MSG_ES_EXTENSIONS   = BIT(7),   // enable protocol extensions
-    MSG_ES_FLOAT_COORDS = BIT(8),   // floating point coordinates
+    MSG_ES_RERELEASE    = BIT(8),   // rerelease extensions: floating point coordinates
     MSG_ES_REMOVE       = BIT(9),   // entity is removed (MVD stream only)
 } msgEsFlags_t;
 

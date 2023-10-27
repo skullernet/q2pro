@@ -279,7 +279,7 @@ void SV_WriteFrameToClient_Enhanced(client_t *client)
     }
     suppressed = client->frameflags;
     psFlags |= MSG_PS_EXTENSIONS;
-    psFlags |= MSG_PS_FLOAT_COORDS | MSG_PS_NEW_STATS;
+    psFlags |= MSG_PS_RERELEASE;
 
     // delta encode the playerstate
     extraflags = MSG_WriteDeltaPlayerstate_Enhanced(oldstate, &frame->ps, psFlags);

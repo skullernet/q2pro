@@ -952,7 +952,7 @@ static void init_pmove_and_es_flags(client_t *newcl)
     if (svs.csr.extended) {
         newcl->esFlags |= MSG_ES_EXTENSIONS;
     }
-    newcl->esFlags |= MSG_ES_FLOAT_COORDS;
+    newcl->esFlags |= MSG_ES_RERELEASE;
     newcl->pmp.waterhack = sv_waterjump_hack->integer >= 1;
 }
 
