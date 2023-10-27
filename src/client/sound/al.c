@@ -107,6 +107,11 @@ static bool AL_Init(void)
     if (s_source_spatialize)
         qalSourcei(s_stream, AL_SOURCE_SPATIALIZE_SOFT, AL_FALSE);
 
+    if (qalIsExtensionPresent("AL_SOFT_direct_channels_remix"))
+        qalSourcei(s_stream, AL_DIRECT_CHANNELS_SOFT, AL_REMIX_UNMATCHED_SOFT);
+    else if (qalIsExtensionPresent("AL_SOFT_direct_channels"))
+        qalSourcei(s_stream, AL_DIRECT_CHANNELS_SOFT, AL_TRUE);
+
     // init underwater filter
     if (qalGenFilters && qalGetEnumValue("AL_FILTER_LOWPASS")) {
         qalGenFilters(1, &s_underwater_filter);

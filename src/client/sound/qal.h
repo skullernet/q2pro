@@ -34,6 +34,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define QALAPI extern
 #endif
 
+#ifndef AL_SOFT_direct_channels_remix
+#define AL_REMIX_UNMATCHED_SOFT     0x0002
+#endif
+
 // AL 1.1
 QALAPI LPALBUFFERDATA qalBufferData;
 QALAPI LPALBUFFERIV qalBufferiv;
