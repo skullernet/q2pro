@@ -432,7 +432,7 @@ static void game_pmove_state_to_server(pmove_state_t* server_pmove_state, const 
     VectorScale(game_pmove_state->origin, 0.125f, server_pmove_state->origin);
     VectorScale(game_pmove_state->velocity, 0.125f, server_pmove_state->velocity);
     server_pmove_state->pm_flags = game_pmove_state->pm_flags;
-    server_pmove_state->pm_time = game_pmove_state->pm_type;
+    server_pmove_state->pm_time = game_pmove_state->pm_time;
     server_pmove_state->gravity = game_pmove_state->gravity;
     server_pmove_state->delta_angles[0] = SHORT2ANGLE(game_pmove_state->delta_angles[0]);
     server_pmove_state->delta_angles[1] = SHORT2ANGLE(game_pmove_state->delta_angles[1]);
