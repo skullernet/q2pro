@@ -67,7 +67,7 @@ void CL_CheckPredictionError(void)
     VectorCopy(cl.frame.ps.pmove.origin, cl.predicted_origins[cmd & CMD_MASK]);
 
     // save for error interpolation
-    VectorScale(delta, 0.125f, cl.prediction_error);
+    VectorCopy(delta, cl.prediction_error);
 }
 
 /*
