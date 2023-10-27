@@ -1224,6 +1224,129 @@ static void scr_scale_changed(cvar_t *self)
     scr.hud_scale = R_ClampScale(self);
 }
 
+
+//============================================================================
+
+typedef struct stat_reg_s stat_reg_t;
+
+typedef struct stat_reg_s {
+    char        name[MAX_QPATH];
+    xcommand_t  cb;
+
+    stat_reg_t  *next;
+} stat_reg_t;
+
+static const stat_reg_t *stat_active;
+static stat_reg_t *stat_head;
+
+struct {
+    int x, y;
+    int key_width, value_width;
+    int key_id;
+} stat_state;
+
+void SCR_RegisterStat(const char *name, xcommand_t cb)
+{
+    stat_reg_t *reg = Z_TagMalloc(sizeof(stat_reg_t), TAG_CMD);
+    reg->next = stat_head;
+    Q_strlcpy(reg->name, name, sizeof(reg->name));
+    reg->cb = cb;
+    stat_head = reg;
+}
+
+void SCR_UnregisterStat(const char *name)
+{
+    stat_reg_t **rover = &stat_head;
+
+    while (*rover) {
+        if (!strcmp((*rover)->name, name)) {
+            stat_reg_t *s = *rover;
+            *rover = s->next;
+
+            if (stat_active == s)
+                stat_active = NULL;
+
+            Z_Free(s);
+            return;
+        }
+
+        rover = &(*rover)->next;
+    }
+
+    Com_EPrintf("can't unregister missing stat \"%s\"\n", name);
+}
+
+static void SCR_SetActive(const char *name)
+{
+    stat_reg_t *rover = stat_head;
+
+    while (rover) {
+        if (!strcmp(rover->name, name)) {
+            stat_active = rover;
+            return;
+        }
+
+        rover = rover->next;
+    }
+}
+
+void SCR_StatTableSize(int key_width, int value_width)
+{
+    stat_state.key_width = key_width;
+    stat_state.value_width = value_width;
+}
+
+#define STAT_MARGIN 1
+
+void SCR_StatKeyValue(const char *key, const char *value)
+{
+    int c = (stat_state.key_id & 1) ? 24 : 0;
+    R_DrawFill32(stat_state.x, stat_state.y, CHAR_WIDTH * (stat_state.key_width + stat_state.value_width) + (STAT_MARGIN * 2), CHAR_HEIGHT + (STAT_MARGIN * 2), MakeColor(c, c, c, 127));
+    SCR_DrawString(stat_state.x + STAT_MARGIN, stat_state.y + STAT_MARGIN, UI_DROPSHADOW, key);
+    stat_state.x += CHAR_WIDTH * stat_state.key_width;
+    SCR_DrawString(stat_state.x + STAT_MARGIN, stat_state.y + STAT_MARGIN, UI_DROPSHADOW, value);
+
+    stat_state.x = 24;
+    stat_state.y += CHAR_HEIGHT + (STAT_MARGIN * 2);
+    stat_state.key_id++;
+}
+
+static void SCR_DrawStats(void)
+{
+    if (!stat_active)
+        return;
+
+    stat_state.x = 24;
+    stat_state.y = 24;
+    stat_state.key_id = 0;
+
+    SCR_StatTableSize(31, 32);
+
+    stat_active->cb();
+}
+
+static void SCR_Stat_g(genctx_t *ctx)
+{
+    if (!stat_head)
+        return;
+
+    for (stat_reg_t *stat = stat_head; stat; stat = stat->next) {
+        Prompt_AddMatch(ctx, stat->name);
+    }
+}
+
+static void SCR_Stat_c(genctx_t *ctx, int argnum)
+{
+    if (argnum == 1) {
+        SCR_Stat_g(ctx);
+    }
+}
+
+static void SCR_Stat_f(void)
+{
+    SCR_SetActive(Cmd_Argv(1));
+}
+
 static const cmdreg_t scr_cmds[] = {
     { "timerefresh", SCR_TimeRefresh_f },
     { "sizeup", SCR_SizeUp_f },
@@ -1232,6 +1355,7 @@ static const cmdreg_t scr_cmds[] = {
     { "draw", SCR_Draw_f, SCR_Draw_c },
     { "undraw", SCR_UnDraw_f, SCR_UnDraw_c },
     { "clearchathud", SCR_ClearChatHUD_f },
+    { "stat", SCR_Stat_f, SCR_Stat_c },
     { NULL }
 };
 
@@ -1818,6 +1942,8 @@ static void SCR_Draw2D(void)
     SCR_DrawTurtle();
 
     SCR_DrawPause();
+
+    SCR_DrawStats();
 
     // debug stats have no alpha
     R_ClearColor();

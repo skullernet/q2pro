@@ -28,6 +28,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MIN_CHANNELS    16
 
 static cvar_t       *al_reverb;
+static cvar_t       *al_reverb_lerp_time;
 
 static ALuint       s_srcnums[MAX_CHANNELS];
 static ALuint       s_stream;
@@ -275,7 +276,7 @@ static void AL_UpdateReverb(void)
         }
 
         s_reverb_lerp_start = cl.time;
-        s_reverb_lerp_time = cl.time + 1000;
+        s_reverb_lerp_time = cl.time + (al_reverb_lerp_time->value * 1000);
         memcpy(&s_reverb_lerp_to, &s_reverb_parameters[s_reverb_current_preset], sizeof(s_active_reverb));
     }
 
@@ -604,6 +605,40 @@ free_temp:
     JSON_Free(tokens);
 }
 
+static void AL_Reverb_stat(void)
+{
+    SCR_StatKeyValue("dimensions", va("%g", s_reverb_probe_avg));
+    SCR_StatKeyValue("env dim", va("%g", s_reverb_active_environment->dimension));
+    SCR_StatKeyValue("preset", s_reverb_names[s_reverb_current_preset]);
+
+#define AL_STATF(e) SCR_StatKeyValue(#e, va("%g", s_reverb_lerp_result.e))
+#define AL_STATI(e) SCR_StatKeyValue(#e, va("%d", s_reverb_lerp_result.e))
+    
+    AL_STATF(flDensity);
+    AL_STATF(flDiffusion);
+    AL_STATF(flGain);
+    AL_STATF(flGainHF);
+    AL_STATF(flGainLF);
+    AL_STATF(flDecayTime);
+    AL_STATF(flDecayHFRatio);
+    AL_STATF(flDecayLFRatio);
+    AL_STATF(flReflectionsGain);
+    AL_STATF(flReflectionsDelay);
+    AL_STATF(flLateReverbGain);
+    AL_STATF(flLateReverbDelay);
+    AL_STATF(flEchoTime);
+    AL_STATF(flEchoDepth);
+    AL_STATF(flModulationTime);
+    AL_STATF(flModulationDepth);
+    AL_STATF(flAirAbsorptionGainHF);
+    AL_STATF(flHFReference);
+    AL_STATF(flLFReference);
+    AL_STATF(flRoomRolloffFactor);
+    AL_STATI(iDecayHFLimit);
+
+    SCR_StatKeyValue("lerp", !s_reverb_lerp_time ? "none" : va("%g", constclamp((cl.time - (float) s_reverb_lerp_start) / (s_reverb_lerp_time - (float) s_reverb_lerp_start), 0.0f, 1.0f)));
+}
+
 static void AL_StreamStop(void);
 
 static void AL_SoundInfo(void)
@@ -701,6 +736,9 @@ static bool AL_Init(void)
 
     al_reverb = Cvar_Get("al_reverb", "1", 0);
     al_reverb->changed = al_reverb_changed;
+    al_reverb_lerp_time = Cvar_Get("al_reverb_lerp_time", "3.0", 0);
+
+    SCR_RegisterStat("al_reverb", AL_Reverb_stat);
 
     Com_Printf("OpenAL initialized.\n");
     return true;
@@ -750,6 +788,8 @@ static void AL_Shutdown(void)
 
     s_underwater_flag = false;
     s_underwater_gain_hf->changed = NULL;
+
+    SCR_UnregisterStat("al_reverb");
 
     QAL_Shutdown();
 }

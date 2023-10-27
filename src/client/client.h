@@ -1049,6 +1049,11 @@ void    SCR_RemovePOI(int id);
 void    SCR_AddPOI(int id, int time, const vec3_t p, int image, int color, int flags);
 void    SCR_Clear(void);
 
+void    SCR_RegisterStat(const char *name, xcommand_t cb);
+void    SCR_UnregisterStat(const char *name);
+void    SCR_StatTableSize(int key_width, int value_width);
+void    SCR_StatKeyValue(const char *key, const char *value);
+
 //
 // cin.c
 //
