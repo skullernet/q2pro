@@ -38,6 +38,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MIN_MENU_ITEMS  64
 #define MAX_MENU_ITEMS  250000000
 
+#define UI_DEFAULT_FILE     APPLICATION ".menu"
+
 typedef enum {
     MTYPE_BAD,
     MTYPE_SLIDER,

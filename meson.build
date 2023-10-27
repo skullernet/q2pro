@@ -441,6 +441,19 @@ if get_option('client-gtv')
 endif
 
 if get_option('client-ui')
+
+  # embed q2pro.menu
+  prog_embed = find_program('embed.py')
+
+  run_command(
+    prog_embed,
+    'src/client/ui/q2pro.menu',
+    meson.project_build_root() / 'q2pro.menu.c',
+    'res_q2pro_menu',
+    check: true
+  )
+  client_src += meson.project_build_root() / 'q2pro.menu.c'
+
   client_src += ui_src
   config.set10('USE_UI', true)
   if system_wide
