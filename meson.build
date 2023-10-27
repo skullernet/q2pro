@@ -54,6 +54,7 @@ common_src = [
   'inc/common/field.h',
   'inc/common/fifo.h',
   'inc/common/files.h',
+  'inc/common/game3_shared.h',
   'inc/common/gamedll.h',
   'inc/common/hash_map.h',
   'inc/common/intreadwrite.h',

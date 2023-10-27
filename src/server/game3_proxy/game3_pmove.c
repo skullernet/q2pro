@@ -17,9 +17,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "shared/shared.h"
-#include "../server.h"
 #include "common/pmove.h"
-#include "game3.h"
+#include "common/game3_shared.h"
 #include "game3_pmove.h"
 
 #define STEPSIZE    18
