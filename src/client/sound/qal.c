@@ -102,6 +102,7 @@ static const alsection_t sections[] = {
 };
 
 static cvar_t   *al_device;
+static cvar_t   *al_allow_hrtf;
 
 static void *handle;
 static ALCdevice *device;
@@ -134,6 +135,8 @@ void QAL_Shutdown(void)
 
     if (al_device)
         al_device->flags &= ~CVAR_SOUND;
+    if (al_allow_hrtf)
+        al_allow_hrtf->flags &= ~CVAR_SOUND;
 }
 
 static const char *const al_drivers[] = {
@@ -151,6 +154,7 @@ bool QAL_Init(void)
     int i;
 
     al_device = Cvar_Get("al_device", "", 0);
+    al_allow_hrtf = Cvar_Get("al_allow_hrtf", "0", 0);
 
     for (i = 0; i < q_countof(al_drivers); i++) {
         Sys_LoadLibrary(al_drivers[i], NULL, &handle);
@@ -178,7 +182,15 @@ bool QAL_Init(void)
         goto fail;
     }
 
-    context = qalcCreateContext(device, NULL);
+    if (!al_allow_hrtf->integer && qalcIsExtensionPresent(device, "ALC_SOFT_HRTF")) {
+        ALCint attrs[] = {
+            ALC_HRTF_SOFT, ALC_FALSE,
+            0
+        };
+        context = qalcCreateContext(device, attrs);
+    } else {
+        context = qalcCreateContext(device, NULL);
+    }
     if (!context) {
         Com_SetLastError("alcCreateContext failed");
         goto fail;
@@ -214,6 +226,8 @@ bool QAL_Init(void)
     }
 
     al_device->flags |= CVAR_SOUND;
+    if (qalcIsExtensionPresent(device, "ALC_SOFT_HRTF"))
+        al_allow_hrtf->flags |= CVAR_SOUND;
 
     return true;
 

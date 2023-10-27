@@ -309,12 +309,15 @@ s_driver::
       - dsound — DirectSound
       - wave — Windows waveform audio
       - sdl — SDL2 audio
-      - oss — OSS audio
 
 al_device::
     Specifies the name of OpenAL device to use. Format of this value depends on
     your OpenAL implementation. Default value is empty, which means default
     sound output device is used.
+
+al_allow_hrtf::
+    Specifies if HRTF mixing is allowed when using OpenAL Soft. Default value
+    is 0 (disable HRTF). Values other than 0 use OpenAL Soft default setting.
 
 TIP: Using https://openal-soft.org/[OpenAL Soft] implementation of OpenAL is
 recommended.
