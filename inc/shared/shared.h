@@ -886,7 +886,9 @@ typedef struct {
 typedef enum {
     // can accelerate and turn
     PM_NORMAL,
-    PM_SPECTATOR,
+    PM_GRAPPLE, // [Paril-KEX] pull towards velocity, no gravity
+    PM_NOCLIP,
+    PM_SPECTATOR, // [Paril-KEX] clip against walls, but not entities
     // no acceleration or turning
     PM_DEAD,
     PM_GIB,     // different bounding box
@@ -894,18 +896,18 @@ typedef enum {
 } pmtype_t;
 
 // pmove->pm_flags
-#define PMF_DUCKED          BIT(0)
-#define PMF_JUMP_HELD       BIT(1)
-#define PMF_ON_GROUND       BIT(2)
-#define PMF_TIME_WATERJUMP  BIT(3)      // pm_time is waterjump
-#define PMF_TIME_LAND       BIT(4)      // pm_time is time before rejump
-#define PMF_TIME_TELEPORT   BIT(5)      // pm_time is non-moving time
-#define PMF_NO_PREDICTION   BIT(6)      // temporarily disables prediction (used for grappling hook)
-#define PMF_TELEPORT_BIT    BIT(7)      // used by Q2PRO (non-extended servers)
-
-//KEX
-#define PMF_IGNORE_PLAYER_COLLISION     BIT(7)
-//KEX
+#define PMF_DUCKED                      BIT(0)
+#define PMF_JUMP_HELD                   BIT(1)
+#define PMF_ON_GROUND                   BIT(2)
+#define PMF_TIME_WATERJUMP              BIT(3)  // pm_time is waterjump
+#define PMF_TIME_LAND                   BIT(4)  // pm_time is time before rejump
+#define PMF_TIME_TELEPORT               BIT(5)  // pm_time is non-moving time
+#define PMF_NO_PREDICTION               BIT(6)  // temporarily disables prediction (used for grappling hook)
+#define PMF_ON_LADDER                   BIT(7)  // signal to game that we are on a ladder
+#define PMF_NO_ANGULAR_PREDICTION       BIT(8)  // temporary disables angular prediction
+#define PMF_IGNORE_PLAYER_COLLISION     BIT(9)  // don't collide with other players
+#define PMF_TIME_TRICK                  BIT(10) // pm_time is trick jump time
+#define PMF_TELEPORT_BIT                BIT(15) // used by Q2PRO (non-extended servers)
 
 typedef uint16_t pmflags_t;
 

@@ -44,6 +44,32 @@ typedef struct game3_entity_state_s {
 
 typedef struct game3_edict_s game3_edict_t;
 
+/* TODO: These are pmtype, pmflags as defined by Q2PRO;
+ * need translation to "new" values */
+#if 0
+// pmove_state_t is the information necessary for client side movement
+// prediction
+typedef enum {
+    // can accelerate and turn
+    PM_NORMAL,
+    PM_SPECTATOR,
+    // no acceleration or turning
+    PM_DEAD,
+    PM_GIB,     // different bounding box
+    PM_FREEZE
+} pmtype_t;
+
+// pmove->pm_flags
+#define PMF_DUCKED          BIT(0)
+#define PMF_JUMP_HELD       BIT(1)
+#define PMF_ON_GROUND       BIT(2)
+#define PMF_TIME_WATERJUMP  BIT(3)      // pm_time is waterjump
+#define PMF_TIME_LAND       BIT(4)      // pm_time is time before rejump
+#define PMF_TIME_TELEPORT   BIT(5)      // pm_time is non-moving time
+#define PMF_NO_PREDICTION   BIT(6)      // temporarily disables prediction (used for grappling hook)
+#define PMF_TELEPORT_BIT    BIT(7)      // used by Q2PRO (non-extended servers)
+#endif
+
 typedef struct {
     pmtype_t    pm_type;
 
