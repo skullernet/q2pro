@@ -1037,7 +1037,7 @@ void Pmove(pmove_t *pmove, pmoveParams_t *params)
     pm->watertype = 0;
     pm->waterlevel = 0;
 
-    int contentmask = /*pm->player->health > 0 ?*/ MASK_PLAYERSOLID /*: MASK_DEADSOLID*/; // FIXME
+    int contentmask = pm->s.pm_type < PM_SPECTATOR ? MASK_PLAYERSOLID : MASK_DEADSOLID;
 
     // clear all pmove local vars
     memset(&pml, 0, sizeof(pml));
