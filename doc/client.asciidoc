@@ -315,9 +315,12 @@ al_device::
     your OpenAL implementation. Default value is empty, which means default
     sound output device is used.
 
-al_allow_hrtf::
+al_hrtf::
     Specifies if HRTF mixing is allowed when using OpenAL Soft. Default value
-    is 0 (disable HRTF). Values other than 0 use OpenAL Soft default setting.
+    is 0.
+      - 0 — force HRTF off
+      - 1 — use OpenAL Soft default setting
+      - 2 — force HRTF on
 
 TIP: Using https://openal-soft.org/[OpenAL Soft] implementation of OpenAL is
 recommended.
