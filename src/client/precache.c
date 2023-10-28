@@ -169,7 +169,7 @@ void CL_LoadClientinfo(clientinfo_t *ci, const char *s)
     // icon file
     Q_concat(icon_filename, sizeof(icon_filename),
              "/players/", model_name, "/", skin_name, "_i.pcx");
-    ci->icon = R_RegisterPic2(icon_filename);
+    ci->icon = R_RegisterTempPic(icon_filename);
 
     strcpy(ci->model_name, model_name);
     strcpy(ci->skin_name, skin_name);
@@ -334,7 +334,7 @@ static qhandle_t CL_RegisterImage(const char *s)
             return R_RegisterSkin(s);
     }
 
-    return R_RegisterPic2(s);
+    return R_RegisterTempPic(s);
 }
 
 /*

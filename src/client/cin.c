@@ -444,7 +444,7 @@ void SCR_ReloadCinematic(void)
     if (cin.pic) {
         R_UpdateRawPic(cin.width, cin.height, cin.pic);
     } else if (cl.mapname[0]) {
-        cin.static_pic = R_RegisterPic2(cl.mapname);
+        cin.static_pic = R_RegisterTempPic(cl.mapname);
         R_GetPicSize(&cin.width, &cin.height, cin.static_pic);
     }
 }
@@ -460,7 +460,7 @@ void SCR_PlayCinematic(const char *name)
     OGG_Stop();
 
     if (!COM_CompareExtension(name, ".pcx")) {
-        cin.static_pic = R_RegisterPic2(name);
+        cin.static_pic = R_RegisterTempPic(name);
         if (!cin.static_pic)
             goto finish;
         R_GetPicSize(&cin.width, &cin.height, cin.static_pic);

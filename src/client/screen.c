@@ -1716,7 +1716,7 @@ static void SCR_ExecuteLayoutString(const char *s)
         if (!strcmp(token, "picn")) {
             // draw a pic from a name
             token = COM_Parse(&s);
-            R_DrawPic(x, y, R_RegisterPic2(token));
+            R_DrawPic(x, y, R_RegisterTempPic(token));
             continue;
         }
 
