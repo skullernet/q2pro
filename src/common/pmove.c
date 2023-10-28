@@ -93,7 +93,7 @@ Does not modify any world state?
 #define MIN_STEP_NORMAL 0.7f    // can't step up onto very steep slopes
 #define MAX_CLIP_PLANES 5
 
-static void PM_StepSlideMove_(void)
+static void PM_StepSlideMove_(contents_t contentmask)
 {
     int         bumpcount, numbumps;
     vec3_t      dir;
@@ -117,7 +117,7 @@ static void PM_StepSlideMove_(void)
         for (i = 0; i < 3; i++)
             end[i] = pml.origin[i] + time_left * pml.velocity[i];
 
-        trace = pm->trace(pml.origin, pm->mins, pm->maxs, end, pm->player, MASK_PLAYERSOLID);
+        trace = pm->trace(pml.origin, pm->mins, pm->maxs, end, pm->player, contentmask);
 
         if (trace.allsolid) {
             // entity is trapped in another solid
@@ -199,7 +199,7 @@ PM_StepSlideMove
 
 ==================
 */
-static void PM_StepSlideMove(void)
+static void PM_StepSlideMove(contents_t contentmask)
 {
     vec3_t      start_o, start_v;
     vec3_t      down_o, down_v;
@@ -210,7 +210,7 @@ static void PM_StepSlideMove(void)
     VectorCopy(pml.origin, start_o);
     VectorCopy(pml.velocity, start_v);
 
-    PM_StepSlideMove_();
+    PM_StepSlideMove_(contentmask);
 
     VectorCopy(pml.origin, down_o);
     VectorCopy(pml.velocity, down_v);
@@ -218,7 +218,7 @@ static void PM_StepSlideMove(void)
     VectorCopy(start_o, up);
     up[2] += STEPSIZE;
 
-    trace = pm->trace(up, pm->mins, pm->maxs, up, pm->player, MASK_PLAYERSOLID);
+    trace = pm->trace(up, pm->mins, pm->maxs, up, pm->player, contentmask);
     if (trace.allsolid)
         return;     // can't step up
 
@@ -226,12 +226,12 @@ static void PM_StepSlideMove(void)
     VectorCopy(up, pml.origin);
     VectorCopy(start_v, pml.velocity);
 
-    PM_StepSlideMove_();
+    PM_StepSlideMove_(contentmask);
 
     // push down the final amount
     VectorCopy(pml.origin, down);
     down[2] -= STEPSIZE;
-    trace = pm->trace(pml.origin, pm->mins, pm->maxs, down, pm->player, MASK_PLAYERSOLID);
+    trace = pm->trace(pml.origin, pm->mins, pm->maxs, down, pm->player, contentmask);
     if (!trace.allsolid)
         VectorCopy(trace.endpos, pml.origin);
 
@@ -431,7 +431,7 @@ PM_WaterMove
 
 ===================
 */
-static void PM_WaterMove(void)
+static void PM_WaterMove(contents_t contentmask)
 {
     int     i;
     vec3_t  wishvel;
@@ -464,7 +464,7 @@ static void PM_WaterMove(void)
 
     PM_Accelerate(wishdir, wishspeed, pm_wateraccelerate);
 
-    PM_StepSlideMove();
+    PM_StepSlideMove(contentmask);
 }
 
 /*
@@ -473,7 +473,7 @@ PM_AirMove
 
 ===================
 */
-static void PM_AirMove(void)
+static void PM_AirMove(contents_t contentmask)
 {
     int         i;
     vec3_t      wishvel;
@@ -517,7 +517,7 @@ static void PM_AirMove(void)
                     pml.velocity[2] = 0;
             }
         }
-        PM_StepSlideMove();
+        PM_StepSlideMove(contentmask);
     } else if (pm->groundentity) {
         // walking on ground
         pml.velocity[2] = 0; //!!! this is before the accel
@@ -533,7 +533,7 @@ static void PM_AirMove(void)
 
         if (!pml.velocity[0] && !pml.velocity[1])
             return;
-        PM_StepSlideMove();
+        PM_StepSlideMove(contentmask);
     } else {
         // not on ground, so little effect on velocity
         if (pmp->airaccelerate)
@@ -542,7 +542,7 @@ static void PM_AirMove(void)
             PM_Accelerate(wishdir, wishspeed, 1);
         // add gravity
         pml.velocity[2] -= pm->s.gravity * pml.frametime;
-        PM_StepSlideMove();
+        PM_StepSlideMove(contentmask);
     }
 }
 
@@ -1108,14 +1108,14 @@ void Pmove(pmove_t *pmove, pmoveParams_t *params)
             pm->s.pm_time = 0;
         }
 
-        PM_StepSlideMove();
+        PM_StepSlideMove(contentmask);
     } else {
         PM_CheckJump();
 
         PM_Friction();
 
         if (pm->waterlevel >= 2)
-            PM_WaterMove();
+            PM_WaterMove(contentmask);
         else {
             vec3_t  angles;
 
@@ -1126,7 +1126,7 @@ void Pmove(pmove_t *pmove, pmoveParams_t *params)
 
             AngleVectors(angles, pml.forward, pml.right, pml.up);
 
-            PM_AirMove();
+            PM_AirMove(contentmask);
         }
     }
 
