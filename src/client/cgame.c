@@ -369,13 +369,14 @@ static bool CG_CL_InAutoDemoLoop(void)
 
 const cgame_export_t *cgame = NULL;
 static char *current_game = NULL;
+static int current_protocol;
 static void *cgame_library;
 
 typedef cgame_export_t *(*cgame_entry_t)(cgame_import_t *);
 
 void CG_Load(const char* new_game)
 {
-    if (!current_game || strcmp(current_game, new_game) != 0) {
+    if (!current_game || strcmp(current_game, new_game) != 0 || current_protocol != cls.serverProtocol) {
         cgame_import_t cgame_imports = {
             .tick_rate = 1000 / CL_FRAMETIME,
             .frame_time_s = CL_FRAMETIME * 0.001f,
@@ -434,11 +435,16 @@ void CG_Load(const char* new_game)
         };
 
         cgame_entry_t entry = NULL;
-        if (cgame_library)
-            Sys_FreeLibrary(cgame_library);
-        cgame_library = GameDll_Load();
-        if (cgame_library)
-            entry = Sys_GetProcAddress(cgame_library, "GetCGameAPI");
+        if (cls.serverProtocol == PROTOCOL_VERSION_RERELEASE) {
+            if (cgame_library)
+                Sys_FreeLibrary(cgame_library);
+            cgame_library = GameDll_Load();
+            if (cgame_library)
+                entry = Sys_GetProcAddress(cgame_library, "GetCGameAPI");
+        } else {
+            // if we're connected to a "classic" Q2PRO server, always use builtin cgame
+            entry = GetClassicCGameAPI;
+        }
 
         if(!entry) {
             // FIXME: Should probably be a fatal error
@@ -448,6 +454,7 @@ void CG_Load(const char* new_game)
 
         cgame = entry(&cgame_imports);
         current_game = Z_CopyString(new_game);
+        current_protocol = cls.serverProtocol;
     }
 }
 
