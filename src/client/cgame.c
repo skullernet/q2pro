@@ -98,10 +98,10 @@ static void CG_Print(const char *msg)
 
 static const char *CG_get_configstring(int index)
 {
-    if (index < 0 || index >= cs_remap_rerelease.end)
+    if (index < 0 || index >= cl.csr.end)
         Com_Error(ERR_DROP, "%s: bad index: %d", __func__, index);
 
-    return cl.configstrings[remap_cs_index(index, &cs_remap_rerelease, &cl.csr)];
+    return cl.configstrings[index];
 }
 
 static void CG_Com_Error(const char *message)
