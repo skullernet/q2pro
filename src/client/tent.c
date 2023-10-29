@@ -562,13 +562,16 @@ static void CL_AddExplosions(void)
             }
 
             ent->alpha = (16.0f - frac) / 16.0f;
+            ent->alpha = 1.0f - ent->alpha;
+            ent->alpha *= ent->alpha * ent->alpha;
+            ent->alpha = 1.0f - ent->alpha;
+            ent->flags |= RF_TRANSLUCENT;
 
             if (f < 10) {
                 ent->skinnum = (f >> 1);
                 if (ent->skinnum < 0)
                     ent->skinnum = 0;
             } else {
-                ent->flags |= RF_TRANSLUCENT;
                 if (f < 13)
                     ent->skinnum = 5;
                 else
