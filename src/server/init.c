@@ -210,7 +210,7 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     // set serverinfo variable
     SV_InfoSet("mapname", sv.name);
     SV_InfoSet("port", net_port->string);
-    SV_InfoSet("protocol", svs.csr.extended ? "36" : "34");
+    SV_InfoSet("protocol", STRINGIFY(PROTOCOL_VERSION_RERELEASE));
 
     Cvar_Set("sv_paused", "0");
     Cvar_Set("timedemo", "0");
