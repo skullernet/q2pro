@@ -447,9 +447,10 @@ void CG_Load(const char* new_game)
         }
 
         if(!entry) {
-            // FIXME: Should probably be a fatal error
-            Com_Printf("cgame functions not available, falling back to built-in cgame\n");
-            entry = GetClassicCGameAPI;
+            Com_Error(ERR_DROP, "cgame functions not available");
+            cgame = NULL;
+            Z_Freep(&current_game);
+            current_protocol = 0;
         }
 
         cgame = entry(&cgame_imports);
