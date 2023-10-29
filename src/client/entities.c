@@ -298,6 +298,13 @@ static void set_active_state(void)
         cl.predicted_rdflags = 0;
     }
 
+    cl.current_viewheight = 0;
+    cl.prev_viewheight = 0;
+    cl.viewheight_change_time = 0;
+
+    cl.last_groundentity = NULL;
+    memset(&cl.last_groundplane, 0, sizeof(cl.last_groundplane));
+
     SCR_EndLoadingPlaque();     // get rid of loading plaque
     SCR_LagClear();
     Con_Close(false);           // get rid of connection screen
