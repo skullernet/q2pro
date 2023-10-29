@@ -836,6 +836,15 @@ static void CGC_TouchPics(void)
     cgi.Draw_RegisterPic(inven_pic);
 }
 
+static void CGC_Pmove(pmove_t *pmove)
+{
+    Pmove(pmove, cgix.GetPmoveParams());
+
+    /* viewheight is now added to the viewoffset; this didn't happen in vanilla,
+     * so clear out the viewheight */
+    pmove->s.viewheight = 0;
+}
+
 static void CGC_ParseCenterPrint(const char *str, int isplit, bool instant)
 {
     const char  *s;
@@ -876,6 +885,8 @@ cgame_export_t cgame_classic = {
 
     .DrawHUD = CGC_DrawHUD,
     .TouchPics = CGC_TouchPics,
+
+    .Pmove = CGC_Pmove,
 
     .ParseCenterPrint = CGC_ParseCenterPrint,
     .ClearCenterprint = CGC_ClearCenterprint,

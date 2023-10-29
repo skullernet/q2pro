@@ -66,6 +66,11 @@ static void CGX_SetColor(uint32_t color)
     R_SetColor(new_color.u32);
 }
 
+static const pmoveParams_t* CGX_GetPmoveParams(void)
+{
+    return &cl.pmp;
+}
+
 static cgame_q2pro_extended_support_ext_t cgame_q2pro_extended_support = {
     .api_version = 1,
 
@@ -73,6 +78,7 @@ static cgame_q2pro_extended_support_ext_t cgame_q2pro_extended_support = {
     .ClearColor = CGX_ClearColor,
     .SetAlpha = CGX_SetAlpha,
     .SetColor = CGX_SetColor,
+    .GetPmoveParams = CGX_GetPmoveParams,
 };
 
 void CG_Init(void)

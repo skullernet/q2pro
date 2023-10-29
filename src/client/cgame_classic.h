@@ -17,6 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "shared/game.h"
+#include "common/pmove.h"
 
 // Extension structure to give classic cgame some extended features
 typedef struct {
@@ -29,6 +30,9 @@ typedef struct {
     void (*ClearColor)(void);
     void (*SetAlpha)(float alpha);
     void (*SetColor)(uint32_t color);
+
+    // Return pmove parameters for server
+    const pmoveParams_t *(*GetPmoveParams)(void);
 } cgame_q2pro_extended_support_ext_t;
 
 // Extension name
