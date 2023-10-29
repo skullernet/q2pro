@@ -825,6 +825,17 @@ static void CGC_DrawHUD (int32_t isplit, const cg_server_data_t *data, vrect_t h
     SCR_DrawCenterString(hud_vrect);
 }
 
+static void CGC_TouchPics(void)
+{
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < STAT_PICS; j++)
+            cgi.Draw_RegisterPic(sb_nums[i][j]);
+    }
+
+    cgi.Draw_RegisterPic(field_pic);
+    cgi.Draw_RegisterPic(inven_pic);
+}
+
 static void CGC_ParseCenterPrint(const char *str, int isplit, bool instant)
 {
     const char  *s;
@@ -864,6 +875,7 @@ cgame_export_t cgame_classic = {
     .Shutdown = CGC_Shutdown,
 
     .DrawHUD = CGC_DrawHUD,
+    .TouchPics = CGC_TouchPics,
 
     .ParseCenterPrint = CGC_ParseCenterPrint,
     .ClearCenterprint = CGC_ClearCenterprint,
