@@ -18,6 +18,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "gl.h"
 
+static cvar_t *gl_per_pixel_lighting;
+
 #define MAX_SHADER_CHARS    4096
 
 #define GLSL(x)     Q_strlcat(buf, #x "\n", MAX_SHADER_CHARS);
@@ -32,6 +34,7 @@ enum {
 };
 
 static void upload_u_block(void);
+static void upload_dlight_block(void);
 
 static void write_header(char *buf)
 {
@@ -59,34 +62,29 @@ static void write_block(char *buf)
         vec4 global_fog;
         vec4 height_fog_start;
         vec4 height_fog_end;
-        float height_fog_falloff; float height_fog_density;
+        float height_fog_falloff; float height_fog_density; int num_dlights;
     )
     GLSF("};\n");
 }
 
-#if 0
-    if (sky_classic) {
-        vec3_t dir;
-		VectorSubtract (out, glr.fd.vieworg, dir);
-		dir[2] *= 3;	// flatten the sphere
-
-		float length = dir[0]*dir[0] + dir[1]*dir[1] + dir[2]*dir[2];
-		length = sqrtf(length);
-		length = 6 * (63 / length);
-
-		dir[0] *= length;
-		dir[1] *= length;
-
-	    float speedscale = glr.fd.time * sky_classic_scroll;
-	    speedscale -= (int) speedscale & ~127 ;
-
-		s = (speedscale + dir[0]) * (1.0/128);
-		t = (speedscale + dir[1]) * (1.0/128);
-
-        out[3] = s;
-        out[4] = t;
-    } else {
-#endif
+static void write_dynamic_light_block(char *buf)
+{
+    GLSL(
+        struct dlight_t
+        {
+            vec3    position;
+            float   radius;
+            vec4    color;
+        };
+    )
+    GLSF("#define DLIGHT_CUTOFF 64\n");
+    GLSF("layout(std140) uniform u_dlights {\n");
+    GLSF(va("#define MAX_DLIGHTS %i\n", MAX_DLIGHTS));
+    GLSL(
+        dlight_t        dlights[MAX_DLIGHTS];
+    )
+    GLSF("};\n");
+}
 
 static void write_vertex_shader(char *buf, GLbitfield bits)
 {
@@ -107,7 +105,13 @@ static void write_vertex_shader(char *buf, GLbitfield bits)
         GLSL(out vec3 v_dir;)
     }
     if (bits & GLS_FOG_ENABLE)
-        GLSL(out vec3 v_wpos; out vec3 world_pos;)
+        GLSL(out vec3 v_wpos;)
+    if (bits & (GLS_FOG_ENABLE | GLS_DYNAMIC_LIGHTS))
+        GLSL(out vec3 v_world_pos;)
+    if (bits & GLS_DYNAMIC_LIGHTS) {
+        GLSL(in vec3 a_normal;)
+        GLSL(out vec3 v_normal;)
+    }
     GLSF("void main() {\n");
         GLSL(vec2 tc = a_tc;)
         if (bits & GLS_SCROLL_ENABLE)
@@ -119,11 +123,15 @@ static void write_vertex_shader(char *buf, GLbitfield bits)
             GLSL(v_color = a_color;)
         GLSL(gl_Position = m_proj * m_view * a_pos;)
         if (bits & GLS_FOG_ENABLE)
-            GLSL(v_wpos = (m_view * a_pos).xyz; world_pos = a_pos.xyz;)
+            GLSL(v_wpos = (m_view * a_pos).xyz;)
+        if (bits & (GLS_FOG_ENABLE | GLS_DYNAMIC_LIGHTS))
+            GLSL(v_world_pos = a_pos.xyz;)
         if (bits & GLS_CLASSIC_SKY) {
             GLSL(v_dir = a_pos.xyz - view_org.xyz;)
             GLSL(v_dir[2] *= 3.0f;)
         }
+        if (bits & GLS_DYNAMIC_LIGHTS)
+            GLSL(v_normal = a_normal;)
     GLSF("}\n");
 }
 
@@ -134,8 +142,11 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
     if (gl_config.ver_es)
         GLSL(precision mediump float;)
 
-    if (bits & (GLS_WARP_ENABLE | GLS_LIGHTMAP_ENABLE | GLS_INTENSITY_ENABLE | GLS_UBLOCK_MASK))
+    if (bits & (GLS_WARP_ENABLE | GLS_LIGHTMAP_ENABLE | GLS_INTENSITY_ENABLE | GLS_UBLOCK_MASK | GLS_DYNAMIC_LIGHTS))
         write_block(buf);
+
+    if (bits & GLS_DYNAMIC_LIGHTS)
+        write_dynamic_light_block(buf);
 
     GLSL(uniform sampler2D u_texture;)
     GLSL(in vec2 v_tc;)
@@ -157,7 +168,13 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
         GLSL(in vec4 v_color;)
 
     if (bits & GLS_FOG_ENABLE)
-        GLSL(in vec3 v_wpos; in vec3 world_pos;);
+        GLSL(in vec3 v_wpos;);
+
+    if (bits & (GLS_FOG_ENABLE | GLS_DYNAMIC_LIGHTS))
+        GLSL(in vec3 v_world_pos;)
+
+    if (bits & GLS_DYNAMIC_LIGHTS)
+        GLSL(in vec3 v_normal;)
 
     GLSL(out vec4 o_color;)
 
@@ -198,6 +215,20 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
                 GLSL(vec4 glowmap = texture(u_glowmap, tc);)
                 GLSL(lightmap.rgb = mix(lightmap.rgb, vec3(1.0), glowmap.a);)
             }
+  
+            if (bits & GLS_DYNAMIC_LIGHTS) {
+                GLSL(
+                    for (int i = 0; i < num_dlights; i++) {
+                        vec3 dir = (dlights[i].position + (v_normal * 16)) - v_world_pos;
+                        float len = length(dir);
+                        float dist = max((dlights[i].radius - DLIGHT_CUTOFF - len), 0.0f);
+
+                        dir /= max(len, 1.0f);
+                        float lambert = max(0.0f, dot(dir, v_normal));
+                        lightmap.rgb += dlights[i].color.rgb * dist * lambert;
+                    }
+                )
+            }
 
             GLSL(diffuse.rgb *= (lightmap.rgb + u_add) * u_modulate;)
         }
@@ -225,7 +256,7 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
             // height fog
             GLSL(if (height_fog_density > 0.0f) {)
                 GLSL(float altitude = view_org.z - height_fog_start.w - 64.f;);
-                GLSL(vec3 view_dir = -normalize(v_wpos - world_pos);)
+                GLSL(vec3 view_dir = -normalize(v_wpos - v_world_pos);)
                 GLSL(float view_sign = step(0.1f, sign(view_dir.z)) * 2.0f - 1.0f;);
                 GLSL(float dy = view_dir.z + (0.00001f * view_sign););
                 GLSL(float frag_depth = gl_FragCoord.z / gl_FragCoord.w;);
@@ -315,6 +346,8 @@ static void create_and_use_program(GLbitfield bits, uint32_t hash)
         qglBindAttribLocation(program, VERT_ATTR_LMTC, "a_lmtc");
     if (!(bits & GLS_TEXTURE_REPLACE))
         qglBindAttribLocation(program, VERT_ATTR_COLOR, "a_color");
+    if (bits & GLS_DYNAMIC_LIGHTS)
+        qglBindAttribLocation(program, VERT_ATTR_NORMAL, "a_normal");
 
     qglLinkProgram(program);
 
@@ -348,7 +381,24 @@ static void create_and_use_program(GLbitfield bits, uint32_t hash)
         return;
     }
 
-    qglUniformBlockBinding(program, index, 0);
+    qglUniformBlockBinding(program, index, UBLOCK_MAIN);
+    
+    if (bits & GLS_DYNAMIC_LIGHTS) {
+        index = qglGetUniformBlockIndex(program, "u_dlights");
+        if (index == GL_INVALID_INDEX) {
+            Com_EPrintf("DLight uniform block not found\n");
+            return;
+        }
+
+        size = 0;
+        qglGetActiveUniformBlockiv(program, index, GL_UNIFORM_BLOCK_DATA_SIZE, &size);
+        if (size != sizeof(gls.u_dlights)) {
+            Com_EPrintf("DLight uniform block size mismatch: %d != %zu\n", size, sizeof(gls.u_dlights));
+            return;
+        }
+
+        qglUniformBlockBinding(program, index, UBLOCK_DLIGHTS);
+    }
 
     qglUseProgram(program);
 
@@ -381,6 +431,11 @@ static void find_and_use_program(GLbitfield bits)
 
 static void shader_state_bits(GLbitfield bits)
 {
+    // disable per-pixel lighting if requested
+    if (!gl_per_pixel_lighting->integer) {
+        bits &= ~GLS_DYNAMIC_LIGHTS;
+    }
+
     // check if we actually need fog
     if (bits & GLS_FOG_ENABLE) {
         if (!gl_fog->integer ||
@@ -409,6 +464,10 @@ static void shader_state_bits(GLbitfield bits)
         }
 
         upload_u_block();
+    }
+
+    if (diff & GLS_DYNAMIC_LIGHTS) {
+        upload_dlight_block();
     }
 }
 
@@ -487,14 +546,22 @@ static void shader_color(GLfloat r, GLfloat g, GLfloat b, GLfloat a)
     qglVertexAttrib4f(VERT_ATTR_COLOR, r, g, b, a);
 }
 
-static void shader_normal_float_pointer(GLint size, GLsizei stride, const GLfloat *pointer)
+static void shader_normal_pointer(GLint size, GLsizei stride, const GLfloat *pointer)
 {
     qglVertexAttribPointer(VERT_ATTR_NORMAL, size, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * stride, pointer);
 }
 
 static void upload_u_block(void)
 {
-    qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_block), &gls.u_block, GL_DYNAMIC_DRAW);
+    qglBindBuffer(GL_UNIFORM_BUFFER, gl_static.u_blocks[UBLOCK_MAIN]);
+    qglBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(gls.u_block), &gls.u_block);
+    c.uniformUploads++;
+}
+
+static void upload_dlight_block(void)
+{
+    qglBindBuffer(GL_UNIFORM_BUFFER, gl_static.u_blocks[UBLOCK_DLIGHTS]);
+    qglBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(gls.u_dlights.lights[0]) * gls.u_block.num_dlights, &gls.u_dlights);
     c.uniformUploads++;
 }
 
@@ -564,6 +631,17 @@ static void shader_setup_3d(void)
     gls.u_block.height_fog_density = glr.fd.fog.height.density;
 
     VectorCopy(glr.fd.vieworg, gls.u_block.view_org);
+
+    if (gl_per_pixel_lighting->integer) {
+        gls.u_block.num_dlights = glr.fd.num_dlights;
+
+        for (int i = 0; i < min(q_countof(gls.u_dlights.lights), glr.fd.num_dlights); i++) {
+            const dlight_t *dl = &glr.fd.dlights[i];
+            VectorCopy(dl->origin, gls.u_dlights.lights[i].position);
+            gls.u_dlights.lights[i].radius = dl->intensity;
+            VectorScale(dl->color, (1.0f / 255), gls.u_dlights.lights[i].color);
+        }
+    }
 }
 
 static void shader_clear_state(void)
@@ -588,13 +666,20 @@ static void shader_clear_state(void)
 
 static void shader_init(void)
 {
-    qglGenBuffers(1, &gl_static.u_bufnum);
-    qglBindBuffer(GL_UNIFORM_BUFFER, gl_static.u_bufnum);
-    qglBindBufferBase(GL_UNIFORM_BUFFER, 0, gl_static.u_bufnum);
+    qglGenBuffers(NUM_UBLOCKS, gl_static.u_blocks);
+
+    qglBindBuffer(GL_UNIFORM_BUFFER, gl_static.u_blocks[UBLOCK_MAIN]);
+    qglBindBufferBase(GL_UNIFORM_BUFFER, UBLOCK_MAIN, gl_static.u_blocks[UBLOCK_MAIN]);
     qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_block), NULL, GL_DYNAMIC_DRAW);
+
+    qglBindBuffer(GL_UNIFORM_BUFFER, gl_static.u_blocks[UBLOCK_DLIGHTS]);
+    qglBindBufferBase(GL_UNIFORM_BUFFER, UBLOCK_DLIGHTS, gl_static.u_blocks[UBLOCK_DLIGHTS]);
+    qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_dlights), NULL, GL_DYNAMIC_DRAW);
 
     // precache common shader
     find_and_use_program(GLS_DEFAULT);
+
+    gl_per_pixel_lighting = Cvar_Get("gl_per_pixel_lighting", "1", 0);
 }
 
 static void shader_shutdown(void)
@@ -612,10 +697,13 @@ static void shader_shutdown(void)
     memset(gl_static.programs_hash, 0, sizeof(gl_static.programs_hash));
 
     qglBindBuffer(GL_UNIFORM_BUFFER, 0);
-    if (gl_static.u_bufnum) {
-        qglDeleteBuffers(1, &gl_static.u_bufnum);
-        gl_static.u_bufnum = 0;
-    }
+    qglDeleteBuffers(NUM_UBLOCKS, gl_static.u_blocks);
+    memset(gl_static.u_blocks, 0, sizeof(gl_static.u_blocks));
+}
+
+static bool shader_use_dlights(void)
+{
+    return !!gl_per_pixel_lighting->integer;
 }
 
 const glbackend_t backend_shader = {
@@ -639,5 +727,6 @@ const glbackend_t backend_shader = {
     .color_byte_pointer = shader_color_byte_pointer,
     .color_float_pointer = shader_color_float_pointer,
     .color = shader_color,
-    .normal_float_pointer = shader_normal_float_pointer,
+    .normal_pointer = shader_normal_pointer,
+    .use_dlights = shader_use_dlights
 };

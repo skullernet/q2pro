@@ -321,7 +321,8 @@ void GL_LightPoint(const vec3_t origin, vec3_t color)
     }
 
     // add dynamic lights
-    GL_AddLights(origin, color);
+    if (!gl_static.backend.use_dlights())
+        GL_AddLights(origin, color);
 
     if (gl_doublelight_entities->integer) {
         // apply modulate twice to mimic original ref_gl behavior
@@ -475,7 +476,8 @@ void GL_DrawBspModel(mmodel_t *model)
         VectorSubtract(glr.fd.vieworg, ent->origin, transformed);
     }
 
-    GL_TransformLights(model);
+    if (!gl_static.backend.use_dlights())
+        GL_TransformLights(model);
 
     GL_RotateForEntity();
 

@@ -1046,6 +1046,8 @@ void BSP_Free(bsp_t *bsp)
     if (--bsp->refcount == 0) {
         Hunk_Free(&bsp->hunk);
         List_Remove(&bsp->entry);
+        Z_Free(bsp->normals.normals);
+        Z_Free(bsp->normals.normal_indices);
         Z_Free(bsp);
     }
 }
@@ -1366,9 +1368,69 @@ static void BSP_ParseLightgrid(bsp_t *bsp, const byte *in, size_t filelen)
     }
 }
 
+static bool BSP_ParseFaceNormalsHeader_(bsp_t *bsp, bsp_normals_t *normals, sizebuf_t *s)
+{
+    normals->num_normals = SZ_ReadLong(s);
+
+    if (sizeof(vec3_t) * normals->num_normals > SZ_Remaining(s))
+        return false;
+
+    return true;
+}
+
+static bool BSP_ParseFaceNormalsHeader(bsp_t *bsp, const byte *in, size_t filelen)
+{
+    bsp_normals_t *normals = &bsp->normals;
+    sizebuf_t s;
+
+    SZ_Init(&s, (void *)in, filelen);
+    s.cursize = filelen;
+
+    if (!BSP_ParseFaceNormalsHeader_(bsp, normals, &s)) {
+        Com_WPrintf("Bad FACENORMALS header\n");
+        memset(normals, 0, sizeof(*normals));
+        return false;
+    }
+
+    return true;
+}
+
+static void BSP_ParseFaceNormals(bsp_t *bsp, const byte *in, size_t filelen)
+{
+    if (!BSP_ParseFaceNormalsHeader(bsp, in, filelen))
+        return;
+
+    bsp->normals.normals = Z_TagMalloc(sizeof(vec3_t) * bsp->normals.num_normals, TAG_RENDERER);
+
+    size_t off = sizeof(uint32_t);
+
+    memcpy(bsp->normals.normals, in + off, sizeof(vec3_t) * bsp->normals.num_normals);
+
+    off += sizeof(vec3_t) * bsp->normals.num_normals;
+
+    size_t num_indices = 0;
+
+    for (int i = 0; i < bsp->numfaces; i++)
+        num_indices += bsp->faces[i].numsurfedges;
+
+    // bad normals
+    if (off + (sizeof(uint32_t) * 3 * num_indices) > filelen) {
+        Z_Free(bsp->normals.normals);
+        return;
+    }
+
+    bsp->normals.normal_indices = Z_TagMalloc(sizeof(uint32_t) * num_indices, TAG_RENDERER);
+
+    for (size_t i = 0; i < num_indices; i++) {
+        memcpy(&bsp->normals.normal_indices[i], in + off, sizeof(uint32_t));
+        off += sizeof(uint32_t) * 3;
+    }
+}
+
 static const xlump_info_t bspx_lumps[] = {
     { "DECOUPLED_LM", BSP_ParseDecoupledLM },
     { "LIGHTGRID_OCTREE", BSP_ParseLightgrid, BSP_ParseLightgridHeader },
+    { "FACENORMALS", BSP_ParseFaceNormals }
 };
 
 // returns amount of extra space to allocate

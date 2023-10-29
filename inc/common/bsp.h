@@ -237,6 +237,12 @@ typedef struct {
     lightgrid_sample_t *samples;
 } lightgrid_t;
 
+typedef struct {
+    uint32_t        num_normals;
+    vec3_t          *normals;
+    uint32_t        *normal_indices;
+} bsp_normals_t;
+
 #endif
 
 typedef struct bsp_s {
@@ -305,6 +311,8 @@ typedef struct bsp_s {
     msurfedge_t     *surfedges;
 
     lightgrid_t     lightgrid;
+
+    bsp_normals_t   normals;
 
     bool            lm_decoupled;
 #endif

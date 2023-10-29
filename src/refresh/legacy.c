@@ -172,7 +172,7 @@ static void legacy_color(GLfloat r, GLfloat g, GLfloat b, GLfloat a)
     qglColor4f(r, g, b, a);
 }
 
-static void legacy_normal_float_pointer(GLint size, GLsizei stride, const GLfloat *pointer)
+static void legacy_normal_pointer(GLint size, GLsizei stride, const GLfloat *pointer)
 {
     // no-op
 }
@@ -264,6 +264,11 @@ static void legacy_shutdown(void)
     }
 }
 
+static bool legacy_use_dlights(void)
+{
+    return false;
+}
+
 const glbackend_t backend_legacy = {
     .name = "legacy",
 
@@ -283,5 +288,6 @@ const glbackend_t backend_legacy = {
     .color_byte_pointer = legacy_color_byte_pointer,
     .color_float_pointer = legacy_color_float_pointer,
     .color = legacy_color,
-    .normal_float_pointer = legacy_normal_float_pointer
+    .normal_pointer = legacy_normal_pointer,
+    .use_dlights = legacy_use_dlights
 };
