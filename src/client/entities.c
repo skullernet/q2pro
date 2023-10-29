@@ -294,6 +294,8 @@ static void set_active_state(void)
             // just use what server provided
             VectorCopy(cl.frame.ps.viewangles, cl.predicted_angles);
         }
+        Vector4Clear(cl.predicted_screen_blend);
+        cl.predicted_rdflags = 0;
     }
 
     SCR_EndLoadingPlaque();     // get rid of loading plaque
