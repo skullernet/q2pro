@@ -1100,7 +1100,7 @@ int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
 
     if (!(flags & MSG_PS_IGNORE_BLEND)) {
         if (!Vector4Compare(from->screen_blend, to->screen_blend) ||
-            ((flags & MSG_PS_EXTENSIONS) && !Vector4Compare(from->damage_blend, to->damage_blend)))
+            ((flags & MSG_PS_RERELEASE) && !Vector4Compare(from->damage_blend, to->damage_blend)))
             pflags |= PS_BLEND;
     } else {
         // save previous state
@@ -1262,7 +1262,7 @@ int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
     }
 
     if (pflags & PS_BLEND) {
-        if (flags & MSG_PS_EXTENSIONS) {
+        if (flags & MSG_PS_RERELEASE) {
             int blend_bits = 0;
             
             if (from->screen_blend[0] != to->screen_blend[0]) blend_bits |= BLENDBITS_SCREEN_R;
@@ -2287,7 +2287,7 @@ void MSG_ParseDeltaPlayerstate_Enhanced(const player_state_t    *from,
     }
 
     if (flags & PS_BLEND) {
-        if (psflags & MSG_PS_EXTENSIONS) {
+        if (psflags & MSG_PS_RERELEASE) {
             int blend_bits = MSG_ReadByte();
             
             if (blend_bits & BLENDBITS_SCREEN_R) to->screen_blend[0] = MSG_ReadByte() / 255.f;
@@ -2430,7 +2430,7 @@ void MSG_ParseDeltaPlayerstate_Packet(const player_state_t  *from,
         to->screen_blend[2] = MSG_ReadByte() / 255.0f;
         to->screen_blend[3] = MSG_ReadByte() / 255.0f;
 
-        if (psflags & MSG_PS_EXTENSIONS) {
+        if (psflags & MSG_PS_RERELEASE) {
             to->damage_blend[0] = MSG_ReadByte() / 255.0f;
             to->damage_blend[1] = MSG_ReadByte() / 255.0f;
             to->damage_blend[2] = MSG_ReadByte() / 255.0f;
