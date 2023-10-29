@@ -1036,8 +1036,9 @@ static void SCR_Sky_f(void)
         axis[2] = atof(Cmd_Argv(5));
     } else
         VectorSet(axis, 0, 0, 1);
-
-    R_SetSky(name, rotate, true, axis);
+    
+    if (!*cl.classic_sky || !R_SetClassicSky(cl.classic_sky))
+        R_SetSky(name, rotate, true, axis);
 }
 
 /*

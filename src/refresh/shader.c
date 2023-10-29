@@ -51,23 +51,41 @@ static void write_block(char *buf)
     GLSL(
         mat4 m_view;
         mat4 m_proj;
-        float u_time;
-        float u_modulate;
-        float u_add;
-        float u_intensity;
-        float u_intensity2;
-        float pad;
-        vec2 w_amp;
-        vec2 w_phase;
-        vec2 u_scroll;
-        vec2 fog_sky_factor;
+        float u_time; float u_modulate; float u_add; float u_intensity;
+        vec2 w_amp; vec2 w_phase;
+        vec2 u_scroll; float fog_sky_factor; float u_intensity2;
+        vec4 view_org;
         vec4 global_fog;
         vec4 height_fog_start;
         vec4 height_fog_end;
-        float height_fog_falloff; float height_fog_density; float view_height; float pad2;
+        float height_fog_falloff; float height_fog_density;
     )
     GLSF("};\n");
 }
+
+#if 0
+    if (sky_classic) {
+        vec3_t dir;
+		VectorSubtract (out, glr.fd.vieworg, dir);
+		dir[2] *= 3;	// flatten the sphere
+
+		float length = dir[0]*dir[0] + dir[1]*dir[1] + dir[2]*dir[2];
+		length = sqrtf(length);
+		length = 6 * (63 / length);
+
+		dir[0] *= length;
+		dir[1] *= length;
+
+	    float speedscale = glr.fd.time * sky_classic_scroll;
+	    speedscale -= (int) speedscale & ~127 ;
+
+		s = (speedscale + dir[0]) * (1.0/128);
+		t = (speedscale + dir[1]) * (1.0/128);
+
+        out[3] = s;
+        out[4] = t;
+    } else {
+#endif
 
 static void write_vertex_shader(char *buf, GLbitfield bits)
 {
@@ -84,6 +102,9 @@ static void write_vertex_shader(char *buf, GLbitfield bits)
         GLSL(in vec4 a_color;)
         GLSL(out vec4 v_color;)
     }
+    if (bits & GLS_CLASSIC_SKY) {
+        GLSL(out vec3 v_dir;)
+    }
     if (bits & GLS_FOG_ENABLE)
         GLSL(out vec3 v_wpos; out vec3 world_pos;)
     GLSF("void main() {\n");
@@ -98,6 +119,10 @@ static void write_vertex_shader(char *buf, GLbitfield bits)
         GLSL(gl_Position = m_proj * m_view * a_pos;)
         if (bits & GLS_FOG_ENABLE)
             GLSL(v_wpos = (m_view * a_pos).xyz; world_pos = a_pos.xyz;)
+        if (bits & GLS_CLASSIC_SKY) {
+            GLSL(v_dir = a_pos.xyz - view_org.xyz;)
+            GLSL(v_dir[2] *= 3.0f;)
+        }
     GLSF("}\n");
 }
 
@@ -108,7 +133,7 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
     if (gl_config.ver_es)
         GLSL(precision mediump float;)
 
-    if (bits & (GLS_WARP_ENABLE | GLS_LIGHTMAP_ENABLE | GLS_INTENSITY_ENABLE | GLS_FOG_ENABLE | GLS_SKY_FOG))
+    if (bits & (GLS_WARP_ENABLE | GLS_LIGHTMAP_ENABLE | GLS_INTENSITY_ENABLE | GLS_UBLOCK_MASK))
         write_block(buf);
 
     GLSL(uniform sampler2D u_texture;)
@@ -117,6 +142,11 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
     if (bits & GLS_LIGHTMAP_ENABLE) {
         GLSL(uniform sampler2D u_lightmap;)
         GLSL(in vec2 v_lmtc;)
+    }
+
+    if (bits & GLS_CLASSIC_SKY) {
+        GLSL(uniform sampler2D u_alphamap;)
+        GLSL(in vec3 v_dir;)
     }
 
     if (bits & GLS_GLOWMAP_ENABLE)
@@ -136,7 +166,26 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
         if (bits & GLS_WARP_ENABLE)
             GLSL(tc += w_amp * sin(tc.ts * w_phase + u_time);)
 
+        if (bits & GLS_CLASSIC_SKY) {
+            GLSL(float len = length(v_dir);)
+            GLSL(len = 6.f * (63.f / len);)
+            GLSL(vec2 dir = v_dir.xy * len;)
+            GLSL(float speed = u_time * 8.0f;)
+            GLSL(tc = (dir + vec2(speed)) / 128.f;)
+        }
+
         GLSL(vec4 diffuse = texture(u_texture, tc);)
+
+        if (bits & GLS_CLASSIC_SKY) {
+            GLSL(diffuse.rgb *= 0.65f;)
+            GLSL(diffuse.a = 1.0f;)
+                
+            GLSL(speed = u_time * 16.0f;)
+            GLSL(tc = (dir + vec2(speed)) / 128.f;)
+            GLSL(vec4 alpha_diffuse = texture(u_alphamap, tc);)
+            GLSL(alpha_diffuse *= 0.65f * 0.25f;)
+            GLSL(diffuse.rgb = diffuse.rgb - alpha_diffuse.rgb;)
+        }
 
         if (bits & GLS_ALPHATEST_ENABLE)
             GLSL(if (diffuse.a <= 0.666) discard;)
@@ -174,7 +223,7 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
 
             // height fog
             GLSL(if (height_fog_density > 0.0f) {)
-                GLSL(float altitude = view_height - height_fog_start.w - 64.f;);
+                GLSL(float altitude = view_org.z - height_fog_start.w - 64.f;);
                 GLSL(vec3 view_dir = -normalize(v_wpos - world_pos);)
                 GLSL(float view_sign = step(0.1f, sign(view_dir.z)) * 2.0f - 1.0f;);
                 GLSL(float dy = view_dir.z + (0.00001f * view_sign););
@@ -296,6 +345,8 @@ static GLuint create_and_use_program(GLbitfield bits)
     qglUniform1i(qglGetUniformLocation(program, "u_texture"), 0);
     if (bits & GLS_LIGHTMAP_ENABLE)
         qglUniform1i(qglGetUniformLocation(program, "u_lightmap"), 1);
+    if (bits & GLS_CLASSIC_SKY)
+        qglUniform1i(qglGetUniformLocation(program, "u_alphamap"), 1);
     if (bits & GLS_GLOWMAP_ENABLE)
         qglUniform1i(qglGetUniformLocation(program, "u_glowmap"), 2);
 
@@ -478,7 +529,7 @@ static void shader_setup_3d(void)
     gls.u_block.height_fog_falloff = glr.fd.fog.height.falloff;
     gls.u_block.height_fog_density = glr.fd.fog.height.density;
 
-    gls.u_block.view_height = glr.fd.vieworg[2];
+    VectorCopy(glr.fd.vieworg, gls.u_block.view_org);
 }
 
 static void shader_clear_state(void)

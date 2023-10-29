@@ -190,6 +190,7 @@ typedef enum {
     IT_SPRITE,
     IT_WALL,
     IT_SKY,
+    IT_CLASSIC_SKY,
 
     IT_MAX
 } imagetype_t;
@@ -218,6 +219,7 @@ qhandle_t R_RegisterModel(const char *name);
 qhandle_t R_RegisterImage(const char *name, imagetype_t type,
                           imageflags_t flags);
 void    R_SetSky(const char *name, float rotate, bool autorotate, const vec3_t axis);
+bool    R_SetClassicSky(const char *name);
 void    R_EndRegistration(void);
 
 #define R_RegisterPic(name)     R_RegisterImage(name, IT_PIC, IF_PERMANENT)

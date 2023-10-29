@@ -51,8 +51,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define TAB_SIN(x) gl_static.sintab[(x) & 255]
 #define TAB_COS(x) gl_static.sintab[((x) + 64) & 255]
 
-// must match GLS_ bit size
-#define MAX_PROGRAMS    512
+// must match GLS_SHADER_MASK bit size
+#define MAX_PROGRAMS    1024
 #define NUM_TEXNUMS     7
 
 typedef struct {
@@ -465,20 +465,21 @@ typedef enum {
     GLS_GLOWMAP_ENABLE      = BIT(12),
     GLS_FOG_ENABLE          = BIT(13),
     GLS_SKY_FOG             = BIT(14),
+    GLS_CLASSIC_SKY         = BIT(15),
 
-    GLS_SHADE_SMOOTH        = BIT(15),
-    GLS_SCROLL_X            = BIT(16),
-    GLS_SCROLL_Y            = BIT(17),
-    GLS_SCROLL_FLIP         = BIT(18),
-    GLS_SCROLL_SLOW         = BIT(19),
+    GLS_SHADE_SMOOTH        = BIT(16),
+    GLS_SCROLL_X            = BIT(17),
+    GLS_SCROLL_Y            = BIT(18),
+    GLS_SCROLL_FLIP         = BIT(19),
+    GLS_SCROLL_SLOW         = BIT(20),
 
     GLS_BLEND_MASK  = GLS_BLEND_BLEND | GLS_BLEND_ADD | GLS_BLEND_MODULATE,
     GLS_COMMON_MASK = GLS_DEPTHMASK_FALSE | GLS_DEPTHTEST_DISABLE | GLS_CULL_DISABLE | GLS_BLEND_MASK,
     GLS_SHADER_MASK = GLS_ALPHATEST_ENABLE | GLS_TEXTURE_REPLACE | GLS_SCROLL_ENABLE |
         GLS_LIGHTMAP_ENABLE | GLS_WARP_ENABLE | GLS_INTENSITY_ENABLE | GLS_GLOWMAP_ENABLE |
-        GLS_FOG_ENABLE,
+        GLS_FOG_ENABLE | GLS_CLASSIC_SKY,
     GLS_SCROLL_MASK = GLS_SCROLL_ENABLE | GLS_SCROLL_X | GLS_SCROLL_Y | GLS_SCROLL_FLIP | GLS_SCROLL_SLOW,
-    GLS_UBLOCK_MASK = GLS_SCROLL_MASK | GLS_FOG_ENABLE | GLS_SKY_FOG,
+    GLS_UBLOCK_MASK = GLS_SCROLL_MASK | GLS_FOG_ENABLE | GLS_SKY_FOG | GLS_CLASSIC_SKY,
 } glStateBits_t;
 
 typedef enum {
@@ -511,14 +512,14 @@ typedef struct {
         GLfloat     scroll[2];
         GLfloat     fog_sky_factor;
         GLfloat     pad0;
-
+        
+        GLfloat     view_org[4];
         GLfloat     global_fog[4];
         GLfloat     height_fog_start[4];
         GLfloat     height_fog_end[4];
         GLfloat     height_fog_falloff;
         GLfloat     height_fog_density;
-        GLfloat     view_height;
-        GLfloat     pad1;
+        GLfloat     pad[2];
     } u_block;
 } glState_t;
 
@@ -725,6 +726,7 @@ void R_AddSkySurface(mface_t *surf);
 void R_ClearSkyBox(void);
 void R_DrawSkyBox(void);
 void R_SetSky(const char *name, float rotate, bool autorotate, const vec3_t axis);
+bool R_SetClassicSky(const char *name);
 
 /*
  * gl_mesh.c

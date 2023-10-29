@@ -95,9 +95,14 @@ static void gl_texturemode_changed(cvar_t *self)
 
     // change all the existing mipmap texture objects
     for (i = 0, image = r_images; i < r_numImages; i++, image++) {
-        if (image->type == IT_WALL || image->type == IT_SKIN || image->type == IT_SKY) {
+        if (image->type == IT_WALL || image->type == IT_SKIN || image->type == IT_SKY || image->type == IT_CLASSIC_SKY) {
             GL_ForceTexture(0, image->texnum);
             GL_SetFilterAndRepeat(image->type, image->flags);
+
+            if (image->glow_texnum) {
+                GL_ForceTexture(0, image->glow_texnum);
+                GL_SetFilterAndRepeat(image->type, image->flags);
+            }
         }
     }
 }
@@ -128,6 +133,11 @@ static void gl_anisotropy_changed(cvar_t *self)
         if (image->type == IT_WALL || image->type == IT_SKIN) {
             GL_ForceTexture(0, image->texnum);
             GL_SetFilterAndRepeat(image->type, image->flags);
+
+            if (image->glow_texnum) {
+                GL_ForceTexture(0, image->glow_texnum);
+                GL_SetFilterAndRepeat(image->type, image->flags);
+            }
         }
     }
 }
@@ -625,7 +635,7 @@ static void GL_SetFilterAndRepeat(imagetype_t type, imageflags_t flags)
     if (type == IT_WALL || type == IT_SKIN) {
         qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
         qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
-    } else if (type == IT_SKY) {
+    } else if (type == IT_SKY || type == IT_CLASSIC_SKY) {
         qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_max);
         qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
     } else {

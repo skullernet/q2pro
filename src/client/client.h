@@ -300,7 +300,8 @@ typedef struct client_state_s {
 
     char    weaponModels[MAX_CLIENTWEAPONMODELS][MAX_QPATH];
     int     numWeaponModels;
-
+    
+    char    classic_sky[MAX_QPATH]; // whether the current map has a classic sky
     bool    need_powerscreen_scale;
 
     float sv_frametime_inv;

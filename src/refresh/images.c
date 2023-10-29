@@ -1400,13 +1400,14 @@ static void IMG_List_f(void)
 
     while ((c = Cmd_ParseOptions(o_imagelist)) != -1) {
         switch (c) {
-        case 'p': mask |= 1 << IT_PIC;      break;
-        case 'f': mask |= 1 << IT_FONT;     break;
-        case 'm': mask |= 1 << IT_SKIN;     break;
-        case 's': mask |= 1 << IT_SPRITE;   break;
-        case 'w': mask |= 1 << IT_WALL;     break;
-        case 'y': mask |= 1 << IT_SKY;      break;
-        case 'P': placeholder = true;       break;
+        case 'p': mask |= 1 << IT_PIC;          break;
+        case 'f': mask |= 1 << IT_FONT;         break;
+        case 'm': mask |= 1 << IT_SKIN;         break;
+        case 's': mask |= 1 << IT_SPRITE;       break;
+        case 'w': mask |= 1 << IT_WALL;         break;
+        case 'y': mask |= (1 << IT_SKY)
+                       | (1 << IT_CLASSIC_SKY); break;
+        case 'P': placeholder = true;           break;
         case 'h':
             Cmd_PrintUsage(o_imagelist, "[wildcard]");
             Com_Printf("List registered images.\n");
@@ -1878,8 +1879,29 @@ static image_t *find_or_load_image(const char *name, size_t len,
             check_for_glow_map(image);
     }
 
-    // upload the image
-    IMG_Load(image, pic);
+    if (type == IT_CLASSIC_SKY) {
+        // upload the top half of the image (solid)
+        image->height /= 2;
+        image->upload_height /= 2;
+
+        IMG_Load(image, pic + (image->width * image->height * 4));
+
+        // upload the bottom half (alpha)
+        image_t temporary = {
+            .type = type,
+            .flags = flags,
+            .width = image->width,
+            .height = image->height,
+            .upload_width = image->upload_width,
+            .upload_height = image->upload_height
+        };
+
+        IMG_Load(&temporary, pic);
+        image->glow_texnum = temporary.texnum;
+    } else {
+        // upload the image
+        IMG_Load(image, pic);
+    }
 
     // don't need pics in memory after GL upload
     Z_Free(pic);

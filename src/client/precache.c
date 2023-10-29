@@ -250,6 +250,18 @@ void CL_RegisterBspModels(void)
         else
             cl.model_clip[i] = NULL;
     }
+
+    *cl.classic_sky = 0;
+
+    // check if we have a classic sky
+    for (int i = 0; i < cl.bsp->numtexinfo; i++) {
+        mtexinfo_t *texinfo = &cl.bsp->texinfo[i];
+
+        if (Q_stristr(texinfo->name, "env/sky") && (texinfo->c.flags & SURF_SKY)) {
+            Q_strlcpy(cl.classic_sky, texinfo->name, sizeof(cl.classic_sky));
+            break;
+        }
+    }
 }
 
 /*
@@ -313,7 +325,8 @@ void CL_SetSky(void)
         VectorClear(axis);
     }
 
-    R_SetSky(cl.configstrings[CS_SKY], rotate, autorotate, axis);
+    if (!*cl.classic_sky || !R_SetClassicSky(cl.classic_sky))
+        R_SetSky(cl.configstrings[CS_SKY], rotate, autorotate, axis);
 }
 
 /*

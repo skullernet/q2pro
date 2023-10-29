@@ -22,6 +22,7 @@ static float    skyrotate;
 static bool     skyautorotate;
 static vec3_t   skyaxis;
 static int      sky_images[6];
+static bool     sky_classic;
 
 static const vec3_t skyclip[6] = {
     { 1, 1, 0 },
@@ -340,17 +341,27 @@ void R_DrawSkyBox(void)
     if (!skyfaces)
         return; // nothing visible
 
-    GL_StateBits(GLS_SKY_FOG);
-    GL_ArrayBits(GLA_VERTEX | GLA_TC);
-    GL_VertexPointer(3, 5, &verts[0][0]);
-    GL_TexCoordPointer(2, 5, &verts[0][3]);
+    if (sky_classic) {
+        GL_StateBits(GLS_CLASSIC_SKY | GLS_TEXTURE_REPLACE);
+        GL_ArrayBits(GLA_VERTEX);
+        GL_VertexPointer(3, 5, &verts[0][0]);
+        
+        GL_BindTexture(0, sky_images[0]);
+        GL_BindTexture(1, sky_images[1]);
+    } else {
+        GL_StateBits(GLS_SKY_FOG);
+        GL_ArrayBits(GLA_VERTEX | GLA_TC);
+        GL_VertexPointer(3, 5, &verts[0][0]);
+        GL_TexCoordPointer(2, 5, &verts[0][3]);
+    }
 
     for (i = 0; i < 6; i++) {
         if (!SKY_VISIBLE(i)) {
             continue;
         }
 
-        GL_BindTexture(0, sky_images[skytexorder[i]]);
+        if (!sky_classic)
+            GL_BindTexture(0, sky_images[skytexorder[i]]);
 
         MakeSkyVec(skymaxs[0][i], skymins[1][i], i, verts[0]);
         MakeSkyVec(skymins[0][i], skymins[1][i], i, verts[1]);
@@ -383,6 +394,8 @@ void R_SetSky(const char *name, float rotate, bool autorotate, const vec3_t axis
     // 3dstudio environment map names
     static const char suf[6][3] = { "rt", "bk", "lf", "ft", "up", "dn" };
 
+    sky_classic = false;
+
     if (!gl_drawsky->integer) {
         R_UnsetSky();
         return;
@@ -408,4 +421,35 @@ void R_SetSky(const char *name, float rotate, bool autorotate, const vec3_t axis
         }
         sky_images[i] = image->texnum;
     }
+}
+
+/*
+============
+R_SetClassicSky
+============
+*/
+bool R_SetClassicSky(const char *name)
+{
+    if (!gl_static.use_shaders)
+        return false;
+
+    sky_classic = name;
+    R_UnsetSky();
+    
+    char    pathname[MAX_QPATH];
+    image_t *image;
+    if (Q_concat(pathname, sizeof(pathname), "textures/", name, ".tga") >= sizeof(pathname)) {
+        R_UnsetSky();
+        return false;
+    }
+    FS_NormalizePath(pathname);
+    image = IMG_Find(pathname, IT_CLASSIC_SKY, IF_REPEAT);
+    if (image->texnum == TEXNUM_DEFAULT) {
+        R_UnsetSky();
+        return false;
+    }
+    sky_images[0] = image->texnum;
+    sky_images[1] = image->glow_texnum;
+
+    return true;
 }
