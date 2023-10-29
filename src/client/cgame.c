@@ -454,6 +454,7 @@ void CG_Load(const char* new_game)
         }
 
         cgame = entry(&cgame_imports);
+        Z_Freep(&current_game);
         current_game = Z_CopyString(new_game);
         current_protocol = cls.serverProtocol;
     }
