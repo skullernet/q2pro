@@ -40,7 +40,7 @@ typedef struct {
 static pmove_t      *pm;
 static pml_t        pml;
 
-static pmoveParams_t    *pmp;
+static const pmoveParams_t    *pmp;
 
 // movement parameters
 static const float  pm_stopspeed = 100;
@@ -1024,7 +1024,7 @@ Pmove
 Can be called by either the server or the client
 ================
 */
-void Pmove(pmove_t *pmove, pmoveParams_t *params)
+void Pmove(pmove_t *pmove, const pmoveParams_t *params)
 {
     pm = pmove;
     pmp = params;
