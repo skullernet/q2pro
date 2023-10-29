@@ -1093,17 +1093,14 @@ void SV_InitGameProgs(void)
         Cvar_SetInteger(g_features, GMF_PROTOCOL_EXTENSIONS | GMF_ENHANCED_SAVEGAMES | GMF_PROPERINUSE | GMF_WANT_ALL_DISCONNECTS, FROM_CODE);
     }
 
+    svs.csr = cs_remap_rerelease;
+
     if (entry_ex)
         gex = entry_ex(&game_import_ex);
 
     // initialize
     ge->PreInit(); // FIXME: When to call PreInit(), when Init()?
     ge->Init();
-
-    if (g_features->integer & GMF_PROTOCOL_EXTENSIONS) {
-        Com_Printf("Game supports Q2PRO protocol extensions.\n");
-        svs.csr = cs_remap_rerelease; // FIXME: Choose cs_remap_q2pro_new if appropriate
-    }
 
     // sanitize edict_size
     unsigned min_size = sizeof(edict_t);

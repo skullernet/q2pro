@@ -26,7 +26,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <malloc.h>
 #include <stdlib.h>
 
-extern cvar_t *g_features;
+static const cs_remap_t *game_csr;
 
 static void sync_single_edict_server_to_game(int index);
 static void sync_edicts_server_to_game(void);
@@ -264,9 +264,7 @@ static void wrap_local_sound(game3_edict_t *target, const vec3_t origin, game3_e
 // Map configstring IDs from "old" to "new"
 static int map_configstring_id(int index)
 {
-    // Games with Q2PRO extensions use different limits/configstring IDs
-    const cs_remap_t *cs_remap_from = (g_features->integer & GMF_PROTOCOL_EXTENSIONS) ? &cs_remap_q2pro_new : &cs_remap_old;
-    return remap_cs_index(index, cs_remap_from, &cs_remap_rerelease);
+    return remap_cs_index(index, game_csr, &cs_remap_rerelease);
 }
 
 static void wrap_configstring(int index, const char* str)
@@ -538,6 +536,13 @@ static void wrap_PreInit(void) { }
 static void wrap_Init(void)
 {
     game3_export->Init();
+
+    // Games with Q2PRO extensions use different limits/configstring IDs
+    if (g_features->integer & GMF_PROTOCOL_EXTENSIONS) {
+        Com_Printf("Game supports Q2PRO protocol extensions.\n");
+        game_csr = &cs_remap_q2pro_new;
+    } else
+        game_csr = &cs_remap_old;
 
     server_edicts = Z_Mallocz(sizeof(edict_t) * game3_export->max_edicts);
     game_export.edicts = server_edicts;
