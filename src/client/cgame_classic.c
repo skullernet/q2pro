@@ -43,6 +43,7 @@ bool SCR_ParseColor(const char *s, color_t *color);
 
 static cgame_import_t cgi;
 static cgame_q2pro_extended_support_ext_t cgix;
+static const cs_remap_t *csr;
 
 static cvar_t   *scr_centertime;
 static cvar_t   *scr_draw2d;
@@ -57,6 +58,10 @@ static int      scr_center_lines;
 
 static void CGC_Init(void)
 {
+    /* We don't consider rerelease servers here and assume the appropriate
+     * cgame is used in that case */
+    csr = cgix.IsExtendedServer() ? &cs_remap_q2pro_new : &cs_remap_old;
+
     scr_centertime = cgi.cvar("scr_centertime", "2.5", 0);
     scr_draw2d = cgi.cvar("scr_draw2d", "2", 0);
 
@@ -290,10 +295,10 @@ static void layout_pic(vrect_t hud_vrect, const char **s, const player_state_t *
         cgi.Com_Error(va("%s: invalid stat index", __func__));
     }
     value = ps->stats[value];
-    if (value < 0 || value >= cs_remap_rerelease.max_images) {
+    if (value < 0 || value >= csr->max_images) {
         cgi.Com_Error(va("%s: invalid pic index", __func__));
     }
-    const char* pic = cgi.get_configstring(cs_remap_rerelease.images + value);
+    const char* pic = cgi.get_configstring(csr->images + value);
     if (pic[0]) {
         // hack for action mod scope scaling
         if (x == hud_vrect.width  / 2 - 160 &&
@@ -465,7 +470,7 @@ static void layout_stat(const char* token, vrect_t hud_vrect, const char **s, co
         cgi.Com_Error(va("%s: invalid stat index", __func__));
     }
     index = ps->stats[index];
-    if (index < 0 || index >= cs_remap_rerelease.end) {
+    if (index < 0 || index >= csr->end) {
         cgi.Com_Error(va("%s: invalid string index", __func__));
     }
     const char* str = cgi.get_configstring(index);
@@ -770,12 +775,12 @@ static void SCR_DrawInventory(vrect_t hud_vrect, const cg_server_data_t *data, c
     for (i = top; i < num && i < top + DISPLAY_ITEMS; i++) {
         item = index[i];
         // search for a binding
-        Q_concat(string, sizeof(string), "use ", cgi.get_configstring(cs_remap_rerelease.items + item));
+        Q_concat(string, sizeof(string), "use ", cgi.get_configstring(csr->items + item));
         bind = cgi.CL_GetKeyBinding(string);
 
         Q_snprintf(string, sizeof(string), "%6s %3i %s",
                    bind, data->inventory[item],
-                   cgi.Localize(cgi.get_configstring(cs_remap_rerelease.items + item), NULL, 0));
+                   cgi.Localize(cgi.get_configstring(csr->items + item), NULL, 0));
 
         if (item != selected) {
             HUD_DrawAltString(x, y, string);
