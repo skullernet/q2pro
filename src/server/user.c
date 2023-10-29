@@ -74,14 +74,10 @@ static void SV_CreateBaselines(void)
         }
 
         base = *chunk + (i & SV_BASELINES_MASK);
-        MSG_PackEntity(base, &ent->s, sv_client->csr->extended);
+        MSG_PackEntity(base, &ent->s, true);
 
 #if USE_MVD_CLIENT
-        if (sv.state == ss_broadcast) {
-            // spectators only need to know about inline BSP models
-            if (!sv_client->csr->extended && base->solid != PACKED_BSP)
-                base->solid = 0;
-        } else
+        if (sv.state != ss_broadcast)
 #endif
         if (sv_client->esFlags & MSG_ES_LONGSOLID) {
             base->solid = sv.entities[i].solid32;
@@ -290,8 +286,7 @@ static int q2pro_protocol_flags(void)
     if (sv_client->pmp.waterhack)
         flags |= Q2PRO_PF_WATERJUMP_HACK;
 
-    if (sv_client->csr->extended)
-        flags |= Q2PRO_PF_EXTENSIONS;
+    flags |= Q2PRO_PF_EXTENSIONS;
 
     return flags;
 }

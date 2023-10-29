@@ -454,7 +454,7 @@ static void MVD_ParseSound(mvd_t *mvd, int extrabits)
     edict_t     *entity;
 
     flags = MSG_ReadByte();
-    if (mvd->csr->extended && flags & SND_INDEX16)
+    if (flags & SND_INDEX16)
         index = MSG_ReadWord();
     else
         index = MSG_ReadByte();
@@ -494,7 +494,7 @@ static void MVD_ParseSound(mvd_t *mvd, int extrabits)
     // prepare multicast message
     MSG_WriteByte(svc_sound);
     MSG_WriteByte(flags | SND_POS);
-    if (mvd->csr->extended && flags & SND_INDEX16)
+    if (flags & SND_INDEX16)
         MSG_WriteShort(index);
     else
         MSG_WriteByte(index);
@@ -557,7 +557,7 @@ static void MVD_ParseSound(mvd_t *mvd, int extrabits)
         msg->attenuation = attenuation;
         msg->timeofs = offset;
         msg->sendchan = sendchan;
-        MSG_ReadPos(msg->pos, cl->csr->extended);
+        MSG_ReadPos(msg->pos, true);
 
         List_Remove(&msg->entry);
         List_Append(&cl->msg_unreliable_list, &msg->entry);

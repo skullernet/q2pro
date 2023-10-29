@@ -784,10 +784,7 @@ static void MVD_SetServerState(client_t *cl, mvd_t *mvd)
     cl->ge = &mvd->ge;
     cl->spawncount = mvd->servercount;
     cl->maxclients = mvd->maxclients;
-    if (cl->csr->extended)
-        cl->esFlags |= MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS;
-    else
-        cl->esFlags &= ~(MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS);
+    cl->esFlags |= MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS;
 }
 
 void MVD_SwitchChannel(mvd_client_t *client, mvd_t *mvd)
@@ -1692,10 +1689,7 @@ void MVD_LinkEdict(mvd_t *mvd, edict_t *ent)
         VectorCopy(cm->maxs, ent->maxs);
         ent->solid = SOLID_BSP;
     } else if (ent->s.solid) {
-        if (mvd->csr->extended)
-            MSG_UnpackSolid32_Ver2(ent->s.solid, ent->mins, ent->maxs);
-        else
-            MSG_UnpackSolid16(ent->s.solid, ent->mins, ent->maxs);
+        MSG_UnpackSolid32_Ver2(ent->s.solid, ent->mins, ent->maxs);
         ent->solid = SOLID_BBOX;
     } else {
         VectorClear(ent->mins);

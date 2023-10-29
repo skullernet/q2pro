@@ -528,7 +528,7 @@ static void emit_snd(client_t *client, message_packet_t *msg)
 
     MSG_WriteByte(svc_sound);
     MSG_WriteByte(flags);
-    if (client->csr->extended && flags & SND_INDEX16)
+    if (flags & SND_INDEX16)
         MSG_WriteShort(msg->index);
     else
         MSG_WriteByte(msg->index);
@@ -543,7 +543,7 @@ static void emit_snd(client_t *client, message_packet_t *msg)
     MSG_WriteShort(msg->sendchan);
 
     if (flags & SND_POS) {
-        MSG_WritePos(msg->pos, client->csr->extended);
+        MSG_WritePos(msg->pos, true);
     }
 }
 

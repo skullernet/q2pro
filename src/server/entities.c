@@ -278,9 +278,7 @@ void SV_WriteFrameToClient_Enhanced(client_t *client)
         psFlags |= MSG_PS_IGNORE_PREDICTION;
     }
     suppressed = client->frameflags;
-    if (client->csr->extended) {
-        psFlags |= MSG_PS_EXTENSIONS;
-    }
+    psFlags |= MSG_PS_EXTENSIONS;
     psFlags |= MSG_PS_FLOAT_COORDS | MSG_PS_NEW_STATS;
 
     // delta encode the playerstate
@@ -451,7 +449,7 @@ void SV_BuildClientFrame(client_t *client)
     // limit maximum number of entities in client frame
     max_packet_entities =
         sv_max_packet_entities->integer > 0 ? sv_max_packet_entities->integer :
-        client->csr->extended ? MAX_PACKET_ENTITIES : MAX_PACKET_ENTITIES_OLD;
+        MAX_PACKET_ENTITIES;
 
     CM_FatPVS(client->cm, clientpvs, org);
     BSP_ClusterVis(client->cm->cache, clientphs, clientcluster, DVIS_PHS);
@@ -482,11 +480,11 @@ void SV_BuildClientFrame(client_t *client)
             continue;
         }
 
-        if (client->csr->extended && ent->s.renderfx & RF_FLARE && client->settings[CLS_NOFLARES])
+        if (ent->s.renderfx & RF_FLARE && client->settings[CLS_NOFLARES])
             continue;
 
         // ignore if not touching a PV leaf
-        if (ent != clent && !sv_novis->integer && !(client->csr->extended && ent->svflags & SVF_NOCULL)) {
+        if (ent != clent && !sv_novis->integer && !(ent->svflags & SVF_NOCULL)) {
             // check area
             if (!CM_AreasConnected(client->cm, clientarea, ent->areanum)) {
                 // doors can legally straddle two areas, so
@@ -499,7 +497,7 @@ void SV_BuildClientFrame(client_t *client)
             // beams just check one point for PHS
             // remaster uses different sound culling rules
             bool beam_cull = ent->s.renderfx & RF_BEAM;
-            bool sound_cull = client->csr->extended && ent->s.sound;
+            bool sound_cull = ent->s.sound;
 
             if (!SV_EntityVisible(client, svent, (beam_cull || sound_cull) ? clientphs : clientpvs))
                 continue;
@@ -526,7 +524,7 @@ void SV_BuildClientFrame(client_t *client)
 
         // add it to the circular client_entities array
         state = &svs.entities[svs.next_entity % svs.num_entities];
-        MSG_PackEntity(state, &ent->s, client->csr->extended);
+        MSG_PackEntity(state, &ent->s, true);
 
 #if USE_FPS
         // fix old entity origins for clients not running at
@@ -537,8 +535,7 @@ void SV_BuildClientFrame(client_t *client)
 
         // clear footsteps
         if (client->settings[CLS_NOFOOTSTEPS] && (state->event == EV_FOOTSTEP
-            || (client->csr->extended && (state->event == EV_OTHER_FOOTSTEP ||
-                                          state->event == EV_LADDER_STEP)))) {
+            || (state->event == EV_OTHER_FOOTSTEP || state->event == EV_LADDER_STEP))) {
             state->event = 0;
         }
 
@@ -549,11 +546,7 @@ void SV_BuildClientFrame(client_t *client)
         }
 
 #if USE_MVD_CLIENT
-        if (sv.state == ss_broadcast) {
-            // spectators only need to know about inline BSP models
-            if (!client->csr->extended && state->solid != PACKED_BSP)
-                state->solid = 0;
-        } else
+        if (sv.state != ss_broadcast)
 #endif
         if (ent->owner == clent) {
             // don't mark players missiles as solid
