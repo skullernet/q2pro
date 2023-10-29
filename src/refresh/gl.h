@@ -51,8 +51,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define TAB_SIN(x) gl_static.sintab[(x) & 255]
 #define TAB_COS(x) gl_static.sintab[((x) + 64) & 255]
 
-// must match GLS_SHADER_MASK bit size
-#define MAX_PROGRAMS    1024
 #define NUM_TEXNUMS     7
 
 typedef struct {
@@ -76,6 +74,7 @@ typedef struct {
     void (*color_byte_pointer)(GLint size, GLsizei stride, const GLubyte *pointer);
     void (*color_float_pointer)(GLint size, GLsizei stride, const GLfloat *pointer);
     void (*color)(GLfloat r, GLfloat g, GLfloat b, GLfloat a);
+    void (*normal_float_pointer)(GLint size, GLsizei stride, const GLfloat *pointer);
 } glbackend_t;
 
 typedef struct {
@@ -83,6 +82,19 @@ typedef struct {
     bool pending;
     bool visible;
 } glquery_t;
+
+typedef struct glprogram_s glprogram_t;
+typedef enum glStateBits_e glStateBits_t;
+
+typedef struct glprogram_s {
+    GLuint          id;
+    glStateBits_t   bits;
+
+    glprogram_t     *next;
+    glprogram_t     *hash_next;
+} glprogram_t;
+
+#define PROGRAM_HASH_SIZE   16
 
 typedef struct {
     bool            registering;
@@ -99,7 +111,8 @@ typedef struct {
     GLuint          warp_renderbuffer;
     GLuint          warp_framebuffer;
     GLuint          u_bufnum;
-    GLuint          programs[MAX_PROGRAMS];
+    glprogram_t     *programs_head;
+    glprogram_t     *programs_hash[PROGRAM_HASH_SIZE];
     GLuint          texnums[NUM_TEXNUMS];
     GLenum          samples_passed;
     GLbitfield      stencil_buffer_bit;
@@ -446,7 +459,7 @@ void GL_LoadWorld(const char *name);
  * gl_state.c
  *
  */
-typedef enum {
+typedef enum glStateBits_e {
     GLS_DEFAULT             = 0,
     GLS_DEPTHMASK_FALSE     = BIT(0),
     GLS_DEPTHTEST_DISABLE   = BIT(1),
@@ -467,6 +480,8 @@ typedef enum {
     GLS_SKY_FOG             = BIT(14),
     GLS_CLASSIC_SKY         = BIT(15),
 
+    GLS_SHADER_START_BIT    = 6,
+
     GLS_SHADE_SMOOTH        = BIT(16),
     GLS_SCROLL_X            = BIT(17),
     GLS_SCROLL_Y            = BIT(18),
@@ -477,7 +492,7 @@ typedef enum {
     GLS_COMMON_MASK = GLS_DEPTHMASK_FALSE | GLS_DEPTHTEST_DISABLE | GLS_CULL_DISABLE | GLS_BLEND_MASK,
     GLS_SHADER_MASK = GLS_ALPHATEST_ENABLE | GLS_TEXTURE_REPLACE | GLS_SCROLL_ENABLE |
         GLS_LIGHTMAP_ENABLE | GLS_WARP_ENABLE | GLS_INTENSITY_ENABLE | GLS_GLOWMAP_ENABLE |
-        GLS_FOG_ENABLE | GLS_CLASSIC_SKY,
+        GLS_FOG_ENABLE | GLS_SKY_FOG | GLS_CLASSIC_SKY,
     GLS_SCROLL_MASK = GLS_SCROLL_ENABLE | GLS_SCROLL_X | GLS_SCROLL_Y | GLS_SCROLL_FLIP | GLS_SCROLL_SLOW,
     GLS_UBLOCK_MASK = GLS_SCROLL_MASK | GLS_FOG_ENABLE | GLS_SKY_FOG | GLS_CLASSIC_SKY,
 } glStateBits_t;
@@ -488,6 +503,7 @@ typedef enum {
     GLA_TC          = BIT(1),
     GLA_LMTC        = BIT(2),
     GLA_COLOR       = BIT(3),
+    GLA_NORMAL      = BIT(4),
 } glArrayBits_t;
 
 typedef struct {

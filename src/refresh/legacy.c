@@ -65,11 +65,11 @@ static void legacy_state_bits(GLbitfield bits)
         }
     }
 
-    if ((diff & GLS_WARP_ENABLE) && gl_static.programs[0]) {
+    if ((diff & GLS_WARP_ENABLE) && gl_static.programs_head) {
         if (bits & GLS_WARP_ENABLE) {
             vec4_t param = { glr.fd.time, glr.fd.time };
             qglEnable(GL_FRAGMENT_PROGRAM_ARB);
-            qglBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, gl_static.programs[0]);
+            qglBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, gl_static.programs_head->id);
             qglProgramLocalParameter4fvARB(GL_FRAGMENT_PROGRAM_ARB, 0, param);
         } else {
             qglBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, 0);
@@ -172,6 +172,11 @@ static void legacy_color(GLfloat r, GLfloat g, GLfloat b, GLfloat a)
     qglColor4f(r, g, b, a);
 }
 
+static void legacy_normal_float_pointer(GLint size, GLsizei stride, const GLfloat *pointer)
+{
+    // no-op
+}
+
 static void legacy_load_view_matrix(const GLfloat *matrix)
 {
     qglMatrixMode(GL_MODELVIEW);
@@ -218,7 +223,7 @@ static void legacy_clear_state(void)
     qglDisableClientState(GL_VERTEX_ARRAY);
     qglDisableClientState(GL_COLOR_ARRAY);
 
-    if (gl_static.programs[0]) {
+    if (gl_static.programs_head) {
         qglBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, 0);
         qglDisable(GL_FRAGMENT_PROGRAM_ARB);
     }
@@ -246,14 +251,16 @@ static void legacy_init(void)
     }
 
     qglBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, 0);
-    gl_static.programs[0] = prog;
+    gl_static.programs_head = Z_TagMallocz(sizeof(glprogram_t), TAG_RENDERER);
+    gl_static.programs_head->id = prog;
 }
 
 static void legacy_shutdown(void)
 {
-    if (gl_static.programs[0]) {
-        qglDeleteProgramsARB(1, gl_static.programs);
-        gl_static.programs[0] = 0;
+    if (gl_static.programs_head) {
+        qglDeleteProgramsARB(1, &gl_static.programs_head->id);
+        Z_Free(gl_static.programs_head);
+        gl_static.programs_head = NULL;
     }
 }
 
@@ -276,4 +283,5 @@ const glbackend_t backend_legacy = {
     .color_byte_pointer = legacy_color_byte_pointer,
     .color_float_pointer = legacy_color_float_pointer,
     .color = legacy_color,
+    .normal_float_pointer = legacy_normal_float_pointer
 };

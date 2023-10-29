@@ -27,6 +27,7 @@ enum {
     VERT_ATTR_POS,
     VERT_ATTR_TC,
     VERT_ATTR_LMTC,
+    VERT_ATTR_NORMAL,
     VERT_ATTR_COLOR
 };
 
@@ -274,26 +275,35 @@ static GLuint create_shader(GLenum type, const char *src)
     return shader;
 }
 
-static GLuint create_and_use_program(GLbitfield bits)
+static void create_and_use_program(GLbitfield bits, uint32_t hash)
 {
     char buffer[MAX_SHADER_CHARS];
 
     GLuint program = qglCreateProgram();
     if (!program) {
         Com_EPrintf("Couldn't create program\n");
-        return 0;
+        return;
     }
+
+    glprogram_t *prog = Z_TagMallocz(sizeof(glprogram_t), TAG_RENDERER);
+    prog->bits = bits;
+    prog->id = program;
+    prog->hash_next = gl_static.programs_hash[hash];
+    gl_static.programs_hash[hash] = prog;
+
+    prog->next = gl_static.programs_head;
+    gl_static.programs_head = prog;
 
     write_vertex_shader(buffer, bits);
     GLuint shader_v = create_shader(GL_VERTEX_SHADER, buffer);
     if (!shader_v)
-        return program;
+        return;
 
     write_fragment_shader(buffer, bits);
     GLuint shader_f = create_shader(GL_FRAGMENT_SHADER, buffer);
     if (!shader_f) {
         qglDeleteShader(shader_v);
-        return program;
+        return;
     }
 
     qglAttachShader(program, shader_v);
@@ -322,20 +332,20 @@ static GLuint create_and_use_program(GLbitfield bits)
             Com_Printf("%s", buffer);
 
         Com_EPrintf("Error linking program\n");
-        return program;
+        return;
     }
 
     GLuint index = qglGetUniformBlockIndex(program, "u_block");
     if (index == GL_INVALID_INDEX) {
         Com_EPrintf("Uniform block not found\n");
-        return program;
+        return;
     }
 
     GLint size = 0;
     qglGetActiveUniformBlockiv(program, index, GL_UNIFORM_BLOCK_DATA_SIZE, &size);
     if (size != sizeof(gls.u_block)) {
         Com_EPrintf("Uniform block size mismatch: %d != %zu\n", size, sizeof(gls.u_block));
-        return program;
+        return;
     }
 
     qglUniformBlockBinding(program, index, 0);
@@ -349,8 +359,24 @@ static GLuint create_and_use_program(GLbitfield bits)
         qglUniform1i(qglGetUniformLocation(program, "u_alphamap"), 1);
     if (bits & GLS_GLOWMAP_ENABLE)
         qglUniform1i(qglGetUniformLocation(program, "u_glowmap"), 2);
+}
 
-    return program;
+static void find_and_use_program(GLbitfield bits)
+{
+    GLuint hash = bits >> GLS_SHADER_START_BIT;
+    hash = HashInt32(&hash) & (PROGRAM_HASH_SIZE - 1);
+    glStateBits_t shader_bits = bits & GLS_SHADER_MASK;
+
+    glprogram_t *prog = gl_static.programs_hash[hash];
+
+    if (prog) {
+        for (; prog && prog->bits != shader_bits; prog = prog->hash_next) ;
+    }
+
+    if (prog)
+        qglUseProgram(prog->id);
+    else
+        create_and_use_program(shader_bits, hash);
 }
 
 static void shader_state_bits(GLbitfield bits)
@@ -374,12 +400,7 @@ static void shader_state_bits(GLbitfield bits)
         GL_CommonStateBits(bits);
 
     if (diff & GLS_SHADER_MASK) {
-        GLuint i = (bits >> 6) & (MAX_PROGRAMS - 1);
-
-        if (gl_static.programs[i])
-            qglUseProgram(gl_static.programs[i]);
-        else
-            gl_static.programs[i] = create_and_use_program(bits);
+        find_and_use_program(bits);
     }
 
     if (diff & GLS_UBLOCK_MASK) {
@@ -426,6 +447,14 @@ static void shader_array_bits(GLbitfield bits)
             qglDisableVertexAttribArray(VERT_ATTR_COLOR);
         }
     }
+
+    if (diff & GLA_NORMAL) {
+        if (bits & GLA_NORMAL) {
+            qglEnableVertexAttribArray(VERT_ATTR_NORMAL);
+        } else {
+            qglDisableVertexAttribArray(VERT_ATTR_NORMAL);
+        }
+    }
 }
 
 static void shader_vertex_pointer(GLint size, GLsizei stride, const GLfloat *pointer)
@@ -456,6 +485,11 @@ static void shader_color_float_pointer(GLint size, GLsizei stride, const GLfloat
 static void shader_color(GLfloat r, GLfloat g, GLfloat b, GLfloat a)
 {
     qglVertexAttrib4f(VERT_ATTR_COLOR, r, g, b, a);
+}
+
+static void shader_normal_float_pointer(GLint size, GLsizei stride, const GLfloat *pointer)
+{
+    qglVertexAttribPointer(VERT_ATTR_NORMAL, size, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * stride, pointer);
 }
 
 static void upload_u_block(void)
@@ -547,11 +581,9 @@ static void shader_clear_state(void)
     qglDisableVertexAttribArray(VERT_ATTR_TC);
     qglDisableVertexAttribArray(VERT_ATTR_LMTC);
     qglDisableVertexAttribArray(VERT_ATTR_COLOR);
+    qglDisableVertexAttribArray(VERT_ATTR_NORMAL);
 
-    if (gl_static.programs[0])
-        qglUseProgram(gl_static.programs[0]);
-    else
-        gl_static.programs[0] = create_and_use_program(GLS_DEFAULT);
+    find_and_use_program(GLS_DEFAULT);
 }
 
 static void shader_init(void)
@@ -560,17 +592,24 @@ static void shader_init(void)
     qglBindBuffer(GL_UNIFORM_BUFFER, gl_static.u_bufnum);
     qglBindBufferBase(GL_UNIFORM_BUFFER, 0, gl_static.u_bufnum);
     qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_block), NULL, GL_DYNAMIC_DRAW);
+
+    // precache common shader
+    find_and_use_program(GLS_DEFAULT);
 }
 
 static void shader_shutdown(void)
 {
     qglUseProgram(0);
-    for (int i = 0; i < MAX_PROGRAMS; i++) {
-        if (gl_static.programs[i]) {
-            qglDeleteProgram(gl_static.programs[i]);
-            gl_static.programs[i] = 0;
-        }
+
+    for (glprogram_t *head = gl_static.programs_head; head; ) {
+        qglDeleteProgram(head->id);
+        glprogram_t *next = head->next;
+        Z_Free(head);
+        head = next;
     }
+
+    gl_static.programs_head = NULL;
+    memset(gl_static.programs_hash, 0, sizeof(gl_static.programs_hash));
 
     qglBindBuffer(GL_UNIFORM_BUFFER, 0);
     if (gl_static.u_bufnum) {
@@ -600,4 +639,5 @@ const glbackend_t backend_shader = {
     .color_byte_pointer = shader_color_byte_pointer,
     .color_float_pointer = shader_color_float_pointer,
     .color = shader_color,
+    .normal_float_pointer = shader_normal_float_pointer,
 };
