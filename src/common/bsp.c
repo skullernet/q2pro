@@ -190,6 +190,11 @@ LOAD(Texinfo)
                     out->step_id = highest_step_id++;
                 }
             }
+
+            // check if we have a classic sky
+            if (!bsp->classic_sky && Q_stristr(out->name, "env/sky") && (out->c.flags & SURF_SKY)) {
+                bsp->classic_sky = out->name;
+            }
 #endif
         }
 

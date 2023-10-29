@@ -309,6 +309,7 @@ typedef struct bsp_s {
     bool            lm_decoupled;
 #endif
     bool            extended;
+    const char      *classic_sky; // N64 / PSX map
 
     char            name[1];
 } bsp_t;
