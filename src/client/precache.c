@@ -30,7 +30,7 @@ Breaks up playerskin into name (optional), model and skin components.
 If model or skin are found to be invalid, replaces them with sane defaults.
 ================
 */
-void CL_ParsePlayerSkin(char *name, char *model, char *skin, const char *s)
+void CL_ParsePlayerSkin(char *name, char *model, char *skin, char *dogtag, const char *s)
 {
     size_t len;
     char *t;
@@ -70,6 +70,12 @@ void CL_ParsePlayerSkin(char *name, char *model, char *skin, const char *s)
     if (t)
         *t = 0;
 
+    // isolate the dogtag name
+    strcpy(dogtag, t + 1);
+
+    if (!*dogtag)
+        goto default_dogtag;
+
     // fix empty model to male
     if (t == model)
         strcpy(model, "male");
@@ -92,6 +98,8 @@ default_model:
         strcpy(model, "male");
         strcpy(skin, "grunt");
     }
+default_dogtag:
+    strcpy(dogtag, "default");
 }
 
 /*
@@ -105,12 +113,14 @@ void CL_LoadClientinfo(clientinfo_t *ci, const char *s)
     int         i;
     char        model_name[MAX_QPATH];
     char        skin_name[MAX_QPATH];
+    char        dogtag_name[MAX_QPATH];
     char        model_filename[MAX_QPATH];
     char        skin_filename[MAX_QPATH];
     char        weapon_filename[MAX_QPATH];
     char        icon_filename[MAX_QPATH];
+    char        dogtag_filename[MAX_QPATH];
 
-    CL_ParsePlayerSkin(ci->name, model_name, skin_name, s);
+    CL_ParsePlayerSkin(ci->name, model_name, skin_name, dogtag_name, s);
 
     // model file
     Q_concat(model_filename, sizeof(model_filename),
@@ -178,6 +188,8 @@ void CL_LoadClientinfo(clientinfo_t *ci, const char *s)
 
     strcpy(ci->model_name, model_name);
     strcpy(ci->skin_name, skin_name);
+    Q_concat(dogtag_filename, sizeof(dogtag_filename), dogtag_name, ".pcx");
+    Q_strlcpy(ci->dogtag_name, dogtag_filename, sizeof(ci->dogtag_name));
 
     // base info should be at least partially valid
     if (ci == &cl.baseclientinfo)
@@ -191,6 +203,7 @@ void CL_LoadClientinfo(clientinfo_t *ci, const char *s)
         ci->weaponmodel[0] = 0;
         ci->model_name[0] = 0;
         ci->skin_name[0] = 0;
+        ci->dogtag_name[0] = 0;
     }
 }
 
@@ -398,7 +411,7 @@ void CL_PrepRefresh(void)
         CL_LoadClientinfo(&cl.clientinfo[i], name);
     }
 
-    CL_LoadClientinfo(&cl.baseclientinfo, "unnamed\\male/grunt");
+    CL_LoadClientinfo(&cl.baseclientinfo, "unnamed\\male/grunt\\default");
 
     // set sky textures and speed
     CL_SetSky();

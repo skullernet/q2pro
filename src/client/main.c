@@ -86,6 +86,7 @@ cvar_t  *cl_vwep;
 cvar_t  *info_password;
 cvar_t  *info_spectator;
 cvar_t  *info_name;
+cvar_t  *info_dogtag;
 cvar_t  *info_skin;
 cvar_t  *info_rate;
 cvar_t  *info_fov;
@@ -2859,6 +2860,7 @@ static void CL_InitLocal(void)
     info_password = Cvar_Get("password", "", CVAR_USERINFO);
     info_spectator = Cvar_Get("spectator", "0", CVAR_USERINFO);
     info_name = Cvar_Get("name", "unnamed", CVAR_USERINFO | CVAR_ARCHIVE);
+    info_dogtag = Cvar_Get("dogtag", "default", CVAR_USERINFO | CVAR_ARCHIVE);
     info_skin = Cvar_Get("skin", "male/grunt", CVAR_USERINFO | CVAR_ARCHIVE);
     info_rate = Cvar_Get("rate", "15000", CVAR_USERINFO | CVAR_ARCHIVE);
     info_msg = Cvar_Get("msg", "1", CVAR_USERINFO | CVAR_ARCHIVE);

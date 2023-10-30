@@ -603,11 +603,11 @@ done:
 
 static void check_player(const char *name)
 {
-    char fn[MAX_QPATH], model[MAX_QPATH], skin[MAX_QPATH], *p;
+    char fn[MAX_QPATH], model[MAX_QPATH], skin[MAX_QPATH], dogtag[MAX_QPATH], *p;
     size_t len;
     int i, j;
 
-    CL_ParsePlayerSkin(NULL, model, skin, name);
+    CL_ParsePlayerSkin(NULL, model, skin, dogtag, name);
 
     // model
     len = Q_concat(fn, sizeof(fn), "players/", model, "/tris.md2");
@@ -629,6 +629,10 @@ static void check_player(const char *name)
 
     // skin_i
     len = Q_concat(fn, sizeof(fn), "players/", model, "/", skin, "_i.pcx");
+    check_file_len(fn, len, DL_OTHER);
+
+    // dogtag
+    len = Q_concat(fn, sizeof(fn), "tags/", dogtag, ".pcx");
     check_file_len(fn, len, DL_OTHER);
 
     // sexed sounds

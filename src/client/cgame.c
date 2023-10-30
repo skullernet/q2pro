@@ -195,8 +195,7 @@ static const char * CG_CL_GetClientDogtag (int32_t index)
     if (index < 0 || index >= MAX_CLIENTS) {
         Com_Error(ERR_DROP, "%s: invalid client index", __func__);
     }
-    // TODO: This may be a userinfo or so?
-    return "default.pcx";
+    return cl.clientinfo[index].dogtag_name;
 }
 
 static const char* CG_CL_GetKeyBinding(const char *binding)

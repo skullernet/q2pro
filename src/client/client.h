@@ -96,6 +96,7 @@ typedef struct clientinfo_s {
     char icon_name[MAX_QPATH];
     char model_name[MAX_QPATH];
     char skin_name[MAX_QPATH];
+    char dogtag_name[MAX_QPATH];
     qhandle_t model;
     qhandle_t weaponmodel[MAX_CLIENTWEAPONMODELS];
 } clientinfo_t;
@@ -608,6 +609,7 @@ extern cvar_t   *cl_async;
 extern cvar_t   *info_password;
 extern cvar_t   *info_spectator;
 extern cvar_t   *info_name;
+extern cvar_t   *info_dogtag;
 extern cvar_t   *info_skin;
 extern cvar_t   *info_rate;
 extern cvar_t   *info_fov;
@@ -667,7 +669,7 @@ typedef enum {
     LOAD_SOUNDS
 } load_state_t;
 
-void CL_ParsePlayerSkin(char *name, char *model, char *skin, const char *s);
+void CL_ParsePlayerSkin(char *name, char *model, char *skin, char *dogtag, const char *s);
 void CL_LoadClientinfo(clientinfo_t *ci, const char *s);
 void CL_LoadState(load_state_t state);
 void CL_RegisterSounds(void);
