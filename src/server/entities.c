@@ -545,10 +545,7 @@ void SV_BuildClientFrame(client_t *client)
             state->modelindex = 0;
         }
 
-#if USE_MVD_CLIENT
-        if (sv.state != ss_broadcast)
-#endif
-        if (ent->owner == clent) {
+        if ((!USE_MVD_CLIENT || sv.state != ss_broadcast) && (ent->owner == clent)) {
             // don't mark players missiles as solid
             state->solid = 0;
         } else if (client->esFlags & MSG_ES_LONGSOLID) {
