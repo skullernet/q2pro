@@ -605,3 +605,8 @@ void GL_InitDebugDraw(void)
 
     Cmd_AddCommand("debug_clear", GL_DebugClear_f);
 }
+
+void GL_ShutdownDebugDraw(void)
+{
+    Cmd_RemoveCommand("debug_clear");
+}

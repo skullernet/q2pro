@@ -1400,7 +1400,7 @@ static void BSP_ParseFaceNormals(bsp_t *bsp, const byte *in, size_t filelen)
     if (!BSP_ParseFaceNormalsHeader(bsp, in, filelen))
         return;
 
-    bsp->normals.normals = Z_TagMalloc(sizeof(vec3_t) * bsp->normals.num_normals, TAG_RENDERER);
+    bsp->normals.normals = Z_Malloc(sizeof(vec3_t) * bsp->normals.num_normals);
 
     size_t off = sizeof(uint32_t);
 
@@ -1419,7 +1419,7 @@ static void BSP_ParseFaceNormals(bsp_t *bsp, const byte *in, size_t filelen)
         return;
     }
 
-    bsp->normals.normal_indices = Z_TagMalloc(sizeof(uint32_t) * num_indices, TAG_RENDERER);
+    bsp->normals.normal_indices = Z_Malloc(sizeof(uint32_t) * num_indices);
 
     for (size_t i = 0; i < num_indices; i++) {
         memcpy(&bsp->normals.normal_indices[i], in + off, sizeof(uint32_t));

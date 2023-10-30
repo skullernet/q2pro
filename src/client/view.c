@@ -551,20 +551,7 @@ static void V_Viewpos_f(void)
     Com_Printf("%s : %.f\n", vtos(cl.refdef.vieworg), cl.refdef.viewangles[YAW]);
 }
 
-static const cmdreg_t v_cmds[] = {
-    { "gun_next", V_Gun_Next_f },
-    { "gun_prev", V_Gun_Prev_f },
-    { "gun_model", V_Gun_Model_f },
-    { "viewpos", V_Viewpos_f },
-    { NULL }
-};
-
-static void cl_add_blend_changed(cvar_t *self)
-{
-    CL_UpdateBlendSetting();
-}
-
-static void CL_Fog_f(void)
+static void V_Fog_f(void)
 {
     fog_params_t p;
     p.global.r = atof(Cmd_Argv(1));
@@ -575,6 +562,20 @@ static void CL_Fog_f(void)
     int time = atoi(Cmd_Argv(6));
 
     V_FogParamsChanged(FOG_BIT_R | FOG_BIT_G | FOG_BIT_B | FOG_BIT_DENSITY, &p, time);
+}
+
+static const cmdreg_t v_cmds[] = {
+    { "gun_next", V_Gun_Next_f },
+    { "gun_prev", V_Gun_Prev_f },
+    { "gun_model", V_Gun_Model_f },
+    { "viewpos", V_Viewpos_f },
+    { "fog", V_Fog_f },
+    { NULL }
+};
+
+static void cl_add_blend_changed(cvar_t *self)
+{
+    CL_UpdateBlendSetting();
 }
 
 /*
@@ -602,8 +603,6 @@ void V_Init(void)
     cl_add_blend->changed = cl_add_blend_changed;
 
     cl_adjustfov = Cvar_Get("cl_adjustfov", "1", 0);
-
-    Cmd_AddCommand("fog", CL_Fog_f);
 }
 
 void V_Shutdown(void)

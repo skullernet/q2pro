@@ -748,7 +748,7 @@ void GL_ClearSolidFaces(void);
 void GL_ClearDebugLines(void);
 void GL_DrawDebugLines(void);
 void GL_InitDebugDraw(void);
-
+void GL_ShutdownDebugDraw(void);
 
 /*
  * gl_world.c
