@@ -65,6 +65,11 @@ void CL_ParsePlayerSkin(char *name, char *model, char *skin, const char *s)
     // isolate the skin name
     strcpy(skin, t + 1);
 
+    // separate it from dogtag
+    t = strchr(skin, '\\');
+    if (t)
+        *t = 0;
+
     // fix empty model to male
     if (t == model)
         strcpy(model, "male");
