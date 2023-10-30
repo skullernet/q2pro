@@ -487,11 +487,6 @@ static PathInfo Nav_Path_(nav_path_t *path)
 }
 
 #if USE_REF
-static inline color_t ColorFromU32(uint32_t c)
-{
-    return (color_t) { .u32 = c };
-}
-
 static inline color_t ColorFromU32A(uint32_t c, uint8_t alpha)
 {
     color_t color = { .u32 = c };

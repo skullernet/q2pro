@@ -341,9 +341,9 @@ check_player_lerp(server_frame_t *oldframe, server_frame_t *frame, int framediv)
         goto dup;
 
     // no lerping if player entity was teleported (origin check)
-    if (abs(ops->pmove.origin[0] - ps->pmove.origin[0]) > 256 ||
-        abs(ops->pmove.origin[1] - ps->pmove.origin[1]) > 256 ||
-        abs(ops->pmove.origin[2] - ps->pmove.origin[2]) > 256) {
+    if (fabsf(ops->pmove.origin[0] - ps->pmove.origin[0]) > 256 ||
+        fabsf(ops->pmove.origin[1] - ps->pmove.origin[1]) > 256 ||
+        fabsf(ops->pmove.origin[2] - ps->pmove.origin[2]) > 256) {
         goto dup;
     }
 

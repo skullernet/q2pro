@@ -559,6 +559,8 @@ static void AL_LoadReverbEnvironments(void)
     jsmntok_t *tokens;
     size_t num_tokens;
     int ret = 0;
+    al_reverb_environment_t *environments = NULL;
+    size_t n = 0;
 
     if (!JSON_Load("sound/default.environments", &buffer, &tokens, &num_tokens)) {
         ret = Q_ERR_INVALID_FORMAT;
@@ -576,10 +578,10 @@ static void AL_LoadReverbEnvironments(void)
 
     t++;
 
-    size_t n = t->size;
+    n = t->size;
     JSON_ENSURE_NEXT(JSMN_ARRAY);
 
-    al_reverb_environment_t *environments = Z_TagMallocz(sizeof(al_reverb_environment_t) * n, TAG_SOUND);
+    environments = Z_TagMallocz(sizeof(al_reverb_environment_t) * n, TAG_SOUND);
 
     for (size_t i = 0; i < n; i++) {
         ret = AL_LoadReverbEnvironment(buffer, tokens, num_tokens, &t, &environments[i]);
@@ -1200,7 +1202,7 @@ static void AL_EndRegistration(void)
     s_reverb_probe_index = 0;
     for (int i = 0; i < q_countof(s_reverb_probes); i++)
         VectorClear(s_reverb_probe_results[i]);
-    s_reverb_probe_avg = 99999999;
+    s_reverb_probe_avg = (float) 8192;
     s_reverb_active_environment = &s_reverb_environments[s_num_reverb_environments - 1];
 
     if (cl.bsp)

@@ -155,6 +155,39 @@ static void Parse_Spin(menuFrameWork_t *menu, menuType_t type)
     Menu_AddItem(menu, s);
 }
 
+static void Parse_ImageSpin(menuFrameWork_t *menu, menuType_t type)
+{
+    menuImageSpinControl_t *s;
+    int c, numItems;
+    char *status = NULL;
+
+    while ((c = Cmd_ParseOptions(o_common)) != -1) {
+        switch (c) {
+        case 's':
+            status = cmd_optarg;
+            break;
+        default:
+            return;
+        }
+    }
+
+    numItems = Cmd_Argc() - (cmd_optind + 2);
+    if (numItems < 1) {
+        Com_Printf("Usage: %s <name> <cvar> <path filter>\n", Cmd_Argv(0));
+        return;
+    }
+
+    s = UI_Mallocz(sizeof(*s));
+    s->generic.type = type;
+    s->generic.name = UI_CopyString(Cmd_Argv(cmd_optind));
+    s->generic.status = UI_CopyString(status);
+    s->cvar = Cvar_WeakGet(Cmd_Argv(cmd_optind + 1));
+    s->path = UI_CopyString(Cmd_Argv(cmd_optind + 2));
+    s->filter = UI_CopyString(Cmd_Argv(cmd_optind + 3));
+
+    Menu_AddItem(menu, s);
+}
+
 static void Parse_Pairs(menuFrameWork_t *menu)
 {
     menuSpinControl_t *s;
@@ -674,6 +707,8 @@ static bool parse_string(char *data, int depth)
                     Parse_Field(menu);
                 } else if (!strcmp(cmd, "blank")) {
                     Parse_Blank(menu);
+                } else if (!strcmp(cmd, "imagevalues")) {
+                    Parse_ImageSpin(menu, MTYPE_IMAGESPINCONTROL);
                 } else {
                     Com_WPrintf("Unknown keyword '%s'\n", cmd);
                 }
@@ -755,7 +790,6 @@ static bool parse_string(char *data, int depth)
 static bool parse_file(const char *path, int depth)
 {
     char *raw;
-    menuFrameWork_t *menu = NULL;
     int ret;
 
     ret = FS_LoadFile(path, (void **)&raw);

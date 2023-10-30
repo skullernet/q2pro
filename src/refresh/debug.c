@@ -321,13 +321,6 @@ void R_AddDebugCylinder(const vec3_t origin, float half_height, float radius, co
     }
 }
 
-static inline void GL_TransformVec3(vec3_t out, const vec3_t *matrix, const vec3_t in)
-{
-    out[0] = matrix[0][0] * in[0] + matrix[1][0] * in[1] + matrix[2][0] * in[2];
-    out[1] = matrix[0][1] * in[0] + matrix[1][1] * in[1] + matrix[2][1] * in[2];
-    out[2] = matrix[0][2] * in[0] + matrix[1][2] * in[1] + matrix[2][2] * in[2];
-}
-
 static void GL_DrawArrowCap(const vec3_t apex, const vec3_t dir, float size, color_t color, int time, bool depth_test)
 {
     vec3_t cap_end;

@@ -18,6 +18,7 @@ common_src = [
   'src/common/field.c',
   'src/common/fifo.c',
   'src/common/files.c',
+  'src/common/natsort.c',
   'src/common/hash_map.c',
   'src/common/loc.c',
   'src/common/math.c',
@@ -42,6 +43,7 @@ common_src = [
   'inc/shared/platform.h',
   'inc/shared/shared.h',
 
+  'inc/common/natsort.h',
   'inc/common/async.h',
   'inc/common/bsp.h',
   'inc/common/cmd.h',
@@ -149,6 +151,7 @@ ui_src = [
   'src/client/ui/servers.c',
   'src/client/ui/ui.c',
   'src/client/ui/ui.h',
+  'src/client/ui/q2pro.menu',
 ]
 
 refresh_src = [

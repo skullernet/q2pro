@@ -85,17 +85,6 @@ typedef struct {
     bool visible;
 } glquery_t;
 
-typedef struct glprogram_s glprogram_t;
-typedef enum glStateBits_e glStateBits_t;
-
-typedef struct glprogram_s {
-    GLuint          id;
-    glStateBits_t   bits;
-
-    glprogram_t     *next;
-    glprogram_t     *hash_next;
-} glprogram_t;
-
 #define PROGRAM_HASH_SIZE   16
 
 #define NUM_UBLOCKS 2
@@ -104,6 +93,8 @@ enum {
     UBLOCK_MAIN,
     UBLOCK_DLIGHTS
 };
+
+typedef struct glprogram_s glprogram_t;
 
 typedef struct {
     bool            registering;
@@ -560,6 +551,14 @@ typedef struct {
         glDlight_t     lights[MAX_DLIGHTS];
     } u_dlights;
 } glState_t;
+
+typedef struct glprogram_s {
+    GLuint          id;
+    glStateBits_t   bits;
+
+    glprogram_t     *next;
+    glprogram_t     *hash_next;
+} glprogram_t;
 
 extern glState_t gls;
 

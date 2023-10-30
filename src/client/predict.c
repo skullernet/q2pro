@@ -190,7 +190,7 @@ void CL_PredictMovement(void)
 {
     unsigned    ack, current, frame;
     pmove_t     pm;
-    int         step;
+    float       step;
 
     if (cls.state != ca_active) {
         return;
@@ -212,7 +212,6 @@ void CL_PredictMovement(void)
 
     ack = cl.history[cls.netchan.incoming_acknowledged & CMD_MASK].cmdNumber;
     current = cl.cmdNumber;
-    unsigned int first_ack = ack;
 
     // if we are too far out of date, just freeze
     if (current - ack > CMD_BACKUP - 1) {

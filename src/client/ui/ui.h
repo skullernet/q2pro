@@ -57,7 +57,8 @@ typedef enum {
     MTYPE_KEYBIND,
     MTYPE_BITMAP,
     MTYPE_SAVEGAME,
-    MTYPE_LOADGAME
+    MTYPE_LOADGAME,
+    MTYPE_IMAGESPINCONTROL
 } menuType_t;
 
 #define QMF_LEFT_JUSTIFY    BIT(0)
@@ -227,6 +228,17 @@ typedef struct menuSpinControl_s {
     int         mask;
     bool        negate;
 } menuSpinControl_t;
+
+typedef struct menuImageSpinControl_s {
+    menuCommon_t generic;
+    cvar_t *cvar;
+    char *path;
+    char *filter;
+
+    char    **itemvalues;
+    int     numItems;
+    int     curvalue;
+} menuImageSpinControl_t;
 
 typedef struct menuAction_s {
     menuCommon_t generic;

@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "ui.h"
 #include "server/server.h"
+#include "common/files.h"
 
 /*
 ===================================================================
@@ -527,7 +528,6 @@ static void SpinControl_Free(menuSpinControl_t *s)
     Z_Free(s);
 }
 
-
 /*
 =================
 SpinControl_Init
@@ -636,6 +636,103 @@ static void SpinControl_Draw(menuSpinControl_t *s)
 
     UI_DrawString(s->generic.x + RCOLUMN_OFFSET, s->generic.y,
                   s->generic.uiFlags, name);
+}
+
+/*
+===================================================================
+
+IMAGE SPIN CONTROL
+
+===================================================================
+*/
+
+static void ImageSpinControl_Push(menuImageSpinControl_t *s)
+{
+}
+
+static void ImageSpinControl_Pop(menuImageSpinControl_t *s)
+{
+    if (s->curvalue >= 0 && s->curvalue < s->numItems)
+        Cvar_SetInteger(s->cvar, s->curvalue, FROM_MENU);
+
+    FS_FreeList((void **) s->itemvalues);
+}
+
+static void ImageSpinControl_Free(menuImageSpinControl_t *s)
+{
+    Z_Free(s->generic.name);
+    Z_Free(s->generic.status);
+    Z_Free(s->filter);
+    Z_Free(s);
+}
+
+/*
+=================
+SpinControl_Draw
+=================
+*/
+static void ImageSpinControl_Draw(menuImageSpinControl_t *s)
+{
+    const char *name;
+
+    UI_DrawString(s->generic.x + LCOLUMN_OFFSET, s->generic.y,
+                  s->generic.uiFlags | UI_RIGHT | UI_ALTCOLOR, s->generic.name);
+
+    if (s->generic.flags & QMF_HASFOCUS) {
+        if ((uis.realtime >> 8) & 1) {
+            UI_DrawChar(s->generic.x + RCOLUMN_OFFSET / 2, s->generic.y,
+                        s->generic.uiFlags | UI_RIGHT, 13);
+        }
+    }
+
+    if (s->curvalue < 0 || s->curvalue >= s->numItems)
+        name = "???";
+    else
+        name = s->itemvalues[s->curvalue];
+
+    UI_DrawString(s->generic.x + RCOLUMN_OFFSET, s->generic.y,
+                  s->generic.uiFlags, name);
+}
+
+/*
+=================
+SpinControl_Init
+=================
+*/
+void ImageSpinControl_Init(menuImageSpinControl_t *s)
+{
+    int    maxLength, length;
+
+    s->generic.uiFlags &= ~(UI_LEFT | UI_RIGHT);
+
+    s->generic.rect.x = s->generic.x + LCOLUMN_OFFSET;
+    s->generic.rect.y = s->generic.y;
+
+    UI_StringDimensions(&s->generic.rect,
+                        s->generic.uiFlags | UI_RIGHT, s->generic.name);
+
+    maxLength = 0;
+    s->numItems = 0;
+    
+    s->itemvalues = (char **) FS_ListFiles(NULL, va("%s/%s", s->path, s->filter), FS_SEARCH_BYFILTER, &s->numItems);
+
+    for (int i = 0; i < s->numItems; i++) {
+        length = strlen(s->itemvalues[i]);
+
+        if (maxLength < length) {
+            maxLength = length;
+        }
+    }
+
+    s->generic.rect.width += (RCOLUMN_OFFSET - LCOLUMN_OFFSET) +
+                             maxLength * CHAR_WIDTH;
+
+    int val = s->cvar->integer;
+
+    if (val < 0 || val >= s->numItems)
+        s->curvalue = -1;
+    else
+        s->curvalue = val;
 }
 
 /*
@@ -1817,6 +1914,9 @@ void Menu_Init(menuFrameWork_t *menu)
         case MTYPE_TOGGLE:
             SpinControl_Init(item);
             break;
+        case MTYPE_IMAGESPINCONTROL:
+            ImageSpinControl_Init(item);
+            break;
         case MTYPE_ACTION:
         case MTYPE_SAVEGAME:
         case MTYPE_LOADGAME:
@@ -2211,6 +2311,9 @@ void Menu_Draw(menuFrameWork_t *menu)
         case MTYPE_BITMAP:
             Bitmap_Draw(item);
             break;
+        case MTYPE_IMAGESPINCONTROL:
+            ImageSpinControl_Draw(item);
+            break;
         default:
             Q_assert(!"unknown item type");
         }
@@ -2470,6 +2573,9 @@ bool Menu_Push(menuFrameWork_t *menu)
         case MTYPE_LOADGAME:
             Savegame_Push(item);
             break;
+        case MTYPE_IMAGESPINCONTROL:
+            ImageSpinControl_Push(item);
+            break;
         default:
             break;
         }
@@ -2509,6 +2615,9 @@ void Menu_Pop(menuFrameWork_t *menu)
             break;
         case MTYPE_FIELD:
             Field_Pop(item);
+            break;
+        case MTYPE_IMAGESPINCONTROL:
+            ImageSpinControl_Pop(item);
             break;
         default:
             break;
@@ -2555,6 +2664,9 @@ void Menu_Free(menuFrameWork_t *menu)
             break;
         case MTYPE_BITMAP:
             Bitmap_Free(item);
+            break;
+        case MTYPE_IMAGESPINCONTROL:
+            ImageSpinControl_Free(item);
             break;
         default:
             break;
