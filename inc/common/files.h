@@ -57,8 +57,6 @@ int FS_RenameFile(const char *from, const char *to);
 
 int FS_CreatePath(char *path);
 
-char    *FS_CopyExtraInfo(const char *name, const file_info_t *info);
-
 int64_t FS_OpenFile(const char *filename, qhandle_t *f, unsigned mode);
 int     FS_CloseFile(qhandle_t f);
 qhandle_t FS_EasyOpenFile(char *buf, size_t size, unsigned mode,
