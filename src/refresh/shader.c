@@ -226,9 +226,10 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
         if (bits & GLS_ALPHATEST_ENABLE)
             GLSL(if (diffuse.a <= 0.666) discard;)
 
+        if (!(bits & GLS_TEXTURE_REPLACE))
+            GLSL(vec4 color = v_color;)
+
         if (bits & GLS_LIGHTMAP_ENABLE) {
-            if (!(bits & GLS_TEXTURE_REPLACE))
-                GLSL(vec4 color = v_color;)
 
             GLSL(vec4 lightmap = texture(u_lightmap, v_lmtc);)
 
@@ -245,8 +246,7 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
 
             GLSL(diffuse.rgb *= (lightmap.rgb + u_add) * u_modulate;)
         } else {
-            GLSL(vec4 color = v_color;)
-  
+
             if (bits & GLS_DYNAMIC_LIGHTS) {
                 GLSL(color.rgb += calc_dynamic_lights() * u_modulate;)
             }
