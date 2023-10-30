@@ -5,11 +5,13 @@
 import os, sys, shutil
 
 # get absolute input and output paths
-input_path = os.path.join(os.getenv('MESON_SOURCE_ROOT'), os.getenv('MESON_SUBDIR'), sys.argv[1])
-output_path = os.path.join(os.getenv('MESON_SOURCE_ROOT'), os.getenv('MESON_SUBDIR'), sys.argv[2])
+input_path = sys.argv[1]
+output_path = sys.argv[2]
 
 # make sure destination directory exists
-os.makedirs(os.path.dirname(output_path), exist_ok = True)
+dest_dir = os.path.dirname(output_path)
+if len(dest_dir) > 0:
+    os.makedirs(dest_dir, exist_ok = True)
 
 # read in the file
 in_file = open(input_path, "r")

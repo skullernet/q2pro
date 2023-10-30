@@ -151,7 +151,6 @@ ui_src = [
   'src/client/ui/servers.c',
   'src/client/ui/ui.c',
   'src/client/ui/ui.h',
-  'src/client/ui/q2pro.menu',
 ]
 
 refresh_src = [
@@ -449,14 +448,13 @@ if get_option('client-ui')
   # embed q2pro.menu
   prog_embed = find_program('embed.py')
 
-  run_command(
-    prog_embed,
-    'src/client/ui/q2pro.menu',
-    meson.project_build_root() / 'q2pro.menu.c',
-    'res_q2pro_menu',
-    check: true
+  q2pro_menu_c = custom_target(
+      'q2pro.menu.c',
+      output : 'q2pro.menu.c',
+      input : 'src/client/ui/q2pro.menu',
+      command : [prog_embed, '@INPUT@', '@OUTPUT@', 'res_q2pro_menu'],
   )
-  client_src += meson.project_build_root() / 'q2pro.menu.c'
+  client_src += q2pro_menu_c
 
   client_src += ui_src
   config.set10('USE_UI', true)
