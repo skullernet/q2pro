@@ -3401,10 +3401,10 @@ void CL_Init(void)
     // start with full screen console
     cls.key_dest = KEY_CONSOLE;
 
+    CL_InitLocal();
     CL_InitRefresh();
     S_Init();   // sound must be initialized after window is created
 
-    CL_InitLocal();
     IN_Init();
 
 #if USE_ZLIB

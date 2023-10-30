@@ -660,10 +660,15 @@ static void ImageSpinControl_Push(menuSpinControl_t *s)
 ImageSpinControl_Pop
 =================
 */
-static void ImageSpinControl_Pop(menuSpinControl_t *s)
+void ImageSpinControl_Pop(menuSpinControl_t *s)
 {
-    if (s->curvalue >= 0 && s->curvalue < s->numItems)
-        Cvar_SetInteger(s->cvar, s->curvalue, FROM_MENU);
+    if (s->curvalue >= 0 && s->curvalue < s->numItems) {
+        size_t path_offset = strlen(s->path) + (strchr(s->filter, '*') - s->filter) + 1;
+        const char *file_value = s->itemnames[s->curvalue] + path_offset;
+        const char *dot = strchr(file_value, '.');
+        size_t file_name_length = dot - file_value;
+        Cvar_SetEx(s->cvar->name, va("%.*s", file_name_length, file_value), FROM_MENU);
+    }
 
     FS_FreeList((void **) s->itemnames);
 }
@@ -706,7 +711,7 @@ static void ImageSpinControl_Draw(menuSpinControl_t *s)
 ImageSpinControl_Init
 =================
 */
-static void ImageSpinControl_Init(menuSpinControl_t *s)
+void ImageSpinControl_Init(menuSpinControl_t *s)
 {
     s->numItems = 0;
     s->itemnames = (char **) FS_ListFiles(NULL, va("%s/%s", s->path, s->filter), FS_SEARCH_BYFILTER, &s->numItems);

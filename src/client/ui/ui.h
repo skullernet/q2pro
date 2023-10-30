@@ -272,6 +272,9 @@ typedef struct playerModelInfo_s {
 void PlayerModel_Load(void);
 void PlayerModel_Free(void);
 
+void ImageSpinControl_Pop(menuSpinControl_t *s);
+void ImageSpinControl_Init(menuSpinControl_t *s);
+
 #define MAX_MENU_DEPTH    8
 
 // animated menu cursor

@@ -17,7 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "ui.h"
-
+#include "../client.h"
 
 /*
 =============================================================================
@@ -36,6 +36,7 @@ typedef struct m_player_s {
     menuSpinControl_t   model;
     menuSpinControl_t   skin;
     menuSpinControl_t   hand;
+    menuSpinControl_t   dogtag;
 
     refdef_t    refdef;
     entity_t    entities[2];
@@ -181,6 +182,10 @@ static void Size(menuFrameWork_t *self)
 
     m_player.hand.generic.x     = x;
     m_player.hand.generic.y     = y;
+    y += MENU_SPACING;
+
+    m_player.dogtag.generic.x     = x;
+    m_player.dogtag.generic.y     = y;
 }
 
 static menuSound_t Change(menuCommon_t *self)
@@ -214,6 +219,8 @@ static void Pop(menuFrameWork_t *self)
     Cvar_SetEx("skin", scratch, FROM_CONSOLE);
 
     Cvar_SetEx("hand", va("%d", m_player.hand.curvalue), FROM_CONSOLE);
+
+    ImageSpinControl_Pop(&m_player.dogtag);
 }
 
 static bool Push(menuFrameWork_t *self)
@@ -280,6 +287,8 @@ static bool Push(menuFrameWork_t *self)
         m_player.menu.title = "Player Setup";
     }
 
+    ImageSpinControl_Init(&m_player.dogtag);
+
     ReloadMedia();
 
     // set up oldframe correctly
@@ -344,10 +353,19 @@ void M_Menu_PlayerConfig(void)
     m_player.hand.generic.name = "handedness";
     m_player.hand.itemnames = (char **)handedness;
 
+    m_player.dogtag.generic.type = MTYPE_IMAGESPINCONTROL;
+    m_player.dogtag.generic.name = "dogtag";
+    m_player.dogtag.generic.width = 192;
+    m_player.dogtag.generic.height = 32;
+    m_player.dogtag.cvar = info_dogtag;
+    m_player.dogtag.path = "tags";
+    m_player.dogtag.filter = "*";
+
     Menu_AddItem(&m_player.menu, &m_player.name);
     Menu_AddItem(&m_player.menu, &m_player.model);
     Menu_AddItem(&m_player.menu, &m_player.skin);
     Menu_AddItem(&m_player.menu, &m_player.hand);
+    Menu_AddItem(&m_player.menu, &m_player.dogtag);
 
     List_Append(&ui_menus, &m_player.menu.entry);
 }
