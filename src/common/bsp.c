@@ -996,12 +996,15 @@ void BSP_Free(bsp_t *bsp)
     if (--bsp->refcount == 0) {
         Hunk_Free(&bsp->hunk);
         List_Remove(&bsp->entry);
+#if USE_REF
         Z_Free(bsp->normals.normals);
         Z_Free(bsp->normals.normal_indices);
+#endif
         Z_Free(bsp);
     }
 }
 
+#if USE_CLIENT
 int BSP_LoadMaterials(bsp_t *bsp)
 {
     char path[MAX_QPATH];
@@ -1035,7 +1038,6 @@ int BSP_LoadMaterials(bsp_t *bsp)
             out->c.material[0] = 0;
         }
 
-#if USE_CLIENT
         if (!out->c.material[0] || !Q_stricmp(out->c.material, "default")) {
             out->step_id = FOOTSTEP_ID_DEFAULT;
             continue;
@@ -1058,12 +1060,12 @@ int BSP_LoadMaterials(bsp_t *bsp)
         // allocate new step_id
         if (j == -1)
             out->step_id = step_id++;
-#endif
     }
 
     Com_DPrintf("%s: %d materials loaded\n", __func__, step_id);
     return step_id;
 }
+#endif
 
 #if USE_REF
 
