@@ -247,7 +247,7 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
             GLSL(diffuse.rgb *= (lightmap.rgb + u_add) * u_modulate;)
         } else {
 
-            if (bits & GLS_DYNAMIC_LIGHTS) {
+            if ((bits & GLS_DYNAMIC_LIGHTS) && !(bits & GLS_TEXTURE_REPLACE)) {
                 GLSL(color.rgb += calc_dynamic_lights() * u_modulate;)
             }
         }

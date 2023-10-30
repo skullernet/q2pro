@@ -80,7 +80,9 @@ enum {
     NavLinkFlag_WalkOnly        = BIT(3),
     NavLinkFlag_EaseIntoTarget  = BIT(4),
     NavLinkFlag_InstantTurn     = BIT(5),
-    NavLinkFlag_Disabled        = BIT(6)
+    NavLinkFlag_Disabled        = BIT(6),
+
+    NavLinkFlag_AllTeams = (NavLinkFlag_TeamRed | NavLinkFlag_TeamBlue)
 };
 
 typedef uint8_t nav_link_flags_t;

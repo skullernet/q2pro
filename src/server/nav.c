@@ -70,12 +70,14 @@ const int32_t INVALID_ID = -1;
 const int32_t NAV_MAGIC = MakeLittleLong('N', 'A', 'V', '3');
 
 // last nav version we support
-// changes from 5: yellow and green teams were removed
-// from link flags. no binary changes.
-const int32_t NAV_VERSION = 6;
+// changes from 5: yellow and green teams were removed;
+// all versions prior to 6 should strip bitflags 2 and 3
+// from link flags.
+// binary comaptible with v5.
+const int32_t NAV_VERSION_6 = 6;
 
 // changes from 4: soft limit change for max nodes.
-// no binary changes.
+// binary compatible with v4.
 const int32_t NAV_VERSION_5 = 5;
 
 // changes from 3: ladder move plane was added to traversal.
@@ -180,9 +182,209 @@ types:
         type: f4
 */
 
-
-// version 3: 
+// changes from 2: link team flags become general link flags;
+// all prior versions should use NavLinkFlag_AllTeams for linkFlags
+// binary compatible with v2
 const int32_t NAV_VERSION_3 = 3;
+
+// changes from 1: edict now contains model index.
+const int32_t NAV_VERSION_2 = 2;
+
+/**
+meta:
+  id: nav_v3_v2
+  file-extension: nav
+  endian: le
+seq:
+  - id: header
+    type: nav_header
+  - id: data_header
+    type: nav_data_header
+  - id: nodes
+    type: nav_node
+    repeat: expr
+    repeat-expr: data_header.num_nodes
+  - id: node_positions
+    type: vec3
+    repeat: expr
+    repeat-expr: data_header.num_nodes
+  - id: links
+    type: nav_link
+    repeat: expr
+    repeat-expr: data_header.num_links
+  - id: traversals
+    type: nav_traversal
+    repeat: expr
+    repeat-expr: data_header.num_traversals
+  - id: num_edicts
+    type: s4
+  - id: edicts
+    type: nav_edict
+    repeat: expr
+    repeat-expr: num_edicts
+types:
+  nav_header:
+    seq:
+      - id: magic
+        contents: "NAV3"
+      - id: version
+        type: u4
+  nav_data_header:
+    seq:
+      - id: num_nodes
+        type: s4
+      - id: num_links
+        type: s4
+      - id: num_traversals
+        type: s4
+      - id: heuristic
+        type: f4
+  nav_node:
+    seq:
+      - id: flags
+        type: u2
+      - id: num_links
+        type: s2
+      - id: first_link
+        type: s2
+      - id: radius
+        type: s2
+  nav_link:
+    seq:
+      - id: target
+        type: s2
+      - id: type
+        type: u1
+      - id: flags
+        type: u1
+      - id: traversal
+        type: s2
+  nav_traversal:
+    seq:
+      - id: funnel
+        type: vec3
+      - id: start
+        type: vec3
+      - id: end
+        type: vec3
+  nav_edict:
+    seq:
+      - id: link
+        type: s2
+      - id: model
+        type: s4
+      - id: mins
+        type: vec3
+      - id: maxs
+        type: vec3
+  vec3:
+    seq:
+      - id: x
+        type: f4
+      - id: y
+        type: f4
+      - id: z
+        type: f4
+*/
+
+const int32_t NAV_VERSION_1 = 1;
+
+/**
+meta:
+  id: nav_v1
+  file-extension: nav
+  endian: le
+seq:
+  - id: header
+    type: nav_header
+  - id: data_header
+    type: nav_data_header
+  - id: nodes
+    type: nav_node
+    repeat: expr
+    repeat-expr: data_header.num_nodes
+  - id: node_positions
+    type: vec3
+    repeat: expr
+    repeat-expr: data_header.num_nodes
+  - id: links
+    type: nav_link
+    repeat: expr
+    repeat-expr: data_header.num_links
+  - id: traversals
+    type: nav_traversal
+    repeat: expr
+    repeat-expr: data_header.num_traversals
+  - id: num_edicts
+    type: s4
+  - id: edicts
+    type: nav_edict
+    repeat: expr
+    repeat-expr: num_edicts
+types:
+  nav_header:
+    seq:
+      - id: magic
+        contents: "NAV3"
+      - id: version
+        type: u4
+  nav_data_header:
+    seq:
+      - id: num_nodes
+        type: s4
+      - id: num_links
+        type: s4
+      - id: num_traversals
+        type: s4
+      - id: heuristic
+        type: f4
+  nav_node:
+    seq:
+      - id: flags
+        type: u2
+      - id: num_links
+        type: s2
+      - id: first_link
+        type: s2
+      - id: radius
+        type: s2
+  nav_link:
+    seq:
+      - id: target
+        type: s2
+      - id: type
+        type: u1
+      - id: flags
+        type: u1
+      - id: traversal
+        type: s2
+  nav_traversal:
+    seq:
+      - id: funnel
+        type: vec3
+      - id: start
+        type: vec3
+      - id: end
+        type: vec3
+  nav_edict:
+    seq:
+      - id: link
+        type: s2
+      - id: mins
+        type: vec3
+      - id: maxs
+        type: vec3
+  vec3:
+    seq:
+      - id: x
+        type: f4
+      - id: y
+        type: f4
+      - id: z
+        type: f4
+*/
+
+#define NAV_VERSION_LATEST NAV_VERSION_6
 
 #define NAV_VERIFY(condition, error) \
     if (!(condition)) { Com_SetLastError(error); goto fail; }
@@ -611,19 +813,18 @@ void Nav_Load(const char *map_name)
     NAV_VERIFY(v == NAV_MAGIC, "bad magic");
 
     NAV_VERIFY_READ(v);
-    NAV_VERIFY((v == NAV_VERSION || v == NAV_VERSION_5 || v == NAV_VERSION_4), va("bad version %i\n", v));
+    NAV_VERIFY((v <= NAV_VERSION_LATEST), va("bad version %i\n", v));
 
-    // TODO: support versions 5 to 1 which we may have used in some earlier maps
     NAV_VERIFY_READ(nav_data.num_nodes);
     NAV_VERIFY_READ(nav_data.num_links);
     NAV_VERIFY_READ(nav_data.num_traversals);
     NAV_VERIFY_READ(nav_data.heuristic);
 
-    NAV_VERIFY(nav_data.nodes = Z_TagMalloc(sizeof(nav_node_t) * nav_data.num_nodes, TAG_NAV), "out of memory");
+    NAV_VERIFY(nav_data.nodes = Z_TagMallocz(sizeof(nav_node_t) * nav_data.num_nodes, TAG_NAV), "out of memory");
     if (nav_data.num_links)
-        NAV_VERIFY(nav_data.links = Z_TagMalloc(sizeof(nav_link_t) * nav_data.num_links, TAG_NAV), "out of memory");
+        NAV_VERIFY(nav_data.links = Z_TagMallocz(sizeof(nav_link_t) * nav_data.num_links, TAG_NAV), "out of memory");
     if (nav_data.num_traversals)
-        NAV_VERIFY(nav_data.traversals = Z_TagMalloc(sizeof(nav_traversal_t) * nav_data.num_traversals, TAG_NAV), "out of memory");
+        NAV_VERIFY(nav_data.traversals = Z_TagMallocz(sizeof(nav_traversal_t) * nav_data.num_traversals, TAG_NAV), "out of memory");
 
     nav_data.num_conditional_nodes = 0;
 
@@ -644,7 +845,7 @@ void Nav_Load(const char *map_name)
     }
 
     if (nav_data.num_conditional_nodes)
-        NAV_VERIFY(nav_data.conditional_nodes = Z_TagMalloc(sizeof(nav_node_t *) * nav_data.num_conditional_nodes, TAG_NAV), "out of memory");
+        NAV_VERIFY(nav_data.conditional_nodes = Z_TagMallocz(sizeof(nav_node_t *) * nav_data.num_conditional_nodes, TAG_NAV), "out of memory");
 
     for (int i = 0, c = 0; i < nav_data.num_nodes; i++) {
         nav_node_t *node = nav_data.nodes + i;
@@ -664,6 +865,13 @@ void Nav_Load(const char *map_name)
         link->target = &nav_data.nodes[target];
         NAV_VERIFY_READ(link->type);
         NAV_VERIFY_READ(link->flags);
+
+        if (v < NAV_VERSION_3)
+            link->flags = NavLinkFlag_AllTeams;
+        // strip old green/yellow team flags
+        else if (v < NAV_VERSION_6)
+            link->flags &= ~(BIT(2) | BIT(3));
+
         int16_t traversal;
         NAV_VERIFY_READ(traversal);
         link->traversal = NULL;
@@ -681,13 +889,15 @@ void Nav_Load(const char *map_name)
         NAV_VERIFY_READ(traversal->funnel);
         NAV_VERIFY_READ(traversal->start);
         NAV_VERIFY_READ(traversal->end);
-        NAV_VERIFY_READ(traversal->ladder_plane);
+
+        if (v >= NAV_VERSION_4)
+            NAV_VERIFY_READ(traversal->ladder_plane);
     }
     
     NAV_VERIFY_READ(nav_data.num_edicts);
 
     if (nav_data.num_edicts) {
-        NAV_VERIFY(nav_data.edicts = Z_TagMalloc(sizeof(nav_edict_t) * nav_data.num_edicts, TAG_NAV), "out of memory");
+        NAV_VERIFY(nav_data.edicts = Z_TagMallocz(sizeof(nav_edict_t) * nav_data.num_edicts, TAG_NAV), "out of memory");
 
         for (int i = 0; i < nav_data.num_edicts; i++) {
             nav_edict_t *edict = nav_data.edicts + i;
@@ -698,7 +908,8 @@ void Nav_Load(const char *map_name)
             edict->link = &nav_data.links[link];
             edict->link->edict = edict;
             edict->game_edict = NULL;
-            NAV_VERIFY_READ(edict->model);
+            if (v >= NAV_VERSION_2)
+                NAV_VERIFY_READ(edict->model);
             NAV_VERIFY_READ(edict->mins);
             NAV_VERIFY_READ(edict->maxs);
         }
