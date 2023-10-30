@@ -177,14 +177,17 @@ static void legacy_normal_pointer(GLint size, GLsizei stride, const GLfloat *poi
     // no-op
 }
 
-static void legacy_load_view_matrix(const GLfloat *matrix)
+static void legacy_load_view_matrix(const GLfloat *model, const GLfloat *view)
 {
     qglMatrixMode(GL_MODELVIEW);
 
-    if (matrix)
-        qglLoadMatrixf(matrix);
+    if (view)
+        qglLoadMatrixf(view);
     else
         qglLoadIdentity();
+
+    if (model)
+        glMultMatrixf(view);
 }
 
 static void legacy_load_proj_matrix(const GLfloat *matrix)

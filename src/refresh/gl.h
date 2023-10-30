@@ -63,7 +63,7 @@ typedef struct {
     void (*setup_3d)(void);
 
     void (*load_proj_matrix)(const GLfloat *matrix);
-    void (*load_view_matrix)(const GLfloat *matrix);
+    void (*load_view_matrix)(const GLfloat *model, const GLfloat *view);
 
     void (*state_bits)(GLbitfield bits);
     void (*array_bits)(GLbitfield bits);
@@ -228,7 +228,6 @@ extern cvar_t *gl_brightness;
 extern cvar_t *gl_dynamic;
 extern cvar_t *gl_dlight_falloff;
 extern cvar_t *gl_modulate_entities;
-extern cvar_t *gl_doublelight_entities;
 extern cvar_t *gl_glowmap_intensity;
 extern cvar_t *gl_fontshadow;
 extern cvar_t *gl_shaders;
@@ -257,6 +256,7 @@ extern cvar_t *gl_lightgrid;
 extern cvar_t *gl_showerrors;
 extern cvar_t *gl_damageblend_frac;
 extern cvar_t *gl_clamppointlight;
+extern cvar_t *gl_per_pixel_lighting; // use_shaders only
 
 typedef enum {
     CULL_OUT,
@@ -415,7 +415,8 @@ typedef struct {
     };
 } model_t;
 
-// xyz[3] | color[1] | st[2] | lmst[2] | normal[3] | unused[1]
+// world: xyz[3] | color[1]  | st[2]    | lmst[2]   | normal[3] | unused[1]
+// model: xyz[3] | unused[1] | color[4]             | normal[3] | unused[1]
 #define VERTEX_SIZE 12
 
 void MOD_FreeUnused(void);
@@ -527,8 +528,10 @@ typedef struct {
     GLuint          texnums[MAX_TMUS];
     GLbitfield      state_bits;
     GLbitfield      array_bits;
-    const GLfloat   *currentmatrix;
+    const GLfloat   *currentviewmatrix;
+    const GLfloat   *currentmodelmatrix;
     struct {
+        GLfloat     model[16];
         GLfloat     view[16];
         GLfloat     proj[16];
 
@@ -607,17 +610,18 @@ static inline void GL_UnlockArrays(void)
     }
 }
 
-static inline void GL_ForceMatrix(const GLfloat *matrix)
+static inline void GL_ForceMatrix(const GLfloat *model, const GLfloat *view)
 {
-    gl_static.backend.load_view_matrix(matrix);
-    gls.currentmatrix = matrix;
+    gl_static.backend.load_view_matrix(model, view);
+    gls.currentmodelmatrix = model;
+    gls.currentviewmatrix = view;
 }
 
-static inline void GL_LoadMatrix(const GLfloat *matrix)
+static inline void GL_LoadMatrix(const GLfloat *model, const GLfloat *view)
 {
-    if (gls.currentmatrix != matrix) {
-        gl_static.backend.load_view_matrix(matrix);
-        gls.currentmatrix = matrix;
+    if (gls.currentmodelmatrix != model ||
+        gls.currentviewmatrix != view) {
+        GL_ForceMatrix(model, view);
     }
 }
 

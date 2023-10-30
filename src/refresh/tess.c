@@ -89,7 +89,7 @@ void GL_DrawParticles(void)
     if (!glr.fd.num_particles)
         return;
 
-    GL_LoadMatrix(glr.viewmatrix);
+    GL_LoadMatrix(NULL, glr.viewmatrix);
 
     GL_VertexPointer(3, 5, tess.vertices);
     GL_TexCoordPointer(2, 5, tess.vertices + 3);
@@ -270,7 +270,7 @@ void GL_DrawBeams(void)
         return;
     }
 
-    GL_LoadMatrix(glr.viewmatrix);
+    GL_LoadMatrix(NULL, glr.viewmatrix);
     GL_BindTexture(0, TEXNUM_BEAM);
     GL_StateBits(GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE | GLS_FOG_ENABLE);
     GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);

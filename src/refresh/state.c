@@ -171,7 +171,7 @@ void GL_Setup2D(void)
     if (gl_static.backend.setup_2d)
         gl_static.backend.setup_2d();
 
-    gl_static.backend.load_view_matrix(NULL);
+    gl_static.backend.load_view_matrix(NULL, NULL);
 }
 
 void GL_Frustum(GLfloat fov_x, GLfloat fov_y, GLfloat reflect_x)
@@ -197,7 +197,7 @@ static void GL_RotateForViewer(void)
 
     Matrix_FromOriginAxis(glr.fd.vieworg, glr.viewaxis, matrix);
 
-    GL_ForceMatrix(matrix);
+    GL_ForceMatrix(glr.entmatrix, matrix);
 }
 
 void GL_Setup3D(bool waterwarp)

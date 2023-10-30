@@ -47,7 +47,6 @@ cvar_t *gl_brightness;
 cvar_t *gl_dynamic;
 cvar_t *gl_dlight_falloff;
 cvar_t *gl_modulate_entities;
-cvar_t *gl_doublelight_entities;
 cvar_t *gl_glowmap_intensity;
 cvar_t *gl_fontshadow;
 cvar_t *gl_shaders;
@@ -325,11 +324,8 @@ void GL_RotationMatrix(GLfloat *matrix)
 
 void GL_RotateForEntity(void)
 {
-    GLfloat matrix[16];
-
-    GL_RotationMatrix(matrix);
-    GL_MultMatrix(glr.entmatrix, glr.viewmatrix, matrix);
-    GL_ForceMatrix(glr.entmatrix);
+    GL_RotationMatrix(glr.entmatrix);
+    GL_ForceMatrix(glr.entmatrix, glr.viewmatrix);
 }
 
 static void GL_DrawSpriteModel(const model_t *model)
@@ -354,7 +350,7 @@ static void GL_DrawSpriteModel(const model_t *model)
         bits |= GLS_BLEND_BLEND;
     }
 
-    GL_LoadMatrix(glr.viewmatrix);
+    GL_LoadMatrix(NULL, glr.viewmatrix);
     GL_BindTexture(0, image->texnum);
     GL_StateBits(bits);
     GL_ArrayBits(GLA_VERTEX | GLA_TC);
@@ -393,7 +389,7 @@ static void GL_DrawNullModel(void)
     VectorMA(e->origin, 16, glr.entaxis[1], points[3]);
     VectorMA(e->origin, 16, glr.entaxis[2], points[5]);
 
-    GL_LoadMatrix(glr.viewmatrix);
+    GL_LoadMatrix(glr.entmatrix, glr.viewmatrix);
     GL_BindTexture(0, TEXNUM_WHITE);
     GL_StateBits(GLS_DEFAULT);
     GL_ArrayBits(GLA_VERTEX | GLA_COLOR);
@@ -431,7 +427,7 @@ static void GL_OccludeFlares(void)
     if (!gl_static.queries)
         return;
 
-    GL_LoadMatrix(glr.viewmatrix);
+    GL_LoadMatrix(glr.entmatrix, glr.viewmatrix);
     GL_StateBits(GLS_DEPTHMASK_FALSE);
     GL_ArrayBits(GLA_VERTEX);
     qglColorMask(0, 0, 0, 0);
@@ -495,7 +491,7 @@ static void GL_DrawFlare(const entity_t *e)
     if (!q->visible)
         return;
 
-    GL_LoadMatrix(glr.viewmatrix);
+    GL_LoadMatrix(glr.entmatrix, glr.viewmatrix);
     GL_BindTexture(0, IMG_ForHandle(e->skin)->texnum);
     GL_StateBits(GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE | GLS_BLEND_ADD);
     GL_ArrayBits(GLA_VERTEX | GLA_TC);
@@ -539,6 +535,8 @@ static void GL_DrawEntities(int musthave, int canthave)
 
         // convert angles to axis
         GL_SetEntityAxis();
+
+        GL_RotateForEntity();
 
         // inline BSP model
         if (ent->model & BIT(31)) {
@@ -649,7 +647,8 @@ static void GL_WaterWarp(void)
 {
     GL_ForceTexture(0, gl_static.warp_texture);
     GL_StateBits(GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE |
-                 GLS_CULL_DISABLE | GLS_TEXTURE_REPLACE | GLS_WARP_ENABLE);
+                 GLS_CULL_DISABLE | GLS_TEXTURE_REPLACE | GLS_WARP_ENABLE |
+                 GLS_DYNAMIC_LIGHTS);
     GL_ArrayBits(GLA_VERTEX | GLA_TC);
 
     vec_t points[8] = {
@@ -913,7 +912,6 @@ static void GL_Register(void)
     gl_dlight_falloff = Cvar_Get("gl_dlight_falloff", "1", 0);
     gl_modulate_entities = Cvar_Get("gl_modulate_entities", "1", 0);
     gl_modulate_entities->changed = gl_modulate_entities_changed;
-    gl_doublelight_entities = Cvar_Get("gl_doublelight_entities", "1", 0);
     gl_glowmap_intensity = Cvar_Get("gl_glowmap_intensity", "1.0", 0);
     gl_fontshadow = Cvar_Get("gl_fontshadow", "0", 0);
     gl_shaders = Cvar_Get("gl_shaders", (gl_config.caps & QGL_CAP_SHADER) ? "1" : "0", CVAR_REFRESH);

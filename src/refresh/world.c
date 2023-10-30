@@ -323,11 +323,6 @@ void GL_LightPoint(const vec3_t origin, vec3_t color)
     // add dynamic lights
     if (!gl_static.backend.use_dlights())
         GL_AddLights(origin, color);
-
-    if (gl_doublelight_entities->integer) {
-        // apply modulate twice to mimic original ref_gl behavior
-        VectorScale(color, gl_static.entity_modulate, color);
-    }
 }
 
 void R_LightPoint(const vec3_t origin, vec3_t color)
@@ -647,7 +642,7 @@ void GL_DrawWorld(void)
 
     R_ClearSkyBox();
 
-    GL_LoadMatrix(glr.viewmatrix);
+    GL_LoadMatrix(NULL, glr.viewmatrix);
 
     GL_BindArrays();
 

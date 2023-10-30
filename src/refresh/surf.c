@@ -34,7 +34,7 @@ LIGHTMAP COLOR ADJUSTING
 */
 
 static inline void
-adjust_color_f(vec_t *out, const vec_t *in, float add, float modulate, float scale)
+adjust_color_f(vec_t *out, const vec_t *in, float add, float modulate, float scale, bool clamp)
 {
     float r, g, b, y, max;
 
@@ -59,7 +59,7 @@ adjust_color_f(vec_t *out, const vec_t *in, float add, float modulate, float sca
 
     // rescale all the color components if the intensity of the greatest
     // channel exceeds 1.0
-    if (max > 255) {
+    if (clamp && max > 255) {
         y = 255.0f / max;
         r *= y;
         g *= y;
@@ -82,7 +82,7 @@ adjust_color_f(vec_t *out, const vec_t *in, float add, float modulate, float sca
 
 void GL_AdjustColor(vec3_t color)
 {
-    adjust_color_f(color, color, lm.add, gl_static.entity_modulate, lm.scale);
+    adjust_color_f(color, color, lm.add, gl_static.entity_modulate, lm.scale, false);
     VectorScale(color, (1.0f / 255), color);
 }
 
@@ -122,7 +122,7 @@ static void put_blocklights(mface_t *surf)
         byte *dst;
         for (j = 0, dst = out; j < smax; j++, bl += 3, dst += 4) {
             vec3_t tmp;
-            adjust_color_f(tmp, bl, add, modulate, scale);
+            adjust_color_f(tmp, bl, add, modulate, scale, true);
             dst[0] = (byte)tmp[0];
             dst[1] = (byte)tmp[1];
             dst[2] = (byte)tmp[2];
@@ -733,7 +733,7 @@ static void sample_surface_verts(mface_t *surf, vec_t *vbo)
         glr.lightpoint.t = (int)vbo[7];
 
         GL_SampleLightPoint(color);
-        adjust_color_f(color, color, lm.add, lm.modulate, lm.scale);
+        adjust_color_f(color, color, lm.add, lm.modulate, lm.scale, true);
 
         dst = (byte *)(vbo + 3);
         dst[0] = (byte)color[0];

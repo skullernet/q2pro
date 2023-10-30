@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "gl.h"
 
-static cvar_t *gl_per_pixel_lighting;
+cvar_t *gl_per_pixel_lighting;
 
 #define MAX_SHADER_CHARS    4096
 
@@ -53,6 +53,7 @@ static void write_block(char *buf)
 {
     GLSF("layout(std140) uniform u_block {\n");
     GLSL(
+        mat4 m_model;
         mat4 m_view;
         mat4 m_proj;
         float u_time; float u_modulate; float u_add; float u_intensity;
@@ -121,17 +122,17 @@ static void write_vertex_shader(char *buf, GLbitfield bits)
             GLSL(v_lmtc = a_lmtc;)
         if (!(bits & GLS_TEXTURE_REPLACE))
             GLSL(v_color = a_color;)
-        GLSL(gl_Position = m_proj * m_view * a_pos;)
+        GLSL(gl_Position = m_proj * m_view * m_model * a_pos;)
         if (bits & GLS_FOG_ENABLE)
-            GLSL(v_wpos = (m_view * a_pos).xyz;)
+            GLSL(v_wpos = (m_view * m_model * a_pos).xyz;)
         if (bits & (GLS_FOG_ENABLE | GLS_DYNAMIC_LIGHTS))
-            GLSL(v_world_pos = a_pos.xyz;)
+            GLSL(v_world_pos = (m_model * a_pos).xyz;)
         if (bits & GLS_CLASSIC_SKY) {
             GLSL(v_dir = a_pos.xyz - view_org.xyz;)
             GLSL(v_dir[2] *= 3.0f;)
         }
         if (bits & GLS_DYNAMIC_LIGHTS)
-            GLSL(v_normal = a_normal;)
+            GLSL(v_normal = normalize((mat3(m_model) * a_normal).xyz);)
     GLSF("}\n");
 }
 
@@ -178,6 +179,23 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
 
     GLSL(out vec4 o_color;)
 
+    if (bits & GLS_DYNAMIC_LIGHTS)
+        GLSL(vec3 calc_dynamic_lights() {
+            vec3 shade = vec3(0);
+
+            for (int i = 0; i < num_dlights; i++) {
+                vec3 dir = (dlights[i].position + (v_normal * 16)) - v_world_pos;
+                float len = length(dir);
+                float dist = max((dlights[i].radius - DLIGHT_CUTOFF - len), 0.0f);
+
+                dir /= max(len, 1.0f);
+                float lambert = max(0.0f, dot(dir, v_normal));
+                shade += dlights[i].color.rgb * dist * lambert;
+            }
+
+            return shade;
+        })
+
     GLSF("void main() {\n");
         GLSL(vec2 tc = v_tc;)
 
@@ -209,6 +227,9 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
             GLSL(if (diffuse.a <= 0.666) discard;)
 
         if (bits & GLS_LIGHTMAP_ENABLE) {
+            if (!(bits & GLS_TEXTURE_REPLACE))
+                GLSL(vec4 color = v_color;)
+
             GLSL(vec4 lightmap = texture(u_lightmap, v_lmtc);)
 
             if (bits & GLS_GLOWMAP_ENABLE) {
@@ -218,26 +239,24 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
   
             if (bits & GLS_DYNAMIC_LIGHTS) {
                 GLSL(
-                    for (int i = 0; i < num_dlights; i++) {
-                        vec3 dir = (dlights[i].position + (v_normal * 16)) - v_world_pos;
-                        float len = length(dir);
-                        float dist = max((dlights[i].radius - DLIGHT_CUTOFF - len), 0.0f);
-
-                        dir /= max(len, 1.0f);
-                        float lambert = max(0.0f, dot(dir, v_normal));
-                        lightmap.rgb += dlights[i].color.rgb * dist * lambert;
-                    }
+                    lightmap.rgb += calc_dynamic_lights();
                 )
             }
 
             GLSL(diffuse.rgb *= (lightmap.rgb + u_add) * u_modulate;)
+        } else {
+            GLSL(vec4 color = v_color;)
+  
+            if (bits & GLS_DYNAMIC_LIGHTS) {
+                GLSL(color.rgb += calc_dynamic_lights() * u_modulate;)
+            }
         }
 
         if (bits & GLS_INTENSITY_ENABLE)
             GLSL(diffuse.rgb *= u_intensity;)
 
         if (!(bits & GLS_TEXTURE_REPLACE))
-            GLSL(diffuse *= v_color;)
+            GLSL(diffuse *= color;)
 
         if (!(bits & GLS_LIGHTMAP_ENABLE) && (bits & GLS_GLOWMAP_ENABLE)) {
             GLSL(vec4 glowmap = texture(u_glowmap, tc);)
@@ -565,14 +584,17 @@ static void upload_dlight_block(void)
     c.uniformUploads++;
 }
 
-static void shader_load_view_matrix(const GLfloat *matrix)
+static void shader_load_view_matrix(const GLfloat *model, const GLfloat *view)
 {
     static const GLfloat identity[16] = { [0] = 1, [5] = 1, [10] = 1, [15] = 1 };
-
-    if (!matrix)
-        matrix = identity;
-
-    memcpy(gls.u_block.view, matrix, sizeof(gls.u_block.view));
+    
+    if (!view)
+        view = identity;
+    if (!model)
+        model = identity;
+    
+    memcpy(gls.u_block.model, model, sizeof(gls.u_block.model));
+    memcpy(gls.u_block.view, view, sizeof(gls.u_block.view));
     upload_u_block();
 }
 
