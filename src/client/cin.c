@@ -31,13 +31,6 @@ typedef struct {
 } hnode_t;
 
 typedef struct {
-    const char  *name;
-    uint32_t    size;
-    uint16_t    start;
-    uint16_t    crop;
-} crop_t;
-
-typedef struct {
     int         width;
     int         height;
     int         crop;
@@ -62,15 +55,6 @@ typedef struct {
 } cinematic_t;
 
 static cinematic_t  cin;
-
-static const crop_t cin_crop[] = {
-    { "ntro.cin",   82836235, 727, 30 },
-    { "end.cin",    19311290,   0, 30 },
-    { "rintro.cin", 38434032,   0, 24 },
-    { "rend.cin",   22580919,   0, 24 },
-    { "xin.cin",    13226649,   0, 32 },
-    { "xout.cin",   11194445,   0, 32 },
-};
 
 /*
 ==================
@@ -225,28 +209,6 @@ static bool Huff1Decompress(const byte *data, int size)
 
 /*
 ==================
-GetVerticalCrop
-==================
-*/
-static int GetVerticalCrop(void)
-{
-    const crop_t *c;
-    int i;
-
-    for (i = 0, c = cin_crop; i < q_countof(cin_crop); i++, c++) {
-        if (!Q_stricmp(cl.mapname, c->name) && FS_Length(cin.file) == c->size) {
-            if (cin.frame >= c->start)
-                return c->crop * 2;
-            break;
-        }
-    }
-
-    return 0;
-}
-
-
-/*
-==================
 SCR_ReadNextFrame
 ==================
 */
@@ -309,7 +271,7 @@ static bool SCR_ReadNextFrame(void)
         S_RawSamples(end - start, cin.s_rate, cin.s_width, cin.s_channels, samples);
     }
 
-    cin.crop = GetVerticalCrop();
+    cin.crop = SCR_GetCinematicCrop(cin.frame, FS_Length(cin.file));
 
     R_UpdateRawPic(cin.width, cin.height, cin.pic);
     cin.frame++;
