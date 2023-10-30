@@ -34,7 +34,6 @@ common_src = [
 
 client_src = [
   'src/client/ascii.c',
-  'src/client/cin.c',
   'src/client/console.c',
   'src/client/crc.c',
   'src/client/demo.c',
@@ -335,6 +334,21 @@ if ogg.found() and vorbisfile.found()
   config.set10('USE_OGG', true)
 endif
 
+# require FFmpeg >= 5.1.3
+avcodec_opt = get_option('avcodec')
+avcodec = dependency('libavcodec', version: '>= 59.37.100', required: avcodec_opt)
+avformat = dependency('libavformat', version: '>= 59.27.100', required: avcodec_opt)
+avutil = dependency('libavutil', version: '>= 57.28.100', required: avcodec_opt)
+swresample = dependency('libswresample', version: '>= 4.7.100', required: avcodec_opt)
+swscale = dependency('libswscale', version: '>= 6.7.100', required: avcodec_opt)
+if avcodec.found() and avformat.found() and avutil.found() and swresample.found() and swscale.found()
+  client_src += 'src/client/ffcin.c'
+  client_deps += [avcodec, avformat, avutil, swresample, swscale]
+  config.set10('USE_AVCODEC', true)
+else
+  client_src += 'src/client/cin.c'
+endif
+
 if win32
   subdir('src/windows')
 else
@@ -469,6 +483,7 @@ endif
 summary({
   'anticheat-server'   : config.get('USE_AC_SERVER', '') != '',
   'auto-reply'         : config.get('USE_AUTOREPLY', 0) != 0,
+  'avcodec'            : config.get('USE_AVCODEC', 0) != 0,
   'client-gtv'         : config.get('USE_CLIENT_GTV', 0) != 0,
   'client-ui'          : config.get('USE_UI', 0) != 0,
   'debug'              : config.get('USE_DEBUG', 0) != 0,

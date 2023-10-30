@@ -223,6 +223,31 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     Com_Printf("-------------------------------------\n");
 }
 
+static int check_cinematic(const char *expanded)
+{
+    int ret;
+
+#if USE_AVCODEC
+    // open from filesystem only
+    ret = FS_LoadFileEx(expanded, NULL, FS_TYPE_REAL, TAG_FREE);
+
+    // if .cin doesn't exist, check for .ogv
+    if (ret == Q_ERR(ENOENT)) {
+        char tmp[MAX_QPATH];
+        COM_StripExtension(tmp, expanded, sizeof(tmp));
+        Q_strlcat(tmp, ".ogv", sizeof(tmp));
+        ret = FS_LoadFileEx(tmp, NULL, FS_TYPE_REAL, TAG_FREE);
+    }
+#else
+    ret = FS_LoadFile(expanded, NULL);
+#endif
+
+    if (ret == Q_ERR(EFBIG))
+        ret = Q_ERR_SUCCESS;
+
+    return ret;
+}
+
 static bool check_server(mapcmd_t *cmd, const char *server, bool nextserver)
 {
     char        expanded[MAX_QPATH];
@@ -252,8 +277,7 @@ static bool check_server(mapcmd_t *cmd, const char *server, bool nextserver)
         if (!sv_cinematics->integer && nextserver)
             return false;   // skip it
         if (Q_concat(expanded, sizeof(expanded), "video/", s) < sizeof(expanded)) {
-            if (COM_DEDICATED || (ret = FS_LoadFile(expanded, NULL)) == Q_ERR(EFBIG))
-                ret = Q_ERR_SUCCESS;
+            ret = COM_DEDICATED ? Q_ERR_SUCCESS : check_cinematic(expanded);
         }
         cmd->state = ss_cinematic;
     } else {

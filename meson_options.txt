@@ -8,6 +8,11 @@ option('auto-reply',
   value: true,
   description: 'Make client auto reply to !version chat probes')
 
+option('avcodec',
+  type: 'feature',
+  value: 'auto',
+  description: 'libavcodec support')
+
 option('base-game',
   type: 'string',
   value: 'baseq2',

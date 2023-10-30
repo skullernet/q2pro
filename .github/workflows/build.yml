@@ -11,6 +11,7 @@ env:
     --auto-features=enabled
     --fatal-meson-warnings
     -Danticheat-server=true
+    -Davcodec=disabled
     -Dclient-gtv=true
     -Dpacketdup-hack=true
     -Dtests=true
