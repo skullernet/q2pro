@@ -669,7 +669,7 @@ typedef enum {
     LOAD_SOUNDS
 } load_state_t;
 
-void CL_ParsePlayerSkin(char *name, char *model, char *skin, char *dogtag, const char *s);
+void CL_ParsePlayerSkin(char *name, char *model, char *skin, char *dogtag, bool parse_dogtag, const char *s);
 void CL_LoadClientinfo(clientinfo_t *ci, const char *s);
 void CL_LoadState(load_state_t state);
 void CL_RegisterSounds(void);

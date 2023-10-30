@@ -606,8 +606,9 @@ static void check_player(const char *name)
     char fn[MAX_QPATH], model[MAX_QPATH], skin[MAX_QPATH], dogtag[MAX_QPATH], *p;
     size_t len;
     int i, j;
+    bool parse_dogtag = true; // FIXME: Check for rerelease server
 
-    CL_ParsePlayerSkin(NULL, model, skin, dogtag, name);
+    CL_ParsePlayerSkin(NULL, model, skin, dogtag, parse_dogtag, name);
 
     // model
     len = Q_concat(fn, sizeof(fn), "players/", model, "/tris.md2");

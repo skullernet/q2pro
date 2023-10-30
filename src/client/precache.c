@@ -22,6 +22,43 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "client.h"
 
+#if 0
+// Testing for CL_ParsePlayerSkin()
+static void test_parse_player_skin(const char* string, bool parse_dogtag, const char* expect_name, const char* expect_model, const char* expect_skin, const char* expect_dogtag)
+{
+    char name[MAX_QPATH];
+    char model[MAX_QPATH];
+    char skin[MAX_QPATH];
+    char dogtag[MAX_QPATH];
+
+    CL_ParsePlayerSkin(name, model, skin, dogtag, parse_dogtag, string);
+    Q_assert(strcmp(name, expect_name) == 0);
+    Q_assert(strcmp(model, expect_model) == 0);
+    Q_assert(strcmp(skin, expect_skin) == 0);
+    Q_assert(strcmp(dogtag, expect_dogtag) == 0);
+}
+
+void test_CL_ParsePlayerSkin(void)
+{
+    test_parse_player_skin("unnamed\\male/grunt\\default", true, "unnamed", "male", "grunt", "default");
+    test_parse_player_skin("unnamed\\male/grunt", false, "unnamed", "male", "grunt", "default");
+    test_parse_player_skin("unnamed\\male\\grunt", false, "unnamed", "male", "grunt", "default");
+
+    test_parse_player_skin("unnamed\\/grunt\\default", true, "unnamed", "male", "grunt", "default");
+    test_parse_player_skin("unnamed\\/grunt", false, "unnamed", "male", "grunt", "default");
+
+    test_parse_player_skin("Name\\Model/Skin\\Dogtag", true, "Name", "Model", "Skin", "Dogtag");
+
+    test_parse_player_skin("Name\\Model\\Dogtag", true, "Name", "male", "grunt", "Dogtag");
+    test_parse_player_skin("Name\\\\Dogtag", true, "Name", "male", "grunt", "Dogtag");
+    test_parse_player_skin("Name\\\\", true, "Name", "male", "grunt", "default");
+
+    test_parse_player_skin("Name\\Model/Skin\\", true, "Name", "Model", "Skin", "default");
+    test_parse_player_skin("Name\\male\\Dogtag", true, "Name", "male", "grunt", "Dogtag");
+    test_parse_player_skin("Name\\female\\Dogtag", true, "Name", "female", "athena", "Dogtag");
+}
+#endif
+
 /*
 ================
 CL_ParsePlayerSkin
@@ -30,55 +67,75 @@ Breaks up playerskin into name (optional), model and skin components.
 If model or skin are found to be invalid, replaces them with sane defaults.
 ================
 */
-void CL_ParsePlayerSkin(char *name, char *model, char *skin, char *dogtag, const char *s)
+void CL_ParsePlayerSkin(char *name, char *model, char *skin, char *dogtag, bool parse_dogtag, const char *s)
 {
+    char buf[MAX_QPATH * 4];
     size_t len;
     char *t;
 
     len = strlen(s);
-    Q_assert(len < MAX_QPATH);
+    Q_assert(len < sizeof(buf));
+    Q_strlcpy(buf, s, sizeof(buf));
 
     // isolate the player's name
-    t = strchr(s, '\\');
+    size_t name_len;
+    char *model_str;
+    t = strchr(buf, '\\');
     if (t) {
-        len = t - s;
-        strcpy(model, t + 1);
+        name_len = t - buf;
+        *t = 0;
+        model_str = t + 1;
     } else {
-        len = 0;
-        strcpy(model, s);
+        model_str = buf;
+        name_len = 0;
+    }
+
+    char *skin_str = NULL;
+    // isolate the model name
+    t = strchr(model_str, '/');
+    if (!t && !parse_dogtag) {
+        /* Using '\\' as a separator for the skin name is technically incorrect;
+         * even early game code always produced "model/skin", yet the backslash
+         * was considered as a separator.
+         * This means it's probably a compatibility measure for even earlier code,
+         * and probably not needed any more...
+         * Still, keep it for compatibility's sake when dealing with userinfo
+         * from non-rerelease servers. */
+        t = strchr(model, '\\');
+    }
+    if (t) {
+        skin_str = t + 1;
+        *t = 0;
+    }
+
+    // isolate the dogtag name
+    const char *dogtag_str = "";
+    if (parse_dogtag) {
+        char *search_str = skin_str ? skin_str : model_str;
+        t = strchr(search_str, '\\');
+        if (t) {
+            dogtag_str = t + 1;
+            *t = 0;
+        }
     }
 
     // copy the player's name
     if (name) {
-        memcpy(name, s, len);
-        name[len] = 0;
+        Q_strnlcpy(name, buf, name_len, MAX_QPATH);
     }
-
-    // isolate the model name
-    t = strchr(model, '/');
-    if (!t)
-        t = strchr(model, '\\');
-    if (!t)
-        goto default_model;
-    *t = 0;
-
-    // isolate the skin name
-    strcpy(skin, t + 1);
-
-    // separate it from dogtag
-    t = strchr(skin, '\\');
-    if (t)
-        *t = 0;
-
-    // isolate the dogtag name
-    strcpy(dogtag, t + 1);
-
-    if (!*dogtag)
-        goto default_dogtag;
-
     // fix empty model to male
-    if (t == model)
-        strcpy(model, "male");
+    if (!*model_str)
+        Q_strlcpy(model, "male", MAX_QPATH);
+    else
+        Q_strlcpy(model, model_str, MAX_QPATH);
+    if (skin_str)
+        Q_strlcpy(skin, skin_str, MAX_QPATH);
+    else
+        skin[0] = 0;
+    if (!*dogtag_str)
+        Q_strlcpy(dogtag, "default", MAX_QPATH);
+    else
+        Q_strlcpy(dogtag, dogtag_str, MAX_QPATH);
 
     // apply restrictions on skins
     if (cl_noskins->integer == 2 || !COM_IsPath(skin))
@@ -91,15 +148,13 @@ void CL_ParsePlayerSkin(char *name, char *model, char *skin, char *dogtag, const
 
 default_skin:
     if (!Q_stricmp(model, "female")) {
-        strcpy(model, "female");
-        strcpy(skin, "athena");
+        Q_strlcpy(model, "female", MAX_QPATH);
+        Q_strlcpy(skin, "athena", MAX_QPATH);
     } else {
 default_model:
-        strcpy(model, "male");
-        strcpy(skin, "grunt");
+        Q_strlcpy(model, "male", MAX_QPATH);
+        Q_strlcpy(skin, "grunt", MAX_QPATH);
     }
-default_dogtag:
-    strcpy(dogtag, "default");
 }
 
 /*
@@ -119,8 +174,9 @@ void CL_LoadClientinfo(clientinfo_t *ci, const char *s)
     char        weapon_filename[MAX_QPATH];
     char        icon_filename[MAX_QPATH];
     char        dogtag_filename[MAX_QPATH];
+    bool        parse_dogtag = true; // FIXME: Check for rerelease server
 
-    CL_ParsePlayerSkin(ci->name, model_name, skin_name, dogtag_name, s);
+    CL_ParsePlayerSkin(ci->name, model_name, skin_name, dogtag_name, parse_dogtag, s);
 
     // model file
     Q_concat(model_filename, sizeof(model_filename),
