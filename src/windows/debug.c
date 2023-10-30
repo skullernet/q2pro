@@ -191,7 +191,6 @@ static LONG WINAPI exception_filter(LPEXCEPTION_POINTERS exceptionInfo)
     char execdir[MAX_PATH];
     HMODULE moduleHandle;
     SYSTEMTIME systemTime;
-    OSVERSIONINFO vinfo;
     DWORD len;
     LONG action;
 
@@ -343,19 +342,6 @@ static LONG WINAPI exception_filter(LPEXCEPTION_POINTERS exceptionInfo)
     write_report(
         "by " APPLICATION " " VERSION
         ", built " __DATE__", " __TIME__ "\r\n");
-
-    vinfo.dwOSVersionInfoSize = sizeof(vinfo);
-    if (GetVersionEx(&vinfo)) {
-        write_report(
-            "\r\nWindows version: %u.%u (build %u) %s\r\n",
-            vinfo.dwMajorVersion,
-            vinfo.dwMinorVersion,
-            vinfo.dwBuildNumber,
-            vinfo.szCSDVersion);
-    } else {
-        write_report("GetVersionEx failed with error %#x\r\n",
-                     GetLastError());
-    }
 
     // oh no, dbghelp is not backwards and forwards compatible
     // why in hell is it different from other windows DLLs?
