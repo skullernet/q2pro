@@ -606,7 +606,7 @@ static void check_player(const char *name)
     char fn[MAX_QPATH], model[MAX_QPATH], skin[MAX_QPATH], dogtag[MAX_QPATH], *p;
     size_t len;
     int i, j;
-    bool parse_dogtag = true; // FIXME: Check for rerelease server
+    bool parse_dogtag = cls.serverProtocol == PROTOCOL_VERSION_RERELEASE;
 
     CL_ParsePlayerSkin(NULL, model, skin, dogtag, parse_dogtag, name);
 
