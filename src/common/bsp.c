@@ -114,10 +114,8 @@ LOAD(Texinfo)
 {
     mtexinfo_t  *out;
     int         i;
-    char        material_file[MAX_QPATH];
     int         j;
 #if USE_REF
-    int         highest_step_id = 2;
     int32_t     next;
     mtexinfo_t  *step;
 #endif
@@ -145,60 +143,12 @@ LOAD(Texinfo)
         memcpy(out->name, in, sizeof(out->name) - 1);
         in += MAX_TEXNAME;
 
-        // check if we already loaded this textures' material
-        for (j = i - 1; j >= 0; --j) {
-            if (!strcmp(out->name, bsp->texinfo[j].name)) {
-                Q_strlcpy(out->c.material, bsp->texinfo[j].c.material, sizeof(out->c.material));
 #if USE_REF
-                out->step_id = bsp->texinfo[j].step_id;
-#endif
-                break;
-            }
+        // check if we have a classic sky
+        if (!bsp->classic_sky && Q_stristr(out->name, "env/sky") && (out->c.flags & SURF_SKY)) {
+            bsp->classic_sky = out->name;
         }
 
-        // didn't find it, load it
-        if (j == -1) {
-            Q_strlcpy(material_file, "textures/", sizeof(material_file));
-            Q_strlcat(material_file, out->name, sizeof(material_file));
-            Q_strlcat(material_file, ".mat", sizeof(material_file));
-
-            char *buffer;
-
-            FS_LoadFile(material_file, (void**)&buffer);
-
-            if (buffer) {
-                Q_strlcpy(out->c.material, buffer, sizeof(out->c.material));
-                FS_FreeFile(buffer);
-            }
-            
-#if USE_REF
-            // set footstep ID
-            if (!*out->c.material || !strcmp(out->c.material, "default")) {
-                out->step_id = FOOTSTEP_ID_DEFAULT;
-            } else if (!strcmp(out->c.material, "ladder")) {
-                out->step_id = FOOTSTEP_ID_LADDER;
-            } else {
-                // find a matching material from another texinfo
-                for (j = i - 1; j >= 0; --j) {
-                    if (!strcmp(out->c.material, bsp->texinfo[j].c.material)) {
-                        out->step_id = bsp->texinfo[j].step_id;
-                        break;
-                    }
-                }
-
-                if (j == -1) {
-                    out->step_id = highest_step_id++;
-                }
-            }
-
-            // check if we have a classic sky
-            if (!bsp->classic_sky && Q_stristr(out->name, "env/sky") && (out->c.flags & SURF_SKY)) {
-                bsp->classic_sky = out->name;
-            }
-#endif
-        }
-
-#if USE_REF
         next = (int32_t)BSP_Long();
         if (next > 0) {
             if (next >= count) {
@@ -1052,8 +1002,6 @@ void BSP_Free(bsp_t *bsp)
     }
 }
 
-#if USE_CLIENT
-
 int BSP_LoadMaterials(bsp_t *bsp)
 {
     char path[MAX_QPATH];
@@ -1066,7 +1014,7 @@ int BSP_LoadMaterials(bsp_t *bsp)
         for (j = i - 1; j >= 0; j--) {
             tex = &bsp->texinfo[j];
             if (!Q_stricmp(tex->name, out->name)) {
-                strcpy(out->material, tex->material);
+                strcpy(out->c.material, tex->c.material);
                 out->step_id = tex->step_id;
                 break;
             }
@@ -1078,21 +1026,22 @@ int BSP_LoadMaterials(bsp_t *bsp)
         Q_concat(path, sizeof(path), "textures/", out->name, ".mat");
         FS_OpenFile(path, &f, FS_MODE_READ | FS_FLAG_LOADFILE);
         if (f) {
-            FS_Read(out->material, sizeof(out->material) - 1, f);
+            FS_Read(out->c.material, sizeof(out->c.material) - 1, f);
             FS_CloseFile(f);
         }
 
-        if (out->material[0] && !COM_IsPath(out->material)) {
-            Com_WPrintf("Bad material \"%s\" in %s\n", Com_MakePrintable(out->material), path);
-            out->material[0] = 0;
+        if (out->c.material[0] && !COM_IsPath(out->c.material)) {
+            Com_WPrintf("Bad material \"%s\" in %s\n", Com_MakePrintable(out->c.material), path);
+            out->c.material[0] = 0;
         }
 
-        if (!out->material[0] || !Q_stricmp(out->material, "default")) {
+#if USE_CLIENT
+        if (!out->c.material[0] || !Q_stricmp(out->c.material, "default")) {
             out->step_id = FOOTSTEP_ID_DEFAULT;
             continue;
         }
 
-        if (!Q_stricmp(out->material, "ladder")) {
+        if (!Q_stricmp(out->c.material, "ladder")) {
             out->step_id = FOOTSTEP_ID_LADDER;
             continue;
         }
@@ -1100,7 +1049,7 @@ int BSP_LoadMaterials(bsp_t *bsp)
         // see if already allocated step_id for this material
         for (j = i - 1; j >= 0; j--) {
             tex = &bsp->texinfo[j];
-            if (!Q_stricmp(tex->material, out->material)) {
+            if (!Q_stricmp(tex->c.material, out->c.material)) {
                 out->step_id = tex->step_id;
                 break;
             }
@@ -1109,13 +1058,12 @@ int BSP_LoadMaterials(bsp_t *bsp)
         // allocate new step_id
         if (j == -1)
             out->step_id = step_id++;
+#endif
     }
 
     Com_DPrintf("%s: %d materials loaded\n", __func__, step_id);
     return step_id;
 }
-
-#endif
 
 #if USE_REF
 

@@ -20,6 +20,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client.h"
 #include "common/mdfour.h"
 
+static cvar_t *cl_compass_time;
+
 qhandle_t   cl_sfx_ric1;
 qhandle_t   cl_sfx_ric2;
 qhandle_t   cl_sfx_ric3;
@@ -60,7 +62,7 @@ qhandle_t   cl_img_flare;
 
 static cvar_t   *cl_muzzleflashes;
 
-#define MAX_FOOTSTEP_SFX    9
+#define MAX_FOOTSTEP_SFX    16
 
 typedef struct {
     int         num_sfx;
@@ -69,8 +71,9 @@ typedef struct {
 
 static cl_footstep_sfx_t    *cl_footstep_sfx;
 static int                  cl_num_footsteps;
+static qhandle_t            cl_last_footstep;
 
-static cvar_t *cl_compass_time;
+extern mtexinfo_t nulltexinfo;
 
 /*
 =================
@@ -238,7 +241,7 @@ static void CL_RegisterFootsteps(void)
     for (i = 0, tex = cl.bsp->texinfo; i < cl.bsp->numtexinfo; i++, tex++) {
         cl_footstep_sfx_t *sfx = &cl_footstep_sfx[tex->step_id];
         if (sfx->num_sfx == -1)
-            CL_RegisterFootstep(sfx, tex->material);
+            CL_RegisterFootstep(sfx, tex->c.material);
     }
 }
 
@@ -312,6 +315,7 @@ void CL_RegisterTEntModels(void)
     cl_mod_marker = R_RegisterModel("models/objects/pointer/tris.md2");
 
     cl_img_flare = R_RegisterSprite("misc/flare.tga");
+
     // check for remaster powerscreen model (ugly!)
     len = FS_LoadFile("models/items/armor/effect/tris.md2", &data);
     cl.need_powerscreen_scale = len == 2300 && Com_BlockChecksum(data, len) == 0x19fca65b;

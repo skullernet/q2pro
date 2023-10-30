@@ -539,13 +539,12 @@ typedef struct {
         GLfloat     modulate;
         GLfloat     add;
         GLfloat     intensity;
-        GLfloat     intensity2;
-        GLfloat     pad;
+
         GLfloat     w_amp[2];
         GLfloat     w_phase[2];
         GLfloat     scroll[2];
         GLfloat     fog_sky_factor;
-        GLfloat     pad0;
+        GLfloat     intensity2;
         
         GLfloat     view_org[4];
         GLfloat     global_fog[4];

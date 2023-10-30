@@ -732,7 +732,6 @@ void R_RenderFrame(refdef_t *fd)
         qglBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
-
     GL_DrawDebugLines();
 
     // go back into 2D mode

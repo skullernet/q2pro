@@ -122,6 +122,7 @@ client_src = [
   'src/server/main.c',
   'src/server/send.c',
   'src/server/user.c',
+  'src/server/nav.c',
   'src/server/world.c',
   'src/server/server.h',
   'src/shared/base85.c',
