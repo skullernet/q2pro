@@ -184,6 +184,8 @@ static void Parse_ImageSpin(menuFrameWork_t *menu, menuType_t type)
     s->cvar = Cvar_WeakGet(Cmd_Argv(cmd_optind + 1));
     s->path = UI_CopyString(Cmd_Argv(cmd_optind + 2));
     s->filter = UI_CopyString(Cmd_Argv(cmd_optind + 3));
+    s->generic.width = atoi(Cmd_Argv(cmd_optind + 4));
+    s->generic.height = atoi(Cmd_Argv(cmd_optind + 5));
 
     Menu_AddItem(menu, s);
 }

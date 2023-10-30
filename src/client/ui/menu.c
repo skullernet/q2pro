@@ -692,6 +692,8 @@ static void ImageSpinControl_Draw(menuImageSpinControl_t *s)
 
     UI_DrawString(s->generic.x + RCOLUMN_OFFSET, s->generic.y,
                   s->generic.uiFlags, name);
+
+    R_DrawPic(s->generic.x + LCOLUMN_OFFSET, s->generic.y + MENU_SPACING, R_RegisterTempPic(va("/%s", s->itemvalues[0])));
 }
 
 /*
@@ -710,6 +712,7 @@ void ImageSpinControl_Init(menuImageSpinControl_t *s)
 
     UI_StringDimensions(&s->generic.rect,
                         s->generic.uiFlags | UI_RIGHT, s->generic.name);
+    s->generic.rect.height += s->generic.height;
 
     maxLength = 0;
     s->numItems = 0;
@@ -1988,6 +1991,8 @@ void Menu_Size(menuFrameWork_t *menu)
             if (widest < item->width) {
                 widest = item->width;
             }
+        } else if (item->type == MTYPE_IMAGESPINCONTROL) {
+            h += GENERIC_SPACING(item->height);
         } else {
             h += MENU_SPACING;
         }
@@ -2062,6 +2067,8 @@ void Menu_Size(menuFrameWork_t *menu)
         item->x = x;
         item->y = y;
         if (item->type == MTYPE_BITMAP) {
+            y += GENERIC_SPACING(item->height);
+        } else if (item->type == MTYPE_IMAGESPINCONTROL) {
             y += GENERIC_SPACING(item->height);
         } else {
             y += MENU_SPACING;

@@ -337,7 +337,7 @@ static int get_auto_scale(void)
     if (r_config.height < r_config.width) {
         if (r_config.height >= 2160)
             scale = 4;
-        else if (r_config.height >= 1080)
+        else if (r_config.height >= 720)
             scale = 2;
     } else {
         if (r_config.width >= 3840)
