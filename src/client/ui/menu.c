@@ -646,19 +646,34 @@ IMAGE SPIN CONTROL
 ===================================================================
 */
 
-static void ImageSpinControl_Push(menuImageSpinControl_t *s)
+/*
+=================
+ImageSpinControl_Push
+=================
+*/
+static void ImageSpinControl_Push(menuSpinControl_t *s)
 {
 }
 
-static void ImageSpinControl_Pop(menuImageSpinControl_t *s)
+/*
+=================
+ImageSpinControl_Pop
+=================
+*/
+static void ImageSpinControl_Pop(menuSpinControl_t *s)
 {
     if (s->curvalue >= 0 && s->curvalue < s->numItems)
         Cvar_SetInteger(s->cvar, s->curvalue, FROM_MENU);
 
-    FS_FreeList((void **) s->itemvalues);
+    FS_FreeList((void **) s->itemnames);
 }
 
-static void ImageSpinControl_Free(menuImageSpinControl_t *s)
+/*
+=================
+ImageSpinControl_Free
+=================
+*/
+static void ImageSpinControl_Free(menuSpinControl_t *s)
 {
     Z_Free(s->generic.name);
     Z_Free(s->generic.status);
@@ -668,74 +683,53 @@ static void ImageSpinControl_Free(menuImageSpinControl_t *s)
 
 /*
 =================
-SpinControl_Draw
+ImageSpinControl_Draw
 =================
 */
-static void ImageSpinControl_Draw(menuImageSpinControl_t *s)
+static void ImageSpinControl_Draw(menuSpinControl_t *s)
 {
-    const char *name;
+    SpinControl_Draw(s);
 
-    UI_DrawString(s->generic.x + LCOLUMN_OFFSET, s->generic.y,
-                  s->generic.uiFlags | UI_RIGHT | UI_ALTCOLOR, s->generic.name);
+    bool in_range = !(s->curvalue < 0 || s->curvalue >= s->numItems);
 
-    if (s->generic.flags & QMF_HASFOCUS) {
-        if ((uis.realtime >> 8) & 1) {
-            UI_DrawChar(s->generic.x + RCOLUMN_OFFSET / 2, s->generic.y,
-                        s->generic.uiFlags | UI_RIGHT, 13);
-        }
+    if (in_range) {
+        qhandle_t pic = R_RegisterTempPic(va("/%s", s->itemnames[s->curvalue]));
+        int w, h;
+        R_GetPicSize(&w, &h, pic);
+
+        R_DrawPic(s->generic.x + LCOLUMN_OFFSET + ((s->generic.width / 2) - (w / 2)), s->generic.y + MENU_SPACING + ((s->generic.height / 2) - (h / 2)), pic);
     }
-
-    if (s->curvalue < 0 || s->curvalue >= s->numItems)
-        name = "???";
-    else
-        name = s->itemvalues[s->curvalue];
-
-    UI_DrawString(s->generic.x + RCOLUMN_OFFSET, s->generic.y,
-                  s->generic.uiFlags, name);
-
-    R_DrawPic(s->generic.x + LCOLUMN_OFFSET, s->generic.y + MENU_SPACING, R_RegisterTempPic(va("/%s", s->itemvalues[0])));
 }
 
 /*
 =================
-SpinControl_Init
+ImageSpinControl_Init
 =================
 */
-void ImageSpinControl_Init(menuImageSpinControl_t *s)
+void ImageSpinControl_Init(menuSpinControl_t *s)
 {
-    int    maxLength, length;
-
-    s->generic.uiFlags &= ~(UI_LEFT | UI_RIGHT);
-
-    s->generic.rect.x = s->generic.x + LCOLUMN_OFFSET;
-    s->generic.rect.y = s->generic.y;
-
-    UI_StringDimensions(&s->generic.rect,
-                        s->generic.uiFlags | UI_RIGHT, s->generic.name);
-    s->generic.rect.height += s->generic.height;
-
-    maxLength = 0;
     s->numItems = 0;
-    
-    s->itemvalues = (char **) FS_ListFiles(NULL, va("%s/%s", s->path, s->filter), FS_SEARCH_BYFILTER, &s->numItems);
+    s->itemnames = (char **) FS_ListFiles(NULL, va("%s/%s", s->path, s->filter), FS_SEARCH_BYFILTER, &s->numItems);
+
+    SpinControl_Init(s);
+
+    // find the selected value
+    const char *val = s->cvar->string;
+
+    s->curvalue = -1;
+
+    size_t path_offset = strlen(s->path) + (strchr(s->filter, '*') - s->filter) + 1;
 
     for (int i = 0; i < s->numItems; i++) {
-        length = strlen(s->itemvalues[i]);
+        const char *file_value = s->itemnames[i] + path_offset;
+        const char *dot = strchr(file_value, '.');
+        size_t file_name_length = dot - file_value;
 
-        if (maxLength < length) {
-            maxLength = length;
+        if (!Q_strncasecmp(val, file_value, file_name_length)) {
+            s->curvalue = i;
+            break;
         }
     }
-
-    s->generic.rect.width += (RCOLUMN_OFFSET - LCOLUMN_OFFSET) +
-                             maxLength * CHAR_WIDTH;
-
-    int val = s->cvar->integer;
-
-    if (val < 0 || val >= s->numItems)
-        s->curvalue = -1;
-    else
-        s->curvalue = val;
 }
 
 /*
@@ -2355,6 +2349,7 @@ menuSound_t Menu_SelectItem(menuFrameWork_t *s)
     case MTYPE_VALUES:
     case MTYPE_STRINGS:
     case MTYPE_TOGGLE:
+    case MTYPE_IMAGESPINCONTROL:
         return SpinControl_DoEnter((menuSpinControl_t *)item);
     case MTYPE_KEYBIND:
         return Keybind_DoEnter((menuKeybind_t *)item);
@@ -2387,6 +2382,7 @@ menuSound_t Menu_SlideItem(menuFrameWork_t *s, int dir)
     case MTYPE_VALUES:
     case MTYPE_STRINGS:
     case MTYPE_TOGGLE:
+    case MTYPE_IMAGESPINCONTROL:
         return SpinControl_DoSlide((menuSpinControl_t *)item, dir);
     default:
         return QMS_NOTHANDLED;

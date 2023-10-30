@@ -227,18 +227,11 @@ typedef struct menuSpinControl_s {
 
     int         mask;
     bool        negate;
-} menuSpinControl_t;
 
-typedef struct menuImageSpinControl_s {
-    menuCommon_t generic;
-    cvar_t *cvar;
+    // for image spin control
     char *path;
     char *filter;
-
-    char    **itemvalues;
-    int     numItems;
-    int     curvalue;
-} menuImageSpinControl_t;
+} menuSpinControl_t;
 
 typedef struct menuAction_s {
     menuCommon_t generic;

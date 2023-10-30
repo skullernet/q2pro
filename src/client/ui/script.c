@@ -157,7 +157,7 @@ static void Parse_Spin(menuFrameWork_t *menu, menuType_t type)
 
 static void Parse_ImageSpin(menuFrameWork_t *menu, menuType_t type)
 {
-    menuImageSpinControl_t *s;
+    menuSpinControl_t *s;
     int c, numItems;
     char *status = NULL;
 
