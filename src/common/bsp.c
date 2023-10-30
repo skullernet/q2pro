@@ -114,8 +114,8 @@ LOAD(Texinfo)
 {
     mtexinfo_t  *out;
     int         i;
-    int         j;
 #if USE_REF
+    int         j;
     int32_t     next;
     mtexinfo_t  *step;
 #endif
