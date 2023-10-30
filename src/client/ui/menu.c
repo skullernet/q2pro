@@ -706,7 +706,7 @@ static void ImageSpinControl_Draw(menuSpinControl_t *s)
 ImageSpinControl_Init
 =================
 */
-void ImageSpinControl_Init(menuSpinControl_t *s)
+static void ImageSpinControl_Init(menuSpinControl_t *s)
 {
     s->numItems = 0;
     s->itemnames = (char **) FS_ListFiles(NULL, va("%s/%s", s->path, s->filter), FS_SEARCH_BYFILTER, &s->numItems);
