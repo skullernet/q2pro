@@ -2609,6 +2609,27 @@ static void q_printf(2, 3) add_game_dir(unsigned mode, const char *fmt, ...)
 
 /*
 =================
+FS_NextPath
+=================
+*/
+const char *FS_NextPath(const char *path)
+{
+    searchpath_t *search;
+    const char *prev = NULL;
+
+    for (search = fs_searchpaths; search; search = search->next) {
+        if (search->pack)
+            continue;
+        if (path == prev)
+            return search->filename;
+        prev = search->filename;
+    }
+
+    return NULL;
+}
+
+/*
+=================
 FS_CopyInfo
 =================
 */

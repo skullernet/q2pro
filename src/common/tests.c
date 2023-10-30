@@ -810,6 +810,18 @@ static void Com_ExtCmpTest_f(void)
     Com_Printf("%d failures, %d strings tested\n", errors, numextcmptests);
 }
 
+static void Com_NextPathTest_f(void)
+{
+    const char *path = NULL;
+
+    while (1) {
+        path = FS_NextPath(path);
+        if (!path)
+            break;
+        Com_Printf("%s\n", path);
+    }
+}
+
 static const cmdreg_t c_test[] = {
     { "error", Com_Error_f },
     { "errordrop", Com_ErrorDrop_f },
@@ -833,6 +845,7 @@ static const cmdreg_t c_test[] = {
     { "mdfourtest", Com_MdfourTest_f },
     { "mdfoursum", Com_MdfourSum_f },
     { "extcmptest", Com_ExtCmpTest_f },
+    { "nextpathtest", Com_NextPathTest_f },
     { NULL }
 };
 

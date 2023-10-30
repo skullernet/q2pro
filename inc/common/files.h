@@ -94,6 +94,8 @@ int64_t FS_Length(qhandle_t f);
 bool FS_WildCmp(const char *filter, const char *string);
 bool FS_ExtCmp(const char *extension, const char *string);
 
+const char *FS_NextPath(const char *path);
+
 #define FS_ReallocList(list, count) \
     Z_Realloc(list, ALIGN(count, MIN_LISTED_FILES) * sizeof(void *))
 
