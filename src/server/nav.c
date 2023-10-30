@@ -70,70 +70,125 @@ const int32_t INVALID_ID = -1;
 const int32_t NAV_MAGIC = MakeLittleLong('N', 'A', 'V', '3');
 
 // last nav version we support
+// changes from 5: yellow and green teams were removed
+// from link flags. no binary changes.
 const int32_t NAV_VERSION = 6;
+
+// changes from 4: soft limit change for max nodes.
+// no binary changes.
+const int32_t NAV_VERSION_5 = 5;
+
+// changes from 3: ladder move plane was added to traversal.
+const int32_t NAV_VERSION_4 = 4;
+
+/**
+meta:
+  id: nav_v6_v5_v4
+  file-extension: nav
+  endian: le
+seq:
+  - id: header
+    type: nav_header
+  - id: data_header
+    type: nav_data_header
+  - id: nodes
+    type: nav_node
+    repeat: expr
+    repeat-expr: data_header.num_nodes
+  - id: node_positions
+    type: vec3
+    repeat: expr
+    repeat-expr: data_header.num_nodes
+  - id: links
+    type: nav_link
+    repeat: expr
+    repeat-expr: data_header.num_links
+  - id: traversals
+    type: nav_traversal
+    repeat: expr
+    repeat-expr: data_header.num_traversals
+  - id: num_edicts
+    type: s4
+  - id: edicts
+    type: nav_edict
+    repeat: expr
+    repeat-expr: num_edicts
+types:
+  nav_header:
+    seq:
+      - id: magic
+        contents: "NAV3"
+      - id: version
+        type: u4
+  nav_data_header:
+    seq:
+      - id: num_nodes
+        type: s4
+      - id: num_links
+        type: s4
+      - id: num_traversals
+        type: s4
+      - id: heuristic
+        type: f4
+  nav_node:
+    seq:
+      - id: flags
+        type: u2
+      - id: num_links
+        type: s2
+      - id: first_link
+        type: s2
+      - id: radius
+        type: s2
+  nav_link:
+    seq:
+      - id: target
+        type: s2
+      - id: type
+        type: u1
+      - id: flags
+        type: u1
+      - id: traversal
+        type: s2
+  nav_traversal:
+    seq:
+      - id: funnel
+        type: vec3
+      - id: start
+        type: vec3
+      - id: end
+        type: vec3
+      - id: ladder_plane
+        type: vec3
+  nav_edict:
+    seq:
+      - id: link
+        type: s2
+      - id: model
+        type: s4
+      - id: mins
+        type: vec3
+      - id: maxs
+        type: vec3
+  vec3:
+    seq:
+      - id: x
+        type: f4
+      - id: y
+        type: f4
+      - id: z
+        type: f4
+*/
+
+
+// version 3: 
+const int32_t NAV_VERSION_3 = 3;
 
 #define NAV_VERIFY(condition, error) \
     if (!(condition)) { Com_SetLastError(error); goto fail; }
 
 #define NAV_VERIFY_READ(v) \
     NAV_VERIFY(FS_Read(&v, sizeof(v), f) == sizeof(v), "bad data")
-
-/**
-HEADER
-
-i32 magic (NAV3)
-i32 version (6)
-
-V6 NAV DATA
-
-i32 num_nodes
-i32 num_links
-i32 num_traversals
-f32 heuristic
-
-struct node
-{
-    u16 flags
-    i16 num_links
-    i16 first_link
-    i16 radius
-}
-
-node[num_nodes] nodes
-vec3[num_nodes] node_origins
-
-struct link
-{
-    i16 target
-    u8 type
-    u8 flags
-    i16 traversal
-}
-
-link[num_links] links
-
-struct traversal
-{
-    vec3 funnel
-    vec3 start
-    vec3 end
-    vec3 ladder_plane
-}
-
-traversal[num_traversals] traversals
-
-i32 num_edicts
-
-struct edict
-{
-    i16 link
-    i32 model
-    vec3 mins
-    vec3 maxs
-}
-
-edict[num_edicts] edicts
-*/
 
 typedef struct nav_open_s {
     const nav_node_t  *node;
@@ -556,7 +611,7 @@ void Nav_Load(const char *map_name)
     NAV_VERIFY(v == NAV_MAGIC, "bad magic");
 
     NAV_VERIFY_READ(v);
-    NAV_VERIFY(v == NAV_VERSION, "bad version");
+    NAV_VERIFY((v == NAV_VERSION || v == NAV_VERSION_5 || v == NAV_VERSION_4), va("bad version %i\n", v));
 
     // TODO: support versions 5 to 1 which we may have used in some earlier maps
     NAV_VERIFY_READ(nav_data.num_nodes);
@@ -565,8 +620,10 @@ void Nav_Load(const char *map_name)
     NAV_VERIFY_READ(nav_data.heuristic);
 
     NAV_VERIFY(nav_data.nodes = Z_TagMalloc(sizeof(nav_node_t) * nav_data.num_nodes, TAG_NAV), "out of memory");
-    NAV_VERIFY(nav_data.links = Z_TagMalloc(sizeof(nav_link_t) * nav_data.num_links, TAG_NAV), "out of memory");
-    NAV_VERIFY(nav_data.traversals = Z_TagMalloc(sizeof(nav_traversal_t) * nav_data.num_traversals, TAG_NAV), "out of memory");
+    if (nav_data.num_links)
+        NAV_VERIFY(nav_data.links = Z_TagMalloc(sizeof(nav_link_t) * nav_data.num_links, TAG_NAV), "out of memory");
+    if (nav_data.num_traversals)
+        NAV_VERIFY(nav_data.traversals = Z_TagMalloc(sizeof(nav_traversal_t) * nav_data.num_traversals, TAG_NAV), "out of memory");
 
     nav_data.num_conditional_nodes = 0;
 
