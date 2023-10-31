@@ -199,6 +199,7 @@ void *Z_Realloc(void *ptr, size_t size)
 
     z->size = size;
 #if USE_MEMORY_TRACES
+    memset(z->trace, 0, sizeof(z->trace));
     Sys_BackTrace(z->trace, q_countof(z->trace), 2);
 #endif
     List_Relink(&z->entry);
@@ -284,6 +285,8 @@ static void *Z_TagMallocInternal(size_t size, memtag_t tag, bool init)
     z->tag = tag;
     z->size = size;
 #if USE_MEMORY_TRACES
+    if (!init)
+        memset(z->trace, 0, sizeof(z->trace));
     Sys_BackTrace(z->trace, q_countof(z->trace), 3);
 #endif
 
