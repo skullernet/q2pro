@@ -574,6 +574,11 @@ config.set10('USE_PACKETDUP',     get_option('packetdup-hack'))
 config.set10('USE_TGA',           get_option('tga'))
 config.set10('USE_' + host_machine.endian().to_upper() + '_ENDIAN', true)
 
+if not win32
+  have_backtrace = cc.has_header('execinfo.h') and cc.has_function('backtrace')
+  config.set10('HAVE_BACKTRACE',  have_backtrace)
+endif
+
 configure_file(output: 'config.h', configuration: config)
 
 if system_wide
