@@ -667,7 +667,7 @@ void ImageSpinControl_Pop(menuSpinControl_t *s)
         const char *file_value = s->itemnames[s->curvalue] + path_offset;
         const char *dot = strchr(file_value, '.');
         size_t file_name_length = dot - file_value;
-        Cvar_SetEx(s->cvar->name, va("%.*s", file_name_length, file_value), FROM_MENU);
+        Cvar_SetEx(s->cvar->name, va("%.*s", (int)file_name_length, file_value), FROM_MENU);
     }
 
     FS_FreeList((void **) s->itemnames);
