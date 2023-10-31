@@ -570,6 +570,7 @@ config.set10('USE_FPS',           get_option('variable-fps'))
 config.set10('USE_ICMP',          get_option('icmp-errors').require(win32 or cc.has_header('linux/errqueue.h')).allowed())
 config.set10('USE_MD3',           get_option('md3'))
 config.set10('USE_MD5',           get_option('md5'))
+config.set10('USE_MEMORY_TRACES', get_option('memory-traces'))
 config.set10('USE_PACKETDUP',     get_option('packetdup-hack'))
 config.set10('USE_TGA',           get_option('tga'))
 config.set10('USE_' + host_machine.endian().to_upper() + '_ENDIAN', true)
@@ -599,6 +600,7 @@ summary({
   'libpng'             : config.get('USE_PNG', 0) != 0,
   'md3'                : config.get('USE_MD3', 0) != 0,
   'md5'                : config.get('USE_MD5', 0) != 0,
+  'memory-traces'      : config.get('USE_MEMORY_TRACES', 0) != 0,
   'mvd-client'         : config.get('USE_MVD_CLIENT', 0) != 0,
   'mvd-server'         : config.get('USE_MVD_SERVER', 0) != 0,
   'openal'             : config.get('USE_OPENAL', 0) != 0,

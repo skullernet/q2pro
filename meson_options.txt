@@ -79,6 +79,11 @@ option('md5',
   value: true,
   description: 'MD5 (re-release) models support')
 
+option('memory-traces',
+  type: 'boolean',
+  value: false,
+  description: 'record backtraces in memory allocations')
+
 option('mvd-client',
   type: 'boolean',
   value: true,
