@@ -21,6 +21,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/common.h"
 #include "common/zone.h"
 
+#if USE_MEMORY_TRACES
+#define MAX_TRACE_SIZE 32
+#include "system/system.h"
+#endif
+
 #define Z_MAGIC     0x1d0d
 
 typedef struct {
@@ -28,6 +33,9 @@ typedef struct {
     uint16_t        tag;        // for group free
     size_t          size;
     list_t          entry;
+#if USE_MEMORY_TRACES
+    void            *trace[MAX_TRACE_SIZE];
+#endif
 } zhead_t;
 
 typedef struct {
@@ -190,6 +198,9 @@ void *Z_Realloc(void *ptr, size_t size)
     }
 
     z->size = size;
+#if USE_MEMORY_TRACES
+    Sys_BackTrace(z->trace, q_countof(z->trace), 2);
+#endif
     List_Relink(&z->entry);
 
     Z_CountAlloc(z);
@@ -272,6 +283,9 @@ static void *Z_TagMallocInternal(size_t size, memtag_t tag, bool init)
     z->magic = Z_MAGIC;
     z->tag = tag;
     z->size = size;
+#if USE_MEMORY_TRACES
+    Sys_BackTrace(z->trace, q_countof(z->trace), 3);
+#endif
 
     List_Insert(&z_chain, &z->entry);
 

@@ -287,8 +287,6 @@ static bool Push(menuFrameWork_t *self)
         m_player.menu.title = "Player Setup";
     }
 
-    ImageSpinControl_Init(&m_player.dogtag);
-
     ReloadMedia();
 
     // set up oldframe correctly

@@ -671,6 +671,7 @@ void ImageSpinControl_Pop(menuSpinControl_t *s)
     }
 
     FS_FreeList((void **) s->itemnames);
+    s->itemnames = NULL;
 }
 
 /*
@@ -683,6 +684,8 @@ static void ImageSpinControl_Free(menuSpinControl_t *s)
     Z_Free(s->generic.name);
     Z_Free(s->generic.status);
     Z_Free(s->filter);
+    Z_Free(s->path);
+    FS_FreeList((void **) s->itemnames);
     Z_Free(s);
 }
 
