@@ -74,7 +74,7 @@ bool Sys_SetNonBlock(int fd, bool nb);
 #endif
 
 #if USE_MEMORY_TRACES
-void Sys_BackTrace(void *output, size_t count, size_t offset);
+void Sys_BackTrace(void **output, size_t count, size_t offset);
 #endif
 
 extern cvar_t   *sys_basedir;
