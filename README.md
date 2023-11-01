@@ -2,6 +2,7 @@ Q2PRO
 =====
 
 Q2PRO is an enhanced, multiplayer oriented Quake 2 client and server.
+This branch is for native support of re-release content.
 
 Features include:
 
