@@ -39,6 +39,7 @@ typedef struct {
     unsigned        timestamp;
     int             stream_idx;
     AVFrame         *frame;
+    bool            eof;
 } DecoderState;
 
 typedef struct {
@@ -216,7 +217,7 @@ static int decode_frames(DecoderState *s)
     AVCodecContext *dec = s->dec_ctx;
     int ret, video_frames = 0;
 
-    if (!dec)
+    if (!dec || s->eof)
         return 0;
 
     // naive decoding loop: keep reading frames until PTS >= current time
@@ -227,14 +228,20 @@ static int decode_frames(DecoderState *s)
         if (ret == AVERROR_EOF) {
             Com_DPrintf("%s from %s decoder\n", av_err2str(ret),
                         av_get_media_type_string(dec->codec->type));
-            return ret;
+            s->eof = true;
+            return 0;
         }
 
         // do we need a packet?
         if (ret == AVERROR(EAGAIN)) {
             if (packet_queue_get(&s->queue, pkt) < 0) {
-                // enter draining mode
-                ret = avcodec_send_packet(dec, NULL);
+                if (cin.eof) {
+                    // enter draining mode
+                    ret = avcodec_send_packet(dec, NULL);
+                } else {
+                    // wait for more packets...
+                    return 0;
+                }
             } else {
                 // submit the packet to the decoder
                 ret = avcodec_send_packet(dec, pkt);
@@ -336,12 +343,11 @@ static bool SCR_ReadNextFrame(void)
         }
     }
 
-    ret = decode_frames(&cin.video);
-    if (ret < 0 && ret != AVERROR(EAGAIN))
+    if (decode_frames(&cin.video) < 0)
         return false;
-
-    ret = decode_frames(&cin.audio);
-    if (ret < 0 && ret != AVERROR(EAGAIN))
+    if (decode_frames(&cin.audio) < 0)
+        return false;
+    if (cin.video.eof && cin.audio.eof)
         return false;
 
     return true;
@@ -381,7 +387,7 @@ void SCR_DrawCinematic(void)
 {
     R_DrawFill8(0, 0, r_config.width, r_config.height, 0);
 
-    if (cin.width > 0 && cin.height > cin.crop) {
+    if (cin.width > 0 && cin.height > cin.crop && !cin.video.eof) {
         float scale_w = (float)r_config.width / cin.width;
         float scale_h = (float)r_config.height / (cin.height - cin.crop);
         float scale = min(scale_w, scale_h);
@@ -412,6 +418,8 @@ static bool open_codec_context(enum AVMediaType type)
             Com_EPrintf("Couldn't find video stream\n");
             return false;
         }
+        // if there is no audio, pretend it hit EOF
+        cin.audio.eof = true;
         return true;
     }
 
