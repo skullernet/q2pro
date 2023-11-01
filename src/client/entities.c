@@ -288,6 +288,8 @@ static void set_active_state(void)
 
     CL_UpdateFrameTimes();
 
+    IN_Activate();
+
     if (!cls.demo.playback) {
         EXEC_TRIGGER(cl_beginmapcmd);
         Cmd_ExecTrigger("#cl_enterlevel");
