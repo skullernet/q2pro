@@ -412,6 +412,79 @@ static qhandle_t CL_RegisterImage(const char *s)
     return R_RegisterTempPic(s);
 }
 
+#define MAX_WHEEL_VALUES 8
+
+/*
+=================
+CL_LoadWheelEntry
+=================
+*/
+static void CL_LoadWheelEntry(int index, const char *s)
+{
+    configstring_t entry;
+    Q_strlcpy(entry, s, sizeof(entry));
+    int values[MAX_WHEEL_VALUES];
+    size_t num_values = 0;
+
+    for (char *start = entry; num_values < MAX_WHEEL_VALUES && start && *start; ) {
+        char *end = strchr(start, '|');
+
+        if (end) {
+            *end = '\0';
+        }
+
+        const char *endptr;
+        values[num_values++] = strtol(start, &endptr, 10);
+
+        // sanity
+        if (endptr == start) {
+            return;
+        }
+
+        start = end ? (end + 1) : NULL;
+    }
+
+    // parse & sanity check
+    if (index >= cl.csr.wheelammo + MAX_WHEEL_ITEMS) {
+        if (num_values != 6) {
+            return;
+        }
+
+        index = index - cl.csr.wheelpowerups;
+        
+        cl.wheel.powerups[index].item_index = values[0];
+        cl.wheel.powerups[index].icon_index = values[1];
+        cl.wheel.powerups[index].is_toggle = values[2];
+        cl.wheel.powerups[index].sort_id = values[3];
+        cl.wheel.powerups[index].can_drop = values[4];
+        cl.wheel.powerups[index].ammo_index = values[5];
+    } else if (index >= cl.csr.wheelweapons + MAX_WHEEL_ITEMS) {
+        if (num_values != 2) {
+            return;
+        }
+
+        index = index - cl.csr.wheelammo;
+        
+        cl.wheel.ammo[index].item_index = values[0];
+        cl.wheel.ammo[index].icon_index = values[1];
+    } else {
+        if (num_values != 8) {
+            return;
+        }
+
+        index = index - cl.csr.wheelweapons;
+        
+        cl.wheel.weapons[index].item_index = values[0];
+        cl.wheel.weapons[index].icon_index = values[1];
+        cl.wheel.weapons[index].ammo_index = values[2];
+        cl.wheel.weapons[index].min_ammo = values[3];
+        cl.wheel.weapons[index].is_powerup = values[4];
+        cl.wheel.weapons[index].sort_id = values[5];
+        cl.wheel.weapons[index].quantity_warn = values[6];
+        cl.wheel.weapons[index].can_drop = values[7];
+    }
+}
+
 /*
 =================
 CL_PrepRefresh
@@ -472,6 +545,14 @@ void CL_PrepRefresh(void)
     // set sky textures and speed
     CL_SetSky();
 
+    // load wheel data
+    int n;
+    for (n = cl.csr.wheelweapons, i = 0; i < MAX_WHEEL_ITEMS * 3; i++, n++) {
+        if (*cl.configstrings[n]) {
+            CL_LoadWheelEntry(n, cl.configstrings[n]);
+        }
+    }
+
     // the renderer can now free unneeded stuff
     R_EndRegistration();
 
@@ -484,14 +565,8 @@ void CL_PrepRefresh(void)
     OGG_Play();
 }
 
-/*
-=================
-CL_UpdateConfigstring
-
-A configstring update has been parsed.
-=================
-*/
-void CL_UpdateConfigstring(int index)
+// parse configstring, internal method
+static void update_configstring(int index)
 {
     const char *s = cl.configstrings[index];
 
@@ -555,4 +630,23 @@ void CL_UpdateConfigstring(int index)
         CL_SetSky();
         return;
     }
+
+    if (index >= cl.csr.wheelweapons && index <= cl.csr.wheelpowerups + MAX_WHEEL_ITEMS) {
+        CL_LoadWheelEntry(index, s);
+        return;
+    }
+}
+
+/*
+=================
+CL_UpdateConfigstring
+
+A configstring update has been parsed.
+=================
+*/
+void CL_UpdateConfigstring(int index)
+{
+    update_configstring(index);
+
+    cgame->ParseConfigString(index, cl.configstrings[index]);
 }

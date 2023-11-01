@@ -336,6 +336,32 @@ typedef struct client_state_s {
         int32_t muzzle_skin;
         vec3_t muzzle_offset;
     } weapon;
+
+    // data for weapon wheel stuff
+    struct {
+        struct {
+            int     item_index;
+            int     icon_index;
+            int     ammo_index;
+            int     min_ammo;
+            int     sort_id;
+            int     quantity_warn;
+            bool    is_powerup;
+            bool    can_drop;
+        } weapons[MAX_WHEEL_ITEMS];
+        struct {
+            int     item_index;
+            int     icon_index;
+        } ammo[MAX_WHEEL_ITEMS];
+        struct {
+            int     item_index;
+            int     icon_index;
+            int     sort_id;
+            int     ammo_index;
+            bool    is_toggle;
+            bool    can_drop;
+        } powerups[MAX_WHEEL_ITEMS];
+    } wheel;
 } client_state_t;
 
 extern client_state_t   cl;
@@ -677,7 +703,6 @@ void CL_RegisterBspModels(void);
 void CL_RegisterVWepModels(void);
 void CL_PrepRefresh(void);
 void CL_UpdateConfigstring(int index);
-
 
 //
 // download.c
