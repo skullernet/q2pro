@@ -104,7 +104,7 @@ Called when either the cinematic completes, or it is aborted
 void SCR_FinishCinematic(void)
 {
     // stop cinematic, but keep static pic
-    if (cin.video.frame) {
+    if (cin.fmt_ctx) {
         SCR_StopCinematic();
         SCR_BeginLoadingPlaque();
     }
@@ -224,19 +224,25 @@ static int decode_frames(DecoderState *s)
     // no A/V synchronization
     while (s->timestamp < cls.realtime - cin.start_time) {
         ret = avcodec_receive_frame(dec, frame);
-        if (ret == AVERROR_EOF)
+        if (ret == AVERROR_EOF) {
+            Com_DPrintf("%s from %s decoder\n", av_err2str(ret),
+                        av_get_media_type_string(dec->codec->type));
             return ret;
+        }
 
         // do we need a packet?
         if (ret == AVERROR(EAGAIN)) {
-            if (packet_queue_get(&s->queue, pkt))
-                return cin.eof ? AVERROR_EOF : ret;
-
-            // submit the packet to the decoder
-            ret = avcodec_send_packet(dec, pkt);
-            av_packet_unref(pkt);
+            if (packet_queue_get(&s->queue, pkt) < 0) {
+                // enter draining mode
+                ret = avcodec_send_packet(dec, NULL);
+            } else {
+                // submit the packet to the decoder
+                ret = avcodec_send_packet(dec, pkt);
+                av_packet_unref(pkt);
+            }
             if (ret < 0) {
-                Com_EPrintf("Error submitting a packet for decoding: %s\n", av_err2str(ret));
+                Com_EPrintf("Error submitting %s packet for decoding: %s\n",
+                            av_get_media_type_string(dec->codec->type), av_err2str(ret));
                 return ret;
             }
 
@@ -244,7 +250,8 @@ static int decode_frames(DecoderState *s)
         }
 
         if (ret < 0) {
-            Com_EPrintf("Error during decoding: %s\n", av_err2str(ret));
+            Com_EPrintf("Error during decoding %s: %s\n",
+                        av_get_media_type_string(dec->codec->type), av_err2str(ret));
             return ret;
         }
 
@@ -306,6 +313,7 @@ static bool SCR_ReadNextFrame(void)
         ret = av_read_frame(cin.fmt_ctx, pkt);
         // idcin demuxer returns AVERROR(EIO) on EOF packet...
         if (ret == AVERROR_EOF || ret == AVERROR(EIO)) {
+            Com_DPrintf("%s from demuxer\n", av_err2str(ret));
             cin.eof = true;
             break;
         }
@@ -425,12 +433,14 @@ static bool open_codec_context(enum AVMediaType type)
     ret = avcodec_parameters_to_context(dec_ctx, st->codecpar);
     if (ret < 0) {
         Com_EPrintf("Failed to copy %s codec parameters to decoder context\n", av_get_media_type_string(type));
+        avcodec_free_context(&dec_ctx);
         return false;
     }
 
     ret = avcodec_open2(dec_ctx, dec, NULL);
     if (ret < 0) {
         Com_EPrintf("Failed to open %s codec\n", av_get_media_type_string(type));
+        avcodec_free_context(&dec_ctx);
         return false;
     }
 
@@ -536,8 +546,8 @@ static bool SCR_StartCinematic(const char *name)
         }
 
         if (Q_snprintf(fullname, sizeof(fullname), "%s/video/%s", path, normalized) >= sizeof(fullname)) {
-            Com_EPrintf("Oversize cinematic name\n");
-            return false;
+            ret = AVERROR(ENAMETOOLONG);
+            break;
         }
 
         ret = avformat_open_input(&cin.fmt_ctx, fullname, NULL, NULL);
