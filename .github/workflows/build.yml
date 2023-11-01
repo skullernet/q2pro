@@ -2,9 +2,9 @@ name: build
 
 on:
   push:
-    branches: [master, ci]
+    branches: [rerelease-game, ci]
   pull_request:
-    branches: [master]
+    branches: [rerelease-game]
 
 env:
   MESON_ARGS: >-
