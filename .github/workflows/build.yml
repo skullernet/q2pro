@@ -10,6 +10,7 @@ env:
   MESON_ARGS: >-
     --auto-features=enabled
     --fatal-meson-warnings
+    -Davcodec=disabled
     -Danticheat-server=true
     -Dpacketdup-hack=true
     -Dtests=true
