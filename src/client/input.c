@@ -809,6 +809,10 @@ void CL_FinalizeCmd(void)
         cl.cmd.buttons |= BUTTON_USE;
     if (in_holster.state & 3)
         cl.cmd.buttons |= BUTTON_HOLSTER;
+    if (in_up.state & 3)
+        cl.cmd.buttons |= BUTTON_JUMP;
+    if (in_down.state & 3)
+        cl.cmd.buttons |= BUTTON_CROUCH;
 
     if (cls.key_dest == KEY_GAME && Key_AnyKeyDown()) {
         cl.cmd.buttons |= BUTTON_ANY;
