@@ -934,9 +934,9 @@ typedef struct {
 //
 #define BUTTON_ATTACK   BIT(0)
 #define BUTTON_USE      BIT(1)
+#define BUTTON_HOLSTER  BIT(2) // Kex
 #define BUTTON_JUMP     BIT(3) // Kex
 #define BUTTON_CROUCH   BIT(4) // Kex
-#define BUTTON_HOLSTER  BIT(5) // Kex
 #define BUTTON_ANY      BIT(7) // any key whatsoever
 
 typedef uint8_t button_t;
