@@ -152,6 +152,30 @@ typedef struct {
 // Time over which step climbing is smoothed
 #define STEP_TIME       100
 
+typedef struct {
+    int     item_index;
+    int     icon_index;
+    int     ammo_index;
+    int     min_ammo;
+    int     sort_id;
+    int     quantity_warn;
+    bool    is_powerup;
+    bool    can_drop;
+} cl_wheel_weapon_t;
+
+typedef struct {
+    int     item_index;
+    int     icon_index;
+} cl_wheel_ammo_t;
+
+typedef struct {
+    int     item_index;
+    int     icon_index;
+    int     sort_id;
+    int     ammo_index;
+    bool    is_toggle;
+    bool    can_drop;
+} cl_wheel_powerup_t;
 
 //
 // the client_state_t structure is wiped completely at every
@@ -339,28 +363,14 @@ typedef struct client_state_s {
 
     // data for weapon wheel stuff
     struct {
-        struct {
-            int     item_index;
-            int     icon_index;
-            int     ammo_index;
-            int     min_ammo;
-            int     sort_id;
-            int     quantity_warn;
-            bool    is_powerup;
-            bool    can_drop;
-        } weapons[MAX_WHEEL_ITEMS];
-        struct {
-            int     item_index;
-            int     icon_index;
-        } ammo[MAX_WHEEL_ITEMS];
-        struct {
-            int     item_index;
-            int     icon_index;
-            int     sort_id;
-            int     ammo_index;
-            bool    is_toggle;
-            bool    can_drop;
-        } powerups[MAX_WHEEL_ITEMS];
+        cl_wheel_weapon_t weapons[MAX_WHEEL_ITEMS];
+        size_t            num_weapons;
+
+        cl_wheel_ammo_t ammo[MAX_WHEEL_ITEMS];
+        size_t          num_ammo;
+
+        cl_wheel_powerup_t powerups[MAX_WHEEL_ITEMS];
+        size_t             num_powerups;
     } wheel;
 } client_state_t;
 
