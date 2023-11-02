@@ -227,13 +227,14 @@ static inline void MSG_WriteAngle16(float f)
 
 #if USE_CLIENT
 
-static void compute_buttons_upmove(const usercmd_t *cmd, int *buttons, short *upmove)
+static void compute_buttons_upmove(int *buttons, short *upmove)
 {
-    *buttons = cmd->buttons & ~(BUTTON_CROUCH | BUTTON_JUMP);
+    int prev_buttons = *buttons;
+    *buttons = prev_buttons & ~(BUTTON_CROUCH | BUTTON_JUMP);
     *upmove = 0;
-    if (cmd->buttons & BUTTON_JUMP)
+    if (prev_buttons & BUTTON_JUMP)
         *upmove += 200; /* cl_upspeed */
-    if (cmd->buttons & BUTTON_CROUCH)
+    if (prev_buttons & BUTTON_CROUCH)
         *upmove -= 200; /* cl_upspeed */
 }
 
@@ -252,12 +253,16 @@ int MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *cmd, int serve
         from = &nullUserCmd;
     }
 
-    int from_buttons;
-    short from_upmove;
-    compute_buttons_upmove(from, &from_buttons, &from_upmove);
-    int new_buttons;
-    short new_upmove;
-    compute_buttons_upmove(cmd, &new_buttons, &new_upmove);
+    bool is_rerelease = serverProtocol == PROTOCOL_VERSION_RERELEASE;
+
+    int from_buttons = from->buttons;
+    short from_upmove = 0;
+    int new_buttons = cmd->buttons;
+    short new_upmove = 0;
+    if (is_rerelease) {
+        compute_buttons_upmove(&from_buttons, &from_upmove);
+        compute_buttons_upmove(&new_buttons, &new_upmove);
+    }
 
 //
 // send the movement message
@@ -273,10 +278,11 @@ int MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *cmd, int serve
         bits |= CM_FORWARD;
     if (cmd->sidemove != from->sidemove)
         bits |= CM_SIDE;
-    if (new_upmove != from_upmove)
-        bits |= CM_UP;
     if (new_buttons != from_buttons)
         bits |= CM_BUTTONS;
+    // The next one can only happen when is_rerelease == false
+    if (new_upmove != from_upmove)
+        bits |= CM_UP;
 
     MSG_WriteByte(bits);
 
@@ -324,7 +330,9 @@ int MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *cmd, int serve
         }
     }
 
-    if (version < PROTOCOL_VERSION_R1Q2_UCMD && (bits & CM_BUTTONS))
+    /* For rerelease, we want to write the full 'buttons' byte,
+     * due to the new button bits that have been added. */
+    if ((version < PROTOCOL_VERSION_R1Q2_UCMD || is_rerelease) && (bits & CM_BUTTONS))
         MSG_WriteByte(cmd->buttons);
 
     MSG_WriteByte(cmd->msec);
@@ -398,12 +406,16 @@ int MSG_WriteDeltaUsercmd_Enhanced(const usercmd_t *from,
         from = &nullUserCmd;
     }
 
-    int from_buttons;
-    short from_upmove;
-    compute_buttons_upmove(from, &from_buttons, &from_upmove);
-    int new_buttons;
-    short new_upmove;
-    compute_buttons_upmove(cmd, &new_buttons, &new_upmove);
+    bool is_rerelease = serverProtocol == PROTOCOL_VERSION_RERELEASE;
+
+    int from_buttons = from->buttons;
+    short from_upmove = 0;
+    int new_buttons = cmd->buttons;
+    short new_upmove = 0;
+    if (!is_rerelease) {
+        compute_buttons_upmove(&from_buttons, &from_upmove);
+        compute_buttons_upmove(&new_buttons, &new_upmove);
+    }
 
 //
 // send the movement message
@@ -419,12 +431,13 @@ int MSG_WriteDeltaUsercmd_Enhanced(const usercmd_t *from,
         bits |= CM_FORWARD;
     if (cmd->sidemove != from->sidemove)
         bits |= CM_SIDE;
-    if (new_upmove != from_upmove)
-        bits |= CM_UP;
     if (new_buttons != from_buttons)
         bits |= CM_BUTTONS;
     if (cmd->msec != from->msec)
         bits |= CM_IMPULSE;
+    // The next one can only happen when is_rerelease == false
+    if (new_upmove != from_upmove)
+        bits |= CM_UP;
 
     if (!bits) {
         MSG_WriteBits(0, 1);
@@ -469,8 +482,13 @@ int MSG_WriteDeltaUsercmd_Enhanced(const usercmd_t *from,
     }
 
     if (bits & CM_BUTTONS) {
-        int buttons = (new_buttons & 3) | (new_buttons >> 5);
-        MSG_WriteBits(buttons, 3);
+        if (is_rerelease) {
+            // Write full button byte to account for new buttons
+            MSG_WriteBits(new_buttons, 8);
+        } else {
+            int buttons = (new_buttons & 3) | (new_buttons >> 5);
+            MSG_WriteBits(buttons, 3);
+        }
     }
     if (bits & CM_IMPULSE) {
         MSG_WriteBits(cmd->msec, 8);
@@ -1747,26 +1765,16 @@ void MSG_ReadDeltaUsercmd(const usercmd_t *from, usercmd_t *to)
         to->angles[2] = MSG_ReadAngle16();
 
 // read movement
-    int buttons = from ? from->buttons : 0;
     if (bits & CM_FORWARD)
         to->forwardmove = MSG_ReadShort();
     if (bits & CM_SIDE)
         to->sidemove = MSG_ReadShort();
-    if (bits & CM_UP) {
-        short upmove = MSG_ReadShort();
-        buttons &= ~(BUTTON_JUMP | BUTTON_CROUCH);
-        if (upmove > 0)
-            buttons |= BUTTON_JUMP;
-        else if (upmove < 0)
-            buttons |= BUTTON_CROUCH;
-    }
+    Q_assert((bits & CM_UP) == 0); // should not be set in rerelease protocol
 
 // read buttons
     if (bits & CM_BUTTONS) {
-        buttons &= (BUTTON_JUMP | BUTTON_CROUCH);
-        buttons |= MSG_ReadByte();
+        to->buttons = MSG_ReadByte();
     }
-    to->buttons = buttons;
 
     if (bits & CM_IMPULSE)
         MSG_ReadByte(); // skip impulse
@@ -1847,28 +1855,18 @@ void MSG_ReadDeltaUsercmd_Enhanced(const usercmd_t *from, usercmd_t *to)
     }
 
 // read movement
-    int buttons = from ? from->buttons : 0;
     if (bits & CM_FORWARD) {
         to->forwardmove = MSG_ReadBits(-10);
     }
     if (bits & CM_SIDE) {
         to->sidemove = MSG_ReadBits(-10);
     }
-    if (bits & CM_UP) {
-        short upmove = MSG_ReadBits(-10);
-        if (upmove > 0)
-            buttons |= BUTTON_JUMP;
-        else if (upmove < 0)
-            buttons |= BUTTON_CROUCH;
-    }
+    Q_assert((bits & CM_UP) == 0); // should not be set in rerelease protocol
 
 // read buttons
     if (bits & CM_BUTTONS) {
-        buttons &= ~BUTTON_MASK;
-        int net_buttons = MSG_ReadBits(3);
-        buttons |= (net_buttons & 3) | ((net_buttons & 4) << 5);
+        to->buttons = MSG_ReadBits(8);
     }
-    to->buttons = buttons;
 
 // read time to run command
     if (bits & CM_IMPULSE) {
