@@ -73,6 +73,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define Q2PRO_PF_QW_MODE            BIT(1)
 #define Q2PRO_PF_WATERJUMP_HACK     BIT(2)
 #define Q2PRO_PF_EXTENSIONS         BIT(3)
+#define Q2PRO_PF_GAME3_COMPAT       BIT(15) // This indicates the server game library is a version 3 game
 
 //=========================================
 

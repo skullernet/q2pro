@@ -479,6 +479,7 @@ typedef struct server_static_s {
 #endif
 
     cs_remap_t      csr;
+    bool            is_game_rerelease;
 
     unsigned        last_heartbeat;
     unsigned        last_timescale_check;

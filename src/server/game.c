@@ -1082,6 +1082,7 @@ void SV_InitGameProgs(void)
     game_entry_ex_t entry_ex = Sys_GetProcAddress(game_library, "GetGameAPIEx");
 
     if (ge->apiversion != GAME_API_VERSION) {
+        svs.is_game_rerelease = false;
         if (ge->apiversion == 3) {
             Com_DPrintf("Detected version 3 game library, using proxy game\n");
             ge = GetGame3Proxy(&import, &game_import_ex, entry, entry_ex);
@@ -1090,6 +1091,7 @@ void SV_InitGameProgs(void)
                       ge->apiversion, GAME_API_VERSION);
         }
     } else {
+        svs.is_game_rerelease = true;
         Cvar_SetInteger(g_features, GMF_PROTOCOL_EXTENSIONS | GMF_ENHANCED_SAVEGAMES | GMF_PROPERINUSE | GMF_WANT_ALL_DISCONNECTS, FROM_CODE);
     }
 

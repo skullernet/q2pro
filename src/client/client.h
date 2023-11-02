@@ -328,6 +328,7 @@ typedef struct client_state_s {
     configstring_t  baseconfigstrings[MAX_CONFIGSTRINGS];
     configstring_t  configstrings[MAX_CONFIGSTRINGS];
     cs_remap_t      csr;
+    bool            is_rerelease_game;
 
     char        mapname[MAX_QPATH]; // short format - q2dm1, etc
 
