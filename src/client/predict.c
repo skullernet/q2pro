@@ -224,17 +224,6 @@ void CL_PredictMovement(void)
         return;
     }
 
-    int pm_clipmask = MASK_PLAYERSOLID; // FIXME
-
-    // remaster player collision rules
-    if (cl.csr.extended) {
-        if (cl.frame.ps.pmove.pm_type == PM_DEAD || cl.frame.ps.pmove.pm_type == PM_GIB)
-            pm_clipmask = MASK_DEADSOLID;
-
-        if (!(cl.frame.ps.pmove.pm_flags & PMF_IGNORE_PLAYER_COLLISION))
-            pm_clipmask |= CONTENTS_PLAYER;
-    }
-
     // copy current state to pmove
     memset(&pm, 0, sizeof(pm));
     pm.trace = CL_PMTrace;
