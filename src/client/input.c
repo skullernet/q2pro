@@ -791,6 +791,10 @@ void CL_FinalizeCmd(void)
         cl.cmd.buttons |= BUTTON_USE;
     if (in_holster.state & 3)
         cl.cmd.buttons |= BUTTON_HOLSTER;
+    if (in_up.state & 3)
+        cl.cmd.buttons |= BUTTON_JUMP;
+    if (in_down.state & 3)
+        cl.cmd.buttons |= BUTTON_CROUCH;
 
     if (cls.key_dest == KEY_GAME && Key_AnyKeyDown()) {
         cl.cmd.buttons |= BUTTON_ANY;
@@ -816,11 +820,6 @@ void CL_FinalizeCmd(void)
     // store the movement vector
     cl.cmd.forwardmove = move[0];
     cl.cmd.sidemove = move[1];
-    cl.cmd.buttons &= ~(BUTTON_JUMP | BUTTON_CROUCH);
-    if (move[2] > 0)
-        cl.cmd.buttons |= BUTTON_JUMP;
-    else if (move[2] < 0)
-        cl.cmd.buttons |= BUTTON_CROUCH;
 
     // save this command off for prediction
     cl.cmdNumber++;
