@@ -240,6 +240,8 @@ static kbutton_t    in_left, in_right, in_forward, in_back;
 static kbutton_t    in_lookup, in_lookdown, in_moveleft, in_moveright;
 static kbutton_t    in_strafe, in_speed, in_use, in_attack;
 static kbutton_t    in_up, in_down;
+// Kex stuff
+static kbutton_t    in_holster, in_wheel, in_wheel2;
 
 static int          in_impulse;
 static bool         in_mlooking;
@@ -424,6 +426,13 @@ static void IN_MLookUp(void)
     if (!freelook->integer && lookspring->integer)
         IN_CenterView();
 }
+
+static void IN_HolsterDown(void) { KeyDown(&in_holster); }
+static void IN_HolsterUp(void) { KeyUp(&in_holster); }
+static void IN_WheelDown(void) { KeyDown(&in_wheel); }
+static void IN_WheelUp(void) { KeyUp(&in_wheel); }
+static void IN_Wheel2Down(void) { KeyDown(&in_wheel2); }
+static void IN_Wheel2Up(void) { KeyUp(&in_wheel2); }
 
 /*
 ===============
@@ -696,6 +705,13 @@ static const cmdreg_t c_input[] = {
     { "+mlook", IN_MLookDown },
     { "-mlook", IN_MLookUp },
     { "in_restart", IN_Restart_f },
+    // Kex stuff
+    { "+holster", IN_HolsterDown },
+    { "-holster", IN_HolsterUp },
+    { "+wheel", IN_WheelDown },
+    { "-wheel", IN_WheelUp },
+    { "+wheel2", IN_Wheel2Down },
+    { "-wheel2", IN_Wheel2Up },
     { NULL }
 };
 
@@ -773,6 +789,8 @@ void CL_FinalizeCmd(void)
         cl.cmd.buttons |= BUTTON_ATTACK;
     if (in_use.state & 3)
         cl.cmd.buttons |= BUTTON_USE;
+    if (in_holster.state & 3)
+        cl.cmd.buttons |= BUTTON_HOLSTER;
 
     if (cls.key_dest == KEY_GAME && Key_AnyKeyDown()) {
         cl.cmd.buttons |= BUTTON_ANY;
@@ -818,6 +836,7 @@ clear:
 
     in_attack.state &= ~2;
     in_use.state &= ~2;
+    in_holster.state &= ~2;
 
     KeyClear(&in_right);
     KeyClear(&in_left);
