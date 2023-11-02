@@ -433,7 +433,7 @@ static void CL_LoadWheelEntry(int index, const char *s)
             *end = '\0';
         }
 
-        const char *endptr;
+        char *endptr;
         values[num_values++] = strtol(start, &endptr, 10);
 
         // sanity
