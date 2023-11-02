@@ -434,6 +434,22 @@ static void IN_WheelUp(void) { KeyUp(&in_wheel); }
 static void IN_Wheel2Down(void) { KeyDown(&in_wheel2); }
 static void IN_Wheel2Up(void) { KeyUp(&in_wheel2); }
 
+static void IN_WeapNext(void)
+{
+    if (!cl.csr.extended) {
+        Cbuf_AddText(&cmd_buffer, "weapnext\n");
+        return;
+    }
+}
+
+static void IN_WeapPrev(void)
+{
+    if (!cl.csr.extended) {
+        Cbuf_AddText(&cmd_buffer, "weapprev\n");
+        return;
+    }
+}
+
 /*
 ===============
 CL_KeyState
@@ -712,6 +728,8 @@ static const cmdreg_t c_input[] = {
     { "-wheel", IN_WheelUp },
     { "+wheel2", IN_Wheel2Down },
     { "-wheel2", IN_Wheel2Up },
+    { "cl_weapnext", IN_WeapNext },
+    { "cl_weapprev", IN_WeapPrev },
     { NULL }
 };
 
