@@ -1330,5 +1330,5 @@ byte COM_BlockSequenceCRCByte(byte *base, size_t length, int sequence);
 extern const cgame_export_t *cgame;
 
 void CG_Init(void);
-void CG_Load(const char* new_game);
+void CG_Load(const char* new_game, bool is_rerelease_server);
 void CG_Unload(void);

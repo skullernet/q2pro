@@ -363,14 +363,14 @@ static bool CG_CL_InAutoDemoLoop(void)
 
 const cgame_export_t *cgame = NULL;
 static char *current_game = NULL;
-static int current_protocol;
+static bool current_rerelease_server;
 static void *cgame_library;
 
 typedef cgame_export_t *(*cgame_entry_t)(cgame_import_t *);
 
-void CG_Load(const char* new_game)
+void CG_Load(const char* new_game, bool is_rerelease_server)
 {
-    if (!current_game || strcmp(current_game, new_game) != 0 || current_protocol != cls.serverProtocol) {
+    if (!current_game || strcmp(current_game, new_game) != 0 || current_rerelease_server != is_rerelease_server) {
         cgame_import_t cgame_imports = {
             .tick_rate = 1000 / CL_FRAMETIME,
             .frame_time_s = CL_FRAMETIME * 0.001f,
@@ -429,7 +429,7 @@ void CG_Load(const char* new_game)
         };
 
         cgame_entry_t entry = NULL;
-        if (cls.serverProtocol == PROTOCOL_VERSION_RERELEASE) {
+        if (is_rerelease_server) {
             if (cgame_library)
                 Sys_FreeLibrary(cgame_library);
             cgame_library = GameDll_Load();
@@ -444,13 +444,13 @@ void CG_Load(const char* new_game)
             Com_Error(ERR_DROP, "cgame functions not available");
             cgame = NULL;
             Z_Freep(&current_game);
-            current_protocol = 0;
+            current_rerelease_server = false;
         }
 
         cgame = entry(&cgame_imports);
         Z_Freep(&current_game);
         current_game = Z_CopyString(new_game);
-        current_protocol = cls.serverProtocol;
+        current_rerelease_server = is_rerelease_server;
     }
 }
 
