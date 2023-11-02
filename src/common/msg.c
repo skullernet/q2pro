@@ -242,7 +242,7 @@ static void compute_buttons_upmove(const usercmd_t *cmd, int *buttons, short *up
 MSG_WriteDeltaUsercmd
 =============
 */
-int MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *cmd, int version)
+int MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *cmd, int serverProtocol, int version)
 {
     int     bits, buttons;
 
@@ -387,7 +387,8 @@ MSG_WriteDeltaUsercmd_Enhanced
 =============
 */
 int MSG_WriteDeltaUsercmd_Enhanced(const usercmd_t *from,
-                                   const usercmd_t *cmd)
+                                   const usercmd_t *cmd,
+                                   int serverProtocol)
 {
     int     bits, delta;
 

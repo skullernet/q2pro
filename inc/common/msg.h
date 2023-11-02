@@ -122,8 +122,8 @@ void    MSG_WriteFloat(float f);
 #if USE_CLIENT
 void    MSG_FlushBits(void);
 void    MSG_WriteBits(int value, int bits);
-int     MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *cmd, int version);
-int     MSG_WriteDeltaUsercmd_Enhanced(const usercmd_t *from, const usercmd_t *cmd);
+int     MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *cmd, int serverProtocol, int version);
+int     MSG_WriteDeltaUsercmd_Enhanced(const usercmd_t *from, const usercmd_t *cmd, int serverProtocol);
 #endif
 void    MSG_WriteDir(const vec3_t vector);
 void    MSG_PackEntity(entity_packed_t *out, const entity_state_t *in, bool ext);

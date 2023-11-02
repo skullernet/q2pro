@@ -952,17 +952,17 @@ static void CL_SendDefaultCmd(void)
     // send this and the previous cmds in the message, so
     // if the last packet was dropped, it can be recovered
     cmd = &cl.cmds[(cl.cmdNumber - 2) & CMD_MASK];
-    MSG_WriteDeltaUsercmd(NULL, cmd, version);
+    MSG_WriteDeltaUsercmd(NULL, cmd, cls.serverProtocol, version);
     MSG_WriteByte(cl.lightlevel);
     oldcmd = cmd;
 
     cmd = &cl.cmds[(cl.cmdNumber - 1) & CMD_MASK];
-    MSG_WriteDeltaUsercmd(oldcmd, cmd, version);
+    MSG_WriteDeltaUsercmd(oldcmd, cmd, cls.serverProtocol, version);
     MSG_WriteByte(cl.lightlevel);
     oldcmd = cmd;
 
     cmd = &cl.cmds[cl.cmdNumber & CMD_MASK];
-    MSG_WriteDeltaUsercmd(oldcmd, cmd, version);
+    MSG_WriteDeltaUsercmd(oldcmd, cmd, cls.serverProtocol, version);
     MSG_WriteByte(cl.lightlevel);
 
     if (cls.serverProtocol <= PROTOCOL_VERSION_DEFAULT) {
@@ -1064,7 +1064,7 @@ static void CL_SendBatchedCmd(void)
         for (j = oldest->cmdNumber + 1; j <= history->cmdNumber; j++) {
             cmd = &cl.cmds[j & CMD_MASK];
             totalMsec += cmd->msec;
-            bits = MSG_WriteDeltaUsercmd_Enhanced(oldcmd, cmd);
+            bits = MSG_WriteDeltaUsercmd_Enhanced(oldcmd, cmd, cls.serverProtocol);
 #if USE_DEBUG
             if (cl_showpackets->integer == 3) {
                 MSG_ShowDeltaUsercmdBits_Enhanced(bits);
