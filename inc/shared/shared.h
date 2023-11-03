@@ -260,6 +260,7 @@ static inline float VectorDistanceSquared(const vec3_t a, const vec3_t b)
 #define VectorDistance(a, b) (sqrtf(VectorDistanceSquared((a), (b))))
     
 
+#define Vector2Clear(a)       ((a)[0]=(a)[1]=0)
 #define Vector2Set(v, x, y)   ((v)[0]=(x),(v)[1]=(y))
 
 #define Vector4Subtract(a,b,c)      ((c)[0]=(a)[0]-(b)[0],(c)[1]=(a)[1]-(b)[1],(c)[2]=(a)[2]-(b)[2],(c)[3]=(a)[3]-(b)[3])
