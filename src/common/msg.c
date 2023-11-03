@@ -1179,6 +1179,10 @@ int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
         // save previous state
         to->gunrate = from->gunrate;
     }
+
+    if (to->pmove.viewheight != from->pmove.viewheight) {
+        pflags |= PS_VIEWHEIGHT;
+    }
 // KEX
 
     //
@@ -1337,6 +1341,10 @@ int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
 // KEX
     if (eflags & EPS_GUNRATE) {
         MSG_WriteByte(to->gunrate);
+    }
+
+    if (pflags & PS_VIEWHEIGHT) {
+        MSG_WriteByte(to->pmove.viewheight);
     }
 // KEX
 
@@ -2330,6 +2338,10 @@ void MSG_ParseDeltaPlayerstate_Enhanced(const player_state_t    *from,
 // KEX
     if (extraflags & EPS_GUNRATE) {
         to->gunrate = MSG_ReadByte();
+    }
+
+    if (flags & PS_VIEWHEIGHT) {
+        to->pmove.viewheight = MSG_ReadByte();
     }
 // KEX
 }

@@ -296,10 +296,9 @@ static void set_active_state(void)
         }
         Vector4Copy(cl.frame.ps.screen_blend, cl.predicted_screen_blend);
         cl.predicted_rdflags = cl.frame.ps.rdflags;
+        cl.current_viewheight = cl.prev_viewheight = cl.frame.ps.pmove.viewheight;
     }
 
-    cl.current_viewheight = 0;
-    cl.prev_viewheight = 0;
     cl.viewheight_change_time = 0;
 
     cl.last_groundentity = NULL;
