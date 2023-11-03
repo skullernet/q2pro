@@ -818,6 +818,7 @@ static void DMA_Update(void)
     int         i;
     channel_t   *ch;
     int         samples, soundtime, endtime;
+    float       sec;
 
     // update spatialization for dynamic sounds
     for (i = 0, ch = s_channels; i < s_numchannels; i++, ch++) {
@@ -870,7 +871,10 @@ static void DMA_Update(void)
     }
 
     // mix ahead of current position
-    endtime = soundtime + Cvar_ClampValue(s_mixahead, 0, 1) * dma.speed;
+    sec = Cvar_ClampValue(s_mixahead, 0, 1);
+    if (!cls.active)
+        sec = max(sec, 0.125f);
+    endtime = soundtime + sec * dma.speed;
 
     // mix to an even submission block size
     endtime = ALIGN(endtime, dma.submission_chunk);
