@@ -1083,9 +1083,73 @@ void    CL_RunRefresh(void);
 //
 // screen.c
 //
-extern vrect_t      scr_vrect;        // position of render window
+#define STAT_PICS       11
+#define STAT_MINUS      (STAT_PICS - 1)  // num frame for '-' stats digit
 
-qhandle_t SCR_FontPic(void);
+typedef struct {
+    int         damage;
+    vec3_t      color;
+    vec3_t      dir;
+    int         time;
+} scr_damage_entry_t;
+
+#define MAX_DAMAGE_ENTRIES      32
+#define DAMAGE_ENTRY_BASE_SIZE  3
+
+typedef struct {
+    int         id;
+    int         time;
+    int         color;
+    int         flags;
+    qhandle_t   image;
+    int         width, height;
+    vec3_t      position;
+} scr_poi_t;
+
+#define MAX_TRACKED_POIS        32
+
+typedef struct {
+    bool        initialized;        // ready to draw
+
+    qhandle_t   crosshair_pic;
+    int         crosshair_width, crosshair_height;
+    color_t     crosshair_color;
+
+    qhandle_t   pause_pic;
+    int         pause_width, pause_height;
+
+    qhandle_t   loading_pic;
+    int         loading_width, loading_height;
+    bool        draw_loading;
+
+    qhandle_t   hit_marker_pic;
+    int         hit_marker_time;
+    int         hit_marker_width, hit_marker_height;
+    qhandle_t   hit_marker_sound;
+
+    qhandle_t   damage_display_pic;
+    int         damage_display_width, damage_display_height;
+    scr_damage_entry_t  damage_entries[MAX_DAMAGE_ENTRIES];
+
+    scr_poi_t   pois[MAX_TRACKED_POIS];
+
+    qhandle_t   sb_pics[2][STAT_PICS];
+    qhandle_t   inven_pic;
+    qhandle_t   field_pic;
+
+    qhandle_t   backtile_pic;
+
+    qhandle_t   net_pic;
+    qhandle_t   font_pic;
+
+    int         hud_width, hud_height;
+    float       hud_scale;
+    vrect_t     vrect;        // position of render window
+    
+    kfont_t     kfont;
+} cl_scr_t;
+
+extern cl_scr_t scr;
 
 void    SCR_Init(void);
 void    SCR_Shutdown(void);
@@ -1104,7 +1168,7 @@ void    SCR_SetCrosshairColor(void);
 
 float   SCR_FadeAlpha(unsigned startTime, unsigned visTime, unsigned fadeTime);
 #define SCR_DrawString(x, y, flags, string) \
-    SCR_DrawStringEx(x, y, flags, MAX_STRING_CHARS, string, SCR_FontPic())
+    SCR_DrawStringEx(x, y, flags, MAX_STRING_CHARS, string, scr.font_pic)
 int     SCR_DrawStringEx(int x, int y, int flags, size_t maxlen, const char *s, qhandle_t font);
 void    SCR_DrawStringMulti(int x, int y, int flags, size_t maxlen, const char *s, qhandle_t font);
 

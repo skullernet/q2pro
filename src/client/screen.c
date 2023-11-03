@@ -19,75 +19,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "client.h"
 
-#define STAT_PICS       11
-#define STAT_MINUS      (STAT_PICS - 1)  // num frame for '-' stats digit
-
 typedef struct {
     const char  *name;
     uint32_t    size;
     uint16_t    start;
     uint16_t    crop;
 } cin_crop_t;
-
-typedef struct {
-    int         damage;
-    vec3_t      color;
-    vec3_t      dir;
-    int         time;
-} scr_damage_entry_t;
-
-#define MAX_DAMAGE_ENTRIES      32
-#define DAMAGE_ENTRY_BASE_SIZE  3
-
-typedef struct {
-    int         id;
-    int         time;
-    int         color;
-    int         flags;
-    qhandle_t   image;
-    int         width, height;
-    vec3_t      position;
-} scr_poi_t;
-
-#define MAX_TRACKED_POIS        32
-
-static struct {
-    bool        initialized;        // ready to draw
-
-    qhandle_t   crosshair_pic;
-    int         crosshair_width, crosshair_height;
-    color_t     crosshair_color;
-
-    qhandle_t   pause_pic;
-    int         pause_width, pause_height;
-
-    qhandle_t   loading_pic;
-    int         loading_width, loading_height;
-    bool        draw_loading;
-
-    qhandle_t   hit_marker_pic;
-    int         hit_marker_time;
-    int         hit_marker_width, hit_marker_height;
-    qhandle_t   hit_marker_sound;
-
-    qhandle_t   damage_display_pic;
-    int         damage_display_width, damage_display_height;
-    scr_damage_entry_t  damage_entries[MAX_DAMAGE_ENTRIES];
-
-    scr_poi_t   pois[MAX_TRACKED_POIS];
-
-    qhandle_t   sb_pics[2][STAT_PICS];
-    qhandle_t   inven_pic;
-    qhandle_t   field_pic;
-
-    qhandle_t   backtile_pic;
-
-    qhandle_t   net_pic;
-    qhandle_t   font_pic;
-
-    int         hud_width, hud_height;
-    float       hud_scale;
-} scr;
 
 static cvar_t   *scr_viewsize;
 static cvar_t   *scr_centertime;
@@ -139,8 +76,6 @@ static cvar_t   *scr_pois;
 static cvar_t   *scr_poi_edge_frac;
 static cvar_t   *scr_poi_max_scale;
 
-vrect_t     scr_vrect;      // position of render window on screen
-
 static const char *const sb_nums[2][STAT_PICS] = {
     {
         "num_0", "num_1", "num_2", "num_3", "num_4", "num_5",
@@ -165,6 +100,8 @@ static const cin_crop_t cin_crop[] = {
     { "xin.cin",    13226649,   0, 32 },
     { "xout.cin",   11194445,   0, 32 },
 };
+
+cl_scr_t scr;
 
 /*
 ===============================================================================
@@ -970,11 +907,11 @@ static void SCR_CalcVrect(void)
     // bound viewsize
     size = Cvar_ClampInteger(scr_viewsize, 40, 100);
 
-    scr_vrect.width = scr.hud_width * size / 100;
-    scr_vrect.height = scr.hud_height * size / 100;
+    scr.vrect.width = scr.hud_width * size / 100;
+    scr.vrect.height = scr.hud_height * size / 100;
 
-    scr_vrect.x = (scr.hud_width - scr_vrect.width) / 2;
-    scr_vrect.y = (scr.hud_height - scr_vrect.height) / 2;
+    scr.vrect.x = (scr.hud_width - scr.vrect.width) / 2;
+    scr.vrect.y = (scr.hud_height - scr.vrect.height) / 2;
 }
 
 /*
@@ -1510,10 +1447,10 @@ static void SCR_TileClear(void)
     if (scr_viewsize->integer == 100)
         return;     // full screen rendering
 
-    top = scr_vrect.y;
-    bottom = top + scr_vrect.height;
-    left = scr_vrect.x;
-    right = left + scr_vrect.width;
+    top = scr.vrect.y;
+    bottom = top + scr.vrect.height;
+    left = scr.vrect.x;
+    right = left + scr.vrect.width;
 
     // clear above view screen
     R_TileClear(0, 0, scr.hud_width, top, scr.backtile_pic);
@@ -1523,11 +1460,11 @@ static void SCR_TileClear(void)
                 scr.hud_height - bottom, scr.backtile_pic);
 
     // clear left of view screen
-    R_TileClear(0, top, left, scr_vrect.height, scr.backtile_pic);
+    R_TileClear(0, top, left, scr.vrect.height, scr.backtile_pic);
 
     // clear right of view screen
     R_TileClear(right, top, scr.hud_width - right,
-                scr_vrect.height, scr.backtile_pic);
+                scr.vrect.height, scr.backtile_pic);
 }
 
 //=============================================================================

@@ -19,7 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client.h"
 #include "common/loc.h"
 
-#define cl_carousel_time 300 // todo cvar
+#define cl_carousel_time 350 // todo cvar
 
 static int sort_wheel_powerups(const void *a, const void *b)
 {
@@ -83,7 +83,7 @@ static inline uint16_t G_GetPowerupStat(uint16_t *start, uint8_t powerup_id)
 	return get_compressed_integer(NUM_BITS_PER_POWERUP, start, powerup_id);
 }
 
-void CL_Carousel_Close(void)
+static void CL_Carousel_Close(void)
 {
 	cl.carousel.awaiting_close = false;
 	cl.carousel.open = false;
@@ -137,7 +137,12 @@ static bool CL_Carousel_Populate(void)
 static void CL_Carousel_Open(void)
 {
 	cl.carousel.open = true;
-	cl.carousel.selected = (cl.frame.ps.stats[STAT_ACTIVE_WEAPON] == -1) ? -1 : cl.wheel.weapons[cl.frame.ps.stats[STAT_ACTIVE_WEAPON]].item_index;
+
+	if (!cl.carousel.awaiting_close) {
+		cl.carousel.selected = (cl.frame.ps.stats[STAT_ACTIVE_WEAPON] == -1) ? -1 : cl.wheel.weapons[cl.frame.ps.stats[STAT_ACTIVE_WEAPON]].item_index;
+	}
+
+	cl.carousel.awaiting_close = false;
 
 	if (!CL_Carousel_Populate()) {
 		CL_Carousel_Close();
@@ -154,6 +159,20 @@ void CL_Carousel_Draw(void)
 		return;
 	}
 
+	int carousel_w = cl.carousel.num_slots * 32;
+	int carousel_x = (scr.hud_width / 2) - (carousel_w / 2);
+	int carousel_y = scr.hud_height - 86;
+	
+	for (int i = 0; i < cl.carousel.num_slots; i++, carousel_x += 32) {
+
+		R_DrawPic(carousel_x, carousel_y, cl.image_precache[cl.wheel.weapons[cl.carousel.slots[i].data_id].icon_index]);
+		
+		if (cl.carousel.selected == cl.carousel.slots[i].item_index) {
+			R_DrawPic(carousel_x, carousel_y, R_RegisterPic("carousel/selected"));
+		}
+	}
+
+#if 0
 	for (int i = 0, y = 128; i < cl.carousel.num_slots; i++, y += CHAR_HEIGHT) {
 
 		int flags = UI_DROPSHADOW;
@@ -161,7 +180,7 @@ void CL_Carousel_Draw(void)
 
 		if (cl.carousel.selected == cl.carousel.slots[i].item_index) {
 			flags |= UI_ALTCOLOR;
-			x += 16;
+			x += 8;
 			SCR_DrawString(x - 16, y, flags, ">");
 		}
 
@@ -171,20 +190,25 @@ void CL_Carousel_Draw(void)
 
 		SCR_DrawString(x, y, flags, localized);
 	}
+#endif
 }
 
 void CL_Carousel_ClearInput(void)
 {
-	if (cl.carousel.awaiting_close) {
-		cl.carousel.awaiting_close = false;
+	if (cl.carousel.open && cl.carousel.awaiting_close) {
 		cl.carousel.open = false;
+		cl.carousel.close_time = cls.realtime + (cl.sv_frametime * 2);
 	}
 }
 
 void CL_Carousel_Input(void)
 {
-	if (!cl.carousel.open || cl.carousel.awaiting_close)
+	if (!cl.carousel.open) {
+		if (cl.carousel.awaiting_close && cls.realtime >= cl.carousel.close_time)
+			cl.carousel.awaiting_close = false;
+
 		return;
+	}
 
 	if (!CL_Carousel_Populate()) {
 		CL_Carousel_Close();

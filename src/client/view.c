@@ -454,10 +454,10 @@ void V_RenderView(void)
         cl.refdef.vieworg[1] += 1.0f / 16;
         cl.refdef.vieworg[2] += 1.0f / 16;
 
-        cl.refdef.x = scr_vrect.x;
-        cl.refdef.y = scr_vrect.y;
-        cl.refdef.width = scr_vrect.width;
-        cl.refdef.height = scr_vrect.height;
+        cl.refdef.x = scr.vrect.x;
+        cl.refdef.y = scr.vrect.y;
+        cl.refdef.width = scr.vrect.width;
+        cl.refdef.height = scr.vrect.height;
 
         // adjust for non-4/3 screens
         if (cl_adjustfov->integer) {

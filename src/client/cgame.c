@@ -21,12 +21,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/loc.h"
 #include "common/gamedll.h"
 
-static struct {
-    qhandle_t font_pic;
-    
-    kfont_t kfont;
-} scr;
-
 static cvar_t   *scr_alpha;
 static cvar_t   *scr_font;
 
