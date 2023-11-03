@@ -146,7 +146,7 @@ static void CL_Carousel_Open(void)
 
 void CL_Carousel_Draw(void)
 {
-	if (!cl.carousel.open || cl.carousel.awaiting_close)
+	if (!cl.carousel.open)
 		return;
 
 	if (!CL_Carousel_Populate()) {
@@ -157,17 +157,19 @@ void CL_Carousel_Draw(void)
 	for (int i = 0, y = 128; i < cl.carousel.num_slots; i++, y += CHAR_HEIGHT) {
 
 		int flags = UI_DROPSHADOW;
+		int x = 24;
 
 		if (cl.carousel.selected == cl.carousel.slots[i].item_index) {
 			flags |= UI_ALTCOLOR;
-			SCR_DrawString(16, y, flags, ">");
+			x += 16;
+			SCR_DrawString(x - 16, y, flags, ">");
 		}
 
 		char localized[64];
 
 		Loc_Localize(cl.configstrings[cl.csr.items + cl.carousel.slots[i].item_index], false, NULL, 0, localized, sizeof(localized));
 
-		SCR_DrawString(24, y, flags, localized);
+		SCR_DrawString(x, y, flags, localized);
 	}
 }
 
