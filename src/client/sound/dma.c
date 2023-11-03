@@ -804,7 +804,7 @@ static int DMA_GetTime(void)
         if (s_paintedtime > 0x40000000) {
             // time to chop things off to avoid 32 bit limits
             buffers = 0;
-            s_paintedtime = fullsamples;
+            s_rawend = s_paintedtime = fullsamples;
             S_StopAllSounds();
         }
     }
