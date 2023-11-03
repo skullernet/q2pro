@@ -174,8 +174,15 @@ UTILS
 ===============================================================================
 */
 
-#define SCR_DrawString(x, y, flags, string) \
-    SCR_DrawStringEx(x, y, flags, MAX_STRING_CHARS, string, scr.font_pic)
+/*
+==============
+SCR_FontPic
+==============
+*/
+qhandle_t SCR_FontPic(void)
+{
+    return scr.font_pic;
+}
 
 /*
 ==============
@@ -1933,6 +1940,8 @@ static void SCR_Draw2D(void)
     vrect_t hud_safe = {0, 0};
     cgame->DrawHUD(0, &cl.cgame_data, hud_rect, hud_safe, 1, 0, &cl.frame.ps);
     R_ClearColor();
+
+    CL_Carousel_Draw();
 
     SCR_DrawNet();
 

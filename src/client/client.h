@@ -364,14 +364,30 @@ typedef struct client_state_s {
     // data for weapon wheel stuff
     struct {
         cl_wheel_weapon_t weapons[MAX_WHEEL_ITEMS];
-        size_t            num_weapons;
+        int               num_weapons;
 
         cl_wheel_ammo_t ammo[MAX_WHEEL_ITEMS];
-        size_t          num_ammo;
+        int             num_ammo;
 
         cl_wheel_powerup_t powerups[MAX_WHEEL_ITEMS];
-        size_t             num_powerups;
+        int                num_powerups;
     } wheel;
+
+    // carousel data
+    struct {
+        bool        open;
+        bool        awaiting_close; // still "open" but a close will happen when we send next cmd
+        int         close_time; // time when we will close
+        int         selected; // selected item index
+
+        struct {
+            bool    is_powerup;
+            bool    has_ammo;
+            int     data_id;
+            int     item_index;
+        } slots[MAX_WHEEL_ITEMS * 2];
+        size_t      num_slots;
+    } carousel;
 } client_state_t;
 
 extern client_state_t   cl;
@@ -850,6 +866,12 @@ void V_AddLightStyle(int style, float value);
 void CL_UpdateBlendSetting(void);
 void V_FogParamsChanged(fog_bits_t bits, const fog_params_t *params, int time);
 
+// wheel.c
+void CL_Wheel_WeapNext(void);
+void CL_Wheel_WeapPrev(void);
+void CL_Carousel_Draw(void);
+void CL_Carousel_Input(void);
+void CL_Carousel_ClearInput(void);
 
 //
 // tent.c
@@ -1063,6 +1085,8 @@ void    CL_RunRefresh(void);
 //
 extern vrect_t      scr_vrect;        // position of render window
 
+qhandle_t SCR_FontPic(void);
+
 void    SCR_Init(void);
 void    SCR_Shutdown(void);
 void    SCR_UpdateScreen(void);
@@ -1079,6 +1103,8 @@ void    SCR_LagClear(void);
 void    SCR_SetCrosshairColor(void);
 
 float   SCR_FadeAlpha(unsigned startTime, unsigned visTime, unsigned fadeTime);
+#define SCR_DrawString(x, y, flags, string) \
+    SCR_DrawStringEx(x, y, flags, MAX_STRING_CHARS, string, SCR_FontPic())
 int     SCR_DrawStringEx(int x, int y, int flags, size_t maxlen, const char *s, qhandle_t font);
 void    SCR_DrawStringMulti(int x, int y, int flags, size_t maxlen, const char *s, qhandle_t font);
 

@@ -440,6 +440,8 @@ static void IN_WeapNext(void)
         Cbuf_AddText(&cmd_buffer, "weapnext\n");
         return;
     }
+
+    CL_Wheel_WeapNext();
 }
 
 static void IN_WeapPrev(void)
@@ -448,6 +450,8 @@ static void IN_WeapPrev(void)
         Cbuf_AddText(&cmd_buffer, "weapprev\n");
         return;
     }
+
+    CL_Wheel_WeapPrev();
 }
 
 /*
@@ -839,6 +843,9 @@ void CL_FinalizeCmd(void)
     cl.cmd.forwardmove = move[0];
     cl.cmd.sidemove = move[1];
 
+    // update wheels before we save it off
+    CL_Carousel_Input();
+
     // save this command off for prediction
     cl.cmdNumber++;
     cl.cmds[cl.cmdNumber & CMD_MASK] = cl.cmd;
@@ -1218,6 +1225,8 @@ void CL_SendCmd(void)
     } else {
         CL_SendDefaultCmd();
     }
+
+    CL_Carousel_ClearInput();
 
     cl.sendPacketNow = false;
 }

@@ -414,28 +414,6 @@ static qhandle_t CL_RegisterImage(const char *s)
 
 #define MAX_WHEEL_VALUES 8
 
-static int sort_wheel_powerups(const void *a, const void *b)
-{
-    const cl_wheel_powerup_t *pa = a;
-    const cl_wheel_powerup_t *pb = b;
-
-    if (pa->sort_id == pb->sort_id)
-        return pa->item_index - pb->item_index;
-
-    return pa->sort_id - pb->sort_id;
-}
-
-static int sort_wheel_weapons(const void *a, const void *b)
-{
-    const cl_wheel_weapon_t *pa = a;
-    const cl_wheel_weapon_t *pb = b;
-
-    if (pa->sort_id == pb->sort_id)
-        return pa->item_index - pb->item_index;
-
-    return pa->sort_id - pb->sort_id;
-}
-
 /*
 =================
 CL_LoadWheelEntry
@@ -481,8 +459,6 @@ static void CL_LoadWheelEntry(int index, const char *s)
         cl.wheel.powerups[index].can_drop = values[4];
         cl.wheel.powerups[index].ammo_index = values[5];
         cl.wheel.num_powerups = max(index, cl.wheel.num_powerups);
-
-        qsort(cl.wheel.powerups, cl.wheel.num_powerups, sizeof(*cl.wheel.powerups), sort_wheel_powerups);
     } else if (index >= cl.csr.wheelweapons + MAX_WHEEL_ITEMS) {
         if (num_values != 2) {
             return;
@@ -509,8 +485,6 @@ static void CL_LoadWheelEntry(int index, const char *s)
         cl.wheel.weapons[index].quantity_warn = values[6];
         cl.wheel.weapons[index].can_drop = values[7];
         cl.wheel.num_weapons = max(index, cl.wheel.num_weapons);
-
-        qsort(cl.wheel.weapons, cl.wheel.num_weapons, sizeof(*cl.wheel.weapons), sort_wheel_weapons);
     }
 }
 

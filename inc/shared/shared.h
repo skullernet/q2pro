@@ -1268,6 +1268,27 @@ typedef uint8_t soundchan_t;
 #define ATTN_IDLE               2
 #define ATTN_STATIC             3   // diminish very rapidly with distance
 
+
+// ammo stats compressed in 9 bits per entry
+// since the range is 0-300
+#define BITS_PER_AMMO 9
+
+#define num_of_type_for_bits(TI, num_bits) (((num_bits) + (sizeof(TI) * 8) - 1) / ((sizeof(TI) * 8) + 1))
+
+#define NUM_BITS_FOR_AMMO 9
+#define AMMO_MAX 12
+
+#define NUM_AMMO_STATS num_of_type_for_bits(uint16_t, NUM_BITS_FOR_AMMO * AMMO_MAX)
+// if this value is set on an STAT_AMMO_INFO_xxx, don't render ammo
+#define AMMO_VALUE_INFINITE BIT(NUM_BITS_FOR_AMMO) - 1;
+
+// powerup stats compressed in 2 bits per entry;
+// 3 is the max you'll ever hold, and for some
+// (flashlight) it's to indicate on/off state
+#define NUM_BITS_PER_POWERUP 2
+#define POWERUP_MAX 23
+#define NUM_POWERUP_STATS num_of_type_for_bits(uint16_t, NUM_BITS_PER_POWERUP * POWERUP_MAX)
+
 // player_state->stats[] indexes
 enum {
     STAT_HEALTH_ICON,
@@ -1291,6 +1312,19 @@ enum {
 
     MAX_STATS_OLD = 32,
     MAX_STATS = 64, // KEX
+
+    // [Kex] More stats for weapon wheel
+    STAT_WEAPONS_OWNED_1 = 32,
+    STAT_WEAPONS_OWNED_2 = 33,
+    STAT_AMMO_INFO_START = 34,
+    STAT_AMMO_INFO_END = STAT_AMMO_INFO_START + NUM_AMMO_STATS - 1,
+	STAT_POWERUP_INFO_START,
+	STAT_POWERUP_INFO_END = STAT_POWERUP_INFO_START + NUM_POWERUP_STATS - 1,
+
+    // [Paril-KEX] Key display
+    STAT_KEY_A,
+    STAT_KEY_B,
+    STAT_KEY_C,
 
     // [Paril-KEX] currently active wheel weapon (or one we're switching to)
     STAT_ACTIVE_WHEEL_WEAPON = 47,
