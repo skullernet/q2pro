@@ -108,7 +108,7 @@ static void write_configstrings(void)
         if (!string[0]) {
             continue;
         }
-        length = Q_strnlen(string, MAX_QPATH);
+        length = Q_strnlen(string, CS_MAX_STRING_LENGTH);
 
         // check if this configstring will overflow
         maybe_flush_msg(length + 4);
@@ -167,7 +167,7 @@ static void write_configstring_stream(void)
         if (!string[0]) {
             continue;
         }
-        length = Q_strnlen(string, MAX_QPATH);
+        length = Q_strnlen(string, CS_MAX_STRING_LENGTH);
 
         // check if this configstring will overflow
         if (msg_write.cursize + length + 5 > msg_write.maxsize) {

@@ -141,7 +141,7 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     set_frame_time();
 
     // save name for levels that don't set message
-    Q_strlcpy(sv.configstrings[CS_NAME], cmd->server, MAX_QPATH);
+    Q_strlcpy(sv.configstrings[CS_NAME], cmd->server, CS_MAX_STRING_LENGTH);
     Q_strlcpy(sv.name, cmd->server, sizeof(sv.name));
     Q_strlcpy(sv.mapcmd, cmd->buffer, sizeof(sv.mapcmd));
 
@@ -163,7 +163,7 @@ void SV_SpawnServer(const mapcmd_t *cmd)
             Com_Error(ERR_DROP, "Too many inline models");
 
         // set inline model names
-        Q_concat(sv.configstrings[svs.csr.models + 1], MAX_QPATH, "maps/", cmd->server, ".bsp");
+        Q_concat(sv.configstrings[svs.csr.models + 1], CS_MAX_STRING_LENGTH, "maps/", cmd->server, ".bsp");
         for (i = 1, j = 2; i < sv.cm.cache->nummodels; i++, j++) {
             if (j == MODELINDEX_PLAYER)
                 j++;    // skip reserved index

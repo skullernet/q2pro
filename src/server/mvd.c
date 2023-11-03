@@ -639,7 +639,7 @@ static void emit_gamestate(void)
         if (!string[0]) {
             continue;
         }
-        length = Q_strnlen(string, MAX_QPATH);
+        length = Q_strnlen(string, CS_MAX_STRING_LENGTH);
         MSG_WriteShort(i);
         MSG_WriteData(string, length);
         MSG_WriteByte(0);

@@ -138,7 +138,8 @@ typedef enum {
     MULTICAST_PVS,
 } multicast_t;
 
-typedef char configstring_t[MAX_QPATH];
+#define CS_MAX_STRING_LENGTH 96
+typedef char configstring_t[CS_MAX_STRING_LENGTH];
 
 /*
 ==============================================================
@@ -1414,7 +1415,8 @@ typedef int16_t layout_flags_t;
 //
 // config strings are a general means of communication from
 // the server to all connected clients.
-// Each config string can be at most MAX_QPATH characters.
+// Each config string can be at most CS_MAX_STRING_LENGTH  characters
+// for rerelease game (was MAX_QPATH previously).
 //
 #define CS_NAME             0
 #define CS_CDTRACK          1

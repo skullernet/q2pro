@@ -284,7 +284,7 @@ static void MVD_UnicastString(mvd_t *mvd, bool reliable, mvd_player_t *player)
         }
     }
     if (!cs) {
-        cs = MVD_Malloc(sizeof(*cs) + MAX_QPATH - 1);
+        cs = MVD_Malloc(sizeof(*cs) + CS_MAX_STRING_LENGTH - 1);
         cs->index = index;
         cs->next = player->configstrings;
         player->configstrings = cs;

@@ -591,7 +591,7 @@ static void demo_emit_snapshot(mvd_t *mvd)
         if (!strcmp(from, to))
             continue;
 
-        len = Q_strnlen(to, MAX_QPATH);
+        len = Q_strnlen(to, CS_MAX_STRING_LENGTH);
         MSG_WriteByte(mvd_configstring);
         MSG_WriteShort(i);
         MSG_WriteData(to, len);
@@ -1906,7 +1906,7 @@ static void emit_gamestate(mvd_t *mvd)
         if (!*s)
             continue;
 
-        len = Q_strnlen(s, MAX_QPATH);
+        len = Q_strnlen(s, CS_MAX_STRING_LENGTH);
         MSG_WriteShort(i);
         MSG_WriteData(s, len);
         MSG_WriteByte(0);
