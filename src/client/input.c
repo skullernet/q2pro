@@ -827,7 +827,7 @@ void CL_FinalizeCmd(void)
     }
 
     // rebuild the movement vector
-    VectorClear(move);
+    Vector2Clear(move);
 
     // get basic movement from keyboard
     CL_BaseMove(move);
