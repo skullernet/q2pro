@@ -416,6 +416,35 @@ static qhandle_t CL_RegisterImage(const char *s)
 
 /*
 =================
+CL_LoadWheelIcons
+=================
+*/
+static cl_wheel_icon_t CL_LoadWheelIcons(int icon_index)
+{
+    cl_wheel_icon_t icons = { .main = cl.image_precache[icon_index] };
+
+    char path[MAX_QPATH];
+    Q_snprintf(path, sizeof(path), "wheel/%s", cl.configstrings[cl.csr.images + icon_index]);
+
+    icons.wheel = R_RegisterTempPic(path);
+
+    if (!icons.wheel) {
+        icons.wheel = icons.selected = icons.main;
+    } else {
+        Q_snprintf(path, sizeof(path), "wheel/%s_selected", cl.configstrings[cl.csr.images + icon_index]);
+
+        icons.selected = R_RegisterTempPic(path);
+
+        if (!icons.selected) {
+            icons.selected = icons.wheel;
+        }
+    }
+
+    return icons;
+}
+
+/*
+=================
 CL_LoadWheelEntry
 =================
 */
@@ -453,7 +482,7 @@ static void CL_LoadWheelEntry(int index, const char *s)
         index = index - cl.csr.wheelpowerups;
         
         cl.wheel.powerups[index].item_index = values[0];
-        cl.wheel.powerups[index].icon_index = values[1];
+        cl.wheel.powerups[index].icons = CL_LoadWheelIcons(values[1]);
         cl.wheel.powerups[index].is_toggle = values[2];
         cl.wheel.powerups[index].sort_id = values[3];
         cl.wheel.powerups[index].can_drop = values[4];
@@ -467,7 +496,7 @@ static void CL_LoadWheelEntry(int index, const char *s)
         index = index - cl.csr.wheelammo;
         
         cl.wheel.ammo[index].item_index = values[0];
-        cl.wheel.ammo[index].icon_index = values[1];
+        cl.wheel.ammo[index].icons = CL_LoadWheelIcons(values[1]);
         cl.wheel.num_ammo = max(index, cl.wheel.num_ammo);
     } else {
         if (num_values != 8) {
@@ -477,7 +506,7 @@ static void CL_LoadWheelEntry(int index, const char *s)
         index = index - cl.csr.wheelweapons;
         
         cl.wheel.weapons[index].item_index = values[0];
-        cl.wheel.weapons[index].icon_index = values[1];
+        cl.wheel.weapons[index].icons = CL_LoadWheelIcons(values[1]);
         cl.wheel.weapons[index].ammo_index = values[2];
         cl.wheel.weapons[index].min_ammo = values[3];
         cl.wheel.weapons[index].is_powerup = values[4];

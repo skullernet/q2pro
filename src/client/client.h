@@ -153,28 +153,34 @@ typedef struct {
 #define STEP_TIME       100
 
 typedef struct {
-    int     item_index;
-    int     icon_index;
-    int     ammo_index;
-    int     min_ammo;
-    int     sort_id;
-    int     quantity_warn;
-    bool    is_powerup;
-    bool    can_drop;
+    int         main;
+    int         wheel;
+    int         selected;
+} cl_wheel_icon_t;
+
+typedef struct {
+    int             item_index;
+    cl_wheel_icon_t icons;
+    int             ammo_index;
+    int             min_ammo;
+    int             sort_id;
+    int             quantity_warn;
+    bool            is_powerup;
+    bool            can_drop;
 } cl_wheel_weapon_t;
 
 typedef struct {
-    int     item_index;
-    int     icon_index;
+    int             item_index;
+    cl_wheel_icon_t icons;
 } cl_wheel_ammo_t;
 
 typedef struct {
-    int     item_index;
-    int     icon_index;
-    int     sort_id;
-    int     ammo_index;
-    bool    is_toggle;
-    bool    can_drop;
+    int             item_index;
+    cl_wheel_icon_t icons;
+    int             sort_id;
+    int             ammo_index;
+    bool            is_toggle;
+    bool            can_drop;
 } cl_wheel_powerup_t;
 
 //
