@@ -226,7 +226,7 @@ typedef struct client_state_s {
 
     // interpolated movement vector used for local prediction,
     // never sent to server, rebuilt each client frame
-    vec3_t      localmove;
+    vec2_t      localmove;
 
     // accumulated mouse forward/side movement, added to both
     // localmove and pending cmd, cleared each time cmd is finalized

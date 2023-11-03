@@ -565,7 +565,7 @@ CL_BaseMove
 Build the intended movement vector
 ================
 */
-static void CL_BaseMove(vec3_t move)
+static void CL_BaseMove(vec2_t move)
 {
     if (in_strafe.state & 1) {
         move[1] += cl_sidespeed->value * CL_KeyState(&in_right);
@@ -574,9 +574,6 @@ static void CL_BaseMove(vec3_t move)
 
     move[1] += cl_sidespeed->value * CL_KeyState(&in_moveright);
     move[1] -= cl_sidespeed->value * CL_KeyState(&in_moveleft);
-
-    move[2] += cl_upspeed->value * CL_KeyState(&in_up);
-    move[2] -= cl_upspeed->value * CL_KeyState(&in_down);
 
     if (!(in_klook.state & 1)) {
         move[0] += cl_forwardspeed->value * CL_KeyState(&in_forward);
@@ -589,13 +586,12 @@ static void CL_BaseMove(vec3_t move)
     }
 }
 
-static void CL_ClampSpeed(vec3_t move)
+static void CL_ClampSpeed(vec2_t move)
 {
     const float speed = 400;    // default (maximum) running speed
 
     move[0] = Q_clipf(move[0], -speed, speed);
     move[1] = Q_clipf(move[1], -speed, speed);
-    move[2] = Q_clipf(move[2], -speed, speed);
 }
 
 static void CL_ClampPitch(void)
@@ -624,7 +620,7 @@ Doesn't touch command forward/side/upmove, these are filled by CL_FinalizeCmd.
 */
 void CL_UpdateCmd(int msec)
 {
-    VectorClear(cl.localmove);
+    Vector2Clear(cl.localmove);
 
     if (sv_paused->integer) {
         return;
@@ -772,7 +768,7 @@ and angles are already set for this frame by CL_UpdateCmd.
 */
 void CL_FinalizeCmd(void)
 {
-    vec3_t move;
+    vec2_t move;
 
     // command buffer ticks in sync with cl_maxfps
     Cbuf_Frame(&cmd_buffer);
