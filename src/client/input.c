@@ -636,8 +636,12 @@ void CL_UpdateCmd(int msec)
     // adjust viewangles
     CL_AdjustAngles(msec);
 
-    // get basic movement from keyboard
+    // get basic movement from keyboard, including jump/crouch
     CL_BaseMove(cl.localmove);
+    if (in_up.state & 3)
+        cl.cmd.buttons |= BUTTON_JUMP;
+    if (in_down.state & 3)
+        cl.cmd.buttons |= BUTTON_CROUCH;
 
     // allow mice to add to the move
     CL_MouseMove();
@@ -791,10 +795,6 @@ void CL_FinalizeCmd(void)
         cl.cmd.buttons |= BUTTON_USE;
     if (in_holster.state & 3)
         cl.cmd.buttons |= BUTTON_HOLSTER;
-    if (in_up.state & 3)
-        cl.cmd.buttons |= BUTTON_JUMP;
-    if (in_down.state & 3)
-        cl.cmd.buttons |= BUTTON_CROUCH;
 
     if (cls.key_dest == KEY_GAME && Key_AnyKeyDown()) {
         cl.cmd.buttons |= BUTTON_ANY;
