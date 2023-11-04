@@ -70,8 +70,8 @@ QUAKE FILESYSTEM
 
 #if USE_DEBUG
 #define FS_DPrintf(...) \
-    if (fs_debug && fs_debug->integer) \
-        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__)
+    do { if (fs_debug && fs_debug->integer) \
+        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 #else
 #define FS_DPrintf(...)
 #endif

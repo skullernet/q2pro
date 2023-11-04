@@ -526,14 +526,14 @@ extern cvar_t   *cl_nolerp;
 
 #if USE_DEBUG
 #define SHOWNET(level, ...) \
-    if (cl_shownet->integer > level) \
-        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__)
+    do { if (cl_shownet->integer > level) \
+        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 #define SHOWCLAMP(level, ...) \
-    if (cl_showclamp->integer > level) \
-        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__)
+    do { if (cl_showclamp->integer > level) \
+        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 #define SHOWMISS(...) \
-    if (cl_showmiss->integer) \
-        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__)
+    do { if (cl_showmiss->integer) \
+        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 extern cvar_t   *cl_shownet;
 extern cvar_t   *cl_showmiss;
 extern cvar_t   *cl_showclamp;

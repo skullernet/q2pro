@@ -114,17 +114,17 @@ void        Com_AddConfigFile(const char *name, unsigned flags);
 
 #if USE_DEBUG
 #define Com_DPrintf(...) \
-    if (developer && developer->integer > 0) \
-        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__)
+    do { if (developer && developer->integer > 0) \
+        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 #define Com_DDPrintf(...) \
-    if (developer && developer->integer > 1) \
-        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__)
+    do { if (developer && developer->integer > 1) \
+        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 #define Com_DDDPrintf(...) \
-    if (developer && developer->integer > 2) \
-        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__)
+    do { if (developer && developer->integer > 2) \
+        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 #define Com_DDDDPrintf(...) \
-    if (developer && developer->integer > 3) \
-        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__)
+    do { if (developer && developer->integer > 3) \
+        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 #else
 #define Com_DPrintf(...) ((void)0)
 #define Com_DDPrintf(...) ((void)0)

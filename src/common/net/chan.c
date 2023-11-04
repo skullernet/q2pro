@@ -85,11 +85,11 @@ unacknowledged reliable
 static cvar_t       *showpackets;
 static cvar_t       *showdrop;
 #define SHOWPACKET(...) \
-    if (showpackets->integer) \
-        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__)
+    do { if (showpackets->integer) \
+        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 #define SHOWDROP(...) \
-    if (showdrop->integer) \
-        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__)
+    do { if (showdrop->integer) \
+        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 #else
 #define SHOWPACKET(...)
 #define SHOWDROP(...)

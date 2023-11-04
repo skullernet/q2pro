@@ -27,8 +27,8 @@ static bool match_ended_hack;
 
 #if USE_DEBUG
 #define SHOWNET(level, ...) \
-    if (mvd_shownet->integer > level) \
-        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__)
+    do { if (mvd_shownet->integer > level) \
+        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 
 static const char *MVD_ServerCommandString(int cmd)
 {
