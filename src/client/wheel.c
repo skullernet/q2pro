@@ -19,7 +19,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client.h"
 #include "common/loc.h"
 
-#define cl_carousel_time 350 // todo cvar
+static cvar_t *wc_screen_frac_y;
+static cvar_t *wc_timeout;
+static cvar_t *wc_lock_time;
 
 static int sort_wheel_powerups(const void *a, const void *b)
 {
@@ -164,7 +166,7 @@ void CL_Carousel_Draw(void)
     int carousel_w = cl.carousel.num_slots * CAROUSEL_ICON_SIZE;
     int center_x = scr.hud_width / 2;
     int carousel_x = center_x - (carousel_w / 2);
-    int carousel_y = scr.hud_height - 86;
+    int carousel_y = (int) (scr.hud_height * wc_screen_frac_y->value);
     
     for (int i = 0; i < cl.carousel.num_slots; i++, carousel_x += CAROUSEL_ICON_SIZE) {
         bool selected = cl.carousel.selected == cl.carousel.slots[i].item_index;
@@ -176,10 +178,13 @@ void CL_Carousel_Draw(void)
         R_DrawPic(carousel_x, carousel_y, selected ? icons->selected : icons->wheel);
         
         if (selected) {
-            R_DrawPic(carousel_x - 1, carousel_y - 1, R_RegisterPic("carousel/selected"));
+            // TODO cache carousel/selected
+            R_DrawPic(carousel_x - 1, carousel_y - 1, scr.carousel_selected);
             
             char localized[CS_MAX_STRING_LENGTH];
 
+            // TODO: cache localized item names in cl somewhere.
+            // make sure they get reset of language is changed.
             Loc_Localize(cl.configstrings[cl.csr.items + cl.carousel.slots[i].item_index], false, NULL, 0, localized, sizeof(localized));
 
             SCR_DrawString(center_x, carousel_y - 16, UI_CENTER | UI_DROPSHADOW, localized);
@@ -241,7 +246,7 @@ void CL_Wheel_WeapNext(void)
             break;
         }
 
-    cl.carousel.close_time = cls.realtime + cl_carousel_time;
+    cl.carousel.close_time = cls.realtime + wc_timeout->integer;
 }
 
 void CL_Wheel_WeapPrev(void)
@@ -259,5 +264,17 @@ void CL_Wheel_WeapPrev(void)
             break;
         }
 
-    cl.carousel.close_time = cls.realtime + cl_carousel_time;
+    cl.carousel.close_time = cls.realtime + wc_timeout->integer;
+}
+
+void CL_Wheel_Precache(void)
+{
+    scr.carousel_selected = R_RegisterPic("carousel/selected");
+}
+
+void CL_Wheel_Init(void)
+{
+    wc_screen_frac_y = Cvar_Get("wc_screen_frac_y", "0.72", 0);
+    wc_timeout = Cvar_Get("wc_timeout", "400", 0);
+    wc_lock_time = Cvar_Get("wc_lock_time", "300", 0);
 }

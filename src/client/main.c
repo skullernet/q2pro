@@ -2750,6 +2750,7 @@ static void CL_InitLocal(void)
     CL_InitEffects();
     CL_InitTEnts();
     CL_InitDownloads();
+    CL_Wheel_Init();
     CL_GTV_Init();
 
     List_Init(&cl_ignore_text);

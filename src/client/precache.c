@@ -563,6 +563,8 @@ void CL_PrepRefresh(void)
     
     cgame->TouchPics();
 
+    CL_Wheel_Precache();
+
     CL_LoadState(LOAD_CLIENTS);
     for (i = 0; i < MAX_CLIENTS; i++) {
         name = cl.configstrings[cl.csr.playerskins + i];

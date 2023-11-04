@@ -878,6 +878,8 @@ void CL_Wheel_WeapPrev(void);
 void CL_Carousel_Draw(void);
 void CL_Carousel_Input(void);
 void CL_Carousel_ClearInput(void);
+void CL_Wheel_Precache(void);
+void CL_Wheel_Init(void);
 
 //
 // tent.c
@@ -1153,6 +1155,8 @@ typedef struct {
     vrect_t     vrect;        // position of render window
     
     kfont_t     kfont;
+
+    qhandle_t   carousel_selected;
 } cl_scr_t;
 
 extern cl_scr_t scr;

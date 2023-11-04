@@ -602,7 +602,7 @@ static void CL_BaseMove(vec2_t move)
 
 // adjust for speed key / running
     if ((in_speed.state & 1) ^ cl_run->integer) {
-        VectorScale(move, 2, move);
+        Vector2Scale(move, 2, move);
     }
 }
 
