@@ -807,7 +807,7 @@ void CL_FinalizeCmd(void)
 //
 // figure button bits
 //
-    if (in_attack.state & 3)
+    if (in_attack.state & 3 && cl.weapon_lock_time <= cl.time)
         cl.cmd.buttons |= BUTTON_ATTACK;
     if (in_use.state & 3)
         cl.cmd.buttons |= BUTTON_USE;

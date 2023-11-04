@@ -394,6 +394,8 @@ typedef struct client_state_s {
         } slots[MAX_WHEEL_ITEMS * 2];
         size_t      num_slots;
     } carousel;
+
+    int weapon_lock_time; // don't allow BUTTON_ATTACK within this time
 } client_state_t;
 
 extern client_state_t   cl;

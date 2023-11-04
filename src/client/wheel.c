@@ -228,6 +228,8 @@ void CL_Carousel_Input(void)
         // switch
         CL_ClientCommand(va("use_index_only %i\n", cl.carousel.selected));
         cl.carousel.awaiting_close = true;
+
+        cl.weapon_lock_time = cl.time + wc_lock_time->integer;
     }
 }
 
