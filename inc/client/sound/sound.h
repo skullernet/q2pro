@@ -38,9 +38,12 @@ void S_BeginRegistration(void);
 qhandle_t S_RegisterSound(const char *sample);
 void S_EndRegistration(void);
 
-void S_RawSamples(int samples, int rate, int width, int channels, const byte *data);
+#define MAX_RAW_SAMPLES     8192
 
-#if USE_OGG
+void S_RawSamples(int samples, int rate, int width, int channels, const byte *data);
+int S_GetSampleRate(void);
+
+#if USE_AVCODEC
 void OGG_Play(void);
 void OGG_Stop(void);
 void OGG_Update(void);

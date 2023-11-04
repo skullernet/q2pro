@@ -21,7 +21,6 @@ env:
   MESON_ARGS_WIN: >-
     -Dlibpng:werror=false
     -Dsdl2=disabled
-    -Dvorbis:werror=false
     -Dwayland=disabled
     -Dwrap_mode=forcefallback
     -Dx11=disabled
@@ -96,8 +95,7 @@ jobs:
           sudo apt-get install -y meson libsdl2-dev libopenal-dev \
           libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
           libcurl4-gnutls-dev libx11-dev libxi-dev \
-          libwayland-dev wayland-protocols libdecor-0-dev \
-          libogg-dev libvorbis-dev
+          libwayland-dev wayland-protocols libdecor-0-dev
 
       - name: Build
         run: |

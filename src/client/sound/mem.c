@@ -62,7 +62,7 @@ static bool GetWavinfo(sizebuf_t *sz)
 
     tag = SZ_ReadLong(sz);
 
-#if USE_OGG
+#if USE_AVCODEC
     if (tag == MakeLittleLong('O','g','g','S') || !COM_CompareExtension(s_info.name, ".ogg")) {
         sz->readcount = 0;
         return OGG_Load(sz);
@@ -258,7 +258,7 @@ sfxcache_t *S_LoadSound(sfx_t *s)
 
     sc = s_api.upload_sfx(s);
 
-#if USE_OGG
+#if USE_AVCODEC
     if (s_info.format != FORMAT_PCM)
         FS_FreeTempMem(s_info.data);
 #endif

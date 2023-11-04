@@ -91,11 +91,6 @@ option('mvd-server',
   description: 'Enable local MVD recording and MVD/GTV server functionality. '+
   'Use this for hosting a GTV-capable game server.')
 
-option('ogg',
-  type: 'feature',
-  value: 'auto',
-  description: 'Ogg Vorbis music and sound effects support')
-
 option('openal',
   type: 'feature',
   value: 'auto',

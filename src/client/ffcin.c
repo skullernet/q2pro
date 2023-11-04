@@ -25,7 +25,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <libswscale/swscale.h>
 
 #define MAX_PACKETS     2048    // max packets in queue
-#define MAX_SAMPLES     8192    // max audio samples in frame
 
 typedef struct {
     AVFifo      *pkt_list;
@@ -199,7 +198,7 @@ static int process_audio(void)
     AVFrame *out = cin.audio.frame;
     int ret;
 
-    out->nb_samples = MAX_SAMPLES;
+    out->nb_samples = MAX_RAW_SAMPLES;
     ret = swr_convert_frame(cin.swr_ctx, out, in);
     if (ret < 0) {
         Com_EPrintf("Error converting audio: %s\n", av_err2str(ret));
@@ -428,7 +427,7 @@ static bool open_codec_context(enum AVMediaType type)
 
     dec = avcodec_find_decoder(st->codecpar->codec_id);
     if (!dec) {
-        Com_EPrintf("Failed to find %s codec\n", av_get_media_type_string(type));
+        Com_EPrintf("Failed to find %s codec %s\n", av_get_media_type_string(type), avcodec_get_name(st->codecpar->codec_id));
         return false;
     }
 
@@ -506,13 +505,17 @@ static bool open_codec_context(enum AVMediaType type)
             return false;
         }
 
+        int sample_rate = S_GetSampleRate();
+        if (!sample_rate)
+            sample_rate = dec_ctx->sample_rate;
+
         if (dec_ctx->ch_layout.nb_channels >= 2)
             out->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
         else
             out->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
         out->format = AV_SAMPLE_FMT_S16;
-        out->sample_rate = dec_ctx->sample_rate;
-        out->nb_samples = MAX_SAMPLES;
+        out->sample_rate = sample_rate;
+        out->nb_samples = MAX_RAW_SAMPLES;
 
         ret = av_frame_get_buffer(out, 0);
         if (ret < 0) {

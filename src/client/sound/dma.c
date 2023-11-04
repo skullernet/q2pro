@@ -22,8 +22,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define PAINTBUFFER_SIZE    2048
 
-#define MAX_RAW_SAMPLES     8192
-
 typedef struct {
     float   left;
     float   right;
@@ -154,9 +152,11 @@ static bool DMA_RawSamples(int samples, int rate, int width, int channels, const
 
 #undef RESAMPLE
 
-static bool DMA_NeedRawSamples(void)
+static int DMA_NeedRawSamples(void)
 {
-    return s_rawend - s_paintedtime < MAX_RAW_SAMPLES - 2048;
+    int avail = MAX_RAW_SAMPLES - (s_rawend - s_paintedtime);
+    clamp(avail, 0, MAX_RAW_SAMPLES);
+    return avail & ~127;
 }
 
 static void DMA_DropRawSamples(void)
@@ -886,6 +886,11 @@ static void DMA_Update(void)
     snddma.submit();
 }
 
+static int DMA_GetSampleRate(void)
+{
+    return dma.speed;
+}
+
 const sndapi_t snd_dma = {
     .init = DMA_Init,
     .shutdown = DMA_Shutdown,
@@ -900,4 +905,5 @@ const sndapi_t snd_dma = {
     .get_begin_ofs = DMA_DriftBeginofs,
     .play_channel = DMA_Spatialize,
     .stop_all_sounds = DMA_ClearBuffer,
+    .get_sample_rate = DMA_GetSampleRate,
 };

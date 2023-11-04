@@ -788,6 +788,13 @@ void S_RawSamples(int samples, int rate, int width, int channels, const byte *da
         s_api.raw_samples(samples, rate, width, channels, data, 1.0f);
 }
 
+int S_GetSampleRate(void)
+{
+    if (s_started && s_api.get_sample_rate)
+        return s_api.get_sample_rate();
+    return 0;
+}
+
 // =======================================================================
 // Update sound buffer
 // =======================================================================

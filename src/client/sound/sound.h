@@ -115,12 +115,13 @@ typedef struct {
     void (*delete_sfx)(sfx_t *s);
     void (*page_in_sfx)(sfx_t *s);
     bool (*raw_samples)(int samples, int rate, int width, int channels, const byte *data, float volume);
-    bool (*need_raw_samples)(void);
+    int (*need_raw_samples)(void);
     void (*drop_raw_samples)(void);
     int (*get_begin_ofs)(float timeofs);
     void (*play_channel)(channel_t *ch);
     void (*stop_channel)(channel_t *ch);
     void (*stop_all_sounds)(void);
+    int (*get_sample_rate)(void);
 } sndapi_t;
 
 #if USE_SNDDMA
@@ -187,6 +188,6 @@ void S_BuildSoundList(int *sounds);
 float S_GetEntityLoopVolume(const centity_state_t *ent);
 float S_GetEntityLoopDistMult(const centity_state_t *ent);
 
-#if USE_OGG
+#if USE_AVCODEC
 bool OGG_Load(sizebuf_t *sz);
 #endif

@@ -16,6 +16,9 @@ network protocol level. The rest of dependencies are optional.
 For JPEG support libjpeg-turbo is required, plain libjpeg will not work. Most
 Linux distributions already provide libjpeg-turbo in place of libjpeg.
 
+For playing back cinematics in Ogg Theora format and music in Ogg Vorbis format
+FFmpeg libraries are required.
+
 To install the *full* set of dependencies for building Q2PRO on Debian or
 Ubuntu use the following command:
 
@@ -23,7 +26,8 @@ Ubuntu use the following command:
                     libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
                     libcurl4-gnutls-dev libx11-dev libxi-dev \
                     libwayland-dev wayland-protocols libdecor-0-dev \
-                    libogg-dev libvorbis-dev
+                    libavcodec-dev libavformat-dev libavutil-dev \
+                    libswresample-dev libswscale-dev
 
 Users of other distributions should look for equivalent development packages
 and install them.
@@ -85,8 +89,7 @@ Q2PRO supports playback of background music ripped off original CD in Ogg
 Vorbis format. Music files should be placed in `music` subdirectory of the game
 directory in format `music/trackNN.ogg`, where `NN` corresponds to CD track
 number. `NN` should be typically in range 02-11 (track 01 is data track on
-original CD and should never be used). Placing music in packfile will also
-work.
+original CD and should never be used).
 
 Note that so-called ‘GOG’ naming convention where music tracks are named
 ‘Track01’ to ‘Track21’ is not supported.

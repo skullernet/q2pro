@@ -398,9 +398,9 @@ static void AL_StreamStop(void)
     Q_assert(!s_stream_buffers);
 }
 
-static bool AL_NeedRawSamples(void)
+static int AL_NeedRawSamples(void)
 {
-    return s_stream_buffers < 48;
+    return s_stream_buffers < 32 ? MAX_RAW_SAMPLES : 0;
 }
 
 static bool AL_RawSamples(int samples, int rate, int width, int channels, const byte *data, float volume)
