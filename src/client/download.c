@@ -91,12 +91,17 @@ int CL_QueueDownload(const char *path, dltype_t type)
 CL_IgnoreDownload
 
 Returns true if specified path matches against an entry in download ignore
-list.
+list. Path should be converted to lower case by the caller.
 ===============
 */
 bool CL_IgnoreDownload(const char *path)
 {
     string_entry_t *entry;
+
+    if (!strncmp(path, CONST_STR_LEN("music/")))
+        return true;
+    if (!strncmp(path, CONST_STR_LEN("video/")))
+        return true;
 
     for (entry = cls.download.ignores; entry; entry = entry->next) {
         if (Com_WildCmp(entry->string, path)) {
