@@ -182,7 +182,7 @@ void CL_Carousel_Draw(void)
 
             Loc_Localize(cl.configstrings[cl.csr.items + cl.carousel.slots[i].item_index], false, NULL, 0, localized, sizeof(localized));
 
-            SCR_DrawString(center_x + (CAROUSEL_ICON_SIZE / 2), carousel_y - 16, UI_CENTER | UI_DROPSHADOW, localized);
+            SCR_DrawString(center_x, carousel_y - 16, UI_CENTER | UI_DROPSHADOW, localized);
         }
     }
 }
