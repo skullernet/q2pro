@@ -850,6 +850,8 @@ static void CGC_Pmove(pmove_t *pmove)
     pmove->s.viewheight = 0;
 }
 
+static void CGC_ParseConfigString(int32_t i, const char *s) {}
+
 static void CGC_ParseCenterPrint(const char *str, int isplit, bool instant)
 {
     const char  *s;
@@ -892,6 +894,8 @@ cgame_export_t cgame_classic = {
     .TouchPics = CGC_TouchPics,
 
     .Pmove = CGC_Pmove,
+
+    .ParseConfigString = CGC_ParseConfigString,
 
     .ParseCenterPrint = CGC_ParseCenterPrint,
     .ClearCenterprint = CGC_ClearCenterprint,
