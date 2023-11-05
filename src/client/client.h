@@ -377,9 +377,9 @@ typedef struct client_state_s {
 
         cl_wheel_powerup_t powerups[MAX_WHEEL_ITEMS];
         int                num_powerups;
-    } wheel;
+    } wheel_data;
 
-    // carousel data
+    // carousel state
     struct {
         bool        open;
         bool        awaiting_close; // still "open" but a close will happen when we send next cmd
@@ -394,6 +394,12 @@ typedef struct client_state_s {
         } slots[MAX_WHEEL_ITEMS * 2];
         size_t      num_slots;
     } carousel;
+
+    // weapon wheel state
+    struct {
+        bool        open;
+        vec2_t      position;
+    } wheel;
 
     int weapon_lock_time; // don't allow BUTTON_ATTACK within this time
 } client_state_t;
@@ -882,6 +888,10 @@ void CL_Carousel_Input(void);
 void CL_Carousel_ClearInput(void);
 void CL_Wheel_Precache(void);
 void CL_Wheel_Init(void);
+void CL_Wheel_Open(bool powerup);
+void CL_Wheel_Close(void);
+void CL_Wheel_Input(int x, int y);
+void CL_Wheel_Draw(void);
 
 //
 // tent.c
@@ -1159,6 +1169,10 @@ typedef struct {
     kfont_t     kfont;
 
     qhandle_t   carousel_selected;
+    qhandle_t   wheel_circle;
+    int         wheel_size;
+    qhandle_t   wheel_button;
+    int         wheel_button_size;
 } cl_scr_t;
 
 extern cl_scr_t scr;

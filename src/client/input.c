@@ -241,7 +241,7 @@ static kbutton_t    in_lookup, in_lookdown, in_moveleft, in_moveright;
 static kbutton_t    in_strafe, in_speed, in_use, in_attack;
 static kbutton_t    in_up, in_down;
 // Kex stuff
-static kbutton_t    in_holster, in_wheel, in_wheel2;
+static kbutton_t    in_holster;
 
 static int          in_impulse;
 static bool         in_mlooking;
@@ -429,10 +429,10 @@ static void IN_MLookUp(void)
 
 static void IN_HolsterDown(void) { KeyDown(&in_holster); }
 static void IN_HolsterUp(void) { KeyUp(&in_holster); }
-static void IN_WheelDown(void) { KeyDown(&in_wheel); }
-static void IN_WheelUp(void) { KeyUp(&in_wheel); }
-static void IN_Wheel2Down(void) { KeyDown(&in_wheel2); }
-static void IN_Wheel2Up(void) { KeyUp(&in_wheel2); }
+static void IN_WheelDown(void) { CL_Wheel_Open(false); }
+static void IN_WheelUp(void) { CL_Wheel_Close(); }
+static void IN_Wheel2Down(void) { CL_Wheel_Open(true); }
+static void IN_Wheel2Up(void) { CL_Wheel_Close(); }
 
 static void IN_WeapNext(void)
 {
@@ -537,14 +537,20 @@ static void CL_MouseMove(void)
 // add mouse X/Y movement
     if ((in_strafe.state & 1) || (lookstrafe->integer && !in_mlooking)) {
         cl.mousemove[1] += m_side->value * mx;
-    } else {
+    } else if (!cl.wheel.open) {
         cl.viewangles[YAW] -= m_yaw->value * mx;
     }
 
     if ((in_mlooking || freelook->integer) && !(in_strafe.state & 1)) {
-        cl.viewangles[PITCH] += m_pitch->value * my;
+        if (!cl.wheel.open) {
+            cl.viewangles[PITCH] += m_pitch->value * my;
+        }
     } else {
         cl.mousemove[0] -= m_forward->value * my;
+    }
+
+    if (cl.wheel.open) {
+        CL_Wheel_Input(dx, dy);
     }
 }
 
