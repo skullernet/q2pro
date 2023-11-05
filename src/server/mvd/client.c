@@ -1697,8 +1697,7 @@ void MVD_Spawn(void)
 #if USE_FPS
     // just fixed base FPS
     sv.framerate = BASE_FRAMERATE;
-    sv.frametime = BASE_FRAMETIME;
-    sv.framediv = 1;
+    sv.frametime = Com_ComputeFrametime(sv.framerate);
 #endif
 
     // set externally visible server name

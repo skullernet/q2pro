@@ -1475,7 +1475,7 @@ static void SV_ParseDeltaUserinfo(void)
 #if USE_FPS
 void SV_AlignKeyFrames(client_t *client)
 {
-    int framediv = sv.framediv / client->framediv;
+    int framediv = sv.frametime.div / client->framediv;
     int framenum = sv.framenum / client->framediv;
     int frameofs = framenum % framediv;
     int newnum = frameofs + Q_align(client->framenum, framediv);
@@ -1497,11 +1497,11 @@ static void set_client_fps(int value)
 
     clamp(framediv, 1, MAX_FRAMEDIV);
 
-    framediv = sv.framediv / Q_gcd(sv.framediv, framediv);
+    framediv = sv.frametime.div / Q_gcd(sv.frametime.div, framediv);
     framerate = sv.framerate / framediv;
 
     Com_DDPrintf("[%d] client div=%d, server div=%d, rate=%d\n",
-                 sv.framenum, framediv, sv.framediv, framerate);
+                 sv.framenum, framediv, sv.frametime.div, framerate);
 
     sv_client->framediv = framediv;
 

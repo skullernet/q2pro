@@ -1109,7 +1109,7 @@ static void SVC_DirectConnect(void)
     Q_strlcpy(newcl->reconnect_var, params.reconnect_var, sizeof(newcl->reconnect_var));
     Q_strlcpy(newcl->reconnect_val, params.reconnect_val, sizeof(newcl->reconnect_val));
 #if USE_FPS
-    newcl->framediv = sv.framediv;
+    newcl->framediv = sv.frametime.div;
     newcl->settings[CLS_FPS] = BASE_FRAMERATE;
 #endif
 
@@ -2267,7 +2267,8 @@ void SV_Init(void)
 
 #if USE_FPS
     // set up default frametime for main loop
-    sv.frametime = BASE_FRAMETIME;
+    sv.framerate = BASE_FRAMERATE;
+    sv.frametime = Com_ComputeFrametime(sv.framerate);
 #endif
 
     // set up default pmove parameters
@@ -2388,7 +2389,8 @@ void SV_Shutdown(const char *finalmsg, error_type_t type)
 
 #if USE_FPS
     // set up default frametime for main loop
-    sv.frametime = BASE_FRAMETIME;
+    sv.framerate = BASE_FRAMERATE;
+    sv.frametime = Com_ComputeFrametime(sv.framerate);
 #endif
 
     sv_client = NULL;

@@ -76,7 +76,7 @@ entity_update_old(centity_t *ent, const centity_state_t *state, const vec_t *ori
     // check for new event
     if (state->event != ent->current.event)
         ent->event_frame = cl.frame.number; // new
-    else if (cl.frame.number - ent->event_frame >= cl.framediv)
+    else if (cl.frame.number - ent->event_frame >= cl.frametime.div)
         ent->event_frame = cl.frame.number; // refreshed
     else
         event = 0; // duplicated
@@ -110,7 +110,7 @@ entity_update_old(centity_t *ent, const centity_state_t *state, const vec_t *ori
     // start alias model animation
     if (state->frame != ent->current.frame) {
         ent->prev_frame = ent->current.frame;
-        ent->anim_start = cl.servertime - cl.frametime;
+        ent->anim_start = cl.servertime - cl.frametime.time;
     }
 #endif
 
@@ -379,7 +379,7 @@ void CL_DeltaFrame(void)
     framenum = cl.frame.number - cl.serverdelta;
     cl.servertime = framenum * CL_FRAMETIME;
 #if USE_FPS
-    cl.keyservertime = (framenum / cl.framediv) * BASE_FRAMETIME;
+    cl.keyservertime = (framenum / cl.frametime.div) * BASE_FRAMETIME;
 #endif
 
     // rebuild the list of solid entities for this frame
@@ -426,7 +426,7 @@ void CL_DeltaFrame(void)
 
 #if USE_FPS
     if (CL_FRAMESYNC)
-        check_player_lerp(&cl.oldkeyframe, &cl.keyframe, cl.framediv);
+        check_player_lerp(&cl.oldkeyframe, &cl.keyframe, cl.frametime.div);
 #endif
 
     CL_CheckPredictionError();
