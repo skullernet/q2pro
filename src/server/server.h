@@ -513,9 +513,7 @@ extern cvar_t       *sv_reserved_slots;
 extern cvar_t       *sv_airaccelerate;        // development tool
 extern cvar_t       *sv_qwmod;                // atu QW Physics modificator
 extern cvar_t       *sv_enforcetime;
-#if USE_FPS
 extern cvar_t       *sv_fps;
-#endif
 extern cvar_t       *sv_force_reconnect;
 extern cvar_t       *sv_iplimit;
 
@@ -554,10 +552,6 @@ extern cvar_t       *g_features;
 extern cvar_t       *sv_timeout;
 extern cvar_t       *sv_zombietime;
 extern cvar_t       *sv_ghostime;
-
-// KEX
-extern cvar_t       *sv_tick_rate;
-// KEX
 
 extern client_t     *sv_client;
 extern edict_t      *sv_player;

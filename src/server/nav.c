@@ -1281,7 +1281,7 @@ void Nav_Frame(void)
 {
     nav_data.nav_frame++;
 
-    if (nav_data.nav_frame > sv_tick_rate->integer)
+    if (nav_data.nav_frame > sv_fps->integer)
         if (!nav_data.setup_entities)
             Nav_SetupEntities();
 

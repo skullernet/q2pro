@@ -42,9 +42,7 @@ cvar_t  *sv_timescale_time;
 cvar_t  *sv_timescale_warn;
 cvar_t  *sv_timescale_kick;
 cvar_t  *sv_allow_nodelta;
-#if USE_FPS
 cvar_t  *sv_fps;
-#endif
 
 cvar_t  *sv_timeout;            // seconds without any message
 cvar_t  *sv_zombietime;         // seconds to sink messages after disconnect
@@ -2100,9 +2098,7 @@ void SV_Init(void)
     sv_timescale_warn = Cvar_Get("sv_timescale_warn", "0", 0);
     sv_timescale_kick = Cvar_Get("sv_timescale_kick", "0", 0);
     sv_allow_nodelta = Cvar_Get("sv_allow_nodelta", "1", 0);
-#if USE_FPS
-    sv_fps = Cvar_Get("sv_fps", "10", CVAR_LATCH);
-#endif
+    sv_fps = Cvar_Get("sv_fps", "40", CVAR_LATCH);
     sv_force_reconnect = Cvar_Get("sv_force_reconnect", "", CVAR_LATCH);
     sv_show_name_changes = Cvar_Get("sv_show_name_changes", "0", 0);
 

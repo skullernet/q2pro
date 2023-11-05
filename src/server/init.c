@@ -38,14 +38,13 @@ void SV_ClientReset(client_t *client)
     memset(&client->lastcmd, 0, sizeof(client->lastcmd));
 }
 
-static void set_frame_time(int rate)
+static void set_frame_time(int rate, bool override)
 {
     sv.framerate = rate;
     sv.frametime = Com_ComputeFrametime(sv.framerate);
 
-#if USE_FPS
-    Cvar_SetInteger(sv_fps, sv.framerate, FROM_CODE);
-#endif
+    if (!override)
+        Cvar_SetInteger(sv_fps, sv.framerate, FROM_CODE);
 }
 
 static void resolve_masters(void)
@@ -136,16 +135,16 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     // set framerate parameters
     if (svs.is_game_rerelease) {
         // configured tick rate
-        set_frame_time(sv_tick_rate->integer);
+        set_frame_time(sv_fps->integer, false);
     } else {
         // Force frame rate to 10Hz for "old" games
     #if USE_FPS
         // (unless they support variable FPS)
         if (g_features->integer & GMF_VARIABLE_FPS) {
-            set_frame_time(sv_fps->integer);
+            set_frame_time(sv_fps->integer, false);
         } else
     #endif
-        set_frame_time(BASE_FRAMERATE);
+        set_frame_time(BASE_FRAMERATE, true);
     }
 
     // save name for levels that don't set message
@@ -382,7 +381,7 @@ void SV_InitGame(unsigned mvd_spawn)
     Cvar_GetLatchedVars();
 
     // We need the time values before the game is loaded
-    set_frame_time(sv_tick_rate->integer);
+    set_frame_time(sv_fps->integer, false);
 
 #if !USE_CLIENT
     Cvar_Reset(sv_recycle);
