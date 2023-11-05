@@ -973,6 +973,18 @@ int     SCR_GetCinematicCrop(unsigned framenum, int64_t filesize);
 //
 // cin.c
 //
+
+#if USE_AVCODEC
+
+typedef struct {
+    const char *ext;
+    const char *fmt;
+    int codec_id;
+} avformat_t;
+
+#endif
+
+void    SCR_InitCinematics(void);
 void    SCR_StopCinematic(void);
 void    SCR_FinishCinematic(void);
 void    SCR_RunCinematic(void);

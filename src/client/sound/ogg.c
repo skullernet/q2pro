@@ -45,12 +45,6 @@ static int      trackindex;
 static char     extensions[MAX_QPATH];
 static int      supported;
 
-typedef struct {
-    const char *ext;
-    const char *fmt;
-    int codec_id;
-} avformat_t;
-
 static const avformat_t formats[] = {
     { ".flac", "flac", AV_CODEC_ID_FLAC },
     { ".opus", "ogg", AV_CODEC_ID_OPUS },

@@ -3386,7 +3386,9 @@ void CL_Init(void)
     Q_assert(inflateInit2(&cls.z, -MAX_WBITS) == Z_OK);
 #endif
 
+    SCR_InitCinematics();
     OGG_Init();
+
     CL_LoadDownloadIgnores();
     CL_LoadStuffTextWhiteList();
 

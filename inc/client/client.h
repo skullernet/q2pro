@@ -95,6 +95,8 @@ void Con_Close(bool force);
 
 void SCR_BeginLoadingPlaque(void);
 void SCR_EndLoadingPlaque(void);
+int SCR_CheckForCinematic(const char *name);
+
 void SCR_ModeChanged(void);
 void SCR_UpdateScreen(void);
 
@@ -145,5 +147,6 @@ float V_CalcFov(float fov_x, float width, float height);
 
 #define SCR_BeginLoadingPlaque()        (void)0
 #define SCR_EndLoadingPlaque()          (void)0
+#define SCR_CheckForCinematic(name)     Q_ERR_SUCCESS
 
 #endif // !USE_CLIENT
