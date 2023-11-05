@@ -138,10 +138,10 @@ typedef struct {
 
 // variable server FPS
 #if USE_FPS
-#define CL_FRAMETIME    cl.frametime
+#define CL_FRAMETIME    cl.frametime.time
 #define CL_1_FRAMETIME  cl.frametime_inv
-#define CL_FRAMEDIV     cl.framediv
-#define CL_FRAMESYNC    !(cl.frame.number % cl.framediv)
+#define CL_FRAMEDIV     cl.frametime.div
+#define CL_FRAMESYNC    !(cl.frame.number % cl.frametime.div)
 #define CL_KEYPS        &cl.keyframe.ps
 #define CL_OLDKEYPS     &cl.oldkeyframe.ps
 #define CL_KEYLERPFRAC  cl.keylerpfrac
@@ -265,9 +265,8 @@ typedef struct client_state_s {
     pmoveParams_t pmp;
 
 #if USE_FPS
-    int         frametime;      // variable server frame time
+    frametime_t frametime;
     float       frametime_inv;  // 1/frametime
-    int         framediv;       // BASE_FRAMETIME/frametime
 #endif
 
     configstring_t  baseconfigstrings[MAX_CONFIGSTRINGS];

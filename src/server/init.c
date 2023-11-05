@@ -40,18 +40,12 @@ void SV_ClientReset(client_t *client)
 static void set_frame_time(void)
 {
 #if USE_FPS
-    int framediv;
-
     if (g_features->integer & GMF_VARIABLE_FPS)
-        framediv = sv_fps->integer / BASE_FRAMERATE;
+        sv.frametime = Com_ComputeFrametime(sv_fps->integer);
     else
-        framediv = 1;
+        sv.frametime = Com_ComputeFrametime(BASE_FRAMERATE);
 
-    clamp(framediv, 1, MAX_FRAMEDIV);
-
-    sv.framerate = framediv * BASE_FRAMERATE;
-    sv.frametime = BASE_FRAMETIME / framediv;
-    sv.framediv = framediv;
+    sv.framerate = sv.frametime.div * BASE_FRAMERATE;
 
     Cvar_SetInteger(sv_fps, sv.framerate, FROM_CODE);
 #endif
@@ -386,7 +380,7 @@ void SV_InitGame(unsigned mvd_spawn)
 
 #if USE_FPS
         // set up default frametime for main loop
-        sv.frametime = BASE_FRAMETIME;
+        sv.frametime = Com_ComputeFrametime(BASE_FRAMERATE);
 #endif
     }
 

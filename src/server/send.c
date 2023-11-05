@@ -71,7 +71,7 @@ static bool SV_RateDrop(client_t *client)
     }
 
 #if USE_FPS
-    total = total * sv.framediv / client->framediv;
+    total = total * sv.frametime.div / client->framediv;
 #endif
 
     if (total > client->rate) {
@@ -878,8 +878,8 @@ static void finish_frame(client_t *client)
 #if USE_DEBUG && USE_FPS
 static void check_key_sync(client_t *client)
 {
-    int div = sv.framediv / client->framediv;
-    int key1 = !(sv.framenum % sv.framediv);
+    int div = sv.frametime.div / client->framediv;
+    int key1 = !(sv.framenum % sv.frametime.div);
     int key2 = !(client->framenum % div);
 
     if (key1 != key2) {
