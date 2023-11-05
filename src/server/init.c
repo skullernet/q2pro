@@ -49,6 +49,9 @@ static void set_frame_time(void)
     sv.framerate = sv.frametime.div * BASE_FRAMERATE;
 
     Cvar_SetInteger(sv_fps, sv.framerate, FROM_CODE);
+#else
+    sv.framerate = sv_tick_rate->integer;
+    sv.frametime = Com_ComputeFrametime(sv.framerate);
 #endif
 }
 
@@ -372,6 +375,9 @@ void SV_InitGame(unsigned mvd_spawn)
 
     // get any latched variable changes (maxclients, etc)
     Cvar_GetLatchedVars();
+
+    // We need the time values before the game is loaded
+    set_frame_time();
 
 #if !USE_CLIENT
     Cvar_Reset(sv_recycle);

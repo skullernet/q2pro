@@ -138,17 +138,13 @@ typedef struct {
 } server_entity_t;
 
 // variable server FPS
-#if USE_FPS
 #define SV_FRAMERATE        sv.framerate
 #define SV_FRAMETIME        sv.frametime.time
 #define SV_FRAMEDIV         sv.frametime.div
+#if USE_FPS
 #define SV_FRAMESYNC        !(sv.framenum % sv.frametime.div)
 #define SV_CLIENTSYNC(cl)   !(sv.framenum % (cl)->framediv)
 #else
-// TODO cache these
-#define SV_FRAMERATE        (sv_tick_rate->integer)
-#define SV_FRAMETIME        ((1.0f / sv_tick_rate->integer) * 1000)
-#define SV_FRAMEDIV         (sv_tick_rate->integer / 10)
 #define SV_FRAMESYNC        1
 #define SV_CLIENTSYNC(cl)   1
 #endif
@@ -161,10 +157,8 @@ typedef struct {
     int         gamedetecthack;
 #endif
 
-#if USE_FPS
     int         framerate;
     frametime_t frametime;
-#endif
 
     int         framenum;
     unsigned    frameresidual;
