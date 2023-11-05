@@ -755,6 +755,7 @@ static void CL_PlayDemo_f(void)
     cls.state = ca_connected;
     Q_strlcpy(cls.servername, COM_SkipPath(name), sizeof(cls.servername));
     cls.serverAddress.type = NA_LOOPBACK;
+    cl.csr = cs_remap_old;
 
     Con_Popup(true);
     SCR_UpdateScreen();

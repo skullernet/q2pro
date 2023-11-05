@@ -1406,6 +1406,7 @@ static void CL_ConnectionlessPacket(void)
         cls.state = ca_connected;
         cls.connect_count = 0;
         Q_strlcpy(cl.mapname, mapname, sizeof(cl.mapname)); // for levelshot screen
+        cl.csr = cs_remap_old;
         return;
     }
 
