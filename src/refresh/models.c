@@ -1317,8 +1317,12 @@ static void MOD_LoadMD5(model_t *model)
 
         // build md5 path
         if (Q_strlcat(skin_path, "md5/", sizeof(skin_path)) < sizeof(skin_path) &&
-            Q_strlcat(skin_path, skin_name, sizeof(skin_path)) < sizeof(skin_path))
+            Q_strlcat(skin_path, skin_name, sizeof(skin_path)) < sizeof(skin_path)) {
             model->skeleton->skins[i] = IMG_Find(skin_path, IT_SKIN, IF_NONE);
+        } else {
+            Com_WPrintf("MD5 skin path too long: %s\n", skin_path);
+            model->skeleton->skins[i] = R_NOTEXTURE;
+        }
     }
 
     Hunk_End(&model->skeleton_hunk);
