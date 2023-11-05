@@ -233,10 +233,10 @@ static const char *MOD_ValidateMD2(const dmd2header_t *header, size_t length)
     ENSURE(header->framesize >= sizeof(dmd2frame_t) + (header->num_xyz - 1) * sizeof(dmd2trivertx_t), "too small frame size");
     ENSURE(header->framesize <= MD2_MAX_FRAMESIZE, "too big frame size");
 
-    ENSURE(header->ofs_tris + (uint64_t)header->num_tris * sizeof(dmd2triangle_t) <= length, "bad tris offset");
-    ENSURE(header->ofs_st + (uint64_t)header->num_st * sizeof(dmd2stvert_t) <= length, "bad st offset");
-    ENSURE(header->ofs_frames + (uint64_t)header->num_frames * header->framesize <= length, "bad frames offset");
-    ENSURE(header->ofs_skins + (uint64_t)MD2_MAX_SKINNAME * header->num_skins <= length, "bad skins offset");
+    ENSURE((uint64_t)header->ofs_tris + header->num_tris * sizeof(dmd2triangle_t) <= length, "bad tris offset");
+    ENSURE((uint64_t)header->ofs_st + header->num_st * sizeof(dmd2stvert_t) <= length, "bad st offset");
+    ENSURE((uint64_t)header->ofs_frames + header->num_frames * header->framesize <= length, "bad frames offset");
+    ENSURE((uint64_t)header->ofs_skins + MD2_MAX_SKINNAME * header->num_skins <= length, "bad skins offset");
 
     ENSURE(!(header->ofs_tris % q_alignof(dmd2triangle_t)), "odd tris offset");
     ENSURE(!(header->ofs_st % q_alignof(dmd2stvert_t)), "odd st offset");
@@ -487,10 +487,10 @@ static const char *MOD_ValidateMD3Mesh(const model_t *model, const dmd3mesh_t *h
     ENSURE(header->num_tris <= TESS_MAX_INDICES / 3, "too many tris");
     ENSURE(header->num_skins <= MD3_MAX_SKINS, "too many skins");
 
-    ENSURE(header->ofs_skins + (uint64_t)header->num_skins * sizeof(dmd3skin_t) <= length, "bad skins offset");
-    ENSURE(header->ofs_verts + (uint64_t)header->num_verts * model->numframes * sizeof(dmd3vertex_t) <= length, "bad verts offset");
-    ENSURE(header->ofs_tcs + (uint64_t)header->num_verts * sizeof(dmd3coord_t) <= length, "bad tcs offset");
-    ENSURE(header->ofs_indexes + (uint64_t)header->num_tris * 3 * sizeof(uint32_t) <= length, "bad indexes offset");
+    ENSURE((uint64_t)header->ofs_skins + header->num_skins * sizeof(dmd3skin_t) <= length, "bad skins offset");
+    ENSURE((uint64_t)header->ofs_verts + header->num_verts * model->numframes * sizeof(dmd3vertex_t) <= length, "bad verts offset");
+    ENSURE((uint64_t)header->ofs_tcs + header->num_verts * sizeof(dmd3coord_t) <= length, "bad tcs offset");
+    ENSURE((uint64_t)header->ofs_indexes + header->num_tris * 3 * sizeof(uint32_t) <= length, "bad indexes offset");
 
     ENSURE(!(header->ofs_skins % q_alignof(dmd3skin_t)), "odd skins offset");
     ENSURE(!(header->ofs_verts % q_alignof(dmd3vertex_t)), "odd verts offset");
@@ -609,7 +609,7 @@ static const char *MOD_ValidateMD3(const dmd3header_t *header, size_t length)
 {
     ENSURE(header->num_frames >= 1, "too few frames");
     ENSURE(header->num_frames <= MD3_MAX_FRAMES, "too many frames");
-    ENSURE(header->ofs_frames + (uint64_t)header->num_frames * sizeof(dmd3frame_t) <= length, "bad frames offset");
+    ENSURE((uint64_t)header->ofs_frames + header->num_frames * sizeof(dmd3frame_t) <= length, "bad frames offset");
     ENSURE(!(header->ofs_frames % q_alignof(dmd3frame_t)), "odd frames offset");
     ENSURE(header->num_meshes >= 1, "too few meshes");
     ENSURE(header->num_meshes <= MD3_MAX_MESHES, "too many meshes");
