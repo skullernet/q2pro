@@ -551,6 +551,23 @@ static void read_q2pro_protocol_flags(void)
     cl.is_rerelease_game = (i & Q2PRO_PF_GAME3_COMPAT) == 0;
 }
 
+static void set_server_fps(int value)
+{
+    cl.frametime = Com_ComputeFrametime(value);
+    cl.frametime_inv = cl.frametime.div * BASE_1_FRAMETIME;
+
+#if USE_FPS
+    // fix time delta
+    if (cls.state == ca_active) {
+        int delta = cl.frame.number - cl.servertime / cl.frametime;
+        cl.serverdelta = Q_align(delta, framediv);
+    }
+
+    Com_DPrintf("client framediv=%d time=%d delta=%d\n",
+                framediv, cl.servertime, cl.serverdelta);
+#endif
+}
+
 static void CL_ParseServerData(void)
 {
     char    levelname[MAX_QPATH];
@@ -616,14 +633,8 @@ static void CL_ParseServerData(void)
     // setup default pmove parameters
     PmoveInit(&cl.pmp);
 
-#if USE_FPS
     // setup default frame times
-    cl.frametime = Com_ComputeFrametime(BASE_FRAMERATE);
-    cl.frametime_inv = cl.frametime.div * BASE_1_FRAMETIME;
-#endif
-    cl.sv_frametime = 100;
-    cl.sv_frametime_inv = 1.0f / cl.sv_frametime;
-    cl.sv_framediv = 1;
+    set_server_fps(BASE_FRAMERATE);
 
     // setup default server state
     cl.serverstate = ss_game;
@@ -709,9 +720,7 @@ static void CL_ParseServerData(void)
         cl.psFlags |= MSG_PS_RERELEASE;
         cl.esFlags |= MSG_ES_RERELEASE;
         int32_t rate = MSG_ReadByte();
-        cl.sv_frametime = (1.0f / rate) * 1000;
-        cl.sv_frametime_inv = 1.0f / cl.sv_frametime;
-        cl.sv_framediv = rate / 10;
+        set_server_fps(rate);
 
         cl.pmp.speedmult = 2;
         cl.pmp.flyhack = true; // fly hack is unconditionally enabled
@@ -1244,23 +1253,6 @@ static void CL_ParseZPacket(void)
               "but no zlib support linked in.");
 #endif
 }
-
-#if USE_FPS
-static void set_server_fps(int value)
-{
-    cl.frametime = Com_ComputeFrametime(value);
-    cl.frametime_inv = cl.frametime.div * BASE_1_FRAMETIME;
-
-    // fix time delta
-    if (cls.state == ca_active) {
-        int delta = cl.frame.number - cl.servertime / cl.frametime.time;
-        cl.serverdelta = Q_align(delta, cl.frametime.div);
-    }
-
-    Com_DPrintf("client framediv=%d time=%d delta=%d\n",
-                cl.frametime.div, cl.servertime, cl.serverdelta);
-}
-#endif
 
 static void CL_ParseSetting(void)
 {

@@ -82,7 +82,6 @@ static inline size_t CS_SIZE(const cs_remap_t *csr, int cs)
     return CS_MAX_STRING_LENGTH;
 }
 
-#if USE_FPS
 typedef struct frametime_s {
     int         time;      // variable server frame time
     int         div;       // BASE_FRAMETIME/frametime
@@ -94,5 +93,3 @@ static inline frametime_t Com_ComputeFrametime(int rate)
     int framediv = Q_clip(rate / BASE_FRAMERATE, 1, MAX_FRAMEDIV);
     return (frametime_t){ .time = BASE_FRAMETIME / framediv, .div = framediv };
 }
-
-#endif // USE_FPS

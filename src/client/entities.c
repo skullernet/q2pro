@@ -585,7 +585,7 @@ static void CL_AddPacketEntities(void)
         if (cl.csr.extended) {
             // TODO: must only do this on alias models
             if (cent->last_frame != cent->current_frame) {
-                ent.backlerp = 1.0f - ((cl.time - ((float) cent->frame_servertime - cl.sv_frametime)) / 100.f);
+                ent.backlerp = 1.0f - ((cl.time - ((float) cent->frame_servertime - cl.frametime.time)) / 100.f);
                 clamp(ent.backlerp, 0.0f, 1.0f);
                 ent.frame = cent->current_frame;
                 ent.oldframe = cent->last_frame;
@@ -1136,7 +1136,7 @@ static void CL_AddViewWeapon(void)
             }
 
             const float gun_ms = 1.f / (!ps->gunrate ? 10 : ps->gunrate) * 1000.f;
-            gun.backlerp = 1.f - ((cl.time - ((float) cl.weapon.server_time - cl.sv_frametime)) / gun_ms);
+            gun.backlerp = 1.f - ((cl.time - ((float) cl.weapon.server_time - cl.frametime.time)) / gun_ms);
             clamp(gun.backlerp, 0.0f, 1.f);
             gun.frame = cl.weapon.frame;
             gun.oldframe = cl.weapon.last_frame;
@@ -1351,7 +1351,7 @@ void CL_CalcViewValues(void)
         VectorMA(cl.predicted_origin, backlerp, cl.prediction_error, cl.refdef.vieworg);
 
         // smooth out stair climbing
-        if (fabsf(cl.predicted_step) < (127 * 0.125f) / cl.sv_framediv) {
+        if (fabsf(cl.predicted_step) < (127 * 0.125f) / cl.frametime.div) {
             delta <<= 1; // small steps
         }
         if (delta < STEP_TIME) {

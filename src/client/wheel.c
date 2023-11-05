@@ -199,7 +199,7 @@ void CL_Carousel_ClearInput(void)
 {
     if (cl.carousel.state == WHEEL_CLOSING) {
         cl.carousel.state = WHEEL_CLOSED;
-        cl.carousel.close_time = cls.realtime + (cl.sv_frametime * 2);
+        cl.carousel.close_time = cls.realtime + (cl.frametime.time * 2);
     }
 }
 

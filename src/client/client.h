@@ -131,18 +131,15 @@ typedef struct {
 #define FF_NODELTA      BIT(8)
 
 // variable server FPS
-#if USE_FPS
 #define CL_FRAMETIME    cl.frametime.time
 #define CL_1_FRAMETIME  cl.frametime_inv
 #define CL_FRAMEDIV     cl.frametime.div
+#if USE_FPS
 #define CL_FRAMESYNC    !(cl.frame.number % cl.frametime.div)
 #define CL_KEYPS        &cl.keyframe.ps
 #define CL_OLDKEYPS     &cl.oldkeyframe.ps
 #define CL_KEYLERPFRAC  cl.keylerpfrac
 #else
-#define CL_FRAMETIME    cl.sv_frametime
-#define CL_1_FRAMETIME  cl.sv_frametime_inv
-#define CL_FRAMEDIV     cl.sv_framediv
 #define CL_FRAMESYNC    1
 #define CL_KEYPS        &cl.frame.ps
 #define CL_OLDKEYPS     &cl.oldframe.ps
@@ -320,10 +317,8 @@ typedef struct client_state_s {
     int         maxclients;
     pmoveParams_t pmp;
 
-#if USE_FPS
     frametime_t frametime;
     float       frametime_inv;  // 1/frametime
-#endif
 
     configstring_t  baseconfigstrings[MAX_CONFIGSTRINGS];
     configstring_t  configstrings[MAX_CONFIGSTRINGS];
@@ -355,10 +350,6 @@ typedef struct client_state_s {
     int     numWeaponModels;
     
     bool    need_powerscreen_scale;
-
-    float sv_frametime_inv;
-    int32_t sv_frametime;
-    int32_t sv_framediv;
 
     int     hit_marker_frame, hit_marker_time;
 
