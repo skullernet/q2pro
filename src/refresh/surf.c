@@ -584,8 +584,8 @@ static void build_surface_poly(mface_t *surf, vec_t *vbo)
 
     src_surfedge = surf->firstsurfedge;
     for (i = 0; i < surf->numsurfedges; i++) {
-        src_edge = src_surfedge->edge;
-        src_vert = src_edge->v[src_surfedge->vert];
+        src_edge = bsp->edges + src_surfedge->edge;
+        src_vert = bsp->vertices + src_edge->v[src_surfedge->vert];
         src_surfedge++;
 
         // vertex coordinates

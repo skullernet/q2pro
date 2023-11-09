@@ -239,6 +239,8 @@ void R_AddSkySurface(mface_t *fa)
     vec3_t      temp;
     msurfedge_t *surfedge;
     mvertex_t   *vert;
+    medge_t     *edge;
+    bsp_t       *bsp = gl_static.world.cache;
 
     if (fa->numsurfedges > MAX_CLIP_VERTS) {
         Com_DPrintf("%s: too many verts\n", __func__);
@@ -252,13 +254,15 @@ void R_AddSkySurface(mface_t *fa)
             SetupRotationMatrix(skymatrix, skyaxis, glr.fd.time * skyrotate);
 
         for (i = 0; i < fa->numsurfedges; i++, surfedge++) {
-            vert = surfedge->edge->v[surfedge->vert];
+            edge = bsp->edges + surfedge->edge;
+            vert = bsp->vertices + edge->v[surfedge->vert];
             VectorSubtract(vert->point, glr.fd.vieworg, temp);
             SkyInverseRotate(verts[i], temp);
         }
     } else {
         for (i = 0; i < fa->numsurfedges; i++, surfedge++) {
-            vert = surfedge->edge->v[surfedge->vert];
+            edge = bsp->edges + surfedge->edge;
+            vert = bsp->vertices + edge->v[surfedge->vert];
             VectorSubtract(vert->point, glr.fd.vieworg, verts[i]);
         }
     }

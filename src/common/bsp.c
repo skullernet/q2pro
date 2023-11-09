@@ -326,7 +326,7 @@ LOAD(Edges)
                 DEBUG("bad vertnum");
                 return Q_ERR_INVALID_FORMAT;
             }
-            out->v[j] = bsp->vertices + vertnum;
+            out->v[j] = vertnum;
         }
     }
 
@@ -357,7 +357,7 @@ LOAD(SurfEdges)
             return Q_ERR_INVALID_FORMAT;
         }
 
-        out->edge = bsp->edges + index;
+        out->edge = index;
         out->vert = vert;
     }
 
