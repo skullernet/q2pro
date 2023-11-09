@@ -1407,6 +1407,10 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
         lump_ofs[i] = ofs;
         lump_count[i] = count;
 
+        // account for terminating NUL for EntString lump
+        if (!info->lump)
+            count++;
+
         // round to cacheline
         memsize += ALIGN(count * info->memsize, 64);
         maxpos = max(maxpos, end);
