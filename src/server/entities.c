@@ -418,7 +418,9 @@ void SV_BuildClientFrame(client_t *client)
     // find the client's PVS
     ps = &clent->client->ps;
     VectorAdd(ps->viewoffset, ps->pmove.origin, org);
-    org[2] += ps->pmove.viewheight;
+    // Rerelease game doesn't include viewheight in viewoffset, vanilla does
+    if (svs.is_game_rerelease)
+        org[2] += ps->pmove.viewheight;
 
     leaf = CM_PointLeaf(client->cm, org);
     clientarea = leaf->area;
