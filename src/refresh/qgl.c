@@ -164,6 +164,17 @@ static const glsection_t sections[] = {
         }
     },
 
+    // GL 1.3
+    // GL_ARB_texture_env_combine
+    {
+        .extension = "GL_ARB_texture_env_combine",
+        .ver_gl = QGL_VER(1, 3),
+        .ver_es = QGL_VER(1, 0),
+        .excl_gl = QGL_VER(3, 1),
+        .excl_es = QGL_VER(2, 0),
+        .caps = QGL_CAP_LEGACY_TEXCOMBINE,
+    },
+
     // GL 1.4, compat
     {
         .ver_gl = QGL_VER(1, 4),
