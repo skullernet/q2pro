@@ -111,6 +111,7 @@ typedef struct {
     byte            latlngtab[NUMVERTEXNORMALS][2];
     byte            lightstylemap[MAX_LIGHTSTYLES];
     hash_map_t      *queries;
+    float           legacy_rgb_scale; // RGB scale (if COMBINE is available) for intensity * modulate application
 } glStatic_t;
 
 typedef struct {

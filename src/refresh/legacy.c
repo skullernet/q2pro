@@ -37,10 +37,17 @@ static void legacy_state_bits(GLbitfield bits)
 
     if (diff & GLS_TEXTURE_REPLACE) {
         GL_ActiveTexture(0);
-        if (bits & GLS_TEXTURE_REPLACE) {
-            qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+        if(gl_config.caps & QGL_CAP_LEGACY_TEXCOMBINE) {
+            qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
+            int combine_mode = bits & GLS_TEXTURE_REPLACE ? GL_REPLACE : GL_MODULATE;
+            qglTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB, combine_mode);
+            qglTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_ALPHA, combine_mode);
         } else {
-            qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+            if (bits & GLS_TEXTURE_REPLACE) {
+                qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+            } else {
+                qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+            }
         }
     }
 
@@ -60,8 +67,23 @@ static void legacy_state_bits(GLbitfield bits)
         GL_ActiveTexture(1);
         if (bits & GLS_LIGHTMAP_ENABLE) {
             qglEnable(GL_TEXTURE_2D);
+            if(gl_config.caps & QGL_CAP_LEGACY_TEXCOMBINE) {
+                qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
+            }
         } else {
             qglDisable(GL_TEXTURE_2D);
+        }
+    }
+    /* Apply RGB scaling to lit entities (GLS_INTENSITY_ENABLE set)
+     * and lightmapped surfaces */
+    if (diff & (GLS_INTENSITY_ENABLE | GLS_LIGHTMAP_ENABLE)) {
+        if(gl_config.caps & QGL_CAP_LEGACY_TEXCOMBINE) {
+            if (bits & GLS_LIGHTMAP_ENABLE) {
+                GL_ActiveTexture(1);
+            } else {
+                GL_ActiveTexture(0);
+            }
+            qglTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE, bits & (GLS_INTENSITY_ENABLE | GLS_LIGHTMAP_ENABLE) ? gl_static.legacy_rgb_scale : 1.f);
         }
     }
 
