@@ -949,9 +949,7 @@ static void init_pmove_and_es_flags(client_t *newcl)
     newcl->esFlags |= MSG_ES_UMASK | MSG_ES_LONGSOLID;
     newcl->esFlags |= MSG_ES_BEAMORIGIN;
     newcl->esFlags |= MSG_ES_SHORTANGLES;
-    if (svs.csr.extended) {
-        newcl->esFlags |= MSG_ES_EXTENSIONS;
-    }
+    newcl->esFlags |= MSG_ES_EXTENSIONS;
     newcl->esFlags |= MSG_ES_RERELEASE;
     newcl->pmp.waterhack = sv_waterjump_hack->integer >= 1;
 }

@@ -717,8 +717,8 @@ static void CL_ParseServerData(void)
         // FIXME: The pmove flags shouldn't really matter, as they should be handled by the game/client library...
         read_q2pro_protocol_flags();
         cl.csr = cs_remap_rerelease;
-        cl.psFlags |= MSG_PS_RERELEASE;
-        cl.esFlags |= MSG_ES_RERELEASE;
+        cl.psFlags |= MSG_PS_RERELEASE | MSG_PS_EXTENSIONS;
+        cl.esFlags |= MSG_ES_RERELEASE | CL_ES_EXTENDED_MASK;
         int32_t rate = MSG_ReadByte();
         set_server_fps(rate);
 

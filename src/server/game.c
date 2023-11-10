@@ -554,7 +554,7 @@ static void SV_StartSound(const vec3_t origin, edict_t *edict,
         MSG_WriteByte(ofs);
 
     MSG_WriteShort(sendchan);
-    MSG_WritePos(origin, svs.csr.extended);
+    MSG_WritePos(origin, true);
 
     // if the sound doesn't attenuate, send it to everyone
     // (global radio chatter, voiceovers, etc)
@@ -898,7 +898,7 @@ static size_t PF_Info_ValueForKey (const char *s, const char *key, char *buffer,
 
 static void PF_MSG_WritePos (const vec3_t p)
 {
-    MSG_WritePos(p, svs.csr.extended);
+    MSG_WritePos(p, true);
 }
 
 //==============================================
