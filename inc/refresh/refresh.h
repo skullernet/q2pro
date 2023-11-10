@@ -232,7 +232,7 @@ void    R_RenderFrame(refdef_t *fd);
 void    R_LightPoint(const vec3_t origin, vec3_t light);
 
 void    R_ClearColor(void);
-void    R_SetAlpha(float clpha);
+void    R_SetAlpha(float alpha);
 void    R_SetColor(uint32_t color);
 void    R_SetClipRect(const clipRect_t *clip);
 float   R_ClampScale(cvar_t *var);

@@ -189,6 +189,21 @@ typedef enum {
     WHEEL_OPEN      // draw & process + holster
 } cl_wheel_state_t;
 
+typedef struct {
+    bool                  has_item;
+    bool                  is_powerup;
+    bool                  has_ammo;
+    int                   data_id;
+    int                   item_index;
+    int                   sort_id;
+    const cl_wheel_icon_t *icons;
+
+    // cached data
+    float   angle;
+    vec2_t  dir;
+    float   dot;
+} cl_wheel_slot_t;
+
 //
 // the client_state_t structure is wiped completely at every
 // server map change
@@ -405,19 +420,10 @@ typedef struct client_state_s {
         vec2_t           position;
         float            distance;
         vec2_t           dir;
+        bool             is_powerup_wheel;
 
-        struct {
-            bool    has_weapon;
-            bool    has_ammo;
-            int     data_id;
-            int     item_index;
-
-            // cached data
-            float   angle;
-            vec2_t  dir;
-            float   dot;
-        } slots[MAX_WHEEL_ITEMS * 2];
-        size_t      num_slots;
+        cl_wheel_slot_t slots[MAX_WHEEL_ITEMS * 2];
+        size_t          num_slots;
 
         float       slice_deg;
         float       slice_sin;

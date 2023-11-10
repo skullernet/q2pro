@@ -165,6 +165,16 @@ static void R_DrawStretchPicShadow(int x, int y, int w, int h, qhandle_t pic, in
     R_DrawStretchPic(x, y, w, h, pic);
 }
 
+static void R_DrawStretchPicShadowAlpha(int x, int y, int w, int h, qhandle_t pic, int shadow_offset, float alpha)
+{
+    R_SetColor(U32_BLACK);
+    R_SetAlpha(alpha);
+    R_DrawStretchPic(x + shadow_offset, y + shadow_offset, w, h, pic);
+    R_SetColor(U32_WHITE);
+    R_SetAlpha(alpha);
+    R_DrawStretchPic(x, y, w, h, pic);
+}
+
 void CL_Carousel_Draw(void)
 {
     if (cl.carousel.state != WHEEL_OPEN)
@@ -198,10 +208,11 @@ void CL_Carousel_Draw(void)
             int count = cgame->GetWeaponWheelAmmoCount(&cl.frame.ps, weap->ammo_index);
             uint32_t color = count <= weap->quantity_warn ? U32_RED : U32_WHITE;
 
-            // TODO: scale ammo
+            R_SetScale(1.0f);
             R_SetColor(color);
-            SCR_DrawString(carousel_x + 12, carousel_y, UI_DROPSHADOW | UI_CENTER, va("%i", count));
+            SCR_DrawString((carousel_x + 12) / scr.hud_scale, (carousel_y + 2) / scr.hud_scale, UI_DROPSHADOW | UI_CENTER, va("%i", count));
             R_SetColor(U32_WHITE);
+            R_SetScale(scr.hud_scale);
         }
     }
 }
@@ -283,6 +294,16 @@ void CL_Wheel_WeapPrev(void)
     cl.carousel.close_time = cls.realtime + wc_timeout->integer;
 }
 
+static int wheel_slot_compare(const void *a, const void *b)
+{
+    const cl_wheel_slot_t *sa = a;
+    const cl_wheel_slot_t *sb = b;
+
+    if (sa->sort_id == sb->sort_id)
+        return sa->item_index - sb->item_index;
+
+    return sa->sort_id - sb->sort_id;
+}
 
 // populate slot list with stuff we own.
 // runs every frame and when we open the carousel.
@@ -293,43 +314,59 @@ static bool CL_Wheel_Populate(void)
     cl.wheel.num_slots = 0;
 
     int owned = cgame->GetOwnedWeaponWheelWeapons(&cl.frame.ps);
+    cl_wheel_slot_t *slot = cl.wheel.slots;
 
-    for (i = 0; i < cl.wheel_data.num_weapons; i++) {
+    if (cl.wheel.is_powerup_wheel) {
+        const cl_wheel_powerup_t *powerup = cl.wheel_data.powerups;
 
-        cl.wheel.slots[cl.wheel.num_slots].data_id = i;
-        cl.wheel.slots[cl.wheel.num_slots].has_ammo = cl.wheel_data.weapons[i].ammo_index == -1 || cgame->GetWeaponWheelAmmoCount(&cl.frame.ps, cl.wheel_data.weapons[i].ammo_index);
-        cl.wheel.slots[cl.wheel.num_slots].item_index = cl.wheel_data.weapons[i].item_index;
-        cl.wheel.slots[cl.wheel.num_slots].has_weapon = (owned & BIT(i));
-        cl.wheel.num_slots++;
+        for (i = 0; i < cl.wheel_data.num_powerups; i++, slot++, cl.wheel.num_slots++, powerup++) {
+            slot->data_id = i;
+            slot->is_powerup = true;
+            slot->has_ammo = false;
+            slot->item_index = powerup->item_index;
+            slot->has_item = cgame->GetPowerupWheelCount(&cl.frame.ps, i);
+            slot->sort_id = powerup->sort_id;
+            slot->icons = &powerup->icons;
+        }
+    } else {
+        const cl_wheel_weapon_t *weapon = cl.wheel_data.weapons;
+
+        for (i = 0; i < cl.wheel_data.num_weapons; i++, slot++, cl.wheel.num_slots++, weapon++) {
+            slot->data_id = i;
+            slot->has_ammo = weapon->ammo_index == -1 || cgame->GetWeaponWheelAmmoCount(&cl.frame.ps, weapon->ammo_index);
+            slot->item_index = weapon->item_index;
+            slot->has_item = (owned & BIT(i));
+            slot->is_powerup = false;
+            slot->sort_id = weapon->sort_id;
+            slot->icons = &weapon->icons;
+        }
     }
 
     cl.wheel.slice_deg = ((M_PI * 2) / cl.wheel.num_slots);
     cl.wheel.slice_sin = cosf(cl.wheel.slice_deg / 2);
 
-    // todo: sort by sort_id
+    qsort(cl.wheel.slots, cl.wheel.num_slots, sizeof(*cl.wheel.slots), wheel_slot_compare);
 
-    // todo: cl.wheel.powerups
-
-    if (!cl.wheel.num_slots)
-        return false;
-
-    return true;
+    return !!cl.wheel.num_slots;
 }
 
 void CL_Wheel_Open(bool powerup)
 {
+    cl.wheel.is_powerup_wheel = powerup;
+    cl.wheel.selected = -1;
+
     if (!CL_Wheel_Populate())
         return;
 
     cl.wheel.state = WHEEL_OPEN;
+    cl.wheel.deselect_time = 0;
     Vector2Clear(cl.wheel.position);
 }
 
 void CL_Wheel_ClearInput(void)
 {
-    if (cl.wheel.state == WHEEL_CLOSING) {
+    if (cl.wheel.state == WHEEL_CLOSING)
         cl.wheel.state = WHEEL_CLOSED;
-    }
 }
 
 void CL_Wheel_Close(bool released)
@@ -339,11 +376,8 @@ void CL_Wheel_Close(bool released)
 
     cl.wheel.state = WHEEL_CLOSING;
 
-    if (released) {
-        if (cl.wheel.selected != -1) {
-            CL_ClientCommand(va("use_index_only %i\n", cl.wheel.slots[cl.wheel.selected].item_index));
-        }
-    }
+    if (released && cl.wheel.selected != -1)
+        CL_ClientCommand(va("use_index_only %i\n", cl.wheel.slots[cl.wheel.selected].item_index));
 }
 
 void CL_Wheel_Input(int x, int y)
@@ -389,9 +423,8 @@ void CL_Wheel_Update(void)
 
     // update cached slice parameters
     for (int i = 0; i < cl.wheel.num_slots; i++) {
-        if (!cl.wheel.slots[i].has_weapon) {
+        if (!cl.wheel.slots[i].has_item)
             continue;
-        }
 
         cl.wheel.slots[i].angle = cl.wheel.slice_deg * i;
         Vector2Set(cl.wheel.slots[i].dir, sinf(cl.wheel.slots[i].angle), -cosf(cl.wheel.slots[i].angle));
@@ -407,7 +440,7 @@ void CL_Wheel_Update(void)
 
     if (can_select) {
         for (int i = 0; i < cl.wheel.num_slots; i++) {
-            if (!cl.wheel.slots[i].has_weapon)
+            if (!cl.wheel.slots[i].has_item)
                 continue;
 
             if (cl.wheel.slots[i].dot > cl.wheel.slice_sin) {
@@ -431,7 +464,13 @@ void CL_Wheel_Draw(void)
     if (cl.wheel.state != WHEEL_OPEN)
         return;
     
-    int center_x = (r_config.width / 2) + (r_config.width / 4);
+    int center_x = (r_config.width / 2);
+
+    if (cl.wheel.is_powerup_wheel)
+        center_x -= (r_config.width / 4);
+    else
+        center_x += (r_config.width / 4);
+
     int center_y = r_config.height / 2;
 
     R_SetScale(1);
@@ -439,11 +478,13 @@ void CL_Wheel_Draw(void)
     R_DrawPic(center_x - (scr.wheel_size / 2), center_y - (scr.wheel_size / 2), scr.wheel_circle);
 
     for (int i = 0; i < cl.wheel.num_slots; i++) {
-        if (!cl.wheel.slots[i].has_weapon)
+        const cl_wheel_slot_t *slot = &cl.wheel.slots[i];
+
+        if (!slot->has_item)
             continue;
 
         vec2_t p;
-        Vector2Scale(cl.wheel.slots[i].dir, (scr.wheel_size / 2) * 0.525f, p);
+        Vector2Scale(slot->dir, (scr.wheel_size / 2) * 0.525f, p);
 
         bool selected = cl.wheel.selected == i;
 
@@ -453,30 +494,64 @@ void CL_Wheel_Draw(void)
             scale = 2.5f;
 
         int size = 12 * scale;
+        float alpha = 1.0f;
+        
+        if (slot->is_powerup)
+            if (cl.wheel_data.powerups[slot->data_id].is_toggle && cgame->GetPowerupWheelCount(&cl.frame.ps, slot->data_id) == 1)
+                alpha = 0.5f;
 
-        R_DrawStretchPicShadow(center_x + p[0] - size, center_y + p[1] - size, size * 2, size * 2, selected ? cl.wheel_data.weapons[i].icons.selected : cl.wheel_data.weapons[i].icons.wheel, 4);
+        R_DrawStretchPicShadowAlpha(center_x + p[0] - size, center_y + p[1] - size, size * 2, size * 2, selected ? slot->icons->selected : slot->icons->wheel, 4, alpha);
+
+        R_SetAlpha(1.0f);
+
+        int count = -1;
+
+        if (slot->is_powerup) {
+            if (!cl.wheel_data.powerups[slot->data_id].is_toggle)
+                count = cgame->GetPowerupWheelCount(&cl.frame.ps, slot->data_id);
+        } else {
+            if (cl.wheel_data.weapons[slot->data_id].ammo_index != -1)
+                count = cgame->GetWeaponWheelAmmoCount(&cl.frame.ps, cl.wheel_data.weapons[slot->data_id].ammo_index);
+        }
+
+        if (count != -1) {
+
+            if (!cl.wheel_data.powerups[slot->data_id].is_toggle) {
+                SCR_DrawString(center_x + p[0] + size, center_y + p[1] + size, UI_CENTER | UI_DROPSHADOW, va("%i", count));
+            }
+        }
 
         if (selected) {
             char localized[CS_MAX_STRING_LENGTH];
 
             // TODO: cache localized item names in cl somewhere.
             // make sure they get reset of language is changed.
-            Loc_Localize(cl.configstrings[cl.csr.items + cl.wheel.slots[i].item_index], false, NULL, 0, localized, sizeof(localized));
+            Loc_Localize(cl.configstrings[cl.csr.items + slot->item_index], false, NULL, 0, localized, sizeof(localized));
 
             R_SetScale(0.5f);
             SCR_DrawString(center_x * 0.5f, (center_y - (scr.wheel_size / 8)) * 0.5f, UI_CENTER | UI_DROPSHADOW, localized);
             R_SetScale(1);
 
-            int ammo_index = cl.wheel_data.weapons[cl.wheel.slots[i].data_id].ammo_index;
+            if (slot->is_powerup) {
 
-            if (ammo_index != -1) {
-                const cl_wheel_ammo_t *ammo = &cl.wheel_data.ammo[ammo_index];
+                if (!cl.wheel_data.powerups[slot->data_id].is_toggle) {
+                    R_SetScale(0.25f);
+                    SCR_DrawString(center_x * 0.25f, (center_y * 0.25f), UI_CENTER | UI_DROPSHADOW, va("%i", cgame->GetPowerupWheelCount(&cl.frame.ps, slot->data_id)));
+                    R_SetScale(1);
+                }
 
-                R_DrawStretchPicShadow(center_x - (24 * 3) / 2, center_y - ((24 * 3) / 2), (24 * 3), (24 * 3), ammo->icons.wheel, 2);
+            } else {
+                int ammo_index = cl.wheel_data.weapons[slot->data_id].ammo_index;
 
-                R_SetScale(0.25f);
-                SCR_DrawString(center_x * 0.25f, (center_y * 0.25f) + 16, UI_CENTER | UI_DROPSHADOW, va("%i", cgame->GetWeaponWheelAmmoCount(&cl.frame.ps, ammo_index)));
-                R_SetScale(1);
+                if (ammo_index != -1) {
+                    const cl_wheel_ammo_t *ammo = &cl.wheel_data.ammo[ammo_index];
+
+                    R_DrawStretchPicShadow(center_x - (24 * 3) / 2, center_y - ((24 * 3) / 2), (24 * 3), (24 * 3), ammo->icons.wheel, 2);
+
+                    R_SetScale(0.25f);
+                    SCR_DrawString(center_x * 0.25f, (center_y * 0.25f) + 16, UI_CENTER | UI_DROPSHADOW, va("%i", cgame->GetWeaponWheelAmmoCount(&cl.frame.ps, ammo_index)));
+                    R_SetScale(1);
+                }
             }
         }
     }
