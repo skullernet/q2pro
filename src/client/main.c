@@ -3312,6 +3312,9 @@ unsigned CL_Frame(unsigned msec)
     // predict all unacknowledged movements
     CL_PredictMovement();
 
+    // update weapon wheel stuff
+    CL_Wheel_Update();
+
     Con_RunConsole();
 
     SCR_RunCinematic();

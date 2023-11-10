@@ -183,6 +183,12 @@ typedef struct {
     bool            can_drop;
 } cl_wheel_powerup_t;
 
+typedef enum {
+    WHEEL_CLOSED,   // release holster
+    WHEEL_CLOSING,  // do not draw or process, but keep holster held
+    WHEEL_OPEN      // draw & process + holster
+} cl_wheel_state_t;
+
 //
 // the client_state_t structure is wiped completely at every
 // server map change
@@ -381,13 +387,11 @@ typedef struct client_state_s {
 
     // carousel state
     struct {
-        bool        open;
-        bool        awaiting_close; // still "open" but a close will happen when we send next cmd
-        int         close_time; // time when we will close
-        int         selected; // selected item index
+        cl_wheel_state_t state;
+        int              close_time; // time when we will close
+        int              selected; // selected item index
 
         struct {
-            bool    is_powerup;
             bool    has_ammo;
             int     data_id;
             int     item_index;
@@ -397,8 +401,29 @@ typedef struct client_state_s {
 
     // weapon wheel state
     struct {
-        bool        open;
-        vec2_t      position;
+        cl_wheel_state_t state;
+        vec2_t           position;
+        float            distance;
+        vec2_t           dir;
+
+        struct {
+            bool    has_weapon;
+            bool    has_ammo;
+            int     data_id;
+            int     item_index;
+
+            // cached data
+            float   angle;
+            vec2_t  dir;
+            float   dot;
+        } slots[MAX_WHEEL_ITEMS * 2];
+        size_t      num_slots;
+
+        float       slice_deg;
+        float       slice_sin;
+
+        int         selected; // -1 = no selection
+        int         deselect_time; // if non-zero, deselect after < cls.realtime
     } wheel;
 
     int weapon_lock_time; // don't allow BUTTON_ATTACK within this time
@@ -889,9 +914,11 @@ void CL_Carousel_ClearInput(void);
 void CL_Wheel_Precache(void);
 void CL_Wheel_Init(void);
 void CL_Wheel_Open(bool powerup);
-void CL_Wheel_Close(void);
+void CL_Wheel_Close(bool released);
 void CL_Wheel_Input(int x, int y);
 void CL_Wheel_Draw(void);
+void CL_Wheel_Update(void);
+void CL_Wheel_ClearInput(void);
 
 //
 // tent.c

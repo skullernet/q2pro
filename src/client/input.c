@@ -430,9 +430,9 @@ static void IN_MLookUp(void)
 static void IN_HolsterDown(void) { KeyDown(&in_holster); }
 static void IN_HolsterUp(void) { KeyUp(&in_holster); }
 static void IN_WheelDown(void) { CL_Wheel_Open(false); }
-static void IN_WheelUp(void) { CL_Wheel_Close(); }
+static void IN_WheelUp(void) { CL_Wheel_Close(true); }
 static void IN_Wheel2Down(void) { CL_Wheel_Open(true); }
-static void IN_Wheel2Up(void) { CL_Wheel_Close(); }
+static void IN_Wheel2Up(void) { CL_Wheel_Close(true); }
 
 static void IN_WeapNext(void)
 {
@@ -517,6 +517,11 @@ static void CL_MouseMove(void)
     input.old_dx = dx;
     input.old_dy = dy;
 
+    // always send input to wheel even if we didn't move
+    if (cl.wheel.state == WHEEL_OPEN) {
+        CL_Wheel_Input(dx, dy);
+    }
+
     if (!mx && !my) {
         return;
     }
@@ -537,20 +542,16 @@ static void CL_MouseMove(void)
 // add mouse X/Y movement
     if ((in_strafe.state & 1) || (lookstrafe->integer && !in_mlooking)) {
         cl.mousemove[1] += m_side->value * mx;
-    } else if (!cl.wheel.open) {
+    } else if (cl.wheel.state != WHEEL_OPEN) {
         cl.viewangles[YAW] -= m_yaw->value * mx;
     }
 
     if ((in_mlooking || freelook->integer) && !(in_strafe.state & 1)) {
-        if (!cl.wheel.open) {
+        if (cl.wheel.state != WHEEL_OPEN) {
             cl.viewangles[PITCH] += m_pitch->value * my;
         }
     } else {
         cl.mousemove[0] -= m_forward->value * my;
-    }
-
-    if (cl.wheel.open) {
-        CL_Wheel_Input(dx, dy);
     }
 }
 
@@ -1231,8 +1232,9 @@ void CL_SendCmd(void)
     } else {
         CL_SendDefaultCmd();
     }
-
+    
     CL_Carousel_ClearInput();
+    CL_Wheel_ClearInput();
 
     cl.sendPacketNow = false;
 }
