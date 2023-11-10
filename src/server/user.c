@@ -286,7 +286,8 @@ static int q2pro_protocol_flags(void)
     if (sv_client->pmp.waterhack)
         flags |= Q2PRO_PF_WATERJUMP_HACK;
 
-    flags |= Q2PRO_PF_EXTENSIONS;
+    if (sv_client->csr->extended)
+        flags |= Q2PRO_PF_EXTENSIONS;
 
     if (!svs.is_game_rerelease)
         flags |= Q2PRO_PF_GAME3_COMPAT;

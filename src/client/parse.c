@@ -716,7 +716,8 @@ static void CL_ParseServerData(void)
         cinematic = cl.serverstate == ss_pic || cl.serverstate == ss_cinematic;
         // FIXME: The pmove flags shouldn't really matter, as they should be handled by the game/client library...
         read_q2pro_protocol_flags();
-        cl.csr = cs_remap_rerelease;
+        if (cl.is_rerelease_game)
+            cl.csr = cs_remap_rerelease;
         cl.psFlags |= MSG_PS_RERELEASE | MSG_PS_EXTENSIONS;
         cl.esFlags |= MSG_ES_RERELEASE | CL_ES_EXTENDED_MASK;
         int32_t rate = MSG_ReadByte();

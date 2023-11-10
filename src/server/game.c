@@ -1095,14 +1095,21 @@ void SV_InitGameProgs(void)
         Cvar_SetInteger(g_features, GMF_PROTOCOL_EXTENSIONS | GMF_ENHANCED_SAVEGAMES | GMF_PROPERINUSE | GMF_WANT_ALL_DISCONNECTS, FROM_CODE);
     }
 
-    svs.csr = cs_remap_rerelease;
-
     if (entry_ex)
         gex = entry_ex(&game_import_ex);
 
     // initialize
+    /* Note: Those functions may already call configstring(). They also decide the features...
+     * So start with an extended csr, and possible choose a smaller one later. */
+    if (svs.is_game_rerelease)
+        svs.csr = cs_remap_rerelease;
+    else
+        svs.csr = cs_remap_q2pro_new;
     ge->PreInit(); // FIXME: When to call PreInit(), when Init()?
     ge->Init();
+
+    if (!svs.is_game_rerelease && (g_features->integer & GMF_PROTOCOL_EXTENSIONS) == 0)
+        svs.csr = cs_remap_old;
 
     // sanitize edict_size
     unsigned min_size = sizeof(edict_t);

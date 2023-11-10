@@ -262,26 +262,14 @@ static void wrap_local_sound(game3_edict_t *target, const vec3_t origin, game3_e
     game_import.local_sound(translate_edict_from_game(target), origin, translate_edict_from_game(ent), channel, soundindex, volume, attenuation, timeofs, 0);
 }
 
-// Map configstring IDs from "old" to "new"
-static int map_configstring_id(int index)
-{
-    return remap_cs_index(index, game_csr, &cs_remap_rerelease);
-}
-
 static void wrap_configstring(int index, const char* str)
 {
-    int mapped_idx = map_configstring_id(index);
-    if (mapped_idx < 0)
-        return;
-    game_import.configstring(mapped_idx, str);
+    game_import.configstring(index, str);
 }
 
 static const char *wrap_get_configstring(int index)
 {
-    int mapped_idx = map_configstring_id(index);
-    if (mapped_idx < 0)
-        return "";
-    return game_import.get_configstring(mapped_idx);
+    return game_import.get_configstring(index);
 }
 
 static trace_t wrap_clip(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, game3_edict_t *clip, int contentmask)
