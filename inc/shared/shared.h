@@ -1524,9 +1524,6 @@ extern const cs_remap_t     cs_remap_old;
 extern const cs_remap_t     cs_remap_rerelease;
 extern const cs_remap_t     cs_remap_q2pro_new;
 
-// Remap a configstring ID between different ranges
-extern int remap_cs_index(int index, const cs_remap_t *from, const cs_remap_t *to);
-
 //==============================================
 
 // entity_state_t->event values
