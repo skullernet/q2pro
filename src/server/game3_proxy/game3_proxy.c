@@ -376,7 +376,7 @@ static void sync_single_edict_server_to_game(int index)
     if(game_edict->client)
         game_edict->client->ping = server_edict->client->ping;
     game_edict->linkcount = server_edict->linkcount;
-    game_edict->area.prev = server_edict->linked ? &game_edict->area : NULL; // emulate entity being linked
+    game_edict->area.next = game_edict->area.prev = server_edict->linked ? &game_edict->area : NULL; // emulate entity being linked
     game_edict->num_clusters = sent->num_clusters;
     memcpy(&game_edict->clusternums, &sent->clusternums, sizeof(game_edict->clusternums));
     game_edict->headnode = sent->headnode;
