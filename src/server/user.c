@@ -1418,7 +1418,7 @@ static void set_client_fps(int value)
     // save for status inspection
     sv_client->settings[CLS_FPS] = framerate;
 
-    MSG_WriteByte(svc_setting);
+    MSG_WriteByte(sv_client->protocol == PROTOCOL_VERSION_RERELEASE ? svc_rr_setting : svc_q2pro_setting);
     MSG_WriteLong(SVS_FPS);
     MSG_WriteLong(framerate);
     SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
