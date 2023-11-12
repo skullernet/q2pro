@@ -1483,19 +1483,6 @@ const cs_remap_t cs_remap_rerelease = {
     .end         = MAX_CONFIGSTRINGS
 };
 
-#define MAX_IMAGES_EX           2048
-#define CS_AIRACCEL_EX          CS_AIRACCEL
-#define CS_MAXCLIENTS_EX        CS_MAXCLIENTS
-#define CS_MAPCHECKSUM_EX       CS_MAPCHECKSUM
-#define CS_MODELS_EX            CS_MODELS
-#define CS_SOUNDS_EX            CS_SOUNDS
-#define CS_IMAGES_EX            CS_IMAGES
-#define CS_LIGHTS_EX            (CS_IMAGES_EX + MAX_IMAGES_EX)
-#define CS_ITEMS_EX             (CS_LIGHTS_EX + MAX_LIGHTSTYLES)
-#define CS_PLAYERSKINS_EX       (CS_ITEMS_EX + MAX_ITEMS)
-#define CS_GENERAL_EX           (CS_PLAYERSKINS_EX + MAX_CLIENTS)
-#define MAX_CONFIGSTRINGS_EX    (CS_GENERAL_EX + MAX_GENERAL)
-
 const cs_remap_t cs_remap_q2pro_new = {
     .extended    = true,
 

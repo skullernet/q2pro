@@ -168,7 +168,7 @@ typedef struct {
     char        name[MAX_QPATH];            // map name, or cinematic name
     cm_t        cm;
 
-    configstring_t  configstrings[MAX_CONFIGSTRINGS];
+    configstring_t  configstrings[MAX_MAX_CONFIGSTRINGS];
 
     server_entity_t entities[MAX_EDICTS];
 } server_t;

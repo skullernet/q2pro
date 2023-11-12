@@ -1489,6 +1489,22 @@ typedef int16_t layout_flags_t;
 #define MAX_CONFIGSTRINGS   (CS_GAME_STYLE + 1)
 #endif // !defined(GAME3_INCLUDE)
 
+// Configuration strings for "Q2PRO extended" games
+#define MAX_IMAGES_EX           2048
+#define CS_AIRACCEL_EX          CS_AIRACCEL
+#define CS_MAXCLIENTS_EX        CS_MAXCLIENTS
+#define CS_MAPCHECKSUM_EX       CS_MAPCHECKSUM
+#define CS_MODELS_EX            CS_MODELS
+#define CS_SOUNDS_EX            CS_SOUNDS
+#define CS_IMAGES_EX            CS_IMAGES
+#define CS_LIGHTS_EX            (CS_IMAGES_EX + MAX_IMAGES_EX)
+#define CS_ITEMS_EX             (CS_LIGHTS_EX + MAX_LIGHTSTYLES)
+#define CS_PLAYERSKINS_EX       (CS_ITEMS_EX + MAX_ITEMS)
+#define CS_GENERAL_EX           (CS_PLAYERSKINS_EX + MAX_CLIENTS)
+#define MAX_CONFIGSTRINGS_EX    (CS_GENERAL_EX + MAX_GENERAL)
+
+#define MAX_MAX_CONFIGSTRINGS   max(MAX_CONFIGSTRINGS_OLD, max(MAX_CONFIGSTRINGS, MAX_CONFIGSTRINGS_EX))
+
 typedef struct {
     bool        extended;
 
