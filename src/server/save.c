@@ -25,9 +25,21 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SAVE_CURRENT    ".current"
 #define SAVE_AUTO       "save0"
 
+typedef enum {
+    SAVE_MANUAL,        // manual save
+    SAVE_LEVEL_START,   // autosave at level start
+    SAVE_AUTOSAVE       // remaster "autosave"
+} savetype_t;
+
+typedef enum {
+    LOAD_NONE,          // not a savegame load
+    LOAD_NORMAL,        // regular savegame, or remaster "autosave"
+    LOAD_LEVEL_START,   // autosave at level start
+} loadtype_t;
+
 static cvar_t   *sv_noreload;
 
-static int write_server_file(bool autosave)
+static int write_server_file(savetype_t autosave)
 {
     char        name[MAX_OSPATH];
     cvar_t      *var;
@@ -70,7 +82,7 @@ static int write_server_file(bool autosave)
     if (Q_snprintf(name, MAX_OSPATH, "%s/save/" SAVE_CURRENT "/game.ssv", fs_gamedir) >= MAX_OSPATH)
         return -1;
 
-    ge->WriteGame(name, autosave);
+    ge->WriteGame(name, autosave == SAVE_LEVEL_START);
     return 0;
 }
 
@@ -274,8 +286,11 @@ char *SV_GetSaveInfo(const char *dir)
     autosave = MSG_ReadByte();
     MSG_ReadString(name, sizeof(name));
 
-    if (autosave)
+    if (autosave == SAVE_LEVEL_START)
         return Z_CopyString(va("ENTERING %s", name));
+
+    if (autosave == SAVE_AUTOSAVE)
+        return Z_CopyString(va("AUTOSAVE %s", name));
 
     // get current year
     t = time(NULL);
@@ -322,10 +337,10 @@ static int read_server_file(void)
 
     // read the comment field
     MSG_ReadLong64();
-    if (MSG_ReadByte())
-        cmd.loadgame = 2;   // autosave
+    if (MSG_ReadByte() == SAVE_LEVEL_START)
+        cmd.loadgame = LOAD_LEVEL_START;
     else
-        cmd.loadgame = 1;   // regular savegame
+        cmd.loadgame = LOAD_NORMAL;
     MSG_ReadString(NULL, 0);
 
     // read the mapcmd
@@ -505,7 +520,7 @@ void SV_AutoSaveEnd(void)
         return;
 
     // save server state
-    if (write_server_file(true)) {
+    if (write_server_file(SAVE_LEVEL_START)) {
         Com_EPrintf("Couldn't write server file.\n");
         return;
     }
@@ -533,7 +548,7 @@ void SV_CheckForSavegame(const mapcmd_t *cmd)
     if (read_level_file()) {
         // only warn when loading a regular savegame. autosave without level
         // file is ok and simply starts the map from the beginning.
-        if (cmd->loadgame == 1)
+        if (cmd->loadgame == LOAD_NORMAL)
             Com_EPrintf("Couldn't read level file.\n");
         return;
     }
@@ -622,6 +637,7 @@ static void SV_Loadgame_f(void)
 static void SV_Savegame_f(void)
 {
     char *dir;
+    savetype_t type;
 
     if (sv.state != ss_game) {
         Com_Printf("You must be in a game to save.\n");
@@ -649,15 +665,21 @@ static void SV_Savegame_f(void)
         }
     }
 
-    if (Cmd_Argc() != 2) {
-        Com_Printf("Usage: %s <directory>\n", Cmd_Argv(0));
-        return;
-    }
+    if (!strcmp(Cmd_Argv(0), "autosave")) {
+        dir = "save1";
+        type = SAVE_AUTOSAVE;
+    } else {
+        if (Cmd_Argc() != 2) {
+            Com_Printf("Usage: %s <directory>\n", Cmd_Argv(0));
+            return;
+        }
 
-    dir = Cmd_Argv(1);
-    if (!COM_IsPath(dir)) {
-        Com_Printf("Bad savedir.\n");
-        return;
+        dir = Cmd_Argv(1);
+        if (!COM_IsPath(dir)) {
+            Com_Printf("Bad savedir.\n");
+            return;
+        }
+        type = SAVE_MANUAL;
     }
 
     // archive current level, including all client edicts.
@@ -669,7 +691,7 @@ static void SV_Savegame_f(void)
     }
 
     // save server state
-    if (write_server_file(false)) {
+    if (write_server_file(type)) {
         Com_Printf("Couldn't write server file.\n");
         return;
     }
@@ -690,6 +712,7 @@ static void SV_Savegame_f(void)
 }
 
 static const cmdreg_t c_savegames[] = {
+    { "autosave", SV_Savegame_f },
     { "save", SV_Savegame_f, SV_Savegame_c },
     { "load", SV_Loadgame_f, SV_Savegame_c },
     { NULL }
