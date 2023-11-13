@@ -338,12 +338,18 @@ if openal.found()
 endif
 
 # require FFmpeg >= 5.1.3
+ffmpeg_defaults = {
+  'tests': 'disabled',
+  'programs': 'disabled',
+  'devices': 'disabled',
+  # 'network': 'disabled', # we don't need network, but disabling it breaks the ffmpeg build
+}
 avcodec_opt = get_option('avcodec')
-avcodec = dependency('libavcodec', version: '>= 59.37.100', required: avcodec_opt)
-avformat = dependency('libavformat', version: '>= 59.27.100', required: avcodec_opt)
-avutil = dependency('libavutil', version: '>= 57.28.100', required: avcodec_opt)
-swresample = dependency('libswresample', version: '>= 4.7.100', required: avcodec_opt)
-swscale = dependency('libswscale', version: '>= 6.7.100', required: avcodec_opt)
+avcodec = dependency('libavcodec', version: '>= 59.37.100', default_options: ffmpeg_defaults, required: avcodec_opt)
+avformat = dependency('libavformat', version: '>= 59.27.100', default_options: ffmpeg_defaults, required: avcodec_opt)
+avutil = dependency('libavutil', version: '>= 57.28.100', default_options: ffmpeg_defaults, required: avcodec_opt)
+swresample = dependency('libswresample', version: '>= 4.7.100', default_options: ffmpeg_defaults, required: avcodec_opt)
+swscale = dependency('libswscale', version: '>= 6.7.100', default_options: ffmpeg_defaults, required: avcodec_opt)
 if avcodec.found() and avformat.found() and avutil.found() and swresample.found() and swscale.found()
   client_src += ['src/client/ffcin.c', 'src/client/sound/ogg.c']
   client_deps += [avcodec, avformat, avutil, swresample, swscale]
