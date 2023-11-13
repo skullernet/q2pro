@@ -338,12 +338,12 @@ if openal.found()
 endif
 
 # require FFmpeg >= 5.1.3
-ffmpeg_defaults = {
-  'tests': 'disabled',
-  'programs': 'disabled',
-  'devices': 'disabled',
-  # 'network': 'disabled', # we don't need network, but disabling it breaks the ffmpeg build
-}
+ffmpeg_defaults = [
+  'tests=disabled',
+  'programs=disabled',
+  'devices=disabled',
+  # 'network=disabled', # we don't need network, but disabling it breaks the ffmpeg build
+]
 avcodec_opt = get_option('avcodec')
 avcodec = dependency('libavcodec', version: '>= 59.37.100', default_options: ffmpeg_defaults, required: avcodec_opt)
 avformat = dependency('libavformat', version: '>= 59.27.100', default_options: ffmpeg_defaults, required: avcodec_opt)
