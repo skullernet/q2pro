@@ -434,8 +434,7 @@ static void GL_OccludeFlares(void)
     GL_StateBits(GLS_DEPTHMASK_FALSE);
     GL_ArrayBits(GLA_VERTEX);
     qglColorMask(0, 0, 0, 0);
-    GL_ActiveTexture(0);
-    qglDisable(GL_TEXTURE_2D);
+    GL_BindTexture(0, TEXNUM_WHITE);
     GL_VertexPointer(3, 0, &points[0][0]);
 
     for (i = 0, e = glr.fd.entities; i < glr.fd.num_entities; i++, e++) {
@@ -462,7 +461,6 @@ static void GL_OccludeFlares(void)
         q->pending = true;
     }
 
-    qglEnable(GL_TEXTURE_2D);
     qglColorMask(1, 1, 1, 1);
 }
 
