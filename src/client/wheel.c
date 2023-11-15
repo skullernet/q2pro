@@ -363,6 +363,13 @@ void CL_Wheel_Open(bool powerup)
     Vector2Clear(cl.wheel.position);
 }
 
+float CL_Wheel_TimeScale(void)
+{
+    if (cl.wheel.state == WHEEL_OPEN)
+        return 0.1f;
+    return 1.0f;
+}
+
 void CL_Wheel_ClearInput(void)
 {
     if (cl.wheel.state == WHEEL_CLOSING)

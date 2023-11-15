@@ -100,6 +100,8 @@ int SCR_CheckForCinematic(const char *name);
 void SCR_ModeChanged(void);
 void SCR_UpdateScreen(void);
 
+float CL_Wheel_TimeScale(void);
+
 #define U32_BLACK   MakeColor(  0,   0,   0, 255)
 #define U32_RED     MakeColor(255,   0,   0, 255)
 #define U32_GREEN   MakeColor(  0, 255,   0, 255)

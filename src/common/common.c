@@ -1065,11 +1065,13 @@ void Qcommon_Frame(void)
         // host OS was hibernated or something
     }
 
+    float ts = CL_Wheel_TimeScale() * timescale->value;
+
     if (fixedtime->integer) {
         Cvar_ClampInteger(fixedtime, 1, 1000);
         msec = fixedtime->integer;
-    } else if (timescale->value > 0) {
-        frac += msec * timescale->value;
+    } else if (ts > 0) {
+        frac += msec * ts;
         msec = frac;
         frac -= msec;
     }

@@ -925,6 +925,7 @@ void CL_Wheel_Input(int x, int y);
 void CL_Wheel_Draw(void);
 void CL_Wheel_Update(void);
 void CL_Wheel_ClearInput(void);
+float CL_Wheel_TimeScale(void);
 
 //
 // tent.c

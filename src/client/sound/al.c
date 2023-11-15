@@ -30,6 +30,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 static cvar_t       *al_reverb;
 static cvar_t       *al_reverb_lerp_time;
 
+static cvar_t       *al_timescale;
+
 static ALuint       s_srcnums[MAX_CHANNELS];
 static ALuint       s_stream;
 static ALuint       s_stream_buffers;
@@ -740,6 +742,8 @@ static bool AL_Init(void)
     al_reverb->changed = al_reverb_changed;
     al_reverb_lerp_time = Cvar_Get("al_reverb_lerp_time", "3.0", 0);
 
+    al_timescale = Cvar_Get("al_timescale", "1", 0);
+
     SCR_RegisterStat("al_reverb", AL_Reverb_stat);
 
     Com_Printf("OpenAL initialized.\n");
@@ -886,6 +890,12 @@ static void AL_Spatialize(channel_t *ch)
     }
 
     qalSource3f(ch->srcnum, AL_POSITION, AL_UnpackVector(origin));
+
+    if (al_timescale->integer) {
+        qalSourcef(ch->srcnum, AL_PITCH, max(0.75f, CL_Wheel_TimeScale() * Cvar_VariableValue("timescale")));
+    } else {
+        qalSourcef(ch->srcnum, AL_PITCH, 1.0f);
+    }
 }
 
 static void AL_StopChannel(channel_t *ch)
