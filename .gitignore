@@ -1,3 +1,4 @@
 /subprojects/*/
+!/subprojects/rerelease-game/
 /tags
 /TAGS
