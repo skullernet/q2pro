@@ -1068,7 +1068,7 @@ void Qcommon_Frame(void)
 #if USE_CLIENT
     float ts = CL_Wheel_TimeScale() * timescale->value;
 #else
-    const unsigned ts = 1;
+    float ts = timescale->value;
 #endif
 
     if (fixedtime->integer) {
