@@ -337,12 +337,98 @@ if openal.found()
   config.set10('USE_OPENAL', true)
 endif
 
+# ./configure \
+#     --disable-everything \
+#     --enable-decoder=theora \
+#     --enable-decoder=vorbis \
+#     --enable-decoder=idcin \
+#     --enable-decoder=pcm_* \
+#     --disable-decoder=pcm_bluray \
+#     --disable-decoder=pcm_dvd \
+#     --disable-decoder=pcm_alaw_at \
+#     --disable-decoder=pcm_mulaw_at \
+#     --enable-demuxer=ogg \
+#     --enable-demuxer=idcin \
+#     --enable-demuxer=wav \
+#     --enable-parser=vp3 \
+#     --enable-parser=vorbis \
+#     --disable-protocols \
+#     --enable-protocol=file \
+#     --disable-avdevice \
+#     --disable-avfilter \
+#     --disable-postproc \
+#     --disable-programs \
+#     --disable-autodetect \
+#     --disable-network \
+#     --disable-doc \
+#     --disable-swscale-alpha \
+#     --enable-small
+
 # require FFmpeg >= 5.1.3
 ffmpeg_defaults = [
   'tests=disabled',
   'programs=disabled',
   'devices=disabled',
-  # 'network=disabled', # we don't need network, but disabling it breaks the ffmpeg build
+  'network=disabled',
+
+  'avdevice=disabled',
+  'avfilter=disabled',
+  'postproc=disabled',
+
+  # Start with a very small set of features, and bit by bit add what we need
+  'protocols=disabled',
+  'file_protocol=enabled',
+
+  'hwaccels=disabled',
+  'bsfs=disabled',
+
+  'parsers=disabled',
+  'vp3_parser=enabled',
+  'vorbis_parser=enabled',
+
+  'decoders=disabled',
+  'idcin_decoder=enabled',
+  'theora_decoder=enabled',
+  'vorbis_decoder=enabled',
+  'pcm_f16le_decoder=enabled',
+  'pcm_f24le_decoder=enabled',
+  'pcm_f32be_decoder=enabled',
+  'pcm_f32le_decoder=enabled',
+  'pcm_f64be_decoder=enabled',
+  'pcm_f64le_decoder=enabled',
+  'pcm_lxf_decoder=enabled',
+  'pcm_s8_decoder=enabled',
+  'pcm_s8_planar_decoder=enabled',
+  'pcm_s16be_decoder=enabled',
+  'pcm_s16be_planar_decoder=enabled',
+  'pcm_s16le_decoder=enabled',
+  'pcm_s16le_planar_decoder=enabled',
+  'pcm_s24be_decoder=enabled',
+  'pcm_s24daud_decoder=enabled',
+  'pcm_s24le_decoder=enabled',
+  'pcm_s24le_planar_decoder=enabled',
+  'pcm_s32be_decoder=enabled',
+  'pcm_s32le_decoder=enabled',
+  'pcm_s32le_planar_decoder=enabled',
+  'pcm_s64be_decoder=enabled',
+  'pcm_s64le_decoder=enabled',
+  'pcm_sga_decoder=enabled',
+  'pcm_u8_decoder=enabled',
+  'pcm_u16be_decoder=enabled',
+  'pcm_u16le_decoder=enabled',
+  'pcm_u24be_decoder=enabled',
+  'pcm_u24le_decoder=enabled',
+  'pcm_u32be_decoder=enabled',
+  'pcm_u32le_decoder=enabled',
+  'pcm_vidc_decoder=enabled',
+
+  'demuxers=disabled',
+  'idcin_demuxer=enabled',
+  'ogg_demuxer=enabled',
+  'wav_demuxer=enabled',
+
+  'encoders=disabled',
+  'muxers=disabled',
 ]
 avcodec_opt = get_option('avcodec')
 avcodec = dependency('libavcodec', version: '>= 59.37.100', default_options: ffmpeg_defaults, required: avcodec_opt)
