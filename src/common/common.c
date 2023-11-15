@@ -1065,7 +1065,11 @@ void Qcommon_Frame(void)
         // host OS was hibernated or something
     }
 
+#if USE_CLIENT
     float ts = CL_Wheel_TimeScale() * timescale->value;
+#else
+    const unsigned ts = 1;
+#endif
 
     if (fixedtime->integer) {
         Cvar_ClampInteger(fixedtime, 1, 1000);
