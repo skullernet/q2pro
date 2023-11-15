@@ -1,0 +1,3 @@
+[submodule "src/game"]
+	path = subprojects/rerelease-game
+	url = https://github.com/Paril/quake2-rerelease-dll.git

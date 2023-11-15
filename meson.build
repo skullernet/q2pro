@@ -551,6 +551,18 @@ shared_library('game' + cpu, game_src,
   override_options:      get_option('game-build-options'),
 )
 
+rr_game_subproject = subproject('rerelease-game')
+rr_game_dll = rr_game_subproject.get_variable('game_dll')
+
+prog_copy_game_dll = find_program('copy-game-dll.py')
+custom_target(
+    'copy_game_dll',
+    build_by_default: true,
+    input : rr_game_dll,
+    output: 'game_dll.stamp',
+    command : [prog_copy_game_dll, '@OUTPUT@', '@INPUT@', '@BUILD_ROOT@'],
+)
+
 config.set('REVISION',            meson.project_version().substring(1).split('~')[0].to_int())
 config.set_quoted('VERSION',      meson.project_version())
 config.set_quoted('CPUSTRING',    cpu)
