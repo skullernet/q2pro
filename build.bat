@@ -1,1 +1,1 @@
-meson setup --buildtype debug --pkg-config-path D:\vcpkg\installed\x64-windows\lib\pkgconfig --backend vs build
+meson setup --wipe --buildtype debug --pkg-config-path D:\vcpkg\installed\x64-windows\lib\pkgconfig --backend vs build
