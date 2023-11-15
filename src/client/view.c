@@ -79,7 +79,19 @@ V_AddEntity
 void V_AddEntity(entity_t *ent)
 {
     if (r_numentities >= MAX_ENTITIES)
+    {
+        if (ent->flags & RF_LOW_PRIORITY)
+            return;
+
+        for (size_t i = 0; i < r_numentities; i++) {
+            if (r_entities[i].flags & RF_LOW_PRIORITY) {
+                r_entities[i] = *ent;
+                return;
+            }
+        }
+
         return;
+    }
 
     r_entities[r_numentities++] = *ent;
 }
