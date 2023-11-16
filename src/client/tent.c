@@ -303,7 +303,6 @@ EXPLOSION MANAGEMENT
 typedef struct {
     enum {
         ex_free,
-        ex_explosion,
         ex_misc,
         ex_flash,
         ex_mflash,
@@ -482,7 +481,7 @@ static void CL_AddExplosions(void)
             ent->flags |= RF_TRANSLUCENT;
             break;
         default:
-            break;
+            Q_assert(!"bad type");
         }
 
         if (ex->type == ex_free)
