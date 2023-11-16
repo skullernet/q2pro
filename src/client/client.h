@@ -770,6 +770,25 @@ typedef struct cl_sustain_s {
     void    (*think)(struct cl_sustain_s *self);
 } cl_sustain_t;
 
+typedef enum {
+    MFLASH_MACHN,
+    MFLASH_SHOTG2,
+    MFLASH_SHOTG,
+    MFLASH_ROCKET,
+    MFLASH_RAIL,
+    MFLASH_LAUNCH,
+    MFLASH_ETF_RIFLE,
+    MFLASH_DIST,
+    MFLASH_BOOMER,
+    MFLASH_BLAST, // 0 = orange, 1 = blue, 2 = green
+    MFLASH_BFG,
+    MFLASH_BEAMER,
+
+    MFLASH_TOTAL
+} cl_muzzlefx_t;
+
+void CL_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, int skin, float scale);
+
 void CL_SmokeAndFlash(const vec3_t origin);
 void CL_DrawBeam(const vec3_t org, const vec3_t end, qhandle_t model);
 void CL_PlayFootstepSfx(int step_id, int entnum, float volume, float attenuation);
