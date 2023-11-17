@@ -17,12 +17,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "shared/shared.h"
+#include "shared/game3_shared.h"
 #include "common/msg.h"
 #include "common/protocol.h"
 #include "common/sizebuf.h"
 #include "common/math.h"
 #include "common/intreadwrite.h"
-#include "common/game3_shared.h"
 
 /*
 ==============================================================================

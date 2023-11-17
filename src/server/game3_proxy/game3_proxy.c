@@ -17,9 +17,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "../server.h"
-#include "common/game3_shared.h"
+#include "shared/game3_shared.h"
+#include "shared/game3.h"
 #include "game3_proxy.h"
-#include "game3.h"
 #include "game3_pmove.h"
 #include "shared/base85.h"
 
