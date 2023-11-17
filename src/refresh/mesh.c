@@ -419,7 +419,7 @@ static void setup_celshading(void)
     celscale = 1.0f - Distance(origin, glr.fd.vieworg) / 700.0f;
 }
 
-static void draw_celshading(QGL_INDEX_TYPE *indices, int num_indices)
+static void draw_celshading(const QGL_INDEX_TYPE *indices, int num_indices)
 {
     if (celscale < 0.01f || celscale > 1)
         return;
@@ -492,7 +492,7 @@ static void setup_shadow(void)
     GL_MultMatrix(shadowmatrix, tmp, matrix);
 }
 
-static void draw_shadow(QGL_INDEX_TYPE *indices, int num_indices)
+static void draw_shadow(const QGL_INDEX_TYPE *indices, int num_indices)
 {
     if (shadowmatrix[15] < 0.5f)
         return;
