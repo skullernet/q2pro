@@ -553,10 +553,10 @@ static image_t *skin_for_mesh(image_t **skins, int num_skins)
     return skins[ent->skinnum];
 }
 
-static void draw_alias_mesh(const maliasmesh_t *mesh)
+static void begin_alias_mesh(image_t **skins, int num_skins)
 {
     glStateBits_t state = GLS_INTENSITY_ENABLE;
-    image_t *skin = skin_for_mesh(mesh->skins, mesh->numskins);
+    image_t *skin = skin_for_mesh(skins, num_skins);
 
     // fall back to entity matrix
     GL_LoadMatrix(glr.entmatrix);
@@ -579,10 +579,11 @@ static void draw_alias_mesh(const maliasmesh_t *mesh)
 
     if (skin->glow_texnum)
         GL_BindTexture(2, skin->glow_texnum);
+}
 
-    (*tessfunc)(mesh);
-    c.trisDrawn += mesh->numtris;
-
+static void end_alias_mesh(const QGL_INDEX_TYPE *indices, int num_indices, int num_verts,
+                           const GLfloat *tcoords, GLsizei tc_stride)
+{
     if (dotshading) {
         GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
         GL_VertexPointer(3, VERTEX_SIZE, tess.vertices);
@@ -593,23 +594,33 @@ static void draw_alias_mesh(const maliasmesh_t *mesh)
         GL_Color(color[0], color[1], color[2], color[3]);
     }
 
-    GL_TexCoordPointer(2, 0, (GLfloat *)mesh->tcoords);
+    GL_TexCoordPointer(2, tc_stride, tcoords);
 
-    GL_LockArrays(mesh->numverts);
+    GL_LockArrays(num_verts);
 
-    qglDrawElements(GL_TRIANGLES, mesh->numindices, QGL_INDEX_ENUM,
-                    mesh->indices);
+    qglDrawElements(GL_TRIANGLES, num_indices, QGL_INDEX_ENUM, indices);
+    c.trisDrawn += num_indices / 3;
 
-    draw_celshading(mesh->indices, mesh->numindices);
+    draw_celshading(indices, num_indices);
 
     if (gl_showtris->integer) {
-        GL_DrawOutlines(mesh->numindices, mesh->indices);
+        GL_DrawOutlines(num_indices, indices);
     }
 
     // FIXME: unlock arrays before changing matrix?
-    draw_shadow(mesh->indices, mesh->numindices);
+    draw_shadow(indices, num_indices);
 
     GL_UnlockArrays();
+}
+
+static void draw_alias_mesh(const maliasmesh_t *mesh)
+{
+    begin_alias_mesh(mesh->skins, mesh->numskins);
+
+    (*tessfunc)(mesh);
+
+    end_alias_mesh(mesh->indices, mesh->numindices,
+                   mesh->numverts, mesh->tcoords->st, 0);
 }
 
 #if USE_MD5
@@ -699,30 +710,7 @@ static void lerp_alias_skeleton(const md5_model_t *model)
 
 static void draw_skeleton_mesh(const md5_model_t *model, const md5_mesh_t *mesh, const md5_joint_t *skel)
 {
-    glStateBits_t state = GLS_INTENSITY_ENABLE;
-    image_t *skin = skin_for_mesh(model->skins, model->num_skins);
-
-    // fall back to entity matrix
-    GL_LoadMatrix(glr.entmatrix);
-
-    if (dotshading)
-        state |= GLS_SHADE_SMOOTH;
-
-    if (glr.ent->flags & RF_TRANSLUCENT) {
-        state |= GLS_BLEND_BLEND;
-        if (!(glr.ent->flags & RF_WEAPONMODEL) || (glr.ent->flags & RF_FULLBRIGHT))
-            state |= GLS_DEPTHMASK_FALSE;
-    }
-
-    if (skin->glow_texnum)
-        state |= GLS_GLOWMAP_ENABLE;
-
-    GL_StateBits(state);
-
-    GL_BindTexture(0, skin->texnum);
-
-    if (skin->glow_texnum)
-        GL_BindTexture(2, skin->glow_texnum);
+    begin_alias_mesh(model->skins, model->num_skins);
 
     if (glr.ent->flags & RF_SHELL_MASK)
         tess_shell_skel(mesh, skel);
@@ -731,34 +719,9 @@ static void draw_skeleton_mesh(const md5_model_t *model, const md5_mesh_t *mesh,
     else
         tess_plain_skel(mesh, skel);
 
-    c.trisDrawn += mesh->num_indices / 3;
-
-    if (dotshading) {
-        GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
-        GL_VertexPointer(3, VERTEX_SIZE, tess.vertices);
-        GL_ColorFloatPointer(4, VERTEX_SIZE, tess.vertices + 4);
-    } else {
-        GL_ArrayBits(GLA_VERTEX | GLA_TC);
-        GL_VertexPointer(3, 4, tess.vertices);
-        GL_Color(color[0], color[1], color[2], color[3]);
-    }
-
-    GL_TexCoordPointer(2, sizeof(mesh->vertices[0]) / sizeof(float), mesh->vertices->st);
-
-    GL_LockArrays(mesh->num_verts);
-
-    qglDrawElements(GL_TRIANGLES, mesh->num_indices, QGL_INDEX_ENUM, mesh->indices);
-
-    draw_celshading(mesh->indices, mesh->num_indices);
-
-    if (gl_showtris->integer) {
-        GL_DrawOutlines(mesh->num_indices, mesh->indices);
-    }
-
-    // FIXME: unlock arrays before changing matrix?
-    draw_shadow(mesh->indices, mesh->num_indices);
-
-    GL_UnlockArrays();
+    end_alias_mesh(mesh->indices, mesh->num_indices,
+                   mesh->num_verts, mesh->vertices->st,
+                   sizeof(mesh->vertices[0]) / sizeof(float));
 }
 
 static void draw_alias_skeleton(const md5_model_t *model)
