@@ -298,6 +298,16 @@ typedef struct client_state_s {
     int     numWeaponModels;
 
     bool    need_powerscreen_scale;
+
+    // data for view weapon
+    struct {
+        struct {
+            qhandle_t   model;
+            int         time;
+            float       roll, scale;
+            vec3_t      offset;
+        } muzzle;
+    } weapon;
 } client_state_t;
 
 extern client_state_t   cl;
@@ -787,6 +797,7 @@ typedef enum {
     MFLASH_TOTAL
 } cl_muzzlefx_t;
 
+void CL_AddWeaponMuzzleFX(cl_muzzlefx_t fx, const vec3_t offset, float scale);
 void CL_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, int skin, float scale);
 
 void CL_SmokeAndFlash(const vec3_t origin);

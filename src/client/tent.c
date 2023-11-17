@@ -403,6 +403,26 @@ static void CL_BFGExplosion(const vec3_t pos)
     ex->frames = 4;
 }
 
+void CL_AddWeaponMuzzleFX(cl_muzzlefx_t fx, const vec3_t offset, float scale)
+{
+    if (mz.entity != cl.frame.clientNum + 1)
+        return;
+
+    Q_assert(fx < q_countof(cl_mod_muzzles));
+
+    if (!cl_mod_muzzles[fx])
+        return;
+
+    cl.weapon.muzzle.model = cl_mod_muzzles[fx];
+    cl.weapon.muzzle.scale = scale;
+    if (fx == MFLASH_MACHN || fx == MFLASH_BEAMER)
+        cl.weapon.muzzle.roll = Q_rand() % 360;
+    else
+        cl.weapon.muzzle.roll = 0;
+    VectorCopy(offset, cl.weapon.muzzle.offset);
+    cl.weapon.muzzle.time = cl.servertime - CL_FRAMETIME;
+}
+
 void CL_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, int skin, float scale)
 {
     explosion_t *ex;

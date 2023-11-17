@@ -564,11 +564,11 @@ static void draw_alias_mesh(const maliasmesh_t *mesh)
     if (dotshading)
         state |= GLS_SHADE_SMOOTH;
 
-    if (glr.ent->flags & RF_TRANSLUCENT)
+    if (glr.ent->flags & RF_TRANSLUCENT) {
         state |= GLS_BLEND_BLEND;
-
-    if ((glr.ent->flags & (RF_TRANSLUCENT | RF_WEAPONMODEL)) == RF_TRANSLUCENT)
-        state |= GLS_DEPTHMASK_FALSE;
+        if (!(glr.ent->flags & RF_WEAPONMODEL) || (glr.ent->flags & RF_FULLBRIGHT))
+            state |= GLS_DEPTHMASK_FALSE;
+    }
 
     if (skin->glow_texnum)
         state |= GLS_GLOWMAP_ENABLE;
@@ -708,11 +708,11 @@ static void draw_skeleton_mesh(const md5_model_t *model, const md5_mesh_t *mesh,
     if (dotshading)
         state |= GLS_SHADE_SMOOTH;
 
-    if (glr.ent->flags & RF_TRANSLUCENT)
+    if (glr.ent->flags & RF_TRANSLUCENT) {
         state |= GLS_BLEND_BLEND;
-
-    if ((glr.ent->flags & (RF_TRANSLUCENT | RF_WEAPONMODEL)) == RF_TRANSLUCENT)
-        state |= GLS_DEPTHMASK_FALSE;
+        if (!(glr.ent->flags & RF_WEAPONMODEL) || (glr.ent->flags & RF_FULLBRIGHT))
+            state |= GLS_DEPTHMASK_FALSE;
+    }
 
     if (skin->glow_texnum)
         state |= GLS_GLOWMAP_ENABLE;
