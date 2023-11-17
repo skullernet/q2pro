@@ -265,6 +265,9 @@ cl_gun_y::
 cl_gun_z::
     Specifies custom gun model offset. Default value is 0.
 
+cl_muzzleflashes::
+    Specifies if muzzleflash effects are enabled. Default value is 1.
+
 Sound Subsystem
 ~~~~~~~~~~~~~~~
 

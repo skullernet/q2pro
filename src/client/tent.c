@@ -54,6 +54,8 @@ qhandle_t   cl_mod_muzzles[MFLASH_TOTAL];
 
 qhandle_t   cl_img_flare;
 
+static cvar_t   *cl_muzzleflashes;
+
 #define MAX_FOOTSTEP_SFX    9
 
 typedef struct {
@@ -405,6 +407,8 @@ static void CL_BFGExplosion(const vec3_t pos)
 
 void CL_AddWeaponMuzzleFX(cl_muzzlefx_t fx, const vec3_t offset, float scale)
 {
+    if (!cl_muzzleflashes->integer)
+        return;
     if (mz.entity != cl.frame.clientNum + 1)
         return;
 
@@ -426,6 +430,9 @@ void CL_AddWeaponMuzzleFX(cl_muzzlefx_t fx, const vec3_t offset, float scale)
 void CL_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, int skin, float scale)
 {
     explosion_t *ex;
+
+    if (!cl_muzzleflashes->integer)
+        return;
 
     Q_assert(fx < q_countof(cl_mod_muzzles));
 
@@ -1619,6 +1626,7 @@ void CL_ClearTEnts(void)
 
 void CL_InitTEnts(void)
 {
+    cl_muzzleflashes = Cvar_Get("cl_muzzleflashes", "1", 0);
     cl_railtrail_type = Cvar_Get("cl_railtrail_type", "0", 0);
     cl_railtrail_time = Cvar_Get("cl_railtrail_time", "1.0", 0);
     cl_railtrail_time->changed = cl_timeout_changed;
