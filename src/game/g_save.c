@@ -18,7 +18,17 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "g_local.h"
 #include "g_ptrs.h"
-#include "shared/base85.h"
+
+#if USE_ZLIB
+#include <zlib.h>
+#else
+#define gzopen(name, mode)          fopen(name, mode)
+#define gzclose(file)               fclose(file)
+#define gzwrite(file, buf, len)     fwrite(buf, 1, len, file)
+#define gzread(file, buf, len)      fread(buf, 1, len, file)
+#define gzbuffer(file, size)        (void)0
+#define gzFile                      FILE *
+#endif
 
 typedef struct {
     fieldtype_t type;
@@ -311,7 +321,7 @@ static const save_field_t clientfields[] = {
     I(ps.gunindex),
     I(ps.gunframe),
 
-    FA(ps.screen_blend, 4),
+    FA(ps.blend, 4),
 
     F(ps.fov),
 
@@ -432,349 +442,356 @@ static const save_field_t gamefields[] = {
 
 //=========================================================
 
-static void write_data(void *buf, size_t len, struct base85_context_t *ctx)
+static void write_data(void *buf, size_t len, gzFile f)
 {
-    ascii85_encode(buf, len, ctx);
+    if (gzwrite(f, buf, len) != len) {
+        gzclose(f);
+        gi.error("%s: couldn't write %zu bytes", __func__, len);
+    }
 }
 
-static void write_short(struct base85_context_t *ctx, int16_t v)
+static void write_short(gzFile f, int16_t v)
 {
     v = LittleShort(v);
-    write_data(&v, sizeof(v), ctx);
+    write_data(&v, sizeof(v), f);
 }
 
-static void write_int(struct base85_context_t *ctx, int32_t v)
+static void write_int(gzFile f, int32_t v)
 {
     v = LittleLong(v);
-    write_data(&v, sizeof(v), ctx);
+    write_data(&v, sizeof(v), f);
 }
 
-static void write_float(struct base85_context_t *ctx, float v)
+static void write_float(gzFile f, float v)
 {
     v = LittleFloat(v);
-    write_data(&v, sizeof(v), ctx);
+    write_data(&v, sizeof(v), f);
 }
 
-static void write_string(struct base85_context_t *ctx, char *s)
+static void write_string(gzFile f, char *s)
 {
     size_t len;
 
     if (!s) {
-        write_int(ctx, -1);
+        write_int(f, -1);
         return;
     }
 
     len = strlen(s);
     if (len >= 65536) {
-        gi.Com_Error(va("%s: bad length", __func__));
+        gzclose(f);
+        gi.error("%s: bad length", __func__);
     }
-    write_int(ctx, len);
-    write_data(s, len, ctx);
+    write_int(f, len);
+    write_data(s, len, f);
 }
 
-static void write_vector(struct base85_context_t *ctx, vec_t *v)
+static void write_vector(gzFile f, vec_t *v)
 {
-    write_float(ctx, v[0]);
-    write_float(ctx, v[1]);
-    write_float(ctx, v[2]);
+    write_float(f, v[0]);
+    write_float(f, v[1]);
+    write_float(f, v[2]);
 }
 
-static void write_index(struct base85_context_t *ctx, void *p, size_t size, const void *start, int max_index)
+static void write_index(gzFile f, void *p, size_t size, const void *start, int max_index)
 {
     uintptr_t diff;
 
     if (!p) {
-        write_int(ctx, -1);
+        write_int(f, -1);
         return;
     }
 
     diff = (uintptr_t)p - (uintptr_t)start;
     if (diff > max_index * size) {
-        gi.Com_Error(va("%s: pointer out of range: %p", __func__, p));
+        gzclose(f);
+        gi.error("%s: pointer out of range: %p", __func__, p);
     }
     if (diff % size) {
-        gi.Com_Error(va("%s: misaligned pointer: %p", __func__, p));
+        gzclose(f);
+        gi.error("%s: misaligned pointer: %p", __func__, p);
     }
-    write_int(ctx, (int)(diff / size));
+    write_int(f, (int)(diff / size));
 }
 
-static void write_pointer(struct base85_context_t *ctx, void *p, ptr_type_t type)
+static void write_pointer(gzFile f, void *p, ptr_type_t type)
 {
     const save_ptr_t *ptr;
     int i;
 
     if (!p) {
-        write_int(ctx, -1);
+        write_int(f, -1);
         return;
     }
 
     for (i = 0, ptr = save_ptrs; i < num_save_ptrs; i++, ptr++) {
         if (ptr->type == type && ptr->ptr == p) {
-            write_int(ctx, i);
+            write_int(f, i);
             return;
         }
     }
 
-    gi.Com_Error(va("%s: unknown pointer: %p", __func__, p));
+    gzclose(f);
+    gi.error("%s: unknown pointer: %p", __func__, p);
 }
 
-static void write_field(struct base85_context_t *ctx, const save_field_t *field, void *base)
+static void write_field(gzFile f, const save_field_t *field, void *base)
 {
     void *p = (byte *)base + field->ofs;
     int i;
 
     switch (field->type) {
     case F_BYTE:
-        write_data(p, field->size, ctx);
+        write_data(p, field->size, f);
         break;
     case F_SHORT:
         for (i = 0; i < field->size; i++) {
-            write_short(ctx, ((short *)p)[i]);
+            write_short(f, ((short *)p)[i]);
         }
         break;
     case F_INT:
         for (i = 0; i < field->size; i++) {
-            write_int(ctx, ((int *)p)[i]);
+            write_int(f, ((int *)p)[i]);
         }
         break;
     case F_BOOL:
         for (i = 0; i < field->size; i++) {
-            write_int(ctx, ((bool *)p)[i]);
+            write_int(f, ((bool *)p)[i]);
         }
         break;
     case F_FLOAT:
         for (i = 0; i < field->size; i++) {
-            write_float(ctx, ((float *)p)[i]);
+            write_float(f, ((float *)p)[i]);
         }
         break;
     case F_VECTOR:
-        write_vector(ctx, (vec_t *)p);
+        write_vector(f, (vec_t *)p);
         break;
 
     case F_ZSTRING:
-        write_string(ctx, (char *)p);
+        write_string(f, (char *)p);
         break;
     case F_LSTRING:
-        write_string(ctx, *(char **)p);
+        write_string(f, *(char **)p);
         break;
 
     case F_EDICT:
-        write_index(ctx, *(void **)p, sizeof(edict_t), g_edicts, game.maxentities - 1);
+        write_index(f, *(void **)p, sizeof(edict_t), g_edicts, game.maxentities - 1);
         break;
     case F_CLIENT:
-        write_index(ctx, *(void **)p, sizeof(gclient_t), game.clients, game.maxclients - 1);
+        write_index(f, *(void **)p, sizeof(gclient_t), game.clients, game.maxclients - 1);
         break;
     case F_ITEM:
-        write_index(ctx, *(void **)p, sizeof(gitem_t), itemlist, game.num_items - 1);
+        write_index(f, *(void **)p, sizeof(gitem_t), itemlist, game.num_items - 1);
         break;
 
     case F_POINTER:
-        write_pointer(ctx, *(void **)p, field->size);
+        write_pointer(f, *(void **)p, field->size);
         break;
 
     default:
-        gi.Com_Error(va("%s: unknown field type", __func__));
+        gi.error("%s: unknown field type", __func__);
     }
 }
 
-static void write_fields(struct base85_context_t *ctx, const save_field_t *fields, void *base)
+static void write_fields(gzFile f, const save_field_t *fields, void *base)
 {
     const save_field_t *field;
 
     for (field = fields; field->type; field++) {
-        write_field(ctx, field, base);
+        write_field(f, field, base);
     }
 }
 
-struct read_context_s {
-    const byte *data_ptr, *data_end;
-};
-
-static void read_data(void *buf, size_t len, struct read_context_s* ctx)
+static void read_data(void *buf, size_t len, gzFile f)
 {
-    if(ctx->data_end - ctx->data_ptr < len) {
-        gi.Com_Error(va("%s: couldn't read %zu bytes", __func__, len));
+    if (gzread(f, buf, len) != len) {
+        gzclose(f);
+        gi.error("%s: couldn't read %zu bytes", __func__, len);
     }
-    memcpy(buf, ctx->data_ptr, len);
-    ctx->data_ptr += len;
 }
 
-static int read_short(struct read_context_s* ctx)
+static int read_short(gzFile f)
 {
     int16_t v;
 
-    read_data(&v, sizeof(v), ctx);
+    read_data(&v, sizeof(v), f);
     v = LittleShort(v);
 
     return v;
 }
 
-static int read_int(struct read_context_s* ctx)
+static int read_int(gzFile f)
 {
     int32_t v;
 
-    read_data(&v, sizeof(v), ctx);
+    read_data(&v, sizeof(v), f);
     v = LittleLong(v);
 
     return v;
 }
 
-static float read_float(struct read_context_s* ctx)
+static float read_float(gzFile f)
 {
     float v;
 
-    read_data(&v, sizeof(v), ctx);
+    read_data(&v, sizeof(v), f);
     v = LittleFloat(v);
 
     return v;
 }
 
-static char *read_string(struct read_context_s* ctx)
+static char *read_string(gzFile f)
 {
     int len;
     char *s;
 
-    len = read_int(ctx);
+    len = read_int(f);
     if (len == -1) {
         return NULL;
     }
 
     if (len < 0 || len >= 65536) {
-        gi.Com_Error(va("%s: bad length", __func__));
+        gzclose(f);
+        gi.error("%s: bad length", __func__);
     }
 
     s = gi.TagMalloc(len + 1, TAG_LEVEL);
-    read_data(s, len, ctx);
+    read_data(s, len, f);
     s[len] = 0;
 
     return s;
 }
 
-static void read_zstring(struct read_context_s* ctx, char *s, size_t size)
+static void read_zstring(gzFile f, char *s, size_t size)
 {
     int len;
 
-    len = read_int(ctx);
+    len = read_int(f);
     if (len < 0 || len >= size) {
-        gi.Com_Error(va("%s: bad length", __func__));
+        gzclose(f);
+        gi.error("%s: bad length", __func__);
     }
 
-    read_data(s, len, ctx);
+    read_data(s, len, f);
     s[len] = 0;
 }
 
-static void read_vector(struct read_context_s* ctx, vec_t *v)
+static void read_vector(gzFile f, vec_t *v)
 {
-    v[0] = read_float(ctx);
-    v[1] = read_float(ctx);
-    v[2] = read_float(ctx);
+    v[0] = read_float(f);
+    v[1] = read_float(f);
+    v[2] = read_float(f);
 }
 
-static void *read_index(struct read_context_s* ctx, size_t size, const void *start, int max_index)
+static void *read_index(gzFile f, size_t size, const void *start, int max_index)
 {
     int index;
     byte *p;
 
-    index = read_int(ctx);
+    index = read_int(f);
     if (index == -1) {
         return NULL;
     }
 
     if (index < 0 || index > max_index) {
-        gi.Com_Error(va("%s: bad index", __func__));
+        gzclose(f);
+        gi.error("%s: bad index", __func__);
     }
 
     p = (byte *)start + index * size;
     return p;
 }
 
-static void *read_pointer(struct read_context_s* ctx, ptr_type_t type)
+static void *read_pointer(gzFile f, ptr_type_t type)
 {
     int index;
     const save_ptr_t *ptr;
 
-    index = read_int(ctx);
+    index = read_int(f);
     if (index == -1) {
         return NULL;
     }
 
     if (index < 0 || index >= num_save_ptrs) {
-        gi.Com_Error(va("%s: bad index", __func__));
+        gzclose(f);
+        gi.error("%s: bad index", __func__);
     }
 
     ptr = &save_ptrs[index];
     if (ptr->type != type) {
-        gi.Com_Error(va("%s: type mismatch", __func__));
+        gzclose(f);
+        gi.error("%s: type mismatch", __func__);
     }
 
     return (void *)ptr->ptr;
 }
 
-static void read_field(struct read_context_s* ctx, const save_field_t *field, void *base)
+static void read_field(gzFile f, const save_field_t *field, void *base)
 {
     void *p = (byte *)base + field->ofs;
     int i;
 
     switch (field->type) {
     case F_BYTE:
-        read_data(p, field->size, ctx);
+        read_data(p, field->size, f);
         break;
     case F_SHORT:
         for (i = 0; i < field->size; i++) {
-            ((short *)p)[i] = read_short(ctx);
+            ((short *)p)[i] = read_short(f);
         }
         break;
     case F_INT:
         for (i = 0; i < field->size; i++) {
-            ((int *)p)[i] = read_int(ctx);
+            ((int *)p)[i] = read_int(f);
         }
         break;
     case F_BOOL:
         for (i = 0; i < field->size; i++) {
-            ((bool *)p)[i] = read_int(ctx);
+            ((bool *)p)[i] = read_int(f);
         }
         break;
     case F_FLOAT:
         for (i = 0; i < field->size; i++) {
-            ((float *)p)[i] = read_float(ctx);
+            ((float *)p)[i] = read_float(f);
         }
         break;
     case F_VECTOR:
-        read_vector(ctx, (vec_t *)p);
+        read_vector(f, (vec_t *)p);
         break;
 
     case F_LSTRING:
-        *(char **)p = read_string(ctx);
+        *(char **)p = read_string(f);
         break;
     case F_ZSTRING:
-        read_zstring(ctx, (char *)p, field->size);
+        read_zstring(f, (char *)p, field->size);
         break;
 
     case F_EDICT:
-        *(edict_t **)p = read_index(ctx, sizeof(edict_t), g_edicts, game.maxentities - 1);
+        *(edict_t **)p = read_index(f, sizeof(edict_t), g_edicts, game.maxentities - 1);
         break;
     case F_CLIENT:
-        *(gclient_t **)p = read_index(ctx, sizeof(gclient_t), game.clients, game.maxclients - 1);
+        *(gclient_t **)p = read_index(f, sizeof(gclient_t), game.clients, game.maxclients - 1);
         break;
     case F_ITEM:
-        *(gitem_t **)p = read_index(ctx, sizeof(gitem_t), itemlist, game.num_items - 1);
+        *(gitem_t **)p = read_index(f, sizeof(gitem_t), itemlist, game.num_items - 1);
         break;
 
     case F_POINTER:
-        *(void **)p = read_pointer(ctx, field->size);
+        *(void **)p = read_pointer(f, field->size);
         break;
 
     default:
-        gi.Com_Error(va("%s: unknown field type", __func__));
+        gi.error("%s: unknown field type", __func__);
     }
 }
 
-static void read_fields(struct read_context_s* ctx, const save_field_t *fields, void *base)
+static void read_fields(gzFile f, const save_field_t *fields, void *base)
 {
     const save_field_t *field;
 
     for (field = fields; field->type; field++) {
-        read_field(ctx, field, base);
+        read_field(f, field, base);
     }
 }
 
@@ -783,6 +800,14 @@ static void read_fields(struct read_context_s* ctx, const save_field_t *fields, 
 #define SAVE_MAGIC1     MakeLittleLong('S','S','V','1')
 #define SAVE_MAGIC2     MakeLittleLong('S','A','V','1')
 #define SAVE_VERSION    8
+
+static void check_gzip(int magic)
+{
+#if !USE_ZLIB
+    if ((magic & 0xe0ffffff) == 0x00088b1f)
+        gi.error("Savegame is compressed, but no gzip support linked in");
+#endif
+}
 
 /*
 ============
@@ -798,72 +823,69 @@ A single player death will automatically restore from the
 last save position.
 ============
 */
-char* WriteGameJson(bool autosave, size_t* json_size)
+void WriteGame(const char *filename, qboolean autosave)
 {
-    struct base85_context_t ctx;
+    gzFile  f;
     int     i;
 
     if (!autosave)
         SaveClientData();
 
-    ascii85_context_init(&ctx);
+    f = gzopen(filename, "wb");
+    if (!f)
+        gi.error("Couldn't open %s", filename);
 
-    write_int(&ctx, SAVE_MAGIC1);
-    write_int(&ctx, SAVE_VERSION);
+    write_int(f, SAVE_MAGIC1);
+    write_int(f, SAVE_VERSION);
 
     game.autosaved = autosave;
-    write_fields(&ctx, gamefields, &game);
+    write_fields(f, gamefields, &game);
     game.autosaved = false;
 
     for (i = 0; i < game.maxclients; i++) {
-        write_fields(&ctx, clientfields, &game.clients[i]);
+        write_fields(f, clientfields, &game.clients[i]);
     }
 
-    ascii85_encode_last(&ctx);
-
-    uint8_t *encoded = ascii85_get_output(&ctx, json_size);
-    char *result = gi.TagMalloc(*json_size + 1, TAG_GAME);
-    memcpy(result, encoded, *json_size);
-    result[*json_size] = 0;
-    ascii85_context_destroy(&ctx);
-    return result;
+    if (gzclose(f))
+        gi.error("Couldn't write %s", filename);
 }
 
-void ReadGameJson(const char *json)
+void ReadGame(const char *filename)
 {
-    struct base85_context_t ctx;
-    struct read_context_s read_ctx;
+    gzFile  f;
     int     i;
 
     gi.FreeTags(TAG_GAME);
 
-    ascii85_context_init(&ctx);
-    ascii85_decode((const uint8_t*)json, strlen(json), &ctx);
-    ascii85_decode_last(&ctx);
+    f = gzopen(filename, "rb");
+    if (!f)
+        gi.error("Couldn't open %s", filename);
 
-    size_t decoded_size = 0;
-    const uint8_t *decoded = ascii85_get_output(&ctx, &decoded_size);
-    read_ctx.data_ptr = decoded;
-    read_ctx.data_end = read_ctx.data_ptr + decoded_size;
+    gzbuffer(f, 65536);
 
-    i = read_int(&read_ctx);
+    i = read_int(f);
     if (i != SAVE_MAGIC1) {
-        gi.Com_Error("Not a Q2PRO save game");
+        gzclose(f);
+        check_gzip(i);
+        gi.error("Not a Q2PRO save game");
     }
 
-    i = read_int(&read_ctx);
+    i = read_int(f);
     if (i != SAVE_VERSION) {
-        gi.Com_Error(va("Savegame from different version (got %d, expected %d)", i, SAVE_VERSION));
+        gzclose(f);
+        gi.error("Savegame from different version (got %d, expected %d)", i, SAVE_VERSION);
     }
 
-    read_fields(&read_ctx, gamefields, &game);
+    read_fields(f, gamefields, &game);
 
     // should agree with server's version
     if (game.maxclients != (int)maxclients->value) {
-        gi.Com_Error("Savegame has bad maxclients");
+        gzclose(f);
+        gi.error("Savegame has bad maxclients");
     }
     if (game.maxentities <= game.maxclients || game.maxentities > game.csr.max_edicts) {
-        gi.Com_Error("Savegame has bad maxentities");
+        gzclose(f);
+        gi.error("Savegame has bad maxentities");
     }
 
     g_edicts = gi.TagMalloc(game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
@@ -872,10 +894,10 @@ void ReadGameJson(const char *json)
 
     game.clients = gi.TagMalloc(game.maxclients * sizeof(game.clients[0]), TAG_GAME);
     for (i = 0; i < game.maxclients; i++) {
-        read_fields(&read_ctx, clientfields, &game.clients[i]);
+        read_fields(f, clientfields, &game.clients[i]);
     }
 
-    ascii85_context_destroy(&ctx);
+    gzclose(f);
 }
 
 //==========================================================
@@ -886,38 +908,34 @@ WriteLevel
 
 =================
 */
-char* WriteLevelJson(bool transition, size_t* json_size)
+void WriteLevel(const char *filename)
 {
     int     i;
     edict_t *ent;
-    struct base85_context_t ctx;
+    gzFile  f;
 
-    ascii85_context_init(&ctx);
+    f = gzopen(filename, "wb");
+    if (!f)
+        gi.error("Couldn't open %s", filename);
 
-    write_int(&ctx, SAVE_MAGIC2);
-    write_int(&ctx, SAVE_VERSION);
+    write_int(f, SAVE_MAGIC2);
+    write_int(f, SAVE_VERSION);
 
     // write out level_locals_t
-    write_fields(&ctx, levelfields, &level);
+    write_fields(f, levelfields, &level);
 
     // write out all the entities
     for (i = 0; i < globals.num_edicts; i++) {
         ent = &g_edicts[i];
         if (!ent->inuse)
             continue;
-        write_int(&ctx, i);
-        write_fields(&ctx, entityfields, ent);
+        write_int(f, i);
+        write_fields(f, entityfields, ent);
     }
-    write_int(&ctx, -1);
+    write_int(f, -1);
 
-    ascii85_encode_last(&ctx);
-
-    uint8_t *encoded = ascii85_get_output(&ctx, json_size);
-    char *result = gi.TagMalloc(*json_size + 1, TAG_GAME);
-    memcpy(result, encoded, *json_size);
-    result[*json_size] = 0;
-    ascii85_context_destroy(&ctx);
-    return result;
+    if (gzclose(f))
+        gi.error("Couldn't write %s", filename);
 }
 
 /*
@@ -936,11 +954,10 @@ calling ReadLevel.
 No clients are connected yet.
 =================
 */
-void ReadLevelJson(const char *json)
+void ReadLevel(const char *filename)
 {
-    struct base85_context_t ctx;
-    struct read_context_s read_ctx;
     int     entnum;
+    gzFile  f;
     int     i;
     edict_t *ent;
 
@@ -948,51 +965,55 @@ void ReadLevelJson(const char *json)
     // base state
     gi.FreeTags(TAG_LEVEL);
 
-    ascii85_context_init(&ctx);
-    ascii85_decode((const uint8_t*)json, strlen(json), &ctx);
-    ascii85_decode_last(&ctx);
+    f = gzopen(filename, "rb");
+    if (!f)
+        gi.error("Couldn't open %s", filename);
 
-    size_t decoded_size = 0;
-    const uint8_t *decoded = ascii85_get_output(&ctx, &decoded_size);
-    read_ctx.data_ptr = decoded;
-    read_ctx.data_end = read_ctx.data_ptr + decoded_size;
+    gzbuffer(f, 65536);
 
     // wipe all the entities
     memset(g_edicts, 0, game.maxentities * sizeof(g_edicts[0]));
     globals.num_edicts = game.maxclients + 1;
 
-    i = read_int(&read_ctx);
+    i = read_int(f);
     if (i != SAVE_MAGIC2) {
-        gi.Com_Error("Not a Q2PRO save game");
+        gzclose(f);
+        check_gzip(i);
+        gi.error("Not a Q2PRO save game");
     }
 
-    i = read_int(&read_ctx);
+    i = read_int(f);
     if (i != SAVE_VERSION) {
-        gi.Com_Error(va("Savegame from different version (got %d, expected %d)", i, SAVE_VERSION));
+        gzclose(f);
+        gi.error("Savegame from different version (got %d, expected %d)", i, SAVE_VERSION);
     }
 
     // load the level locals
-    read_fields(&read_ctx, levelfields, &level);
+    read_fields(f, levelfields, &level);
 
     // load all the entities
     while (1) {
-        entnum = read_int(&read_ctx);
+        entnum = read_int(f);
         if (entnum == -1)
             break;
         if (entnum < 0 || entnum >= game.maxentities) {
-            gi.Com_Error(va("%s: bad entity number", __func__));
+            gzclose(f);
+            gi.error("%s: bad entity number", __func__);
         }
         if (entnum >= globals.num_edicts)
             globals.num_edicts = entnum + 1;
 
         ent = &g_edicts[entnum];
-        read_fields(&read_ctx, entityfields, ent);
+        read_fields(f, entityfields, ent);
         ent->inuse = true;
         ent->s.number = entnum;
 
         // let the server rebuild world links for this ent
+        memset(&ent->area, 0, sizeof(ent->area));
         gi.linkentity(ent);
     }
+
+    gzclose(f);
 
     // mark all clients as unconnected
     for (i = 0; i < game.maxclients; i++) {
@@ -1023,19 +1044,5 @@ void ReadLevelJson(const char *json)
         }
     }
 
-    // refresh global precache indices
-    G_RefreshPrecaches();
-
     ascii85_context_destroy(&ctx);
-}
-
-// Return whether game can be saved
-bool CanSave(void)
-{
-    if (game.maxclients == 1 && game.clients[0].ps.stats[STAT_HEALTH] <= 0) {
-        Com_Printf("Can't savegame while dead!\n");
-        return false;
-    }
-
-    return true;
 }

@@ -606,7 +606,7 @@ void BossExplode(edict_t *self)
     gi.WriteByte(svc_temp_entity);
     gi.WriteByte(TE_EXPLOSION1);
     gi.WritePosition(org);
-    gi.multicast(self->s.origin, MULTICAST_PVS, false);
+    gi.multicast(self->s.origin, MULTICAST_PVS);
 
     self->nextthink = level.framenum + 1;
 }

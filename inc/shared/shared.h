@@ -74,14 +74,18 @@ typedef int qhandle_t;
 // [Sam-KEX]
 #define MAX_SHADOW_LIGHTS   256
 
+#if !defined(GAME3_INCLUDE)
 #define MAX_EDICTS          8192    // sent as ENTITYNUM_BITS, can't be increased
 #define MAX_MODELS          8192    // half is reserved for inline BSP models
 #define MAX_SOUNDS          2048
 #define MAX_IMAGES          512     // FIXME: Q2PRO extended protocol raises this to 2048
+#endif // !defined(GAME3_INCLUDE)
 
 #define MODELINDEX_PLAYER   (MAX_MODELS_OLD - 1)
 
+#if !defined(GAME3_INCLUDE)
 #define MAX_CLIENT_NAME     16
+#endif // !defined(GAME3_INCLUDE)
 
 typedef enum {
     ERR_FATAL,          // exit the entire game with a popup window
@@ -99,6 +103,7 @@ typedef enum {
     PRINT_NOTICE        // print in cyan color
 } print_type_t;
 
+#if !defined(GAME3_INCLUDE)
 q_printf(2, 3)
 void    Com_LPrintf(print_type_t type, const char *fmt, ...);
 
@@ -112,6 +117,8 @@ void    Com_Error(error_type_t code, const char *fmt, ...);
 
 #define Q_assert(expr) \
     do { if (!(expr)) Com_Error(ERR_FATAL, "%s: assertion `%s' failed", __func__, #expr); } while (0)
+
+#endif // !defined(GAME3_INCLUDE)
 
 // game print flags
 enum {
@@ -138,8 +145,12 @@ typedef enum {
     MULTICAST_PVS,
 } multicast_t;
 
+#if !defined(GAME3_INCLUDE)
+
 #define CS_MAX_STRING_LENGTH 96
 typedef char configstring_t[CS_MAX_STRING_LENGTH];
+
+#endif // !defined(GAME3_INCLUDE)
 
 /*
 ==============================================================
@@ -875,6 +886,7 @@ typedef struct csurface_s {
     char        material[16];
 } csurface_t;
 
+#if !defined(GAME3_INCLUDE)
 // a trace is returned when a box is swept through the world
 typedef struct {
     bool        allsolid;   // if true, plane is not valid
@@ -938,6 +950,7 @@ typedef struct {
                                 // changed by spawns, rotating objects, and teleporters
     int8_t      viewheight; // view height, added to origin[2] + viewoffset[2], for crouching
 } pmove_state_t;
+#endif // !defined(GAME3_INCLUDE)
 
 //
 // button bits
@@ -951,6 +964,7 @@ typedef struct {
 
 typedef uint8_t button_t;
 
+#if !defined(GAME3_INCLUDE)
 // usercmd_t is sent to the server each client frame
 typedef struct usercmd_s {
     byte    msec;
@@ -962,9 +976,11 @@ typedef struct usercmd_s {
 
 // For RDF_xxx values
 typedef uint8_t refdef_flags_t;
+#endif // !defined(GAME3_INCLUDE)
 
 #define MAXTOUCH    32
 
+#if !defined(GAME3_INCLUDE)
 typedef struct
 {
     uint32_t num;
@@ -1009,6 +1025,7 @@ typedef struct {
     bool step_clip; // we clipped on top of an object from below
     float impact_delta; // impact delta, for falling damage
 } pmove_t;
+#endif // !defined(GAME3_INCLUDE)
 
 // entity_state_t->effects
 // Effects are things handled on the client side (lights, particles, frame animations)
@@ -1146,7 +1163,7 @@ enum {
     MZ_BFG2,
     MZ_PHALANX2,
 
-//ROGUE
+// ROGUE
     MZ_ETF_RIFLE = 30,
     MZ_PROX,        // KEX
     MZ_SHOTGUN2,    // MZ_ETF_RIFLE_2 in KEX
@@ -1157,7 +1174,7 @@ enum {
     MZ_NUKE2,
     MZ_NUKE4,
     MZ_NUKE8,
-//ROGUE
+// ROGUE
 
     MZ_SILENCED = BIT(7),  // bit flag ORed with one of the above numbers
 };
@@ -1278,6 +1295,7 @@ typedef uint8_t soundchan_t;
 #define ATTN_STATIC             3   // diminish very rapidly with distance
 
 
+#if !defined(GAME3_INCLUDE)
 // ammo stats compressed in 9 bits per entry
 // since the range is 0-300
 #define BITS_PER_AMMO 9
@@ -1297,6 +1315,7 @@ typedef uint8_t soundchan_t;
 #define NUM_BITS_PER_POWERUP 2
 #define POWERUP_MAX 23
 #define NUM_POWERUP_STATS num_of_type_for_bits(uint16_t, NUM_BITS_PER_POWERUP * POWERUP_MAX)
+#endif // !defined(GAME3_INCLUDE)
 
 // player_state->stats[] indexes
 enum {
@@ -1320,6 +1339,7 @@ enum {
     STAT_SPECTATOR,
 
     MAX_STATS_OLD = 32,
+#if !defined(GAME3_INCLUDE)
     MAX_STATS = 64, // KEX
 
     // [Kex] More stats for weapon wheel
@@ -1349,6 +1369,7 @@ enum {
 	STAT_HEALTH_BARS, // two health bar values; 7 bits for value, 1 bit for active
 	// [Paril-KEX]
 	STAT_ACTIVE_WEAPON,
+#endif // !defined(GAME3_INCLUDE)
 };
 
 // STAT_LAYOUTS flags
@@ -1433,6 +1454,7 @@ typedef int16_t layout_flags_t;
 #define CS_SKYROTATE        4
 #define CS_STATUSBAR        5       // display program string
 
+#if !defined(GAME3_INCLUDE)
 #define CS_AIRACCEL_OLD         29      // air acceleration control
 #define CS_MAXCLIENTS_OLD       30
 #define CS_MAPCHECKSUM_OLD      31      // for catching cheater maps
@@ -1465,6 +1487,7 @@ typedef int16_t layout_flags_t;
 #define CS_CD_LOOP_COUNT    (CS_WHEEL_POWERUPS + MAX_WHEEL_ITEMS) // [Paril-KEX] override default loop count
 #define CS_GAME_STYLE       (CS_CD_LOOP_COUNT + 1) // [Paril-KEX] see game_style_t
 #define MAX_CONFIGSTRINGS   (CS_GAME_STYLE + 1)
+#endif // !defined(GAME3_INCLUDE)
 
 typedef struct {
     bool        extended;
@@ -1527,6 +1550,7 @@ enum {
 
 typedef uint8_t entity_event_t;
 
+#if !defined(GAME3_INCLUDE)
 // entity_state_t is the information conveyed from the server
 // in an update message about entities that the client will
 // need to render in some way
@@ -1618,3 +1642,5 @@ typedef struct {
 
 #define GUNINDEX_BITS       13  // upper 3 bits are skinnum
 #define GUNINDEX_MASK       (BIT(GUNINDEX_BITS) - 1)
+
+#endif // !defined(GAME3_INCLUDE)

@@ -93,7 +93,7 @@ void P_DamageFeedback(edict_t *player)
         static int      i;
 
         client->anim_priority = ANIM_PAIN;
-        if (client->ps.pmove.pm_flags & PMF_DUCKED) {
+        if (client->ps.pmove.pm_flags & G3PMF_DUCKED) {
             player->s.frame = FRAME_crpain1 - 1;
             client->anim_end = FRAME_crpain4;
         } else {
@@ -254,11 +254,11 @@ void SV_CalcViewOffset(edict_t *ent)
         // add angles based on bob
 
         delta = bobfracsin * bob_pitch->value * xyspeed;
-        if (ent->client->ps.pmove.pm_flags & PMF_DUCKED)
+        if (ent->client->ps.pmove.pm_flags & G3PMF_DUCKED)
             delta *= 6;     // crouching
         angles[PITCH] += delta;
         delta = bobfracsin * bob_roll->value * xyspeed;
-        if (ent->client->ps.pmove.pm_flags & PMF_DUCKED)
+        if (ent->client->ps.pmove.pm_flags & G3PMF_DUCKED)
             delta *= 6;     // crouching
         if (bobcycle & 1)
             delta = -delta;
@@ -378,7 +378,7 @@ void SV_CalcBlend(edict_t *ent)
     vec3_t  vieworg;
     int     remaining;
 
-    Vector4Clear(ent->client->ps.screen_blend);
+    Vector4Clear(ent->client->ps.blend);
 
     // add for contents
     VectorAdd(ent->s.origin, ent->client->ps.viewoffset, vieworg);
@@ -389,11 +389,11 @@ void SV_CalcBlend(edict_t *ent)
         ent->client->ps.rdflags &= ~RDF_UNDERWATER;
 
     if (contents & (CONTENTS_SOLID | CONTENTS_LAVA))
-        SV_AddBlend(1.0f, 0.3f, 0.0f, 0.6f, ent->client->ps.screen_blend);
+        SV_AddBlend(1.0f, 0.3f, 0.0f, 0.6f, ent->client->ps.blend);
     else if (contents & CONTENTS_SLIME)
-        SV_AddBlend(0.0f, 0.1f, 0.05f, 0.6f, ent->client->ps.screen_blend);
+        SV_AddBlend(0.0f, 0.1f, 0.05f, 0.6f, ent->client->ps.blend);
     else if (contents & CONTENTS_WATER)
-        SV_AddBlend(0.5f, 0.3f, 0.2f, 0.4f, ent->client->ps.screen_blend);
+        SV_AddBlend(0.5f, 0.3f, 0.2f, 0.4f, ent->client->ps.blend);
 
     // add for powerups
     if (ent->client->quad_framenum > level.framenum) {
@@ -401,34 +401,34 @@ void SV_CalcBlend(edict_t *ent)
         if (remaining == 30)    // beginning to fade
             gi.sound(ent, CHAN_ITEM, gi.soundindex("items/damage2.wav"), 1, ATTN_NORM, 0);
         if (remaining > 30 || (remaining & 4))
-            SV_AddBlend(0, 0, 1, 0.08f, ent->client->ps.screen_blend);
+            SV_AddBlend(0, 0, 1, 0.08f, ent->client->ps.blend);
     } else if (ent->client->invincible_framenum > level.framenum) {
         remaining = ent->client->invincible_framenum - level.framenum;
         if (remaining == 30)    // beginning to fade
             gi.sound(ent, CHAN_ITEM, gi.soundindex("items/protect2.wav"), 1, ATTN_NORM, 0);
         if (remaining > 30 || (remaining & 4))
-            SV_AddBlend(1, 1, 0, 0.08f, ent->client->ps.screen_blend);
+            SV_AddBlend(1, 1, 0, 0.08f, ent->client->ps.blend);
     } else if (ent->client->enviro_framenum > level.framenum) {
         remaining = ent->client->enviro_framenum - level.framenum;
         if (remaining == 30)    // beginning to fade
             gi.sound(ent, CHAN_ITEM, gi.soundindex("items/airout.wav"), 1, ATTN_NORM, 0);
         if (remaining > 30 || (remaining & 4))
-            SV_AddBlend(0, 1, 0, 0.08f, ent->client->ps.screen_blend);
+            SV_AddBlend(0, 1, 0, 0.08f, ent->client->ps.blend);
     } else if (ent->client->breather_framenum > level.framenum) {
         remaining = ent->client->breather_framenum - level.framenum;
         if (remaining == 30)    // beginning to fade
             gi.sound(ent, CHAN_ITEM, gi.soundindex("items/airout.wav"), 1, ATTN_NORM, 0);
         if (remaining > 30 || (remaining & 4))
-            SV_AddBlend(0.4f, 1, 0.4f, 0.04f, ent->client->ps.screen_blend);
+            SV_AddBlend(0.4f, 1, 0.4f, 0.04f, ent->client->ps.blend);
     }
 
     // add for damage
     if (ent->client->damage_alpha > 0)
         SV_AddBlend(ent->client->damage_blend[0], ent->client->damage_blend[1]
-                    , ent->client->damage_blend[2], ent->client->damage_alpha, ent->client->ps.screen_blend);
+                    , ent->client->damage_blend[2], ent->client->damage_alpha, ent->client->ps.blend);
 
     if (ent->client->bonus_alpha > 0)
-        SV_AddBlend(0.85f, 0.7f, 0.3f, ent->client->bonus_alpha, ent->client->ps.screen_blend);
+        SV_AddBlend(0.85f, 0.7f, 0.3f, ent->client->bonus_alpha, ent->client->ps.blend);
 
     // drop the damage value
     ent->client->damage_alpha -= 0.06f;
@@ -771,7 +771,7 @@ void G_SetClientFrame(edict_t *ent)
 
     client = ent->client;
 
-    if (client->ps.pmove.pm_flags & PMF_DUCKED)
+    if (client->ps.pmove.pm_flags & G3PMF_DUCKED)
         duck = true;
     else
         duck = false;
@@ -853,6 +853,7 @@ and right after spawning
 void ClientEndServerFrame(edict_t *ent)
 {
     float   bobtime;
+    int     i;
 
     current_player = ent;
     current_client = ent->client;
@@ -865,8 +866,10 @@ void ClientEndServerFrame(edict_t *ent)
     // If it wasn't updated here, the view position would lag a frame
     // behind the body position when pushed -- "sinking into plats"
     //
-    VectorCopy(ent->s.origin, current_client->ps.pmove.origin);
-    VectorCopy(ent->velocity, current_client->ps.pmove.velocity);
+    for (i = 0; i < 3; i++) {
+        current_client->ps.pmove.origin[i] = COORD2SHORT(ent->s.origin[i]);
+        current_client->ps.pmove.velocity[i] = COORD2SHORT(ent->velocity[i]);
+    }
 
     //
     // If the end of unit layout is displayed, don't give
@@ -874,7 +877,7 @@ void ClientEndServerFrame(edict_t *ent)
     //
     if (level.intermission_framenum) {
         // FIXME: add view drifting here?
-        current_client->ps.screen_blend[3] = 0;
+        current_client->ps.blend[3] = 0;
         current_client->ps.fov = 90;
         G_SetStats(ent);
         return;
@@ -920,7 +923,7 @@ void ClientEndServerFrame(edict_t *ent)
 
     bobtime = (current_client->bobtime += bobmove);
 
-    if (current_client->ps.pmove.pm_flags & PMF_DUCKED)
+    if (current_client->ps.pmove.pm_flags & G3PMF_DUCKED)
         bobtime *= 4;
 
     bobcycle = (int)bobtime;
@@ -970,6 +973,6 @@ void ClientEndServerFrame(edict_t *ent)
     // if the scoreboard is up, update it
     if (ent->client->showscores && !(level.framenum & 31)) {
         DeathmatchScoreboardMessage(ent, ent->enemy);
-        gi.unicast(ent, false, 0);
+        gi.unicast(ent, false);
     }
 }

@@ -609,7 +609,7 @@ void medic_cable_attack(edict_t *self)
     gi.WriteShort(self - g_edicts);
     gi.WritePosition(start);
     gi.WritePosition(end);
-    gi.multicast(self->s.origin, MULTICAST_PVS, false);
+    gi.multicast(self->s.origin, MULTICAST_PVS);
 }
 
 void medic_hook_retract(edict_t *self)

@@ -114,7 +114,7 @@ edict_t *G_PickTarget(char *targetname)
     edict_t *choice[MAXCHOICES];
 
     if (!targetname) {
-        gi.Com_Print("G_PickTarget called with NULL targetname\n");
+        gi.dprintf("G_PickTarget called with NULL targetname\n");
         return NULL;
     }
 
@@ -128,7 +128,7 @@ edict_t *G_PickTarget(char *targetname)
     }
 
     if (!num_choices) {
-        gi.Com_Print(va("G_PickTarget: target %s not found\n", targetname));
+        gi.dprintf("G_PickTarget: target %s not found\n", targetname);
         return NULL;
     }
 
@@ -172,7 +172,7 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
         t->think = Think_Delay;
         t->activator = activator;
         if (!activator)
-            gi.Com_Print("Think_Delay with no activator\n");
+            gi.dprintf("Think_Delay with no activator\n");
         t->message = ent->message;
         t->target = ent->target;
         t->killtarget = ent->killtarget;
@@ -183,7 +183,7 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
 // print the message
 //
     if ((ent->message) && !(activator->svflags & SVF_MONSTER)) {
-        gi.Center_Print(activator, ent->message);
+        gi.centerprintf(activator, "%s", ent->message);
         if (ent->noise_index)
             gi.sound(activator, CHAN_AUTO, ent->noise_index, 1, ATTN_NORM, 0);
         else
@@ -198,7 +198,7 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
         while ((t = G_Find(t, FOFS(targetname), ent->killtarget))) {
             G_FreeEdict(t);
             if (!ent->inuse) {
-                gi.Com_Print("entity was removed while using killtargets\n");
+                gi.dprintf("entity was removed while using killtargets\n");
                 return;
             }
         }
@@ -216,13 +216,13 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
                 continue;
 
             if (t == ent) {
-                gi.Com_Print("WARNING: Entity used itself.\n");
+                gi.dprintf("WARNING: Entity used itself.\n");
             } else {
                 if (t->use)
                     t->use(t, ent, activator);
             }
             if (!ent->inuse) {
-                gi.Com_Print("entity was removed while using targets\n");
+                gi.dprintf("entity was removed while using targets\n");
                 return;
             }
         }
@@ -341,7 +341,7 @@ edict_t *G_Spawn(void)
     }
 
     if (i == game.maxentities)
-        gi.Com_Error("ED_Alloc: no free edicts");
+        gi.error("ED_Alloc: no free edicts");
 
     globals.num_edicts++;
     G_InitEdict(e);

@@ -32,6 +32,7 @@ typedef enum {
     G3PM_FREEZE
 } game3_pmtype_t;
 
+#if !defined(GAME3_INCLUDE)
 static inline pmtype_t pmtype_from_game3(game3_pmtype_t pmtype)
 {
     switch(pmtype)
@@ -69,6 +70,7 @@ static inline game3_pmtype_t pmtype_to_game3(pmtype_t pmtype)
     }
     return (game3_pmtype_t)pmtype;
 }
+#endif // #if !defined(GAME3_INCLUDE)
 
 // pmove->pm_flags
 #define G3PMF_DUCKED          BIT(0)
@@ -80,6 +82,7 @@ static inline game3_pmtype_t pmtype_to_game3(pmtype_t pmtype)
 #define G3PMF_NO_PREDICTION   BIT(6)      // temporarily disables prediction (used for grappling hook)
 #define G3PMF_TELEPORT_BIT    BIT(7)      // used by Q2PRO (non-extended servers)
 
+#if !defined(GAME3_INCLUDE)
 static inline pmflags_t pmflags_from_game3(byte pmflags)
 {
     pmflags_t new_pmflags = 0;
@@ -123,6 +126,7 @@ static inline byte pmflags_to_game3(pmflags_t pmflags)
         new_pmflags |= G3PMF_TELEPORT_BIT;
     return new_pmflags;
 }
+#endif // #if !defined(GAME3_INCLUDE)
 
 typedef struct {
     game3_pmtype_t pm_type;

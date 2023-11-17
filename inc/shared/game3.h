@@ -80,6 +80,7 @@ struct game3_gclient_s {
     // this point in the structure
 };
 
+#if !defined(GAME_INCLUDE)
 struct game3_edict_s {
     game3_entity_state_t  s;
     struct game3_gclient_s    *client;
@@ -106,6 +107,7 @@ struct game3_edict_s {
     // the game dll can add anything it wants after
     // this point in the structure
 };
+#endif // !defined(GAME_INCLUDE)
 
 //===============================================================
 

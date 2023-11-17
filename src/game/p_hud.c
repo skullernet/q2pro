@@ -34,11 +34,13 @@ void MoveClientToIntermission(edict_t *ent)
     if (deathmatch->value || coop->value)
         ent->client->showscores = true;
     VectorCopy(level.intermission_origin, ent->s.origin);
-    VectorCopy(level.intermission_origin, ent->client->ps.pmove.origin);
+    ent->client->ps.pmove.origin[0] = COORD2SHORT(level.intermission_origin[0]);
+    ent->client->ps.pmove.origin[1] = COORD2SHORT(level.intermission_origin[1]);
+    ent->client->ps.pmove.origin[2] = COORD2SHORT(level.intermission_origin[2]);
     VectorCopy(level.intermission_angle, ent->client->ps.viewangles);
-    ent->client->ps.pmove.pm_type = PM_FREEZE;
+    ent->client->ps.pmove.pm_type = G3PM_FREEZE;
     ent->client->ps.gunindex = 0;
-    ent->client->ps.screen_blend[3] = 0;
+    ent->client->ps.blend[3] = 0;
     ent->client->ps.rdflags &= ~RDF_UNDERWATER;
 
     // clean up powerup info
@@ -69,7 +71,7 @@ void MoveClientToIntermission(edict_t *ent)
 
     if (deathmatch->value || coop->value) {
         DeathmatchScoreboardMessage(ent, NULL);
-        gi.unicast(ent, true, 0);
+        gi.unicast(ent, true);
     }
 
 }
@@ -249,7 +251,7 @@ Note that it isn't that hard to overflow the 1400 byte message limit!
 void DeathmatchScoreboard(edict_t *ent)
 {
     DeathmatchScoreboardMessage(ent, ent->enemy);
-    gi.unicast(ent, true, 0);
+    gi.unicast(ent, true);
 }
 
 /*
@@ -316,7 +318,7 @@ void HelpComputer(edict_t *ent)
 
     gi.WriteByte(svc_layout);
     gi.WriteString(string);
-    gi.unicast(ent, true, 0);
+    gi.unicast(ent, true);
 }
 
 /*

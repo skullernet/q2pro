@@ -17,19 +17,35 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 // g_local.h -- local definitions for game module
 
+// Disable all definitions conflicting between vanilla and rerelease ABI
+#define GAME3_INCLUDE
 #include "shared/shared.h"
+#include "shared/game3_shared.h"
 #include "shared/list.h"
 #include "shared/m_flash.h"
-#include "common/pmove.h"
+
+typedef struct game3_edict_s edict_t;
+typedef struct gclient_s gclient_t;
+typedef game3_trace_t trace_t;
 
 // define GAME_INCLUDE so that game.h does not define the
 // short, server-visible gclient_t and edict_t structures,
 // because we define the full size ones in this file
 #define GAME_INCLUDE
 #include "shared/game.h"
+#include "shared/game3.h"
+
+// Compatibility definitions
+typedef game3_entity_state_t entity_state_t;
+typedef game3_player_state_t player_state_t;
+typedef game3_pmove_state_t pmove_state_t;
+typedef game3_pmove_t pmove_t;
+typedef game3_usercmd_t usercmd_t;
+#define MAX_EDICTS  MAX_EDICTS_OLD
+#define MAX_STATS   MAX_STATS_GAME3
 
 // features this game supports
-#define G_FEATURES  (GMF_PROPERINUSE|GMF_WANT_ALL_DISCONNECTS|GMF_ENHANCED_SAVEGAMES|GMF_EXTRA_USERINFO)
+#define G_FEATURES  (GMF_PROPERINUSE|GMF_WANT_ALL_DISCONNECTS|GMF_ENHANCED_SAVEGAMES)
 
 // the "gameversion" client command will print this plus compile date
 #define GAMEVERSION "baseq2"
@@ -222,10 +238,10 @@ typedef struct {
 
 typedef struct gitem_s {
     char        *classname; // spawning name
-    bool        (*pickup)(struct edict_s *ent, struct edict_s *other);
-    void        (*use)(struct edict_s *ent, const struct gitem_s *item);
-    void        (*drop)(struct edict_s *ent, const struct gitem_s *item);
-    void        (*weaponthink)(struct edict_s *ent);
+    bool        (*pickup)(struct game3_edict_s *ent, struct game3_edict_s *other);
+    void        (*use)(struct game3_edict_s *ent, const struct gitem_s *item);
+    void        (*drop)(struct game3_edict_s *ent, const struct gitem_s *item);
+    void        (*weaponthink)(struct game3_edict_s *ent);
     char        *pickup_sound;
     char        *world_model;
     int         world_model_flags;
@@ -434,8 +450,8 @@ typedef struct {
 
 extern  game_locals_t   game;
 extern  level_locals_t  level;
-extern  game_import_t   gi;
-extern  game_export_t   globals;
+extern  game3_import_t  gi;
+extern  game3_export_t  globals;
 extern  spawn_temp_t    st;
 
 extern  int sm_meat_index;
@@ -511,11 +527,6 @@ extern  cvar_t  *filterban;
 
 extern  cvar_t  *sv_gravity;
 extern  cvar_t  *sv_maxvelocity;
-// movement options, affecting pmove
-extern  cvar_t  *sv_airaccelerate;
-extern  cvar_t  *sv_qwmod;
-extern  cvar_t  *sv_strafejump_hack;
-extern  cvar_t  *sv_waterjump_hack;
 
 extern  cvar_t  *gun_x, *gun_y, *gun_z;
 extern  cvar_t  *sv_rollspeed;
@@ -846,8 +857,6 @@ typedef struct {
     int         helpchanged;
 
     bool        spectator;      // client is a spectator
-
-    char        extrauserinfo[MAX_INFO_STRING]; // used to obtain client protocol, needed for correct pmove params
 } client_persistant_t;
 
 // client data that stays across deathmatch respawns
@@ -869,7 +878,6 @@ struct gclient_s {
 
     // private to game
     client_persistant_t pers;
-    pmoveParams_t       pmp;
     client_respawn_t    resp;
     pmove_state_t       old_pmove;  // for detecting out-of-pmove changes
 
@@ -948,7 +956,7 @@ struct gclient_s {
     bool        update_chase;       // need to update chase info?
 };
 
-struct edict_s {
+struct game3_edict_s {
     entity_state_t  s;
     struct gclient_s    *client;    // NULL if not a player
                                     // the server expects the first part
@@ -956,8 +964,14 @@ struct edict_s {
                                     // but the rest of it is opaque
 
     qboolean    inuse;
-    bool        linked;
     int         linkcount;
+
+    // FIXME: move these fields to a server private sv_entity_t
+    list_t      area;               // linked to a division node or leaf
+
+    int         num_clusters;       // if -1, use headnode instead
+    int         clusternums[MAX_ENT_CLUSTERS];
+    int         headnode;           // unused if num_clusters != -1
     int         areanum, areanum2;
 
     //================================

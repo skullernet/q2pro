@@ -1062,7 +1062,7 @@ void door_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf
         return;
     self->touch_debounce_framenum = level.framenum + 5.0f * BASE_FRAMERATE;
 
-    gi.Center_Print(other, self->message);
+    gi.centerprintf(other, "%s", self->message);
     gi.sound(other, CHAN_AUTO, gi.soundindex("misc/talk1.wav"), 1, ATTN_NORM, 0);
 }
 
@@ -1201,7 +1201,7 @@ void SP_func_door_rotating(edict_t *ent)
         VectorNegate(ent->movedir, ent->movedir);
 
     if (!st.distance) {
-        gi.Com_Print(va("%s at %s with no distance set\n", ent->classname, vtos(ent->s.origin)));
+        gi.dprintf("%s at %s with no distance set\n", ent->classname, vtos(ent->s.origin));
         st.distance = 90;
     }
 
@@ -1448,7 +1448,7 @@ again:
 
     ent = G_PickTarget(self->target);
     if (!ent) {
-        gi.Com_Print(va("train_next: bad target %s\n", self->target));
+        gi.dprintf("train_next: bad target %s\n", self->target);
         return;
     }
 
@@ -1457,7 +1457,7 @@ again:
     // check for a teleport path_corner
     if (ent->spawnflags & 1) {
         if (!first) {
-            gi.Com_Print(va("connected teleport path_corners, see %s at %s\n", ent->classname, vtos(ent->s.origin)));
+            gi.dprintf("connected teleport path_corners, see %s at %s\n", ent->classname, vtos(ent->s.origin));
             return;
         }
         first = false;
@@ -1505,12 +1505,12 @@ void func_train_find(edict_t *self)
     edict_t *ent;
 
     if (!self->target) {
-        gi.Com_Print("train_find: no target\n");
+        gi.dprintf("train_find: no target\n");
         return;
     }
     ent = G_PickTarget(self->target);
     if (!ent) {
-        gi.Com_Print(va("train_find: target %s not found\n", self->target));
+        gi.dprintf("train_find: target %s not found\n", self->target);
         return;
     }
     self->target = ent->target;
@@ -1581,7 +1581,7 @@ void SP_func_train(edict_t *self)
         self->nextthink = level.framenum + 1;
         self->think = func_train_find;
     } else {
-        gi.Com_Print(va("func_train without a target at %s\n", vtos(self->absmin)));
+        gi.dprintf("func_train without a target at %s\n", vtos(self->absmin));
     }
 }
 
@@ -1597,13 +1597,13 @@ void trigger_elevator_use(edict_t *self, edict_t *other, edict_t *activator)
     }
 
     if (!other->pathtarget) {
-        gi.Com_Print("elevator used with no pathtarget\n");
+        gi.dprintf("elevator used with no pathtarget\n");
         return;
     }
 
     target = G_PickTarget(other->pathtarget);
     if (!target) {
-        gi.Com_Print(va("elevator used with bad pathtarget: %s\n", other->pathtarget));
+        gi.dprintf("elevator used with bad pathtarget: %s\n", other->pathtarget);
         return;
     }
 
@@ -1614,16 +1614,16 @@ void trigger_elevator_use(edict_t *self, edict_t *other, edict_t *activator)
 void trigger_elevator_init(edict_t *self)
 {
     if (!self->target) {
-        gi.Com_Print("trigger_elevator has no target\n");
+        gi.dprintf("trigger_elevator has no target\n");
         return;
     }
     self->movetarget = G_PickTarget(self->target);
     if (!self->movetarget) {
-        gi.Com_Print(va("trigger_elevator unable to find target %s\n", self->target));
+        gi.dprintf("trigger_elevator unable to find target %s\n", self->target);
         return;
     }
     if (strcmp(self->movetarget->classname, "func_train") != 0) {
-        gi.Com_Print(va("trigger_elevator target %s is not a train\n", self->target));
+        gi.dprintf("trigger_elevator target %s is not a train\n", self->target);
         return;
     }
 
@@ -1685,7 +1685,7 @@ void SP_func_timer(edict_t *self)
 
     if (self->random >= self->wait) {
         self->random = self->wait - FRAMETIME;
-        gi.Com_Print(va("func_timer at %s has random >= wait\n", vtos(self->s.origin)));
+        gi.dprintf("func_timer at %s has random >= wait\n", vtos(self->s.origin));
     }
 
     if (self->spawnflags & 1) {

@@ -21,11 +21,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "shared/list.h"
 #include "shared/m_flash.h"
 
+#if !defined(GAME3_INCLUDE)
 //
 // game.h -- game dll information visible to server
 //
 
 #define GAME_API_VERSION    2023
+
+#endif // !defined(GAME3_INCLUDE)
 
 // edict->svflags
 
@@ -73,6 +76,8 @@ typedef enum {
 //===============================================================
 
 #define MAX_ENT_CLUSTERS    16
+
+#if !defined(GAME3_INCLUDE)
 
 typedef struct edict_s edict_t;
 typedef struct gclient_s gclient_t;
@@ -730,3 +735,5 @@ typedef struct
     // Fetch named extension from cgame DLL.
     void *(*GetExtension)(const char *name);
 } cgame_export_t;
+
+#endif // defined(GAME3_INCLUDE)

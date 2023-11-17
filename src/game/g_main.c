@@ -20,8 +20,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 game_locals_t   game;
 level_locals_t  level;
-game_import_t   gi;
-game_export_t   globals;
+game3_import_t  gi;
+game3_export_t  globals;
 spawn_temp_t    st;
 
 int sm_meat_index;
@@ -49,10 +49,6 @@ cvar_t  *filterban;
 
 cvar_t  *sv_maxvelocity;
 cvar_t  *sv_gravity;
-cvar_t  *sv_airaccelerate;
-cvar_t  *sv_qwmod;
-cvar_t  *sv_strafejump_hack;
-cvar_t  *sv_waterjump_hack;
 
 cvar_t  *sv_rollspeed;
 cvar_t  *sv_rollangle;
@@ -77,27 +73,25 @@ cvar_t  *sv_maplist;
 cvar_t  *sv_features;
 
 void SpawnEntities(const char *mapname, const char *entities, const char *spawnpoint);
-edict_t *ClientChooseSlot(const char *userinfo, const char *social_id, bool isBot, edict_t **ignore, size_t num_ignore, bool cinematic);
 void ClientThink(edict_t *ent, usercmd_t *cmd);
-bool ClientConnect(edict_t *ent, char *userinfo, const char *social_id, bool isBot);
-void ClientUserinfoChanged(edict_t *ent, const char *userinfo);
+qboolean ClientConnect(edict_t *ent, char *userinfo);
+void ClientUserinfoChanged(edict_t *ent, char *userinfo);
 void ClientDisconnect(edict_t *ent);
 void ClientBegin(edict_t *ent);
 void ClientCommand(edict_t *ent);
 void RunEntity(edict_t *ent);
-char* WriteGameJson(bool autosave, size_t* json_size);
-void ReadGameJson(const char *json);
-char* WriteLevelJson(bool transition, size_t* json_size);
-void ReadLevelJson(const char *json);
-bool CanSave(void);
+void WriteGame(const char *filename, qboolean autosave);
+void ReadGame(const char *filename);
+void WriteLevel(const char *filename);
+void ReadLevel(const char *filename);
 void InitGame(void);
-void G_RunFrame(bool main_loop);
+void G_RunFrame(void);
 
 //===================================================================
 
 void ShutdownGame(void)
 {
-    gi.Com_Print("==== ShutdownGame ====\n");
+    gi.dprintf("==== ShutdownGame ====\n");
 
     memset(&game, 0, sizeof(game));
 
@@ -118,7 +112,7 @@ void InitGame(void)
 {
     int features = G_FEATURES;
 
-    gi.Com_Print("==== InitGame ====\n");
+    gi.dprintf("==== InitGame ====\n");
 
     Q_srand(time(NULL));
 
@@ -131,10 +125,6 @@ void InitGame(void)
     sv_rollangle = gi.cvar("sv_rollangle", "2", 0);
     sv_maxvelocity = gi.cvar("sv_maxvelocity", "2000", 0);
     sv_gravity = gi.cvar("sv_gravity", "800", 0);
-    sv_airaccelerate = gi.cvar("sv_airaccelerate", "0", CVAR_LATCH);
-    sv_qwmod = gi.cvar("sv_qwmod", "0", CVAR_LATCH);   //atu QWMod
-    sv_strafejump_hack = gi.cvar("sv_strafejump_hack", "1", CVAR_LATCH);
-    sv_waterjump_hack = gi.cvar("sv_waterjump_hack", "1", CVAR_LATCH);
 
     // noset vars
     dedicated = gi.cvar("dedicated", "0", CVAR_NOSET);
@@ -217,22 +207,20 @@ Returns a pointer to the structure with all entry points
 and global variables
 =================
 */
-q_exported game_export_t *GetGameAPI(game_import_t *import)
+q_exported game3_export_t *GetGameAPI(game3_import_t *import)
 {
     gi = *import;
 
-    globals.apiversion = GAME_API_VERSION;
+    globals.apiversion = 3;
     globals.Init = InitGame;
     globals.Shutdown = ShutdownGame;
     globals.SpawnEntities = SpawnEntities;
 
-    globals.WriteGameJson = WriteGameJson;
-    globals.ReadGameJson = ReadGameJson;
-    globals.WriteLevelJson = WriteLevelJson;
-    globals.ReadLevelJson = ReadLevelJson;
-    globals.CanSave = CanSave;
+    globals.WriteGame = WriteGame;
+    globals.ReadGame = ReadGame;
+    globals.WriteLevel = WriteLevel;
+    globals.ReadLevel = ReadLevel;
 
-    globals.ClientChooseSlot = ClientChooseSlot;
     globals.ClientThink = ClientThink;
     globals.ClientConnect = ClientConnect;
     globals.ClientUserinfoChanged = ClientUserinfoChanged;
@@ -264,7 +252,7 @@ void Com_LPrintf(print_type_t type, const char *fmt, ...)
     Q_vsnprintf(text, sizeof(text), fmt, argptr);
     va_end(argptr);
 
-    gi.Com_Print(text);
+    gi.dprintf("%s", text);
 }
 
 void Com_Error(error_type_t type, const char *fmt, ...)
@@ -276,7 +264,7 @@ void Com_Error(error_type_t type, const char *fmt, ...)
     Q_vsnprintf(text, sizeof(text), fmt, argptr);
     va_end(argptr);
 
-    gi.Com_Error(text);
+    gi.error("%s", text);
 }
 #endif
 
@@ -425,7 +413,7 @@ void CheckDMRules(void)
 
     if (timelimit->value) {
         if (level.time >= timelimit->value * 60) {
-            gi.Broadcast_Print(PRINT_HIGH, "Timelimit hit.\n");
+            gi.bprintf(PRINT_HIGH, "Timelimit hit.\n");
             EndDMLevel();
             return;
         }
@@ -438,7 +426,7 @@ void CheckDMRules(void)
                 continue;
 
             if (cl->resp.score >= fraglimit->value) {
-                gi.Broadcast_Print(PRINT_HIGH, "Fraglimit hit.\n");
+                gi.bprintf(PRINT_HIGH, "Fraglimit hit.\n");
                 EndDMLevel();
                 return;
             }
@@ -481,7 +469,7 @@ G_RunFrame
 Advances the world by 0.1 seconds
 ================
 */
-void G_RunFrame(bool main_loop)
+void G_RunFrame(void)
 {
     int     i;
     edict_t *ent;

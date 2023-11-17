@@ -283,7 +283,7 @@ void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker)
             }
         }
         if (message) {
-            gi.Broadcast_Print(PRINT_MEDIUM, va("%s %s.\n", self->client->pers.netname, message));
+            gi.bprintf(PRINT_MEDIUM, "%s %s.\n", self->client->pers.netname, message);
             if (deathmatch->value)
                 self->client->resp.score--;
             self->enemy = NULL;
@@ -363,7 +363,7 @@ void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker)
                 break;
             }
             if (message) {
-                gi.Broadcast_Print(PRINT_MEDIUM, va("%s %s %s%s\n", self->client->pers.netname, message, attacker->client->pers.netname, message2));
+                gi.bprintf(PRINT_MEDIUM, "%s %s %s%s\n", self->client->pers.netname, message, attacker->client->pers.netname, message2);
                 if (deathmatch->value) {
                     if (ff)
                         attacker->client->resp.score--;
@@ -375,7 +375,7 @@ void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker)
         }
     }
 
-    gi.Broadcast_Print(PRINT_MEDIUM, va("%s died.\n", self->client->pers.netname));
+    gi.bprintf(PRINT_MEDIUM, "%s died.\n", self->client->pers.netname);
     if (deathmatch->value)
         self->client->resp.score--;
 }
@@ -489,7 +489,7 @@ void player_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage
     if (!self->deadflag) {
         self->client->respawn_framenum = level.framenum + 1.0f * BASE_FRAMERATE;
         LookAtKiller(self, inflictor, attacker);
-        self->client->ps.pmove.pm_type = PM_DEAD;
+        self->client->ps.pmove.pm_type = G3PM_DEAD;
         ClientObituary(self, inflictor, attacker);
         TossClientWeapon(self);
         if (deathmatch->value)
@@ -527,7 +527,7 @@ void player_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage
             i = (i + 1) % 3;
             // start a death animation
             self->client->anim_priority = ANIM_DEATH;
-            if (self->client->ps.pmove.pm_flags & PMF_DUCKED) {
+            if (self->client->ps.pmove.pm_flags & G3PMF_DUCKED) {
                 self->s.frame = FRAME_crdeath1 - 1;
                 self->client->anim_end = FRAME_crdeath5;
             } else switch (i) {
@@ -838,7 +838,7 @@ void    SelectSpawnPoint(edict_t *ent, vec3_t origin, vec3_t angles)
                 spot = G_Find(spot, FOFS(classname), "info_player_start");
             }
             if (!spot)
-                gi.Com_Error(va("Couldn't find spawn point %s", game.spawnpoint));
+                gi.error("Couldn't find spawn point %s", game.spawnpoint);
         }
     }
 
@@ -890,7 +890,7 @@ void CopyToBodyQue(edict_t *ent)
         gi.WriteByte(TE_BLOOD);
         gi.WritePosition(body->s.origin);
         gi.WriteDir(vec3_origin);
-        gi.multicast(body->s.origin, MULTICAST_PVS, false);
+        gi.multicast(body->s.origin, MULTICAST_PVS);
     }
 
     gi.unlinkentity(body);
@@ -937,7 +937,7 @@ void respawn(edict_t *self)
         self->s.event = EV_PLAYER_TELEPORT;
 
         // hold in place briefly
-        self->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
+        self->client->ps.pmove.pm_flags = G3PMF_TIME_TELEPORT;
         self->client->ps.pmove.pm_time = 14;
 
         self->client->respawn_framenum = level.framenum;
@@ -965,11 +965,11 @@ void spectator_respawn(edict_t *ent)
         if (*spectator_password->string &&
             strcmp(spectator_password->string, "none") &&
             strcmp(spectator_password->string, value)) {
-            gi.Client_Print(ent, PRINT_HIGH, "Spectator password incorrect.\n");
+            gi.cprintf(ent, PRINT_HIGH, "Spectator password incorrect.\n");
             ent->client->pers.spectator = false;
             gi.WriteByte(svc_stufftext);
             gi.WriteString("spectator 0\n");
-            gi.unicast(ent, true, 0);
+            gi.unicast(ent, true);
             return;
         }
 
@@ -979,12 +979,12 @@ void spectator_respawn(edict_t *ent)
                 numspec++;
 
         if (numspec >= maxspectators->value) {
-            gi.Client_Print(ent, PRINT_HIGH, "Server spectator limit is full.");
+            gi.cprintf(ent, PRINT_HIGH, "Server spectator limit is full.");
             ent->client->pers.spectator = false;
             // reset his spectator var
             gi.WriteByte(svc_stufftext);
             gi.WriteString("spectator 0\n");
-            gi.unicast(ent, true, 0);
+            gi.unicast(ent, true);
             return;
         }
     } else {
@@ -993,11 +993,11 @@ void spectator_respawn(edict_t *ent)
         char *value = Info_ValueForKey(ent->client->pers.userinfo, "password");
         if (*password->string && strcmp(password->string, "none") &&
             strcmp(password->string, value)) {
-            gi.Client_Print(ent, PRINT_HIGH, "Password incorrect.\n");
+            gi.cprintf(ent, PRINT_HIGH, "Password incorrect.\n");
             ent->client->pers.spectator = true;
             gi.WriteByte(svc_stufftext);
             gi.WriteString("spectator 1\n");
-            gi.unicast(ent, true, 0);
+            gi.unicast(ent, true);
             return;
         }
     }
@@ -1014,76 +1014,22 @@ void spectator_respawn(edict_t *ent)
         gi.WriteByte(svc_muzzleflash);
         gi.WriteShort(ent - g_edicts);
         gi.WriteByte(MZ_LOGIN);
-        gi.multicast(ent->s.origin, MULTICAST_PVS, false);
+        gi.multicast(ent->s.origin, MULTICAST_PVS);
 
         // hold in place briefly
-        ent->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
+        ent->client->ps.pmove.pm_flags = G3PMF_TIME_TELEPORT;
         ent->client->ps.pmove.pm_time = 14;
     }
 
     ent->client->respawn_framenum = level.framenum;
 
     if (ent->client->pers.spectator)
-        gi.Broadcast_Print(PRINT_HIGH, va("%s has moved to the sidelines\n", ent->client->pers.netname));
+        gi.bprintf(PRINT_HIGH, "%s has moved to the sidelines\n", ent->client->pers.netname);
     else
-        gi.Broadcast_Print(PRINT_HIGH, va("%s joined the game\n", ent->client->pers.netname));
+        gi.bprintf(PRINT_HIGH, "%s joined the game\n", ent->client->pers.netname);
 }
 
 //==============================================================
-
-static bool edict_ignored(edict_t *ent, edict_t **ignore, size_t num_ignore)
-{
-    for (size_t i = 0; i < num_ignore; i++) {
-        if (ent == ignore[i])
-            return true;
-    }
-    return false;
-}
-
-edict_t *ClientChooseSlot (const char *userinfo, const char *social_id, bool isBot, edict_t **ignore, size_t num_ignore, bool cinematic)
-{
-    // find a free client slot
-    for (int i = 0; i < game.maxclients; i++) {
-        edict_t *ent = &g_edicts[i + 1];
-        if (!edict_ignored(ent, ignore, num_ignore) && !game.clients[i].pers.connected)
-            return ent;
-    }
-
-    return NULL;
-}
-
-#define PROTOCOL_VERSION_DEFAULT    34
-#define PROTOCOL_VERSION_R1Q2       35
-#define PROTOCOL_VERSION_Q2PRO      36
-
-static void init_pmove(pmoveParams_t *pmp, int protocol)
-{
-    int force;
-
-    // copy default pmove parameters
-    PmoveInit(pmp);
-    pmp->airaccelerate = sv_airaccelerate->value;
-
-    // common extensions
-    force = 2;
-    if (protocol >= PROTOCOL_VERSION_R1Q2) {
-        pmp->speedmult = 2;
-        force = 1;
-    }
-    pmp->strafehack = sv_strafejump_hack->value >= force;
-
-    // q2pro extensions
-    force = 2;
-    if (protocol == PROTOCOL_VERSION_Q2PRO) {
-        if (sv_qwmod->value) {
-            PmoveEnableQW(pmp);
-        }
-        pmp->flyhack = true;
-        pmp->flyfriction = 4;
-        force = 1;
-    }
-    pmp->waterhack = sv_waterjump_hack->value >= force;
-}
 
 /*
 ===========
@@ -1178,13 +1124,6 @@ void PutClientInServer(edict_t *ent)
     VectorCopy(maxs, ent->maxs);
     VectorClear(ent->velocity);
 
-    // setup pmove
-    int protocol = 0;
-    char protocol_str[MAX_INFO_STRING];
-    if (gi.Info_ValueForKey(ent->client->pers.extrauserinfo, "major", protocol_str, sizeof(protocol_str)))
-        protocol = atoi(protocol_str);
-    init_pmove(&ent->client->pmp, protocol ? protocol : PROTOCOL_VERSION_DEFAULT);
-
     // clear playerstate values
     memset(&ent->client->ps, 0, sizeof(client->ps));
 
@@ -1227,14 +1166,16 @@ void PutClientInServer(edict_t *ent)
 
     VectorCopy(ent->s.origin, ent->s.old_origin);
 
-    VectorCopy(ent->s.origin, client->ps.pmove.origin);
+    for (i = 0; i < 3; i++) {
+        client->ps.pmove.origin[i] = COORD2SHORT(ent->s.origin[i]);
+    }
 
     spawn_angles[PITCH] = 0;
     spawn_angles[ROLL] = 0;
 
     // set the delta angle
     for (i = 0; i < 3; i++) {
-        client->ps.pmove.delta_angles[i] = spawn_angles[i] - client->resp.cmd_angles[i];
+        client->ps.pmove.delta_angles[i] = ANGLE2SHORT(spawn_angles[i] - client->resp.cmd_angles[i]);
     }
 
     VectorCopy(spawn_angles, ent->s.angles);
@@ -1291,14 +1232,14 @@ void ClientBeginDeathmatch(edict_t *ent)
         gi.WriteByte(svc_muzzleflash);
         gi.WriteShort(ent - g_edicts);
         gi.WriteByte(MZ_LOGIN);
-        gi.multicast(ent->s.origin, MULTICAST_PVS, false);
+        gi.multicast(ent->s.origin, MULTICAST_PVS);
 
         // hold in place briefly
-        ent->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
+        ent->client->ps.pmove.pm_flags = G3PMF_TIME_TELEPORT;
         ent->client->ps.pmove.pm_time = 200 >> 3;
     }
 
-    gi.Broadcast_Print(PRINT_HIGH, va("%s entered the game\n", ent->client->pers.netname));
+    gi.bprintf(PRINT_HIGH, "%s entered the game\n", ent->client->pers.netname);
 
     // make sure all view stuff is valid
     ClientEndServerFrame(ent);
@@ -1331,7 +1272,7 @@ void ClientBegin(edict_t *ent)
         // state when the game is saved, so we need to compensate
         // with deltaangles
         for (i = 0; i < 3; i++)
-            ent->client->ps.pmove.delta_angles[i] = ent->client->ps.viewangles[i];
+            ent->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(ent->client->ps.viewangles[i]);
     } else {
         // a spawn point will completely reinitialize the entity
         // except for the persistant data that was initialized at
@@ -1342,7 +1283,7 @@ void ClientBegin(edict_t *ent)
         PutClientInServer(ent);
 
         // hold in place briefly
-        ent->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
+        ent->client->ps.pmove.pm_flags = G3PMF_TIME_TELEPORT;
         ent->client->ps.pmove.pm_time = 200 >> 3;
     }
 
@@ -1354,9 +1295,9 @@ void ClientBegin(edict_t *ent)
             gi.WriteByte(svc_muzzleflash);
             gi.WriteShort(ent - g_edicts);
             gi.WriteByte(MZ_LOGIN);
-            gi.multicast(ent->s.origin, MULTICAST_PVS, false);
+            gi.multicast(ent->s.origin, MULTICAST_PVS);
 
-            gi.Broadcast_Print(PRINT_HIGH, va("%s entered the game\n", ent->client->pers.netname));
+            gi.bprintf(PRINT_HIGH, "%s entered the game\n", ent->client->pers.netname);
         }
     }
 
@@ -1437,7 +1378,7 @@ Changing levels will NOT cause this to be called again, but
 loadgames will.
 ============
 */
-bool ClientConnect(edict_t *ent, char *userinfo, const char *social_id, bool isBot)
+qboolean ClientConnect(edict_t *ent, char *userinfo)
 {
     char    *value;
 
@@ -1493,11 +1434,8 @@ bool ClientConnect(edict_t *ent, char *userinfo, const char *social_id, bool isB
 
     ClientUserinfoChanged(ent, userinfo);
 
-    const char *extrauserinfo = userinfo + strlen(userinfo) + 1;
-    Q_strlcpy(ent->client->pers.extrauserinfo, extrauserinfo, sizeof(ent->client->pers.extrauserinfo));
-
     if (game.maxclients > 1)
-        gi.Com_Print(va("%s connected\n", ent->client->pers.netname));
+        gi.dprintf("%s connected\n", ent->client->pers.netname);
 
     ent->svflags = 0; // make sure we start with known default
     ent->client->pers.connected = true;
@@ -1519,14 +1457,14 @@ void ClientDisconnect(edict_t *ent)
     if (!ent->client)
         return;
 
-    gi.Broadcast_Print(PRINT_HIGH, va("%s disconnected\n", ent->client->pers.netname));
+    gi.bprintf(PRINT_HIGH, "%s disconnected\n", ent->client->pers.netname);
 
     // send effect
     if (ent->inuse) {
         gi.WriteByte(svc_muzzleflash);
         gi.WriteShort(ent - g_edicts);
         gi.WriteByte(MZ_LOGOUT);
-        gi.multicast(ent->s.origin, MULTICAST_PVS, false);
+        gi.multicast(ent->s.origin, MULTICAST_PVS);
     }
 
     gi.unlinkentity(ent);
@@ -1552,7 +1490,7 @@ void ClientDisconnect(edict_t *ent)
 edict_t *pm_passent;
 
 // pmove doesn't need to know about passent and contentmask
-trace_t q_gameabi PM_trace(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, const edict_t* passent, contents_t contentmask)
+trace_t q_gameabi PM_trace(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end)
 {
     if (pm_passent->health > 0)
         return gi.trace(start, mins, maxs, end, pm_passent, MASK_PLAYERSOLID);
@@ -1579,7 +1517,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
     client = ent->client;
 
     if (level.intermission_framenum) {
-        client->ps.pmove.pm_type = PM_FREEZE;
+        client->ps.pmove.pm_type = G3PM_FREEZE;
         // can exit intermission after five seconds
         if (level.framenum > level.intermission_framenum + 5.0f * BASE_FRAMERATE
             && (ucmd->buttons & BUTTON_ANY))
@@ -1591,9 +1529,9 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 
     if (ent->client->chase_target) {
 
-        client->resp.cmd_angles[0] = ucmd->angles[0];
-        client->resp.cmd_angles[1] = ucmd->angles[1];
-        client->resp.cmd_angles[2] = ucmd->angles[2];
+        client->resp.cmd_angles[0] = SHORT2ANGLE(ucmd->angles[0]);
+        client->resp.cmd_angles[1] = SHORT2ANGLE(ucmd->angles[1]);
+        client->resp.cmd_angles[2] = SHORT2ANGLE(ucmd->angles[2]);
 
     } else {
 
@@ -1601,19 +1539,21 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         memset(&pm, 0, sizeof(pm));
 
         if (ent->movetype == MOVETYPE_NOCLIP)
-            client->ps.pmove.pm_type = PM_SPECTATOR;
+            client->ps.pmove.pm_type = G3PM_SPECTATOR;
         else if (ent->s.modelindex != MODELINDEX_PLAYER)
-            client->ps.pmove.pm_type = PM_GIB;
+            client->ps.pmove.pm_type = G3PM_GIB;
         else if (ent->deadflag)
-            client->ps.pmove.pm_type = PM_DEAD;
+            client->ps.pmove.pm_type = G3PM_DEAD;
         else
-            client->ps.pmove.pm_type = PM_NORMAL;
+            client->ps.pmove.pm_type = G3PM_NORMAL;
 
         client->ps.pmove.gravity = sv_gravity->value;
         pm.s = client->ps.pmove;
 
-        VectorCopy(ent->s.origin, pm.s.origin);
-        VectorCopy(ent->velocity, pm.s.velocity);
+        for (i = 0; i < 3; i++) {
+            pm.s.origin[i] = COORD2SHORT(ent->s.origin[i]);
+            pm.s.velocity[i] = COORD2SHORT(ent->velocity[i]);
+        }
 
         if (memcmp(&client->old_pmove, &pm.s, sizeof(pm.s))) {
             pm.snapinitial = true;
@@ -1622,25 +1562,25 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 
         pm.cmd = *ucmd;
 
-        pm.player = ent;
         pm.trace = PM_trace;    // adds default parms
         pm.pointcontents = gi.pointcontents;
-        VectorCopy(ent->client->ps.viewoffset, pm.viewoffset);
 
         // perform a pmove
-        Pmove(&pm, &ent->client->pmp);
+        gi.Pmove(&pm);
 
-        VectorCopy(pm.s.origin, ent->s.origin);
-        VectorCopy(pm.s.velocity, ent->velocity);
+        for (i = 0; i < 3; i++) {
+            ent->s.origin[i] = SHORT2COORD(pm.s.origin[i]);
+            ent->velocity[i] = SHORT2COORD(pm.s.velocity[i]);
+        }
 
         VectorCopy(pm.mins, ent->mins);
         VectorCopy(pm.maxs, ent->maxs);
 
-        client->resp.cmd_angles[0] = ucmd->angles[0];
-        client->resp.cmd_angles[1] = ucmd->angles[1];
-        client->resp.cmd_angles[2] = ucmd->angles[2];
+        client->resp.cmd_angles[0] = SHORT2ANGLE(ucmd->angles[0]);
+        client->resp.cmd_angles[1] = SHORT2ANGLE(ucmd->angles[1]);
+        client->resp.cmd_angles[2] = SHORT2ANGLE(ucmd->angles[2]);
 
-        if (~client->ps.pmove.pm_flags & pm.s.pm_flags & PMF_JUMP_HELD && pm.waterlevel == 0) {
+        if (~client->ps.pmove.pm_flags & pm.s.pm_flags & G3PMF_JUMP_HELD && pm.waterlevel == 0) {
             gi.sound(ent, CHAN_VOICE, gi.soundindex("*jump1.wav"), 1, ATTN_NORM, 0);
             PlayerNoise(ent, ent->s.origin, PNOISE_SELF);
         }
@@ -1649,7 +1589,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         client->ps.pmove = pm.s;
         client->old_pmove = pm.s;
 
-        ent->viewheight = pm.s.viewheight;
+        ent->viewheight = pm.viewheight;
         ent->waterlevel = pm.waterlevel;
         ent->watertype = pm.watertype;
         ent->groundentity = pm.groundentity;
@@ -1671,10 +1611,10 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
             G_TouchTriggers(ent);
 
         // touch other objects
-        for (i = 0; i < pm.touch.num; i++) {
-            other = pm.touch.traces[i].ent;
+        for (i = 0; i < pm.numtouch; i++) {
+            other = pm.touchents[i];
             for (j = 0; j < i; j++)
-                if (pm.touch.traces[j].ent == other)
+                if (pm.touchents[j] == other)
                     break;
             if (j != i)
                 continue;   // duplicated
@@ -1691,7 +1631,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 
     // save light level the player is standing on for
     // monster sighting AI
-    ent->light_level = 128; // ucmd->lightlevel; // FIXME
+    ent->light_level = ucmd->lightlevel;
 
     // fire weapon from final position if needed
     if (client->latched_buttons & BUTTON_ATTACK) {
@@ -1701,7 +1641,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 
             if (client->chase_target) {
                 client->chase_target = NULL;
-                client->ps.pmove.pm_flags &= ~PMF_NO_PREDICTION;
+                client->ps.pmove.pm_flags &= ~G3PMF_NO_PREDICTION;
             } else
                 GetChaseTarget(ent);
 
@@ -1712,16 +1652,16 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
     }
 
     if (client->resp.spectator) {
-        if (ucmd->buttons & BUTTON_JUMP) {
-            if (!(client->ps.pmove.pm_flags & PMF_JUMP_HELD)) {
-                client->ps.pmove.pm_flags |= PMF_JUMP_HELD;
+        if (ucmd->upmove >= 10) {
+            if (!(client->ps.pmove.pm_flags & G3PMF_JUMP_HELD)) {
+                client->ps.pmove.pm_flags |= G3PMF_JUMP_HELD;
                 if (client->chase_target)
                     ChaseNext(ent);
                 else
                     GetChaseTarget(ent);
             }
         } else
-            client->ps.pmove.pm_flags &= ~PMF_JUMP_HELD;
+            client->ps.pmove.pm_flags &= ~G3PMF_JUMP_HELD;
     }
 
     // update chase cam if being followed

@@ -26,7 +26,7 @@ void Use_Target_Tent(edict_t *ent, edict_t *other, edict_t *activator)
     gi.WriteByte(svc_temp_entity);
     gi.WriteByte(ent->style);
     gi.WritePosition(ent->s.origin);
-    gi.multicast(ent->s.origin, MULTICAST_PVS, false);
+    gi.multicast(ent->s.origin, MULTICAST_PVS);
 }
 
 void SP_target_temp_entity(edict_t *ent)
@@ -79,7 +79,7 @@ void SP_target_speaker(edict_t *ent)
     char    buffer[MAX_QPATH];
 
     if (!st.noise) {
-        gi.Com_Print(va("target_speaker with no noise set at %s\n", vtos(ent->s.origin)));
+        gi.dprintf("target_speaker with no noise set at %s\n", vtos(ent->s.origin));
         return;
     }
     if (!strstr(st.noise, ".wav"))
@@ -131,7 +131,7 @@ void SP_target_help(edict_t *ent)
     }
 
     if (!ent->message) {
-        gi.Com_Print(va("%s with no message at %s\n", ent->classname, vtos(ent->s.origin)));
+        gi.dprintf("%s with no message at %s\n", ent->classname, vtos(ent->s.origin));
         G_FreeEdict(ent);
         return;
     }
@@ -223,7 +223,7 @@ void target_explosion_explode(edict_t *self)
     gi.WriteByte(svc_temp_entity);
     gi.WriteByte(TE_EXPLOSION1);
     gi.WritePosition(self->s.origin);
-    gi.multicast(self->s.origin, MULTICAST_PHS, false);
+    gi.multicast(self->s.origin, MULTICAST_PHS);
 
     T_RadiusDamage(self, self->activator, self->dmg, NULL, self->dmg + 40, MOD_EXPLOSIVE);
 
@@ -276,7 +276,7 @@ void use_target_changelevel(edict_t *self, edict_t *other, edict_t *activator)
     // if multiplayer, let everyone know who hit the exit
     if (deathmatch->value) {
         if (activator && activator->client)
-            gi.Broadcast_Print(PRINT_HIGH, va("%s exited the level.\n", activator->client->pers.netname));
+            gi.bprintf(PRINT_HIGH, "%s exited the level.\n", activator->client->pers.netname);
     }
 
     // if going to a new unit, clear cross triggers
@@ -289,7 +289,7 @@ void use_target_changelevel(edict_t *self, edict_t *other, edict_t *activator)
 void SP_target_changelevel(edict_t *ent)
 {
     if (!ent->map) {
-        gi.Com_Print(va("target_changelevel with no map at %s\n", vtos(ent->s.origin)));
+        gi.dprintf("target_changelevel with no map at %s\n", vtos(ent->s.origin));
         G_FreeEdict(ent);
         return;
     }
@@ -328,7 +328,7 @@ void use_target_splash(edict_t *self, edict_t *other, edict_t *activator)
     gi.WritePosition(self->s.origin);
     gi.WriteDir(self->movedir);
     gi.WriteByte(self->sounds);
-    gi.multicast(self->s.origin, MULTICAST_PVS, false);
+    gi.multicast(self->s.origin, MULTICAST_PVS);
 
     if (self->dmg)
         T_RadiusDamage(self, activator, self->dmg, NULL, self->dmg + 40, MOD_SPLASH);
@@ -522,7 +522,7 @@ void target_laser_think(edict_t *self)
                 gi.WritePosition(tr.endpos);
                 gi.WriteDir(tr.plane.normal);
                 gi.WriteByte(self->s.skinnum);
-                gi.multicast(tr.endpos, MULTICAST_PVS, false);
+                gi.multicast(tr.endpos, MULTICAST_PVS);
             }
             break;
         }
@@ -592,7 +592,7 @@ void target_laser_start(edict_t *self)
         if (self->target) {
             ent = G_Find(NULL, FOFS(targetname), self->target);
             if (!ent)
-                gi.Com_Print(va("%s at %s: %s is a bad target\n", self->classname, vtos(self->s.origin), self->target));
+                gi.dprintf("%s at %s: %s is a bad target\n", self->classname, vtos(self->s.origin), self->target);
             self->enemy = ent;
         } else {
             G_SetMovedir(self->s.angles, self->movedir);
@@ -657,15 +657,15 @@ void target_lightramp_use(edict_t *self, edict_t *other, edict_t *activator)
             if (!e)
                 break;
             if (strcmp(e->classname, "light") != 0) {
-                gi.Com_Print(va("%s at %s ", self->classname, vtos(self->s.origin)));
-                gi.Com_Print(va("target %s (%s at %s) is not a light\n", self->target, e->classname, vtos(e->s.origin)));
+                gi.dprintf("%s at %s ", self->classname, vtos(self->s.origin));
+                gi.dprintf("target %s (%s at %s) is not a light\n", self->target, e->classname, vtos(e->s.origin));
             } else {
                 self->enemy = e;
             }
         }
 
         if (!self->enemy) {
-            gi.Com_Print(va("%s target %s not found at %s\n", self->classname, self->target, vtos(self->s.origin)));
+            gi.dprintf("%s target %s not found at %s\n", self->classname, self->target, vtos(self->s.origin));
             G_FreeEdict(self);
             return;
         }
@@ -678,7 +678,7 @@ void target_lightramp_use(edict_t *self, edict_t *other, edict_t *activator)
 void SP_target_lightramp(edict_t *self)
 {
     if (!self->message || strlen(self->message) != 2 || self->message[0] < 'a' || self->message[0] > 'z' || self->message[1] < 'a' || self->message[1] > 'z' || self->message[0] == self->message[1]) {
-        gi.Com_Print(va("target_lightramp has bad ramp (%s) at %s\n", self->message, vtos(self->s.origin)));
+        gi.dprintf("target_lightramp has bad ramp (%s) at %s\n", self->message, vtos(self->s.origin));
         G_FreeEdict(self);
         return;
     }
@@ -689,7 +689,7 @@ void SP_target_lightramp(edict_t *self)
     }
 
     if (!self->target) {
-        gi.Com_Print(va("%s with no target at %s\n", self->classname, vtos(self->s.origin)));
+        gi.dprintf("%s with no target at %s\n", self->classname, vtos(self->s.origin));
         G_FreeEdict(self);
         return;
     }
@@ -751,7 +751,7 @@ void target_earthquake_use(edict_t *self, edict_t *other, edict_t *activator)
 void SP_target_earthquake(edict_t *self)
 {
     if (!self->targetname)
-        gi.Com_Print(va("untargeted %s at %s\n", self->classname, vtos(self->s.origin)));
+        gi.dprintf("untargeted %s at %s\n", self->classname, vtos(self->s.origin));
 
     if (!self->count)
         self->count = 5;

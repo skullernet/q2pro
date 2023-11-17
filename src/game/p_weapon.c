@@ -193,7 +193,7 @@ void ChangeWeapon(edict_t *ent)
     ent->client->ps.gunindex = gi.modelindex(ent->client->pers.weapon->view_model);
 
     ent->client->anim_priority = ANIM_PAIN;
-    if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+    if (ent->client->ps.pmove.pm_flags & G3PMF_DUCKED) {
         ent->s.frame = FRAME_crpain1;
         ent->client->anim_end = FRAME_crpain4;
     } else {
@@ -290,12 +290,12 @@ void Use_Weapon(edict_t *ent, const gitem_t *item)
         ammo_index = ITEM_INDEX(ammo_item);
 
         if (!ent->client->pers.inventory[ammo_index]) {
-            gi.Client_Print(ent, PRINT_HIGH, va("No %s for %s.\n", ammo_item->pickup_name, item->pickup_name));
+            gi.cprintf(ent, PRINT_HIGH, "No %s for %s.\n", ammo_item->pickup_name, item->pickup_name);
             return;
         }
 
         if (ent->client->pers.inventory[ammo_index] < item->quantity) {
-            gi.Client_Print(ent, PRINT_HIGH, va("Not enough %s for %s.\n", ammo_item->pickup_name, item->pickup_name));
+            gi.cprintf(ent, PRINT_HIGH, "Not enough %s for %s.\n", ammo_item->pickup_name, item->pickup_name);
             return;
         }
     }
@@ -319,7 +319,7 @@ void Drop_Weapon(edict_t *ent, const gitem_t *item)
     index = ITEM_INDEX(item);
     // see if we're already using it
     if (((item == ent->client->pers.weapon) || (item == ent->client->newweapon)) && (ent->client->pers.inventory[index] == 1)) {
-        gi.Client_Print(ent, PRINT_HIGH, "Can't drop current weapon\n");
+        gi.cprintf(ent, PRINT_HIGH, "Can't drop current weapon\n");
         return;
     }
 
@@ -352,7 +352,7 @@ static void Weapon_Generic(edict_t *ent, int FRAME_ACTIVATE_LAST, int FRAME_FIRE
             return;
         } else if ((FRAME_DEACTIVATE_LAST - ent->client->ps.gunframe) == 4) {
             ent->client->anim_priority = ANIM_REVERSE;
-            if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+            if (ent->client->ps.pmove.pm_flags & G3PMF_DUCKED) {
                 ent->s.frame = FRAME_crpain4 + 1;
                 ent->client->anim_end = FRAME_crpain1;
             } else {
@@ -383,7 +383,7 @@ static void Weapon_Generic(edict_t *ent, int FRAME_ACTIVATE_LAST, int FRAME_FIRE
 
         if ((FRAME_DEACTIVATE_LAST - FRAME_DEACTIVATE_FIRST) < 4) {
             ent->client->anim_priority = ANIM_REVERSE;
-            if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+            if (ent->client->ps.pmove.pm_flags & G3PMF_DUCKED) {
                 ent->s.frame = FRAME_crpain4 + 1;
                 ent->client->anim_end = FRAME_crpain1;
             } else {
@@ -405,7 +405,7 @@ static void Weapon_Generic(edict_t *ent, int FRAME_ACTIVATE_LAST, int FRAME_FIRE
 
                 // start the animation
                 ent->client->anim_priority = ANIM_ATTACK;
-                if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+                if (ent->client->ps.pmove.pm_flags & G3PMF_DUCKED) {
                     ent->s.frame = FRAME_crattak1 - 1;
                     ent->client->anim_end = FRAME_crattak9;
                 } else {
@@ -504,7 +504,7 @@ void weapon_grenade_fire(edict_t *ent, bool held)
     if (ent->health <= 0)
         return;
 
-    if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+    if (ent->client->ps.pmove.pm_flags & G3PMF_DUCKED) {
         ent->client->anim_priority = ANIM_ATTACK;
         ent->s.frame = FRAME_crattak1 - 1;
         ent->client->anim_end = FRAME_crattak3;
@@ -634,7 +634,7 @@ void weapon_grenadelauncher_fire(edict_t *ent)
     gi.WriteByte(svc_muzzleflash);
     gi.WriteShort(ent - g_edicts);
     gi.WriteByte(MZ_GRENADE | is_silenced);
-    gi.multicast(ent->s.origin, MULTICAST_PVS, false);
+    gi.multicast(ent->s.origin, MULTICAST_PVS);
 
     ent->client->ps.gunframe++;
 
@@ -689,7 +689,7 @@ void Weapon_RocketLauncher_Fire(edict_t *ent)
     gi.WriteByte(svc_muzzleflash);
     gi.WriteShort(ent - g_edicts);
     gi.WriteByte(MZ_ROCKET | is_silenced);
-    gi.multicast(ent->s.origin, MULTICAST_PVS, false);
+    gi.multicast(ent->s.origin, MULTICAST_PVS);
 
     ent->client->ps.gunframe++;
 
@@ -740,7 +740,7 @@ void Blaster_Fire(edict_t *ent, const vec3_t g_offset, int damage, bool hyper, i
         gi.WriteByte(MZ_HYPERBLASTER | is_silenced);
     else
         gi.WriteByte(MZ_BLASTER | is_silenced);
-    gi.multicast(ent->s.origin, MULTICAST_PVS, false);
+    gi.multicast(ent->s.origin, MULTICAST_PVS);
 
     PlayerNoise(ent, start, PNOISE_WEAPON);
 }
@@ -802,7 +802,7 @@ void Weapon_HyperBlaster_Fire(edict_t *ent)
                 ent->client->pers.inventory[ent->client->ammo_index]--;
 
             ent->client->anim_priority = ANIM_ATTACK;
-            if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+            if (ent->client->ps.pmove.pm_flags & G3PMF_DUCKED) {
                 ent->s.frame = FRAME_crattak1 - 1;
                 ent->client->anim_end = FRAME_crattak9;
             } else {
@@ -899,7 +899,7 @@ void Machinegun_Fire(edict_t *ent)
     gi.WriteByte(svc_muzzleflash);
     gi.WriteShort(ent - g_edicts);
     gi.WriteByte(MZ_MACHINEGUN | is_silenced);
-    gi.multicast(ent->s.origin, MULTICAST_PVS, false);
+    gi.multicast(ent->s.origin, MULTICAST_PVS);
 
     PlayerNoise(ent, start, PNOISE_WEAPON);
 
@@ -907,7 +907,7 @@ void Machinegun_Fire(edict_t *ent)
         ent->client->pers.inventory[ent->client->ammo_index]--;
 
     ent->client->anim_priority = ANIM_ATTACK;
-    if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+    if (ent->client->ps.pmove.pm_flags & G3PMF_DUCKED) {
         ent->s.frame = FRAME_crattak1 - (int)(random() + 0.25f);
         ent->client->anim_end = FRAME_crattak9;
     } else {
@@ -962,7 +962,7 @@ void Chaingun_Fire(edict_t *ent)
     }
 
     ent->client->anim_priority = ANIM_ATTACK;
-    if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+    if (ent->client->ps.pmove.pm_flags & G3PMF_DUCKED) {
         ent->s.frame = FRAME_crattak1 - (ent->client->ps.gunframe & 1);
         ent->client->anim_end = FRAME_crattak9;
     } else {
@@ -1017,7 +1017,7 @@ void Chaingun_Fire(edict_t *ent)
     gi.WriteByte(svc_muzzleflash);
     gi.WriteShort(ent - g_edicts);
     gi.WriteByte((MZ_CHAINGUN1 + shots - 1) | is_silenced);
-    gi.multicast(ent->s.origin, MULTICAST_PVS, false);
+    gi.multicast(ent->s.origin, MULTICAST_PVS);
 
     PlayerNoise(ent, start, PNOISE_WEAPON);
 
@@ -1076,7 +1076,7 @@ void weapon_shotgun_fire(edict_t *ent)
     gi.WriteByte(svc_muzzleflash);
     gi.WriteShort(ent - g_edicts);
     gi.WriteByte(MZ_SHOTGUN | is_silenced);
-    gi.multicast(ent->s.origin, MULTICAST_PVS, false);
+    gi.multicast(ent->s.origin, MULTICAST_PVS);
 
     ent->client->ps.gunframe++;
     PlayerNoise(ent, start, PNOISE_WEAPON);
@@ -1128,7 +1128,7 @@ void weapon_supershotgun_fire(edict_t *ent)
     gi.WriteByte(svc_muzzleflash);
     gi.WriteShort(ent - g_edicts);
     gi.WriteByte(MZ_SSHOTGUN | is_silenced);
-    gi.multicast(ent->s.origin, MULTICAST_PVS, false);
+    gi.multicast(ent->s.origin, MULTICAST_PVS);
 
     ent->client->ps.gunframe++;
     PlayerNoise(ent, start, PNOISE_WEAPON);
@@ -1188,7 +1188,7 @@ void weapon_railgun_fire(edict_t *ent)
     gi.WriteByte(svc_muzzleflash);
     gi.WriteShort(ent - g_edicts);
     gi.WriteByte(MZ_RAILGUN | is_silenced);
-    gi.multicast(ent->s.origin, MULTICAST_PVS, false);
+    gi.multicast(ent->s.origin, MULTICAST_PVS);
 
     ent->client->ps.gunframe++;
     PlayerNoise(ent, start, PNOISE_WEAPON);
@@ -1230,7 +1230,7 @@ void weapon_bfg_fire(edict_t *ent)
         gi.WriteByte(svc_muzzleflash);
         gi.WriteShort(ent - g_edicts);
         gi.WriteByte(MZ_BFG | is_silenced);
-        gi.multicast(ent->s.origin, MULTICAST_PVS, false);
+        gi.multicast(ent->s.origin, MULTICAST_PVS);
 
         ent->client->ps.gunframe++;
 
