@@ -140,6 +140,7 @@ LOAD(Texinfo)
         out->c.id = i + 1; // Kex
 
         memcpy(out->c.name, in, sizeof(out->c.name) - 1);
+        Q_strlcpy(out->c.compat_name, out->c.name, sizeof(out->c.compat_name));
         memcpy(out->name, in, sizeof(out->name) - 1);
         in += MAX_TEXNAME;
 
