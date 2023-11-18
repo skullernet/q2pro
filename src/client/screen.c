@@ -113,16 +113,6 @@ UTILS
 
 /*
 ==============
-SCR_FontPic
-==============
-*/
-qhandle_t SCR_FontPic(void)
-{
-    return scr.font_pic;
-}
-
-/*
-==============
 SCR_DrawStringEx
 ==============
 */

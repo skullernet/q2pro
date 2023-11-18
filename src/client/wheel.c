@@ -23,28 +23,6 @@ static cvar_t *wc_screen_frac_y;
 static cvar_t *wc_timeout;
 static cvar_t *wc_lock_time;
 
-static int sort_wheel_powerups(const void *a, const void *b)
-{
-    const cl_wheel_powerup_t *pa = a;
-    const cl_wheel_powerup_t *pb = b;
-
-    if (pa->sort_id == pb->sort_id)
-        return pa->item_index - pb->item_index;
-
-    return pa->sort_id - pb->sort_id;
-}
-
-static int sort_wheel_weapons(const void *a, const void *b)
-{
-    const cl_wheel_weapon_t *pa = a;
-    const cl_wheel_weapon_t *pb = b;
-
-    if (pa->sort_id == pb->sort_id)
-        return pa->item_index - pb->item_index;
-
-    return pa->sort_id - pb->sort_id;
-}
-
 static inline void set_compressed_integer(size_t bits_per_value, uint16_t *start, uint8_t id, uint16_t count)
 {
     uint16_t bit_offset = bits_per_value * id;
@@ -435,9 +413,6 @@ void CL_Wheel_Update(void)
 
         cl.wheel.slots[i].angle = cl.wheel.slice_deg * i;
         Vector2Set(cl.wheel.slots[i].dir, sinf(cl.wheel.slots[i].angle), -cosf(cl.wheel.slots[i].angle));
-
-        vec2_t p;
-        Vector2Scale(cl.wheel.slots[i].dir, (scr.wheel_size / 2) * 0.525f, p);
 
         cl.wheel.slots[i].dot = Dot2Product(cl.wheel.dir, cl.wheel.slots[i].dir);
     }
