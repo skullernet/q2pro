@@ -933,7 +933,7 @@ void GL_LoadWorld(const char *name)
     bsp_t *bsp;
     mtexinfo_t *info;
     mface_t *surf;
-    int i, ret;
+    int i, n64surfs, ret;
 
     ret = BSP_Load(name, &bsp);
     if (!bsp) {
@@ -975,13 +975,15 @@ void GL_LoadWorld(const char *name)
 
     // calculate vertex buffer size in bytes
     size = 0;
-    for (i = 0, surf = bsp->faces; i < bsp->numfaces; i++, surf++) {
+    for (i = n64surfs = 0, surf = bsp->faces; i < bsp->numfaces; i++, surf++) {
         // hack surface flags into drawflags for faster access
         surf->drawflags |= surf->texinfo->c.flags & ~DSURF_PLANEBACK;
 
         // don't count sky surfaces
         if (surf->drawflags & (SURF_SKY | SURF_NODRAW))
             continue;
+        if (surf->drawflags & SURF_N64_UV)
+            n64surfs++;
 
         size += surf->numsurfedges * VERTEX_SIZE * sizeof(vec_t);
     }
@@ -1002,7 +1004,7 @@ void GL_LoadWorld(const char *name)
     // only supported in DECOUPLED_LM maps because vanilla maps have broken
     // lightofs for liquids/alphas. legacy renderer doesn't support lightmapped
     // liquids too.
-    if (bsp->lm_decoupled && gl_static.use_shaders) {
+    if ((bsp->lm_decoupled || n64surfs > 100) && gl_static.use_shaders) {
         gl_static.nolm_mask = SURF_NOLM_MASK_REMASTER;
     }
 
