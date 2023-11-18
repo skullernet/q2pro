@@ -321,17 +321,11 @@ typedef struct {
 
 /* Vertex */
 typedef struct {
-    vec2_t st;
     vec3_t normal;
 
     uint32_t start; /* start weight */
     uint32_t count; /* weight count */
 } md5_vertex_t;
-
-/* Triangle */
-typedef struct {
-    int index[3];
-} md5_triangle_t;
 
 /* Weight */
 typedef struct {
@@ -348,6 +342,7 @@ typedef struct {
     int num_weights;
 
     md5_vertex_t *vertices;
+    maliastc_t *tcoords;
     QGL_INDEX_TYPE *indices;
     md5_weight_t *weights;
 } md5_mesh_t;

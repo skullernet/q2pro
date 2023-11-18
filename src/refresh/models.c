@@ -931,6 +931,7 @@ static bool MOD_LoadMD5Mesh(model_t *model, const char *path)
         MD5_UINT(&num_verts);
         MD5_ENSURE(num_verts <= TESS_MAX_VERTICES, "too many verts");
         OOM_CHECK(mesh->vertices = MD5_Malloc(num_verts * sizeof(mesh->vertices[0])));
+        OOM_CHECK(mesh->tcoords = MD5_Malloc(num_verts * sizeof(mesh->tcoords[0])));
         mesh->num_verts = num_verts;
 
         for (j = 0; j < num_verts; j++) {
@@ -940,13 +941,13 @@ static bool MOD_LoadMD5Mesh(model_t *model, const char *path)
             MD5_UINT(&vert_index);
             MD5_ENSURE(vert_index < num_verts, "bad vert index");
 
-            md5_vertex_t *vert = &mesh->vertices[vert_index];
-
+            maliastc_t *tc = &mesh->tcoords[vert_index];
             MD5_EXPECT("(");
-            MD5_FLOAT(&vert->st[0]);
-            MD5_FLOAT(&vert->st[1]);
+            MD5_FLOAT(&tc->st[0]);
+            MD5_FLOAT(&tc->st[1]);
             MD5_EXPECT(")");
 
+            md5_vertex_t *vert = &mesh->vertices[vert_index];
             MD5_UINT(&vert->start);
             MD5_UINT(&vert->count);
         }

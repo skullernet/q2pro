@@ -581,8 +581,8 @@ static void begin_alias_mesh(image_t **skins, int num_skins)
         GL_BindTexture(2, skin->glow_texnum);
 }
 
-static void end_alias_mesh(const QGL_INDEX_TYPE *indices, int num_indices, int num_verts,
-                           const GLfloat *tcoords, GLsizei tc_stride)
+static void end_alias_mesh(const QGL_INDEX_TYPE *indices, int num_indices,
+                           const maliastc_t *tcoords, int num_verts)
 {
     if (dotshading) {
         GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
@@ -594,7 +594,7 @@ static void end_alias_mesh(const QGL_INDEX_TYPE *indices, int num_indices, int n
         GL_Color(color[0], color[1], color[2], color[3]);
     }
 
-    GL_TexCoordPointer(2, tc_stride, tcoords);
+    GL_TexCoordPointer(2, 0, tcoords->st);
 
     GL_LockArrays(num_verts);
 
@@ -620,7 +620,7 @@ static void draw_alias_mesh(const maliasmesh_t *mesh)
     (*tessfunc)(mesh);
 
     end_alias_mesh(mesh->indices, mesh->numindices,
-                   mesh->numverts, mesh->tcoords->st, 0);
+                   mesh->tcoords, mesh->numverts);
 }
 
 #if USE_MD5
@@ -719,9 +719,7 @@ static void draw_skeleton_mesh(const md5_model_t *model, const md5_mesh_t *mesh,
     else
         tess_plain_skel(mesh, skel);
 
-    end_alias_mesh(mesh->indices, mesh->num_indices,
-                   mesh->num_verts, mesh->vertices->st,
-                   sizeof(mesh->vertices[0]) / sizeof(float));
+    end_alias_mesh(mesh->indices, mesh->num_indices, mesh->tcoords, mesh->num_verts);
 }
 
 static void draw_alias_skeleton(const md5_model_t *model)
