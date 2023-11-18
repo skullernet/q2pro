@@ -587,6 +587,11 @@ static void AL_LoadReverbEnvironments(void)
     t++;
 
     n = t->size;
+    if (n == 0) {
+        s_reverb_environments = NULL;
+        s_num_reverb_environments = 0;
+        goto free_temp;
+    }
     JSON_ENSURE_NEXT(JSMN_ARRAY);
 
     environments = Z_TagMallocz(sizeof(al_reverb_environment_t) * n, TAG_SOUND);
