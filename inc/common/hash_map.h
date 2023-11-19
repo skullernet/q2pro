@@ -22,11 +22,11 @@ typedef struct hash_map_s hash_map_t;
 
 hash_map_t *HashMap_CreateImpl(const uint32_t key_size, const uint32_t value_size,
                                uint32_t (*hasher)(const void *const),
-                               qboolean (*comp)(const void *const, const void *const));
+                               bool (*comp)(const void *const, const void *const));
 void     HashMap_Destroy(hash_map_t *map);
 void     HashMap_Reserve(hash_map_t *map, int capacity);
-qboolean HashMap_InsertImpl(hash_map_t *map, const uint32_t key_size, const uint32_t value_size, const void *const key, const void *const value);
-qboolean HashMap_EraseImpl(hash_map_t *map, const uint32_t key_size, const void *const key);
+bool     HashMap_InsertImpl(hash_map_t *map, const uint32_t key_size, const uint32_t value_size, const void *const key, const void *const value);
+bool     HashMap_EraseImpl(hash_map_t *map, const uint32_t key_size, const void *const key);
 void    *HashMap_LookupImpl(hash_map_t *map, const uint32_t key_size, const void *const key);
 uint32_t HashMap_Size(hash_map_t *map);
 void    *HashMap_GetKeyImpl(hash_map_t *map, uint32_t index);
@@ -119,7 +119,7 @@ static inline uint32_t HashStr(const void *const val)
     return hval;
 }
 
-static inline qboolean HashStrCmp(const void *const a, const void *const b)
+static inline bool HashStrCmp(const void *const a, const void *const b)
 {
     const char *str_a = *(const char **)a;
     const char *str_b = *(const char **)b;

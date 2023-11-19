@@ -32,7 +32,7 @@ typedef struct hash_map_s {
     uint32_t key_size;
     uint32_t value_size;
     uint32_t (*hasher)(const void *const);
-    qboolean (*comp)(const void *const, const void *const);
+    bool     (*comp)(const void *const, const void *const);
     uint32_t *hash_to_index;
     uint32_t *index_chain;
     void     *keys;
@@ -100,7 +100,7 @@ HashMap_CreateImpl
 */
 hash_map_t *HashMap_CreateImpl(const uint32_t key_size, const uint32_t value_size,
                                uint32_t (*hasher)(const void *const),
-                               qboolean (*comp)(const void *const, const void *const))
+                               bool (*comp)(const void *const, const void *const))
 {
     hash_map_t *map = Z_Mallocz(sizeof(hash_map_t));
     map->key_size = key_size;
@@ -144,7 +144,7 @@ void HashMap_Reserve(hash_map_t *map, int capacity)
 HashMap_InsertImpl
 =================
 */
-qboolean HashMap_InsertImpl(hash_map_t *map, const uint32_t key_size, const uint32_t value_size, const void *const key, const void *const value)
+bool HashMap_InsertImpl(hash_map_t *map, const uint32_t key_size, const uint32_t value_size, const void *const key, const void *const value)
 {
     Q_assert(map->key_size == key_size);
     Q_assert(map->value_size == value_size);
@@ -182,7 +182,7 @@ qboolean HashMap_InsertImpl(hash_map_t *map, const uint32_t key_size, const uint
 HashMap_EraseImpl
 =================
 */
-qboolean HashMap_EraseImpl(hash_map_t *map, const uint32_t key_size, const void *const key)
+bool HashMap_EraseImpl(hash_map_t *map, const uint32_t key_size, const void *const key)
 {
     Q_assert(key_size == map->key_size);
     if (map->num_entries == 0)
@@ -217,7 +217,7 @@ qboolean HashMap_EraseImpl(hash_map_t *map, const uint32_t key_size, const void 
                 if (map->hash_to_index[last_hash_index] == last_index)
                     map->hash_to_index[last_hash_index] = map->index_chain[last_index];
                 else {
-                    qboolean found = false;
+                    bool found = false;
                     for (uint32_t last_storage_index = map->hash_to_index[last_hash_index]; last_storage_index != UINT32_MAX;
                          last_storage_index = map->index_chain[last_storage_index]) {
                         if (map->index_chain[last_storage_index] == last_index) {
