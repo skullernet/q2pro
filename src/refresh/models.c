@@ -89,11 +89,15 @@ static void MOD_List_f(void)
             continue;
         }
         size_t model_size = model->hunk.mapped;
+        int flag = ' ';
 #if USE_MD5
-        model_size += model->skeleton_hunk.mapped;
+        if (model->skeleton) {
+            model_size += model->skeleton_hunk.mapped;
+            flag = '*';
+        }
 #endif
-        Com_Printf("%c %8zu : %s\n", types[model->type],
-                   model_size, model->name);
+        Com_Printf("%c%c %8zu : %s\n", types[model->type],
+                   flag, model_size, model->name);
         bytes += model_size;
         count++;
     }
