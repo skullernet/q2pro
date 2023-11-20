@@ -22,6 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <process.h>
 #include <errno.h>
 
 #define PTHREAD_MUTEX_INITIALIZER   {0}
@@ -30,7 +31,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 typedef void pthread_attr_t;
 typedef void pthread_mutexattr_t;
 typedef void pthread_condattr_t;
-typedef unsigned int pthread_t;
 
 typedef struct {
     SRWLOCK srw;
@@ -39,6 +39,37 @@ typedef struct {
 typedef struct {
     CONDITION_VARIABLE cond;
 } pthread_cond_t;
+
+typedef struct {
+    void *(*func)(void *);
+    void *arg, *ret;
+    HANDLE handle;
+} pthread_t;
+
+static unsigned __stdcall thread_func(void *arg)
+{
+    pthread_t *t = arg;
+    t->ret = t->func(t->arg);
+    return 0;
+}
+
+static inline int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
+                                 void *(*start_routine)(void *), void *arg)
+{
+    thread->func = start_routine;
+    thread->arg = arg;
+    thread->handle = (HANDLE)_beginthreadex(NULL, 0, thread_func, thread, 0, NULL);
+    return thread->handle ? 0 : EAGAIN;
+}
+
+static inline int pthread_join(pthread_t thread, void **retval)
+{
+    int ret = WaitForSingleObject(thread.handle, INFINITE);
+    CloseHandle(thread.handle);
+    if (retval)
+        *retval = thread.ret;
+    return ret ? EINVAL : 0;
+}
 
 static inline int pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *mutexattr)
 {
@@ -89,11 +120,6 @@ static inline int pthread_cond_destroy(pthread_cond_t *cond)
 {
     return 0;
 }
-
-int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
-                   void *(*start_routine)(void *), void *arg);
-
-int pthread_join(pthread_t thread, void **retval);
 
 #else
 #include <pthread.h>
