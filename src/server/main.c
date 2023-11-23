@@ -1046,8 +1046,9 @@ static void SVC_DirectConnect(void)
     Q_strlcpy(newcl->reconnect_var, params.reconnect_var, sizeof(newcl->reconnect_var));
     Q_strlcpy(newcl->reconnect_val, params.reconnect_val, sizeof(newcl->reconnect_val));
 #if USE_FPS
-    newcl->framediv = sv.frametime.div;
-    newcl->settings[CLS_FPS] = BASE_FRAMERATE;
+    // Rerelease protocol assumes client framerate is always in sync
+    newcl->framediv = 1;
+    newcl->settings[CLS_FPS] = sv.framerate;
 #endif
 
     init_pmove_and_es_flags(newcl);

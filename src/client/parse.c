@@ -722,6 +722,11 @@ static void CL_ParseServerData(void)
         cl.esFlags |= MSG_ES_RERELEASE | CL_ES_EXTENDED_MASK;
         int32_t rate = MSG_ReadByte();
         set_server_fps(rate);
+        /* Rerelease game assumes client & server framerate is in sync,
+         * non-rerelease games w/ variable FPS (eg OpenFFA) seem to assume
+         * client runs on 10Hz. */
+        if (cl.is_rerelease_game)
+            cl.frametime.div = 1;
 
         cl.pmp.speedmult = 2;
         cl.pmp.flyhack = true; // fly hack is unconditionally enabled

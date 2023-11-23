@@ -244,7 +244,8 @@ static void CL_UpdatePredictSetting(void)
 #if USE_FPS
 static void CL_UpdateRateSetting(void)
 {
-    if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO && cls.serverProtocol != PROTOCOL_VERSION_RERELEASE) {
+    // Rerelease protocol sends framerate in server data
+    if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO) {
         return;
     }
 
