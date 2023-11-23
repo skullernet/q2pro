@@ -876,12 +876,11 @@ typedef struct cplane_s {
 #define PLANE_NON_AXIAL 6
 
 typedef struct csurface_s {
-    char        compat_name[16]; // for binary compatibility w/ V3 interface
+    char        name[32]; // KEX 32
     surfflags_t flags;
     int32_t		value;
 
     // [Paril-KEX]
-    char        name[32]; // KEX 32
     uint32_t    id; // unique texinfo ID, offset by 1 (0 is 'null')
     char        material[16];
 } csurface_t;
