@@ -34,7 +34,7 @@ typedef struct {
     vec3_t      forward, right, up;
     float       frametime;
 
-    csurface_t  *groundsurface;
+    csurface_v3_t *groundsurface;
     cplane_t    groundplane;
     int         groundcontents;
 

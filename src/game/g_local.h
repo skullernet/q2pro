@@ -36,6 +36,7 @@ typedef game3_trace_t trace_t;
 #include "shared/game3.h"
 
 // Compatibility definitions
+typedef csurface_v3_t csurface_t;
 typedef game3_entity_state_t entity_state_t;
 typedef game3_player_state_t player_state_t;
 typedef game3_pmove_state_t pmove_state_t;

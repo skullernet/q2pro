@@ -237,7 +237,7 @@ static void server_trace_to_game(game3_trace_t *tr, const trace_t *str)
     tr->fraction = str->fraction;
     VectorCopy(str->endpos, tr->endpos);
     tr->plane = str->plane;
-    tr->surface = str->surface;
+    tr->surface = &str->surface->surface_v3;
     tr->contents = str->contents;
     tr->ent = translate_edict_to_game(str->ent);
 }

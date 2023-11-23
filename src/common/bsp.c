@@ -143,6 +143,10 @@ LOAD(Texinfo)
         memcpy(out->name, in, sizeof(out->name) - 1);
         in += MAX_TEXNAME;
 
+        Q_strlcpy(out->c.surface_v3.name, out->c.name, sizeof(out->c.surface_v3.name));
+        out->c.surface_v3.flags = out->c.flags;
+        out->c.surface_v3.value = out->c.value;
+
 #if USE_REF
         // check if we have a classic sky
         if (!bsp->classic_sky && Q_stristr(out->name, "env/sky") && (out->c.flags & SURF_SKY)) {

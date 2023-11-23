@@ -875,6 +875,14 @@ typedef struct cplane_s {
 #define PLANE_Z         2
 #define PLANE_NON_AXIAL 6
 
+// csurface_t, but as expected by V3 games
+typedef struct csurface_v3_s {
+    char        name[16];
+    surfflags_t flags;
+    int32_t		value;
+} csurface_v3_t;
+
+#if !defined(GAME3_INCLUDE)
 typedef struct csurface_s {
     char        name[32]; // KEX 32
     surfflags_t flags;
@@ -883,9 +891,10 @@ typedef struct csurface_s {
     // [Paril-KEX]
     uint32_t    id; // unique texinfo ID, offset by 1 (0 is 'null')
     char        material[16];
+
+    csurface_v3_t surface_v3; // used for V3 ABI games
 } csurface_t;
 
-#if !defined(GAME3_INCLUDE)
 // a trace is returned when a box is swept through the world
 typedef struct {
     bool        allsolid;   // if true, plane is not valid
