@@ -27,6 +27,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client/sound/dma.h"
 #endif
 
+#define MAX_SFX_SAMPLES     ((1 << 23) - 1)
+
 typedef struct sfxcache_s {
     int         length;
     int         loopstart;

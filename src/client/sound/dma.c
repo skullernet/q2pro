@@ -72,6 +72,8 @@ static sfxcache_t *DMA_UploadSfx(sfx_t *sfx)
     sc->channels = s_info.channels;
     sc->size = size;
 
+    Q_assert(stepscale == 1 || s_info.samples <= MAX_SFX_SAMPLES);
+
 // resample / decimate to the current source rate
     if (stepscale == 1) // fast special case
         memcpy(sc->data, s_info.data, size);

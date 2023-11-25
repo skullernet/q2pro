@@ -135,8 +135,8 @@ static bool GetWavinfo(sizebuf_t *sz)
 
 // calculate length in samples
     s_info.samples = chunk_len / (s_info.width * s_info.channels);
-    if (!s_info.samples) {
-        Com_DPrintf("%s has zero length\n", s_info.name);
+    if (s_info.samples < 1 || s_info.samples > MAX_SFX_SAMPLES) {
+        Com_DPrintf("%s has bad number of samples\n", s_info.name);
         return false;
     }
 
