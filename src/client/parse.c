@@ -724,7 +724,8 @@ static void CL_ParseServerData(void)
         set_server_fps(rate);
         /* Rerelease game assumes client & server framerate is in sync,
          * non-rerelease games w/ variable FPS (eg OpenFFA) seem to assume
-         * client runs on 10Hz. */
+         * certain things still happen at 10Hz.
+         * (For one, view weapon looks janky if the divider is 1.)*/
         if (cl.is_rerelease_game)
             cl.frametime.div = 1;
 
