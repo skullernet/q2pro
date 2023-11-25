@@ -197,6 +197,12 @@ void *Z_Realloc(void *ptr, size_t size)
     return z + 1;
 }
 
+void *Z_ReallocArray(void *ptr, size_t nmemb, size_t size)
+{
+    Q_assert(!size || nmemb <= INT_MAX / size);
+    return Z_Realloc(ptr, nmemb * size);
+}
+
 /*
 ========================
 Z_Stats_f
