@@ -628,8 +628,8 @@ bool OGG_Load(sizebuf_t *sz)
 
         int size = out->nb_samples << out->ch_layout.nb_channels;
         if (size > bufsize - offset) {
-            ret = AVERROR(ENOSPC);
-            break;
+            size = bufsize - offset;
+            eof = true;
         }
 
         memcpy(s_info.data + offset, out->data[0], size);
