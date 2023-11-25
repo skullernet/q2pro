@@ -104,6 +104,9 @@ SCR_StopCinematic
 */
 void SCR_StopCinematic(void)
 {
+    if (cin.video.frame)
+        R_UpdateRawPic(0, 0, NULL);
+
     avcodec_free_context(&cin.video.dec_ctx);
     avcodec_free_context(&cin.audio.dec_ctx);
 

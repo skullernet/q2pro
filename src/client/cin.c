@@ -73,6 +73,9 @@ SCR_StopCinematic
 */
 void SCR_StopCinematic(void)
 {
+    if (cin.pic)
+        R_UpdateRawPic(0, 0, NULL);
+
     Z_Free(cin.pic);
     FS_CloseFile(cin.file);
     memset(&cin, 0, sizeof(cin));
