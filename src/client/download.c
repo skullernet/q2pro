@@ -98,6 +98,8 @@ bool CL_IgnoreDownload(const char *path)
 {
     string_entry_t *entry;
 
+    if (!strncmp(path, CONST_STR_LEN("save/")))
+        return true;
     if (!strncmp(path, CONST_STR_LEN("music/")))
         return true;
     if (!strncmp(path, CONST_STR_LEN("video/")))
