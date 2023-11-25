@@ -55,6 +55,9 @@ static const char *Com_GetFeatures(void)
 #if USE_MD3
     "md3 "
 #endif
+#if USE_MD5
+    "md5 "
+#endif
 #if USE_MVD_CLIENT
     "mvd-client "
 #endif
