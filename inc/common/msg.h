@@ -53,7 +53,7 @@ typedef struct {
 typedef struct {
     pmove_state_t   pmove;
     int16_t         viewangles[3];
-    int8_t          viewoffset[3];
+    int16_t         viewoffset[3];
     int16_t         kick_angles[3];
     int8_t          gunangles[3];
     int8_t          gunoffset[3];

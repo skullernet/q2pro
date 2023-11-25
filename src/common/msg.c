@@ -852,7 +852,7 @@ void MSG_PackPlayer(player_packed_t *out, const player_state_t *in)
 
     out->pmove = in->pmove;
     for (i = 0; i < 3; i++) out->viewangles[i] = ANGLE2SHORT(in->viewangles[i]);
-    for (i = 0; i < 3; i++) out->viewoffset[i] = OFFSET2CHAR(in->viewoffset[i]);
+    for (i = 0; i < 3; i++) out->viewoffset[i] = scaled_short(in->viewoffset[i], 16);
     for (i = 0; i < 3; i++) out->kick_angles[i] = scaled_short(in->kick_angles[i], 1024);
     for (i = 0; i < 3; i++) out->gunoffset[i] = OFFSET2CHAR(in->gunoffset[i]);
     for (i = 0; i < 3; i++) out->gunangles[i] = OFFSET2CHAR(in->gunangles[i]);
@@ -984,9 +984,16 @@ void MSG_WriteDeltaPlayerstate_Default(const player_packed_t *from, const player
     // write the rest of the player_state_t
     //
     if (pflags & PS_VIEWOFFSET) {
-        MSG_WriteChar(to->viewoffset[0]);
-        MSG_WriteChar(to->viewoffset[1]);
-        MSG_WriteChar(to->viewoffset[2]);
+        if (flags & MSG_PS_EXTENSIONS) {
+            MSG_WriteShort(to->viewoffset[0]);
+            MSG_WriteShort(to->viewoffset[1]);
+            MSG_WriteShort(to->viewoffset[2]);
+        } else {
+            // Convert viewoffset from 'offset * 16' to 'offset * 4'
+            MSG_WriteChar(constclamp(to->viewoffset[0] >> 2, -128, 127));
+            MSG_WriteChar(constclamp(to->viewoffset[1] >> 2, -128, 127));
+            MSG_WriteChar(constclamp(to->viewoffset[2] >> 2, -128, 127));
+        }
     }
 
     if (pflags & PS_VIEWANGLES) {
@@ -1259,9 +1266,16 @@ int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
     // write the rest of the player_state_t
     //
     if (pflags & PS_VIEWOFFSET) {
-        MSG_WriteChar(to->viewoffset[0]);
-        MSG_WriteChar(to->viewoffset[1]);
-        MSG_WriteChar(to->viewoffset[2]);
+        if (flags & MSG_PS_EXTENSIONS) {
+            MSG_WriteShort(to->viewoffset[0]);
+            MSG_WriteShort(to->viewoffset[1]);
+            MSG_WriteShort(to->viewoffset[2]);
+        } else {
+            // Convert viewoffset from 'offset * 16' to 'offset * 4'
+            MSG_WriteChar(constclamp(to->viewoffset[0] >> 2, -128, 127));
+            MSG_WriteChar(constclamp(to->viewoffset[1] >> 2, -128, 127));
+            MSG_WriteChar(constclamp(to->viewoffset[2] >> 2, -128, 127));
+        }
     }
 
     if (pflags & PS_VIEWANGLES) {
@@ -1505,9 +1519,16 @@ void MSG_WriteDeltaPlayerstate_Packet(const player_packed_t *from,
     // write the rest of the player_state_t
     //
     if (pflags & PPS_VIEWOFFSET) {
-        MSG_WriteChar(to->viewoffset[0]);
-        MSG_WriteChar(to->viewoffset[1]);
-        MSG_WriteChar(to->viewoffset[2]);
+        if (flags & MSG_PS_EXTENSIONS) {
+            MSG_WriteShort(to->viewoffset[0]);
+            MSG_WriteShort(to->viewoffset[1]);
+            MSG_WriteShort(to->viewoffset[2]);
+        } else {
+            // Convert viewoffset from 'offset * 16' to 'offset * 4'
+            MSG_WriteChar(constclamp(to->viewoffset[0] >> 2, -128, 127));
+            MSG_WriteChar(constclamp(to->viewoffset[1] >> 2, -128, 127));
+            MSG_WriteChar(constclamp(to->viewoffset[2] >> 2, -128, 127));
+        }
     }
 
     if (pflags & PPS_VIEWANGLES) {
@@ -2159,9 +2180,15 @@ void MSG_ParseDeltaPlayerstate_Default(const player_state_t *from,
     // parse the rest of the player_state_t
     //
     if (flags & PS_VIEWOFFSET) {
-        to->viewoffset[0] = MSG_ReadChar() * 0.25f;
-        to->viewoffset[1] = MSG_ReadChar() * 0.25f;
-        to->viewoffset[2] = MSG_ReadChar() * 0.25f;
+        if (psflags & MSG_PS_EXTENSIONS) {
+            to->viewoffset[0] = MSG_ReadShort() / 16.f;
+            to->viewoffset[1] = MSG_ReadShort() / 16.f;
+            to->viewoffset[2] = MSG_ReadShort() / 16.f;
+        } else {
+            to->viewoffset[0] = MSG_ReadChar() * 0.25f;
+            to->viewoffset[1] = MSG_ReadChar() * 0.25f;
+            to->viewoffset[2] = MSG_ReadChar() * 0.25f;
+        }
     }
 
     if (flags & PS_VIEWANGLES) {
@@ -2301,9 +2328,15 @@ void MSG_ParseDeltaPlayerstate_Enhanced(const player_state_t    *from,
     // parse the rest of the player_state_t
     //
     if (flags & PS_VIEWOFFSET) {
-        to->viewoffset[0] = MSG_ReadChar() * 0.25f;
-        to->viewoffset[1] = MSG_ReadChar() * 0.25f;
-        to->viewoffset[2] = MSG_ReadChar() * 0.25f;
+        if (psflags & MSG_PS_EXTENSIONS) {
+            to->viewoffset[0] = MSG_ReadShort() / 16.f;
+            to->viewoffset[1] = MSG_ReadShort() / 16.f;
+            to->viewoffset[2] = MSG_ReadShort() / 16.f;
+        } else {
+            to->viewoffset[0] = MSG_ReadChar() * 0.25f;
+            to->viewoffset[1] = MSG_ReadChar() * 0.25f;
+            to->viewoffset[2] = MSG_ReadChar() * 0.25f;
+        }
     }
 
     if (flags & PS_VIEWANGLES) {
@@ -2453,9 +2486,15 @@ void MSG_ParseDeltaPlayerstate_Packet(const player_state_t  *from,
     // parse the rest of the player_state_t
     //
     if (flags & PPS_VIEWOFFSET) {
-        to->viewoffset[0] = MSG_ReadChar() * 0.25f;
-        to->viewoffset[1] = MSG_ReadChar() * 0.25f;
-        to->viewoffset[2] = MSG_ReadChar() * 0.25f;
+        if (psflags & MSG_PS_EXTENSIONS) {
+            to->viewoffset[0] = MSG_ReadShort() / 16.f;
+            to->viewoffset[1] = MSG_ReadShort() / 16.f;
+            to->viewoffset[2] = MSG_ReadShort() / 16.f;
+        } else {
+            to->viewoffset[0] = MSG_ReadChar() * 0.25f;
+            to->viewoffset[1] = MSG_ReadChar() * 0.25f;
+            to->viewoffset[2] = MSG_ReadChar() * 0.25f;
+        }
     }
 
     if (flags & PPS_VIEWANGLES) {
