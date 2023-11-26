@@ -841,6 +841,11 @@ static void CGC_TouchPics(void)
     cgi.Draw_RegisterPic(inven_pic);
 }
 
+static uint32_t CGC_GetOwnedWeaponWheelWeapons(const player_state_t *ps)
+{
+    return 0;
+}
+
 static void CGC_Pmove(pmove_t *pmove)
 {
     Pmove(pmove, cgix.GetPmoveParams());
@@ -892,6 +897,8 @@ cgame_export_t cgame_classic = {
 
     .DrawHUD = CGC_DrawHUD,
     .TouchPics = CGC_TouchPics,
+
+    .GetOwnedWeaponWheelWeapons = CGC_GetOwnedWeaponWheelWeapons,
 
     .Pmove = CGC_Pmove,
 
