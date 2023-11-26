@@ -29,7 +29,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "server/nav.h"
 
 const game_export_t     *ge;
-const game_export_ex_t  *gex;
+const game_q2pro_restart_filesystem_t *g_restart_fs;
 
 static void PF_configstring(int index, const char *val);
 
@@ -1026,7 +1026,7 @@ it is changing to a different game directory.
 */
 void SV_ShutdownGameProgs(void)
 {
-    gex = NULL;
+    g_restart_fs = NULL;
     if (ge) {
         ge->Shutdown();
         ge = NULL;
@@ -1072,7 +1072,7 @@ void SV_InitGameProgs(void)
         Com_Error(ERR_DROP, "Game library returned NULL exports");
     }
     // get extended api if present
-    game_entry_ex_t entry_ex = Sys_GetProcAddress(game_library, "GetGameAPIEx");
+    void* entry_ex = Sys_GetProcAddress(game_library, "GetGameAPIEx");
 
     if (ge->apiversion != GAME_API_VERSION) {
         svs.is_game_rerelease = false;
@@ -1088,9 +1088,6 @@ void SV_InitGameProgs(void)
         Cvar_SetInteger(g_features, GMF_PROTOCOL_EXTENSIONS | GMF_ENHANCED_SAVEGAMES | GMF_PROPERINUSE | GMF_WANT_ALL_DISCONNECTS, FROM_CODE);
     }
 
-    if (entry_ex)
-        gex = entry_ex(NULL);
-
     // initialize
     /* Note: Those functions may already call configstring(). They also decide the features...
      * So start with an extended csr, and possible choose a smaller one later. */
@@ -1100,6 +1097,8 @@ void SV_InitGameProgs(void)
         svs.csr = cs_remap_q2pro_new;
     ge->PreInit(); // FIXME: When to call PreInit(), when Init()?
     ge->Init();
+
+    g_restart_fs = (game_q2pro_restart_filesystem_t *)ge->GetExtension(game_q2pro_restart_filesystem_ext);
 
     if (!svs.is_game_rerelease && (g_features->integer & GMF_PROTOCOL_EXTENSIONS) == 0)
         svs.csr = cs_remap_old;

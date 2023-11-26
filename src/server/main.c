@@ -1965,8 +1965,8 @@ void SV_UserinfoChanged(client_t *cl)
 
 void SV_RestartFilesystem(void)
 {
-    if (gex && gex->RestartFilesystem)
-        gex->RestartFilesystem();
+    if (g_restart_fs && g_restart_fs->RestartFilesystem)
+        g_restart_fs->RestartFilesystem();
 }
 
 #if USE_SYSCON

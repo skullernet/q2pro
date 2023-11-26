@@ -542,29 +542,11 @@ typedef game_export_t *(*game_entry_t)(game_import_t *);
 
 //===============================================================
 
-/*
- * GetGameAPIEx() is guaranteed to be called after GetGameAPI() and before
- * ge->Init().
- *
- * Unlike GetGameAPI(), passed game_import_ex_t * is valid as long as game
- * library is loaded. Pointed to structure can be used directly without making
- * a copy of it. If copying is neccessary, no more than structsize bytes must
- * be copied.
- *
- * New fields can be safely added at the end of game_import_ex_t and
- * game_export_ex_t structures, provided GAME_API_VERSION_EX is also bumped.
- */
-
-#define GAME_API_VERSION_EX     -1
-
 typedef struct {
-    uint32_t    apiversion;
-    uint32_t    structsize;
+    int api_version;
 
-    void        (*RestartFilesystem)(void); // called when fs_restart is issued
-} game_export_ex_t;
-
-typedef const game_export_ex_t *(*game_entry_ex_t)(const void *);
+    void (*RestartFilesystem)(void); // called when fs_restart is issued
+} game_q2pro_restart_filesystem_t;
 
 //===============================================================
 

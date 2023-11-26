@@ -40,6 +40,19 @@ static game3_export_t *game3_export;
 static const game3_export_ex_t *game3_export_ex;
 static game_export_t game_export;
 
+static void wrap_RestartFilesystem(void)
+{
+    game3_export_ex->RestartFilesystem();
+}
+
+const char *game_q2pro_restart_filesystem_ext = "q2pro:restart_filesystem";
+
+static const game_q2pro_restart_filesystem_t game_q2pro_restart_filesystem = {
+    .api_version = 1,
+
+    .RestartFilesystem = wrap_RestartFilesystem,
+};
+
 #define GAME_EDICT_NUM(n) ((game3_edict_t *)((byte *)game3_export->edicts + game3_export->edict_size*(n)))
 #define NUM_FOR_GAME_EDICT(e) ((int)(((byte *)(e) - (byte *)game3_export->edicts) / game3_export->edict_size))
 
@@ -868,6 +881,9 @@ static void wrap_Pmove_export(pmove_t *pmove)
 
 static void *wrap_GetExtension_export(const char *name)
 {
+    if (game3_export_ex && strcmp(name, game_q2pro_restart_filesystem_ext) == 0) {
+        return (void*)&game_q2pro_restart_filesystem;
+    }
     return NULL;
 }
 
@@ -976,6 +992,8 @@ game_export_t *GetGame3Proxy(game_import_t *import, void *game3_entry, void *gam
     game3_export = entry(&import3);
     if (game3_ex_entry)
         game3_export_ex = entry_ex(&game3_import_ex);
+    else
+        game3_export_ex = NULL;
 
     game_export.apiversion = GAME_API_VERSION;
     game_export.PreInit = wrap_PreInit;
