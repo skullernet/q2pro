@@ -1014,11 +1014,6 @@ static void *PF_GetExtension(const char *name)
     return NULL;
 }
 
-static const game_import_ex_t game_import_ex = {
-    .apiversion = GAME_API_VERSION_EX,
-    .structsize = sizeof(game_import_ex),
-};
-
 static void *game_library;
 
 /*
@@ -1083,7 +1078,7 @@ void SV_InitGameProgs(void)
         svs.is_game_rerelease = false;
         if (ge->apiversion == 3) {
             Com_DPrintf("Detected version 3 game library, using proxy game\n");
-            ge = GetGame3Proxy(&import, &game_import_ex, entry, entry_ex);
+            ge = GetGame3Proxy(&import, entry, entry_ex);
         } else {
             Com_Error(ERR_DROP, "Game library is version %d, expected %d",
                       ge->apiversion, GAME_API_VERSION);
@@ -1094,7 +1089,7 @@ void SV_InitGameProgs(void)
     }
 
     if (entry_ex)
-        gex = entry_ex(&game_import_ex);
+        gex = entry_ex(NULL);
 
     // initialize
     /* Note: Those functions may already call configstring(). They also decide the features...

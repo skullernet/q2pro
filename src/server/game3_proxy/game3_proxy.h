@@ -19,6 +19,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef GAME3_PROXY_H_
 #define GAME3_PROXY_H_
 
-game_export_t *GetGame3Proxy(game_import_t *import, const game_import_ex_t *import_ex, void *game3_entry, void *game3_ex_entry);
+game_export_t *GetGame3Proxy(game_import_t *import, void *game3_entry, void *game3_ex_entry);
 
 #endif // GAME3_PROXY_H_

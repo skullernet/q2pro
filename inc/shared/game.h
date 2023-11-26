@@ -560,16 +560,11 @@ typedef game_export_t *(*game_entry_t)(game_import_t *);
 typedef struct {
     uint32_t    apiversion;
     uint32_t    structsize;
-} game_import_ex_t;
-
-typedef struct {
-    uint32_t    apiversion;
-    uint32_t    structsize;
 
     void        (*RestartFilesystem)(void); // called when fs_restart is issued
 } game_export_ex_t;
 
-typedef const game_export_ex_t *(*game_entry_ex_t)(const game_import_ex_t *);
+typedef const game_export_ex_t *(*game_entry_ex_t)(const void *);
 
 //===============================================================
 

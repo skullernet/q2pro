@@ -35,7 +35,6 @@ static void sync_single_edict_game_to_server(int index);
 static void sync_edicts_game_to_server(void);
 
 static game_import_t game_import;
-static const game_import_ex_t *game_import_ex;
 
 static game3_export_t *game3_export;
 static const game3_export_ex_t *game3_export_ex;
@@ -913,10 +912,9 @@ static const game3_import_ex_t game3_import_ex = {
     .TagRealloc = PF_TagRealloc,
 };
 
-game_export_t *GetGame3Proxy(game_import_t *import, const game_import_ex_t *import_ex, void *game3_entry, void *game3_ex_entry)
+game_export_t *GetGame3Proxy(game_import_t *import, void *game3_entry, void *game3_ex_entry)
 {
     game_import = *import;
-    game_import_ex = import_ex;
 
     game3_import_t import3;
     game3_export_t *(*entry)(game3_import_t *) = game3_entry;
