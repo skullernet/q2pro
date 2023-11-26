@@ -915,7 +915,7 @@ void Nav_Load(const char *map_name)
         }
     }
 
-    nav_data.node_link_bitmap_size = nav_data.num_nodes / CHAR_BIT;
+    nav_data.node_link_bitmap_size = (nav_data.num_nodes + CHAR_BIT - 1) / CHAR_BIT;
     NAV_VERIFY(nav_data.node_link_bitmap = Z_TagMallocz(nav_data.node_link_bitmap_size * nav_data.num_nodes, TAG_NAV), "out of memory");
 
     for (int i = 0; i < nav_data.num_nodes; i++) {
