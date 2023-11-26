@@ -855,12 +855,13 @@ void MSG_PackPlayer(player_packed_t *out, const player_state_t *in, msgPsFlags_t
     if (flags & MSG_PS_RERELEASE) {
         for (i = 0; i < 3; i++) out->viewoffset[i] = scaled_short(in->viewoffset[i], 16);
         for (i = 0; i < 3; i++) out->kick_angles[i] = scaled_short(in->kick_angles[i], 1024);
+        for (i = 0; i < 3; i++) out->gunangles[i] = ANGLE2SHORT(in->gunangles[i]);
     } else {
         for (i = 0; i < 3; i++) out->viewoffset[i] = OFFSET2CHAR(in->viewoffset[i]);
         for (i = 0; i < 3; i++) out->kick_angles[i] = OFFSET2CHAR(in->kick_angles[i]);
+        for (i = 0; i < 3; i++) out->gunangles[i] = OFFSET2CHAR(in->gunangles[i]);
     }
     for (i = 0; i < 3; i++) out->gunoffset[i] = OFFSET2CHAR(in->gunoffset[i]);
-    for (i = 0; i < 3; i++) out->gunangles[i] = OFFSET2CHAR(in->gunangles[i]);
     out->gunindex = in->gunindex;
     out->gunframe = in->gunframe;
     for (i = 0; i < 4; i++)
@@ -1034,9 +1035,15 @@ void MSG_WriteDeltaPlayerstate_Default(const player_packed_t *from, const player
         MSG_WriteChar(to->gunoffset[0]);
         MSG_WriteChar(to->gunoffset[1]);
         MSG_WriteChar(to->gunoffset[2]);
-        MSG_WriteChar(to->gunangles[0]);
-        MSG_WriteChar(to->gunangles[1]);
-        MSG_WriteChar(to->gunangles[2]);
+        if(flags & MSG_PS_RERELEASE) {
+            MSG_WriteShort(to->gunangles[0]);
+            MSG_WriteShort(to->gunangles[1]);
+            MSG_WriteShort(to->gunangles[2]);
+        } else {
+            MSG_WriteChar(to->gunangles[0]);
+            MSG_WriteChar(to->gunangles[1]);
+            MSG_WriteChar(to->gunangles[2]);
+        }
     }
 
     if (pflags & PS_BLEND) {
@@ -1322,9 +1329,15 @@ int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
     }
 
     if (eflags & EPS_GUNANGLES) {
-        MSG_WriteChar(to->gunangles[0]);
-        MSG_WriteChar(to->gunangles[1]);
-        MSG_WriteChar(to->gunangles[2]);
+        if(flags & MSG_PS_RERELEASE) {
+            MSG_WriteShort(to->gunangles[0]);
+            MSG_WriteShort(to->gunangles[1]);
+            MSG_WriteShort(to->gunangles[2]);
+        } else {
+            MSG_WriteChar(to->gunangles[0]);
+            MSG_WriteChar(to->gunangles[1]);
+            MSG_WriteChar(to->gunangles[2]);
+        }
     }
 
     if (pflags & PS_BLEND) {
@@ -1573,9 +1586,15 @@ void MSG_WriteDeltaPlayerstate_Packet(const player_packed_t *from,
     }
 
     if (pflags & PPS_GUNANGLES) {
-        MSG_WriteChar(to->gunangles[0]);
-        MSG_WriteChar(to->gunangles[1]);
-        MSG_WriteChar(to->gunangles[2]);
+        if(flags & MSG_PS_RERELEASE) {
+            MSG_WriteShort(to->gunangles[0]);
+            MSG_WriteShort(to->gunangles[1]);
+            MSG_WriteShort(to->gunangles[2]);
+        } else {
+            MSG_WriteChar(to->gunangles[0]);
+            MSG_WriteChar(to->gunangles[1]);
+            MSG_WriteChar(to->gunangles[2]);
+        }
     }
 
     if (pflags & PPS_BLEND) {
@@ -2223,9 +2242,15 @@ void MSG_ParseDeltaPlayerstate_Default(const player_state_t *from,
         to->gunoffset[0] = MSG_ReadChar() * 0.25f;
         to->gunoffset[1] = MSG_ReadChar() * 0.25f;
         to->gunoffset[2] = MSG_ReadChar() * 0.25f;
-        to->gunangles[0] = MSG_ReadChar() * 0.25f;
-        to->gunangles[1] = MSG_ReadChar() * 0.25f;
-        to->gunangles[2] = MSG_ReadChar() * 0.25f;
+        if (psflags & MSG_PS_EXTENSIONS) {
+            to->gunangles[0] = MSG_ReadAngle16();
+            to->gunangles[1] = MSG_ReadAngle16();
+            to->gunangles[2] = MSG_ReadAngle16();
+        } else {
+            to->gunangles[0] = MSG_ReadChar() * 0.25f;
+            to->gunangles[1] = MSG_ReadChar() * 0.25f;
+            to->gunangles[2] = MSG_ReadChar() * 0.25f;
+        }
     }
 
     if (flags & PS_BLEND) {
@@ -2379,9 +2404,15 @@ void MSG_ParseDeltaPlayerstate_Enhanced(const player_state_t    *from,
     }
 
     if (extraflags & EPS_GUNANGLES) {
-        to->gunangles[0] = MSG_ReadChar() * 0.25f;
-        to->gunangles[1] = MSG_ReadChar() * 0.25f;
-        to->gunangles[2] = MSG_ReadChar() * 0.25f;
+        if (psflags & MSG_PS_EXTENSIONS) {
+            to->gunangles[0] = MSG_ReadAngle16();
+            to->gunangles[1] = MSG_ReadAngle16();
+            to->gunangles[2] = MSG_ReadAngle16();
+        } else {
+            to->gunangles[0] = MSG_ReadChar() * 0.25f;
+            to->gunangles[1] = MSG_ReadChar() * 0.25f;
+            to->gunangles[2] = MSG_ReadChar() * 0.25f;
+        }
     }
 
     if (flags & PS_BLEND) {
@@ -2537,9 +2568,15 @@ void MSG_ParseDeltaPlayerstate_Packet(const player_state_t  *from,
     }
 
     if (flags & PPS_GUNANGLES) {
-        to->gunangles[0] = MSG_ReadChar() * 0.25f;
-        to->gunangles[1] = MSG_ReadChar() * 0.25f;
-        to->gunangles[2] = MSG_ReadChar() * 0.25f;
+        if (psflags & MSG_PS_EXTENSIONS) {
+            to->gunangles[0] = MSG_ReadAngle16();
+            to->gunangles[1] = MSG_ReadAngle16();
+            to->gunangles[2] = MSG_ReadAngle16();
+        } else {
+            to->gunangles[0] = MSG_ReadChar() * 0.25f;
+            to->gunangles[1] = MSG_ReadChar() * 0.25f;
+            to->gunangles[2] = MSG_ReadChar() * 0.25f;
+        }
     }
 
     if (flags & PPS_BLEND) {
