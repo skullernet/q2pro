@@ -436,7 +436,7 @@ static void IN_Wheel2Up(void) { CL_Wheel_Close(true); }
 
 static void IN_WeapNext(void)
 {
-    if (!cl.csr.extended) {
+    if (!cl.is_rerelease_game) {
         Cbuf_AddText(&cmd_buffer, "weapnext\n");
         return;
     }
@@ -446,7 +446,7 @@ static void IN_WeapNext(void)
 
 static void IN_WeapPrev(void)
 {
-    if (!cl.csr.extended) {
+    if (!cl.is_rerelease_game) {
         Cbuf_AddText(&cmd_buffer, "weapprev\n");
         return;
     }
