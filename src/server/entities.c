@@ -434,7 +434,7 @@ void SV_BuildClientFrame(client_t *client)
     }
 
     // grab the current player_state_t
-    MSG_PackPlayer(&frame->ps, ps);
+    MSG_PackPlayer(&frame->ps, ps, MSG_PS_RERELEASE);
 
     // grab the current clientNum
     if (g_features->integer & GMF_CLIENTNUM) {
