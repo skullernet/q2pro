@@ -560,8 +560,6 @@ typedef game_export_t *(*game_entry_t)(game_import_t *);
 typedef struct {
     uint32_t    apiversion;
     uint32_t    structsize;
-
-    void        *(*TagRealloc)(void *ptr, size_t size);
 } game_import_ex_t;
 
 typedef struct {

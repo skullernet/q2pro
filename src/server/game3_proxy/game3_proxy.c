@@ -304,9 +304,12 @@ static void wrap_FreeTags(unsigned tag)
     game_import.FreeTags(tag);
 }
 
-static void *wrap_TagRealloc(void *ptr, size_t size)
+static void *PF_TagRealloc(void *ptr, size_t size)
 {
-    return game_import_ex->TagRealloc(ptr, size);
+    if (!ptr && size) {
+        Com_Error(ERR_DROP, "%s: untagged allocation not allowed", __func__);
+    }
+    return Z_Realloc(ptr, size);
 }
 
 static char* wrap_argv(int idx)
@@ -907,7 +910,7 @@ static const game3_import_ex_t game3_import_ex = {
     .inVIS = wrap_inVIS,
 
     .GetExtension = wrap_GetExtension_import,
-    .TagRealloc = wrap_TagRealloc,
+    .TagRealloc = PF_TagRealloc,
 };
 
 game_export_t *GetGame3Proxy(game_import_t *import, const game_import_ex_t *import_ex, void *game3_entry, void *game3_ex_entry)

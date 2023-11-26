@@ -1017,8 +1017,6 @@ static void *PF_GetExtension(const char *name)
 static const game_import_ex_t game_import_ex = {
     .apiversion = GAME_API_VERSION_EX,
     .structsize = sizeof(game_import_ex),
-
-    .TagRealloc = PF_TagRealloc,
 };
 
 static void *game_library;
