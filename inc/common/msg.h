@@ -56,7 +56,7 @@ typedef struct {
     int16_t         viewoffset[3];
     int16_t         kick_angles[3];
     int16_t         gunangles[3];
-    int8_t          gunoffset[3];
+    int16_t         gunoffset[3];
     uint16_t        gunindex;
     uint8_t         gunframe;
     uint8_t         screen_blend[4];
