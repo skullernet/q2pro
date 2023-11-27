@@ -691,12 +691,12 @@ static void OGG_Play_f(void)
 
 static void OGG_Info_f(void)
 {
-    AVFrame *out = ogg.frame_out;
+    AVCodecContext *dec = ogg.dec_ctx;
 
-    if (out) {
+    if (dec) {
         Com_Printf("Playing %s, %s, %d Hz, %d ch\n",
-                   ogg.fmt_ctx->url, ogg.dec_ctx->codec->name,
-                   out->sample_rate, out->ch_layout.nb_channels);
+                   COM_SkipPath(ogg.fmt_ctx->url), dec->codec->name,
+                   dec->sample_rate, dec->ch_layout.nb_channels);
     } else {
         Com_Printf("Playback stopped.\n");
     }
