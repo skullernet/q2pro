@@ -57,7 +57,7 @@ void GL_Flush2D(void)
 
     qglDrawElements(GL_TRIANGLES, tess.numindices, QGL_INDEX_ENUM, tess.indices);
 
-    if (gl_showtris->integer > 1) {
+    if (gl_showtris->integer & BIT(2)) {
         GL_DrawOutlines(tess.numindices, tess.indices);
     }
 
@@ -147,7 +147,7 @@ void GL_DrawParticles(void)
 
         qglDrawArrays(GL_TRIANGLES, 0, numverts);
 
-        if (gl_showtris->integer) {
+        if (gl_showtris->integer & BIT(2)) {
             GL_DrawOutlines(numverts, NULL);
         }
     } while (total);
@@ -374,7 +374,7 @@ void GL_Flush3D(void)
 
     qglDrawElements(GL_TRIANGLES, tess.numindices, QGL_INDEX_ENUM, tess.indices);
 
-    if (gl_showtris->integer) {
+    if (gl_showtris->integer & BIT(0)) {
         GL_DrawOutlines(tess.numindices, tess.indices);
     }
 

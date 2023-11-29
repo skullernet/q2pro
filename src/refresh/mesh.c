@@ -603,7 +603,7 @@ static void end_alias_mesh(const QGL_INDEX_TYPE *indices, int num_indices,
 
     draw_celshading(indices, num_indices);
 
-    if (gl_showtris->integer) {
+    if (gl_showtris->integer & BIT(1)) {
         GL_DrawOutlines(num_indices, indices);
     }
 
