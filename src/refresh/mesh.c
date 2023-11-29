@@ -556,18 +556,28 @@ static void draw_alias_mesh(const QGL_INDEX_TYPE *indices, int num_indices,
 {
     glStateBits_t state = GLS_INTENSITY_ENABLE;
     image_t *skin = skin_for_mesh(skins, num_skins);
+    bool is_alpha_gun = (glr.ent->flags & (RF_TRANSLUCENT | RF_WEAPONMODEL | RF_FULLBRIGHT)) == (RF_TRANSLUCENT | RF_WEAPONMODEL);
 
     // fall back to entity matrix
     GL_LoadMatrix(glr.entmatrix);
 
+    // avoid drawing hidden faces for transparent gun
+    if (is_alpha_gun) {
+        GL_StateBits(GLS_DEFAULT);
+        GL_ArrayBits(GLA_VERTEX);
+        GL_BindTexture(0, TEXNUM_WHITE);
+        GL_VertexPointer(3, dotshading ? VERTEX_SIZE : 4, tess.vertices);
+        qglColorMask(0, 0, 0, 0);
+        qglDrawElements(GL_TRIANGLES, num_indices, QGL_INDEX_ENUM, indices);
+        qglColorMask(1, 1, 1, 1);
+        qglDepthFunc(GL_LEQUAL);
+    }
+
     if (dotshading)
         state |= GLS_SHADE_SMOOTH;
 
-    if (glr.ent->flags & RF_TRANSLUCENT) {
-        state |= GLS_BLEND_BLEND;
-        if (!(glr.ent->flags & RF_WEAPONMODEL) || (glr.ent->flags & RF_FULLBRIGHT))
-            state |= GLS_DEPTHMASK_FALSE;
-    }
+    if (glr.ent->flags & RF_TRANSLUCENT)
+        state |= GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE;
 
     if (skin->glow_texnum)
         state |= GLS_GLOWMAP_ENABLE;
@@ -595,6 +605,9 @@ static void draw_alias_mesh(const QGL_INDEX_TYPE *indices, int num_indices,
 
     qglDrawElements(GL_TRIANGLES, num_indices, QGL_INDEX_ENUM, indices);
     c.trisDrawn += num_indices / 3;
+
+    if (is_alpha_gun)
+        qglDepthFunc(GL_LESS);
 
     draw_celshading(indices, num_indices);
 
