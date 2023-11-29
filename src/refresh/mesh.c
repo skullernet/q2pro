@@ -18,8 +18,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "gl.h"
 
-typedef void (*tessfunc_t)(const maliasmesh_t *);
-
 static int      oldframenum;
 static int      newframenum;
 static float    frontlerp;
@@ -29,7 +27,6 @@ static vec3_t   oldscale;
 static vec3_t   newscale;
 static vec3_t   translate;
 static vec_t    shellscale;
-static tessfunc_t tessfunc;
 static vec4_t   color;
 
 static vec3_t   shadedir;
@@ -553,7 +550,9 @@ static image_t *skin_for_mesh(image_t **skins, int num_skins)
     return skins[ent->skinnum];
 }
 
-static void begin_alias_mesh(image_t **skins, int num_skins)
+static void draw_alias_mesh(const QGL_INDEX_TYPE *indices, int num_indices,
+                            const maliastc_t *tcoords, int num_verts,
+                            image_t **skins, int num_skins)
 {
     glStateBits_t state = GLS_INTENSITY_ENABLE;
     image_t *skin = skin_for_mesh(skins, num_skins);
@@ -579,11 +578,7 @@ static void begin_alias_mesh(image_t **skins, int num_skins)
 
     if (skin->glow_texnum)
         GL_BindTexture(2, skin->glow_texnum);
-}
 
-static void end_alias_mesh(const QGL_INDEX_TYPE *indices, int num_indices,
-                           const maliastc_t *tcoords, int num_verts)
-{
     if (dotshading) {
         GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
         GL_VertexPointer(3, VERTEX_SIZE, tess.vertices);
@@ -611,16 +606,6 @@ static void end_alias_mesh(const QGL_INDEX_TYPE *indices, int num_indices,
     draw_shadow(indices, num_indices);
 
     GL_UnlockArrays();
-}
-
-static void draw_alias_mesh(const maliasmesh_t *mesh)
-{
-    begin_alias_mesh(mesh->skins, mesh->numskins);
-
-    (*tessfunc)(mesh);
-
-    end_alias_mesh(mesh->indices, mesh->numindices,
-                   mesh->tcoords, mesh->numverts);
 }
 
 #if USE_MD5
@@ -710,8 +695,6 @@ static void lerp_alias_skeleton(const md5_model_t *model)
 
 static void draw_skeleton_mesh(const md5_model_t *model, const md5_mesh_t *mesh, const md5_joint_t *skel)
 {
-    begin_alias_mesh(model->skins, model->num_skins);
-
     if (glr.ent->flags & RF_SHELL_MASK)
         tess_shell_skel(mesh, skel);
     else if (dotshading)
@@ -719,7 +702,9 @@ static void draw_skeleton_mesh(const md5_model_t *model, const md5_mesh_t *mesh,
     else
         tess_plain_skel(mesh, skel);
 
-    end_alias_mesh(mesh->indices, mesh->num_indices, mesh->tcoords, mesh->num_verts);
+    draw_alias_mesh(mesh->indices, mesh->num_indices,
+                    mesh->tcoords, mesh->num_verts,
+                    model->skins, model->num_skins);
 }
 
 static void draw_alias_skeleton(const md5_model_t *model)
@@ -773,6 +758,7 @@ void GL_DrawAliasModel(const model_t *model)
 {
     const entity_t *ent = glr.ent;
     glCullResult_t cull;
+    void (*tessfunc)(const maliasmesh_t *);
     int i;
 
     newframenum = ent->frame;
@@ -838,8 +824,13 @@ void GL_DrawAliasModel(const model_t *model)
         draw_alias_skeleton(model->skeleton);
     else
 #endif
-    for (i = 0; i < model->nummeshes; i++)
-        draw_alias_mesh(&model->meshes[i]);
+    for (i = 0; i < model->nummeshes; i++) {
+        const maliasmesh_t *mesh = &model->meshes[i];
+        (*tessfunc)(mesh);
+        draw_alias_mesh(mesh->indices, mesh->numindices,
+                        mesh->tcoords, mesh->numverts,
+                        mesh->skins, mesh->numskins);
+    }
 
     if (ent->flags & RF_DEPTHHACK)
         GL_DepthRange(0, 1);
