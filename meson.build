@@ -337,33 +337,6 @@ if openal.found()
   config.set10('USE_OPENAL', true)
 endif
 
-# ./configure \
-#     --disable-everything \
-#     --enable-decoder=theora \
-#     --enable-decoder=vorbis \
-#     --enable-decoder=idcin \
-#     --enable-decoder=pcm_* \
-#     --disable-decoder=pcm_bluray \
-#     --disable-decoder=pcm_dvd \
-#     --disable-decoder=pcm_alaw_at \
-#     --disable-decoder=pcm_mulaw_at \
-#     --enable-demuxer=ogg \
-#     --enable-demuxer=idcin \
-#     --enable-demuxer=wav \
-#     --enable-parser=vp3 \
-#     --enable-parser=vorbis \
-#     --disable-protocols \
-#     --enable-protocol=file \
-#     --disable-avdevice \
-#     --disable-avfilter \
-#     --disable-postproc \
-#     --disable-programs \
-#     --disable-autodetect \
-#     --disable-network \
-#     --disable-doc \
-#     --disable-swscale-alpha \
-#     --enable-small
-
 # require FFmpeg >= 5.1.3
 ffmpeg_defaults = [
   'tests=disabled',
