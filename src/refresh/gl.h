@@ -222,7 +222,6 @@ extern cvar_t *gl_nobind;
 extern cvar_t *gl_test;
 #endif
 extern cvar_t *gl_cull_nodes;
-extern cvar_t *gl_hash_faces;
 extern cvar_t *gl_clear;
 extern cvar_t *gl_novis;
 extern cvar_t *gl_lockpvs;
@@ -666,7 +665,6 @@ void GL_DrawBeams(void);
 
 void GL_BindArrays(void);
 void GL_Flush3D(void);
-void GL_DrawFace(mface_t *surf);
 
 void GL_AddAlphaFace(mface_t *face, entity_t *ent);
 void GL_AddSolidFace(mface_t *face);

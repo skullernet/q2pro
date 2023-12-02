@@ -422,7 +422,7 @@ static image_t *GL_TextureAnimation(mtexinfo_t *tex)
     return tex->image;
 }
 
-void GL_DrawFace(mface_t *surf)
+static void GL_DrawFace(mface_t *surf)
 {
     int numtris = surf->numsurfedges - 2;
     int numindices = numtris * 3;

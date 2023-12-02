@@ -481,6 +481,8 @@ void GL_DrawBspModel(mmodel_t *model)
 
     GL_BindArrays();
 
+    GL_ClearSolidFaces();
+
     // draw visible faces
     last = model->firstface + model->numfaces;
     for (face = model->firstface; face < last; face++) {
@@ -505,8 +507,10 @@ void GL_DrawBspModel(mmodel_t *model)
             continue;
         }
 
-        GL_DrawFace(face);
+        GL_AddSolidFace(face);
     }
+
+    GL_DrawSolidFaces();
 
     GL_Flush3D();
 
@@ -591,11 +595,7 @@ static inline void GL_DrawNode(mnode_t *node)
             continue;
         }
 
-        if (gl_hash_faces->integer) {
-            GL_AddSolidFace(face);
-        } else {
-            GL_DrawFace(face);
-        }
+        GL_AddSolidFace(face);
     }
 
     c.nodesDrawn++;
@@ -645,14 +645,12 @@ void GL_DrawWorld(void)
 
     GL_BindArrays();
 
-    if (gl_hash_faces->integer)
-        GL_ClearSolidFaces();
+    GL_ClearSolidFaces();
 
     GL_WorldNode_r(gl_static.world.cache->nodes,
                    gl_cull_nodes->integer ? NODE_CLIPPED : NODE_UNCLIPPED);
 
-    if (gl_hash_faces->integer)
-        GL_DrawSolidFaces();
+    GL_DrawSolidFaces();
 
     GL_Flush3D();
 
