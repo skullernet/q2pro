@@ -366,13 +366,16 @@ void Draw_Stats(void)
 
 void Draw_Lightmaps(void)
 {
-    int i, x, y;
+    int rows = max(r_config.height / 256, 1);
+    int cols = max(lm.nummaps / rows, 1);
 
-    for (i = 0; i < lm.nummaps; i++) {
-        x = i & 1;
-        y = i >> 1;
-        _GL_StretchPic(256 * x, 256 * y, 256, 256,
-                       0, 0, 1, 1, U32_WHITE, lm.texnums[i], 0);
+    for (int i = 0; i < cols; i++) {
+        for (int j = 0; j < rows; j++) {
+            int k = j * cols + i;
+            if (k < lm.nummaps)
+                _GL_StretchPic(256 * i, 256 * j, 256, 256,
+                               0, 0, 1, 1, U32_WHITE, lm.texnums[k], 0);
+        }
     }
 }
 
