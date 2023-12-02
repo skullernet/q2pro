@@ -278,13 +278,7 @@ void GL_PushLights(mface_t *surf)
     lightstyle_t *style;
     int i;
 
-    if (!surf->lightmap) {
-        return;
-    }
-    if (surf->drawflags & gl_static.nolm_mask) {
-        return;
-    }
-    if (!surf->texnum[1]) {
+    if (!surf->light_m) {
         return;
     }
 
@@ -500,16 +494,9 @@ static void LM_RebuildSurfaces(void)
     }
 
     for (i = 0, surf = bsp->faces; i < bsp->numfaces; i++, surf++) {
-        if (!surf->lightmap) {
-            continue;
+        if (surf->light_m) {
+            build_primary_lightmap(surf);
         }
-        if (surf->drawflags & gl_static.nolm_mask) {
-            continue;
-        }
-        if (!surf->texnum[1]) {
-            continue;
-        }
-        build_primary_lightmap(surf);
     }
 
     // upload all lightmaps
@@ -883,11 +870,12 @@ static void upload_world_surfaces(void)
             tess.numverts += surf->numsurfedges;
         }
 
+        surf->light_m = NULL;   // start with no lightmap
         surf->firstvert = currvert;
         build_surface_poly(surf, vbo);
         build_surface_light(surf, vbo);
 
-        if (surf->texnum[1])
+        if (surf->light_m)
             normalize_surface_lmtc(surf, vbo);
         else
             duplicate_surface_lmtc(surf, vbo);
