@@ -2177,7 +2177,6 @@ void MSG_ParseDeltaPlayerstate_Default(const player_state_t *from,
 
     if (flags & PS_M_ORIGIN) {
         MSG_ReadPos(to->pmove.origin, psflags & MSG_PS_RERELEASE);
-        MSG_ReadPos(to->pmove.origin, psflags & MSG_PS_RERELEASE);
     }
 
     if (flags & PS_M_VELOCITY) {
