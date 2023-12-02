@@ -309,13 +309,7 @@ LIGHTMAPS BUILDING
 
 static void LM_InitBlock(void)
 {
-    int i;
-
-    for (i = 0; i < LM_BLOCK_WIDTH; i++) {
-        lm.inuse[i] = 0;
-    }
-
-    lm.dirty = false;
+    memset(lm.inuse, 0, sizeof(lm.inuse));
 }
 
 static void LM_UploadBlock(void)
@@ -324,11 +318,15 @@ static void LM_UploadBlock(void)
         return;
     }
 
-    GL_ForceTexture(1, lm.texnums[lm.nummaps++]);
+    Q_assert(lm.nummaps < LM_MAX_LIGHTMAPS);
+    GL_ForceTexture(1, lm.texnums[lm.nummaps]);
     qglTexImage2D(GL_TEXTURE_2D, 0, lm.comp, LM_BLOCK_WIDTH, LM_BLOCK_HEIGHT, 0,
                   GL_RGBA, GL_UNSIGNED_BYTE, lm.buffer);
     qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    lm.nummaps++;
+    lm.dirty = false;
 }
 
 static void build_style_map(int dynamic)
@@ -360,6 +358,7 @@ static void LM_BeginBuilding(void)
     // lightmap textures are not deleted from memory when changing maps,
     // they are merely reused
     lm.nummaps = 0;
+    lm.dirty = false;
 
     LM_InitBlock();
 
@@ -404,6 +403,9 @@ static void build_primary_lightmap(mface_t *surf)
 static void LM_BuildSurface(mface_t *surf, vec_t *vbo)
 {
     int smax, tmax, s, t;
+
+    if (lm.nummaps == LM_MAX_LIGHTMAPS)
+        return;     // can't have any more
 
     smax = surf->lm_width;
     tmax = surf->lm_height;
