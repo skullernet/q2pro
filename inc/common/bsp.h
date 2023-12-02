@@ -110,6 +110,7 @@ typedef struct mface_s {
     unsigned        dlightframe;
     uint64_t        dlightbits;
 
+    struct lightmap_s   *light_m;
     struct entity_s     *entity;
     struct mface_s      *next;
 } mface_t;

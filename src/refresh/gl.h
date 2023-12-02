@@ -407,24 +407,31 @@ qhandle_t R_RegisterModel(const char *name);
 #define LIGHT_STYLE(i) \
     &glr.fd.lightstyles[gl_static.lightstylemap[(i)]]
 
-#define LM_MAX_LIGHTMAPS    32
-#define LM_BLOCK_WIDTH      512
-#define LM_BLOCK_HEIGHT     512
+#define LM_MAX_LIGHTMAPS    128
+#define LM_BLOCK_WIDTH      256
+#define LM_BLOCK_HEIGHT     256
+
+typedef struct lightmap_s {
+    byte        buffer[LM_BLOCK_WIDTH * LM_BLOCK_HEIGHT * 4];
+    int         mins[2];
+    int         maxs[2];
+} lightmap_t;
 
 typedef struct {
-    int         inuse[LM_BLOCK_WIDTH];
-    byte        buffer[LM_BLOCK_WIDTH * LM_BLOCK_HEIGHT * 4];
     bool        dirty;
     int         comp;
     float       add, modulate, scale;
     int         nummaps;
+    int         inuse[LM_BLOCK_WIDTH];
     GLuint      texnums[LM_MAX_LIGHTMAPS];
+    lightmap_t  lightmaps[LM_MAX_LIGHTMAPS];
 } lightmap_builder_t;
 
 extern lightmap_builder_t lm;
 
 void GL_AdjustColor(vec3_t color);
 void GL_PushLights(mface_t *surf);
+void GL_UploadLightmaps(void);
 
 void GL_RebuildLighting(void);
 void GL_FreeWorld(void);

@@ -510,6 +510,10 @@ void GL_DrawBspModel(mmodel_t *model)
         GL_AddSolidFace(face);
     }
 
+    if (gl_dynamic->integer) {
+        GL_UploadLightmaps();
+    }
+
     GL_DrawSolidFaces();
 
     GL_Flush3D();
@@ -649,6 +653,10 @@ void GL_DrawWorld(void)
 
     GL_WorldNode_r(gl_static.world.cache->nodes,
                    gl_cull_nodes->integer ? NODE_CLIPPED : NODE_UNCLIPPED);
+
+    if (gl_dynamic->integer) {
+        GL_UploadLightmaps();
+    }
 
     GL_DrawSolidFaces();
 
