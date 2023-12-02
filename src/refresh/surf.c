@@ -738,7 +738,7 @@ static void build_surface_light(mface_t *surf, vec_t *vbo)
 
     // validate lightmap extents
     if (smax < 1 || tmax < 1 || smax > MAX_LIGHTMAP_EXTENTS || tmax > MAX_LIGHTMAP_EXTENTS) {
-        Com_EPrintf("%s: bad lightmap extents\n", __func__);
+        Com_WPrintf("Bad lightmap extents: %d x %d\n", smax, tmax);
         surf->lightmap = NULL;  // don't use this lightmap
         return;
     }
@@ -747,7 +747,7 @@ static void build_surface_light(mface_t *surf, vec_t *vbo)
     size = smax * tmax;
     ofs = surf->lightmap - bsp->lightmap;
     if (surf->numstyles * size * 3 > bsp->numlightmapbytes - ofs) {
-        Com_EPrintf("%s: bad surface lightmap\n", __func__);
+        Com_WPrintf("Bad surface lightmap\n");
         surf->lightmap = NULL;  // don't use this lightmap
         return;
     }
