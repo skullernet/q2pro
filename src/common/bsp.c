@@ -1305,6 +1305,8 @@ static size_t BSP_ParseExtensionHeader(bsp_t *bsp, lump_t *out, const byte *buf,
                 break;
             }
 
+            Com_DDPrintf("Found %s lump\n", e->name);
+
             if (e->parse_header)
                 extrasize += e->parse_header(bsp, buf + ofs, len);
 
