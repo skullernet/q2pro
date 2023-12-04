@@ -1661,7 +1661,9 @@ static void print_error(const char *name, imageflags_t flags, int err)
         msg = Com_GetLastError();
         break;
     case Q_ERR(ENOENT):
-        if (flags & IF_PERMANENT) {
+        if (flags == -1) {
+            return;
+        } else if (flags & IF_PERMANENT) {
             // ugly hack for console code
             if (strcmp(name, "pics/conchars.pcx"))
                 level = PRINT_WARNING;
@@ -1752,7 +1754,7 @@ static void check_for_glow_map(image_t *image)
 
     ret = load_image_data(&temporary, IM_PCX, false, &glow_pic);
     if (ret < 0) {
-        print_error(temporary.name, 0, ret);
+        print_error(temporary.name, -1, ret);
         return;
     }
 
