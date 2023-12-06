@@ -178,6 +178,7 @@ typedef struct {
     int facesTris;
     int texSwitches;
     int texUploads;
+    int lightTexels;
     int trisDrawn;
     int batchesDrawn;
     int nodesCulled;

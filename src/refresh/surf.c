@@ -336,6 +336,7 @@ void GL_UploadLightmaps(void)
                          m->buffer + (y << lm.block_shift) + x * 4);
         clear_dirty_region(m);
         c.texUploads++;
+        c.lightTexels += w * h;
     }
 
     if (set)

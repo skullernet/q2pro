@@ -338,7 +338,7 @@ void Draw_Stats(void)
     int x = 10, y = 10;
 
     R_SetScale(1.0f / get_auto_scale());
-    R_DrawFill8(8, 8, 24*8, 20*10+2, 4);
+    R_DrawFill8(8, 8, 25*8, 21*10+2, 4);
 
     Draw_Stringf(x, y, "Nodes visible  : %i", c.nodesVisible); y += 10;
     Draw_Stringf(x, y, "Nodes culled   : %i", c.nodesCulled); y += 10;
@@ -352,6 +352,7 @@ void Draw_Stats(void)
     Draw_Stringf(x, y, "Tris drawn     : %i", c.trisDrawn); y += 10;
     Draw_Stringf(x, y, "Tex switches   : %i", c.texSwitches); y += 10;
     Draw_Stringf(x, y, "Tex uploads    : %i", c.texUploads); y += 10;
+    Draw_Stringf(x, y, "LM texels      : %i", c.lightTexels); y += 10;
     Draw_Stringf(x, y, "Batches drawn  : %i", c.batchesDrawn); y += 10;
     Draw_Stringf(x, y, "Faces / batch  : %.1f", c.batchesDrawn ? (float)c.facesDrawn / c.batchesDrawn : 0.0f); y += 10;
     Draw_Stringf(x, y, "Tris / batch   : %.1f", c.batchesDrawn ? (float)c.facesTris / c.batchesDrawn : 0.0f); y += 10;
