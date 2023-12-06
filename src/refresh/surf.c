@@ -94,7 +94,7 @@ DYNAMIC BLOCKLIGHTS
 =============================================================================
 */
 
-#define MAX_LIGHTMAP_EXTENTS    256
+#define MAX_LIGHTMAP_EXTENTS    513
 #define MAX_BLOCKLIGHTS         (MAX_LIGHTMAP_EXTENTS * MAX_LIGHTMAP_EXTENTS)
 
 static float blocklights[MAX_BLOCKLIGHTS * 3];
@@ -102,7 +102,7 @@ static float blocklights[MAX_BLOCKLIGHTS * 3];
 static void put_blocklights(mface_t *surf)
 {
     float *bl, add, modulate, scale = lm.scale;
-    int i, j, smax, tmax;
+    int i, j, smax, tmax, stride = 1 << lm.block_shift;
     byte *out;
 
     if (gl_static.use_shaders) {
@@ -116,9 +116,9 @@ static void put_blocklights(mface_t *surf)
     smax = surf->lm_width;
     tmax = surf->lm_height;
 
-    out = surf->light_m->buffer + (surf->light_t * LM_BLOCK_WIDTH + surf->light_s) * 4;
+    out = surf->light_m->buffer + (surf->light_t << lm.block_shift) + surf->light_s * 4;
 
-    for (i = 0, bl = blocklights; i < tmax; i++, out += LM_BLOCK_WIDTH * 4) {
+    for (i = 0, bl = blocklights; i < tmax; i++, out += stride) {
         byte *dst;
         for (j = 0, dst = out; j < smax; j++, bl += 3, dst += 4) {
             vec3_t tmp;
@@ -300,8 +300,8 @@ void GL_PushLights(mface_t *surf)
 
 static void clear_dirty_region(lightmap_t *m)
 {
-    m->mins[0] = LM_BLOCK_WIDTH;
-    m->mins[1] = LM_BLOCK_HEIGHT;
+    m->mins[0] = lm.block_size;
+    m->mins[1] = lm.block_size;
     m->maxs[0] = 0;
     m->maxs[1] = 0;
 }
@@ -325,7 +325,7 @@ void GL_UploadLightmaps(void)
         h = m->maxs[1] - y;
 
         if (!set) {
-            qglPixelStorei(GL_UNPACK_ROW_LENGTH, LM_BLOCK_WIDTH);
+            qglPixelStorei(GL_UNPACK_ROW_LENGTH, lm.block_size);
             set = true;
         }
 
@@ -333,7 +333,7 @@ void GL_UploadLightmaps(void)
         GL_ForceTexture(1, lm.texnums[i]);
         qglTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h,
                          GL_RGBA, GL_UNSIGNED_BYTE,
-                         m->buffer + ((y * LM_BLOCK_WIDTH) + x) * 4);
+                         m->buffer + (y << lm.block_shift) + x * 4);
         clear_dirty_region(m);
         c.texUploads++;
     }
@@ -351,7 +351,7 @@ LIGHTMAPS BUILDING
 */
 
 #define LM_AllocBlock(w, h, s, t) \
-    GL_AllocBlock(LM_BLOCK_WIDTH, LM_BLOCK_HEIGHT, lm.inuse, w, h, s, t)
+    GL_AllocBlock(lm.block_size, lm.block_size, lm.inuse, w, h, s, t)
 
 static void LM_InitBlock(void)
 {
@@ -364,14 +364,14 @@ static void LM_UploadBlock(void)
         return;
     }
 
-    Q_assert(lm.nummaps < LM_MAX_LIGHTMAPS);
+    Q_assert(lm.nummaps < lm.maxmaps);
 
     lightmap_t *m = &lm.lightmaps[lm.nummaps];
     clear_dirty_region(m);
 
     GL_ForceTexture(1, lm.texnums[lm.nummaps]);
     qglTexImage2D(GL_TEXTURE_2D, 0, lm.comp,
-                  LM_BLOCK_WIDTH, LM_BLOCK_HEIGHT, 0,
+                  lm.block_size, lm.block_size, 0,
                   GL_RGBA, GL_UNSIGNED_BYTE, m->buffer);
     qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -404,28 +404,53 @@ static void build_style_map(int dynamic)
     }
 }
 
+static bool no_lightmaps(void)
+{
+    return gl_fullbright->integer || gl_vertexlight->integer;
+}
+
 static void LM_BeginBuilding(void)
 {
-    // lightmap textures are not deleted from memory when changing maps,
-    // they are merely reused
-    lm.nummaps = 0;
-    lm.dirty = false;
-
-    LM_InitBlock();
+    bsp_t *bsp = gl_static.world.cache;
+    int size_shift, bits;
 
     // start up with fullbright styles
     build_style_map(0);
+
+    // lightmap textures are not deleted from memory when changing maps,
+    // they are merely reused
+    lm.nummaps = lm.maxmaps = 0;
+    lm.dirty = false;
+
+    if (no_lightmaps())
+        return;
+
+    // use larger lightmaps for DECOUPLED_LM maps
+    bits = 8 + bsp->lm_decoupled * 2;
+
+    lm.block_size = 1 << bits;
+    lm.block_shift = bits + 2;
+
+    size_shift = bits * 2 + 2;
+    lm.maxmaps = min(sizeof(lm.buffer) >> size_shift, LM_MAX_LIGHTMAPS);
+
+    for (int i = 0; i < lm.maxmaps; i++)
+        lm.lightmaps[i].buffer = lm.buffer + (i << size_shift);
+
+    Com_DDPrintf("%s: %d lightmaps, %d block size\n", __func__, lm.maxmaps, lm.block_size);
+
+    LM_InitBlock();
 }
 
 static void LM_EndBuilding(void)
 {
+    // vertex lighting implies fullbright styles
+    if (no_lightmaps())
+        return;
+
     // upload the last lightmap
     LM_UploadBlock();
     LM_InitBlock();
-
-    // vertex lighting implies fullbright styles
-    if (gl_fullbright->integer || gl_vertexlight->integer)
-        return;
 
     // now build the real lightstyle map
     build_style_map(gl_dynamic->integer);
@@ -448,7 +473,7 @@ static void LM_BuildSurface(mface_t *surf, vec_t *vbo)
 {
     int smax, tmax, s, t;
 
-    if (lm.nummaps == LM_MAX_LIGHTMAPS)
+    if (lm.nummaps >= lm.maxmaps)
         return;     // can't have any more
 
     smax = surf->lm_width;
@@ -456,8 +481,8 @@ static void LM_BuildSurface(mface_t *surf, vec_t *vbo)
 
     if (!LM_AllocBlock(smax, tmax, &s, &t)) {
         LM_UploadBlock();
-        if (lm.nummaps == LM_MAX_LIGHTMAPS) {
-            Com_EPrintf("%s: LM_MAX_LIGHTMAPS exceeded\n", __func__);
+        if (lm.nummaps >= lm.maxmaps) {
+            Com_EPrintf("%s: too many lightmaps\n", __func__);
             return;
         }
         LM_InitBlock();
@@ -503,7 +528,7 @@ static void LM_RebuildSurfaces(void)
     for (i = 0, m = lm.lightmaps; i < lm.nummaps; i++, m++) {
         GL_ForceTexture(1, lm.texnums[i]);
         qglTexImage2D(GL_TEXTURE_2D, 0, lm.comp,
-                      LM_BLOCK_WIDTH, LM_BLOCK_HEIGHT, 0,
+                      lm.block_size, lm.block_size, 0,
                       GL_RGBA, GL_UNSIGNED_BYTE, m->buffer);
         clear_dirty_region(m);
         c.texUploads++;
@@ -757,8 +782,8 @@ static void normalize_surface_lmtc(mface_t *surf, vec_t *vbo)
     for (i = 0; i < surf->numsurfedges; i++) {
         vbo[6] += s;
         vbo[7] += t;
-        vbo[6] *= 1.0f / LM_BLOCK_WIDTH;
-        vbo[7] *= 1.0f / LM_BLOCK_HEIGHT;
+        vbo[6] *= 1.0f / lm.block_size;
+        vbo[7] *= 1.0f / lm.block_size;
 
         vbo += VERTEX_SIZE;
     }
@@ -922,7 +947,7 @@ void GL_RebuildLighting(void)
         return;
 
     // if doing vertex lighting, rebuild all surfaces
-    if (gl_fullbright->integer || gl_vertexlight->integer) {
+    if (no_lightmaps()) {
         upload_world_surfaces();
         return;
     }
