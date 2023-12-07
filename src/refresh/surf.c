@@ -872,6 +872,9 @@ static void upload_world_surfaces(void)
     if (!qglActiveTexture || (!qglClientActiveTexture && !gl_static.use_shaders))
         Cvar_Set("gl_vertexlight", "1");
 
+    // begin building lightmaps
+    LM_BeginBuilding();
+
     if (!gl_static.world.vertices)
         qglBindBuffer(GL_ARRAY_BUFFER, gl_static.world.bufnum);
 
@@ -917,6 +920,9 @@ static void upload_world_surfaces(void)
         qglBindBuffer(GL_ARRAY_BUFFER, 0);
     }
 
+    // end building lightmaps
+    LM_EndBuilding();
+
     gl_fullbright->modified = false;
     gl_vertexlight->modified = false;
 }
@@ -949,9 +955,16 @@ void GL_RebuildLighting(void)
 
     // rebuild all surfaces if toggling lightmaps off/on
     if (gl_fullbright->modified || gl_vertexlight->modified) {
-        LM_BeginBuilding();
         upload_world_surfaces();
-        LM_EndBuilding();
+        return;
+    }
+
+    if (gl_fullbright->integer)
+        return;
+
+    // rebuild all surfaces if doing vertex lighting (and not fullbright)
+    if (gl_vertexlight->integer) {
+        upload_world_surfaces();
         return;
     }
 
@@ -1058,14 +1071,8 @@ void GL_LoadWorld(const char *name)
         gl_static.nolm_mask = SURF_NOLM_MASK_REMASTER;
     }
 
-    // begin building lightmaps
-    LM_BeginBuilding();
-
     // post process all surfaces
     upload_world_surfaces();
-
-    // end building lightmaps
-    LM_EndBuilding();
 
     GL_ShowErrors(__func__);
 }
