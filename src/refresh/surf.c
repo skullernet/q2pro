@@ -947,13 +947,7 @@ void GL_RebuildLighting(void)
     if (!gl_static.world.cache)
         return;
 
-    // if doing vertex lighting, rebuild all surfaces
-    if (no_lightmaps()) {
-        upload_world_surfaces();
-        return;
-    }
-
-    // if did vertex lighting previously, rebuild all surfaces and lightmaps
+    // rebuild all surfaces if toggling lightmaps off/on
     if (gl_fullbright->modified || gl_vertexlight->modified) {
         LM_BeginBuilding();
         upload_world_surfaces();
