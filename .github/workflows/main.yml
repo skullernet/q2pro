@@ -1,12 +1,105 @@
-[binaries]
-c = 'x86_64-w64-mingw32-gcc'
-cpp = 'x86_64-w64-mingw32-g++'
-ar = 'x86_64-w64-mingw32-ar'
-strip = 'x86_64-w64-mingw32-strip'
-windres = 'x86_64-w64-mingw32-windres'
+name: build
 
-[host_machine]
-system = 'windows'
-cpu_family = 'x86_64'
-cpu = 'x86_64'
-endian = 'little'
+on:
+  push:
+    branches: [master, ci]
+  pull_request:
+    branches: [master]
+
+env:
+  MESON_ARGS: >-
+    --auto-features=enabled
+    --fatal-meson-warnings
+    -Danticheat-server=true
+    -Davcodec=disabled
+    -Dclient-gtv=true
+    -Dpacketdup-hack=true
+    -Dtests=true
+    -Dvariable-fps=true
+    -Dwerror=true
+
+  MESON_ARGS_WIN: >-
+    -Dlibpng:werror=false
+    -Dsdl2=disabled
+    -Dwayland=disabled
+    -Dwrap_mode=forcefallback
+    -Dx11=disabled
+
+  MESON_ARGS_LINUX: >-
+    -Dwindows-crash-dumps=disabled
+    -Dwrap_mode=nofallback
+
+jobs:
+  mingw:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: ["i686", "x86_64"]
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/cache@v3
+        with:
+          path: subprojects/packagecache
+          key: ${{ hashFiles('subprojects/*.wrap') }}
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-mingw-w64 meson nasm
+
+      - name: Build
+        run: |
+          meson setup --cross-file=.ci/${{ matrix.arch }}-w64-mingw32.txt \
+          ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_WIN }} builddir
+          meson compile -C builddir
+
+  msvc:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        arch: ["x86", "x64"]
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/cache@v3
+        with:
+          path: subprojects/packagecache
+          key: ${{ hashFiles('subprojects/*.wrap') }}
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.arch }}
+
+      - uses: ilammy/setup-nasm@v1
+
+      - name: Install dependencies
+        run: pip3 install --no-input meson ninja
+
+      - name: Build
+        run: |
+          meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_WIN }} builddir
+          meson compile -C builddir
+
+  linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y meson libsdl2-dev libopenal-dev \
+          libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
+          libcurl4-gnutls-dev libx11-dev libxi-dev \
+          libwayland-dev wayland-protocols libdecor-0-dev
+
+      - name: Build
+        run: |
+          meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_LINUX }} builddir
+          meson compile -C builddir
+        env:
+          CC: ${{ matrix.cc }}
