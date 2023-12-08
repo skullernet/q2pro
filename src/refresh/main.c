@@ -668,6 +668,11 @@ void R_RenderFrame(refdef_t *fd)
 
     Q_assert(gl_static.world.cache || (fd->rdflags & RDF_NOWORLDMODEL));
 
+    if (lm.dirty) {
+        GL_RebuildLighting();
+        lm.dirty = false;
+    }
+
     glr.drawframe++;
     glr.rand_seed = fd->time * 20;
 
@@ -677,11 +682,6 @@ void R_RenderFrame(refdef_t *fd)
 
     if (gl_dynamic->integer != 1 || gl_vertexlight->integer) {
         glr.fd.num_dlights = 0;
-    }
-
-    if (lm.dirty) {
-        GL_RebuildLighting();
-        lm.dirty = false;
     }
 
     bool waterwarp = (glr.fd.rdflags & RDF_UNDERWATER) && gl_static.use_shaders && gl_waterwarp->integer;
