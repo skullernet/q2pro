@@ -418,7 +418,7 @@ bool SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
             || check->movetype == MOVETYPE_NOCLIP)
             continue;
 
-        if (!check->area.prev)
+        if (!check->area.next)
             continue;       // not linked in anywhere
 
         // if the entity is standing on the pusher, it will definitely be moved

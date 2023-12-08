@@ -115,7 +115,7 @@ void SV_ClearWorld(void)
     // make sure all entities are unlinked
     for (i = 0; i < ge->max_edicts; i++) {
         ent = EDICT_NUM(i);
-        ent->area.prev = ent->area.next = NULL;
+        ent->area.next = ent->area.prev = NULL;
     }
 }
 
@@ -228,10 +228,10 @@ void PF_UnlinkEdict(edict_t *ent)
 {
     if (!ent)
         Com_Error(ERR_DROP, "%s: NULL", __func__);
-    if (!ent->area.prev)
+    if (!ent->area.next)
         return;        // not linked in anywhere
     List_Remove(&ent->area);
-    ent->area.prev = ent->area.next = NULL;
+    ent->area.next = ent->area.prev = NULL;
 }
 
 static uint32_t SV_PackSolid32(edict_t *ent)
@@ -276,7 +276,7 @@ void PF_LinkEdict(edict_t *ent)
     if (!ent)
         Com_Error(ERR_DROP, "%s: NULL", __func__);
 
-    if (ent->area.prev)
+    if (ent->area.next)
         PF_UnlinkEdict(ent);     // unlink from old position
 
     if (ent == ge->edicts)
