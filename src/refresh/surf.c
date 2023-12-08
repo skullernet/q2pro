@@ -709,6 +709,9 @@ static void sample_surface_verts(mface_t *surf, vec_t *vbo)
     vec3_t  color;
     byte    *dst;
 
+    if (surf->drawflags & SURF_COLOR_MASK)
+        return;
+
     glr.lightpoint.surf = surf;
 
     for (i = 0; i < surf->numsurfedges; i++) {
