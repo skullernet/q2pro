@@ -277,6 +277,7 @@ Fires a single blaster bolt.  Used by the blaster and hyper blaster.
 */
 void blaster_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
 {
+    vec_t   *normal = NULL;
     int     mod;
 
     if (other == self->owner)
@@ -290,20 +291,20 @@ void blaster_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *s
     if (self->owner->client)
         PlayerNoise(self->owner, self->s.origin, PNOISE_IMPACT);
 
+    if (plane)
+        normal = plane->normal;
+
     if (other->takedamage) {
         if (self->spawnflags & 1)
             mod = MOD_HYPERBLASTER;
         else
             mod = MOD_BLASTER;
-        T_Damage(other, self, self->owner, self->velocity, self->s.origin, plane->normal, self->dmg, 1, DAMAGE_ENERGY, mod);
+        T_Damage(other, self, self->owner, self->velocity, self->s.origin, normal, self->dmg, 1, DAMAGE_ENERGY, mod);
     } else {
         gi.WriteByte(svc_temp_entity);
         gi.WriteByte(TE_BLASTER);
         gi.WritePosition(self->s.origin);
-        if (!plane)
-            gi.WriteDir(vec3_origin);
-        else
-            gi.WriteDir(plane->normal);
+        gi.WriteDir(normal);
         gi.multicast(self->s.origin, MULTICAST_PVS);
     }
 
@@ -548,7 +549,7 @@ void rocket_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *sur
     VectorMA(ent->s.origin, -0.02f, ent->velocity, origin);
 
     if (other->takedamage) {
-        T_Damage(other, ent, ent->owner, ent->velocity, ent->s.origin, plane->normal, ent->dmg, 0, 0, MOD_ROCKET);
+        T_Damage(other, ent, ent->owner, ent->velocity, ent->s.origin, plane ? plane->normal : NULL, ent->dmg, 0, 0, MOD_ROCKET);
     } else {
         // don't throw any debris in net games
         if (!deathmatch->value && !coop->value) {
@@ -729,7 +730,7 @@ void bfg_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
 
     // core explosion - prevents firing it into the wall/floor
     if (other->takedamage)
-        T_Damage(other, self, self->owner, self->velocity, self->s.origin, plane->normal, 200, 0, 0, MOD_BFG_BLAST);
+        T_Damage(other, self, self->owner, self->velocity, self->s.origin, plane ? plane->normal : NULL, 200, 0, 0, MOD_BFG_BLAST);
     T_RadiusDamage(self, self->owner, 200, other, 100, MOD_BFG_BLAST);
 
     gi.sound(self, CHAN_VOICE, gi.soundindex("weapons/bfg__x1b.wav"), 1, ATTN_NORM, 0);
