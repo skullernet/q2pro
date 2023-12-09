@@ -913,7 +913,7 @@ static menuSound_t MenuList_PrevColumn(menuList_t *l)
         return MenuList_FindColumn(l, 1);
 
     do {
-        if (col < 0) {
+        if (col == 0) {
             col = l->numcolumns - 1;
         } else {
             col--;
