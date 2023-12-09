@@ -877,6 +877,7 @@ static menuSound_t MenuList_SetColumn(menuList_t *l, int value)
     }
     if (l->sort) {
         l->sort(l);
+        MenuList_AdjustPrestep(l);
     }
     return QMS_SILENT;
 }
@@ -1482,9 +1483,6 @@ void MenuList_Sort(menuList_t *l, int offset, int (*cmpfunc)(const void *, const
             break;
         }
     }
-
-    if (n)
-        MenuList_AdjustPrestep(l);
 }
 
 /*
