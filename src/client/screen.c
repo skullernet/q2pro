@@ -58,6 +58,7 @@ static struct {
 
 static cvar_t   *scr_viewsize;
 static cvar_t   *scr_centertime;
+static cvar_t   *scr_printspeed;
 static cvar_t   *scr_showpause;
 #if USE_DEBUG
 static cvar_t   *scr_showstats;
@@ -168,18 +169,16 @@ void SCR_DrawStringMulti(int x, int y, int flags, size_t maxlen,
     char    *p;
     size_t  len;
 
-    while (*s) {
+    while (*s && maxlen) {
         p = strchr(s, '\n');
         if (!p) {
             SCR_DrawStringEx(x, y, flags, maxlen, s, font);
             break;
         }
 
-        len = p - s;
-        if (len > maxlen) {
-            len = maxlen;
-        }
+        len = min(p - s, maxlen);
         SCR_DrawStringEx(x, y, flags, len, s, font);
+        maxlen -= len;
 
         y += CHAR_HEIGHT;
         s = p + 1;
@@ -379,9 +378,24 @@ CENTER PRINTING
 ===============================================================================
 */
 
-static char     scr_centerstring[MAX_STRING_CHARS];
-static unsigned scr_centertime_start;   // for slow victory printing
-static int      scr_center_lines;
+#define MAX_CENTERPRINTS_REAL   4
+#define MAX_CENTERPRINTS        (cl.csr.extended ? MAX_CENTERPRINTS_REAL : 1)
+
+typedef struct {
+    char        string[MAX_STRING_CHARS - 8];
+    uint32_t    start;
+    uint16_t    lines;
+    uint16_t    typewrite;  // msec to typewrite (0 if instant)
+} centerprint_t;
+
+static centerprint_t    scr_centerprints[MAX_CENTERPRINTS_REAL];
+static unsigned         scr_centerhead, scr_centertail;
+
+void SCR_ClearCenterPrints(void)
+{
+    memset(scr_centerprints, 0, sizeof(scr_centerprints));
+    scr_centerhead = scr_centertail = 0;
+}
 
 /*
 ==============
@@ -391,51 +405,97 @@ Called for important messages that should stay in the center of the screen
 for a few moments
 ==============
 */
-void SCR_CenterPrint(const char *str)
+void SCR_CenterPrint(const char *str, bool typewrite)
 {
-    const char  *s;
+    centerprint_t *cp;
+    const char *s;
 
-    scr_centertime_start = cls.realtime;
-    if (!strcmp(scr_centerstring, str)) {
+    // refresh duplicate message
+    cp = &scr_centerprints[(scr_centerhead - 1) & (MAX_CENTERPRINTS - 1)];
+    if (!strcmp(cp->string, str)) {
+        if (cp->start)
+            cp->start = cls.realtime;
+        if (scr_centertail == scr_centerhead)
+            scr_centertail--;
         return;
     }
 
-    Q_strlcpy(scr_centerstring, str, sizeof(scr_centerstring));
+    cp = &scr_centerprints[scr_centerhead & (MAX_CENTERPRINTS - 1)];
+    Q_strlcpy(cp->string, str, sizeof(cp->string));
 
     // count the number of lines for centering
-    scr_center_lines = 1;
-    s = str;
+    cp->lines = 1;
+    s = cp->string;
     while (*s) {
         if (*s == '\n')
-            scr_center_lines++;
+            cp->lines++;
         s++;
     }
 
+    cp->start = 0;  // not yet displayed
+    cp->typewrite = 0;
+
+    // for typewritten strings set minimum display time,
+    // but no longer than 30 sec
+    if (typewrite && scr_printspeed->value > 0) {
+        size_t nb_chars = strlen(cp->string) - cp->lines + 2;
+        cp->typewrite = min(nb_chars * 1000 / scr_printspeed->value + 300, 30000);
+    }
+
     // echo it to the console
-    Com_Printf("%s\n", scr_centerstring);
+    Com_Printf("%s\n", cp->string);
     Con_ClearNotify_f();
+
+    scr_centerhead++;
+    if (scr_centerhead - scr_centertail > MAX_CENTERPRINTS)
+        scr_centertail++;
 }
 
 static void SCR_DrawCenterString(void)
 {
+    centerprint_t *cp;
     int y;
     float alpha;
+    size_t maxlen;
 
-    Cvar_ClampValue(scr_centertime, 0.3f, 10.0f);
-
-    alpha = SCR_FadeAlpha(scr_centertime_start, scr_centertime->value * 1000, 300);
-    if (!alpha) {
+    if (!scr_centertime->integer) {
+        scr_centertail = scr_centerhead;
         return;
+    }
+
+    while (1) {
+        if (scr_centertail == scr_centerhead)
+            return;
+        cp = &scr_centerprints[scr_centertail & (MAX_CENTERPRINTS - 1)];
+        if (!cp->start)
+            cp->start = cls.realtime;
+        alpha = SCR_FadeAlpha(cp->start, max(scr_centertime->integer, cp->typewrite), 300);
+        if (alpha > 0)
+            break;
+        scr_centertail++;
     }
 
     R_SetAlpha(alpha * scr_alpha->value);
 
-    y = scr.hud_height / 4 - scr_center_lines * 8 / 2;
+    y = scr.hud_height / 4 - cp->lines * CHAR_HEIGHT / 2;
+
+    if (cp->typewrite)
+        maxlen = scr_printspeed->value * 0.001f * (cls.realtime - cp->start);
+    else
+        maxlen = MAX_STRING_CHARS;
 
     SCR_DrawStringMulti(scr.hud_width / 2, y, UI_CENTER,
-                        MAX_STRING_CHARS, scr_centerstring, scr.font_pic);
+                        maxlen, cp->string, scr.font_pic);
 
     R_SetAlpha(scr_alpha->value);
+}
+
+static void scr_centertime_changed(cvar_t *self)
+{
+    if (self->value > 0)
+        self->integer = 1000 * Cvar_ClampValue(self, 1.0f, 30.0f);
+    else
+        self->integer = 0;
 }
 
 /*
@@ -1250,6 +1310,9 @@ void SCR_Init(void)
     scr_viewsize = Cvar_Get("viewsize", "100", CVAR_ARCHIVE);
     scr_showpause = Cvar_Get("scr_showpause", "1", 0);
     scr_centertime = Cvar_Get("scr_centertime", "2.5", 0);
+    scr_centertime->changed = scr_centertime_changed;
+    scr_centertime->changed(scr_centertime);
+    scr_printspeed = Cvar_Get("scr_printspeed", "16", 0);
     scr_demobar = Cvar_Get("scr_demobar", "1", 0);
     scr_font = Cvar_Get("scr_font", "conchars", 0);
     scr_font->changed = scr_font_changed;

@@ -1004,7 +1004,10 @@ static void CL_ParsePrint(void)
     SHOWNET(2, "    %i \"%s\"\n", level, Com_MakePrintable(s));
 
     if (level != PRINT_CHAT) {
-        Com_Printf("%s", s);
+        if (cl.csr.extended && (level == PRINT_TYPEWRITER || level == PRINT_CENTER))
+            SCR_CenterPrint(s, level == PRINT_TYPEWRITER);
+        else
+            Com_Printf("%s", s);
         if (!cls.demo.playback && cl.serverstate != ss_broadcast) {
             COM_strclr(s);
             Cmd_ExecTrigger(s);
@@ -1060,7 +1063,7 @@ static void CL_ParseCenterPrint(void)
 
     MSG_ReadString(s, sizeof(s));
     SHOWNET(2, "    \"%s\"\n", Com_MakePrintable(s));
-    SCR_CenterPrint(s);
+    SCR_CenterPrint(s, false);
 
     if (!cls.demo.playback && cl.serverstate != ss_broadcast) {
         COM_strclr(s);

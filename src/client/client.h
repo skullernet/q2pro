@@ -978,7 +978,8 @@ extern vrect_t      scr_vrect;        // position of render window
 void    SCR_Init(void);
 void    SCR_Shutdown(void);
 void    SCR_UpdateScreen(void);
-void    SCR_CenterPrint(const char *str);
+void    SCR_CenterPrint(const char *str, bool typewrite);
+void    SCR_ClearCenterPrints(void);
 void    SCR_BeginLoadingPlaque(void);
 void    SCR_EndLoadingPlaque(void);
 void    SCR_RegisterMedia(void);
