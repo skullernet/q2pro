@@ -469,7 +469,7 @@ static void SCR_DrawCenterString(void)
         cp = &scr_centerprints[scr_centertail & (MAX_CENTERPRINTS - 1)];
         if (!cp->start)
             cp->start = cls.realtime;
-        alpha = SCR_FadeAlpha(cp->start, max(scr_centertime->integer, cp->typewrite), 300);
+        alpha = SCR_FadeAlpha(cp->start, scr_centertime->integer + cp->typewrite, 300);
         if (alpha > 0)
             break;
         scr_centertail++;
