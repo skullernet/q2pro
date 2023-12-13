@@ -373,8 +373,8 @@ typedef struct {
 
 typedef struct {
     int         framenum;
+    unsigned    msglen;
     int64_t     filepos;
-    size_t      msglen;
     byte        data[1];
 } demosnap_t;
 
@@ -486,7 +486,7 @@ typedef struct client_static_s {
         connstate_t     state;
 
         netstream_t     stream;
-        size_t          msglen;
+        unsigned        msglen;
 
         player_packed_t     ps;
         entity_packed_t     entities[MAX_EDICTS];

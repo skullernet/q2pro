@@ -86,7 +86,7 @@ static bool SV_RateDrop(client_t *client)
     return false;
 }
 
-static void SV_CalcSendTime(client_t *client, size_t size)
+static void SV_CalcSendTime(client_t *client, unsigned size)
 {
     // never drop over the loopback
     if (!client->rate) {
@@ -565,7 +565,7 @@ static void emit_snd(client_t *client, message_packet_t *msg)
     }
 }
 
-static inline void write_snd(client_t *client, message_packet_t *msg, size_t maxsize)
+static inline void write_snd(client_t *client, message_packet_t *msg, unsigned maxsize)
 {
     // if this msg fits, write it
     if (msg_write.cursize + MAX_SOUND_PACKET <= maxsize) {
@@ -575,7 +575,7 @@ static inline void write_snd(client_t *client, message_packet_t *msg, size_t max
     List_Insert(&client->msg_free_list, &msg->entry);
 }
 
-static inline void write_msg(client_t *client, message_packet_t *msg, size_t maxsize)
+static inline void write_msg(client_t *client, message_packet_t *msg, unsigned maxsize)
 {
     // if this msg fits, write it
     if (msg_write.cursize + msg->cursize <= maxsize) {
@@ -584,7 +584,7 @@ static inline void write_msg(client_t *client, message_packet_t *msg, size_t max
     free_msg_packet(client, msg);
 }
 
-static inline void write_unreliables(client_t *client, size_t maxsize)
+static inline void write_unreliables(client_t *client, unsigned maxsize)
 {
     message_packet_t    *msg, *next;
 
@@ -621,7 +621,7 @@ static void add_message_old(client_t *client, byte *data,
 }
 
 // this should be the only place data is ever written to netchan message for old clients
-static void write_reliables_old(client_t *client, size_t maxsize)
+static void write_reliables_old(client_t *client, unsigned maxsize)
 {
     message_packet_t *msg, *next;
     int count;
@@ -654,7 +654,7 @@ static void write_reliables_old(client_t *client, size_t maxsize)
 }
 
 // unreliable portion doesn't fit, then throw out low priority effects
-static void repack_unreliables(client_t *client, size_t maxsize)
+static void repack_unreliables(client_t *client, unsigned maxsize)
 {
     message_packet_t *msg, *next;
 
@@ -713,7 +713,7 @@ static void repack_unreliables(client_t *client, size_t maxsize)
 static void write_datagram_old(client_t *client)
 {
     message_packet_t *msg;
-    size_t maxsize, cursize;
+    unsigned maxsize, cursize;
 
     // determine how much space is left for unreliable data
     maxsize = client->netchan.maxpacketlen;
@@ -734,7 +734,7 @@ static void write_datagram_old(client_t *client)
     // and the player_state_t
     client->WriteFrame(client);
     if (msg_write.cursize > maxsize) {
-        size_t size = msg_write.cursize;
+        unsigned size = msg_write.cursize;
         int len = 0;
 
         // try to compress if it has a chance to fit
@@ -745,11 +745,11 @@ static void write_datagram_old(client_t *client)
         SZ_Clear(&msg_write);
 
         if (len > 0 && len <= maxsize) {
-            SV_DPrintf(0, "Frame %d compressed for %s: %zu into %d\n",
+            SV_DPrintf(0, "Frame %d compressed for %s: %u into %d\n",
                        client->framenum, client->name, size, len);
             SZ_Write(&msg_write, get_compressed_data(), len);
         } else {
-            SV_DPrintf(0, "Frame %d overflowed for %s: %zu > %zu (comp %d)\n",
+            SV_DPrintf(0, "Frame %d overflowed for %s: %u > %u (comp %d)\n",
                        client->framenum, client->name, size, maxsize, len);
         }
     }
@@ -770,7 +770,7 @@ static void write_datagram_old(client_t *client)
 
 #if USE_DEBUG
     if (sv_pad_packets->integer > 0) {
-        size_t pad = min(MAX_PACKETLEN - 8, sv_pad_packets->integer);
+        int pad = min(MAX_PACKETLEN - 8, sv_pad_packets->integer);
 
         while (msg_write.cursize < pad)
             MSG_WriteByte(svc_nop);
@@ -812,7 +812,7 @@ static void add_message_new(client_t *client, byte *data,
 
 static void write_datagram_new(client_t *client)
 {
-    size_t cursize;
+    int cursize;
 
     // send over all the relevant entity_state_t
     // and the player_state_t
@@ -836,7 +836,7 @@ static void write_datagram_new(client_t *client)
 
 #if USE_DEBUG
     if (sv_pad_packets->integer > 0) {
-        size_t pad = min(msg_write.maxsize, sv_pad_packets->integer);
+        int pad = min(msg_write.maxsize, sv_pad_packets->integer);
 
         while (msg_write.cursize < pad)
             MSG_WriteByte(svc_nop);
@@ -901,7 +901,7 @@ Clients in earlier connection state are handled in SV_SendAsyncPackets.
 void SV_SendClientMessages(void)
 {
     client_t    *client;
-    size_t      cursize;
+    int         cursize;
 
     // send a message to each connected client
     FOR_EACH_CLIENT(client) {
@@ -1001,7 +1001,7 @@ void SV_SendAsyncPackets(void)
     bool        retransmit;
     client_t    *client;
     netchan_t   *netchan;
-    size_t      cursize;
+    int         cursize;
 
     FOR_EACH_CLIENT(client) {
         // don't overrun bandwidth
@@ -1014,7 +1014,7 @@ void SV_SendAsyncPackets(void)
         // make sure all fragments are transmitted first
         if (netchan->fragment_pending) {
             cursize = netchan->TransmitNextFragment(netchan);
-            SV_DPrintf(1, "%s: frag: %zu\n", client->name, cursize);
+            SV_DPrintf(1, "%s: frag: %d\n", client->name, cursize);
             goto calctime;
         }
 
@@ -1042,7 +1042,7 @@ void SV_SendAsyncPackets(void)
         if (netchan->message.cursize || netchan->reliable_ack_pending ||
             netchan->reliable_length || retransmit) {
             cursize = netchan->Transmit(netchan, 0, "", 1);
-            SV_DPrintf(1, "%s: send: %zu\n", client->name, cursize);
+            SV_DPrintf(1, "%s: send: %d\n", client->name, cursize);
 calctime:
             SV_CalcSendTime(client, cursize);
         }

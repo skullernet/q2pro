@@ -869,7 +869,8 @@ CL_SendDefaultCmd
 */
 static void CL_SendDefaultCmd(void)
 {
-    size_t cursize q_unused, checksumIndex;
+    int cursize q_unused;
+    uint32_t checksumIndex;
     usercmd_t *cmd, *oldcmd;
     client_history_t *history;
     int version;
@@ -944,7 +945,7 @@ static void CL_SendDefaultCmd(void)
     cursize = cls.netchan.Transmit(&cls.netchan, msg_write.cursize, msg_write.data, 1);
 #if USE_DEBUG
     if (cl_showpackets->integer) {
-        Com_Printf("%zu ", cursize);
+        Com_Printf("%i ", cursize);
     }
 #endif
 
@@ -961,7 +962,7 @@ static void CL_SendBatchedCmd(void)
     int i, j, seq, bits q_unused;
     int numCmds, numDups;
     int totalCmds, totalMsec;
-    size_t cursize q_unused;
+    int cursize q_unused;
     usercmd_t *cmd, *oldcmd;
     client_history_t *history, *oldest;
     byte *patch;
@@ -1044,9 +1045,9 @@ static void CL_SendBatchedCmd(void)
     cursize = cls.netchan.Transmit(&cls.netchan, msg_write.cursize, msg_write.data, 1);
 #if USE_DEBUG
     if (cl_showpackets->integer == 1) {
-        Com_Printf("%zu(%i) ", cursize, totalCmds);
+        Com_Printf("%i(%i) ", cursize, totalCmds);
     } else if (cl_showpackets->integer == 2) {
-        Com_Printf("%zu(%i) ", cursize, totalMsec);
+        Com_Printf("%i(%i) ", cursize, totalMsec);
     } else if (cl_showpackets->integer == 3) {
         Com_Printf(" | ");
     }
@@ -1058,7 +1059,7 @@ static void CL_SendBatchedCmd(void)
 static void CL_SendKeepAlive(void)
 {
     client_history_t *history;
-    size_t cursize q_unused;
+    int cursize q_unused;
 
     // archive this packet
     history = &cl.history[cls.netchan.outgoing_sequence & CMD_MASK];
@@ -1073,7 +1074,7 @@ static void CL_SendKeepAlive(void)
     cursize = cls.netchan.Transmit(&cls.netchan, 0, "", 1);
 #if USE_DEBUG
     if (cl_showpackets->integer) {
-        Com_Printf("%zu ", cursize);
+        Com_Printf("%i ", cursize);
     }
 #endif
 }

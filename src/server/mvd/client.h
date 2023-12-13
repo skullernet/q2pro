@@ -115,8 +115,8 @@ typedef enum {
 
 typedef struct {
     int framenum;
+    unsigned msglen;
     int64_t filepos;
-    size_t msglen;
     byte data[1];
 } mvd_snap_t;
 
@@ -144,7 +144,7 @@ typedef struct mvd_s {
 
     // delay buffer
     fifo_t      delay;
-    size_t      msglen;
+    unsigned    msglen;
     unsigned    num_packets, min_packets;
     unsigned    underflows, overflows;
     int         framenum;

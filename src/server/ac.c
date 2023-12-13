@@ -90,7 +90,7 @@ typedef struct {
     bool ping_pending;
     unsigned last_ping;
     netstream_t stream;
-    size_t msglen;
+    unsigned msglen;
 } ac_locals_t;
 
 typedef struct {

@@ -60,7 +60,7 @@ typedef struct gtv_s {
     netstream_t stream;
     char        address[MAX_QPATH];
     byte        *data;
-    size_t      msglen;
+    unsigned    msglen;
     unsigned    flags;
 #if USE_ZLIB
     bool        z_act; // true when actively inflating

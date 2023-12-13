@@ -1565,7 +1565,7 @@ static void SV_PacketEvent(void)
 static void update_client_mtu(client_t *client, int ee_info)
 {
     netchan_t *netchan = &client->netchan;
-    size_t newpacketlen;
+    unsigned newpacketlen;
 
     // sanity check discovered MTU
     if (ee_info < 576 || ee_info > 4096)
@@ -1585,7 +1585,7 @@ static void update_client_mtu(client_t *client, int ee_info)
     if (newpacketlen >= netchan->maxpacketlen)
         return;
 
-    Com_Printf("Fixing up maxmsglen for %s: %zu --> %zu\n",
+    Com_Printf("Fixing up maxmsglen for %s: %u --> %u\n",
                client->name, netchan->maxpacketlen, newpacketlen);
     netchan->maxpacketlen = newpacketlen;
 }

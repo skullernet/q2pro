@@ -30,7 +30,7 @@ typedef enum netchan_type_e {
 typedef struct netchan_s {
     netchan_type_t  type;
     int         protocol;
-    size_t      maxpacketlen;
+    unsigned    maxpacketlen;
 
     bool        fatal_error;
 
@@ -48,7 +48,7 @@ typedef struct netchan_s {
 
     sizebuf_t   message;            // writing buffer for reliable data
 
-    size_t      reliable_length;
+    unsigned    reliable_length;
 
     bool        reliable_ack_pending;   // set to true each time reliable is received
     bool        fragment_pending;
@@ -76,8 +76,8 @@ typedef struct netchan_s {
     byte        *fragment_out_buf;
 
     // common methods
-    size_t      (*Transmit)(struct netchan_s *, size_t, const void *, int);
-    size_t      (*TransmitNextFragment)(struct netchan_s *);
+    int         (*Transmit)(struct netchan_s *, size_t, const void *, int);
+    int         (*TransmitNextFragment)(struct netchan_s *);
     bool        (*Process)(struct netchan_s *);
     bool        (*ShouldUpdate)(struct netchan_s *);
 } netchan_t;

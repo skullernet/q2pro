@@ -166,7 +166,7 @@ void Netchan_OutOfBand(netsrc_t sock, const netadr_t *address, const char *forma
 
 // ============================================================================
 
-static size_t NetchanOld_TransmitNextFragment(netchan_t *netchan)
+static int NetchanOld_TransmitNextFragment(netchan_t *netchan)
 {
     Q_assert(!"not implemented");
     return 0;
@@ -182,7 +182,7 @@ transmition / retransmition of the reliable messages.
 A 0 length will still generate a packet and deal with the reliable messages.
 ================
 */
-static size_t NetchanOld_Transmit(netchan_t *chan, size_t length, const void *data, int numpackets)
+static int NetchanOld_Transmit(netchan_t *chan, size_t length, const void *data, int numpackets)
 {
     sizebuf_t   send;
     byte        send_buf[MAX_PACKETLEN];
@@ -389,7 +389,7 @@ static bool NetchanOld_ShouldUpdate(netchan_t *chan)
 NetchanNew_TransmitNextFragment
 ================
 */
-static size_t NetchanNew_TransmitNextFragment(netchan_t *chan)
+static int NetchanNew_TransmitNextFragment(netchan_t *chan)
 {
     sizebuf_t   send;
     byte        send_buf[MAX_PACKETLEN];
@@ -473,7 +473,7 @@ static size_t NetchanNew_TransmitNextFragment(netchan_t *chan)
 NetchanNew_Transmit
 ================
 */
-static size_t NetchanNew_Transmit(netchan_t *chan, size_t length, const void *data, int numpackets)
+static int NetchanNew_Transmit(netchan_t *chan, size_t length, const void *data, int numpackets)
 {
     sizebuf_t   send;
     byte        send_buf[MAX_PACKETLEN];
