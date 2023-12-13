@@ -22,12 +22,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/net/net.h"
 #include "common/sizebuf.h"
 
-typedef enum netchan_type_e {
+typedef enum {
     NETCHAN_OLD,
     NETCHAN_NEW
 } netchan_type_t;
 
-typedef struct netchan_s {
+typedef struct {
     netchan_type_t  type;
     int         protocol;
     unsigned    maxpacketlen;
@@ -41,8 +41,8 @@ typedef struct netchan_s {
     unsigned    last_received;      // for timeouts
     unsigned    last_sent;          // for retransmits
 
-    netadr_t    remote_address;
     int         qport;              // qport value to write when transmitting
+    netadr_t    remote_address;
 
     sizebuf_t   message;            // writing buffer for reliable data
 
