@@ -64,16 +64,11 @@ typedef struct netchan_s {
     int         last_reliable_sequence;     // sequence number of last send
     int         fragment_sequence;
 
-    byte        *message_buf;       // leave space for header
-
     // message is copied to this buffer when it is first transfered
     byte        *reliable_buf;      // unacked reliable message
 
     sizebuf_t   fragment_in;
-    byte        *fragment_in_buf;
-
     sizebuf_t   fragment_out;
-    byte        *fragment_out_buf;
 
     // common methods
     int         (*Transmit)(struct netchan_s *, size_t, const void *, int);

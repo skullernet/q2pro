@@ -207,7 +207,7 @@ static int NetchanOld_Transmit(netchan_t *chan, size_t length, const void *data,
 // if the reliable transmit buffer is empty, copy the current message out
     if (!chan->reliable_length && chan->message.cursize) {
         send_reliable = true;
-        memcpy(chan->reliable_buf, chan->message_buf, chan->message.cursize);
+        memcpy(chan->reliable_buf, chan->message.data, chan->message.cursize);
         chan->reliable_length = chan->message.cursize;
         chan->message.cursize = 0;
         chan->reliable_sequence ^= 1;
@@ -502,7 +502,7 @@ static int NetchanNew_Transmit(netchan_t *chan, size_t length, const void *data,
 // if the reliable transmit buffer is empty, copy the current message out
     if (!chan->reliable_length && chan->message.cursize) {
         send_reliable = true;
-        memcpy(chan->reliable_buf, chan->message_buf, chan->message.cursize);
+        memcpy(chan->reliable_buf, chan->message.data, chan->message.cursize);
         chan->reliable_length = chan->message.cursize;
         chan->message.cursize = 0;
         chan->reliable_sequence ^= 1;
@@ -740,9 +740,10 @@ void Netchan_Setup(netchan_t *chan, netsrc_t sock, netchan_type_t type,
                    const netadr_t *adr, int qport, size_t maxpacketlen, int protocol)
 {
     memtag_t tag = sock == NS_SERVER ? TAG_SERVER : TAG_GENERAL;
+    byte *buf;
 
     Q_assert(chan);
-    Q_assert(!chan->message_buf);
+    Q_assert(!chan->message.data);
     Q_assert(adr);
     Q_assert(maxpacketlen >= MIN_PACKETLEN);
     Q_assert(maxpacketlen <= MAX_PACKETLEN_WRITABLE);
@@ -765,10 +766,10 @@ void Netchan_Setup(netchan_t *chan, netsrc_t sock, netchan_type_t type,
         chan->TransmitNextFragment = NetchanOld_TransmitNextFragment;
         chan->ShouldUpdate = NetchanOld_ShouldUpdate;
 
-        chan->message_buf = Z_TagMalloc(maxpacketlen * 2, tag);
-        chan->reliable_buf = chan->message_buf + maxpacketlen;
+        buf = Z_TagMalloc(maxpacketlen * 2, tag);
+        chan->reliable_buf = buf + maxpacketlen;
 
-        SZ_Init(&chan->message, chan->message_buf, maxpacketlen);
+        SZ_Init(&chan->message, buf, maxpacketlen);
         break;
 
     case NETCHAN_NEW:
@@ -777,14 +778,12 @@ void Netchan_Setup(netchan_t *chan, netsrc_t sock, netchan_type_t type,
         chan->TransmitNextFragment = NetchanNew_TransmitNextFragment;
         chan->ShouldUpdate = NetchanNew_ShouldUpdate;
 
-        chan->message_buf = Z_TagMalloc(MAX_MSGLEN * 4, tag);
-        chan->reliable_buf = chan->message_buf + MAX_MSGLEN;
-        chan->fragment_in_buf = chan->message_buf + MAX_MSGLEN * 2;
-        chan->fragment_out_buf = chan->message_buf + MAX_MSGLEN * 3;
+        buf = Z_TagMalloc(MAX_MSGLEN * 4, tag);
+        chan->reliable_buf = buf + MAX_MSGLEN;
 
-        SZ_Init(&chan->message, chan->message_buf, MAX_MSGLEN);
-        SZ_TagInit(&chan->fragment_in, chan->fragment_in_buf, MAX_MSGLEN, "nc_frg_in");
-        SZ_TagInit(&chan->fragment_out, chan->fragment_out_buf, MAX_MSGLEN, "nc_frg_out");
+        SZ_Init(&chan->message, buf, MAX_MSGLEN);
+        SZ_TagInit(&chan->fragment_in, buf + MAX_MSGLEN * 2, MAX_MSGLEN, "nc_frg_in");
+        SZ_TagInit(&chan->fragment_out, buf + MAX_MSGLEN * 3, MAX_MSGLEN, "nc_frg_out");
         break;
 
     default:
@@ -800,6 +799,6 @@ Netchan_Close
 void Netchan_Close(netchan_t *chan)
 {
     Q_assert(chan);
-    Z_Free(chan->message_buf);
+    Z_Free(chan->message.data);
     memset(chan, 0, sizeof(*chan));
 }
