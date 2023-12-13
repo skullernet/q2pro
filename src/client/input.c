@@ -942,7 +942,7 @@ static void CL_SendDefaultCmd(void)
     //
     // deliver the message
     //
-    cursize = cls.netchan.Transmit(&cls.netchan, msg_write.cursize, msg_write.data, 1);
+    cursize = Netchan_Transmit(&cls.netchan, msg_write.cursize, msg_write.data, 1);
 #if USE_DEBUG
     if (cl_showpackets->integer) {
         Com_Printf("%i ", cursize);
@@ -1042,7 +1042,7 @@ static void CL_SendBatchedCmd(void)
     //
     // deliver the message
     //
-    cursize = cls.netchan.Transmit(&cls.netchan, msg_write.cursize, msg_write.data, 1);
+    cursize = Netchan_Transmit(&cls.netchan, msg_write.cursize, msg_write.data, 1);
 #if USE_DEBUG
     if (cl_showpackets->integer == 1) {
         Com_Printf("%i(%i) ", cursize, totalCmds);
@@ -1071,7 +1071,7 @@ static void CL_SendKeepAlive(void)
     cl.lastTransmitCmdNumber = cl.cmdNumber;
     cl.lastTransmitCmdNumberReal = cl.cmdNumber;
 
-    cursize = cls.netchan.Transmit(&cls.netchan, 0, "", 1);
+    cursize = Netchan_Transmit(&cls.netchan, 0, "", 1);
 #if USE_DEBUG
     if (cl_showpackets->integer) {
         Com_Printf("%i ", cursize);
@@ -1141,7 +1141,7 @@ void CL_SendCmd(void)
         CL_SendReliable();
 
         // just keepalive or update reliable
-        if (cls.netchan.ShouldUpdate(&cls.netchan)) {
+        if (Netchan_ShouldUpdate(&cls.netchan)) {
             CL_SendKeepAlive();
         }
 

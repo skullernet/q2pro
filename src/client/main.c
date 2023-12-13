@@ -743,7 +743,7 @@ void CL_Disconnect(error_type_t type)
         MSG_WriteByte(clc_stringcmd);
         MSG_WriteData("disconnect", 11);
 
-        cls.netchan.Transmit(&cls.netchan, msg_write.cursize, msg_write.data, 3);
+        Netchan_Transmit(&cls.netchan, msg_write.cursize, msg_write.data, 3);
 
         SZ_Clear(&msg_write);
 
@@ -1385,7 +1385,7 @@ static void CL_ConnectionlessPacket(void)
         if (anticheat) {
             MSG_WriteByte(clc_nop);
             MSG_FlushTo(&cls.netchan.message);
-            cls.netchan.Transmit(&cls.netchan, 0, "", 3);
+            Netchan_Transmit(&cls.netchan, 0, "", 3);
             S_StopAllSounds();
             cls.connect_count = -1;
             Com_Printf("Loading anticheat, this may take a few moments...\n");
@@ -1488,7 +1488,7 @@ static void CL_PacketEvent(void)
         return;
     }
 
-    if (!cls.netchan.Process(&cls.netchan))
+    if (!Netchan_Process(&cls.netchan))
         return;     // wasn't accepted for some reason
 
 #if USE_ICMP

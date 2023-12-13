@@ -778,10 +778,10 @@ static void write_datagram_old(client_t *client)
 #endif
 
     // send the datagram
-    cursize = client->netchan.Transmit(&client->netchan,
-                                       msg_write.cursize,
-                                       msg_write.data,
-                                       client->numpackets);
+    cursize = Netchan_Transmit(&client->netchan,
+                               msg_write.cursize,
+                               msg_write.data,
+                               client->numpackets);
 
     // record the size for rate estimation
     SV_CalcSendTime(client, cursize);
@@ -844,10 +844,10 @@ static void write_datagram_new(client_t *client)
 #endif
 
     // send the datagram
-    cursize = client->netchan.Transmit(&client->netchan,
-                                       msg_write.cursize,
-                                       msg_write.data,
-                                       client->numpackets);
+    cursize = Netchan_Transmit(&client->netchan,
+                               msg_write.cursize,
+                               msg_write.data,
+                               client->numpackets);
 
     // record the size for rate estimation
     SV_CalcSendTime(client, cursize);
@@ -931,7 +931,7 @@ void SV_SendClientMessages(void)
         // don't write any frame data until all fragments are sent
         if (client->netchan.fragment_pending) {
             client->frameflags |= FF_SUPPRESSED;
-            cursize = client->netchan.TransmitNextFragment(&client->netchan);
+            cursize = Netchan_TransmitNextFragment(&client->netchan);
             SV_CalcSendTime(client, cursize);
             goto advance;
         }
@@ -1013,7 +1013,7 @@ void SV_SendAsyncPackets(void)
 
         // make sure all fragments are transmitted first
         if (netchan->fragment_pending) {
-            cursize = netchan->TransmitNextFragment(netchan);
+            cursize = Netchan_TransmitNextFragment(netchan);
             SV_DPrintf(1, "%s: frag: %d\n", client->name, cursize);
             goto calctime;
         }
@@ -1041,7 +1041,7 @@ void SV_SendAsyncPackets(void)
 
         if (netchan->message.cursize || netchan->reliable_ack_pending ||
             netchan->reliable_length || retransmit) {
-            cursize = netchan->Transmit(netchan, 0, "", 1);
+            cursize = Netchan_Transmit(netchan, 0, "", 1);
             SV_DPrintf(1, "%s: send: %d\n", client->name, cursize);
 calctime:
             SV_CalcSendTime(client, cursize);

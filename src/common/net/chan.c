@@ -120,16 +120,13 @@ Netchan_Init
 */
 void Netchan_Init(void)
 {
-    int     port;
-
 #if USE_DEBUG
     showpackets = Cvar_Get("showpackets", "0", 0);
     showdrop = Cvar_Get("showdrop", "0", 0);
 #endif
 
     // pick a port value that should be nice and random
-    port = Sys_Milliseconds() & 0xffff;
-    net_qport = Cvar_Get("qport", va("%d", port), 0);
+    net_qport = Cvar_Get("qport", va("%d", Sys_Milliseconds() & 0xffff), 0);
     net_maxmsglen = Cvar_Get("net_maxmsglen", va("%d", MAX_PACKETLEN_WRITABLE_DEFAULT), 0);
     net_maxmsglen->changed = net_maxmsglen_changed;
     net_chantype = Cvar_Get("net_chantype", "1", 0);
@@ -165,12 +162,6 @@ void Netchan_OutOfBand(netsrc_t sock, const netadr_t *address, const char *forma
 }
 
 // ============================================================================
-
-static int NetchanOld_TransmitNextFragment(netchan_t *netchan)
-{
-    Q_assert(!"not implemented");
-    return 0;
-}
 
 /*
 ===============
@@ -370,32 +361,22 @@ static bool NetchanOld_Process(netchan_t *chan)
     return true;
 }
 
-/*
-===============
-NetchanOld_ShouldUpdate
-================
-*/
-static bool NetchanOld_ShouldUpdate(netchan_t *chan)
-{
-    return chan->message.cursize
-        || chan->reliable_ack_pending
-        || com_localTime - chan->last_sent > 1000;
-}
-
 // ============================================================================
 
 /*
 ===============
-NetchanNew_TransmitNextFragment
+Netchan_TransmitNextFragment
 ================
 */
-static int NetchanNew_TransmitNextFragment(netchan_t *chan)
+int Netchan_TransmitNextFragment(netchan_t *chan)
 {
     sizebuf_t   send;
     byte        send_buf[MAX_PACKETLEN];
     bool        send_reliable, more_fragments;
     int         w1, w2, offset;
     unsigned    fragment_length;
+
+    Q_assert(chan->type);
 
     send_reliable = chan->reliable_length;
 
@@ -488,7 +469,7 @@ static int NetchanNew_Transmit(netchan_t *chan, size_t length, const void *data,
     }
 
     if (chan->fragment_pending) {
-        return NetchanNew_TransmitNextFragment(chan);
+        return Netchan_TransmitNextFragment(chan);
     }
 
     send_reliable = false;
@@ -519,7 +500,7 @@ static int NetchanNew_Transmit(netchan_t *chan, size_t length, const void *data,
             SZ_Write(&chan->fragment_out, data, length);
         else
             Com_WPrintf("%s: dumped unreliable\n", NET_AdrToString(&chan->remote_address));
-        return NetchanNew_TransmitNextFragment(chan);
+        return Netchan_TransmitNextFragment(chan);
     }
 
 // write the packet header
@@ -718,12 +699,28 @@ static bool NetchanNew_Process(netchan_t *chan)
     return true;
 }
 
+bool Netchan_Process(netchan_t *chan)
+{
+    if (chan->type)
+        return NetchanNew_Process(chan);
+
+    return NetchanOld_Process(chan);
+}
+
+int Netchan_Transmit(netchan_t *chan, size_t length, const void *data, int numpackets)
+{
+    if (chan->type)
+        return NetchanNew_Transmit(chan, length, data, numpackets);
+
+    return NetchanOld_Transmit(chan, length, data, numpackets);
+}
+
 /*
 ==============
-NetchanNew_ShouldUpdate
+Netchan_ShouldUpdate
 ==============
 */
-static bool NetchanNew_ShouldUpdate(netchan_t *chan)
+bool Netchan_ShouldUpdate(netchan_t *chan)
 {
     return chan->message.cursize
         || chan->reliable_ack_pending
@@ -761,11 +758,6 @@ void Netchan_Setup(netchan_t *chan, netsrc_t sock, netchan_type_t type,
 
     switch (type) {
     case NETCHAN_OLD:
-        chan->Process = NetchanOld_Process;
-        chan->Transmit = NetchanOld_Transmit;
-        chan->TransmitNextFragment = NetchanOld_TransmitNextFragment;
-        chan->ShouldUpdate = NetchanOld_ShouldUpdate;
-
         buf = Z_TagMalloc(maxpacketlen * 2, tag);
         chan->reliable_buf = buf + maxpacketlen;
 
@@ -773,11 +765,6 @@ void Netchan_Setup(netchan_t *chan, netsrc_t sock, netchan_type_t type,
         break;
 
     case NETCHAN_NEW:
-        chan->Process = NetchanNew_Process;
-        chan->Transmit = NetchanNew_Transmit;
-        chan->TransmitNextFragment = NetchanNew_TransmitNextFragment;
-        chan->ShouldUpdate = NetchanNew_ShouldUpdate;
-
         buf = Z_TagMalloc(MAX_MSGLEN * 4, tag);
         chan->reliable_buf = buf + MAX_MSGLEN;
 
