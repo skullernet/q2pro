@@ -32,8 +32,6 @@ typedef struct netchan_s {
     int         protocol;
     unsigned    maxpacketlen;
 
-    bool        fatal_error;
-
     netsrc_t    sock;
 
     int         dropped;            // between last packet and previous

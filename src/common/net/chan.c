@@ -180,13 +180,6 @@ static int NetchanOld_Transmit(netchan_t *chan, size_t length, const void *data,
     bool        send_reliable;
     int         i, w1, w2;
 
-// check for message overflow
-    if (chan->message.overflowed) {
-        chan->fatal_error = true;
-        Com_WPrintf("%s: outgoing message overflow\n", NET_AdrToString(&chan->remote_address));
-        return 0;
-    }
-
     send_reliable = false;
 
     // if the remote side dropped the last reliable message, resend it
@@ -461,13 +454,6 @@ static int NetchanNew_Transmit(netchan_t *chan, size_t length, const void *data,
     bool        send_reliable;
     int         i, w1, w2;
 
-// check for message overflow
-    if (chan->message.overflowed) {
-        chan->fatal_error = true;
-        Com_WPrintf("%s: outgoing message overflow\n", NET_AdrToString(&chan->remote_address));
-        return 0;
-    }
-
     if (chan->fragment_pending) {
         return Netchan_TransmitNextFragment(chan);
     }
@@ -709,6 +695,12 @@ bool Netchan_Process(netchan_t *chan)
 
 int Netchan_Transmit(netchan_t *chan, size_t length, const void *data, int numpackets)
 {
+    // overflow is detected externally now, so this should never happen.
+    if (chan->message.overflowed) {
+        Com_WPrintf("%s: outgoing message overflow\n", NET_AdrToString(&chan->remote_address));
+        return 0;
+    }
+
     if (chan->type)
         return NetchanNew_Transmit(chan, length, data, numpackets);
 
