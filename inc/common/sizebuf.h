@@ -22,12 +22,12 @@ typedef struct {
     bool        allowoverflow;
     bool        allowunderflow;
     bool        overflowed;     // set to true if the buffer size failed
-    byte        *data;
-    size_t      maxsize;
-    size_t      cursize;
-    size_t      readcount;
+    uint32_t    maxsize;
+    uint32_t    cursize;
+    uint32_t    readcount;
     uint32_t    bits_buf;
     uint32_t    bits_left;
+    byte        *data;
     const char  *tag;           // for debugging
 } sizebuf_t;
 
@@ -45,7 +45,7 @@ static inline void *SZ_Write(sizebuf_t *buf, const void *data, size_t len)
     return memcpy(SZ_GetSpace(buf, len), data, len);
 }
 
-static inline size_t SZ_Remaining(const sizebuf_t *buf)
+static inline uint32_t SZ_Remaining(const sizebuf_t *buf)
 {
     if (buf->readcount > buf->cursize)
         return 0;

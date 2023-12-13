@@ -644,7 +644,7 @@ static void demo_emit_snapshot(mvd_t *mvd)
         mvd->snapshots = Z_Realloc(mvd->snapshots, sizeof(snap) * ALIGN(mvd->numsnapshots + 1, MIN_SNAPSHOTS));
     mvd->snapshots[mvd->numsnapshots++] = snap;
 
-    Com_DPrintf("[%d] snaplen %zu\n", mvd->framenum, msg_write.cursize);
+    Com_DPrintf("[%d] snaplen %u\n", mvd->framenum, msg_write.cursize);
 
     SZ_Clear(&msg_write);
 

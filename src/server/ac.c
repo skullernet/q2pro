@@ -972,7 +972,7 @@ static bool AC_ParseMessage(void)
     }
 
     if (msg_read.readcount > msg_read.cursize) {
-        Com_WPrintf("ANTICHEAT: Read %zu bytes past end of message %d\n",
+        Com_WPrintf("ANTICHEAT: Read %u bytes past end of message %d\n",
                     msg_read.readcount - msg_read.cursize, cmd);
     }
 

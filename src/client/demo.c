@@ -61,7 +61,7 @@ bool CL_WriteDemoMessage(sizebuf_t *buf)
     if (ret != buf->cursize)
         goto fail;
 
-    Com_DDPrintf("%s: wrote %zu bytes\n", __func__, buf->cursize);
+    Com_DDPrintf("%s: wrote %u bytes\n", __func__, buf->cursize);
 
     SZ_Clear(buf);
     return true;
@@ -225,13 +225,13 @@ void CL_EmitDemoFrame(void)
     emit_delta_frame(oldframe, &cl.frame, lastframe, FRAME_CUR);
 
     if (cls.demo.buffer.cursize + msg_write.cursize > cls.demo.buffer.maxsize) {
-        Com_DPrintf("Demo frame overflowed (%zu + %zu > %zu)\n",
+        Com_DPrintf("Demo frame overflowed (%u + %u > %u)\n",
                     cls.demo.buffer.cursize, msg_write.cursize, cls.demo.buffer.maxsize);
         cls.demo.frames_dropped++;
 
         // warn the user if drop rate is too high
         if (cls.demo.frames_written < 10 && cls.demo.frames_dropped == 50)
-            Com_WPrintf("Too many demo frames don't fit into %zu bytes.\n"
+            Com_WPrintf("Too many demo frames don't fit into %u bytes.\n"
                         "Try to increase 'cl_demomsglen' value and restart recording.\n",
                         cls.demo.buffer.maxsize);
     } else {
@@ -861,7 +861,7 @@ void CL_EmitDemoSnapshot(void)
     cls.demo.snapshots = Z_Realloc(cls.demo.snapshots, sizeof(snap) * ALIGN(cls.demo.numsnapshots + 1, MIN_SNAPSHOTS));
     cls.demo.snapshots[cls.demo.numsnapshots++] = snap;
 
-    Com_DPrintf("[%d] snaplen %zu\n", cls.demo.frames_read, msg_write.cursize);
+    Com_DPrintf("[%d] snaplen %u\n", cls.demo.frames_read, msg_write.cursize);
 
     SZ_Clear(&msg_write);
 

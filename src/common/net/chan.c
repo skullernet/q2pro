@@ -250,7 +250,7 @@ static size_t NetchanOld_Transmit(netchan_t *chan, size_t length, const void *da
     else
         Com_WPrintf("%s: dumped unreliable\n", NET_AdrToString(&chan->remote_address));
 
-    SHOWPACKET("send %4zu : s=%d ack=%d rack=%d",
+    SHOWPACKET("send %4u : s=%d ack=%d rack=%d",
                send.cursize,
                chan->outgoing_sequence,
                chan->incoming_sequence,
@@ -311,7 +311,7 @@ static bool NetchanOld_Process(netchan_t *chan)
     sequence &= OLD_MASK;
     sequence_ack &= OLD_MASK;
 
-    SHOWPACKET("recv %4zu : s=%d ack=%d rack=%d",
+    SHOWPACKET("recv %4u : s=%d ack=%d rack=%d",
                msg_read.cursize,
                sequence,
                sequence_ack,
@@ -395,7 +395,7 @@ static size_t NetchanNew_TransmitNextFragment(netchan_t *chan)
     byte        send_buf[MAX_PACKETLEN];
     bool        send_reliable, more_fragments;
     int         w1, w2, offset;
-    size_t      fragment_length;
+    unsigned    fragment_length;
 
     send_reliable = chan->reliable_length;
 
@@ -439,8 +439,8 @@ static size_t NetchanNew_TransmitNextFragment(netchan_t *chan)
     // write fragment contents
     SZ_Write(&send, chan->fragment_out.data + chan->fragment_out.readcount, fragment_length);
 
-    SHOWPACKET("send %4zu : s=%d ack=%d rack=%d "
-               "fragment_offset=%zu more_fragments=%d",
+    SHOWPACKET("send %4u : s=%d ack=%d rack=%d "
+               "fragment_offset=%u more_fragments=%d",
                send.cursize,
                chan->outgoing_sequence,
                chan->incoming_sequence,
@@ -552,7 +552,7 @@ static size_t NetchanNew_Transmit(netchan_t *chan, size_t length, const void *da
     // add the unreliable part
     SZ_Write(&send, data, length);
 
-    SHOWPACKET("send %4zu : s=%d ack=%d rack=%d",
+    SHOWPACKET("send %4u : s=%d ack=%d rack=%d",
                send.cursize,
                chan->outgoing_sequence,
                chan->incoming_sequence,
@@ -583,7 +583,7 @@ static bool NetchanNew_Process(netchan_t *chan)
 {
     int         sequence, sequence_ack, fragment_offset;
     bool        reliable_message, reliable_ack, fragmented_message, more_fragments;
-    size_t      length;
+    unsigned    length;
 
 // get sequence numbers
     MSG_BeginReading();
@@ -616,7 +616,7 @@ static bool NetchanNew_Process(netchan_t *chan)
         return false;
     }
 
-    SHOWPACKET("recv %4zu : s=%d ack=%d rack=%d",
+    SHOWPACKET("recv %4u : s=%d ack=%d rack=%d",
                msg_read.cursize, sequence, sequence_ack, reliable_ack);
     if (fragmented_message) {
         SHOWPACKET(" fragment_offset=%d more_fragments=%d",

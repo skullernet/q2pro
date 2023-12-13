@@ -1789,7 +1789,7 @@ static void SV_RunGameFrame(void)
 #endif
 
     if (msg_write.cursize) {
-        Com_WPrintf("Game left %zu bytes "
+        Com_WPrintf("Game left %u bytes "
                     "in multicast buffer, cleared.\n",
                     msg_write.cursize);
         SZ_Clear(&msg_write);

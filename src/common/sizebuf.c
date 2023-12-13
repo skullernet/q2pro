@@ -23,6 +23,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 void SZ_TagInit(sizebuf_t *buf, void *data, size_t size, const char *tag)
 {
+    Q_assert(size <= INT32_MAX);
     memset(buf, 0, sizeof(*buf));
     buf->data = data;
     buf->maxsize = size;
@@ -31,6 +32,7 @@ void SZ_TagInit(sizebuf_t *buf, void *data, size_t size, const char *tag)
 
 void SZ_Init(sizebuf_t *buf, void *data, size_t size)
 {
+    Q_assert(size <= INT32_MAX);
     memset(buf, 0, sizeof(*buf));
     buf->data = data;
     buf->maxsize = size;
@@ -59,7 +61,7 @@ void *SZ_GetSpace(sizebuf_t *buf, size_t len)
     if (len > buf->maxsize - buf->cursize) {
         if (len > buf->maxsize) {
             Com_Error(ERR_FATAL,
-                      "%s: %s: %zu is > full buffer size %zu",
+                      "%s: %s: %zu is > full buffer size %u",
                       __func__, buf->tag, len, buf->maxsize);
         }
 

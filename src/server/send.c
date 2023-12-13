@@ -358,7 +358,7 @@ static int compress_message(client_t *client)
     deflateReset(&svs.z);
 
     if (ret != Z_STREAM_END) {
-        Com_WPrintf("Error %d compressing %zu bytes message for %s\n",
+        Com_WPrintf("Error %d compressing %u bytes message for %s\n",
                     ret, msg_write.cursize, client->name);
         return 0;
     }
@@ -405,11 +405,11 @@ void SV_ClientAddMessage(client_t *client, int flags)
 
     if ((flags & MSG_COMPRESS) && (len = compress_message(client)) && len < msg_write.cursize) {
         client->AddMessage(client, get_compressed_data(), len, flags & MSG_RELIABLE);
-        SV_DPrintf(0, "Compressed %sreliable message to %s: %zu into %d\n",
+        SV_DPrintf(0, "Compressed %sreliable message to %s: %u into %d\n",
                    (flags & MSG_RELIABLE) ? "" : "un", client->name, msg_write.cursize, len);
     } else {
         client->AddMessage(client, msg_write.data, msg_write.cursize, flags & MSG_RELIABLE);
-        SV_DPrintf(1, "Added %sreliable message to %s: %zu bytes\n",
+        SV_DPrintf(1, "Added %sreliable message to %s: %u bytes\n",
                    (flags & MSG_RELIABLE) ? "" : "un", client->name, msg_write.cursize);
     }
 
