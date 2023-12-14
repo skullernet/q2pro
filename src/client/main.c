@@ -1385,7 +1385,7 @@ static void CL_ConnectionlessPacket(void)
         if (anticheat) {
             MSG_WriteByte(clc_nop);
             MSG_FlushTo(&cls.netchan.message);
-            Netchan_Transmit(&cls.netchan, 0, "", 3);
+            Netchan_Transmit(&cls.netchan, 0, NULL, 3);
             S_StopAllSounds();
             cls.connect_count = -1;
             Com_Printf("Loading anticheat, this may take a few moments...\n");

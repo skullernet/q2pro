@@ -40,9 +40,10 @@ void SZ_WriteShort(sizebuf_t *sb, int c);
 void SZ_WriteLong(sizebuf_t *sb, int c);
 void SZ_WriteString(sizebuf_t *sb, const char *s);
 
-static inline void *SZ_Write(sizebuf_t *buf, const void *data, size_t len)
+static inline void SZ_Write(sizebuf_t *buf, const void *data, size_t len)
 {
-    return memcpy(SZ_GetSpace(buf, len), data, len);
+    if (len)
+        memcpy(SZ_GetSpace(buf, len), data, len);
 }
 
 static inline uint32_t SZ_Remaining(const sizebuf_t *buf)

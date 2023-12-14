@@ -1071,7 +1071,7 @@ static void CL_SendKeepAlive(void)
     cl.lastTransmitCmdNumber = cl.cmdNumber;
     cl.lastTransmitCmdNumberReal = cl.cmdNumber;
 
-    cursize = Netchan_Transmit(&cls.netchan, 0, "", 1);
+    cursize = Netchan_Transmit(&cls.netchan, 0, NULL, 1);
 #if USE_DEBUG
     if (cl_showpackets->integer) {
         Com_Printf("%i ", cursize);
