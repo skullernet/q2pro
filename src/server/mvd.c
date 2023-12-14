@@ -1113,7 +1113,6 @@ void SV_MvdMulticast(int leafnum, multicast_t to)
 {
     mvd_ops_t   op;
     sizebuf_t   *buf;
-    int         bits;
 
     // do nothing if not active
     if (!mvd.active) {
@@ -1130,9 +1129,8 @@ void SV_MvdMulticast(int leafnum, multicast_t to)
 
     op = mvd_multicast_all + to;
     buf = to < MULTICAST_ALL_R ? &mvd.datagram : &mvd.message;
-    bits = (msg_write.cursize >> 8) & 7;
 
-    SZ_WriteByte(buf, op | (bits << SVCMD_BITS));
+    SZ_WriteByte(buf, op | (msg_write.cursize >> 8 << SVCMD_BITS));
     SZ_WriteByte(buf, msg_write.cursize & 255);
 
     if (op != mvd_multicast_all && op != mvd_multicast_all_r) {
@@ -1183,7 +1181,6 @@ void SV_MvdUnicast(edict_t *ent, int clientNum, bool reliable)
 {
     mvd_ops_t   op;
     sizebuf_t   *buf;
-    int         bits;
 
     // do nothing if not active
     if (!mvd.active) {
@@ -1214,8 +1211,7 @@ void SV_MvdUnicast(edict_t *ent, int clientNum, bool reliable)
     }
 
     // write it
-    bits = (msg_write.cursize >> 8) & 7;
-    SZ_WriteByte(buf, op | (bits << SVCMD_BITS));
+    SZ_WriteByte(buf, op | (msg_write.cursize >> 8 << SVCMD_BITS));
     SZ_WriteByte(buf, msg_write.cursize & 255);
     SZ_WriteByte(buf, clientNum);
     SZ_Write(buf, msg_write.data, msg_write.cursize);

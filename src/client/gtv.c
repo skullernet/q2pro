@@ -219,8 +219,6 @@ static void write_message(gtv_serverop_t op)
 
 void CL_GTV_WriteMessage(byte *data, size_t len)
 {
-    int bits;
-
     if (cls.gtv.state != ca_active)
         return;
 
@@ -241,15 +239,13 @@ void CL_GTV_WriteMessage(byte *data, size_t len)
         break;
     case svc_layout:
     case svc_stufftext:
-        bits = ((len >> 8) & 7) << SVCMD_BITS;
-        SZ_WriteByte(&cls.gtv.message, mvd_unicast | bits);
+        SZ_WriteByte(&cls.gtv.message, mvd_unicast | (len >> 8 << SVCMD_BITS));
         SZ_WriteByte(&cls.gtv.message, len & 255);
         SZ_WriteByte(&cls.gtv.message, cl.clientNum);
         SZ_Write(&cls.gtv.message, data, len);
         break;
     default:
-        bits = ((len >> 8) & 7) << SVCMD_BITS;
-        SZ_WriteByte(&cls.gtv.message, mvd_multicast_all | bits);
+        SZ_WriteByte(&cls.gtv.message, mvd_multicast_all | (len >> 8 << SVCMD_BITS));
         SZ_WriteByte(&cls.gtv.message, len & 255);
         SZ_Write(&cls.gtv.message, data, len);
         break;
