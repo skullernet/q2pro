@@ -525,6 +525,17 @@ void flyer_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage,
     BecomeExplosion1(self);
 }
 
+static void flyer_precache(void)
+{
+    sound_sight = gi.soundindex("flyer/flysght1.wav");
+    sound_idle = gi.soundindex("flyer/flysrch1.wav");
+    sound_pain1 = gi.soundindex("flyer/flypain1.wav");
+    sound_pain2 = gi.soundindex("flyer/flypain2.wav");
+    sound_slash = gi.soundindex("flyer/flyatck2.wav");
+    sound_sproing = gi.soundindex("flyer/flyatck1.wav");
+    sound_die = gi.soundindex("flyer/flydeth1.wav");
+}
+
 /*QUAKED monster_flyer (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
 */
 void SP_monster_flyer(edict_t *self)
@@ -540,13 +551,7 @@ void SP_monster_flyer(edict_t *self)
         self->target = NULL;
     }
 
-    sound_sight = gi.soundindex("flyer/flysght1.wav");
-    sound_idle = gi.soundindex("flyer/flysrch1.wav");
-    sound_pain1 = gi.soundindex("flyer/flypain1.wav");
-    sound_pain2 = gi.soundindex("flyer/flypain2.wav");
-    sound_slash = gi.soundindex("flyer/flyatck2.wav");
-    sound_sproing = gi.soundindex("flyer/flyatck1.wav");
-    sound_die = gi.soundindex("flyer/flydeth1.wav");
+    G_AddPrecache(flyer_precache);
 
     gi.soundindex("flyer/flyatck3.wav");
 

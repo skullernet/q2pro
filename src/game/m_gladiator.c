@@ -313,15 +313,8 @@ void gladiator_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int dam
     self->monsterinfo.currentmove = &gladiator_move_death;
 }
 
-/*QUAKED monster_gladiator (1 .5 0) (-32 -32 -24) (32 32 64) Ambush Trigger_Spawn Sight
-*/
-void SP_monster_gladiator(edict_t *self)
+static void gladiator_precache(void)
 {
-    if (deathmatch->value) {
-        G_FreeEdict(self);
-        return;
-    }
-
     sound_pain1 = gi.soundindex("gladiator/pain.wav");
     sound_pain2 = gi.soundindex("gladiator/gldpain2.wav");
     sound_die = gi.soundindex("gladiator/glddeth2.wav");
@@ -332,6 +325,18 @@ void SP_monster_gladiator(edict_t *self)
     sound_idle = gi.soundindex("gladiator/gldidle1.wav");
     sound_search = gi.soundindex("gladiator/gldsrch1.wav");
     sound_sight = gi.soundindex("gladiator/sight.wav");
+}
+
+/*QUAKED monster_gladiator (1 .5 0) (-32 -32 -24) (32 32 64) Ambush Trigger_Spawn Sight
+*/
+void SP_monster_gladiator(edict_t *self)
+{
+    if (deathmatch->value) {
+        G_FreeEdict(self);
+        return;
+    }
+
+    G_AddPrecache(gladiator_precache);
 
     self->movetype = MOVETYPE_STEP;
     self->solid = SOLID_BBOX;

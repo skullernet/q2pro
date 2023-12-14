@@ -576,15 +576,8 @@ void insane_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage
     }
 }
 
-/*QUAKED misc_insane (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn CRAWL CRUCIFIED STAND_GROUND ALWAYS_STAND
-*/
-void SP_misc_insane(edict_t *self)
+static void insane_precache(void)
 {
-    if (deathmatch->value) {
-        G_FreeEdict(self);
-        return;
-    }
-
     sound_fist = gi.soundindex("insane/insane11.wav");
     sound_shake = gi.soundindex("insane/insane5.wav");
     sound_moan = gi.soundindex("insane/insane7.wav");
@@ -596,6 +589,18 @@ void SP_misc_insane(edict_t *self)
     sound_scream[5] = gi.soundindex("insane/insane8.wav");
     sound_scream[6] = gi.soundindex("insane/insane9.wav");
     sound_scream[7] = gi.soundindex("insane/insane10.wav");
+}
+
+/*QUAKED misc_insane (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn CRAWL CRUCIFIED STAND_GROUND ALWAYS_STAND
+*/
+void SP_misc_insane(edict_t *self)
+{
+    if (deathmatch->value) {
+        G_FreeEdict(self);
+        return;
+    }
+
+    G_AddPrecache(insane_precache);
 
     self->movetype = MOVETYPE_STEP;
     self->solid = SOLID_BBOX;

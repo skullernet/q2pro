@@ -376,6 +376,16 @@ void berserk_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
         self->monsterinfo.currentmove = &berserk_move_death2;
 }
 
+static void berserk_precache(void)
+{
+    sound_pain   = gi.soundindex("berserk/berpain2.wav");
+    sound_die    = gi.soundindex("berserk/berdeth2.wav");
+    sound_idle   = gi.soundindex("berserk/beridle1.wav");
+    sound_punch  = gi.soundindex("berserk/attack.wav");
+    sound_search = gi.soundindex("berserk/bersrch1.wav");
+    sound_sight  = gi.soundindex("berserk/sight.wav");
+}
+
 /*QUAKED monster_berserk (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
 */
 void SP_monster_berserk(edict_t *self)
@@ -386,12 +396,7 @@ void SP_monster_berserk(edict_t *self)
     }
 
     // pre-caches
-    sound_pain  = gi.soundindex("berserk/berpain2.wav");
-    sound_die   = gi.soundindex("berserk/berdeth2.wav");
-    sound_idle  = gi.soundindex("berserk/beridle1.wav");
-    sound_punch = gi.soundindex("berserk/attack.wav");
-    sound_search = gi.soundindex("berserk/bersrch1.wav");
-    sound_sight = gi.soundindex("berserk/sight.wav");
+    G_AddPrecache(berserk_precache);
 
     self->s.modelindex = gi.modelindex("models/monsters/berserk/tris.md2");
     VectorSet(self->mins, -16, -16, -24);

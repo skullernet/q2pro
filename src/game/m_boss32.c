@@ -768,7 +768,7 @@ void SP_monster_makron(edict_t *self)
         return;
     }
 
-    MakronPrecache();
+    G_AddPrecache(MakronPrecache);
 
     self->movetype = MOVETYPE_STEP;
     self->solid = SOLID_BBOX;

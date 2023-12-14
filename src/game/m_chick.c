@@ -579,15 +579,8 @@ void chick_sight(edict_t *self, edict_t *other)
     gi.sound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
 }
 
-/*QUAKED monster_chick (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
-*/
-void SP_monster_chick(edict_t *self)
+static void chick_precache(void)
 {
-    if (deathmatch->value) {
-        G_FreeEdict(self);
-        return;
-    }
-
     sound_missile_prelaunch = gi.soundindex("chick/chkatck1.wav");
     sound_missile_launch    = gi.soundindex("chick/chkatck2.wav");
     sound_melee_swing       = gi.soundindex("chick/chkatck3.wav");
@@ -603,6 +596,18 @@ void SP_monster_chick(edict_t *self)
     sound_pain3             = gi.soundindex("chick/chkpain3.wav");
     sound_sight             = gi.soundindex("chick/chksght1.wav");
     sound_search            = gi.soundindex("chick/chksrch1.wav");
+}
+
+/*QUAKED monster_chick (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
+*/
+void SP_monster_chick(edict_t *self)
+{
+    if (deathmatch->value) {
+        G_FreeEdict(self);
+        return;
+    }
+
+    G_AddPrecache(chick_precache);
 
     self->movetype = MOVETYPE_STEP;
     self->solid = SOLID_BBOX;

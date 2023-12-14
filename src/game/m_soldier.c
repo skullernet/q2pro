@@ -1067,9 +1067,16 @@ void soldier_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 // SPAWN
 //
 
-void SP_monster_soldier_x(edict_t *self)
+static void soldier_precache_x(void)
 {
+    sound_idle   = gi.soundindex("soldier/solidle1.wav");
+    sound_sight1 = gi.soundindex("soldier/solsght1.wav");
+    sound_sight2 = gi.soundindex("soldier/solsrch1.wav");
+    sound_cock   = gi.soundindex("infantry/infatck3.wav");
+}
 
+static void SP_monster_soldier_x(edict_t *self)
+{
     self->s.modelindex = gi.modelindex("models/monsters/soldier/tris.md2");
     self->monsterinfo.scale = MODEL_SCALE;
     VectorSet(self->mins, -16, -16, -24);
@@ -1077,10 +1084,7 @@ void SP_monster_soldier_x(edict_t *self)
     self->movetype = MOVETYPE_STEP;
     self->solid = SOLID_BBOX;
 
-    sound_idle =    gi.soundindex("soldier/solidle1.wav");
-    sound_sight1 =  gi.soundindex("soldier/solsght1.wav");
-    sound_sight2 =  gi.soundindex("soldier/solsrch1.wav");
-    sound_cock =    gi.soundindex("infantry/infatck3.wav");
+    G_AddPrecache(soldier_precache_x);
 
     self->mass = 100;
 
@@ -1102,6 +1106,12 @@ void SP_monster_soldier_x(edict_t *self)
     walkmonster_start(self);
 }
 
+static void soldier_precache_light(void)
+{
+    sound_pain_light = gi.soundindex("soldier/solpain2.wav");
+    sound_death_light = gi.soundindex("soldier/soldeth2.wav");
+}
+
 /*QUAKED monster_soldier_light (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
 */
 void SP_monster_soldier_light(edict_t *self)
@@ -1113,8 +1123,8 @@ void SP_monster_soldier_light(edict_t *self)
 
     SP_monster_soldier_x(self);
 
-    sound_pain_light = gi.soundindex("soldier/solpain2.wav");
-    sound_death_light = gi.soundindex("soldier/soldeth2.wav");
+    G_AddPrecache(soldier_precache_light);
+
     gi.modelindex("models/objects/laser/tris.md2");
     gi.soundindex("misc/lasfly.wav");
     gi.soundindex("soldier/solatck2.wav");
@@ -1122,6 +1132,12 @@ void SP_monster_soldier_light(edict_t *self)
     self->s.skinnum = 0;
     self->max_health = self->health = 20;
     self->gib_health = -30;
+}
+
+static void soldier_precache(void)
+{
+    sound_pain = gi.soundindex("soldier/solpain1.wav");
+    sound_death = gi.soundindex("soldier/soldeth1.wav");
 }
 
 /*QUAKED monster_soldier (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
@@ -1135,13 +1151,19 @@ void SP_monster_soldier(edict_t *self)
 
     SP_monster_soldier_x(self);
 
-    sound_pain = gi.soundindex("soldier/solpain1.wav");
-    sound_death = gi.soundindex("soldier/soldeth1.wav");
+    G_AddPrecache(soldier_precache);
+
     gi.soundindex("soldier/solatck1.wav");
 
     self->s.skinnum = 2;
     self->max_health = self->health = 30;
     self->gib_health = -30;
+}
+
+static void soldier_precache_ss(void)
+{
+    sound_pain_ss = gi.soundindex("soldier/solpain3.wav");
+    sound_death_ss = gi.soundindex("soldier/soldeth3.wav");
 }
 
 /*QUAKED monster_soldier_ss (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
@@ -1155,8 +1177,8 @@ void SP_monster_soldier_ss(edict_t *self)
 
     SP_monster_soldier_x(self);
 
-    sound_pain_ss = gi.soundindex("soldier/solpain3.wav");
-    sound_death_ss = gi.soundindex("soldier/soldeth3.wav");
+    G_AddPrecache(soldier_precache_ss);
+
     gi.soundindex("soldier/solatck3.wav");
 
     self->s.skinnum = 4;

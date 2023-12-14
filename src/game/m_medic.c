@@ -668,15 +668,8 @@ bool medic_checkattack(edict_t *self)
     return M_CheckAttack(self);
 }
 
-/*QUAKED monster_medic (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
-*/
-void SP_monster_medic(edict_t *self)
+static void medic_precache(void)
 {
-    if (deathmatch->value) {
-        G_FreeEdict(self);
-        return;
-    }
-
     sound_idle1 = gi.soundindex("medic/idle.wav");
     sound_pain1 = gi.soundindex("medic/medpain1.wav");
     sound_pain2 = gi.soundindex("medic/medpain2.wav");
@@ -687,6 +680,18 @@ void SP_monster_medic(edict_t *self)
     sound_hook_hit = gi.soundindex("medic/medatck3.wav");
     sound_hook_heal = gi.soundindex("medic/medatck4.wav");
     sound_hook_retract = gi.soundindex("medic/medatck5.wav");
+}
+
+/*QUAKED monster_medic (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
+*/
+void SP_monster_medic(edict_t *self)
+{
+    if (deathmatch->value) {
+        G_FreeEdict(self);
+        return;
+    }
+
+    G_AddPrecache(medic_precache);
 
     gi.soundindex("medic/medatck1.wav");
 

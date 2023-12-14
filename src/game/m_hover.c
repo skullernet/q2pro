@@ -534,6 +534,17 @@ void hover_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage,
     self->monsterinfo.currentmove = &hover_move_death1;
 }
 
+static void hover_precache(void)
+{
+    sound_pain1 = gi.soundindex("hover/hovpain1.wav");
+    sound_pain2 = gi.soundindex("hover/hovpain2.wav");
+    sound_death1 = gi.soundindex("hover/hovdeth1.wav");
+    sound_death2 = gi.soundindex("hover/hovdeth2.wav");
+    sound_sight = gi.soundindex("hover/hovsght1.wav");
+    sound_search1 = gi.soundindex("hover/hovsrch1.wav");
+    sound_search2 = gi.soundindex("hover/hovsrch2.wav");
+}
+
 /*QUAKED monster_hover (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
 */
 void SP_monster_hover(edict_t *self)
@@ -543,13 +554,7 @@ void SP_monster_hover(edict_t *self)
         return;
     }
 
-    sound_pain1 = gi.soundindex("hover/hovpain1.wav");
-    sound_pain2 = gi.soundindex("hover/hovpain2.wav");
-    sound_death1 = gi.soundindex("hover/hovdeth1.wav");
-    sound_death2 = gi.soundindex("hover/hovdeth2.wav");
-    sound_sight = gi.soundindex("hover/hovsght1.wav");
-    sound_search1 = gi.soundindex("hover/hovsrch1.wav");
-    sound_search2 = gi.soundindex("hover/hovsrch2.wav");
+    G_AddPrecache(hover_precache);
 
     gi.soundindex("hover/hovatck1.wav");
 

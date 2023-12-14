@@ -566,15 +566,8 @@ void mutant_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage
 // SPAWN
 //
 
-/*QUAKED monster_mutant (1 .5 0) (-32 -32 -24) (32 32 32) Ambush Trigger_Spawn Sight
-*/
-void SP_monster_mutant(edict_t *self)
+static void mutant_precache(void)
 {
-    if (deathmatch->value) {
-        G_FreeEdict(self);
-        return;
-    }
-
     sound_swing = gi.soundindex("mutant/mutatck1.wav");
     sound_hit = gi.soundindex("mutant/mutatck2.wav");
     sound_hit2 = gi.soundindex("mutant/mutatck3.wav");
@@ -588,6 +581,18 @@ void SP_monster_mutant(edict_t *self)
     sound_step2 = gi.soundindex("mutant/step2.wav");
     sound_step3 = gi.soundindex("mutant/step3.wav");
     sound_thud = gi.soundindex("mutant/thud1.wav");
+}
+
+/*QUAKED monster_mutant (1 .5 0) (-32 -32 -24) (32 32 32) Ambush Trigger_Spawn Sight
+*/
+void SP_monster_mutant(edict_t *self)
+{
+    if (deathmatch->value) {
+        G_FreeEdict(self);
+        return;
+    }
+
+    G_AddPrecache(mutant_precache);
 
     self->movetype = MOVETYPE_STEP;
     self->solid = SOLID_BBOX;

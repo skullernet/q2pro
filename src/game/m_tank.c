@@ -734,6 +734,18 @@ void tank_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 // monster_tank
 //
 
+static void tank_precache(void)
+{
+    sound_pain = gi.soundindex("tank/tnkpain2.wav");
+    sound_thud = gi.soundindex("tank/tnkdeth2.wav");
+    sound_idle = gi.soundindex("tank/tnkidle1.wav");
+    sound_die = gi.soundindex("tank/death.wav");
+    sound_step = gi.soundindex("tank/step.wav");
+    sound_windup = gi.soundindex("tank/tnkatck4.wav");
+    sound_strike = gi.soundindex("tank/tnkatck5.wav");
+    sound_sight = gi.soundindex("tank/sight1.wav");
+}
+
 /*QUAKED monster_tank (1 .5 0) (-32 -32 -16) (32 32 72) Ambush Trigger_Spawn Sight
 */
 /*QUAKED monster_tank_commander (1 .5 0) (-32 -32 -16) (32 32 72) Ambush Trigger_Spawn Sight
@@ -751,14 +763,7 @@ void SP_monster_tank(edict_t *self)
     self->movetype = MOVETYPE_STEP;
     self->solid = SOLID_BBOX;
 
-    sound_pain = gi.soundindex("tank/tnkpain2.wav");
-    sound_thud = gi.soundindex("tank/tnkdeth2.wav");
-    sound_idle = gi.soundindex("tank/tnkidle1.wav");
-    sound_die = gi.soundindex("tank/death.wav");
-    sound_step = gi.soundindex("tank/step.wav");
-    sound_windup = gi.soundindex("tank/tnkatck4.wav");
-    sound_strike = gi.soundindex("tank/tnkatck5.wav");
-    sound_sight = gi.soundindex("tank/sight1.wav");
+    G_AddPrecache(tank_precache);
 
     gi.soundindex("tank/tnkatck1.wav");
     gi.soundindex("tank/tnkatk2a.wav");

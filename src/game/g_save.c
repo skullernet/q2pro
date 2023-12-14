@@ -1043,4 +1043,7 @@ void ReadLevel(const char *filename)
             }
         }
     }
+
+    // refresh global precache indices
+    G_RefreshPrecaches();
 }

@@ -339,6 +339,18 @@ void flipper_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
     self->monsterinfo.currentmove = &flipper_move_death;
 }
 
+static void flipper_precache(void)
+{
+    sound_pain1     = gi.soundindex("flipper/flppain1.wav");
+    sound_pain2     = gi.soundindex("flipper/flppain2.wav");
+    sound_death     = gi.soundindex("flipper/flpdeth1.wav");
+    sound_chomp     = gi.soundindex("flipper/flpatck1.wav");
+    sound_attack    = gi.soundindex("flipper/flpatck2.wav");
+    sound_idle      = gi.soundindex("flipper/flpidle1.wav");
+    sound_search    = gi.soundindex("flipper/flpsrch1.wav");
+    sound_sight     = gi.soundindex("flipper/flpsght1.wav");
+}
+
 /*QUAKED monster_flipper (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
 */
 void SP_monster_flipper(edict_t *self)
@@ -348,14 +360,7 @@ void SP_monster_flipper(edict_t *self)
         return;
     }
 
-    sound_pain1     = gi.soundindex("flipper/flppain1.wav");
-    sound_pain2     = gi.soundindex("flipper/flppain2.wav");
-    sound_death     = gi.soundindex("flipper/flpdeth1.wav");
-    sound_chomp     = gi.soundindex("flipper/flpatck1.wav");
-    sound_attack    = gi.soundindex("flipper/flpatck2.wav");
-    sound_idle      = gi.soundindex("flipper/flpidle1.wav");
-    sound_search    = gi.soundindex("flipper/flpsrch1.wav");
-    sound_sight     = gi.soundindex("flipper/flpsght1.wav");
+    G_AddPrecache(flipper_precache);
 
     self->movetype = MOVETYPE_STEP;
     self->solid = SOLID_BBOX;

@@ -511,15 +511,8 @@ void infantry_attack(edict_t *self)
         self->monsterinfo.currentmove = &infantry_move_attack1;
 }
 
-/*QUAKED monster_infantry (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
-*/
-void SP_monster_infantry(edict_t *self)
+static void infantry_precache(void)
 {
-    if (deathmatch->value) {
-        G_FreeEdict(self);
-        return;
-    }
-
     sound_pain1 = gi.soundindex("infantry/infpain1.wav");
     sound_pain2 = gi.soundindex("infantry/infpain2.wav");
     sound_die1 = gi.soundindex("infantry/infdeth1.wav");
@@ -533,6 +526,18 @@ void SP_monster_infantry(edict_t *self)
     sound_sight = gi.soundindex("infantry/infsght1.wav");
     sound_search = gi.soundindex("infantry/infsrch1.wav");
     sound_idle = gi.soundindex("infantry/infidle1.wav");
+}
+
+/*QUAKED monster_infantry (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
+*/
+void SP_monster_infantry(edict_t *self)
+{
+    if (deathmatch->value) {
+        G_FreeEdict(self);
+        return;
+    }
+
+    G_AddPrecache(infantry_precache);
 
     self->movetype = MOVETYPE_STEP;
     self->solid = SOLID_BBOX;

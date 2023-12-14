@@ -93,6 +93,8 @@ void ShutdownGame(void)
 {
     gi.dprintf("==== ShutdownGame ====\n");
 
+    memset(&game, 0, sizeof(game));
+
     gi.FreeTags(TAG_LEVEL);
     gi.FreeTags(TAG_GAME);
 }
