@@ -750,7 +750,7 @@ void G_SetClientSound(edict_t *ent)
         weap = "";
 
     if (ent->waterlevel && (ent->watertype & (CONTENTS_LAVA | CONTENTS_SLIME)))
-        ent->s.sound = snd_fry;
+        ent->s.sound = gi.soundindex("player/fry.wav");
     else if (strcmp(weap, "weapon_railgun") == 0)
         ent->s.sound = gi.soundindex("weapons/rg_hum.wav");
     else if (strcmp(weap, "weapon_bfg") == 0)

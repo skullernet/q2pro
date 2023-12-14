@@ -880,8 +880,7 @@ void SP_worldspawn(edict_t *ent)
     else
         gi.cvar_set("sv_gravity", st.gravity);
 
-    snd_fry = gi.soundindex("player/fry.wav");  // standing in lava / slime
-
+    gi.soundindex("player/fry.wav");  // standing in lava / slime
     gi.soundindex("player/lava_in.wav");
     gi.soundindex("player/burn1.wav");
     gi.soundindex("player/burn2.wav");

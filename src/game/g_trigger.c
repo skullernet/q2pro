@@ -351,8 +351,6 @@ trigger_push
 
 #define PUSH_ONCE       1
 
-static int windsound;
-
 void trigger_push_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
 {
     if (strcmp(other->classname, "grenade") == 0) {
@@ -365,7 +363,7 @@ void trigger_push_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface
             VectorCopy(other->velocity, other->client->oldvelocity);
             if (other->fly_sound_debounce_framenum < level.framenum) {
                 other->fly_sound_debounce_framenum = level.framenum + 1.5f * BASE_FRAMERATE;
-                gi.sound(other, CHAN_AUTO, windsound, 1, ATTN_NORM, 0);
+                gi.sound(other, CHAN_AUTO, gi.soundindex("misc/windfly.wav"), 1, ATTN_NORM, 0);
             }
         }
     }
@@ -380,7 +378,7 @@ Pushes the player
 void SP_trigger_push(edict_t *self)
 {
     InitTrigger(self);
-    windsound = gi.soundindex("misc/windfly.wav");
+    gi.soundindex("misc/windfly.wav");
     self->touch = trigger_push_touch;
     if (!self->speed)
         self->speed = 1000;
