@@ -383,12 +383,10 @@ static void LM_UploadBlock(void)
 
 static void build_style_map(int dynamic)
 {
-    static const lightstyle_t fake = { 1 };
     int i;
 
     if (!dynamic) {
         // make all styles fullbright
-        glr.fd.lightstyles = (lightstyle_t *)&fake;
         memset(gl_static.lightstylemap, 0, sizeof(gl_static.lightstylemap));
         return;
     }
@@ -1074,8 +1072,12 @@ void GL_LoadWorld(const char *name)
         gl_static.nolm_mask = SURF_NOLM_MASK_REMASTER;
     }
 
+    glr.fd.lightstyles = &(lightstyle_t){ 1 };
+
     // post process all surfaces
     upload_world_surfaces();
+
+    glr.fd.lightstyles = NULL;
 
     GL_ShowErrors(__func__);
 }
