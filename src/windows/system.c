@@ -60,15 +60,30 @@ CONSOLE I/O
 
 static HANDLE   hinput = INVALID_HANDLE_VALUE;
 static HANDLE   houtput = INVALID_HANDLE_VALUE;
+// "Original" input handles are used to restore standard handles, if necessary
+static HANDLE   original_hinput = INVALID_HANDLE_VALUE;
+static HANDLE   original_houtput = INVALID_HANDLE_VALUE;
 
 static commandPrompt_t  sys_con;
 static int              sys_hidden;
 static bool             gotConsole;
 
+static inline BOOL duplicate_handle(HANDLE hIn, HANDLE* hOut)
+{
+    return DuplicateHandle(GetCurrentProcess(), hIn, GetCurrentProcess(), hOut, 0, FALSE, DUPLICATE_SAME_ACCESS);
+}
+
 static void write_console_data(const char *data, size_t len)
 {
     DWORD res;
-    WriteFile(houtput, data, len, &res, NULL);
+    if (!WriteFile(houtput, data, len, &res, NULL)) {
+        DWORD err = GetLastError();
+        // If handle is invalid, try again with a duplicate of the original output handle
+        if (err == ERROR_INVALID_HANDLE && duplicate_handle(original_houtput, &houtput)) {
+            SetStdHandle(STD_OUTPUT_HANDLE, houtput);
+            WriteFile(houtput, data, len, &res, NULL);
+        }
+    }
 }
 
 static void hide_console_input(void)
@@ -195,6 +210,19 @@ static void clear_console_window(void)
     show_console_input();
 }
 
+static BOOL get_number_of_console_input_events(LPDWORD number_of_events)
+{
+    if(!GetNumberOfConsoleInputEvents(hinput, number_of_events)) {
+        DWORD err = GetLastError();
+        // If handle is invalid, try again with a duplicate of the original input handle
+        if (err == ERROR_INVALID_HANDLE && duplicate_handle(original_hinput, &hinput)) {
+            SetStdHandle(STD_INPUT_HANDLE, hinput);
+            return GetNumberOfConsoleInputEvents(hinput, number_of_events);
+        }
+    }
+    return TRUE;
+}
+
 /*
 ================
 Sys_ConsoleInput
@@ -218,7 +246,7 @@ void Sys_RunConsole(void)
     }
 
     while (1) {
-        if (!GetNumberOfConsoleInputEvents(hinput, &numevents)) {
+        if (!get_number_of_console_input_events(&numevents)) {
             Com_EPrintf("Error %lu getting number of console events.\n", GetLastError());
             gotConsole = false;
             return;
@@ -618,8 +646,12 @@ static void Sys_ConsoleInit(void)
     freopen("CONOUT$", "w", stderr);
 #endif
 
-    hinput = GetStdHandle(STD_INPUT_HANDLE);
-    houtput = GetStdHandle(STD_OUTPUT_HANDLE);
+    original_hinput = GetStdHandle(STD_INPUT_HANDLE);
+    original_houtput = GetStdHandle(STD_OUTPUT_HANDLE);
+    if(!duplicate_handle(original_hinput, &hinput) || !duplicate_handle(original_houtput, &houtput)) {
+        Com_EPrintf("Couldn't duplicate input/output handles.\n");
+        return;
+    }
     if (!GetConsoleScreenBufferInfo(houtput, &info)) {
         Com_EPrintf("Couldn't get console buffer info.\n");
         return;
@@ -656,6 +688,21 @@ static void Sys_ConsoleInit(void)
 
     Com_DPrintf("System console initialized (%d cols, %d rows).\n",
                 info.dwSize.X, info.dwSize.Y);
+}
+
+static void Sys_ConsoleShutdown(void)
+{
+    // Clean up the duplicates created in Sys_ConsoleInit()
+    if (hinput != INVALID_HANDLE_VALUE && hinput != original_hinput)
+        CloseHandle(hinput);
+    if (houtput != INVALID_HANDLE_VALUE && houtput != original_houtput)
+        CloseHandle(houtput);
+
+    // In case hinput or houtput happens to be used afterwards
+    hinput = original_hinput;
+    houtput = original_houtput;
+    SetStdHandle(STD_INPUT_HANDLE, hinput);
+    SetStdHandle(STD_OUTPUT_HANDLE, houtput);
 }
 
 #endif // USE_SYSCON
@@ -834,6 +881,7 @@ void Sys_Error(const char *error, ...)
         SetConsoleMode(hinput, ENABLE_PROCESSED_INPUT);
         Sys_Printf("Press Ctrl+C to exit.\n");
         Sleep(INFINITE);
+        Sys_ConsoleShutdown();
     }
 #endif
 
@@ -853,6 +901,11 @@ void Sys_Quit(void)
 #if USE_WINSVC
     if (statusHandle)
         longjmp(exitBuf, 1);
+#endif
+
+#if USE_SYSCON
+    if (gotConsole)
+        Sys_ConsoleShutdown();
 #endif
 
     exit(0);
