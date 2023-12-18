@@ -99,6 +99,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #else
 #define q_sentinel
 #endif
+#define q_cold              __attribute__((cold))
 
 #define q_likely(x)         __builtin_expect(!!(x), 1)
 #define q_unlikely(x)       __builtin_expect(!!(x), 0)
@@ -130,6 +131,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define q_noinline
 #define q_malloc
 #define q_sentinel
+#define q_cold
 
 #define q_likely(x)         (x)
 #define q_unlikely(x)       (x)
