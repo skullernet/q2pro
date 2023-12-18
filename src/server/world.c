@@ -437,37 +437,17 @@ Returns a headnode that can be used for testing or clipping an
 object of mins/maxs size.
 ================
 */
-static mnode_t *SV_HullForEntity(edict_t *ent)
+static mnode_t *SV_HullForEntity(edict_t *ent, bool triggers)
 {
-    if (ent->solid == SOLID_BSP) {
-        int i = ent->s.modelindex - 1;
-
-        // explicit hulls in the BSP model
-        if (i <= 0 || i >= sv.cm.cache->nummodels)
-            Com_Error(ERR_DROP, "%s: inline model %d out of range", __func__, i);
-
-        return sv.cm.cache->models[i].headnode;
-    }
-
-    // create a temp hull from bounding box sizes
-    return CM_HeadnodeForBox(ent->mins, ent->maxs);
-}
-
-/*
-=============
-SV_HullForEntity2
-
-Can be used to clip to SOLID_TRIGGER by its BSP tree
-=============
-*/
-static mnode_t *SV_HullForEntity2(edict_t *ent)
-{
-    if (ent->solid == SOLID_BSP || ent->solid == SOLID_TRIGGER) {
+    if (ent->solid == SOLID_BSP || (triggers && ent->solid == SOLID_TRIGGER)) {
         int i = ent->s.modelindex - 1;
 
         // explicit hulls in the BSP model
         if (i > 0 && i < sv.cm.cache->nummodels)
             return sv.cm.cache->models[i].headnode;
+
+        if (!triggers)
+            Com_Error(ERR_DROP, "%s: inline model %d out of range", __func__, i);
     }
 
     // create a temp hull from bounding box sizes
@@ -505,7 +485,7 @@ int SV_PointContents(const vec3_t p)
         hit = touch[i];
 
         // might intersect, so do an exact clip
-        contents |= CM_TransformedPointContents(p, SV_HullForEntity(hit),
+        contents |= CM_TransformedPointContents(p, SV_HullForEntity(hit, false),
                                                 hit->s.origin, hit->s.angles);
     }
 
@@ -572,7 +552,7 @@ static void SV_ClipMoveToEntities(const vec3_t start, const vec3_t mins,
 
         // might intersect, so do an exact clip
         CM_TransformedBoxTrace(&trace, start, end, mins, maxs,
-                               SV_HullForEntity(touch), contentmask,
+                               SV_HullForEntity(touch, false), contentmask,
                                touch->s.origin, touch->s.angles);
 
         CM_ClipEntity(tr, &trace, touch);
@@ -632,7 +612,7 @@ trace_t q_gameabi SV_Clip(const vec3_t start, const vec3_t mins,
         CM_BoxTrace(&trace, start, end, mins, maxs, SV_WorldNodes(), contentmask);
     else
         CM_TransformedBoxTrace(&trace, start, end, mins, maxs,
-                               SV_HullForEntity2(clip), contentmask,
+                               SV_HullForEntity(clip, true), contentmask,
                                clip->s.origin, clip->s.angles);
     trace.ent = clip;
     return trace;
