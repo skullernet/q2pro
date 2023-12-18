@@ -1393,7 +1393,7 @@ static void CL_ConnectionlessPacket(void)
             if (!Sys_GetAntiCheatAPI()) {
                 Com_Printf("Trying to connect without anticheat.\n");
             } else {
-                Com_LPrintf(PRINT_NOTICE, "Anticheat loaded successfully.\n");
+                Com_NPrintf("Anticheat loaded successfully.\n");
             }
         }
 #else

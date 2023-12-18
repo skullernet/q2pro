@@ -36,7 +36,7 @@ bool Sys_GetAntiCheatAPI(void)
     if (anticheatInit) {
         anticheatApi = anticheatInit();
         if (!anticheatApi) {
-            Com_LPrintf(PRINT_ERROR, "Anticheat failed to reinitialize!\n");
+            Com_EPrintf("Anticheat failed to reinitialize!\n");
             FreeLibrary(anticheatHandle);
             anticheatHandle = NULL;
             anticheatInit = NULL;
@@ -48,15 +48,14 @@ bool Sys_GetAntiCheatAPI(void)
 reInit:
     anticheatHandle = LoadLibrary("anticheat");
     if (!anticheatHandle) {
-        Com_LPrintf(PRINT_ERROR, "Anticheat failed to load.\n");
+        Com_EPrintf("Anticheat failed to load.\n");
         return false;
     }
 
     //this should never fail unless the anticheat.dll is bad
     anticheatInit = (FNINIT)GetProcAddress(anticheatHandle, "Initialize");
     if (!anticheatInit) {
-        Com_LPrintf(PRINT_ERROR,
-                    "Couldn't get API of anticheat.dll!\n"
+        Com_EPrintf("Couldn't get API of anticheat.dll!\n"
                     "Please check you are using a valid "
                     "anticheat.dll from http://antiche.at/");
         FreeLibrary(anticheatHandle);
@@ -77,7 +76,7 @@ reInit:
         goto reInit;
     }
 
-    Com_LPrintf(PRINT_ERROR, "Anticheat failed to initialize.\n");
+    Com_EPrintf("Anticheat failed to initialize.\n");
 
     return false;
 }
