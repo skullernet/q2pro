@@ -374,14 +374,14 @@ const mmove_t jorg_move_end_attack1 = {FRAME_attak115, FRAME_attak118, jorg_fram
 
 void jorg_reattack1(edict_t *self)
 {
-    if (visible(self, self->enemy))
+    if (visible(self, self->enemy)) {
         if (random() < 0.9f)
             self->monsterinfo.currentmove = &jorg_move_attack1;
         else {
             self->s.sound = 0;
             self->monsterinfo.currentmove = &jorg_move_end_attack1;
         }
-    else {
+    } else {
         self->s.sound = 0;
         self->monsterinfo.currentmove = &jorg_move_end_attack1;
     }
@@ -394,7 +394,6 @@ void jorg_attack1(edict_t *self)
 
 void jorg_pain(edict_t *self, edict_t *other, float kick, int damage)
 {
-
     if (self->health < (self->max_health / 2))
         self->s.skinnum = 1;
 
