@@ -543,6 +543,11 @@ static inline float LongToFloat(uint32_t l)
     return dat.f;
 }
 
+static inline int32_t SignExtend(uint32_t v, int bits)
+{
+    return (int32_t)(v << (32 - bits)) >> (32 - bits);
+}
+
 #if USE_LITTLE_ENDIAN
 #define BigShort    ShortSwap
 #define BigLong     LongSwap

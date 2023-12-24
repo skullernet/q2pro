@@ -1735,7 +1735,7 @@ int MSG_ReadBits(int bits)
     msg_read.bits_left = bits_left - bits;
 
     if (sgn) {
-        return (int32_t)(value << (32 - bits)) >> (32 - bits);
+        return SignExtend(value, bits);
     }
 
     return value;
