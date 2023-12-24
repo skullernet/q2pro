@@ -118,9 +118,8 @@ void gladiator_run(edict_t *self)
 
 void GaldiatorMelee(edict_t *self)
 {
-    vec3_t  aim;
+    vec3_t  aim = { MELEE_DISTANCE, self->mins[0], -4 };
 
-    VectorSet(aim, MELEE_DISTANCE, self->mins[0], -4);
     if (fire_hit(self, aim, (20 + (Q_rand() % 5)), 300))
         gi.sound(self, CHAN_AUTO, sound_cleaver_hit, 1, ATTN_NORM, 0);
     else

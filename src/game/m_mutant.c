@@ -241,9 +241,8 @@ void mutant_run(edict_t *self)
 
 void mutant_hit_left(edict_t *self)
 {
-    vec3_t  aim;
+    vec3_t  aim = { MELEE_DISTANCE, self->mins[0], 8 };
 
-    VectorSet(aim, MELEE_DISTANCE, self->mins[0], 8);
     if (fire_hit(self, aim, (10 + (Q_rand() % 5)), 100))
         gi.sound(self, CHAN_WEAPON, sound_hit, 1, ATTN_NORM, 0);
     else
@@ -252,9 +251,8 @@ void mutant_hit_left(edict_t *self)
 
 void mutant_hit_right(edict_t *self)
 {
-    vec3_t  aim;
+    vec3_t  aim = { MELEE_DISTANCE, self->maxs[0], 8 };
 
-    VectorSet(aim, MELEE_DISTANCE, self->maxs[0], 8);
     if (fire_hit(self, aim, (10 + (Q_rand() % 5)), 100))
         gi.sound(self, CHAN_WEAPON, sound_hit2, 1, ATTN_NORM, 0);
     else

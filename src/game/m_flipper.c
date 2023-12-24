@@ -168,9 +168,8 @@ const mmove_t flipper_move_pain1 = {FRAME_flppn201, FRAME_flppn205, flipper_fram
 
 void flipper_bite(edict_t *self)
 {
-    vec3_t  aim;
+    vec3_t  aim = { MELEE_DISTANCE, 0, 0 };
 
-    VectorSet(aim, MELEE_DISTANCE, 0, 0);
     fire_hit(self, aim, 5, 0);
 }
 

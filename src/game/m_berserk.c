@@ -158,7 +158,8 @@ void berserk_run(edict_t *self)
 
 void berserk_attack_spike(edict_t *self)
 {
-    vec3_t aim = {MELEE_DISTANCE, 0, -24};
+    vec3_t  aim = { MELEE_DISTANCE, 0, -24 };
+
     fire_hit(self, aim, (15 + (Q_rand() % 6)), 400);    //  Faster attack -- upwards and backwards
 }
 
@@ -181,9 +182,8 @@ const mmove_t berserk_move_attack_spike = {FRAME_att_c1, FRAME_att_c8, berserk_f
 
 void berserk_attack_club(edict_t *self)
 {
-    vec3_t  aim;
+    vec3_t  aim = { MELEE_DISTANCE, self->mins[0], -4 };
 
-    VectorSet(aim, MELEE_DISTANCE, self->mins[0], -4);
     fire_hit(self, aim, (5 + (Q_rand() % 6)), 400);     // Slower attack
 }
 

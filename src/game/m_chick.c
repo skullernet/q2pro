@@ -417,9 +417,8 @@ void chick_dodge(edict_t *self, edict_t *attacker, float eta)
 
 void ChickSlash(edict_t *self)
 {
-    vec3_t  aim;
+    vec3_t  aim = { MELEE_DISTANCE, self->mins[0], 10 };
 
-    VectorSet(aim, MELEE_DISTANCE, self->mins[0], 10);
     gi.sound(self, CHAN_WEAPON, sound_melee_swing, 1, ATTN_NORM, 0);
     fire_hit(self, aim, (10 + (Q_rand() % 6)), 100);
 }

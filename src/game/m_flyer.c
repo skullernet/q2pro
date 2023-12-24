@@ -398,18 +398,16 @@ const mmove_t flyer_move_attack2 = {FRAME_attak201, FRAME_attak217, flyer_frames
 
 void flyer_slash_left(edict_t *self)
 {
-    vec3_t  aim;
+    vec3_t  aim = { MELEE_DISTANCE, self->mins[0], 0 };
 
-    VectorSet(aim, MELEE_DISTANCE, self->mins[0], 0);
     fire_hit(self, aim, 5, 0);
     gi.sound(self, CHAN_WEAPON, sound_slash, 1, ATTN_NORM, 0);
 }
 
 void flyer_slash_right(edict_t *self)
 {
-    vec3_t  aim;
+    vec3_t  aim = { MELEE_DISTANCE, self->maxs[0], 0 };
 
-    VectorSet(aim, MELEE_DISTANCE, self->maxs[0], 0);
     fire_hit(self, aim, 5, 0);
     gi.sound(self, CHAN_WEAPON, sound_slash, 1, ATTN_NORM, 0);
 }
