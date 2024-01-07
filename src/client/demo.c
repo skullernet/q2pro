@@ -1211,20 +1211,14 @@ demoInfo_t *CL_GetDemoInfo(const char *path, demoInfo_t *info)
         }
     } else {
         c = MSG_ReadByte();
-        if ((c & 128) != mvd_serverdata) {
+        if ((c & SVCMD_MASK) != mvd_serverdata) {
             goto fail;
         }
         if (MSG_ReadLong() != PROTOCOL_VERSION_MVD) {
             goto fail;
         }
-        if (c & 128)
-        {
-            uint8_t extra = MSG_ReadByte();
-            c &= ~128;
-
-            if (extra & MVF_EXTLIMITS) {
-                csr = &cs_remap_q2pro_new;
-            }
+        if (c & (MVF_EXTLIMITS << SVCMD_BITS)) {
+            csr = &cs_remap_q2pro_new;
         }
         MSG_ReadWord();
         MSG_ReadLong();
