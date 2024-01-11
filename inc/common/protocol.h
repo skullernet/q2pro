@@ -30,7 +30,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define PROTOCOL_VERSION_Q2PRO      36
 #define PROTOCOL_VERSION_MVD        37 // not used for UDP connections
 #define PROTOCOL_VERSION_RERELEASE  1038
-#define PROTOCOL_VERSION_EXTENDED   3434
+#define PROTOCOL_VERSION_EXTENDED   3434  // used in demos
 
 #define PROTOCOL_VERSION_R1Q2_MINIMUM           1903    // b6377
 #define PROTOCOL_VERSION_R1Q2_UCMD              1904    // b7387
