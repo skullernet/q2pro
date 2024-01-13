@@ -597,7 +597,9 @@ static void CL_ParseServerData(void)
                       cls.serverProtocol, protocol);
         }
         // BIG HACK to let demos from release work with the 3.0x patch!!!
-        if (protocol == PROTOCOL_VERSION_EXTENDED) {
+        if (protocol == PROTOCOL_VERSION_RERELEASE) {
+            // keep protocol as-is
+        } else if (protocol == PROTOCOL_VERSION_EXTENDED) {
             cl.csr = cs_remap_q2pro_new;
             protocol = PROTOCOL_VERSION_DEFAULT;
         } else if (protocol < PROTOCOL_VERSION_OLD || protocol > PROTOCOL_VERSION_DEFAULT) {
@@ -741,7 +743,11 @@ static void CL_ParseServerData(void)
         cl.psFlags |= MSG_PS_EXTENSIONS;
     }
 
-    cls.demo.esFlags = cl.csr.extended ? CL_ES_EXTENDED_MASK : 0;
+    if (cls.serverProtocol == PROTOCOL_VERSION_RERELEASE) {
+        cls.demo.esFlags = cl.esFlags;
+    } else {
+        cls.demo.esFlags = cl.csr.extended ? CL_ES_EXTENDED_MASK : 0;
+    }
 
     // Load cgame (after we know all the timings)
     CG_Load(cl.gamedir, cl.is_rerelease_game);

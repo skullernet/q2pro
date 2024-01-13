@@ -148,7 +148,7 @@ static void emit_packet_entities(server_frame_t *from, server_frame_t *to)
         if (newnum > oldnum) {
             // the old entity isn't present in the new message
             CL_PackEntity(&oldpack, oldent);
-            MSG_WriteDeltaEntity(&oldpack, NULL, MSG_ES_FORCE);
+            MSG_WriteDeltaEntity(&oldpack, NULL, cls.demo.esFlags | MSG_ES_FORCE);
             oldindex++;
             continue;
         }
@@ -161,29 +161,51 @@ static void emit_delta_frame(server_frame_t *from, server_frame_t *to,
                              int fromnum, int tonum)
 {
     player_packed_t oldpack, newpack;
+    byte *bflags;
 
     MSG_WriteByte(svc_frame);
-    MSG_WriteLong(tonum);
-    MSG_WriteLong(fromnum); // what we are delta'ing from
-    if (cls.serverProtocol != PROTOCOL_VERSION_OLD)
-        MSG_WriteByte(0);   // rate dropped packets
+    if (cls.serverProtocol == PROTOCOL_VERSION_RERELEASE) {
+        int delta = from ? tonum - fromnum : 31;
+        MSG_WriteLong((tonum & FRAMENUM_MASK) | (delta << FRAMENUM_BITS));
+        MSG_WriteByte(0); // server: client->frameflags
+        bflags = SZ_GetSpace(&msg_write, 1);
+    } else {
+        MSG_WriteLong(tonum);
+        MSG_WriteLong(fromnum); // what we are delta'ing from
+        if (cls.serverProtocol != PROTOCOL_VERSION_OLD)
+            MSG_WriteByte(0);   // rate dropped packets
+    }
 
     // send over the areabits
     MSG_WriteByte(to->areabytes);
     MSG_WriteData(to->areabits, to->areabytes);
 
+    msgPsFlags_t psFlags = cl.psFlags;
+    if (cls.serverProtocol == PROTOCOL_VERSION_RERELEASE) {
+        psFlags |= MSG_PS_EXTENSIONS;
+        psFlags |= MSG_PS_RERELEASE;
+    }
     // delta encode the playerstate
-    MSG_WriteByte(svc_playerinfo);
-    MSG_PackPlayer(&newpack, &to->ps, cl.psFlags);
-    if (from) {
-        MSG_PackPlayer(&oldpack, &from->ps, cl.psFlags);
-        MSG_WriteDeltaPlayerstate_Default(&oldpack, &newpack, cl.psFlags);
+    MSG_PackPlayer(&newpack, &to->ps, psFlags);
+    if (from)
+        MSG_PackPlayer(&oldpack, &from->ps, psFlags);
+    if (cls.serverProtocol == PROTOCOL_VERSION_RERELEASE) {
+        uint32_t extraflags = MSG_WriteDeltaPlayerstate_Enhanced(from ? &oldpack : NULL, &newpack, psFlags);
+
+        // delta encode the clientNum
+        if ((from ? from->clientNum : 0) != to->clientNum) {
+            extraflags |= EPS_CLIENTNUM;
+            MSG_WriteShort(from->clientNum);
+        }
+        *bflags = extraflags;
     } else {
-        MSG_WriteDeltaPlayerstate_Default(NULL, &newpack, cl.psFlags);
+        MSG_WriteByte(svc_playerinfo);
+        MSG_WriteDeltaPlayerstate_Default(from ? &oldpack : NULL, &newpack, cl.psFlags);
     }
 
     // delta encode the entities
-    MSG_WriteByte(svc_packetentities);
+    if (cls.serverProtocol != PROTOCOL_VERSION_RERELEASE)
+        MSG_WriteByte(svc_packetentities);
     emit_packet_entities(from, to);
 }
 
@@ -416,7 +438,9 @@ static void CL_Record_f(void)
 
     // send the serverdata
     MSG_WriteByte(svc_serverdata);
-    if (cl.csr.extended)
+    if (cls.serverProtocol == PROTOCOL_VERSION_RERELEASE)
+        MSG_WriteLong(PROTOCOL_VERSION_RERELEASE);
+    else if (cl.csr.extended)
         MSG_WriteLong(PROTOCOL_VERSION_EXTENDED);
     else
         MSG_WriteLong(min(cls.serverProtocol, PROTOCOL_VERSION_DEFAULT));
@@ -425,6 +449,19 @@ static void CL_Record_f(void)
     MSG_WriteString(cl.gamedir);
     MSG_WriteShort(cl.clientNum);
     MSG_WriteString(cl.configstrings[CS_NAME]);
+
+    if (cls.serverProtocol == PROTOCOL_VERSION_RERELEASE) {
+        MSG_WriteShort(PROTOCOL_VERSION_Q2PRO_CURRENT);
+        MSG_WriteByte(cl.serverstate);
+        int protocol_flags = 0;
+        if (cl.csr.extended)
+            protocol_flags |= Q2PRO_PF_EXTENSIONS;
+        if (!cl.is_rerelease_game)
+            protocol_flags |= Q2PRO_PF_GAME3_COMPAT;
+        MSG_WriteShort(protocol_flags);
+        int rate = cl.frametime_inv / 0.001f;
+        MSG_WriteByte(rate);
+    }
 
     // configstrings
     for (i = 0; i < cl.csr.end; i++) {
@@ -1180,10 +1217,12 @@ demoInfo_t *CL_GetDemoInfo(const char *path, demoInfo_t *info)
         if (MSG_ReadByte() != svc_serverdata) {
             goto fail;
         }
-        c = MSG_ReadLong();
-        if (c == PROTOCOL_VERSION_EXTENDED) {
+        int protocol = MSG_ReadLong();
+        if (protocol == PROTOCOL_VERSION_RERELEASE) {
+            // Don't futz anything
+        } else if (protocol == PROTOCOL_VERSION_EXTENDED) {
             csr = &cs_remap_q2pro_new;
-        } else if (c < PROTOCOL_VERSION_OLD || c > PROTOCOL_VERSION_DEFAULT) {
+        } else if (protocol < PROTOCOL_VERSION_OLD || protocol > PROTOCOL_VERSION_DEFAULT) {
             goto fail;
         }
         MSG_ReadLong();
@@ -1191,6 +1230,17 @@ demoInfo_t *CL_GetDemoInfo(const char *path, demoInfo_t *info)
         MSG_ReadString(NULL, 0);
         clientNum = MSG_ReadShort();
         MSG_ReadString(NULL, 0);
+
+        if (protocol == PROTOCOL_VERSION_RERELEASE) {
+            MSG_ReadWord();
+            MSG_ReadByte();
+            int protocol_flags = MSG_ReadWord();
+            if (protocol_flags & Q2PRO_PF_EXTENSIONS)
+                csr = &cs_remap_q2pro_new;
+            if (!(protocol_flags & Q2PRO_PF_GAME3_COMPAT))
+                csr = &cs_remap_rerelease;
+            MSG_ReadByte();
+        }
 
         while (1) {
             c = MSG_ReadByte();
