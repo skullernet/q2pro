@@ -51,6 +51,7 @@ static void build_gamestate(void)
     }
 
     // set protocol flags
+    cls.gtv.psFlags = MSG_PS_RERELEASE | MSG_PS_EXTENSIONS;
     cls.gtv.esFlags = MSG_ES_UMASK | MSG_ES_BEAMORIGIN;
     if (cl.csr.extended)
         cls.gtv.esFlags |= MSG_ES_LONGSOLID | MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS;

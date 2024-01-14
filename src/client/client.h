@@ -606,6 +606,7 @@ typedef struct client_static_s {
 
         player_packed_t     ps;
         entity_packed_t     entities[MAX_EDICTS];
+        msgPsFlags_t        psFlags;
         msgEsFlags_t        esFlags;    // for writing
 
         sizebuf_t       message;
