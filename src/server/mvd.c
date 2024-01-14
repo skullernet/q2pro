@@ -611,16 +611,14 @@ static void emit_gamestate(void)
     // pack MVD stream flags into extra bits
     extra = 0;
     if (sv_mvd_nomsgs->integer && mvd.dummy) {
-        extra |= MVF_NOMSGS;
+        extra |= MVF_NOMSGS << SVCMD_BITS;
     }
     if (svs.csr.extended) {
-        extra |= MVF_EXTLIMITS;
+        extra |= MVF_EXTLIMITS << SVCMD_BITS;
     }
 
     // send the serverdata
-    MSG_WriteByte(mvd_serverdata | (extra ? 128 : 0));
-    if (extra)
-        MSG_WriteByte(extra);
+    MSG_WriteByte(mvd_serverdata | extra);
     MSG_WriteLong(PROTOCOL_VERSION_MVD);
     if (svs.csr.extended)
         MSG_WriteShort(PROTOCOL_VERSION_MVD_CURRENT);

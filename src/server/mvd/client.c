@@ -1888,12 +1888,10 @@ static void emit_gamestate(mvd_t *mvd)
     size_t      len;
 
     // pack MVD stream flags into extra bits
-    extra = mvd->flags;
+    extra = mvd->flags << SVCMD_BITS;
 
     // send the serverdata
-    MSG_WriteByte(mvd_serverdata | (extra ? 128 : 0));
-    if (extra)
-        MSG_WriteByte(extra);
+    MSG_WriteByte(mvd_serverdata | extra);
     MSG_WriteLong(PROTOCOL_VERSION_MVD);
     MSG_WriteLong(mvd->version);
     MSG_WriteLong(mvd->servercount);
