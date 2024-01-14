@@ -59,9 +59,7 @@ void AI_SetSightClient(void)
         if (check > game.maxclients)
             check = 1;
         ent = &g_edicts[check];
-        if (ent->inuse
-            && ent->health > 0
-            && !(ent->flags & FL_NOTARGET)) {
+        if (ent->inuse && ent->health > 0 && !(ent->flags & FL_NOTARGET)) {
             level.sight_client = ent;
             return;     // got one
         }
@@ -380,10 +378,9 @@ bool FindTarget(edict_t *self)
     int         r;
 
     if (self->monsterinfo.aiflags & AI_GOOD_GUY) {
-        if (self->goalentity && self->goalentity->inuse && self->goalentity->classname) {
+        if (self->goalentity && self->goalentity->inuse && self->goalentity->classname)
             if (strcmp(self->goalentity->classname, "target_actor") == 0)
                 return false;
-        }
 
         //FIXME look for monsters?
         return false;
@@ -403,9 +400,8 @@ bool FindTarget(edict_t *self)
     heardit = false;
     if ((level.sight_entity_framenum >= (level.framenum - 1)) && !(self->spawnflags & 1)) {
         client = level.sight_entity;
-        if (client->enemy == self->enemy) {
+        if (client->enemy == self->enemy)
             return false;
-        }
     } else if (level.sound_entity_framenum >= (level.framenum - 1)) {
         client = level.sound_entity;
         heardit = true;
@@ -451,18 +447,15 @@ bool FindTarget(edict_t *self)
         if (client->light_level <= 5)
             return false;
 
-        if (!visible(self, client)) {
+        if (!visible(self, client))
             return false;
-        }
 
         if (r == RANGE_NEAR) {
-            if (client->show_hostile < level.framenum && !infront(self, client)) {
+            if (client->show_hostile < level.framenum && !infront(self, client))
                 return false;
-            }
         } else if (r == RANGE_MID) {
-            if (!infront(self, client)) {
+            if (!infront(self, client))
                 return false;
-            }
         }
 
         self->enemy = client;
@@ -491,9 +484,8 @@ bool FindTarget(edict_t *self)
 
         VectorSubtract(client->s.origin, self->s.origin, temp);
 
-        if (VectorLength(temp) > 1000) { // too far to hear
+        if (VectorLength(temp) > 1000)  // too far to hear
             return false;
-        }
 
         // check area portals - if they are different and not connected then we can't hear it
         if (client->areanum != self->areanum)
@@ -581,17 +573,16 @@ bool M_CheckAttack(edict_t *self)
     if (enemy_range == RANGE_FAR)
         return false;
 
-    if (self->monsterinfo.aiflags & AI_STAND_GROUND) {
+    if (self->monsterinfo.aiflags & AI_STAND_GROUND)
         chance = 0.4f;
-    } else if (enemy_range == RANGE_MELEE) {
+    else if (enemy_range == RANGE_MELEE)
         chance = 0.2f;
-    } else if (enemy_range == RANGE_NEAR) {
+    else if (enemy_range == RANGE_NEAR)
         chance = 0.1f;
-    } else if (enemy_range == RANGE_MID) {
+    else if (enemy_range == RANGE_MID)
         chance = 0.02f;
-    } else {
+    else
         return false;
-    }
 
     if (skill->value == 0)
         chance *= 0.5f;

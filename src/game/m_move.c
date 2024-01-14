@@ -30,8 +30,6 @@ is not a staircase.
 
 =============
 */
-int c_yes, c_no;
-
 bool M_CheckBottom(edict_t *ent)
 {
     vec3_t  mins, maxs, start, stop;
@@ -54,11 +52,9 @@ bool M_CheckBottom(edict_t *ent)
                 goto realcheck;
         }
 
-    c_yes++;
     return true;        // we got out easy
 
 realcheck:
-    c_no++;
 //
 // check it for real...
 //
@@ -88,7 +84,6 @@ realcheck:
                 return false;
         }
 
-    c_yes++;
     return true;
 }
 
@@ -365,7 +360,7 @@ SV_NewChaseDir
 void SV_NewChaseDir(edict_t *actor, edict_t *enemy, float dist)
 {
     float   deltax, deltay;
-    float   d[3];
+    float   d1, d2;
     float   tdir, olddir, turnaround;
 
     //FIXME: how did we get here with no enemy
@@ -378,42 +373,37 @@ void SV_NewChaseDir(edict_t *actor, edict_t *enemy, float dist)
     deltax = enemy->s.origin[0] - actor->s.origin[0];
     deltay = enemy->s.origin[1] - actor->s.origin[1];
     if (deltax > 10)
-        d[1] = 0;
+        d1 = 0;
     else if (deltax < -10)
-        d[1] = 180;
+        d1 = 180;
     else
-        d[1] = DI_NODIR;
+        d1 = DI_NODIR;
     if (deltay < -10)
-        d[2] = 270;
+        d2 = 270;
     else if (deltay > 10)
-        d[2] = 90;
+        d2 = 90;
     else
-        d[2] = DI_NODIR;
+        d2 = DI_NODIR;
 
 // try direct route
-    if (d[1] != DI_NODIR && d[2] != DI_NODIR) {
-        if (d[1] == 0)
-            tdir = d[2] == 90 ? 45 : 315;
+    if (d1 != DI_NODIR && d2 != DI_NODIR) {
+        if (d1 == 0)
+            tdir = d2 == 90 ? 45 : 315;
         else
-            tdir = d[2] == 90 ? 135 : 215;
+            tdir = d2 == 90 ? 135 : 215;
 
         if (tdir != turnaround && SV_StepDirection(actor, tdir, dist))
             return;
     }
 
 // try other directions
-    if (((Q_rand() & 3) & 1) || fabsf(deltay) > fabsf(deltax)) {
-        tdir = d[1];
-        d[1] = d[2];
-        d[2] = tdir;
-    }
+    if ((Q_rand() & 1) || fabsf(deltay) > fabsf(deltax))
+        SWAP(float, d1, d2);
 
-    if (d[1] != DI_NODIR && d[1] != turnaround
-        && SV_StepDirection(actor, d[1], dist))
+    if (d1 != DI_NODIR && d1 != turnaround && SV_StepDirection(actor, d1, dist))
         return;
 
-    if (d[2] != DI_NODIR && d[2] != turnaround
-        && SV_StepDirection(actor, d[2], dist))
+    if (d2 != DI_NODIR && d2 != turnaround && SV_StepDirection(actor, d2, dist))
         return;
 
     /* there is no direct path to the player, so pick another direction */
@@ -477,7 +467,7 @@ void M_MoveToGoal(edict_t *ent, float dist)
         return;
 
 // if the next step hits the enemy, return immediately
-    if (ent->enemy &&  SV_CloseEnough(ent, ent->enemy, dist))
+    if (ent->enemy && SV_CloseEnough(ent, ent->enemy, dist))
         return;
 
 // bump around...

@@ -1933,7 +1933,7 @@ void SP_item_health_mega(edict_t *self)
 
 void InitItems(void)
 {
-    game.num_items = sizeof(itemlist) / sizeof(itemlist[0]) - 1;
+    game.num_items = q_countof(itemlist) - 1;
 }
 
 /*

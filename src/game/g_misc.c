@@ -1506,18 +1506,12 @@ static void func_clock_format_countdown(edict_t *self)
     }
 
     if (self->style == 1) {
-        Q_snprintf(self->message, CLOCK_MESSAGE_SIZE, "%2i:%2i", self->health / 60, self->health % 60);
-        if (self->message[3] == ' ')
-            self->message[3] = '0';
+        Q_snprintf(self->message, CLOCK_MESSAGE_SIZE, "%2i:%02i", self->health / 60, self->health % 60);
         return;
     }
 
     if (self->style == 2) {
-        Q_snprintf(self->message, CLOCK_MESSAGE_SIZE, "%2i:%2i:%2i", self->health / 3600, (self->health - (self->health / 3600) * 3600) / 60, self->health % 60);
-        if (self->message[3] == ' ')
-            self->message[3] = '0';
-        if (self->message[6] == ' ')
-            self->message[6] = '0';
+        Q_snprintf(self->message, CLOCK_MESSAGE_SIZE, "%2i:%02i:%02i", self->health / 3600, (self->health - (self->health / 3600) * 3600) / 60, self->health % 60);
         return;
     }
 }
@@ -1543,13 +1537,9 @@ void func_clock_think(edict_t *self)
         gmtime = time(NULL);
         ltime = localtime(&gmtime);
         if (ltime)
-            Q_snprintf(self->message, CLOCK_MESSAGE_SIZE, "%2i:%2i:%2i", ltime->tm_hour, ltime->tm_min, ltime->tm_sec);
+            Q_snprintf(self->message, CLOCK_MESSAGE_SIZE, "%2i:%02i:%02i", ltime->tm_hour, ltime->tm_min, ltime->tm_sec);
         else
             strcpy(self->message, "00:00:00");
-        if (self->message[3] == ' ')
-            self->message[3] = '0';
-        if (self->message[6] == ' ')
-            self->message[6] = '0';
     }
 
     self->enemy->message = self->message;
@@ -1607,7 +1597,7 @@ void SP_func_clock(edict_t *self)
     }
 
     if ((self->spawnflags & 1) && (!self->count))
-        self->count = 60 * 60;;
+        self->count = 60 * 60;
 
     func_clock_reset(self);
 

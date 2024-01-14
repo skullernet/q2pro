@@ -432,10 +432,8 @@ void hurt_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf
     else
         self->timestamp = level.framenum + 0.1f * BASE_FRAMERATE;
 
-    if (!(self->spawnflags & 4)) {
-        if ((level.framenum % 10) == 0)
-            gi.sound(other, CHAN_AUTO, self->noise_index, 1, ATTN_NORM, 0);
-    }
+    if (!(self->spawnflags & 4) && !(level.framenum % BASE_FRAMERATE))
+        gi.sound(other, CHAN_AUTO, self->noise_index, 1, ATTN_NORM, 0);
 
     if (self->spawnflags & 8)
         dflags = DAMAGE_NO_PROTECTION;

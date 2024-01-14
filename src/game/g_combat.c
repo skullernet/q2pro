@@ -34,8 +34,7 @@ bool CanDamage(edict_t *targ, edict_t *inflictor)
 
 // bmodels need special checking because their origin is 0,0,0
     if (targ->movetype == MOVETYPE_PUSH) {
-        VectorAdd(targ->absmin, targ->absmax, dest);
-        VectorScale(dest, 0.5f, dest);
+        VectorAvg(targ->absmin, targ->absmax, dest);
         trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
         if (trace.fraction == 1.0f)
             return true;
@@ -515,8 +514,8 @@ void T_RadiusDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t
         if (!ent->takedamage)
             continue;
 
-        VectorAdd(ent->mins, ent->maxs, v);
-        VectorMA(ent->s.origin, 0.5f, v, v);
+        VectorAvg(ent->mins, ent->maxs, v);
+        VectorAdd(ent->s.origin, v, v);
         VectorSubtract(inflictor->s.origin, v, v);
         points = damage - 0.5f * VectorLength(v);
         if (ent == attacker)

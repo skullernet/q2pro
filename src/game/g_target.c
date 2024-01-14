@@ -460,7 +460,7 @@ void target_crosslevel_target_think(edict_t *self)
 
 void SP_target_crosslevel_target(edict_t *self)
 {
-    if (! self->delay)
+    if (!self->delay)
         self->delay = 1;
     self->svflags = SVF_NOCLIENT;
 
@@ -640,12 +640,8 @@ void target_lightramp_think(edict_t *self)
     if (diff < self->speed) {
         self->nextthink = level.framenum + 1;
     } else if (self->spawnflags & 1) {
-        char    temp;
-
-        temp = self->movedir[0];
-        self->movedir[0] = self->movedir[1];
-        self->movedir[1] = temp;
-        self->movedir[2] *= -1;
+        SWAP(float, self->movedir[0], self->movedir[1]);
+        self->movedir[2] = -self->movedir[2];
     }
 }
 
@@ -726,7 +722,7 @@ void target_earthquake_think(edict_t *self)
         self->last_move_framenum = level.framenum + 0.5f * BASE_FRAMERATE;
     }
 
-    for (i = 1, e = g_edicts + i; i < globals.num_edicts; i++, e++) {
+    for (i = 1, e = g_edicts + i; i <= game.maxclients; i++, e++) {
         if (!e->inuse)
             continue;
         if (!e->client)

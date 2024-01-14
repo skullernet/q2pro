@@ -34,10 +34,8 @@ static void check_dodge(edict_t *self, vec3_t start, vec3_t dir, int speed)
     float   eta;
 
     // easy mode only ducks one quarter the time
-    if (skill->value == 0) {
-        if (random() > 0.25f)
-            return;
-    }
+    if (skill->value == 0 && random() > 0.25f)
+        return;
     VectorMA(start, 8192, dir, end);
     tr = gi.trace(start, NULL, NULL, end, self, MASK_SHOT);
     if ((tr.ent) && (tr.ent->svflags & SVF_MONSTER) && (tr.ent->health > 0) && (tr.ent->monsterinfo.dodge) && infront(tr.ent, self)) {
@@ -377,8 +375,8 @@ void Grenade_Explode(edict_t *ent)
         vec3_t  v;
         vec3_t  dir;
 
-        VectorAdd(ent->enemy->mins, ent->enemy->maxs, v);
-        VectorMA(ent->enemy->s.origin, 0.5f, v, v);
+        VectorAvg(ent->enemy->mins, ent->enemy->maxs, v);
+        VectorAdd(ent->enemy->s.origin, v, v);
         VectorSubtract(ent->s.origin, v, v);
         points = ent->dmg - 0.5f * VectorLength(v);
         VectorSubtract(ent->enemy->s.origin, ent->s.origin, dir);
@@ -693,8 +691,8 @@ void bfg_explode(edict_t *self)
             if (!CanDamage(ent, self->owner))
                 continue;
 
-            VectorAdd(ent->mins, ent->maxs, v);
-            VectorMA(ent->s.origin, 0.5f, v, v);
+            VectorAvg(ent->mins, ent->maxs, v);
+            VectorAdd(ent->s.origin, v, v);
             VectorSubtract(self->s.origin, v, v);
             dist = VectorLength(v);
             points = self->radius_dmg * (1.0f - sqrtf(dist / self->dmg_radius));

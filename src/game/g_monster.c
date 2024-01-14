@@ -419,11 +419,10 @@ void monster_triggered_spawn(edict_t *self)
 
     monster_start_go(self);
 
-    if (self->enemy && !(self->spawnflags & 1) && !(self->enemy->flags & FL_NOTARGET)) {
+    if (self->enemy && !(self->spawnflags & 1) && !(self->enemy->flags & FL_NOTARGET))
         FoundTarget(self);
-    } else {
+    else
         self->enemy = NULL;
-    }
 }
 
 void monster_triggered_spawn_use(edict_t *self, edict_t *other, edict_t *activator)

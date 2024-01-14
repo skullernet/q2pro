@@ -138,10 +138,7 @@ void P_DamageFeedback(edict_t *player)
     if (client->damage_alpha < 0)
         client->damage_alpha = 0;
     client->damage_alpha += count * 0.01f;
-    if (client->damage_alpha < 0.2f)
-        client->damage_alpha = 0.2f;
-    if (client->damage_alpha > 0.6f)
-        client->damage_alpha = 0.6f;    // don't go too saturated
+    clamp(client->damage_alpha, 0.2f, 0.6f);    // don't go too saturated
 
     // the color of the blend will vary based on how much was absorbed
     // by different armors
@@ -149,9 +146,9 @@ void P_DamageFeedback(edict_t *player)
     if (client->damage_parmor)
         VectorMA(v, (float)client->damage_parmor / realcount, power_color, v);
     if (client->damage_armor)
-        VectorMA(v, (float)client->damage_armor / realcount,  acolor, v);
+        VectorMA(v, (float)client->damage_armor / realcount, acolor, v);
     if (client->damage_blood)
-        VectorMA(v, (float)client->damage_blood / realcount,  bcolor, v);
+        VectorMA(v, (float)client->damage_blood / realcount, bcolor, v);
     VectorCopy(v, client->damage_blend);
 
     //

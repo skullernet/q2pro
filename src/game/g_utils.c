@@ -72,7 +72,7 @@ findradius (origin, radius)
 edict_t *findradius(edict_t *from, vec3_t org, float rad)
 {
     vec3_t  eorg;
-    int     j;
+    vec3_t  mid;
 
     if (!from)
         from = g_edicts;
@@ -83,9 +83,9 @@ edict_t *findradius(edict_t *from, vec3_t org, float rad)
             continue;
         if (from->solid == SOLID_NOT)
             continue;
-        for (j = 0; j < 3; j++)
-            eorg[j] = org[j] - (from->s.origin[j] + (from->mins[j] + from->maxs[j]) * 0.5f);
-        if (VectorLength(eorg) > rad)
+        VectorAvg(from->mins, from->maxs, mid);
+        VectorAdd(from->s.origin, mid, eorg);
+        if (Distance(eorg, org) > rad)
             continue;
         return from;
     }
@@ -236,13 +236,12 @@ static const vec3_t MOVEDIR_DOWN = { 0,  0, -1 };
 
 void G_SetMovedir(vec3_t angles, vec3_t movedir)
 {
-    if (VectorCompare(angles, VEC_UP)) {
+    if (VectorCompare(angles, VEC_UP))
         VectorCopy(MOVEDIR_UP, movedir);
-    } else if (VectorCompare(angles, VEC_DOWN)) {
+    else if (VectorCompare(angles, VEC_DOWN))
         VectorCopy(MOVEDIR_DOWN, movedir);
-    } else {
+    else
         AngleVectors(angles, movedir, NULL, NULL);
-    }
 
     VectorClear(angles);
 }

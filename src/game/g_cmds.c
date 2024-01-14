@@ -633,7 +633,7 @@ void Cmd_Players_f(edict_t *ent)
     int     count;
     char    small[64];
     char    large[1280];
-    int     index[256];
+    int     index[MAX_CLIENTS];
 
     count = 0;
     for (i = 0; i < maxclients->value; i++)

@@ -97,7 +97,7 @@ void Move_Begin(edict_t *ent)
         return;
     }
     VectorScale(ent->moveinfo.dir, ent->moveinfo.speed, ent->velocity);
-    frames = floor((ent->moveinfo.remaining_distance / ent->moveinfo.speed) / FRAMETIME);
+    frames = floorf((ent->moveinfo.remaining_distance / ent->moveinfo.speed) / FRAMETIME);
     ent->moveinfo.remaining_distance -= frames * ent->moveinfo.speed * FRAMETIME;
     ent->nextthink = level.framenum + frames;
     ent->think = Move_Final;
@@ -105,7 +105,7 @@ void Move_Begin(edict_t *ent)
 
 void Think_AccelMove(edict_t *ent);
 
-void Move_Calc(edict_t *ent, const vec3_t dest, void(*func)(edict_t*))
+void Move_Calc(edict_t *ent, const vec3_t dest, void (*func)(edict_t *))
 {
     VectorClear(ent->velocity);
     VectorSubtract(dest, ent->s.origin, ent->moveinfo.dir);
@@ -181,7 +181,7 @@ void AngleMove_Begin(edict_t *ent)
         return;
     }
 
-    frames = floor(traveltime / FRAMETIME);
+    frames = floorf(traveltime / FRAMETIME);
 
     // scale the destdelta vector by the time spent traveling to get velocity
     VectorScale(destdelta, 1.0f / traveltime, ent->avelocity);
@@ -191,7 +191,7 @@ void AngleMove_Begin(edict_t *ent)
     ent->think = AngleMove_Final;
 }
 
-void AngleMove_Calc(edict_t *ent, void(*func)(edict_t*))
+void AngleMove_Calc(edict_t *ent, void (*func)(edict_t *))
 {
     VectorClear(ent->avelocity);
     ent->moveinfo.endfunc = func;
@@ -744,7 +744,7 @@ void SP_func_button(edict_t *ent)
     abs_movedir[0] = fabsf(ent->movedir[0]);
     abs_movedir[1] = fabsf(ent->movedir[1]);
     abs_movedir[2] = fabsf(ent->movedir[2]);
-    dist = abs_movedir[0] * ent->size[0] + abs_movedir[1] * ent->size[1] + abs_movedir[2] * ent->size[2] - st.lip;
+    dist = DotProduct(abs_movedir, ent->size) - st.lip;
     VectorMA(ent->pos1, dist, ent->movedir, ent->pos2);
 
     ent->use = button_use;
@@ -1106,7 +1106,7 @@ void SP_func_door(edict_t *ent)
     abs_movedir[0] = fabsf(ent->movedir[0]);
     abs_movedir[1] = fabsf(ent->movedir[1]);
     abs_movedir[2] = fabsf(ent->movedir[2]);
-    ent->moveinfo.distance = abs_movedir[0] * ent->size[0] + abs_movedir[1] * ent->size[1] + abs_movedir[2] * ent->size[2] - st.lip;
+    ent->moveinfo.distance = DotProduct(abs_movedir, ent->size) - st.lip;
     VectorMA(ent->pos1, ent->moveinfo.distance, ent->movedir, ent->pos2);
 
     // if it starts open, switch the positions
@@ -1323,7 +1323,7 @@ void SP_func_water(edict_t *self)
     abs_movedir[0] = fabsf(self->movedir[0]);
     abs_movedir[1] = fabsf(self->movedir[1]);
     abs_movedir[2] = fabsf(self->movedir[2]);
-    self->moveinfo.distance = abs_movedir[0] * self->size[0] + abs_movedir[1] * self->size[1] + abs_movedir[2] * self->size[2] - st.lip;
+    self->moveinfo.distance = DotProduct(abs_movedir, self->size) - st.lip;
     VectorMA(self->pos1, self->moveinfo.distance, self->movedir, self->pos2);
 
     // if it starts open, switch the positions
@@ -1866,9 +1866,7 @@ void SP_func_door_secret(edict_t *ent)
     if (!ent->wait)
         ent->wait = 5;
 
-    ent->moveinfo.accel =
-        ent->moveinfo.decel =
-            ent->moveinfo.speed = 50;
+    ent->moveinfo.accel = ent->moveinfo.decel = ent->moveinfo.speed = 50;
 
     // calculate positions
     AngleVectors(ent->s.angles, forward, right, up);
