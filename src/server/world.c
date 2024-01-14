@@ -440,11 +440,16 @@ object of mins/maxs size.
 static mnode_t *SV_HullForEntity(edict_t *ent, bool triggers)
 {
     if (ent->solid == SOLID_BSP || (triggers && ent->solid == SOLID_TRIGGER)) {
+        bsp_t *bsp = sv.cm.cache;
         int i = ent->s.modelindex - 1;
 
+        // account for "hole" in configstring namespace
+        if (i >= MODELINDEX_PLAYER && bsp->nummodels >= MODELINDEX_PLAYER)
+            i--;
+
         // explicit hulls in the BSP model
-        if (i > 0 && i < sv.cm.cache->nummodels)
-            return sv.cm.cache->models[i].headnode;
+        if (i > 0 && i < bsp->nummodels)
+            return bsp->models[i].headnode;
 
         if (!triggers)
             Com_Error(ERR_DROP, "%s: inline model %d out of range", __func__, i);
