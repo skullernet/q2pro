@@ -346,6 +346,7 @@ void ED_CallSpawn(edict_t *ent)
 
     if (!ent->classname) {
         gi.dprintf("ED_CallSpawn: NULL classname\n");
+        G_FreeEdict(ent);
         return;
     }
 
@@ -368,7 +369,9 @@ void ED_CallSpawn(edict_t *ent)
             return;
         }
     }
+
     gi.dprintf("%s doesn't have a spawn function\n", ent->classname);
+    G_FreeEdict(ent);
 }
 
 /*
