@@ -973,7 +973,7 @@ void ReadLevel(const char *filename)
 
     // wipe all the entities
     memset(g_edicts, 0, game.maxentities * sizeof(g_edicts[0]));
-    globals.num_edicts = maxclients->value + 1;
+    globals.num_edicts = game.maxclients + 1;
 
     i = read_int(f);
     if (i != SAVE_MAGIC2) {
@@ -1016,7 +1016,7 @@ void ReadLevel(const char *filename)
     gzclose(f);
 
     // mark all clients as unconnected
-    for (i = 0; i < maxclients->value; i++) {
+    for (i = 0; i < game.maxclients; i++) {
         ent = &g_edicts[i + 1];
         ent->client = game.clients + i;
         ent->client->pers.connected = false;

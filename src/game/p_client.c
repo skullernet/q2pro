@@ -656,7 +656,7 @@ float   PlayersRangeFromSpot(edict_t *spot)
 
     bestplayerdistance = 9999999;
 
-    for (n = 1; n <= maxclients->value; n++) {
+    for (n = 1; n <= game.maxclients; n++) {
         player = &g_edicts[n];
 
         if (!player->inuse)
@@ -974,7 +974,7 @@ void spectator_respawn(edict_t *ent)
         }
 
         // count spectators
-        for (i = 1, numspec = 0; i <= maxclients->value; i++)
+        for (i = 1, numspec = 0; i <= game.maxclients; i++)
             if (g_edicts[i].inuse && g_edicts[i].client->pers.spectator)
                 numspec++;
 
@@ -1402,7 +1402,7 @@ qboolean ClientConnect(edict_t *ent, char *userinfo)
         }
 
         // count spectators
-        for (i = numspec = 0; i < maxclients->value; i++)
+        for (i = numspec = 0; i < game.maxclients; i++)
             if (g_edicts[i + 1].inuse && g_edicts[i + 1].client->pers.spectator)
                 numspec++;
 
@@ -1665,7 +1665,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
     }
 
     // update chase cam if being followed
-    for (i = 1; i <= maxclients->value; i++) {
+    for (i = 1; i <= game.maxclients; i++) {
         other = g_edicts + i;
         if (other->inuse && other->client->chase_target == ent)
             UpdateChaseCam(other);

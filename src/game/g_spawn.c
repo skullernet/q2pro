@@ -927,7 +927,7 @@ void SP_worldspawn(edict_t *ent)
     else
         gi.configstring(CS_CDTRACK, va("%i", ent->sounds));
 
-    gi.configstring(game.csr.maxclients, va("%i", (int)(maxclients->value)));
+    gi.configstring(game.csr.maxclients, va("%i", game.maxclients));
 
     // status bar program
     if (deathmatch->value)

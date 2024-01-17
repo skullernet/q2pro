@@ -636,7 +636,7 @@ void Cmd_Players_f(edict_t *ent)
     int     index[MAX_CLIENTS];
 
     count = 0;
-    for (i = 0; i < maxclients->value; i++)
+    for (i = 0; i < game.maxclients; i++)
         if (game.clients[i].pers.connected) {
             index[count] = i;
             count++;
@@ -808,7 +808,7 @@ void Cmd_PlayerList_f(edict_t *ent)
 
     // connect time, ping, score, name
     *text = 0;
-    for (i = 0, e2 = g_edicts + 1; i < maxclients->value; i++, e2++) {
+    for (i = 0, e2 = g_edicts + 1; i < game.maxclients; i++, e2++) {
         if (!e2->inuse)
             continue;
 

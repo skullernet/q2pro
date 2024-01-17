@@ -283,7 +283,7 @@ void ClientEndServerFrames(void)
 
     // calc the player views now that all pushing
     // and damage has been added
-    for (i = 0; i < maxclients->value; i++) {
+    for (i = 0; i < game.maxclients; i++) {
         ent = g_edicts + 1 + i;
         if (!ent->inuse || !ent->client)
             continue;
@@ -419,7 +419,7 @@ void CheckDMRules(void)
     }
 
     if (fraglimit->value) {
-        for (i = 0; i < maxclients->value; i++) {
+        for (i = 0; i < game.maxclients; i++) {
             cl = game.clients + i;
             if (!g_edicts[i + 1].inuse)
                 continue;
@@ -451,7 +451,7 @@ void ExitLevel(void)
     level.intermission_framenum = 0;
 
     // clear some things before going to next level
-    for (i = 0; i < maxclients->value; i++) {
+    for (i = 0; i < game.maxclients; i++) {
         ent = g_edicts + 1 + i;
         if (!ent->inuse)
             continue;
@@ -507,7 +507,7 @@ void G_RunFrame(void)
             }
         }
 
-        if (i > 0 && i <= maxclients->value) {
+        if (i > 0 && i <= game.maxclients) {
             ClientBeginServerFrame(ent);
             continue;
         }

@@ -87,7 +87,7 @@ void BeginIntermission(edict_t *targ)
     game.autosaved = false;
 
     // respawn any dead clients
-    for (i = 0; i < maxclients->value; i++) {
+    for (i = 0; i < game.maxclients; i++) {
         client = g_edicts + 1 + i;
         if (!client->inuse)
             continue;
@@ -100,7 +100,7 @@ void BeginIntermission(edict_t *targ)
 
     if (strchr(level.changemap, '*')) {
         if (coop->value) {
-            for (i = 0; i < maxclients->value; i++) {
+            for (i = 0; i < game.maxclients; i++) {
                 client = g_edicts + 1 + i;
                 if (!client->inuse)
                     continue;
@@ -144,7 +144,7 @@ void BeginIntermission(edict_t *targ)
     }
 
     // move all clients to the intermission point
-    for (i = 0; i < maxclients->value; i++) {
+    for (i = 0; i < game.maxclients; i++) {
         client = g_edicts + 1 + i;
         if (!client->inuse)
             continue;
@@ -508,7 +508,7 @@ void G_CheckChaseStats(edict_t *ent)
     int i;
     gclient_t *cl;
 
-    for (i = 1; i <= maxclients->value; i++) {
+    for (i = 1; i <= game.maxclients; i++) {
         cl = g_edicts[i].client;
         if (!g_edicts[i].inuse || cl->chase_target != ent)
             continue;
