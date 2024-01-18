@@ -1264,13 +1264,16 @@ demoInfo_t *CL_GetDemoInfo(const char *path, demoInfo_t *info)
         if ((c & SVCMD_MASK) != mvd_serverdata) {
             goto fail;
         }
-        if (MSG_ReadLong() != PROTOCOL_VERSION_MVD) {
+        int mvd_protocol = MSG_ReadLong();
+        if (mvd_protocol != PROTOCOL_VERSION_MVD) {
             goto fail;
         }
         if (c & (MVF_EXTLIMITS << SVCMD_BITS)) {
             csr = &cs_remap_q2pro_new;
         }
-        MSG_ReadWord();
+        int protocol_version = MSG_ReadWord();
+        if (protocol_version == PROTOCOL_VERSION_MVD_RERELEASE)
+            csr = &cs_remap_rerelease;
         MSG_ReadLong();
         MSG_ReadString(NULL, 0);
         clientNum = MSG_ReadShort();

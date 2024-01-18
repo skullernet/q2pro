@@ -69,7 +69,9 @@ static void emit_gamestate(void)
         flags |= MVF_EXTLIMITS;
     MSG_WriteByte(mvd_serverdata | (flags << SVCMD_BITS));
     MSG_WriteLong(PROTOCOL_VERSION_MVD);
-    if (cl.csr.extended)
+    if (cl.is_rerelease_game)
+        MSG_WriteShort(PROTOCOL_VERSION_MVD_RERELEASE);
+    else if (cl.csr.extended)
         MSG_WriteShort(PROTOCOL_VERSION_MVD_CURRENT);
     else
         MSG_WriteShort(PROTOCOL_VERSION_MVD_DEFAULT);

@@ -493,7 +493,7 @@ static void MVD_ParseSound(mvd_t *mvd, int extrabits)
 
     // prepare multicast message
     MSG_WriteByte(svc_sound);
-    MSG_WriteByte(flags | SND_POS);
+    MSG_WriteByte(flags | SND_POS | SND_ENT);
     if (flags & SND_INDEX16)
         MSG_WriteShort(index);
     else
@@ -507,7 +507,7 @@ static void MVD_ParseSound(mvd_t *mvd, int extrabits)
         MSG_WriteByte(offset);
 
     MSG_WriteShort(sendchan);
-    MSG_WritePos(origin, svs.csr.extended);
+    MSG_WritePos(origin, mvd->esFlags & MSG_ES_RERELEASE);
 
     leaf1 = NULL;
     if (!(extrabits & 1)) {
@@ -557,7 +557,7 @@ static void MVD_ParseSound(mvd_t *mvd, int extrabits)
         msg->attenuation = attenuation;
         msg->timeofs = offset;
         msg->sendchan = sendchan;
-        MSG_ReadPos(msg->pos, true);
+        VectorCopy(origin, msg->pos);
 
         List_Remove(&msg->entry);
         List_Append(&cl->msg_unreliable_list, &msg->entry);
@@ -915,11 +915,19 @@ static void MVD_ParseServerData(mvd_t *mvd, int extrabits)
     mvd->psFlags = 0;
     mvd->csr = &cs_remap_old;
 
-    if (mvd->version >= PROTOCOL_VERSION_MVD_EXTENDED_LIMITS && mvd->flags & MVF_EXTLIMITS) {
+    if (mvd->version == PROTOCOL_VERSION_MVD_RERELEASE) {
+        mvd->esFlags |= MSG_ES_LONGSOLID | MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS | MSG_ES_RERELEASE;
+        mvd->psFlags |= MSG_PS_EXTENSIONS | MSG_PS_RERELEASE;
+        mvd->csr = &cs_remap_rerelease;
+    } else if (mvd->version >= PROTOCOL_VERSION_MVD_EXTENDED_LIMITS && mvd->flags & MVF_EXTLIMITS) {
         mvd->esFlags |= MSG_ES_LONGSOLID | MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS;
         mvd->psFlags |= MSG_PS_EXTENSIONS;
         mvd->csr = &cs_remap_q2pro_new;
     }
+
+    /* HACKY: is_game_rerelease must match the value that was used on the server
+     * so matching CS limits are used */
+    svs.is_game_rerelease = mvd->version == PROTOCOL_VERSION_MVD_RERELEASE;
 
 #if 0
     // change gamedir unless playing a demo

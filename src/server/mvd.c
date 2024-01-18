@@ -620,7 +620,9 @@ static void emit_gamestate(void)
     // send the serverdata
     MSG_WriteByte(mvd_serverdata | extra);
     MSG_WriteLong(PROTOCOL_VERSION_MVD);
-    if (svs.csr.extended)
+    if (svs.is_game_rerelease)
+        MSG_WriteShort(PROTOCOL_VERSION_MVD_RERELEASE);
+    else if (svs.csr.extended)
         MSG_WriteShort(PROTOCOL_VERSION_MVD_CURRENT);
     else
         MSG_WriteShort(PROTOCOL_VERSION_MVD_DEFAULT);
@@ -1279,9 +1281,7 @@ void SV_MvdStartSound(int entnum, int channel, int flags,
         extrabits |= 2;
     }
 
-    SZ_WriteByte(&mvd.datagram, mvd_sound | (extrabits ? 128 : 0));
-    if (extrabits)
-        SZ_WriteByte(&mvd.datagram, extrabits);
+    SZ_WriteByte(&mvd.datagram, mvd_sound | extrabits);
     SZ_WriteByte(&mvd.datagram, flags);
     if (flags & SND_INDEX16)
         SZ_WriteShort(&mvd.datagram, soundindex);
@@ -2129,6 +2129,10 @@ void SV_MvdPostInit(void)
     if (svs.csr.extended) {
         mvd.esFlags |= MSG_ES_LONGSOLID | MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS;
         mvd.psFlags |= MSG_PS_EXTENSIONS;
+    }
+    if (svs.is_game_rerelease) {
+        mvd.esFlags |= MSG_ES_LONGSOLID | MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS | MSG_ES_RERELEASE;
+        mvd.psFlags |= MSG_PS_EXTENSIONS | MSG_PS_RERELEASE;
     }
 }
 

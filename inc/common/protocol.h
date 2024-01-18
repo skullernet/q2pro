@@ -53,6 +53,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define PROTOCOL_VERSION_MVD_DEFAULT            2010    // r177
 #define PROTOCOL_VERSION_MVD_EXTENDED_LIMITS    2011    // r2894
 #define PROTOCOL_VERSION_MVD_CURRENT            2011    // r2894
+#define PROTOCOL_VERSION_MVD_RERELEASE          3038
 
 #define R1Q2_SUPPORTED(x) \
     ((x) >= PROTOCOL_VERSION_R1Q2_MINIMUM && \
@@ -63,8 +64,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
      (x) <= PROTOCOL_VERSION_Q2PRO_CURRENT)
 
 #define MVD_SUPPORTED(x) \
-    ((x) >= PROTOCOL_VERSION_MVD_MINIMUM && \
-     (x) <= PROTOCOL_VERSION_MVD_CURRENT)
+    (((x) >= PROTOCOL_VERSION_MVD_MINIMUM && \
+      (x) <= PROTOCOL_VERSION_MVD_CURRENT) \
+     || ((x) == PROTOCOL_VERSION_MVD_RERELEASE))
 
 #define VALIDATE_CLIENTNUM(csr, x) \
     ((x) >= -1 && (x) < (csr)->max_edicts - 1)
