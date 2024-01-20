@@ -46,7 +46,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-mingw-w64 nasm python3-pip ninja-build
+          sudo apt-get install -y gcc-mingw-w64 g++-mingw-w64 nasm python3-pip ninja-build
           sudo python3 -m pip install meson
 
       - name: Build
