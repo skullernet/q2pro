@@ -25,6 +25,7 @@ env:
   MESON_ARGS_LINUX: >-
     -Dwindows-crash-dumps=disabled
     -Dwrap_mode=nofallback
+    --force-fallback-for=fmt
 
 jobs:
   mingw:
