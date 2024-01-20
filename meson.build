@@ -4,6 +4,7 @@ project('q2pro', 'c',
   meson_version: '>= 0.59.0',
   default_options: [
     meson.version().version_compare('>=1.3.0') ? 'c_std=gnu11,c11' : 'c_std=gnu11',
+    'cpp_std=c++17',
     'buildtype=debugoptimized',
   ],
 )
