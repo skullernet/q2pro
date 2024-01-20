@@ -25,7 +25,7 @@ env:
   MESON_ARGS_LINUX: >-
     -Dwindows-crash-dumps=disabled
     -Dwrap_mode=nofallback
-    --force-fallback-for=fmt
+    --force-fallback-for=fmt,jsoncpp
 
 jobs:
   mingw:
