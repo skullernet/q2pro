@@ -34,6 +34,8 @@ jobs:
         arch: ["i686", "x86_64"]
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - uses: actions/cache@v4
         with:
@@ -59,6 +61,8 @@ jobs:
         arch: ["x86", "x64"]
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - uses: actions/cache@v4
         with:
@@ -86,6 +90,8 @@ jobs:
         cc: [gcc, clang]
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Install dependencies
         run: |
