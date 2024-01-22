@@ -476,7 +476,7 @@ SV_PointContents
 */
 int SV_PointContents(const vec3_t p)
 {
-    edict_t     *touch[MAX_EDICTS], *hit;
+    edict_t     *touch[MAX_EDICTS_OLD], *hit;
     int         i, num;
     int         contents;
 
@@ -484,7 +484,7 @@ int SV_PointContents(const vec3_t p)
     contents = CM_PointContents(p, SV_WorldNodes());
 
     // or in contents from all the other entities
-    num = SV_AreaEdicts(p, p, touch, MAX_EDICTS, AREA_SOLID);
+    num = SV_AreaEdicts(p, p, touch, q_countof(touch), AREA_SOLID);
 
     for (i = 0; i < num; i++) {
         hit = touch[i];
