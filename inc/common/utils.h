@@ -91,8 +91,7 @@ typedef struct frametime_s {
 // Compute frametime based on requested frame rate
 static inline frametime_t Com_ComputeFrametime(int rate)
 {
-    int framediv = rate / BASE_FRAMERATE;
-    clamp(framediv, 1, MAX_FRAMEDIV);
+    int framediv = Q_clip(rate / BASE_FRAMERATE, 1, MAX_FRAMEDIV);
     return (frametime_t){ .time = BASE_FRAMETIME / framediv, .div = framediv };
 }
 

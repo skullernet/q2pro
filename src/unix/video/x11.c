@@ -302,7 +302,7 @@ static bool init(void)
         int scale_x = Q_rint(dpi_x / 96.0f);
         int scale_y = Q_rint(dpi_y / 96.0f);
         if (scale_x == scale_y)
-            x11.dpi_scale = clamp(scale_x, 1, 10);
+            x11.dpi_scale = Q_clip(scale_x, 1, 10);
     }
 
     XSizeHints hints = {

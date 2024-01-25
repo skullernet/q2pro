@@ -588,7 +588,7 @@ static void CL_ParseServerData(void)
                 "R1Q2 server reports unsupported protocol version %d.\n"
                 "Assuming it really uses our current client version %d.\n"
                 "Things will break if it does not!\n", i, PROTOCOL_VERSION_R1Q2_CURRENT);
-            clamp(i, PROTOCOL_VERSION_R1Q2_MINIMUM, PROTOCOL_VERSION_R1Q2_CURRENT);
+            i = Q_clip(i, PROTOCOL_VERSION_R1Q2_MINIMUM, PROTOCOL_VERSION_R1Q2_CURRENT);
         }
         Com_DPrintf("Using minor R1Q2 protocol version %d\n", i);
         cls.protocolVersion = i;

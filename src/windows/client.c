@@ -349,7 +349,7 @@ int Win_GetDpiScale(void)
         int dpi = win.GetDpiForWindow(win.wnd);
         if (dpi) {
             int scale = (dpi + USER_DEFAULT_SCREEN_DPI / 2) / USER_DEFAULT_SCREEN_DPI;
-            return clamp(scale, 1, 10);
+            return Q_clip(scale, 1, 10);
         }
     }
     return 1;
@@ -621,7 +621,7 @@ static void mouse_wheel_event(int delta)
 
     if (Key_GetDest() & KEY_CONSOLE) {
         SystemParametersInfo(SPI_GETWHEELSCROLLLINES, 0, &lines, 0);
-        clamp(lines, 1, 9);
+        lines = Q_clip(lines, 1, 9);
     } else {
         lines = 1;
     }

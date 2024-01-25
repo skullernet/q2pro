@@ -890,10 +890,8 @@ static void handle_relative_motion(void *data, struct zwp_relative_pointer_v1 *z
                                    wl_fixed_t dx_unaccel, wl_fixed_t dy_unaccel)
 {
     if (Key_GetDest() & KEY_MENU) {
-        wl.abs_mouse_x += dx;
-        wl.abs_mouse_y += dy;
-        clamp(wl.abs_mouse_x, 0, wl_fixed_from_int(wl.width * wl.scale_factor) - 1);
-        clamp(wl.abs_mouse_y, 0, wl_fixed_from_int(wl.height * wl.scale_factor) - 1);
+        wl.abs_mouse_x = Q_clip(wl.abs_mouse_x + dx, 0, wl_fixed_from_int(wl.width * wl.scale_factor) - 1);
+        wl.abs_mouse_y = Q_clip(wl.abs_mouse_y + dy, 0, wl_fixed_from_int(wl.height * wl.scale_factor) - 1);
         UI_MouseEvent(wl_fixed_to_int(wl.abs_mouse_x), wl_fixed_to_int(wl.abs_mouse_y));
     }
 
