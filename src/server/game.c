@@ -745,14 +745,6 @@ static int PF_LoadFile(const char *path, void **buffer, unsigned flags, unsigned
     return FS_LoadFileEx(path, buffer, flags, tag + TAG_MAX);
 }
 
-static void *PF_TagRealloc(void *ptr, size_t size)
-{
-    if (!ptr && size) {
-        Com_Error(ERR_DROP, "%s: untagged allocation not allowed", __func__);
-    }
-    return Z_Realloc(ptr, size);
-}
-
 static void *PF_GetExtension(const char *name);
 
 static void PF_Bot_RegisterEdict(const edict_t * edict)
