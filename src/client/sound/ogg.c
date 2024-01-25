@@ -261,7 +261,7 @@ void OGG_Play(void)
         s = tracklist[trackindex];
         trackindex = (trackindex + 1) % trackcount;
     } else if (COM_IsUint(s)) {
-        s = va("track%02d", atoi(s));
+        s = va("track%02d", Q_atoi(s));
     }
 
     ogg_play(ogg_open(s, true));

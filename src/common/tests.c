@@ -49,7 +49,7 @@ static void Com_Activate_f(void)
         return;
     }
 
-    act = atoi(Cmd_Argv(1));
+    act = Q_atoi(Cmd_Argv(1));
     if (act < ACT_MINIMIZED || act > ACT_ACTIVATED) {
         Com_Printf("Bad mode\n");
         return;
@@ -90,7 +90,7 @@ static void Com_Crash_f(void)
 {
     static byte buf1[16];
     byte buf2[16], *buf3;
-    int i = atoi(Cmd_Argv(1));
+    int i = Q_atoi(Cmd_Argv(1));
 
     switch (i) {
     case 1:
@@ -148,7 +148,7 @@ static void Com_PrintJunk_f(void)
         buf[Q_rand() % (sizeof(buf) - 1)] = ' ';
 
     if (Cmd_Argc() > 1)
-        count = atoi(Cmd_Argv(1));
+        count = Q_atoi(Cmd_Argv(1));
     else
         count = 1;
 
