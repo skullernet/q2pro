@@ -43,26 +43,6 @@ static inline uint16_t get_compressed_integer(size_t bits_per_value, uint16_t *s
     return (*base & mask) >> bit_shift;
 }
 
-static inline void G_SetAmmoStat(uint16_t *start, uint8_t ammo_id, uint16_t count)
-{
-    set_compressed_integer(NUM_BITS_FOR_AMMO, start, ammo_id, count);
-}
-
-static inline uint16_t G_GetAmmoStat(uint16_t *start, uint8_t ammo_id)
-{
-    return get_compressed_integer(NUM_BITS_FOR_AMMO, start, ammo_id);
-}
-
-static inline void G_SetPowerupStat(uint16_t *start, uint8_t powerup_id, uint16_t count)
-{
-    set_compressed_integer(NUM_BITS_PER_POWERUP, start, powerup_id, count);
-}
-
-static inline uint16_t G_GetPowerupStat(uint16_t *start, uint8_t powerup_id)
-{
-    return get_compressed_integer(NUM_BITS_PER_POWERUP, start, powerup_id);
-}
-
 static void CL_Carousel_Close(void)
 {
     cl.carousel.state = WHEEL_CLOSED;
