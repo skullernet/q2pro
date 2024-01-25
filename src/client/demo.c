@@ -161,7 +161,7 @@ static void emit_delta_frame(server_frame_t *from, server_frame_t *to,
                              int fromnum, int tonum)
 {
     player_packed_t oldpack, newpack;
-    byte *bflags;
+    byte *bflags = NULL;
 
     MSG_WriteByte(svc_frame);
     if (cls.serverProtocol == PROTOCOL_VERSION_RERELEASE) {
