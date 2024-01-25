@@ -23,26 +23,6 @@ static cvar_t *wc_screen_frac_y;
 static cvar_t *wc_timeout;
 static cvar_t *wc_lock_time;
 
-static inline void set_compressed_integer(size_t bits_per_value, uint16_t *start, uint8_t id, uint16_t count)
-{
-    uint16_t bit_offset = bits_per_value * id;
-    uint16_t byte = bit_offset / 8;
-    uint16_t bit_shift = bit_offset % 8;
-    uint16_t mask = (BIT(bits_per_value) - 1) << bit_shift;
-    uint16_t *base = (uint16_t *) ((uint8_t *) start + byte);
-    *base = (*base & ~mask) | ((count << bit_shift) & mask);
-}
-
-static inline uint16_t get_compressed_integer(size_t bits_per_value, uint16_t *start, uint8_t id)
-{
-    uint16_t bit_offset = bits_per_value * id;
-    uint16_t byte = bit_offset / 8;
-    uint16_t bit_shift = bit_offset % 8;
-    uint16_t mask = (BIT(bits_per_value) - 1) << bit_shift;
-    uint16_t *base = (uint16_t *) ((uint8_t *) start + byte);
-    return (*base & mask) >> bit_shift;
-}
-
 static void CL_Carousel_Close(void)
 {
     cl.carousel.state = WHEEL_CLOSED;
