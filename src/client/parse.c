@@ -634,6 +634,7 @@ static void CL_ParseServerData(void)
 
     // setup default pmove parameters
     PmoveInit(&cl.pmp);
+    cl.pmp.remaster_rules = cl.csr.extended;
 
     // setup default frame times
     set_server_fps(BASE_FRAMERATE);

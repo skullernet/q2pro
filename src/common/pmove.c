@@ -1037,7 +1037,16 @@ void Pmove(pmove_t *pmove, const pmoveParams_t *params)
     pm->watertype = 0;
     pm->waterlevel = 0;
 
-    int contentmask = pm->s.pm_type < PM_SPECTATOR ? MASK_PLAYERSOLID : MASK_DEADSOLID;
+    int contentmask = MASK_PLAYERSOLID;
+
+    // remaster player collision rules
+    if (params->remaster_rules) {
+        if (pm->s.pm_type == PM_DEAD || pm->s.pm_type == PM_GIB)
+            contentmask = MASK_DEADSOLID;
+
+        if (!(pm->s.pm_flags & PMF_IGNORE_PLAYER_COLLISION))
+            contentmask |= CONTENTS_PLAYER;
+    }
 
     // clear all pmove local vars
     memset(&pml, 0, sizeof(pml));

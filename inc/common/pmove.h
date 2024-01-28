@@ -36,6 +36,7 @@ typedef struct {
     bool        strafehack;
     bool        flyhack;
     bool        waterhack;
+    bool        remaster_rules;
     float       speedmult;
     float       watermult;
     float       maxspeed;
