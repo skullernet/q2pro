@@ -25,6 +25,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 extern cvar_t   *fs_game;
 
+#if defined(_WIN64)
+// Official remaster game DLL is named "game_x64.dll"
+#define RERELEASE_CPUSTRING     "_x64"
+#else
+#define RERELEASE_CPUSTRING     "_" CPUSTRING
+#endif
+
 static void *LoadGameLibraryFrom(const char *path)
 {
     void *gamelib;
@@ -38,13 +45,13 @@ static void *LoadGameLibraryFrom(const char *path)
     return gamelib;
 }
 
-static void *LoadGameLibrary(const char *libdir, const char *gamedir)
+static void *TryLoadGameLibrary(const char *libdir, const char *gamedir, const char *cpustring)
 {
     char path[MAX_OSPATH];
 
     if (Q_concat(path, sizeof(path), libdir,
                  PATH_SEP_STRING, gamedir, PATH_SEP_STRING,
-                 "game" CPUSTRING LIBSUFFIX) >= sizeof(path)) {
+                 "game", cpustring, LIBSUFFIX) >= sizeof(path)) {
         Com_EPrintf("Game library path length exceeded\n");
         return NULL;
     }
@@ -55,6 +62,16 @@ static void *LoadGameLibrary(const char *libdir, const char *gamedir)
     }
 
     return LoadGameLibraryFrom(path);
+}
+
+static void *LoadGameLibrary(const char *libdir, const char *gamedir)
+{
+    // Try rerelease game first
+    void *rerelease_game = TryLoadGameLibrary(libdir, gamedir, RERELEASE_CPUSTRING);
+    if (rerelease_game)
+        return rerelease_game;
+    // Fallback to vanilla game
+    return TryLoadGameLibrary(libdir, gamedir, CPUSTRING);
 }
 
 
