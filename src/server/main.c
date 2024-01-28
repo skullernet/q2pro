@@ -2045,7 +2045,7 @@ void SV_UserinfoChanged(client_t *cl)
     // msg command
     val = Info_ValueForKey(cl->userinfo, "msg");
     if (*val) {
-        cl->messagelevel = Q_clip(Q_atoi(val), PRINT_LOW, PRINT_CHAT + 1);
+        cl->messagelevel = Q_clip(Q_atoi(val), PRINT_LOW, 256);
     }
 }
 
