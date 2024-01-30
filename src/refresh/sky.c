@@ -33,7 +33,7 @@ static const vec3_t skyclip[6] = {
 };
 
 // 1 = s, 2 = t, 3 = 2048
-static const int st_to_vec[6][3] = {
+static const int8_t st_to_vec[6][3] = {
     { 3, -1, 2 },
     { -3, 1, 2 },
 
@@ -45,7 +45,7 @@ static const int st_to_vec[6][3] = {
 };
 
 // s = [0]/[2], t = [1]/[2]
-static const int vec_to_st[6][3] = {
+static const int8_t vec_to_st[6][3] = {
     { -2, 3, 1 },
     { 2, 3, -1 },
 
@@ -314,17 +314,8 @@ static void MakeSkyVec(float s, float t, int axis, vec_t *out)
     }
 
     // avoid bilerp seam
-    s = (s + 1) * 0.5f;
-    t = (t + 1) * 0.5f;
-
-    if (s < sky_min)
-        s = sky_min;
-    else if (s > sky_max)
-        s = sky_max;
-    if (t < sky_min)
-        t = sky_min;
-    else if (t > sky_max)
-        t = sky_max;
+    s = Q_clipf((s + 1) * 0.5f, sky_min, sky_max);
+    t = Q_clipf((t + 1) * 0.5f, sky_min, sky_max);
 
     out[3] = s;
     out[4] = 1.0f - t;
@@ -341,7 +332,7 @@ R_DrawSkyBox
 */
 void R_DrawSkyBox(void)
 {
-    static const int skytexorder[6] = {0, 2, 1, 3, 4, 5};
+    static const uint8_t skytexorder[6] = {0, 2, 1, 3, 4, 5};
     vec5_t verts[4];
     int i;
 
