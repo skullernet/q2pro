@@ -129,7 +129,7 @@ void HashMap_Destroy(hash_map_t *map)
 HashMap_Reserve
 =================
 */
-void HashMap_Reserve(hash_map_t *map, int capacity)
+void HashMap_Reserve(hash_map_t *map, uint32_t capacity)
 {
     const uint32_t new_key_value_storage_size = Q_npot32(capacity);
     if (map->key_value_storage_size < new_key_value_storage_size)
