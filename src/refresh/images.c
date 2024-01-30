@@ -656,7 +656,8 @@ static int my_jpeg_start_decompress(j_decompress_ptr cinfo, byte *rawdata, size_
         return Q_ERR_INVALID_FORMAT;
     }
 
-    if (cinfo->output_width > MAX_TEXTURE_SIZE || cinfo->output_height > MAX_TEXTURE_SIZE) {
+    if (cinfo->output_width < 1 || cinfo->output_width > MAX_TEXTURE_SIZE ||
+        cinfo->output_height < 1 || cinfo->output_height > MAX_TEXTURE_SIZE) {
         Com_SetLastError("invalid image dimensions");
         return Q_ERR_INVALID_FORMAT;
     }
@@ -842,7 +843,7 @@ static int my_png_read_header(png_structp png_ptr, png_infop info_ptr,
         return Q_ERR_FAILURE;
     }
 
-    if (w > MAX_TEXTURE_SIZE || h > MAX_TEXTURE_SIZE) {
+    if (w < 1 || h < 1 || w > MAX_TEXTURE_SIZE || h > MAX_TEXTURE_SIZE) {
         Com_SetLastError("invalid image dimensions");
         return Q_ERR_INVALID_FORMAT;
     }
