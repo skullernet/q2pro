@@ -87,10 +87,10 @@ static void CL_ParsePacketEntities(server_frame_t *oldframe,
     oldindex = 0;
     oldstate = NULL;
     if (!oldframe) {
-        oldnum = 99999;
+        oldnum = MAX_EDICTS;
     } else {
         if (oldindex >= oldframe->numEntities) {
-            oldnum = 99999;
+            oldnum = MAX_EDICTS;
         } else {
             i = oldframe->firstEntity + oldindex;
             oldstate = &cl.entityStates[i & PARSE_ENTITIES_MASK];
@@ -116,7 +116,7 @@ static void CL_ParsePacketEntities(server_frame_t *oldframe,
             oldindex++;
 
             if (oldindex >= oldframe->numEntities) {
-                oldnum = 99999;
+                oldnum = MAX_EDICTS;
             } else {
                 i = oldframe->firstEntity + oldindex;
                 oldstate = &cl.entityStates[i & PARSE_ENTITIES_MASK];
@@ -137,7 +137,7 @@ static void CL_ParsePacketEntities(server_frame_t *oldframe,
             oldindex++;
 
             if (oldindex >= oldframe->numEntities) {
-                oldnum = 99999;
+                oldnum = MAX_EDICTS;
             } else {
                 i = oldframe->firstEntity + oldindex;
                 oldstate = &cl.entityStates[i & PARSE_ENTITIES_MASK];
@@ -157,7 +157,7 @@ static void CL_ParsePacketEntities(server_frame_t *oldframe,
             oldindex++;
 
             if (oldindex >= oldframe->numEntities) {
-                oldnum = 99999;
+                oldnum = MAX_EDICTS;
             } else {
                 i = oldframe->firstEntity + oldindex;
                 oldstate = &cl.entityStates[i & PARSE_ENTITIES_MASK];
@@ -179,7 +179,7 @@ static void CL_ParsePacketEntities(server_frame_t *oldframe,
     }
 
     // any remaining entities in the old frame are copied over
-    while (oldnum != 99999) {
+    while (oldnum != MAX_EDICTS) {
         // one or more entities from the old packet are unchanged
         SHOWNET(3, "   unchanged: %i\n", oldnum);
         CL_ParseDeltaEntity(frame, oldnum, oldstate, 0);
@@ -187,7 +187,7 @@ static void CL_ParsePacketEntities(server_frame_t *oldframe,
         oldindex++;
 
         if (oldindex >= oldframe->numEntities) {
-            oldnum = 99999;
+            oldnum = MAX_EDICTS;
         } else {
             i = oldframe->firstEntity + oldindex;
             oldstate = &cl.entityStates[i & PARSE_ENTITIES_MASK];

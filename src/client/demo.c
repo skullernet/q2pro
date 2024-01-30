@@ -104,7 +104,7 @@ static void emit_packet_entities(server_frame_t *from, server_frame_t *to)
     oldent = newent = NULL;
     while (newindex < to->numEntities || oldindex < from_num_entities) {
         if (newindex >= to->numEntities) {
-            newnum = 9999;
+            newnum = MAX_EDICTS;
         } else {
             i = (to->firstEntity + newindex) & PARSE_ENTITIES_MASK;
             newent = &cl.entityStates[i];
@@ -112,7 +112,7 @@ static void emit_packet_entities(server_frame_t *from, server_frame_t *to)
         }
 
         if (oldindex >= from_num_entities) {
-            oldnum = 9999;
+            oldnum = MAX_EDICTS;
         } else {
             i = (from->firstEntity + oldindex) & PARSE_ENTITIES_MASK;
             oldent = &cl.entityStates[i];

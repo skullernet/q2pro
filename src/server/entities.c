@@ -62,7 +62,7 @@ static void SV_EmitPacketEntities(client_t         *client,
         }
 
         if (newindex >= to->num_entities) {
-            newnum = 9999;
+            newnum = MAX_EDICTS;
         } else {
             i = (to->first_entity + newindex) % svs.num_entities;
             newent = &svs.entities[i];
@@ -70,7 +70,7 @@ static void SV_EmitPacketEntities(client_t         *client,
         }
 
         if (oldindex >= from_num_entities) {
-            oldnum = 9999;
+            oldnum = MAX_EDICTS;
         } else {
             i = (from->first_entity + oldindex) % svs.num_entities;
             oldent = &svs.entities[i];
