@@ -1139,7 +1139,8 @@ static void CL_ParseZPacket(void)
 #if USE_ZLIB
     sizebuf_t   temp;
     byte        buffer[MAX_MSGLEN];
-    int         ret, inlen, outlen;
+    uInt        inlen, outlen;
+    int         ret;
 
     if (msg_read.data != msg_read_buffer) {
         Com_Error(ERR_DROP, "%s: recursively entered", __func__);
@@ -1154,9 +1155,9 @@ static void CL_ParseZPacket(void)
     inflateReset(&cls.z);
 
     cls.z.next_in = MSG_ReadData(inlen);
-    cls.z.avail_in = (uInt)inlen;
+    cls.z.avail_in = inlen;
     cls.z.next_out = buffer;
-    cls.z.avail_out = (uInt)outlen;
+    cls.z.avail_out = outlen;
     ret = inflate(&cls.z, Z_FINISH);
     if (ret != Z_STREAM_END) {
         Com_Error(ERR_DROP, "%s: inflate() failed with error %d", __func__, ret);
