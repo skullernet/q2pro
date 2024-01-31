@@ -834,7 +834,11 @@ static int SortPlayers(const void *v1, const void *v2)
     const playerStatus_t *p1 = (const playerStatus_t *)v1;
     const playerStatus_t *p2 = (const playerStatus_t *)v2;
 
-    return p2->score - p1->score;
+    if (p1->score < p2->score)
+        return 1;
+    if (p1->score > p2->score)
+        return -1;
+    return 0;
 }
 
 /*
