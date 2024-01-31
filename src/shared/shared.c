@@ -827,6 +827,7 @@ size_t Q_scnprintf(char *dest, size_t size, const char *fmt, ...)
     return ret;
 }
 
+#ifndef HAVE_STRCHRNUL
 char *Q_strchrnul(const char *s, int c)
 {
     while (*s && *s != c) {
@@ -834,7 +835,9 @@ char *Q_strchrnul(const char *s, int c)
     }
     return (char *)s;
 }
+#endif
 
+#ifndef HAVE_MEMCCPY
 /*
 ===============
 Q_memccpy
@@ -856,12 +859,15 @@ void *Q_memccpy(void *dst, const void *src, int c, size_t size)
 
     return NULL;
 }
+#endif
 
+#ifndef HAVE_STRNLEN
 size_t Q_strnlen(const char *s, size_t maxlen)
 {
     char *p = memchr(s, 0, maxlen);
     return p ? p - s : maxlen;
 }
+#endif
 
 #ifndef _WIN32
 int Q_atoi(const char *s)

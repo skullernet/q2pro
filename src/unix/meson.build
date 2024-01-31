@@ -29,3 +29,15 @@ if not config.has('USE_SDL') and not config.has('USE_X11') and not config.has('U
   warning('No video drivers enabled, client will not be built')
   client_deps += disabler()
 endif
+
+test_funcs = [
+  'memccpy',
+  'strchrnul',
+  'strnlen',
+]
+
+foreach func: test_funcs
+  if cc.has_function(func, args: '-D_GNU_SOURCE', prefix: '#include <string.h>')
+    config.set('HAVE_' + func.to_upper(), true)
+  endif
+endforeach

@@ -512,9 +512,23 @@ char *Q_strcasestr(const char *s1, const char *s2);
 #define Q_stricmpn  Q_strncasecmp
 #define Q_stristr   Q_strcasestr
 
+#ifdef HAVE_STRCHRNUL
+#define Q_strchrnul strchrnul
+#else
 char *Q_strchrnul(const char *s, int c);
+#endif
+
+#ifdef HAVE_MEMCCPY
+#define Q_memccpy memccpy
+#else
 void *Q_memccpy(void *dst, const void *src, int c, size_t size);
+#endif
+
+#ifdef HAVE_STRNLEN
+#define Q_strnlen strnlen
+#else
 size_t Q_strnlen(const char *s, size_t maxlen);
+#endif
 
 #ifdef _WIN32
 #define Q_atoi(s) atoi(s)
