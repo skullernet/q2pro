@@ -637,9 +637,9 @@ static void demo_emit_snapshot(mvd_t *mvd)
     memcpy(snap->data, msg_write.data, msg_write.cursize);
 
     if (!mvd->snapshots)
-        mvd->snapshots = MVD_Malloc(sizeof(snap) * MIN_SNAPSHOTS);
+        mvd->snapshots = MVD_Malloc(sizeof(mvd->snapshots[0]) * MIN_SNAPSHOTS);
     else
-        mvd->snapshots = Z_Realloc(mvd->snapshots, sizeof(snap) * ALIGN(mvd->numsnapshots + 1, MIN_SNAPSHOTS));
+        mvd->snapshots = Z_Realloc(mvd->snapshots, sizeof(mvd->snapshots[0]) * ALIGN(mvd->numsnapshots + 1, MIN_SNAPSHOTS));
     mvd->snapshots[mvd->numsnapshots++] = snap;
 
     Com_DPrintf("[%d] snaplen %u\n", mvd->framenum, msg_write.cursize);

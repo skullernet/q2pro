@@ -858,7 +858,7 @@ void CL_EmitDemoSnapshot(void)
     snap->msglen = msg_write.cursize;
     memcpy(snap->data, msg_write.data, msg_write.cursize);
 
-    cls.demo.snapshots = Z_Realloc(cls.demo.snapshots, sizeof(snap) * ALIGN(cls.demo.numsnapshots + 1, MIN_SNAPSHOTS));
+    cls.demo.snapshots = Z_Realloc(cls.demo.snapshots, sizeof(cls.demo.snapshots[0]) * ALIGN(cls.demo.numsnapshots + 1, MIN_SNAPSHOTS));
     cls.demo.snapshots[cls.demo.numsnapshots++] = snap;
 
     Com_DPrintf("[%d] snaplen %u\n", cls.demo.frames_read, msg_write.cursize);
