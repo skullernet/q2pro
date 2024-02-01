@@ -256,7 +256,6 @@ HashMap_LookupImpl
 void *HashMap_LookupImpl(hash_map_t *map, const uint32_t key_size, const void *const key)
 {
     Q_assert(map->key_size == key_size);
-
     if (map->num_entries == 0)
         return NULL;
 
@@ -266,7 +265,7 @@ void *HashMap_LookupImpl(hash_map_t *map, const uint32_t key_size, const void *c
     while (storage_index != UINT32_MAX) {
         const void *const storage_key = HashMap_GetKeyImpl(map, storage_index);
         if (map->comp ? map->comp(key, storage_key) : (memcmp(key, storage_key, key_size) == 0))
-            return (byte *)map->values + (storage_index * map->value_size);
+            return HashMap_GetValueImpl(map, storage_index);
         storage_index = map->index_chain[storage_index];
     }
 
