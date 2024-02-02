@@ -43,7 +43,7 @@ typedef struct m_player_s {
     unsigned    time;
     unsigned    oldTime;
 
-    char *pmnames[MAX_PLAYERMODELS];
+    char *pmnames[MAX_PLAYERMODELS + 1];
 } m_player_t;
 
 static m_player_t    m_player;
@@ -203,7 +203,7 @@ static menuSound_t Change(menuCommon_t *self)
 
 static void Pop(menuFrameWork_t *self)
 {
-    char scratch[MAX_OSPATH];
+    char scratch[MAX_QPATH];
 
     Cvar_SetEx("name", m_player.name.field.text, FROM_CONSOLE);
 
