@@ -917,7 +917,7 @@ IMG_LOAD(PNG)
     if (rawlen < 8)
         return Q_ERR_FILE_TOO_SMALL;
 
-    if (!png_check_sig(rawdata, 8))
+    if (png_sig_cmp(rawdata, 0, 8))
         return Q_ERR_UNKNOWN_FORMAT;
 
     my_err.filename = image->name;

@@ -1,11 +1,12 @@
 [wrap-file]
-directory = libpng-1.6.40
-source_url = https://downloads.sourceforge.net/libpng/libpng-1.6.40.tar.xz
-source_filename = libpng-1.6.40.tar.xz
-source_hash = 535b479b2467ff231a3ec6d92a525906fb8ef27978be4f66dbe05d3f3a01b3a1
-patch_url = https://skuller.net/meson/libpng_1.6.40-1_patch.zip
-patch_filename = libpng_1.6.40-1_patch.zip
-patch_hash = aeffbd55f18ec363354080f927ef19d52bb29ccc75cc1ed53e7cb916acf5f0ae
+directory = libpng-1.6.42
+source_url = https://downloads.sourceforge.net/libpng/libpng-1.6.42.tar.xz
+source_filename = libpng-1.6.42.tar.xz
+source_hash = c919dbc11f4c03b05aba3f8884d8eb7adfe3572ad228af972bb60057bdb48450
+patch_filename = libpng_1.6.42-1_patch.zip
+patch_url = https://wrapdb.mesonbuild.com/v2/libpng_1.6.42-1/get_patch
+patch_hash = b5c709da83556da3e970550d1b5bd2286f44da88db34be8215d17765bcbb356a
+wrapdb_version = 1.6.42-1
 
 [provide]
 libpng = libpng_dep
