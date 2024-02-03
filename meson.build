@@ -292,7 +292,7 @@ game_deps = [zlib]
 
 jpeg = dependency('libjpeg',
   required:        get_option('libjpeg'),
-  default_options: fallback_opt,
+  default_options: fallback_opt + [ 'jpeg-turbo=disabled', 'tests=disabled' ]
 )
 if jpeg.found()
   if jpeg.type_name() == 'internal'
