@@ -21,7 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/protocol.h"
 #include "common/sizebuf.h"
 
-#define MAX_PACKETENTITY_BYTES  64  // rough estimate
+#define MAX_PACKETENTITY_BYTES  64  // 62 bytes worst case + margin
 
 // entity and player states are pre-quantized before sending to make delta
 // comparsion easier
