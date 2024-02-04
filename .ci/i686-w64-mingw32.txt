@@ -4,6 +4,7 @@ cpp = 'i686-w64-mingw32-g++'
 ar = 'i686-w64-mingw32-ar'
 strip = 'i686-w64-mingw32-strip'
 windres = 'i686-w64-mingw32-windres'
+nasm = 'nasm'
 
 [host_machine]
 system = 'windows'

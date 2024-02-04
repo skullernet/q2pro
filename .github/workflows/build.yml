@@ -19,7 +19,6 @@ env:
     -Dwerror=true
 
   MESON_ARGS_WIN: >-
-    -Dlibpng:werror=false
     -Dsdl2=disabled
     -Dwayland=disabled
     -Dwrap_mode=forcefallback
@@ -46,7 +45,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-mingw-w64 meson nasm
+          sudo apt-get install -y gcc-mingw-w64 nasm python3-pip ninja-build
+          sudo python3 -m pip install meson
 
       - name: Build
         run: |
