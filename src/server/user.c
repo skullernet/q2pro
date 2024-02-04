@@ -461,16 +461,14 @@ void SV_New_f(void)
         return;
 
     // send gamestate
-    if (sv_client->netchan.type == NETCHAN_NEW) {
-        if (sv_client->version >= PROTOCOL_VERSION_Q2PRO_EXTENDED_LIMITS) {
-            write_configstring_stream();
-            write_baseline_stream();
-        } else {
-            write_gamestate();
-        }
-    } else {
+    if (sv_client->netchan.type == NETCHAN_OLD) {
         write_configstrings();
         write_baselines();
+    } else if (sv_client->version >= PROTOCOL_VERSION_Q2PRO_EXTENDED_LIMITS) {
+        write_configstring_stream();
+        write_baseline_stream();
+    } else {
+        write_gamestate();
     }
 
     // send next command

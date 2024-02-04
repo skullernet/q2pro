@@ -1041,7 +1041,7 @@ void SV_SendAsyncPackets(void)
 
         if (netchan->message.cursize || netchan->reliable_ack_pending ||
             netchan->reliable_length || retransmit) {
-            cursize = Netchan_Transmit(netchan, 0, "", 1);
+            cursize = Netchan_Transmit(netchan, 0, NULL, 1);
             SV_DPrintf(1, "%s: send: %d\n", client->name, cursize);
 calctime:
             SV_CalcSendTime(client, cursize);
