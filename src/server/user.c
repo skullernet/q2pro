@@ -174,7 +174,7 @@ static void write_configstring_stream(void)
         length = Q_strnlen(string, MAX_QPATH);
 
         // check if this configstring will overflow
-        if (msg_write.cursize + length + 4 > msg_write.maxsize) {
+        if (msg_write.cursize + length + 5 > msg_write.maxsize) {
             MSG_WriteShort(sv_client->csr->end);
             SV_ClientAddMessage(sv_client, MSG_GAMESTATE);
             MSG_WriteByte(svc_configstringstream);
