@@ -732,7 +732,7 @@ void Netchan_Setup(netchan_t *chan, netsrc_t sock, netchan_type_t type,
     byte *buf;
 
     Q_assert(chan);
-    Q_assert(!chan->message.data);
+    Q_assert(!chan->reliable_buf);
     Q_assert(adr);
     Q_assert(maxpacketlen >= MIN_PACKETLEN);
     Q_assert(maxpacketlen <= MAX_PACKETLEN_WRITABLE);
@@ -750,17 +750,13 @@ void Netchan_Setup(netchan_t *chan, netsrc_t sock, netchan_type_t type,
 
     switch (type) {
     case NETCHAN_OLD:
-        buf = Z_TagMalloc(maxpacketlen * 2, tag);
-        chan->reliable_buf = buf + maxpacketlen;
-
-        SZ_Init(&chan->message, buf, maxpacketlen);
+        chan->reliable_buf = buf = Z_TagMalloc(maxpacketlen * 2, tag);
+        SZ_Init(&chan->message, buf + maxpacketlen, maxpacketlen);
         break;
 
     case NETCHAN_NEW:
-        buf = Z_TagMalloc(MAX_MSGLEN * 4, tag);
-        chan->reliable_buf = buf + MAX_MSGLEN;
-
-        SZ_Init(&chan->message, buf, MAX_MSGLEN);
+        chan->reliable_buf = buf = Z_TagMalloc(MAX_MSGLEN * 4, tag);
+        SZ_Init(&chan->message, buf + MAX_MSGLEN, MAX_MSGLEN);
         SZ_TagInit(&chan->fragment_in, buf + MAX_MSGLEN * 2, MAX_MSGLEN, "nc_frg_in");
         SZ_TagInit(&chan->fragment_out, buf + MAX_MSGLEN * 3, MAX_MSGLEN, "nc_frg_out");
         break;
@@ -778,6 +774,6 @@ Netchan_Close
 void Netchan_Close(netchan_t *chan)
 {
     Q_assert(chan);
-    Z_Free(chan->message.data);
+    Z_Free(chan->reliable_buf);
     memset(chan, 0, sizeof(*chan));
 }
