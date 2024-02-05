@@ -13,7 +13,9 @@ Features include:
 * recording from demos, forward and backward seeking
 * server side multiview demos and GTV capabilities
 
-For building Q2PRO, consult the INSTALL file.
+For building Q2PRO, consult the INSTALL.md file.
+
+Nightly Windows builds are available at https://skuller.net/q2pro/
 
 For information on using and configuring Q2PRO, refer to client and server
 manuals available in doc/ subdirectory.
