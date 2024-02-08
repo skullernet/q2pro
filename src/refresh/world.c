@@ -73,7 +73,7 @@ void GL_SampleLightPoint(vec3_t color)
 static bool GL_LightGridPoint(lightgrid_t *grid, const vec3_t start, vec3_t color)
 {
     vec3_t point, avg;
-    int point_i[3];
+    uint32_t point_i[3];
     vec3_t samples[8];
     int i, j, mask, numsamples;
 
@@ -88,17 +88,17 @@ static bool GL_LightGridPoint(lightgrid_t *grid, const vec3_t start, vec3_t colo
     VectorClear(avg);
 
     for (i = mask = numsamples = 0; i < 8; i++) {
-        int32_t tmp[3];
+        uint32_t tmp[3];
 
         tmp[0] = point_i[0] + ((i >> 0) & 1);
         tmp[1] = point_i[1] + ((i >> 1) & 1);
         tmp[2] = point_i[2] + ((i >> 2) & 1);
 
-        VectorClear(samples[i]);
-
         lightgrid_sample_t *s = BSP_LookupLightgrid(grid, tmp);
         if (!s)
             continue;
+
+        VectorClear(samples[i]);
 
         for (j = 0; j < grid->numstyles && s->style != 255; j++, s++) {
             lightstyle_t *style = LIGHT_STYLE(s->style);

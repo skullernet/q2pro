@@ -1045,7 +1045,7 @@ static void BSP_ParseDecoupledLM(bsp_t *bsp, const byte *in, size_t filelen)
 #define FLAG_OCCLUDED   BIT(30)
 #define FLAG_LEAF       BIT(31)
 
-lightgrid_sample_t *BSP_LookupLightgrid(lightgrid_t *grid, int32_t point[3])
+lightgrid_sample_t *BSP_LookupLightgrid(lightgrid_t *grid, uint32_t point[3])
 {
     uint32_t nodenum = grid->rootnode;
 

@@ -331,7 +331,7 @@ void BSP_LightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end, m
 void BSP_TransformedLightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end,
                                mnode_t *headnode, int nolm_mask, const vec3_t origin, const vec3_t angles);
 
-lightgrid_sample_t *BSP_LookupLightgrid(lightgrid_t *grid, int32_t point[3]);
+lightgrid_sample_t *BSP_LookupLightgrid(lightgrid_t *grid, uint32_t point[3]);
 #endif
 
 byte *BSP_ClusterVis(bsp_t *bsp, byte *mask, int cluster, int vis);
