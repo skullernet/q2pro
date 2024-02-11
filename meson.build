@@ -219,13 +219,15 @@ if cc.get_argument_syntax() == 'gcc'
     '-fsigned-char',
     '-fms-extensions',
     '-fno-math-errno',
-    '-Wno-microsoft-anon-tag',
-    '-Wno-tautological-constant-out-of-range-compare',
     '-Wpointer-arith',
     '-Wformat-security',
     '-Werror=vla',
     '-Wstrict-prototypes',
   ]
+
+  if cc.get_id() == 'clang'
+    test_args += ['-Wno-microsoft-anon-tag']
+  endif
 
   common_args += cc.get_supported_arguments(test_args)
   engine_args += cc.get_supported_arguments(['-Wmissing-prototypes'])
