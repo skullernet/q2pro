@@ -3,7 +3,7 @@ project('q2pro', 'c',
   version: run_command(find_program('python3'), 'version.py', check: true).stdout().strip(),
   meson_version: '>= 0.59.0',
   default_options: [
-    meson.version().version_compare('>=1.3.0') ? 'c_std=gnu11,c11' : 'c_std=gnu11',
+    'c_std=c11',
     'buildtype=debugoptimized',
   ],
 )
@@ -195,7 +195,9 @@ if system_wide
 endif
 
 common_args = ['-DHAVE_CONFIG_H', '-DUSE_PROTOCOL_EXTENSIONS=1']
-if not win32
+if win32
+  common_args += '-D_USE_MATH_DEFINES'
+else
   common_args += '-D_GNU_SOURCE'
 endif
 
@@ -240,7 +242,7 @@ if cc.get_argument_syntax() == 'gcc'
     dll_link_args += '-static-libgcc'
   endif
 elif cc.get_id() == 'msvc'
-  common_args += ['/D_USE_MATH_DEFINES', '/wd4146', '/wd4244', '/wd4305']
+  common_args += ['/wd4146', '/wd4244', '/wd4305']
 endif
 
 add_project_arguments(common_args, language: 'c')
