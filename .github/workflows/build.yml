@@ -35,9 +35,9 @@ jobs:
       matrix:
         arch: ["i686", "x86_64"]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: subprojects/packagecache
           key: ${{ hashFiles('subprojects/*.wrap') }}
@@ -60,9 +60,9 @@ jobs:
       matrix:
         arch: ["x86", "x64"]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: subprojects/packagecache
           key: ${{ hashFiles('subprojects/*.wrap') }}
@@ -87,7 +87,7 @@ jobs:
       matrix:
         cc: [gcc, clang]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
