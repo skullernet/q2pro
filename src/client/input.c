@@ -1014,7 +1014,7 @@ static void CL_SendBatchedCmd(void)
         numCmds = history->cmdNumber - oldest->cmdNumber;
         if (numCmds >= MAX_PACKET_USERCMDS) {
             Com_WPrintf("%s: MAX_PACKET_USERCMDS exceeded\n", __func__);
-            SZ_Clear(&msg_write);
+            MSG_BeginWriting();
             break;
         }
         totalCmds += numCmds;
