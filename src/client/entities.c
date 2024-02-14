@@ -963,7 +963,7 @@ static void CL_AddPacketEntities(void)
                 CL_BfgParticles(&ent);
                 i = 200;
             } else {
-                static const int bfg_lightramp[6] = {300, 400, 600, 300, 150, 75};
+                static const uint16_t bfg_lightramp[6] = {300, 400, 600, 300, 150, 75};
                 i = bfg_lightramp[Q_clip(s1->frame, 0, 5)];
             }
             V_AddLight(ent.origin, i, 0, 1, 0);
