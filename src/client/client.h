@@ -504,18 +504,18 @@ extern char         cl_cmdbuf_text[MAX_STRING_CHARS];
 
 //=============================================================================
 
-#define NOPART_GRENADE_EXPLOSION    1
-#define NOPART_GRENADE_TRAIL        2
-#define NOPART_ROCKET_EXPLOSION     4
-#define NOPART_ROCKET_TRAIL         8
-#define NOPART_BLOOD                16
+#define NOPART_GRENADE_EXPLOSION    BIT(0)
+#define NOPART_GRENADE_TRAIL        BIT(1)
+#define NOPART_ROCKET_EXPLOSION     BIT(2)
+#define NOPART_ROCKET_TRAIL         BIT(3)
+#define NOPART_BLOOD                BIT(4)
 
-#define NOEXP_GRENADE   1
-#define NOEXP_ROCKET    2
+#define NOEXP_GRENADE               BIT(0)
+#define NOEXP_ROCKET                BIT(1)
 
-#define DLHACK_ROCKET_COLOR         1
-#define DLHACK_SMALLER_EXPLOSION    2
-#define DLHACK_NO_MUZZLEFLASH       4
+#define DLHACK_ROCKET_COLOR         BIT(0)
+#define DLHACK_SMALLER_EXPLOSION    BIT(1)
+#define DLHACK_NO_MUZZLEFLASH       BIT(2)
 
 //
 // cvars
