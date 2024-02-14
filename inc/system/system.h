@@ -55,8 +55,11 @@ void    Sys_Printf(const char *fmt, ...) q_printf(1, 2);
 #define Sys_Printf(...)                 (void)0
 #endif
 
-void    Sys_Error(const char *error, ...) q_noreturn q_printf(1, 2);
-void    Sys_Quit(void) q_noreturn;
+q_noreturn q_printf(1, 2)
+void    Sys_Error(const char *error, ...);
+
+q_noreturn
+void    Sys_Quit(void);
 
 void    Sys_ListFiles_r(listfiles_t *list, const char *path, int depth);
 

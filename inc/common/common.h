@@ -86,7 +86,8 @@ void        Com_AbortFunc(void (*func)(void *), void *arg);
 void        Com_SetLastError(const char *msg);
 const char  *Com_GetLastError(void);
 
-void        Com_Quit(const char *reason, error_type_t type) q_noreturn;
+q_noreturn
+void        Com_Quit(const char *reason, error_type_t type);
 
 void        Com_SetColor(color_index_t color);
 

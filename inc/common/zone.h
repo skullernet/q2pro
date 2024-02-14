@@ -46,11 +46,16 @@ void    Z_Free(void *ptr);
 void    Z_Freep(void *ptr);
 void    *Z_Realloc(void *ptr, size_t size);
 void    *Z_ReallocArray(void *ptr, size_t nmemb, size_t size);
-void    *Z_Malloc(size_t size) q_malloc;
-void    *Z_Mallocz(size_t size) q_malloc;
-void    *Z_TagMalloc(size_t size, memtag_t tag) q_malloc;
-void    *Z_TagMallocz(size_t size, memtag_t tag) q_malloc;
-char    *Z_TagCopyString(const char *in, memtag_t tag) q_malloc;
+q_malloc
+void    *Z_Malloc(size_t size);
+q_malloc
+void    *Z_Mallocz(size_t size);
+q_malloc
+void    *Z_TagMalloc(size_t size, memtag_t tag);
+q_malloc
+void    *Z_TagMallocz(size_t size, memtag_t tag);
+q_malloc
+char    *Z_TagCopyString(const char *in, memtag_t tag);
 void    Z_FreeTags(memtag_t tag);
 void    Z_LeakTest(memtag_t tag);
 void    Z_Stats_f(void);

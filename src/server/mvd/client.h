@@ -199,7 +199,8 @@ extern jmp_buf  mvd_jmpbuf;
 extern cvar_t    *mvd_shownet;
 #endif
 
-void MVD_Destroyf(mvd_t *mvd, const char *fmt, ...) q_noreturn q_printf(2, 3);
+q_noreturn q_printf(2, 3)
+void MVD_Destroyf(mvd_t *mvd, const char *fmt, ...);
 void MVD_Shutdown(void);
 
 mvd_t *MVD_SetChannel(int arg);

@@ -145,7 +145,7 @@ typedef struct {
     // they connect, and changes are sent to all connected clients.
     void (*configstring)(int num, const char *string);
 
-    void (* q_noreturn q_printf(1, 2) error)(const char *fmt, ...);
+    void (* q_noreturn_ptr q_printf(1, 2) error)(const char *fmt, ...);
 
     // the *index functions create configstrings and some internal server state
     int (*modelindex)(const char *name);
