@@ -289,10 +289,6 @@ allow_download::
 
 allow_download_maps::
     Enables downloading of files from ‘maps/’ subdirectory. Default value is 1.
-     - 0 — map downloads are disabled
-     - 1 — map downloads are enabled for physical files and disabled for files
-     from packs
-     - 2 — map downloads are enabled for all files
 
 allow_download_models::
     Enables downloading of files from ‘models/’ and ‘sprites/’ subdirectories.
