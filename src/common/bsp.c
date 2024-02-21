@@ -233,7 +233,7 @@ LOAD(Brushes)
 {
     mbrush_t    *out;
     int         i;
-    uint32_t    firstside, numsides, lastside;
+    uint32_t    firstside, numsides;
 
     bsp->numbrushes = count;
     bsp->brushes = ALLOC(sizeof(*out) * count);
@@ -242,8 +242,7 @@ LOAD(Brushes)
     for (i = 0; i < count; i++, out++) {
         firstside = BSP_Long();
         numsides = BSP_Long();
-        lastside = firstside + numsides;
-        if (lastside < firstside || lastside > bsp->numbrushsides) {
+        if ((uint64_t)firstside + numsides > bsp->numbrushsides) {
             DEBUG("bad brushsides");
             return Q_ERR_INVALID_FORMAT;
         }
@@ -368,7 +367,7 @@ LOAD(Faces)
 {
     mface_t     *out;
     int         i, j;
-    uint32_t    firstedge, numedges, lastedge;
+    uint32_t    firstedge, numedges;
     uint32_t    planenum, texinfo, side;
     uint32_t    lightofs;
 
@@ -389,7 +388,6 @@ LOAD(Faces)
 
         firstedge = BSP_Long();
         numedges = BSP_ExtLong();
-        lastedge = firstedge + numedges;
         if (numedges < 3) {
             DEBUG("too few surfedges");
             return Q_ERR_INVALID_FORMAT;
@@ -398,7 +396,7 @@ LOAD(Faces)
             DEBUG("too many surfedges");
             return Q_ERR_INVALID_FORMAT;
         }
-        if (lastedge < firstedge || lastedge > bsp->numsurfedges) {
+        if ((uint64_t)firstedge + numedges > bsp->numsurfedges) {
             DEBUG("bad surfedges");
             return Q_ERR_INVALID_FORMAT;
         }
@@ -463,10 +461,10 @@ LOAD(Leafs)
     mleaf_t     *out;
     int         i;
     uint32_t    cluster, area;
-    uint32_t    firstleafbrush, numleafbrushes, lastleafbrush;
+    uint32_t    firstleafbrush, numleafbrushes;
 #if USE_REF
     int         j;
-    uint32_t    firstleafface, numleaffaces, lastleafface;
+    uint32_t    firstleafface, numleaffaces;
 #endif
 
     if (!count) {
@@ -512,8 +510,7 @@ LOAD(Leafs)
 
         firstleafface = BSP_ExtLong();
         numleaffaces = BSP_ExtLong();
-        lastleafface = firstleafface + numleaffaces;
-        if (lastleafface < firstleafface || lastleafface > bsp->numleaffaces) {
+        if ((uint64_t)firstleafface + numleaffaces > bsp->numleaffaces) {
             DEBUG("bad leaffaces");
             return Q_ERR_INVALID_FORMAT;
         }
@@ -528,8 +525,7 @@ LOAD(Leafs)
 
         firstleafbrush = BSP_ExtLong();
         numleafbrushes = BSP_ExtLong();
-        lastleafbrush = firstleafbrush + numleafbrushes;
-        if (lastleafbrush < firstleafbrush || lastleafbrush > bsp->numleafbrushes) {
+        if ((uint64_t)firstleafbrush + numleafbrushes > bsp->numleafbrushes) {
             DEBUG("bad leafbrushes");
             return Q_ERR_INVALID_FORMAT;
         }
@@ -551,7 +547,7 @@ LOAD(Nodes)
     int         i, j;
     uint32_t    planenum, child;
 #if USE_REF
-    uint32_t    firstface, numfaces, lastface;
+    uint32_t    firstface, numfaces;
 #endif
 
     if (!count) {
@@ -597,8 +593,7 @@ LOAD(Nodes)
 
         firstface = BSP_ExtLong();
         numfaces = BSP_ExtLong();
-        lastface = firstface + numfaces;
-        if (lastface < firstface || lastface > bsp->numfaces) {
+        if ((uint64_t)firstface + numfaces > bsp->numfaces) {
             DEBUG("bad faces");
             return Q_ERR_INVALID_FORMAT;
         }
@@ -621,7 +616,7 @@ LOAD(SubModels)
     int         i, j;
     uint32_t    headnode;
 #if USE_REF
-    uint32_t    firstface, numfaces, lastface;
+    uint32_t    firstface, numfaces;
 #endif
 
     if (!count) {
@@ -665,8 +660,7 @@ LOAD(SubModels)
         }
         firstface = BSP_Long();
         numfaces = BSP_Long();
-        lastface = firstface + numfaces;
-        if (lastface < firstface || lastface > bsp->numfaces) {
+        if ((uint64_t)firstface + numfaces > bsp->numfaces) {
             DEBUG("bad faces");
             return Q_ERR_INVALID_FORMAT;
         }
@@ -704,7 +698,7 @@ LOAD(Areas)
 {
     marea_t     *out;
     int         i;
-    uint32_t    numareaportals, firstareaportal, lastareaportal;
+    uint32_t    numareaportals, firstareaportal;
 
     if (count > MAX_MAP_AREAS) {
         DEBUG("too many areas");
@@ -718,8 +712,7 @@ LOAD(Areas)
     for (i = 0; i < count; i++, out++) {
         numareaportals = BSP_Long();
         firstareaportal = BSP_Long();
-        lastareaportal = firstareaportal + numareaportals;
-        if (lastareaportal < firstareaportal || lastareaportal > bsp->numareaportals) {
+        if ((uint64_t)firstareaportal + numareaportals > bsp->numareaportals) {
             DEBUG("bad areaportals");
             return Q_ERR_INVALID_FORMAT;
         }
@@ -1282,7 +1275,7 @@ static size_t BSP_ParseExtensionHeader(bsp_t *bsp, lump_t *out, const byte *buf,
     for (int i = 0; i < numlumps; i++, l++) {
         for (int j = 0; j < q_countof(bspx_lumps); j++) {
             const xlump_info_t *e = &bspx_lumps[j];
-            uint32_t ofs, len, end;
+            uint32_t ofs, len;
 
             if (strcmp(l->name, e->name))
                 continue;
@@ -1294,8 +1287,7 @@ static size_t BSP_ParseExtensionHeader(bsp_t *bsp, lump_t *out, const byte *buf,
                 break;
             }
 
-            end = ofs + len;
-            if (end < ofs || end > filelen) {
+            if ((uint64_t)ofs + len > filelen) {
                 Com_WPrintf("Ignoring out of bounds %s lump\n", e->name);
                 break;
             }
@@ -1334,7 +1326,7 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
     byte            *buf;
     dheader_t       *header;
     const lump_info_t *info;
-    uint32_t        filelen, ofs, len, end, count, maxpos;
+    uint32_t        filelen, ofs, len, count, maxpos;
     int             i, ret;
     uint32_t        lump_ofs[q_countof(bsp_lumps)];
     uint32_t        lump_count[q_countof(bsp_lumps)];
@@ -1392,8 +1384,7 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
     for (i = 0, info = bsp_lumps; i < q_countof(bsp_lumps); i++, info++) {
         ofs = LittleLong(header->lumps[info->lump].fileofs);
         len = LittleLong(header->lumps[info->lump].filelen);
-        end = ofs + len;
-        if (end < ofs || end > filelen) {
+        if ((uint64_t)ofs + len > filelen) {
             Com_SetLastError(va("%s lump out of bounds", info->name));
             ret = Q_ERR_INVALID_FORMAT;
             goto fail2;
@@ -1415,7 +1406,7 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
 
         // round to cacheline
         memsize += ALIGN(count * info->memsize, 64);
-        maxpos = max(maxpos, end);
+        maxpos = max(maxpos, ofs + len);
     }
 
     // load into hunk
