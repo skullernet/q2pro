@@ -49,8 +49,8 @@ typedef struct mtexinfo_s {  // used internally due to name len probs //ZOID
     vec3_t              axis[2];
     vec2_t              offset;
     struct image_s      *image; // used for texturing
-    int                 numframes;
     struct mtexinfo_s   *next; // used for animation
+    int                 numframes;
 #endif
 #if USE_CLIENT
     char                material[16];
@@ -82,28 +82,27 @@ typedef struct {
 
 typedef struct mface_s {
     msurfedge_t     *firstsurfedge;
-    int             numsurfedges;
-
     cplane_t        *plane;
-    int             drawflags; // DSURF_PLANEBACK, etc
 
     byte            *lightmap;
     byte            styles[MAX_LIGHTMAPS];
     byte            numstyles;
 
     byte            hash;
+    uint16_t        numsurfedges;
 
     mtexinfo_t      *texinfo;
     vec3_t          lm_axis[2];
     vec2_t          lm_offset;
     vec2_t          lm_scale;
-    int             lm_width;
-    int             lm_height;
+    uint16_t        lm_width;
+    uint16_t        lm_height;
 
     int             texnum[3]; // FIXME MAX_TMUS
+    int             drawflags; // DSURF_PLANEBACK, etc
     int             statebits;
     int             firstvert;
-    int             light_s, light_t;
+    uint16_t        light_s, light_t;
     float           stylecache[MAX_LIGHTMAPS];
 
     unsigned        drawframe;
