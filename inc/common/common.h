@@ -83,7 +83,10 @@ void        Com_EndRedirect(void);
 
 void        Com_AbortFunc(void (*func)(void *), void *arg);
 
+q_cold
 void        Com_SetLastError(const char *msg);
+
+q_cold
 const char  *Com_GetLastError(void);
 
 q_noreturn
