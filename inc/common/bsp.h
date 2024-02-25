@@ -204,7 +204,7 @@ typedef struct mmodel_s {
 #if USE_REF
 
 typedef struct {
-    int32_t point[3];
+    uint32_t point[3];
     uint32_t children[8];
 } lightgrid_node_t;
 
