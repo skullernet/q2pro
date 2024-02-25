@@ -311,7 +311,7 @@ WAL LOADING
 IMG_LOAD(WAL)
 {
     miptex_t    *mt;
-    unsigned    w, h, offset, size, endpos;
+    unsigned    w, h, offset;
 
     if (rawlen < sizeof(miptex_t)) {
         return Q_ERR_FILE_TOO_SMALL;
@@ -326,16 +326,13 @@ IMG_LOAD(WAL)
         return Q_ERR_INVALID_FORMAT;
     }
 
-    size = w * h;
-
     offset = LittleLong(mt->offsets[0]);
-    endpos = offset + size;
-    if (endpos < offset || endpos > rawlen) {
+    if ((uint64_t)offset + w * h > rawlen) {
         Com_SetLastError("data out of bounds");
         return Q_ERR_INVALID_FORMAT;
     }
 
-    *pic = IMG_AllocPixels(size * 4);
+    *pic = IMG_AllocPixels(w * h * 4);
 
     image->upload_width = image->width = w;
     image->upload_height = image->height = h;
