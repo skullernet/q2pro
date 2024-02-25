@@ -577,8 +577,12 @@ static void Com_TestImages_f(void)
     void **list;
     int i, count, errors;
     unsigned start, end;
+    const char *filter = ".pcx;.wal;.png;.jpg;.tga";
 
-    list = FS_ListFiles(NULL, ".pcx;.wal;.png;.jpg;.tga", FS_SEARCH_RECURSIVE, &count);
+    if (Cmd_Argc() > 1)
+        filter = Cmd_Argv(1);
+
+    list = FS_ListFiles(NULL, filter, FS_SEARCH_RECURSIVE, &count);
     if (!list) {
         Com_Printf("No images found\n");
         return;
