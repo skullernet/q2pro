@@ -124,7 +124,7 @@ PCX LOADING
 =================================================================
 */
 
-static int _IMG_LoadPCX(byte *rawdata, size_t rawlen, byte *pixels,
+static int IMG_LoadPCX_(byte *rawdata, size_t rawlen, byte *pixels,
                         byte *palette, int *width, int *height)
 {
     byte    *raw, *end;
@@ -152,7 +152,7 @@ static int _IMG_LoadPCX(byte *rawdata, size_t rawlen, byte *pixels,
 
     w = (LittleShort(pcx->xmax) - LittleShort(pcx->xmin)) + 1;
     h = (LittleShort(pcx->ymax) - LittleShort(pcx->ymin)) + 1;
-    if (w < 1 || h < 1 || w > 640 || h > 480) {
+    if (w < 1 || h < 1 || w > MAX_TEXTURE_SIZE || h > MAX_TEXTURE_SIZE) {
         Com_SetLastError("invalid image dimensions");
         return Q_ERR_INVALID_FORMAT;
     }
@@ -271,12 +271,19 @@ static int IMG_Unpack8(uint32_t *out, const uint8_t *in, int width, int height)
 
 IMG_LOAD(PCX)
 {
-    byte    buffer[640 * 480];
+    byte    *buffer;
     int     w, h, ret;
 
-    ret = _IMG_LoadPCX(rawdata, rawlen, buffer, NULL, &w, &h);
+    ret = IMG_LoadPCX_(rawdata, rawlen, NULL, NULL, &w, &h);
     if (ret < 0)
         return ret;
+
+    buffer = IMG_AllocPixels(w * h);
+    ret = IMG_LoadPCX_(rawdata, rawlen, buffer, NULL, NULL, NULL);
+    if (ret < 0) {
+        IMG_FreePixels(buffer);
+        return ret;
+    }
 
     if (image->type == IT_SKIN)
         IMG_FloodFill(buffer, w, h);
@@ -286,6 +293,8 @@ IMG_LOAD(PCX)
     image->upload_width = image->width = w;
     image->upload_height = image->height = h;
     image->flags |= IMG_Unpack8((uint32_t *)*pic, buffer, w, h);
+
+    IMG_FreePixels(buffer);
 
     return Q_ERR_SUCCESS;
 }
@@ -2038,7 +2047,7 @@ void IMG_GetPalette(void)
         goto fail;
     }
 
-    ret = _IMG_LoadPCX(data, len, NULL, pal, NULL, NULL);
+    ret = IMG_LoadPCX_(data, len, NULL, pal, NULL, NULL);
 
     FS_FreeFile(data);
 

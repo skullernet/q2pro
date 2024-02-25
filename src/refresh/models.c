@@ -247,8 +247,8 @@ static const char *MOD_ValidateMD2(const dmd2header_t *header, size_t length)
     ENSURE(!(header->ofs_frames % q_alignof(dmd2frame_t)), "odd frames offset");
     ENSURE(!(header->framesize % q_alignof(dmd2frame_t)), "odd frame size");
 
-    ENSURE(header->skinwidth >= 1 && header->skinwidth <= MD2_MAX_SKINWIDTH, "bad skin width");
-    ENSURE(header->skinheight >= 1 && header->skinheight <= MD2_MAX_SKINHEIGHT, "bad skin height");
+    ENSURE(header->skinwidth >= 1 && header->skinwidth <= MAX_TEXTURE_SIZE, "bad skin width");
+    ENSURE(header->skinheight >= 1 && header->skinheight <= MAX_TEXTURE_SIZE, "bad skin height");
     return NULL;
 }
 
