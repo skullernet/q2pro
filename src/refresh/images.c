@@ -124,13 +124,44 @@ PCX LOADING
 =================================================================
 */
 
-static int IMG_LoadPCX_(byte *rawdata, size_t rawlen, byte *pixels,
-                        byte *palette, int *width, int *height)
+static int uncompress_pcx(const byte *raw, const byte *end,
+                          int w, int h, int scan, byte *pixels)
 {
-    byte    *raw, *end;
+    int dataByte, runLength;
+
+    for (int y = 0; y < h; y++, pixels += w) {
+        for (int x = 0; x < scan;) {
+            if (raw >= end)
+                return Q_ERR_OVERRUN;
+            dataByte = *raw++;
+
+            if ((dataByte & 0xC0) == 0xC0) {
+                runLength = dataByte & 0x3F;
+                if (x + runLength > scan)
+                    return Q_ERR_OVERRUN;
+                if (raw >= end)
+                    return Q_ERR_OVERRUN;
+                dataByte = *raw++;
+            } else {
+                runLength = 1;
+            }
+
+            while (runLength--) {
+                if (x < w)
+                    pixels[x] = dataByte;
+                x++;
+            }
+        }
+    }
+
+    return Q_ERR_SUCCESS;
+}
+
+static int load_pcx(byte *rawdata, size_t rawlen, byte **pixels_p,
+                    byte *palette, int *width, int *height)
+{
     dpcx_t  *pcx;
-    int     x, y, w, h, scan;
-    int     dataByte, runLength;
+    int     w, h, scan;
 
     //
     // parse the PCX file
@@ -175,39 +206,20 @@ static int IMG_LoadPCX_(byte *rawdata, size_t rawlen, byte *pixels,
         if (rawlen < 768) {
             return Q_ERR_FILE_TOO_SMALL;
         }
-        memcpy(palette, (byte *)pcx + rawlen - 768, 768);
+        memcpy(palette, rawdata + rawlen - 768, 768);
     }
 
     //
     // get pixels
     //
-    if (pixels) {
-        raw = pcx->data;
-        end = (byte *)pcx + rawlen;
-        for (y = 0; y < h; y++, pixels += w) {
-            for (x = 0; x < scan;) {
-                if (raw >= end)
-                    return Q_ERR_OVERRUN;
-                dataByte = *raw++;
-
-                if ((dataByte & 0xC0) == 0xC0) {
-                    runLength = dataByte & 0x3F;
-                    if (x + runLength > scan)
-                        return Q_ERR_OVERRUN;
-                    if (raw >= end)
-                        return Q_ERR_OVERRUN;
-                    dataByte = *raw++;
-                } else {
-                    runLength = 1;
-                }
-
-                while (runLength--) {
-                    if (x < w)
-                        pixels[x] = dataByte;
-                    x++;
-                }
-            }
+    if (pixels_p) {
+        byte *pixels = IMG_AllocPixels(w * h);
+        int ret = uncompress_pcx(pcx->data, rawdata + rawlen, w, h, scan, pixels);
+        if (ret < 0) {
+            IMG_FreePixels(pixels);
+            return ret;
         }
+        *pixels_p = pixels;
     }
 
     if (width)
@@ -271,30 +283,23 @@ static int IMG_Unpack8(uint32_t *out, const uint8_t *in, int width, int height)
 
 IMG_LOAD(PCX)
 {
-    byte    *buffer;
+    byte    *pixels;
     int     w, h, ret;
 
-    ret = IMG_LoadPCX_(rawdata, rawlen, NULL, NULL, &w, &h);
+    ret = load_pcx(rawdata, rawlen, &pixels, NULL, &w, &h);
     if (ret < 0)
         return ret;
 
-    buffer = IMG_AllocPixels(w * h);
-    ret = IMG_LoadPCX_(rawdata, rawlen, buffer, NULL, NULL, NULL);
-    if (ret < 0) {
-        IMG_FreePixels(buffer);
-        return ret;
-    }
-
     if (image->type == IT_SKIN)
-        IMG_FloodFill(buffer, w, h);
+        IMG_FloodFill(pixels, w, h);
 
     *pic = IMG_AllocPixels(w * h * 4);
 
     image->upload_width = image->width = w;
     image->upload_height = image->height = h;
-    image->flags |= IMG_Unpack8((uint32_t *)*pic, buffer, w, h);
+    image->flags |= IMG_Unpack8((uint32_t *)*pic, pixels, w, h);
 
-    IMG_FreePixels(buffer);
+    IMG_FreePixels(pixels);
 
     return Q_ERR_SUCCESS;
 }
@@ -2044,7 +2049,7 @@ void IMG_GetPalette(void)
         goto fail;
     }
 
-    ret = IMG_LoadPCX_(data, len, NULL, pal, NULL, NULL);
+    ret = load_pcx(data, len, NULL, pal, NULL, NULL);
 
     FS_FreeFile(data);
 
