@@ -117,6 +117,57 @@ static q_noinline void IMG_FloodFill(byte *skin, int skinwidth, int skinheight)
 }
 
 /*
+===============
+IMG_Unpack8
+===============
+*/
+static int IMG_Unpack8(uint32_t *out, const uint8_t *in, int width, int height)
+{
+    int         x, y, p;
+    bool        has_alpha = false;
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            p = *in;
+            if (p == 255) {
+                has_alpha = true;
+                // transparent, so scan around for another color
+                // to avoid alpha fringes
+                if (y > 0 && *(in - width) != 255)
+                    p = *(in - width);
+                else if (y < height - 1 && *(in + width) != 255)
+                    p = *(in + width);
+                else if (x > 0 && *(in - 1) != 255)
+                    p = *(in - 1);
+                else if (x < width - 1 && *(in + 1) != 255)
+                    p = *(in + 1);
+                else if (y > 0 && x > 0 && *(in - width - 1) != 255)
+                    p = *(in - width - 1);
+                else if (y > 0 && x < width - 1 && *(in - width + 1) != 255)
+                    p = *(in - width + 1);
+                else if (y < height - 1 && x > 0 && *(in + width - 1) != 255)
+                    p = *(in + width - 1);
+                else if (y < height - 1 && x < width - 1 && *(in + width + 1) != 255)
+                    p = *(in + width + 1);
+                else
+                    p = 0;
+                // copy rgb components
+                *out = d_8to24table[p] & U32_RGB;
+            } else {
+                *out = d_8to24table[p];
+            }
+            in++;
+            out++;
+        }
+    }
+
+    if (has_alpha)
+        return IF_PALETTED | IF_TRANSPARENT;
+
+    return IF_PALETTED | IF_OPAQUE;
+}
+
+/*
 =================================================================
 
 PCX LOADING
@@ -228,57 +279,6 @@ static int load_pcx(byte *rawdata, size_t rawlen, byte **pixels_p,
         *height = h;
 
     return Q_ERR_SUCCESS;
-}
-
-/*
-===============
-IMG_Unpack8
-===============
-*/
-static int IMG_Unpack8(uint32_t *out, const uint8_t *in, int width, int height)
-{
-    int         x, y, p;
-    bool        has_alpha = false;
-
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++) {
-            p = *in;
-            if (p == 255) {
-                has_alpha = true;
-                // transparent, so scan around for another color
-                // to avoid alpha fringes
-                if (y > 0 && *(in - width) != 255)
-                    p = *(in - width);
-                else if (y < height - 1 && *(in + width) != 255)
-                    p = *(in + width);
-                else if (x > 0 && *(in - 1) != 255)
-                    p = *(in - 1);
-                else if (x < width - 1 && *(in + 1) != 255)
-                    p = *(in + 1);
-                else if (y > 0 && x > 0 && *(in - width - 1) != 255)
-                    p = *(in - width - 1);
-                else if (y > 0 && x < width - 1 && *(in - width + 1) != 255)
-                    p = *(in - width + 1);
-                else if (y < height - 1 && x > 0 && *(in + width - 1) != 255)
-                    p = *(in + width - 1);
-                else if (y < height - 1 && x < width - 1 && *(in + width + 1) != 255)
-                    p = *(in + width + 1);
-                else
-                    p = 0;
-                // copy rgb components
-                *out = d_8to24table[p] & U32_RGB;
-            } else {
-                *out = d_8to24table[p];
-            }
-            in++;
-            out++;
-        }
-    }
-
-    if (has_alpha)
-        return IF_PALETTED | IF_TRANSPARENT;
-
-    return IF_PALETTED | IF_OPAQUE;
 }
 
 IMG_LOAD(PCX)
@@ -783,9 +783,6 @@ static int IMG_SaveJPG(screenshot_t *restrict s)
 
 #endif // USE_JPG
 
-
-#if USE_PNG
-
 /*
 =========================================================
 
@@ -793,6 +790,8 @@ PNG IMAGES
 
 =========================================================
 */
+
+#if USE_PNG
 
 typedef struct {
     png_bytep next_in;
