@@ -1274,6 +1274,11 @@ loop if rendering is disabled but sound is running.
 void CL_CalcViewValues(void)
 {
     player_state_t *ps, *ops;
+#if USE_FPS
+    player_state_t *keyps, *keyops;
+    keyps = &cl.keyframe.ps;
+    keyops = &cl.oldkeyframe.ps;
+#endif
     vec3_t viewoffset;
     float lerp;
 
@@ -1294,6 +1299,7 @@ void CL_CalcViewValues(void)
         float backlerp = lerp - 1.0f;
 
         VectorMA(cl.predicted_origin, backlerp, cl.prediction_error, cl.refdef.vieworg);
+		LerpVector(ops->viewoffset, ps->viewoffset, lerp, viewoffset);
 
         // smooth out stair climbing
         if (cl.predicted_step < 127 * 0.125f) {
@@ -1302,14 +1308,19 @@ void CL_CalcViewValues(void)
         if (delta < 100) {
             cl.refdef.vieworg[2] -= cl.predicted_step * (100 - delta) * 0.01f;
         }
+
     } else {
         int i;
-
         // just use interpolated values
         for (i = 0; i < 3; i++) {
             cl.refdef.vieworg[i] = SHORT2COORD(ops->pmove.origin[i] +
                 lerp * (ps->pmove.origin[i] - ops->pmove.origin[i]));
         }
+#if USE_FPS
+		LerpVector(keyops->viewoffset, keyps->viewoffset, cl.keylerpfrac, viewoffset);
+#else
+        LerpVector(ops->viewoffset, ps->viewoffset, lerp, viewoffset);
+#endif
     }
 
     // if not running a demo or on a locked frame, add the local angle movement
@@ -1323,10 +1334,19 @@ void CL_CalcViewValues(void)
     } else if (ps->pmove.pm_type < PM_DEAD) {
         // use predicted values
         VectorCopy(cl.predicted_angles, cl.refdef.viewangles);
-    } else if (ops->pmove.pm_type < PM_DEAD && cls.serverProtocol > PROTOCOL_VERSION_DEFAULT) {
+    }
+#if USE_FPS
+    else if (keyops->pmove.pm_type < PM_DEAD && cls.serverProtocol > PROTOCOL_VERSION_DEFAULT) {
+#else
+    else if (ops->pmove.pm_type < PM_DEAD && cls.serverProtocol > PROTOCOL_VERSION_DEFAULT) {
+#endif
         // lerp from predicted angles, since enhanced servers
         // do not send viewangles each frame
+#if USE_FPS
+        LerpAngles(cl.predicted_angles, keyps->viewangles, cl.keylerpfrac, cl.refdef.viewangles);
+#else
         LerpAngles(cl.predicted_angles, ps->viewangles, lerp, cl.refdef.viewangles);
+#endif
     } else {
         // just use interpolated values
         LerpAngles(ops->viewangles, ps->viewangles, lerp, cl.refdef.viewangles);
@@ -1345,8 +1365,6 @@ void CL_CalcViewValues(void)
     // interpolate field of view
     cl.fov_x = lerp_client_fov(ops->fov, ps->fov, lerp);
     cl.fov_y = V_CalcFov(cl.fov_x, 4, 3);
-
-    LerpVector(ops->viewoffset, ps->viewoffset, lerp, viewoffset);
 
     AngleVectors(cl.refdef.viewangles, cl.v_forward, cl.v_right, cl.v_up);
 
