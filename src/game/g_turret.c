@@ -197,8 +197,10 @@ void turret_breach_finish_init(edict_t *self)
         gi.dprintf("%s at %s needs a target\n", self->classname, vtos(self->s.origin));
     } else {
         self->target_ent = G_PickTarget(self->target);
-        VectorSubtract(self->target_ent->s.origin, self->s.origin, self->move_origin);
-        G_FreeEdict(self->target_ent);
+        if (self->target_ent) {
+            VectorSubtract(self->target_ent->s.origin, self->s.origin, self->move_origin);
+            G_FreeEdict(self->target_ent);
+        }
     }
 
     self->teammaster->dmg = self->dmg;
@@ -340,6 +342,10 @@ void turret_driver_link(edict_t *self)
     self->nextthink = level.framenum + 1;
 
     self->target_ent = G_PickTarget(self->target);
+    if (!self->target_ent) {
+        G_FreeEdict(self);
+        return;
+    }
     self->target_ent->owner = self;
     self->target_ent->teammaster->owner = self;
     VectorCopy(self->target_ent->s.angles, self->s.angles);
