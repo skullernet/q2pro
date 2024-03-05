@@ -1170,6 +1170,208 @@ void Sys_ListFiles_r(listfiles_t *list, const char *path, int depth)
 /*
 ========================================================================
 
+GAME PATH DETECTION
+
+========================================================================
+*/
+
+#define COM_ParseExpect(d, s) \
+    !strcmp(COM_Parse((d)), (s))
+
+static void Sys_SkipVDFValue(char **file_contents)
+{
+    char *value = COM_Parse(file_contents);
+
+    if (!strcmp(value, "{")) {
+        while (true) {
+            COM_Parse(file_contents);
+            Sys_SkipVDFValue(file_contents);
+        }
+    }
+}
+
+#define QUAKE_II_STEAM_APP_ID           "2320"
+#define QUAKE_II_GOG_CLASSIC_APP_ID     "1441704824"
+#define QUAKE_II_GOG_RERELEASE_APP_ID   "1947927225"
+
+static bool Sys_ParseAppsList(char **file_contents)
+{
+    if (!COM_ParseExpect(file_contents, "{")) {
+        return false;
+    }
+
+    bool game_found = false;
+
+    while (true) {
+        char *key = COM_Parse(file_contents);
+
+        if (!*key || !strcmp(key, "}")) {
+            return game_found;
+        }
+
+        char *value = COM_Parse(file_contents);
+
+        if (!strcmp(key, QUAKE_II_STEAM_APP_ID)) {
+            game_found = true;
+        }
+    }
+
+    return game_found;
+}
+
+static bool Sys_ParseLibraryVDF(char **file_contents, char *out_dir, size_t out_dir_length)
+{
+    char library_path[MAX_OSPATH];
+
+    while (true) {
+        char *key = COM_Parse(file_contents);
+
+        if (!*key || !strcmp(key, "}")) {
+            return false;
+        } else if (!strcmp(key, "path")) {
+            char *value = COM_ParseEx(file_contents, PARSE_FLAG_ESCAPE, NULL, 0);
+            Q_strlcpy(library_path, value, sizeof(library_path));
+        } else if (!strcmp(key, "apps")) {
+            if (Sys_ParseAppsList(file_contents)) {
+                Q_strlcat(library_path, "\\steamapps\\common\\Quake 2", sizeof(library_path));
+                Q_strlcpy(out_dir, library_path, out_dir_length);
+                return true;
+            }
+        } else {
+            Sys_SkipVDFValue(file_contents);
+        }
+    }
+
+    return false;
+}
+
+static bool Sys_ParseLibraryFoldersVDF(char **file_contents, char *out_dir, size_t out_dir_length)
+{
+    // parse library folders VDF
+    if (!COM_ParseExpect(file_contents, "libraryfolders") ||
+        !COM_ParseExpect(file_contents, "{")) {
+        return false;
+    }
+
+    while (true) {
+        char *token = COM_Parse(file_contents);
+
+        // done with folders
+        if (!*token || !strcmp(token, "}")) {
+            break;
+        }
+
+        // should be an integer; check the entrance of the folder
+        if (!COM_ParseExpect(file_contents, "{")) {
+            break;
+        }
+
+        if (Sys_ParseLibraryVDF(file_contents, out_dir, out_dir_length)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool Sys_CheckSteamInstallation(char *out_dir, size_t out_dir_length)
+{
+    // grab Steam installation path
+    DWORD folder_path_len = MAX_OSPATH;
+    char folder_path[MAX_OSPATH];
+    bool result = false;
+    
+#ifndef _WIN64
+    LSTATUS status = RegGetValueA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Valve\\Steam\\", "InstallPath", RRF_RT_REG_SZ, NULL, (PVOID) &folder_path, &folder_path_len);
+#else
+    LSTATUS status = RegGetValueA(HKEY_LOCAL_MACHINE, "SOFTWARE\\WOW6432Node\\Valve\\Steam\\", "InstallPath", RRF_RT_REG_SZ, NULL, (PVOID) &folder_path, &folder_path_len);
+#endif
+
+    if (status != ERROR_SUCCESS) {
+        Com_WPrintf("Error %lu finding Steam installation.\n", GetLastError());
+        return result;
+    }
+
+    // grab library folders file
+    Q_strlcat(folder_path, "\\steamapps\\libraryfolders.vdf", sizeof(folder_path));
+
+    FILE *libraryfolders = fopen(folder_path, "rb");
+
+    if (!libraryfolders) {
+        return result;
+    }
+
+    fseek(libraryfolders, 0, SEEK_END);
+    long len = ftell(libraryfolders);
+    fseek(libraryfolders, 0, SEEK_SET);
+
+    char *file_contents = Z_Malloc(len + 1);
+    file_contents[len] = '\0';
+
+    size_t file_read = fread((void *) file_contents, 1, len, libraryfolders);
+
+    fclose(libraryfolders);
+
+    if (file_read != len) {
+        Com_EPrintf("Error %lu reading libraryfolders.vdf.\n", GetLastError());
+        result = false;
+        goto exit;
+    }
+
+    char *parse_contents = file_contents;
+
+    result = Sys_ParseLibraryFoldersVDF(&parse_contents, out_dir, out_dir_length);
+
+exit:
+    Z_Free(file_contents);
+    return result;
+}
+
+static bool Sys_CheckGOGInstallation(const char *app_id, char *out_dir, size_t out_dir_length)
+{
+    // grab Steam installation path
+    DWORD folder_path_len = MAX_OSPATH;
+    char folder_path[MAX_OSPATH];
+    bool result = false;
+    
+#ifndef _WIN64
+    LSTATUS status = RegGetValueA(HKEY_LOCAL_MACHINE, va("SOFTWARE\\GOG.com\\Games\\%s\\", app_id), "path", RRF_RT_REG_SZ, NULL, (PVOID) &folder_path, &folder_path_len);
+#else
+    LSTATUS status = RegGetValueA(HKEY_LOCAL_MACHINE, va("SOFTWARE\\WOW6432Node\\GOG.com\\Games\\%s\\", app_id), "path", RRF_RT_REG_SZ, NULL, (PVOID) &folder_path, &folder_path_len);
+#endif
+
+    if (status != ERROR_SUCCESS) {
+        Com_WPrintf("Error %lu finding GOG installation.\n", GetLastError());
+        return result;
+    }
+
+    Q_strlcpy(out_dir, folder_path, out_dir_length);
+    return true;
+}
+
+/*
+================
+Sys_GetInstalledGamePath
+================
+*/
+bool Sys_GetInstalledGamePath(game_path_t path_type, char *path, size_t path_length)
+{
+    Q_strlcpy(path, "", path_length);
+    
+    if (path_type == GAME_PATH_STEAM) {
+        return Sys_CheckSteamInstallation(path, path_length);
+    } else if (path_type == GAME_PATH_GOG_RERELEASE) {
+        return Sys_CheckGOGInstallation(QUAKE_II_GOG_RERELEASE_APP_ID, path, path_length);
+    } else if (path_type == GAME_PATH_GOG_CLASSIC) {
+        return Sys_CheckGOGInstallation(QUAKE_II_GOG_CLASSIC_APP_ID, path, path_length);
+    }
+
+    return false;
+}
+
+/*
+========================================================================
+
 MAIN
 
 ========================================================================

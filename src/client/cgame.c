@@ -81,8 +81,6 @@ void CG_Init(void)
     scr_font = Cvar_Get("scr_font", "conchars", 0);
     scr_font->changed = scr_font_changed;
     scr_font_changed(scr_font);
-
-    SCR_LoadKFont(&scr.kfont, "fonts/qconfont.kfont");
 }
 
 static void CG_Print(const char *msg)
@@ -451,6 +449,8 @@ void CG_Load(const char* new_game, bool is_rerelease_server)
         Z_Freep(&current_game);
         current_game = Z_CopyString(new_game);
         current_rerelease_server = is_rerelease_server;
+
+        SCR_LoadKFont(&scr.kfont, "fonts/qconfont.kfont");
     }
 }
 

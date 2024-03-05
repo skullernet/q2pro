@@ -455,6 +455,24 @@ void Sys_ListFiles_r(listfiles_t *list, const char *path, int depth)
 }
 
 /*
+========================================================================
+
+GAME PATH DETECTION
+
+========================================================================
+*/
+
+/*
+================
+Sys_GetInstalledGamePath
+================
+*/
+bool Sys_GetInstalledGamePath(game_path_t path_type, char *path, size_t path_length)
+{
+    return false;
+}
+
+/*
 =================
 main
 =================

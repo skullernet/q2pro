@@ -63,6 +63,14 @@ void    Sys_Quit(void);
 
 void    Sys_ListFiles_r(listfiles_t *list, const char *path, int depth);
 
+typedef enum {
+    GAME_PATH_STEAM,
+    GAME_PATH_GOG_CLASSIC,
+    GAME_PATH_GOG_RERELEASE
+} game_path_t;
+
+bool    Sys_GetInstalledGamePath(game_path_t path_type, char *path, size_t path_length);
+
 void    Sys_DebugBreak(void);
 
 #if USE_AC_CLIENT

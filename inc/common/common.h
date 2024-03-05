@@ -158,6 +158,14 @@ extern cvar_t   *sv_paused;
 extern cvar_t   *com_timedemo;
 extern cvar_t   *com_sleep;
 
+typedef enum {
+    RERELEASE_MODE_NO = 0, // use vanilla game
+    RERELEASE_MODE_YES = 1, // use re-release game
+    RERELEASE_MODE_NEVER = -1 // do not attempt any sort of auto-detection
+} rerelease_mode_t;
+
+extern cvar_t   *com_rerelease;
+
 extern cvar_t   *allow_download;
 extern cvar_t   *allow_download_players;
 extern cvar_t   *allow_download_models;

@@ -3763,6 +3763,72 @@ static void fs_game_generator(genctx_t *ctx)
         list_dirs(ctx, sys_homedir->string);
 }
 
+// TODO: find a better home (lol) for me
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#endif
+
+/*
+================
+FS_FindBaseDir
+================
+*/
+static void FS_FindBaseDir(void)
+{
+    // TODO: figure out something here. DEFGAME macro
+    // is empty by default which we should fix.
+    static const char *defgame = "baseq2";
+
+    // find Steam installation dir first
+    char client_dir[MAX_OSPATH];
+    
+    if (Sys_GetInstalledGamePath(GAME_PATH_STEAM, client_dir, sizeof(client_dir))) {
+
+        // found Steam dir - see if the mode we want is available
+        listfiles_t list = {
+            .flags = FS_SEARCH_DIRSONLY,
+            .baselen = strlen(client_dir) + 1,
+        };
+
+        Sys_ListFiles_r(&list, client_dir, 0);
+
+        bool has_rerelease = false;
+
+        for (int i = 0; i < list.count; i++) {
+            char *s = list.files[i];
+
+            if (!Q_stricmp(s, "rerelease")) {
+                has_rerelease = true;
+            }
+
+            Z_Free(s);
+        }
+
+        Z_Free(list.files);
+
+        if (com_rerelease->integer == RERELEASE_MODE_YES && has_rerelease) {
+            Q_strlcat(client_dir, PATH_SEP_STRING "rerelease", sizeof(client_dir));
+        }
+    } else if (com_rerelease->integer == RERELEASE_MODE_YES && Sys_GetInstalledGamePath(GAME_PATH_GOG_RERELEASE, client_dir, sizeof(client_dir))) {
+        // 
+    } else if (com_rerelease->integer == RERELEASE_MODE_NO && Sys_GetInstalledGamePath(GAME_PATH_GOG_CLASSIC, client_dir, sizeof(client_dir))) {
+        // 
+    }
+
+    Cvar_Set("basedir", client_dir);
+    Cvar_Set("libdir", client_dir);
+
+    // TODO: find a better home (lol) for me
+#ifdef _WIN32
+    if (com_rerelease->integer == RERELEASE_MODE_YES) {
+        if (ExpandEnvironmentStringsA("%userprofile%\\Saved Games\\NightDive Studios\\Quake II", client_dir, sizeof(client_dir) - 2)) {
+            Cvar_Set("homedir", client_dir);
+        }
+    }
+#endif
+}
+
 /*
 ================
 FS_Init
@@ -3790,6 +3856,11 @@ void FS_Init(void)
 
     // get the game cvar and start the filesystem
     fs_game = Cvar_Get("game", DEFGAME, CVAR_LATCH | CVAR_SERVERINFO | CVAR_NOARCHIVE);
+
+    if (com_rerelease->integer != RERELEASE_MODE_NEVER) {
+        FS_FindBaseDir();
+    }
+
     fs_game->changed = fs_game_changed;
     fs_game->generator = fs_game_generator;
     fs_game_changed(fs_game);
