@@ -251,7 +251,7 @@ static void AL_UpdateReverb(void)
 
     uint8_t new_preset = s_reverb_current_preset;
 
-    if (tr.fraction < 1.0f) {
+    if (tr.fraction < 1.0f && tr.surface->id) {
         const mtexinfo_t *surf_info = cl.bsp->texinfo + (tr.surface->id - 1);
         int16_t id = surf_info->step_id;
 
