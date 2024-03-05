@@ -3778,7 +3778,7 @@ static void FS_FindBaseDir(void)
 {
     // TODO: figure out something here. DEFGAME macro
     // is empty by default which we should fix.
-    static const char *defgame = "baseq2";
+    //static const char *defgame = "baseq2";
 
     // find Steam installation dir first
     char client_dir[MAX_OSPATH];
