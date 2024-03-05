@@ -2035,8 +2035,10 @@ static pack_t *pack_alloc(FILE *fp, filetype_t type, const char *name,
                           unsigned num_files, size_t names_len)
 {
     pack_t *pack;
+    size_t len;
 
-    pack = FS_Malloc(sizeof(*pack) + strlen(name));
+    len = strlen(name);
+    pack = FS_Malloc(sizeof(*pack) + len);
     pack->type = type;
     pack->refcount = 0;
     pack->fp = fp;
@@ -2045,7 +2047,7 @@ static pack_t *pack_alloc(FILE *fp, filetype_t type, const char *name,
     pack->hash_size = 0;
     pack->file_hash = NULL;
     pack->names = FS_Malloc(names_len);
-    strcpy(pack->filename, name);
+    memcpy(pack->filename, name, len + 1);
 
     return pack;
 }
