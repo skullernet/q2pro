@@ -685,7 +685,6 @@ void CL_ClearState(void)
     S_StopAllSounds();
     OGG_Stop();
     SCR_StopCinematic();
-    SCR_ClearCenterPrints();
     CL_ClearEffects();
     CL_ClearTEnts();
     LOC_FreeLocations();

@@ -42,6 +42,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define q_countof(a)        (sizeof(a) / sizeof(a[0]))
 
+#define BIT(n)          (1U << (n))
+#define BIT_ULL(n)      (1ULL << (n))
+
 typedef unsigned char byte;
 typedef intptr_t ssize_t;
 typedef enum { qfalse, qtrue } qboolean;    // ABI compat only, don't use
@@ -130,13 +133,11 @@ enum {
     PRINT_TYPEWRITER,
     PRINT_CENTER,
 // KEX
-};
-#define PRINT_TYPEWRITER    4       // centerprint but typed out one char at a time
-#define PRINT_CENTER        5       // centerprint without a separate function (loc variants only)
-#define PRINT_TTS           6       // PRINT_HIGH but will speak for players with narration on
-#define PRINT_BROADCAST     BIT(3)  // Bitflag, add to message to broadcast print to all clients.
-#define PRINT_NO_NOTIFY     BIT(4)  // Bitflag, don't put on notify
+    PRINT_TTS,
 
+    PRINT_BROADCAST     = BIT(3),  // Bitflag, add to message to broadcast print to all clients.
+    PRINT_NO_NOTIFY     = BIT(4),  // Bitflag, don't put on notify
+};
 
 // destination class for gi.multicast()
 typedef enum {
@@ -183,9 +184,6 @@ typedef struct vrect_s {
 #define RAD2DEG(a)      ((a) * (180 / M_PI))
 
 #define ALIGN(x, a)     (((x) + (a) - 1) & ~((a) - 1))
-
-#define BIT(n)          (1U << (n))
-#define BIT_ULL(n)      (1ULL << (n))
 
 #define SWAP(type, a, b) \
     do { type SWAP_tmp = a; a = b; b = SWAP_tmp; } while (0)
@@ -379,9 +377,14 @@ void Q_srand(uint32_t seed);
 uint32_t Q_rand(void);
 uint32_t Q_rand_uniform(uint32_t n);
 
-#define constclamp(a,b,c)   ((a)<(b)?(b):(a)>(c)?(c):(a))
-#define clamp(a,b,c)        ((a)=constclamp((a),(b),(c)))
-#define cclamp(a,b,c)       ((b)>(c)?clamp(a,c,b):clamp(a,b,c))
+static inline int Q_clip(int a, int b, int c)
+{
+    if (a < b)
+        return b;
+    if (a > c)
+        return c;
+    return a;
+}
 
 static inline float Q_clipf(float a, float b, float c)
 {

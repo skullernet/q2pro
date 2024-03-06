@@ -1044,5 +1044,6 @@ void ReadLevel(const char *filename)
         }
     }
 
-    ascii85_context_destroy(&ctx);
+    // refresh global precache indices
+    G_RefreshPrecaches();
 }

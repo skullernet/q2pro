@@ -341,7 +341,7 @@ typedef struct {
     void (*configstring)(int num, const char *string);
     const char *(*get_configstring)(int num);
 
-    void (* q_noreturn_ptr q_printf(1, 2) error)(const char *fmt, ...);
+    void (* q_noreturn_ptr q_printf(1, 2) Com_Error)(const char *fmt, ...);
 
     // the *index functions create configstrings and some internal server state
     int (*modelindex)(const char *name);
@@ -364,7 +364,9 @@ typedef struct {
     // solidity changes, it must be relinked.
     void (*linkentity)(edict_t *ent);
     void (*unlinkentity)(edict_t *ent);     // call before removing an interactive edict
-    int (*BoxEdicts)(const vec3_t mins, const vec3_t maxs, edict_t **list, int maxcount, int areatype);
+    size_t (*BoxEdicts)(const vec3_t mins, const vec3_t maxs,
+                        edict_t **list, size_t maxcount, int areatype,
+                        BoxEdictsFilter_t filter, void *filter_data);
 
     // network messaging
     void (*multicast)(const vec3_t origin, multicast_t to, bool reliable);

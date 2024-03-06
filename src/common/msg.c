@@ -843,7 +843,7 @@ void MSG_WriteDeltaEntity(const entity_packed_t *from,
 
 static inline int16_t scaled_short(float x, int scale)
 {
-    return constclamp(x * scale, -32768, 32767);
+    return Q_clip(x * scale, -32768, 32767);
 }
 
 void MSG_PackPlayer(player_packed_t *out, const player_state_t *in, msgPsFlags_t flags)
@@ -866,7 +866,7 @@ void MSG_PackPlayer(player_packed_t *out, const player_state_t *in, msgPsFlags_t
     out->gunindex = in->gunindex;
     out->gunframe = in->gunframe;
     for (i = 0; i < 4; i++)
-        out->blend[i] = Q_clip_uint8(in->screen_blend[i] * 255);
+        out->screen_blend[i] = Q_clip_uint8(in->screen_blend[i] * 255);
     out->fov = (int)in->fov;
     out->rdflags = in->rdflags;
     for (i = 0; i < MAX_STATS; i++)

@@ -357,7 +357,7 @@ void R_AddDebugArrow(const vec3_t start, const vec3_t end, float size, color_t l
 
 void R_AddDebugCurveArrow(const vec3_t start, const vec3_t ctrl, const vec3_t end, float size, color_t line_color, color_t arrow_color, int time, bool depth_test)
 {
-    size_t num_points = constclamp(VectorDistance(start, end) / 32.0f, 3, 24);
+    size_t num_points = Q_clip(VectorDistance(start, end) / 32.0f, 3, 24);
     vec3_t last_point;
 
     for (size_t i = 0; i <= num_points; i++) {

@@ -246,7 +246,6 @@ extern cvar_t *gl_vertexlight;
 extern cvar_t *gl_lightgrid;
 extern cvar_t *gl_showerrors;
 extern cvar_t *gl_damageblend_frac;
-extern cvar_t *gl_clamppointlight;
 extern cvar_t *gl_per_pixel_lighting; // use_shaders only
 
 typedef enum {

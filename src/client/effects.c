@@ -374,7 +374,7 @@ CL_MuzzleFlash2
 void CL_MuzzleFlash2(void)
 {
     centity_t   *ent;
-    vec3_t      ofs, origin;
+    vec3_t      ofs, origin, flash_origin;
     cdlight_t   *dl;
     vec3_t      forward, right;
     char        soundname[MAX_QPATH];
@@ -392,6 +392,8 @@ void CL_MuzzleFlash2(void)
     origin[0] = ent->current.origin[0] + forward[0] * ofs[0] + right[0] * ofs[1];
     origin[1] = ent->current.origin[1] + forward[1] * ofs[0] + right[1] * ofs[1];
     origin[2] = ent->current.origin[2] + forward[2] * ofs[0] + right[2] * ofs[1] + ofs[2];
+
+    VectorMA(origin, 4.0f * scale, forward, flash_origin);
 
     dl = CL_AllocDlight(mz.entity);
     VectorCopy(origin,  dl->origin);

@@ -355,6 +355,9 @@ typedef struct client_state_s {
 
     // data for view weapon
     struct {
+        int32_t frame, last_frame;
+        int32_t server_time;
+
         struct {
             qhandle_t   model;
             int         time;
@@ -367,18 +370,6 @@ typedef struct client_state_s {
         fog_params_t        start, end;
         int                 lerp_time, lerp_time_start;
     } fog;
-
-    // data for view weapon
-    struct {
-        int32_t frame, last_frame;
-        int32_t server_time;
-
-        qhandle_t muzzle_model;
-        int32_t muzzle_time;
-        float muzzle_roll, muzzle_scale;
-        int32_t muzzle_skin;
-        vec3_t muzzle_offset;
-    } weapon;
 
     // data for weapon wheel stuff
     struct {
@@ -1207,8 +1198,6 @@ extern cl_scr_t scr;
 void    SCR_Init(void);
 void    SCR_Shutdown(void);
 void    SCR_UpdateScreen(void);
-void    SCR_CenterPrint(const char *str, bool typewrite);
-void    SCR_ClearCenterPrints(void);
 void    SCR_SizeUp(void);
 void    SCR_SizeDown(void);
 void    SCR_BeginLoadingPlaque(void);

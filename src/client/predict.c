@@ -278,7 +278,7 @@ void CL_PredictMovement(void)
             }
 
             // add this amount
-            cl.predicted_step = constclamp(old_step + step, -MAX_STEP_CHANGE, MAX_STEP_CHANGE);
+            cl.predicted_step = Q_clip(old_step + step, -MAX_STEP_CHANGE, MAX_STEP_CHANGE);
             cl.predicted_step_time = cls.realtime;
         }
     }

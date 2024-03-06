@@ -27,7 +27,6 @@ static vec3_t   oldscale;
 static vec3_t   newscale;
 static vec3_t   translate;
 static vec_t    shellscale;
-static tessfunc_t tessfunc;
 static vec4_t   color;
 
 static vec3_t   shadedir;
@@ -390,13 +389,6 @@ static void setup_color(void)
                     color[i] = m;
             }
         }
-
-
-        if (gl_clamppointlight->integer) {
-	        color[0] = Q_clipf(color[0], 0, 1);
-	        color[1] = Q_clipf(color[1], 0, 1);
-	        color[2] = Q_clipf(color[2], 0, 1);
-    }
     }
 
     if (flags & RF_TRANSLUCENT) {

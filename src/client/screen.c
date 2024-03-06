@@ -27,8 +27,6 @@ typedef struct {
 } cin_crop_t;
 
 static cvar_t   *scr_viewsize;
-static cvar_t   *scr_centertime;
-static cvar_t   *scr_printspeed;
 static cvar_t   *scr_showpause;
 #if USE_DEBUG
 static cvar_t   *scr_showstats;
@@ -1303,10 +1301,6 @@ void SCR_Init(void)
 {
     scr_viewsize = Cvar_Get("viewsize", "100", CVAR_ARCHIVE);
     scr_showpause = Cvar_Get("scr_showpause", "1", 0);
-    scr_centertime = Cvar_Get("scr_centertime", "2.5", 0);
-    scr_centertime->changed = scr_centertime_changed;
-    scr_centertime->changed(scr_centertime);
-    scr_printspeed = Cvar_Get("scr_printspeed", "16", 0);
     scr_demobar = Cvar_Get("scr_demobar", "1", 0);
     scr_font = Cvar_Get("scr_font", "conchars", 0);
     scr_font->changed = scr_font_changed;
@@ -1699,7 +1693,7 @@ void SCR_AddPOI(int id, int time, const vec3_t p, int image, int color, int flag
     poi->time = cl.time + time;
     VectorCopy(p, poi->position);
     poi->image = cl.image_precache[image];
-    R_GetPicSize(&poi->width, &poi->height, image);
+    R_GetPicSize(&poi->width, &poi->height, poi->image);
     poi->color = color;
     poi->flags = flags;
 }
@@ -1783,7 +1777,7 @@ static void SCR_DrawPOIs(void)
                     continue;
                 }
 
-                scale = constclamp(1.0f + (1.0f - frac) * (scr_poi_max_scale->value - 1.f), scale, scr_poi_max_scale->value);
+                scale = Q_clip(1.0f + (1.0f - frac) * (scr_poi_max_scale->value - 1.f), scale, scr_poi_max_scale->value);
             }
         }
 
@@ -1794,8 +1788,8 @@ static void SCR_DrawPOIs(void)
         sp[0] -= hw;
         sp[1] -= hh;
         
-        clamp(sp[0], 0, scr.hud_width - hw);
-        clamp(sp[1], 0, scr.hud_height - hh);
+        sp[0] = Q_clipf(sp[0], 0, scr.hud_width - hw);
+        sp[1] = Q_clipf(sp[1], 0, scr.hud_height - hh);
 
         color_t c = { .u32 = d_8to24table[poi->color] };
 
@@ -1804,7 +1798,7 @@ static void SCR_DrawPOIs(void)
             vec3_t centered = { (scr.hud_width / 2) - sp[0], (scr.hud_height / 2) - sp[1], 0.f };
             sp[2] = 0.f;
             float len = VectorLength(centered);
-            c.u8[3] = constclamp(len / (hw * 6), 0.25f, 1.0f) * 255.f;
+            c.u8[3] = Q_clip(len / (hw * 6), 0.25f, 1.0f) * 255.f;
         }
 
         R_SetColor(c.u32);

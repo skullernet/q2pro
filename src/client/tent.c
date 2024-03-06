@@ -435,23 +435,41 @@ static void CL_BFGExplosion(const vec3_t pos)
 }
 
 // muzzleflashes
-void CL_AddWeaponMuzzleFX(cl_muzzlefx_t fx, const vec3_t offset, int skin, float scale, float rotate)
+void CL_AddWeaponMuzzleFX(cl_muzzlefx_t fx, const vec3_t offset, float scale)
 {
-    Q_assert(fx > MFLASH_NONE && fx < MFLASH_TOTAL);
+    if (!cl_muzzleflashes->integer)
+        return;
+    if (mz.entity != cl.frame.clientNum + 1)
+        return;
 
-    cl.weapon.muzzle_model = cl_mod_muzzles[fx];
-    cl.weapon.muzzle_skin = skin;
-    cl.weapon.muzzle_scale = scale;
-    cl.weapon.muzzle_roll = rotate;
-    VectorCopy(offset, cl.weapon.muzzle_offset);
-    cl.weapon.muzzle_time = cl.time + 50;
+    Q_assert(fx < q_countof(cl_mod_muzzles));
+
+    if (!cl_mod_muzzles[fx])
+        return;
+
+    cl.weapon.muzzle.model = cl_mod_muzzles[fx];
+    cl.weapon.muzzle.scale = scale;
+    if (fx == MFLASH_MACHN || fx == MFLASH_BEAMER)
+        cl.weapon.muzzle.roll = Q_rand() % 360;
+    else
+        cl.weapon.muzzle.roll = 0;
+    VectorCopy(offset, cl.weapon.muzzle.offset);
+    cl.weapon.muzzle.time = cl.servertime - CL_FRAMETIME;
 }
 
-void CL_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, int skin, float scale, float rotate)
+void CL_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, int skin, float scale)
 {
-    Q_assert(fx > MFLASH_NONE && fx < MFLASH_TOTAL);
+    explosion_t *ex;
 
-    explosion_t *ex = CL_AllocExplosion();
+    if (!cl_muzzleflashes->integer)
+        return;
+
+    Q_assert(fx < q_countof(cl_mod_muzzles));
+
+    if (!cl_mod_muzzles[fx])
+        return;
+
+    ex = CL_AllocExplosion();
     VectorCopy(origin, ex->ent.origin);
     VectorCopy(angles, ex->ent.angles);
     ex->type = ex_mflash;
@@ -461,7 +479,8 @@ void CL_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, 
     ex->ent.model = cl_mod_muzzles[fx];
     ex->ent.skinnum = skin;
     ex->ent.scale = scale;
-    ex->ent.angles[2] = rotate;
+    if (fx != MFLASH_BOOMER)
+        ex->ent.angles[2] = Q_rand() % 360;
 }
 
 // help stuff

@@ -487,7 +487,7 @@ static void CL_LoadWheelEntry(int index, const char *s)
         cl.wheel_data.powerups[index].sort_id = values[3];
         cl.wheel_data.powerups[index].can_drop = values[4];
         cl.wheel_data.powerups[index].ammo_index = values[5];
-        cl.wheel_data.num_powerups = max(index, cl.wheel_data.num_powerups);
+        cl.wheel_data.num_powerups = max(index + 1, cl.wheel_data.num_powerups);
     } else if (index >= cl.csr.wheelweapons + MAX_WHEEL_ITEMS) {
         if (num_values != 2) {
             return;
@@ -497,7 +497,7 @@ static void CL_LoadWheelEntry(int index, const char *s)
         
         cl.wheel_data.ammo[index].item_index = values[0];
         cl.wheel_data.ammo[index].icons = CL_LoadWheelIcons(values[1]);
-        cl.wheel_data.num_ammo = max(index, cl.wheel_data.num_ammo);
+        cl.wheel_data.num_ammo = max(index + 1, cl.wheel_data.num_ammo);
     } else {
         if (num_values != 8) {
             return;
@@ -513,7 +513,7 @@ static void CL_LoadWheelEntry(int index, const char *s)
         cl.wheel_data.weapons[index].sort_id = values[5];
         cl.wheel_data.weapons[index].quantity_warn = values[6];
         cl.wheel_data.weapons[index].can_drop = values[7];
-        cl.wheel_data.num_weapons = max(index, cl.wheel_data.num_weapons);
+        cl.wheel_data.num_weapons = max(index + 1, cl.wheel_data.num_weapons);
     }
 }
 

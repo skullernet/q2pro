@@ -1131,6 +1131,7 @@ void SV_MvdMulticast(int leafnum, multicast_t to, bool reliable)
 
     op = mvd_multicast_all + to + (reliable ? 3 : 0);
     buf = reliable ? &mvd.datagram : &mvd.message;
+    bits = (msg_write.cursize >> 8) & 7;
 
     SZ_WriteByte(buf, op | (bits ? 128 : 0));
     if (bits)

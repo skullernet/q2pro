@@ -585,8 +585,7 @@ static void CL_AddPacketEntities(void)
         if (cl.csr.extended) {
             // TODO: must only do this on alias models
             if (cent->last_frame != cent->current_frame) {
-                ent.backlerp = 1.0f - ((cl.time - ((float) cent->frame_servertime - cl.frametime.time)) / 100.f);
-                clamp(ent.backlerp, 0.0f, 1.0f);
+                ent.backlerp = Q_clipf(1.0f - ((cl.time - ((float) cent->frame_servertime - cl.frametime.time)) / 100.f), 0.0f, 1.0f);
                 ent.frame = cent->current_frame;
                 ent.oldframe = cent->last_frame;
             }
@@ -998,7 +997,7 @@ static void CL_AddPacketEntities(void)
                 i = 200;
             } else {
                 static const uint16_t bfg_lightramp[6] = {300, 400, 600, 300, 150, 75};
-                i = bfg_lightramp[constclamp(s1->frame, 0, 5)];
+                i = bfg_lightramp[Q_clip(s1->frame, 0, 5)];
             }
             V_AddLight(ent.origin, i, 0, 1, 0);
         } else if (effects & EF_TRAP) {
@@ -1136,8 +1135,7 @@ static void CL_AddViewWeapon(void)
             }
 
             const float gun_ms = 1.f / (!ps->gunrate ? 10 : ps->gunrate) * 1000.f;
-            gun.backlerp = 1.f - ((cl.time - ((float) cl.weapon.server_time - cl.frametime.time)) / gun_ms);
-            clamp(gun.backlerp, 0.0f, 1.f);
+            gun.backlerp = Q_clipf(1.f - ((cl.time - ((float) cl.weapon.server_time - cl.frametime.time)) / gun_ms), 0.0f, 1.f);
             gun.frame = cl.weapon.frame;
             gun.oldframe = cl.weapon.last_frame;
         } else {
