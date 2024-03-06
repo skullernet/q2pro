@@ -562,12 +562,10 @@ custom_target(
     'copy_game_dll',
     build_by_default: true,
     input : rr_game_dll,
-    output: 'game_dll.stamp',
-    command : [prog_copy_game_dll, '@OUTPUT@', '@INPUT@', '@BUILD_ROOT@'],
-)
-install_data(rr_game_dll.full_path(),
-  install_dir: libdir / get_option('base-game'),
-  install_tag: 'runtime',
+    output: '@PLAINNAME@',
+    command : [prog_copy_game_dll, '@OUTPUT@', '@INPUT@'],
+    install_dir: libdir / get_option('base-game'),
+    install_tag: 'runtime',
 )
 
 config.set('REVISION',            meson.project_version().substring(1).split('~')[0].to_int())
