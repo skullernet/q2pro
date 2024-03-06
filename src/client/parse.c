@@ -1619,7 +1619,7 @@ void CL_ParseServerMessage(void)
             extrabits = 0;
         }
 
-        SHOWNET(1, "%3zu:%s\n", msg_read.readcount - 1, MSG_ServerCommandString(cmd, cls.serverProtocol));
+        SHOWNET(1, "%3u:%s\n", msg_read.readcount - 1, MSG_ServerCommandString(cmd, cls.serverProtocol));
 
         svc_handle_result_t handle_result = handle_svc_common(cmd, extrabits);
         if (handle_result == svch_unknown) {
@@ -1700,7 +1700,7 @@ bool CL_SeekDemoMessage(void)
         }
 
         cmd = MSG_ReadByte();
-        SHOWNET(1, "%3zu:%s\n", msg_read.readcount - 1, MSG_ServerCommandString(cmd, cls.serverProtocol));
+        SHOWNET(1, "%3u:%s\n", msg_read.readcount - 1, MSG_ServerCommandString(cmd, cls.serverProtocol));
 
         // other commands
         switch (cmd) {
