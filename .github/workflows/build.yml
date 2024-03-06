@@ -85,6 +85,11 @@ jobs:
           meson compile -C builddir
           meson install -C builddir --tags runtime --destdir ${{ github.workspace }}/installdir
 
+      - name: Setup variables
+        uses: actions/github-script@v6
+        with:
+          script: core.exportVariable('GITHUB_SHA_SHORT', context.sha.substring(0, 7))
+
       - name: Upload
         uses: actions/upload-artifact@v3
         with:
@@ -116,6 +121,11 @@ jobs:
           meson install -C builddir --tags runtime --destdir ${{ github.workspace }}/installdir
         env:
           CC: ${{ matrix.cc }}
+
+      - name: Setup variables
+        uses: actions/github-script@v6
+        with:
+          script: core.exportVariable('GITHUB_SHA_SHORT', context.sha.substring(0, 7))
 
       - name: Upload
         uses: actions/upload-artifact@v3
