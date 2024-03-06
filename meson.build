@@ -280,12 +280,14 @@ else
   sys = sys[0].to_upper() + sys.substring(1)
 endif
 
+bindir = '.'
 datadir = '.'
 libdir = '.'
 homedir = ''
 
 system_wide = not win32 and get_option('system-wide')
 if system_wide
+  bindir = get_option('prefix') / get_option('bindir')
   datadir = get_option('prefix') / get_option('datadir') / meson.project_name()
   libdir = get_option('prefix') / get_option('libdir') / meson.project_name()
   homedir = get_option('homedir')
@@ -461,9 +463,7 @@ if get_option('client-ui')
 
   client_src += ui_src
   config.set10('USE_UI', true)
-  if system_wide
-    install_data('src/client/ui/q2pro.menu', install_dir: datadir / get_option('base-game'))
-  endif
+  install_data('src/client/ui/q2pro.menu', install_dir: datadir / get_option('base-game'), install_tag: 'runtime')
 endif
 
 if get_option('software-sound').require(win32 or sdl2.found()).allowed()
@@ -528,7 +528,8 @@ executable('q2pro', common_src, client_src, refresh_src,
   win_subsystem:         'windows,6.0',
   link_args:             exe_link_args,
   c_args:                ['-DUSE_CLIENT=1', '-DUSE_REF=1', engine_args],
-  install:               system_wide,
+  install:               true,
+  install_dir:           bindir,
 )
 
 executable('q2proded', common_src, server_src,
@@ -538,7 +539,8 @@ executable('q2proded', common_src, server_src,
   win_subsystem:         'console,6.0',
   link_args:             exe_link_args,
   c_args:                ['-DUSE_SERVER=1', engine_args],
-  install:               system_wide,
+  install:               true,
+  install_dir:           bindir,
 )
 
 shared_library('game' + cpu, game_src,
@@ -547,7 +549,7 @@ shared_library('game' + cpu, game_src,
   include_directories:   'inc',
   gnu_symbol_visibility: 'hidden',
   link_args:             dll_link_args,
-  install:               system_wide,
+  install:               true,
   install_dir:           libdir / get_option('base-game'),
   override_options:      get_option('game-build-options'),
 )
@@ -562,6 +564,10 @@ custom_target(
     input : rr_game_dll,
     output: 'game_dll.stamp',
     command : [prog_copy_game_dll, '@OUTPUT@', '@INPUT@', '@BUILD_ROOT@'],
+)
+install_data(rr_game_dll.full_path(),
+  install_dir: libdir / get_option('base-game'),
+  install_tag: 'runtime',
 )
 
 config.set('REVISION',            meson.project_version().substring(1).split('~')[0].to_int())
