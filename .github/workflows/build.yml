@@ -83,6 +83,13 @@ jobs:
         run: |
           meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_WIN }} builddir
           meson compile -C builddir
+          meson install -C builddir --tags runtime --destdir installdir
+
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: q2pro-rr-windows-${{ matrix.arch }}-${{env.GITHUB_SHA_SHORT}}
+          path: installdir/
 
   linux:
     runs-on: ubuntu-latest
@@ -106,5 +113,12 @@ jobs:
         run: |
           meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_LINUX }} builddir
           meson compile -C builddir
+          meson install -C builddir --tags runtime --destdir installdir
         env:
           CC: ${{ matrix.cc }}
+
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: q2pro-rr-linux-${{ matrix.cc }}-x86_64-${{env.GITHUB_SHA_SHORT}}
+          path: installdir/
