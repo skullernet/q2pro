@@ -83,7 +83,7 @@ jobs:
         run: |
           meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_WIN }} builddir
           meson compile -C builddir
-          meson install -C builddir --tags runtime --destdir installdir
+          meson install -C builddir --tags runtime --destdir ${{ github.workspace }}/installdir
 
       - name: Upload
         uses: actions/upload-artifact@v3
@@ -113,7 +113,7 @@ jobs:
         run: |
           meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_LINUX }} builddir
           meson compile -C builddir
-          meson install -C builddir --tags runtime --destdir installdir
+          meson install -C builddir --tags runtime --destdir ${{ github.workspace }}/installdir
         env:
           CC: ${{ matrix.cc }}
 
