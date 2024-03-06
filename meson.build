@@ -564,6 +564,7 @@ custom_target(
     input : rr_game_dll,
     output: '@PLAINNAME@',
     command : [prog_copy_game_dll, '@OUTPUT@', '@INPUT@'],
+    install: true,
     install_dir: libdir / get_option('base-game'),
     install_tag: 'runtime',
 )
