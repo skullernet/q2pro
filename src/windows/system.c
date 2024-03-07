@@ -45,7 +45,9 @@ cvar_t  *sys_basedir;
 cvar_t  *sys_libdir;
 cvar_t  *sys_homedir;
 cvar_t  *sys_forcegamelib;
+#ifdef _DEBUG
 cvar_t  *sys_debugprint;
+#endif
 
 /*
 ===============================================================================
@@ -545,6 +547,7 @@ void Sys_SetConsoleColor(color_index_t color)
     }
 }
 
+#ifdef _DEBUG
 // hack'd version of OutputDebugStringA that can
 // be given a specific size rather than strlen'ing the input
 static void __stdcall QOutputDebugStringA(LPCSTR lpOutputString, size_t len)
@@ -561,6 +564,7 @@ static void __stdcall QOutputDebugStringA(LPCSTR lpOutputString, size_t len)
     {
     }
 }
+#endif
 
 /*
 ================
@@ -571,10 +575,12 @@ Print text to the dedicated console
 */
 void Sys_ConsoleOutput(const char *text, size_t len)
 {
+#ifdef _DEBUG
     if (sys_debugprint && sys_debugprint->integer) {
         QOutputDebugStringA(text, len);
         QOutputDebugStringA("\r\n", 2);
     }
+#endif
 
     if (houtput == INVALID_HANDLE_VALUE) {
         return;
@@ -923,7 +929,9 @@ Sys_Init
 */
 void Sys_Init(void)
 {
-    sys_debugprint = Cvar_Get("sys_debugprint", "0", CVAR_NOSET);
+#ifdef _DEBUG
+    sys_debugprint = Cvar_Get("sys_debugprint", "0", 0);
+#endif
 
     if (!QueryPerformanceFrequency(&timer_freq))
         Sys_Error("QueryPerformanceFrequency failed");
@@ -1178,7 +1186,7 @@ GAME PATH DETECTION
 #define COM_ParseExpect(d, s) \
     !strcmp(COM_Parse((d)), (s))
 
-static void Sys_SkipVDFValue(char **file_contents)
+static void Sys_SkipVDFValue(const char **file_contents)
 {
     char *value = COM_Parse(file_contents);
 
@@ -1194,7 +1202,7 @@ static void Sys_SkipVDFValue(char **file_contents)
 #define QUAKE_II_GOG_CLASSIC_APP_ID     "1441704824"
 #define QUAKE_II_GOG_RERELEASE_APP_ID   "1947927225"
 
-static bool Sys_ParseAppsList(char **file_contents)
+static bool Sys_ParseAppsList(const char **file_contents)
 {
     if (!COM_ParseExpect(file_contents, "{")) {
         return false;
@@ -1219,7 +1227,7 @@ static bool Sys_ParseAppsList(char **file_contents)
     return game_found;
 }
 
-static bool Sys_ParseLibraryVDF(char **file_contents, char *out_dir, size_t out_dir_length)
+static bool Sys_ParseLibraryVDF(const char **file_contents, char *out_dir, size_t out_dir_length)
 {
     char library_path[MAX_OSPATH];
 
@@ -1245,7 +1253,7 @@ static bool Sys_ParseLibraryVDF(char **file_contents, char *out_dir, size_t out_
     return false;
 }
 
-static bool Sys_ParseLibraryFoldersVDF(char **file_contents, char *out_dir, size_t out_dir_length)
+static bool Sys_ParseLibraryFoldersVDF(const char **file_contents, char *out_dir, size_t out_dir_length)
 {
     // parse library folders VDF
     if (!COM_ParseExpect(file_contents, "libraryfolders") ||
