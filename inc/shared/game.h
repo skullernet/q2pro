@@ -341,7 +341,7 @@ typedef struct {
     void (*configstring)(int num, const char *string);
     const char *(*get_configstring)(int num);
 
-    void (* q_noreturn_ptr q_printf(1, 2) Com_Error)(const char *fmt, ...);
+    void (* q_noreturn_ptr Com_Error)(const char *message);
 
     // the *index functions create configstrings and some internal server state
     int (*modelindex)(const char *name);
@@ -417,7 +417,7 @@ typedef struct {
     bool (*GetPathToGoal)(const PathRequest* request, PathInfo* info);
 
     // localization
-    void (*Loc_Print)(edict_t* ent, print_type_t level, const char* base, const char** args, size_t num_args);
+    void (*Loc_Print)(edict_t* ent, int level, const char* base, const char** args, size_t num_args);
 
     // drawing
     void (*Draw_Line)(const vec3_t start, const vec3_t end, const rgba_t* color, const float lifeTime, const bool depthTest);

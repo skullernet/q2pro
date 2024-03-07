@@ -780,7 +780,7 @@ static bool PF_GetPathToGoal(const PathRequest* request, PathInfo* info)
     return result.returnCode < PathReturnCode_StartPathErrors;
 }
 
-static void PF_Loc_Print(edict_t* ent, print_type_t level, const char* base, const char** args, size_t num_args)
+static void PF_Loc_Print(edict_t* ent, int level, const char* base, const char** args, size_t num_args)
 {
     /* FIXME - actually support localization & perform formatting.
      * Also, the rerelease game docs call this "The new primary entry point for printing." and
@@ -791,7 +791,7 @@ static void PF_Loc_Print(edict_t* ent, print_type_t level, const char* base, con
     Loc_Localize(base, true, args, num_args, string, sizeof(string));
 
     if (level & PRINT_BROADCAST) {
-        print_type_t broadcast_level = level & ~(PRINT_BROADCAST | PRINT_NO_NOTIFY);
+        int broadcast_level = level & ~(PRINT_BROADCAST | PRINT_NO_NOTIFY);
         // restrict to print levels support by by svc_print
         if (broadcast_level > PRINT_CHAT && broadcast_level != PRINT_TTS)
             broadcast_level = PRINT_CHAT;
