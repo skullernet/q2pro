@@ -1217,7 +1217,7 @@ static bool Sys_ParseAppsList(const char **file_contents)
             return game_found;
         }
 
-        char *value = COM_Parse(file_contents);
+        COM_Parse(file_contents);
 
         if (!strcmp(key, QUAKE_II_STEAM_APP_ID)) {
             game_found = true;
@@ -1328,7 +1328,7 @@ static bool Sys_CheckSteamInstallation(char *out_dir, size_t out_dir_length)
 
     char *parse_contents = file_contents;
 
-    result = Sys_ParseLibraryFoldersVDF(&parse_contents, out_dir, out_dir_length);
+    result = Sys_ParseLibraryFoldersVDF((const char **) &parse_contents, out_dir, out_dir_length);
 
 exit:
     Z_Free(file_contents);
