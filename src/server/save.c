@@ -589,7 +589,7 @@ void SV_CheckForSavegame(const mapcmd_t *cmd)
 
         // coming back to a level after being in a different
         // level, so run it for ten seconds
-        for (i = 0; i < 100; i++)
+        for (i = 0; i < 100 * SV_FRAMEDIV; i++)
             ge->RunFrame(false);
     }
 }
