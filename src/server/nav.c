@@ -982,7 +982,7 @@ static void Nav_Debug(void)
             continue;
         }
 
-        uint8_t alpha = Q_clip((1.0f - ((len - 32.f) / (nav_debug_range->value - 32.f))), 0.0f, 1.0f) * 255.f;
+        uint8_t alpha = Q_clipf((1.0f - ((len - 32.f) / (nav_debug_range->value - 32.f))), 0.0f, 1.0f) * 255.f;
 
         R_AddDebugCircle(node->origin, node->radius, ColorFromU32A(U32_CYAN, alpha), SV_FRAMETIME, true);
 

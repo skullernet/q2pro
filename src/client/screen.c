@@ -1777,7 +1777,7 @@ static void SCR_DrawPOIs(void)
                     continue;
                 }
 
-                scale = Q_clip(1.0f + (1.0f - frac) * (scr_poi_max_scale->value - 1.f), scale, scr_poi_max_scale->value);
+                scale = Q_clipf(1.0f + (1.0f - frac) * (scr_poi_max_scale->value - 1.f), scale, scr_poi_max_scale->value);
             }
         }
 
@@ -1798,7 +1798,7 @@ static void SCR_DrawPOIs(void)
             vec3_t centered = { (scr.hud_width / 2) - sp[0], (scr.hud_height / 2) - sp[1], 0.f };
             sp[2] = 0.f;
             float len = VectorLength(centered);
-            c.u8[3] = Q_clip(len / (hw * 6), 0.25f, 1.0f) * 255.f;
+            c.u8[3] = Q_clipf(len / (hw * 6), 0.25f, 1.0f) * 255.f;
         }
 
         R_SetColor(c.u32);

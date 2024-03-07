@@ -294,7 +294,7 @@ static void AL_UpdateReverb(void)
             memcpy(&s_active_reverb, &s_reverb_lerp_to, sizeof(s_active_reverb));
             AL_LoadEffect(&s_active_reverb);
         } else {
-            float f = Q_clip((cl.time - (float) s_reverb_lerp_start) / (s_reverb_lerp_time - (float) s_reverb_lerp_start), 0.0f, 1.0f);
+            float f = Q_clipf((cl.time - (float) s_reverb_lerp_start) / (s_reverb_lerp_time - (float) s_reverb_lerp_start), 0.0f, 1.0f);
 
 #define AL_LERP(prop) \
                 s_reverb_lerp_result.prop = FASTLERP(s_active_reverb.prop, s_reverb_lerp_to.prop, f)
@@ -651,7 +651,7 @@ static void AL_Reverb_stat(void)
     AL_STATF(flRoomRolloffFactor);
     AL_STATI(iDecayHFLimit);
 
-    SCR_StatKeyValue("lerp", !s_reverb_lerp_time ? "none" : va("%g", Q_clip((cl.time - (float) s_reverb_lerp_start) / (s_reverb_lerp_time - (float) s_reverb_lerp_start), 0.0f, 1.0f)));
+    SCR_StatKeyValue("lerp", !s_reverb_lerp_time ? "none" : va("%g", Q_clipf((cl.time - (float) s_reverb_lerp_start) / (s_reverb_lerp_time - (float) s_reverb_lerp_start), 0.0f, 1.0f)));
 }
 
 static void AL_StreamStop(void);
