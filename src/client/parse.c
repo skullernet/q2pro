@@ -1590,7 +1590,7 @@ void CL_ParseServerMessage(void)
 
 #if USE_DEBUG
     if (cl_shownet->integer == 1) {
-        Com_LPrintf(PRINT_DEVELOPER, "%zu ", msg_read.cursize);
+        Com_LPrintf(PRINT_DEVELOPER, "%u ", msg_read.cursize);
     } else if (cl_shownet->integer > 1) {
         Com_LPrintf(PRINT_DEVELOPER, "------------------\n");
     }
