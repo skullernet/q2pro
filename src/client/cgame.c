@@ -449,8 +449,6 @@ void CG_Load(const char* new_game, bool is_rerelease_server)
         Z_Freep(&current_game);
         current_game = Z_CopyString(new_game);
         current_rerelease_server = is_rerelease_server;
-
-        SCR_LoadKFont(&scr.kfont, "fonts/qconfont.kfont");
     }
 }
 

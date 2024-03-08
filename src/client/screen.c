@@ -1145,6 +1145,8 @@ void SCR_RegisterMedia(void)
 
     if (cgame)
         cgame->TouchPics();
+
+    SCR_LoadKFont(&scr.kfont, "fonts/qconfont.kfont");
 }
 
 static void scr_font_changed(cvar_t *self)
