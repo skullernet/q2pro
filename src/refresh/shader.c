@@ -63,7 +63,7 @@ static void write_block(char *buf)
         vec4 global_fog;
         vec4 height_fog_start;
         vec4 height_fog_end;
-        float height_fog_falloff; float height_fog_density; int num_dlights;
+        float height_fog_falloff; float height_fog_density; int num_dlights; float pad;
     )
     GLSF("};\n");
 }
