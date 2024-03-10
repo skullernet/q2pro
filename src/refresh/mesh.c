@@ -552,7 +552,8 @@ static void draw_alias_mesh(const QGL_INDEX_TYPE *indices, int num_indices,
     // fall back to entity matrix
     GL_LoadMatrix(glr.entmatrix);
 
-    // avoid drawing hidden faces for transparent gun
+    // avoid drawing hidden faces for transparent gun by pre-filling depth buffer
+    // muzzle flashes are excluded by checking for RF_FULLBRIGHT bit
     if ((glr.ent->flags & (RF_TRANSLUCENT | RF_WEAPONMODEL | RF_FULLBRIGHT)) == (RF_TRANSLUCENT | RF_WEAPONMODEL)) {
         GL_StateBits(GLS_DEFAULT);
         GL_ArrayBits(GLA_VERTEX);
