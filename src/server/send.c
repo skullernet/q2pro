@@ -458,10 +458,8 @@ static void free_all_messages(client_t *client)
     client->msg_dynamic_bytes = 0;
 }
 
-static void add_msg_packet(client_t     *client,
-                           byte         *data,
-                           size_t       len,
-                           bool         reliable)
+static void add_msg_packet(client_t *client, const byte *data,
+                           size_t len, bool reliable)
 {
     message_packet_t    *msg;
 
@@ -605,7 +603,7 @@ FRAME UPDATES - OLD NETCHAN
 ===============================================================================
 */
 
-static void add_message_old(client_t *client, byte *data,
+static void add_message_old(client_t *client, const byte *data,
                             size_t len, bool reliable)
 {
     if (len > client->netchan.maxpacketlen) {
@@ -798,7 +796,7 @@ FRAME UPDATES - NEW NETCHAN
 ===============================================================================
 */
 
-static void add_message_new(client_t *client, byte *data,
+static void add_message_new(client_t *client, const byte *data,
                             size_t len, bool reliable)
 {
     if (reliable) {

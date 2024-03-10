@@ -270,10 +270,10 @@ static void dummy_exec_string(cmdbuf_t *buf, const char *line)
     dummy_command();
 }
 
-static void dummy_add_message(client_t *client, byte *data,
+static void dummy_add_message(client_t *client, const byte *data,
                               size_t length, bool reliable)
 {
-    char *text;
+    char text[MAX_STRING_CHARS];
 
     if (!length || !reliable || data[0] != svc_stufftext) {
         return; // not interesting
@@ -283,8 +283,11 @@ static void dummy_add_message(client_t *client, byte *data,
         return; // not allowed
     }
 
-    data[length] = 0;
-    text = (char *)(data + 1);
+    // truncate at MAX_STRING_CHARS
+    length = min(length, sizeof(text));
+    memcpy(text, data + 1, length - 1);
+    text[length - 1] = 0;
+
     Com_DPrintf("dummy stufftext: %s\n", Com_MakePrintable(text));
     Cbuf_AddText(&dummy_buffer, text);
 }

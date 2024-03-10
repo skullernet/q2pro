@@ -360,7 +360,7 @@ typedef struct client_s {
     int                 maxclients;
 
     // netchan type dependent methods
-    void            (*AddMessage)(struct client_s *, byte *, size_t, bool);
+    void            (*AddMessage)(struct client_s *, const byte *, size_t, bool);
     void            (*WriteFrame)(struct client_s *);
     void            (*WriteDatagram)(struct client_s *);
 
