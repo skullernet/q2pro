@@ -402,23 +402,15 @@ static void setup_celshading(void)
 {
     float value = Cvar_ClampValue(gl_celshading, 0, 10);
 
-    celscale = 0;
-
-    if (value == 0)
-        return;
-
-    if (glr.ent->flags & (RF_TRANSLUCENT | RF_SHELL_MASK))
-        return;
-
-    if (!qglPolygonMode)
-        return;
-
-    celscale = 1.0f - Distance(origin, glr.fd.vieworg) / 700.0f;
+    if (value == 0 || (glr.ent->flags & (RF_TRANSLUCENT | RF_SHELL_MASK)) || !qglPolygonMode)
+        celscale = 0;
+    else
+        celscale = 1.0f - Distance(origin, glr.fd.vieworg) / 700.0f;
 }
 
 static void draw_celshading(const QGL_INDEX_TYPE *indices, int num_indices)
 {
-    if (celscale < 0.01f || celscale > 1)
+    if (celscale < 0.01f)
         return;
 
     GL_BindTexture(0, TEXNUM_BLACK);
