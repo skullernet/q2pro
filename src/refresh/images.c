@@ -49,6 +49,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
     static int IMG_Load##x(byte *rawdata, size_t rawlen, \
         image_t *image, byte **pic)
 
+static bool check_image_size(unsigned w, unsigned h)
+{
+    return (w < 1 || h < 1 || w > MAX_TEXTURE_SIZE || h > MAX_TEXTURE_SIZE);
+}
+
 /*
 ====================================================================
 
@@ -234,7 +239,7 @@ static int load_pcx(byte *rawdata, size_t rawlen, byte **pixels_p,
 
     w = (LittleShort(pcx->xmax) - LittleShort(pcx->xmin)) + 1;
     h = (LittleShort(pcx->ymax) - LittleShort(pcx->ymin)) + 1;
-    if (w < 1 || h < 1 || w > MAX_TEXTURE_SIZE || h > MAX_TEXTURE_SIZE) {
+    if (check_image_size(w, h)) {
         Com_SetLastError("invalid image dimensions");
         return Q_ERR_INVALID_FORMAT;
     }
@@ -326,7 +331,7 @@ IMG_LOAD(WAL)
 
     w = LittleLong(mt->width);
     h = LittleLong(mt->height);
-    if (w < 1 || h < 1 || w > MAX_TEXTURE_SIZE || h > MAX_TEXTURE_SIZE) {
+    if (check_image_size(w, h))  {
         Com_SetLastError("invalid image dimensions");
         return Q_ERR_INVALID_FORMAT;
     }
@@ -488,7 +493,7 @@ IMG_LOAD(TGA)
         return Q_ERR_INVALID_FORMAT;
     }
 
-    if (w < 1 || h < 1 || w > MAX_TEXTURE_SIZE || h > MAX_TEXTURE_SIZE) {
+    if (check_image_size(w, h)) {
         Com_SetLastError("invalid image dimensions");
         return Q_ERR_INVALID_FORMAT;
     }
@@ -667,8 +672,7 @@ static int my_jpeg_start_decompress(j_decompress_ptr cinfo, byte *rawdata, size_
         return Q_ERR_INVALID_FORMAT;
     }
 
-    if (cinfo->output_width < 1 || cinfo->output_width > MAX_TEXTURE_SIZE ||
-        cinfo->output_height < 1 || cinfo->output_height > MAX_TEXTURE_SIZE) {
+    if (check_image_size(cinfo->output_width, cinfo->output_height)) {
         Com_SetLastError("invalid image dimensions");
         return Q_ERR_INVALID_FORMAT;
     }
@@ -853,7 +857,7 @@ static int my_png_read_header(png_structp png_ptr, png_infop info_ptr,
         return Q_ERR_FAILURE;
     }
 
-    if (w < 1 || h < 1 || w > MAX_TEXTURE_SIZE || h > MAX_TEXTURE_SIZE) {
+    if (check_image_size(w, h)) {
         Com_SetLastError("invalid image dimensions");
         return Q_ERR_INVALID_FORMAT;
     }
@@ -1605,7 +1609,7 @@ static void get_image_dimensions(imageformat_t fmt, image_t *image)
 
     FS_CloseFile(f);
 
-    if (w < 1 || h < 1 || w > MAX_TEXTURE_SIZE || h > MAX_TEXTURE_SIZE) {
+    if (check_image_size(w, h)) {
         return;
     }
 
