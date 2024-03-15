@@ -111,6 +111,7 @@ typedef struct {
     byte            latlngtab[NUMVERTEXNORMALS][2];
     byte            lightstylemap[MAX_LIGHTSTYLES];
     hash_map_t      *queries;
+    float           legacy_rgb_scale; // RGB scale (if COMBINE is available) for intensity * modulate application
 } glStatic_t;
 
 typedef struct {
@@ -139,13 +140,14 @@ typedef struct {
 
 enum {
     QGL_CAP_LEGACY                      = BIT(0),
-    QGL_CAP_SHADER                      = BIT(1),
-    QGL_CAP_TEXTURE_BITS                = BIT(2),
-    QGL_CAP_TEXTURE_CLAMP_TO_EDGE       = BIT(3),
-    QGL_CAP_TEXTURE_MAX_LEVEL           = BIT(4),
-    QGL_CAP_TEXTURE_LOD_BIAS            = BIT(5),
-    QGL_CAP_TEXTURE_NON_POWER_OF_TWO    = BIT(6),
-    QGL_CAP_TEXTURE_ANISOTROPY          = BIT(7),
+    QGL_CAP_LEGACY_TEXCOMBINE           = BIT(1),
+    QGL_CAP_SHADER                      = BIT(2),
+    QGL_CAP_TEXTURE_BITS                = BIT(3),
+    QGL_CAP_TEXTURE_CLAMP_TO_EDGE       = BIT(4),
+    QGL_CAP_TEXTURE_MAX_LEVEL           = BIT(5),
+    QGL_CAP_TEXTURE_LOD_BIAS            = BIT(6),
+    QGL_CAP_TEXTURE_NON_POWER_OF_TWO    = BIT(7),
+    QGL_CAP_TEXTURE_ANISOTROPY          = BIT(8),
 };
 
 #define QGL_VER(major, minor)   ((major) * 100 + (minor))
