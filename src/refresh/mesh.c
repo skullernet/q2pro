@@ -639,10 +639,11 @@ static inline void calc_skel_vert(const md5_vertex_t *vert,
         const md5_joint_t *joint = &skeleton[weight->joint];
 
         vec3_t local_pos;
-        VectorScale(weight->pos, joint->scale, local_pos);
+        VectorCopy(weight->pos, local_pos);
 
         vec3_t wv;
         Quat_RotatePoint(joint->orient, local_pos, wv);
+        VectorScale(wv, joint->scale, wv);
 
         VectorAdd(joint->pos, wv, wv);
         VectorMA(out_position, weight->bias, wv, out_position);
@@ -716,7 +717,7 @@ static void draw_skeleton_mesh(const md5_model_t *model, const md5_mesh_t *mesh,
     draw_alias_mesh(mesh->indices, mesh->num_indices,
                     mesh->tcoords, mesh->num_verts,
                     model->skins, model->num_skins);
-    }
+}
 
 static void draw_alias_skeleton(const md5_model_t *model)
 {

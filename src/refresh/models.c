@@ -765,11 +765,17 @@ static bool MD5_ParseVector(const char **buffer, vec3_t output)
         MD5_ParseExpect(buffer, ")");
 }
 
+#define MD5_FAIL() \
+    ret = Q_ERR_INVALID_FORMAT; goto fail;
+
 #define MD5_CHECK(x) \
-    if (!(x)) { ret = Q_ERR_INVALID_FORMAT; goto fail; }
+    if (!(x)) { MD5_FAIL(); }
+
+#define MD5_ERROR(e) \
+    Com_SetLastError(e); MD5_FAIL();
 
 #define MD5_ENSURE(x, e) \
-    if (!(x)) { Com_SetLastError(e); ret = Q_ERR_INVALID_FORMAT; goto fail; }
+    if (!(x)) { MD5_ERROR(e); }
 
 #define MD5_EXPECT(x)   MD5_CHECK(MD5_ParseExpect(&s, x))
 #define MD5_UINT(x)     MD5_CHECK(MD5_ParseUint(&s, x))
@@ -1026,6 +1032,7 @@ typedef struct {
     uint32_t parent;
     uint32_t flags;
     uint32_t start_index;
+    bool scale_positions;
 } joint_info_t;
 
 typedef struct {
@@ -1046,6 +1053,7 @@ static void MD5_BuildFrameSkeleton(const joint_info_t *joint_infos,
 {
     for (int i = 0; i < num_joints; i++) {
         const baseframe_joint_t *baseJoint = &base_frame[i];
+        bool scale_positions = joint_infos[i].scale_positions;
         float components[7];
 
         float *animated_position = components + 0;
@@ -1064,11 +1072,13 @@ static void MD5_BuildFrameSkeleton(const joint_info_t *joint_infos,
 
         // parent should already be calculated
         md5_joint_t *thisJoint = &skeleton_frame[i];
-        thisJoint->scale = 1.0f;
 
         int parent = thisJoint->parent = (int32_t)joint_infos[i].parent;
         if (parent < 0) {
             VectorCopy(animated_position, thisJoint->pos);
+            if (scale_positions) {
+                VectorScale(animated_position, thisJoint->scale, animated_position);
+            }
             Vector4Copy(animated_quat, thisJoint->orient);
             continue;
         }
@@ -1078,6 +1088,9 @@ static void MD5_BuildFrameSkeleton(const joint_info_t *joint_infos,
         // add positions
         vec3_t rotated_pos;
         Quat_RotatePoint(parentJoint->orient, animated_position, rotated_pos);
+        if (scale_positions) {
+            VectorScale(rotated_pos, thisJoint->scale, rotated_pos);
+        }
         VectorAdd(rotated_pos, parentJoint->pos, thisJoint->pos);
 
         // concat rotations
@@ -1086,10 +1099,93 @@ static void MD5_BuildFrameSkeleton(const joint_info_t *joint_infos,
     }
 }
 
+// icky icky ""JSON"" parser. it works for re-release *.md5scale files, and I
+// don't care about anything else...
+static void MOD_LoadMD5Scale(md5_model_t *model, joint_info_t *joint_infos, const char *path)
+{
+    void *buffer;
+    const char *s;
+    int ret;
+
+    ret = FS_LoadFile(path, &buffer);
+    if (!buffer)
+        goto fail;
+    s = buffer;
+
+    MD5_EXPECT("{");
+    while (s) {
+        int joint_id = -1;
+        char *tok;
+
+        tok = COM_Parse(&s);
+        if (!strcmp(tok, "}"))
+            break;
+
+        for (int i = 0; i < model->num_joints; i++) {
+            if (!strcmp(tok, model->jointnames[i])) {
+                joint_id = i;
+                break;
+            }
+        }
+
+        if (joint_id == -1)
+            Com_WPrintf("No such joint %s in %s\n", tok, path);
+
+        MD5_EXPECT(":");
+        MD5_EXPECT("{");
+
+        while (s) {
+            tok = COM_Parse(&s);
+            if (!strcmp(tok, "}") || !strcmp(tok, "},"))
+                break;
+            MD5_EXPECT(":");
+
+            if (!strncmp(tok, "scale_positions", 15)) {
+                tok = COM_Parse(&s);
+                if (!strcmp(tok, "true") || !strcmp(tok, "true,")) {
+                    joint_infos[joint_id].scale_positions = true;
+                } else {
+                    MD5_ERROR(va("expected true, got %s", tok));
+                }
+                continue;
+            }
+
+            const char *endptr;
+            unsigned frame_id = strtoul(tok, &endptr, 10);
+
+            // failed to parse number; check the key
+            if (endptr == tok) {
+                Com_WPrintf("Failed to parse a frame id in joint id %d in %s\n", joint_id, path);
+                continue;
+            }
+
+            float scale = strtof(COM_Parse(&s), NULL);
+
+            if (joint_id == -1)
+                continue;
+
+            if (frame_id >= model->num_frames) {
+                Com_WPrintf("No such frame %d in %s\n", frame_id, path);
+                continue;
+            }
+
+            model->skeleton_frames[(frame_id * model->num_joints) + joint_id].scale = scale;
+        }
+    }
+
+    FS_FreeFile(buffer);
+    return;
+
+fail:
+    if (ret != Q_ERR(ENOENT))
+        MOD_PrintError(path, ret);
+    FS_FreeFile(buffer);
+}
+
 /**
  * Load an MD5 animation from file.
  */
-static bool MOD_LoadMD5Anim(model_t *model, const char *path)
+static bool MOD_LoadMD5Anim(model_t *model, const char *path, const char *base_path, const char *model_name)
 {
     joint_info_t joint_infos[MD5_MAX_JOINTS];
     baseframe_joint_t base_frame[MD5_MAX_JOINTS];
@@ -1099,6 +1195,7 @@ static bool MOD_LoadMD5Anim(model_t *model, const char *path)
     int i, j, ret;
     void *buffer;
     const char *s;
+    char scale_path[MAX_QPATH];
 
     ret = FS_LoadFile(path, &buffer);
     if (!buffer)
@@ -1148,6 +1245,7 @@ static bool MOD_LoadMD5Anim(model_t *model, const char *path)
         MD5_UINT(&joint_info->parent);
         MD5_UINT(&joint_info->flags);
         MD5_UINT(&joint_info->start_index);
+        joint_info->scale_positions = false;
 
         // validate animated components
         int num_components = 0;
@@ -1195,6 +1293,13 @@ static bool MOD_LoadMD5Anim(model_t *model, const char *path)
 
     OOM_CHECK(mdl->skeleton_frames = MD5_Malloc(sizeof(mdl->skeleton_frames[0]) * mdl->num_frames * mdl->num_joints));
 
+    // initialize scales & load
+    for (i = 0; i < mdl->num_frames * mdl->num_joints; i++)
+        mdl->skeleton_frames[i].scale = 1.0f;
+
+    if (Q_concat(scale_path, sizeof(scale_path), base_path, "md5/", model_name, ".md5scale") < sizeof(scale_path))
+        MOD_LoadMD5Scale(model->skeleton, joint_infos, scale_path);
+
     for (i = 0; i < mdl->num_frames; i++) {
         MD5_EXPECT("frame");
 
@@ -1222,76 +1327,10 @@ fail:
     return false;
 }
 
-// icky icky ""JSON"" parser. it works for re-release *.md5scale files, and I
-// don't care about anything else...
-static void MOD_LoadMD5Scale(md5_model_t *model, const char *path)
-{
-    void *buffer;
-    const char *s;
-    int ret;
-
-    ret = FS_LoadFile(path, &buffer);
-    if (!buffer)
-        goto fail;
-    s = buffer;
-
-    MD5_EXPECT("{");
-    while (s) {
-        int joint_id = -1;
-        char *tok;
-
-        tok = COM_Parse(&s);
-        if (!strcmp(tok, "}"))
-            break;
-
-        for (int i = 0; i < model->num_joints; i++) {
-            if (!strcmp(tok, model->jointnames[i])) {
-                joint_id = i;
-                break;
-            }
-        }
-
-        if (joint_id == -1)
-            Com_WPrintf("No such joint %s in %s\n", tok, path);
-
-        MD5_EXPECT(":");
-        MD5_EXPECT("{");
-
-        while (s) {
-            tok = COM_Parse(&s);
-            if (!strcmp(tok, "}") || !strcmp(tok, "},"))
-                break;
-            MD5_EXPECT(":");
-
-            unsigned frame_id = strtoul(tok, NULL, 10);
-            float scale = strtof(COM_Parse(&s), NULL);
-
-            if (joint_id == -1)
-                continue;
-
-            if (frame_id >= model->num_frames) {
-                Com_WPrintf("No such frame %d in %s\n", frame_id, path);
-                continue;
-            }
-
-            model->skeleton_frames[(frame_id * model->num_joints) + joint_id].scale = scale;
-        }
-    }
-
-    FS_FreeFile(buffer);
-    return;
-
-fail:
-    if (ret != Q_ERR(ENOENT))
-        MOD_PrintError(path, ret);
-    FS_FreeFile(buffer);
-}
-
 static void MOD_LoadMD5(model_t *model)
 {
     char model_name[MAX_QPATH], base_path[MAX_QPATH];
     char mesh_path[MAX_QPATH], anim_path[MAX_QPATH];
-    char scale_path[MAX_QPATH];
 
     COM_SplitPath(model->name, model_name, sizeof(model_name), base_path, sizeof(base_path), true);
 
@@ -1306,7 +1345,7 @@ static void MOD_LoadMD5(model_t *model)
     if (!MOD_LoadMD5Mesh(model, mesh_path))
         goto fail;
 
-    if (!MOD_LoadMD5Anim(model, anim_path))
+    if (!MOD_LoadMD5Anim(model, anim_path, base_path, model_name))
         goto fail;
 
     model->skeleton->num_skins = model->meshes[0].numskins;
@@ -1331,9 +1370,6 @@ static void MOD_LoadMD5(model_t *model)
     }
 
     Hunk_End(&model->skeleton_hunk);
-
-    if (Q_concat(scale_path, sizeof(scale_path), base_path, "md5/", model_name, ".md5scale") < sizeof(scale_path))
-        MOD_LoadMD5Scale(model->skeleton, scale_path);
 
     return;
 
