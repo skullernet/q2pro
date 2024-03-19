@@ -639,13 +639,12 @@ static inline void calc_skel_vert(const md5_vertex_t *vert,
         const md5_joint_t *joint = &skeleton[weight->joint];
 
         vec3_t local_pos;
-        VectorCopy(weight->pos, local_pos);
+        VectorScale(weight->pos, joint->scale, local_pos);
 
         vec3_t wv;
         Quat_RotatePoint(joint->orient, local_pos, wv);
 
         VectorAdd(joint->pos, wv, wv);
-        VectorScale(wv, joint->scale, wv);
         VectorMA(out_position, weight->bias, wv, out_position);
 
         if (out_normal) {
