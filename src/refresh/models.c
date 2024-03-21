@@ -1150,7 +1150,7 @@ static void MOD_LoadMD5Scale(md5_model_t *model, joint_info_t *joint_infos, cons
                 continue;
             }
 
-            const char *endptr;
+            char *endptr;
             unsigned frame_id = strtoul(tok, &endptr, 10);
 
             // failed to parse number; check the key
