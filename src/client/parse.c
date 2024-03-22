@@ -548,7 +548,7 @@ static void read_q2pro_protocol_flags(void)
         Com_DPrintf("Q2PRO protocol extensions enabled\n");
         cl.csr = cs_remap_q2pro_new;
     }
-    cl.is_rerelease_game = (i & Q2PRO_PF_GAME3_COMPAT) == 0;
+    cl.is_rerelease_game = (cls.serverProtocol == PROTOCOL_VERSION_RERELEASE) && (i & Q2PRO_PF_GAME3_COMPAT) == 0;
 }
 
 static void set_server_fps(int value)
