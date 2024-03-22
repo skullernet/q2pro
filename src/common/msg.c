@@ -288,11 +288,13 @@ int MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *cmd, int serve
 
     buttons = new_buttons & BUTTON_MASK;
 
+    // See if movement values can be "compressed" by dividing by 5.
+    // If so, set BUTTON_xxx flag
     if (version >= PROTOCOL_VERSION_R1Q2_UCMD && (bits & CM_BUTTONS)) {
-        if ((bits & CM_FORWARD) && !((int)cmd->forwardmove % 5)) { // FIXME: Why the modulo 5?
+        if ((bits & CM_FORWARD) && !((int)cmd->forwardmove % 5)) {
             buttons |= BUTTON_FORWARD;
         }
-        if ((bits & CM_SIDE) && !((int)cmd->sidemove % 5)) { // FIXME: Why the modulo 5?
+        if ((bits & CM_SIDE) && !((int)cmd->sidemove % 5)) {
             buttons |= BUTTON_SIDE;
         }
         if ((bits & CM_UP) && !(new_upmove % 5)) {
