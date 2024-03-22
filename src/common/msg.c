@@ -259,10 +259,11 @@ int MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *cmd, int serve
     short from_upmove = 0;
     int new_buttons = cmd->buttons;
     short new_upmove = 0;
-    if (is_rerelease) {
+    if (!is_rerelease) {
         compute_buttons_upmove(&from_buttons, &from_upmove);
         compute_buttons_upmove(&new_buttons, &new_upmove);
     }
+    // else: for is_rerelease, always transmit full 'buttons' byte below
 
 //
 // send the movement message
