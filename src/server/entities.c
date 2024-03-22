@@ -28,7 +28,7 @@ Encode a client frame onto the network channel
 
 // some protocol optimizations are disabled when recording a demo
 #define Q2PRO_OPTIMIZE(c) \
-    ((c)->protocol == PROTOCOL_VERSION_Q2PRO && !(c)->settings[CLS_RECORDING])
+    (!(c)->settings[CLS_RECORDING])
 
 /*
 =============
@@ -218,7 +218,7 @@ void SV_WriteFrameToClient_Enhanced(client_t *client)
     player_packed_t *oldstate;
     uint32_t        extraflags, delta;
     int             suppressed;
-    byte            *b1, *b2;
+    byte            *b1, *b2, *bflags;
     msgPsFlags_t    psFlags;
     int             clientEntityNum;
 
@@ -240,8 +240,9 @@ void SV_WriteFrameToClient_Enhanced(client_t *client)
 
     MSG_WriteLong((client->framenum & FRAMENUM_MASK) | (delta << FRAMENUM_BITS));
 
-    // second byte to be patched
+    // secondary bytes to be patched
     b2 = SZ_GetSpace(&msg_write, 1);
+    bflags = SZ_GetSpace(&msg_write, 1);
 
     // send over the areabits
     MSG_WriteByte(frame->areabytes);
@@ -270,42 +271,28 @@ void SV_WriteFrameToClient_Enhanced(client_t *client)
     }
 
     clientEntityNum = 0;
-    if (client->protocol == PROTOCOL_VERSION_Q2PRO) {
-        if (frame->ps.pmove.pm_type < PM_DEAD && !client->settings[CLS_RECORDING]) {
-            clientEntityNum = frame->clientNum + 1;
-        }
-        if (client->settings[CLS_NOPREDICT]) {
-            psFlags |= MSG_PS_IGNORE_PREDICTION;
-        }
-        suppressed = client->frameflags;
-    } else {
-        suppressed = client->suppress_count;
+    if (frame->ps.pmove.pm_type < PM_DEAD && !client->settings[CLS_RECORDING]) {
+        clientEntityNum = frame->clientNum + 1;
     }
-    if (client->csr->extended) {
-        psFlags |= MSG_PS_EXTENSIONS;
+    if (client->settings[CLS_NOPREDICT]) {
+        psFlags |= MSG_PS_IGNORE_PREDICTION;
     }
+    suppressed = client->frameflags;
+    psFlags |= MSG_PS_EXTENSIONS;
+    psFlags |= MSG_PS_RERELEASE;
 
     // delta encode the playerstate
     extraflags = MSG_WriteDeltaPlayerstate_Enhanced(oldstate, &frame->ps, psFlags);
 
-    if (client->protocol == PROTOCOL_VERSION_Q2PRO) {
-        // delta encode the clientNum
-        if ((oldframe ? oldframe->clientNum : 0) != frame->clientNum) {
-            extraflags |= EPS_CLIENTNUM;
-            if (client->version < PROTOCOL_VERSION_Q2PRO_CLIENTNUM_SHORT) {
-                MSG_WriteByte(frame->clientNum);
-            } else {
-                MSG_WriteShort(frame->clientNum);
-            }
-        }
+    // delta encode the clientNum
+    if ((oldframe ? oldframe->clientNum : 0) != frame->clientNum) {
+        extraflags |= EPS_CLIENTNUM;
+        MSG_WriteShort(frame->clientNum);
     }
 
-    // save 3 high bits of extraflags
-    *b1 = svc_frame | (((extraflags & 0x70) << 1));
-
-    // save 4 low bits of extraflags
-    *b2 = (suppressed & SUPPRESSCOUNT_MASK) |
-          ((extraflags & 0x0F) << SUPPRESSCOUNT_BITS);
+    *b1 = svc_frame;
+    *b2 = suppressed;
+    *bflags = extraflags;
 
     client->suppress_count = 0;
     client->frameflags = 0;
@@ -349,7 +336,7 @@ fix_old_origin(client_t *client, entity_packed_t *state, edict_t *ent, int e)
 
     if (sent->create_framenum > sv.framenum - client->framediv) {
         // created between client frames
-        VectorScale(sent->create_origin, 8.0f, state->old_origin);
+        VectorCopy(sent->create_origin, state->old_origin);
         return;
     }
 
@@ -358,7 +345,7 @@ fix_old_origin(client_t *client, entity_packed_t *state, edict_t *ent, int e)
         j = sv.framenum - (client->framediv - i);
         k = j & ENT_HISTORY_MASK;
         if (sent->history[k].framenum == j) {
-            VectorScale(sent->history[k].origin, 8.0f, state->old_origin);
+            VectorCopy(sent->history[k].origin, state->old_origin);
             return;
         }
     }
@@ -367,15 +354,15 @@ fix_old_origin(client_t *client, entity_packed_t *state, edict_t *ent, int e)
 }
 #endif
 
-static bool SV_EntityVisible(client_t *client, edict_t *ent, byte *mask)
+static bool SV_EntityVisible(client_t *client, server_entity_t *svent, byte *mask)
 {
-    if (ent->num_clusters == -1)
+    if (svent->num_clusters == -1)
         // too many leafs for individual check, go by headnode
-        return CM_HeadnodeVisible(CM_NodeNum(client->cm, ent->headnode), mask);
+        return CM_HeadnodeVisible(CM_NodeNum(client->cm, svent->headnode), mask);
 
     // check individual leafs
-    for (int i = 0; i < ent->num_clusters; i++)
-        if (Q_IsBitSet(mask, ent->clusternums[i]))
+    for (int i = 0; i < svent->num_clusters; i++)
+        if (Q_IsBitSet(mask, svent->clusternums[i]))
             return true;
 
     return false;
@@ -386,8 +373,8 @@ static bool SV_EntityAttenuatedAway(vec3_t org, edict_t *ent)
     float dist = Distance(org, ent->s.origin);
     float dist_mult = SOUND_LOOPATTENUATE;
 
-    if (ent->x.loop_attenuation && ent->x.loop_attenuation != ATTN_STATIC)
-        dist_mult = ent->x.loop_attenuation * SOUND_LOOPATTENUATE_MULT;
+    if (ent->s.loop_attenuation && ent->s.loop_attenuation != ATTN_STATIC)
+        dist_mult = ent->s.loop_attenuation * SOUND_LOOPATTENUATE_MULT;
 
     return (dist - SOUND_FULLVOLUME) * dist_mult > 1.0f;
 }
@@ -405,6 +392,7 @@ void SV_BuildClientFrame(client_t *client)
     int         e;
     vec3_t      org;
     edict_t     *ent;
+    server_entity_t *svent;
     edict_t     *clent;
     client_frame_t  *frame;
     entity_packed_t *state;
@@ -413,7 +401,6 @@ void SV_BuildClientFrame(client_t *client)
     mleaf_t     *leaf;
     byte        clientphs[VIS_MAX_BYTES];
     byte        clientpvs[VIS_MAX_BYTES];
-    bool        need_clientnum_fix;
     int         max_packet_entities;
 
     clent = client->edict;
@@ -430,7 +417,10 @@ void SV_BuildClientFrame(client_t *client)
 
     // find the client's PVS
     ps = &clent->client->ps;
-    VectorMA(ps->viewoffset, 0.125f, ps->pmove.origin, org);
+    VectorAdd(ps->viewoffset, ps->pmove.origin, org);
+    // Rerelease game doesn't include viewheight in viewoffset, vanilla does
+    if (svs.is_game_rerelease)
+        org[2] += ps->pmove.viewheight;
 
     leaf = CM_PointLeaf(client->cm, org);
     clientarea = leaf->area;
@@ -438,13 +428,13 @@ void SV_BuildClientFrame(client_t *client)
 
     // calculate the visible areas
     frame->areabytes = CM_WriteAreaBits(client->cm, frame->areabits, clientarea);
-    if (!frame->areabytes && client->protocol != PROTOCOL_VERSION_Q2PRO) {
+    if (!frame->areabytes) {
         frame->areabits[0] = 255;
         frame->areabytes = 1;
     }
 
     // grab the current player_state_t
-    MSG_PackPlayer(&frame->ps, ps);
+    MSG_PackPlayer(&frame->ps, ps, MSG_PS_RERELEASE);
 
     // grab the current clientNum
     if (g_features->integer & GMF_CLIENTNUM) {
@@ -458,15 +448,10 @@ void SV_BuildClientFrame(client_t *client)
         frame->clientNum = client->number;
     }
 
-    // fix clientNum if out of range for older version of Q2PRO protocol
-    need_clientnum_fix = client->protocol == PROTOCOL_VERSION_Q2PRO
-        && client->version < PROTOCOL_VERSION_Q2PRO_CLIENTNUM_SHORT
-        && frame->clientNum >= CLIENTNUM_NONE;
-
     // limit maximum number of entities in client frame
     max_packet_entities =
         sv_max_packet_entities->integer > 0 ? sv_max_packet_entities->integer :
-        client->csr->extended ? MAX_PACKET_ENTITIES : MAX_PACKET_ENTITIES_OLD;
+        MAX_PACKET_ENTITIES;
 
     CM_FatPVS(client->cm, clientpvs, org);
     BSP_ClusterVis(client->cm->cache, clientphs, clientcluster, DVIS_PHS);
@@ -477,6 +462,7 @@ void SV_BuildClientFrame(client_t *client)
 
     for (e = 1; e < client->ge->num_edicts; e++) {
         ent = EDICT_NUM2(client->ge, e);
+        svent = &sv.entities[e];
 
         // ignore entities not in use
         if (!ent->inuse && (g_features->integer & GMF_PROPERINUSE)) {
@@ -496,11 +482,11 @@ void SV_BuildClientFrame(client_t *client)
             continue;
         }
 
-        if (client->csr->extended && ent->s.renderfx & RF_FLARE && client->settings[CLS_NOFLARES])
+        if (ent->s.renderfx & RF_FLARE && client->settings[CLS_NOFLARES])
             continue;
 
         // ignore if not touching a PV leaf
-        if (ent != clent && !sv_novis->integer && !(client->csr->extended && ent->svflags & SVF_NOCULL)) {
+        if (ent != clent && !sv_novis->integer && !(ent->svflags & SVF_NOCULL)) {
             // check area
             if (!CM_AreasConnected(client->cm, clientarea, ent->areanum)) {
                 // doors can legally straddle two areas, so
@@ -513,9 +499,9 @@ void SV_BuildClientFrame(client_t *client)
             // beams just check one point for PHS
             // remaster uses different sound culling rules
             bool beam_cull = ent->s.renderfx & RF_BEAM;
-            bool sound_cull = client->csr->extended && ent->s.sound;
+            bool sound_cull = ent->s.sound;
 
-            if (!SV_EntityVisible(client, ent, (beam_cull || sound_cull) ? clientphs : clientpvs))
+            if (!SV_EntityVisible(client, svent, (beam_cull || sound_cull) ? clientphs : clientpvs))
                 continue;
 
             // don't send sounds if they will be attenuated away
@@ -523,7 +509,7 @@ void SV_BuildClientFrame(client_t *client)
                 if (SV_EntityAttenuatedAway(org, ent)) {
                     if (!ent->s.modelindex)
                         continue;
-                    if (!beam_cull && !SV_EntityVisible(client, ent, clientpvs))
+                    if (!beam_cull && !SV_EntityVisible(client, svent, clientpvs))
                         continue;
                 }
             } else if (!ent->s.modelindex) {
@@ -540,7 +526,7 @@ void SV_BuildClientFrame(client_t *client)
 
         // add it to the circular client_entities array
         state = &svs.entities[svs.next_entity % svs.num_entities];
-        MSG_PackEntity(state, &ent->s, ENT_EXTENSION(client->csr, ent));
+        MSG_PackEntity(state, &ent->s, true);
 
 #if USE_FPS
         // fix old entity origins for clients not running at
@@ -551,25 +537,17 @@ void SV_BuildClientFrame(client_t *client)
 
         // clear footsteps
         if (client->settings[CLS_NOFOOTSTEPS] && (state->event == EV_FOOTSTEP
-            || (client->csr->extended && (state->event == EV_OTHER_FOOTSTEP ||
-                                          state->event == EV_LADDER_STEP)))) {
+            || (state->event == EV_OTHER_FOOTSTEP || state->event == EV_LADDER_STEP))) {
             state->event = 0;
         }
 
         // hide POV entity from renderer, unless this is player's own entity
         if (e == frame->clientNum + 1 && ent != clent &&
-            (!Q2PRO_OPTIMIZE(client) || need_clientnum_fix)) {
+            (!Q2PRO_OPTIMIZE(client))) {
             state->modelindex = 0;
         }
 
-#if USE_MVD_CLIENT
-        if (sv.state == ss_broadcast) {
-            // spectators only need to know about inline BSP models
-            if (!client->csr->extended && state->solid != PACKED_BSP)
-                state->solid = 0;
-        } else
-#endif
-        if (ent->owner == clent) {
+        if ((!USE_MVD_CLIENT || sv.state != ss_broadcast) && (ent->owner == clent)) {
             // don't mark players missiles as solid
             state->solid = 0;
         } else if (client->esFlags & MSG_ES_LONGSOLID) {
@@ -582,7 +560,4 @@ void SV_BuildClientFrame(client_t *client)
             break;
         }
     }
-
-    if (need_clientnum_fix)
-        frame->clientNum = client->slot;
 }

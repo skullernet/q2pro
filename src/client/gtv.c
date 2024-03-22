@@ -37,7 +37,7 @@ static void build_gamestate(void)
     memset(cls.gtv.entities, 0, sizeof(cls.gtv.entities));
 
     // set base player states
-    MSG_PackPlayer(&cls.gtv.ps, &cl.frame.ps);
+    MSG_PackPlayer(&cls.gtv.ps, &cl.frame.ps, cls.gtv.psFlags);
 
     // set base entity states
     for (i = 1; i < cl.csr.max_edicts; i++) {
@@ -51,6 +51,7 @@ static void build_gamestate(void)
     }
 
     // set protocol flags
+    cls.gtv.psFlags = MSG_PS_RERELEASE | MSG_PS_EXTENSIONS;
     cls.gtv.esFlags = MSG_ES_UMASK | MSG_ES_BEAMORIGIN;
     if (cl.csr.extended)
         cls.gtv.esFlags |= MSG_ES_LONGSOLID | MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS;
@@ -69,7 +70,9 @@ static void emit_gamestate(void)
         flags |= MVF_EXTLIMITS;
     MSG_WriteByte(mvd_serverdata | (flags << SVCMD_BITS));
     MSG_WriteLong(PROTOCOL_VERSION_MVD);
-    if (cl.csr.extended)
+    if (cl.is_rerelease_game)
+        MSG_WriteShort(PROTOCOL_VERSION_MVD_RERELEASE);
+    else if (cl.csr.extended)
         MSG_WriteShort(PROTOCOL_VERSION_MVD_CURRENT);
     else
         MSG_WriteShort(PROTOCOL_VERSION_MVD_DEFAULT);
@@ -131,7 +134,7 @@ void CL_GTV_EmitFrame(void)
     MSG_WriteByte(0);
 
     // send player state
-    MSG_PackPlayer(&newps, &cl.frame.ps);
+    MSG_PackPlayer(&newps, &cl.frame.ps, cl.psFlags);
 
     MSG_WriteDeltaPlayerstate_Packet(&cls.gtv.ps, &newps,
                                      cl.clientNum, cl.psFlags | MSG_PS_FORCE);

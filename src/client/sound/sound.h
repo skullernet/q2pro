@@ -124,6 +124,7 @@ typedef struct {
     void (*stop_channel)(channel_t *ch);
     void (*stop_all_sounds)(void);
     int (*get_sample_rate)(void);
+    void (*end_registration)(void);
 } sndapi_t;
 
 #if USE_SNDDMA
@@ -171,7 +172,7 @@ extern cvar_t       *s_underwater_gain_hf;
     ((ch)->entnum == -1 || (ch)->entnum == listener_entnum || (ch)->dist_mult == 0)
 
 #define S_IsUnderWater() \
-    (cls.state == ca_active && cl.frame.ps.rdflags & RDF_UNDERWATER && s_underwater->integer)
+    (cls.state == ca_active && (cl.frame.ps.rdflags | cl.predicted_rdflags) & RDF_UNDERWATER && s_underwater->integer)
 
 #define S_Malloc(x)     Z_TagMalloc(x, TAG_SOUND)
 #define S_CopyString(x) Z_TagCopyString(x, TAG_SOUND)
@@ -181,8 +182,8 @@ sfxcache_t *S_LoadSound(sfx_t *s);
 channel_t *S_PickChannel(int entnum, int entchannel);
 void S_IssuePlaysound(playsound_t *ps);
 void S_BuildSoundList(int *sounds);
-float S_GetEntityLoopVolume(const centity_state_t *ent);
-float S_GetEntityLoopDistMult(const centity_state_t *ent);
+float S_GetEntityLoopVolume(const entity_state_t *ent);
+float S_GetEntityLoopDistMult(const entity_state_t *ent);
 
 #if USE_AVCODEC
 bool OGG_Load(sizebuf_t *sz);

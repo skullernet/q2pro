@@ -33,7 +33,7 @@ void UpdateChaseCam(edict_t *ent)
         ChaseNext(ent);
         if (ent->client->chase_target == old) {
             ent->client->chase_target = NULL;
-            ent->client->ps.pmove.pm_flags &= ~PMF_NO_PREDICTION;
+            ent->client->ps.pmove.pm_flags &= ~G3PMF_NO_PREDICTION;
             return;
         }
     }
@@ -82,9 +82,9 @@ void UpdateChaseCam(edict_t *ent)
     }
 
     if (targ->deadflag)
-        ent->client->ps.pmove.pm_type = PM_DEAD;
+        ent->client->ps.pmove.pm_type = G3PM_DEAD;
     else
-        ent->client->ps.pmove.pm_type = PM_FREEZE;
+        ent->client->ps.pmove.pm_type = G3PM_FREEZE;
 
     VectorCopy(goal, ent->s.origin);
     for (i = 0; i < 3; i++)
@@ -100,7 +100,7 @@ void UpdateChaseCam(edict_t *ent)
     }
 
     ent->viewheight = 0;
-    ent->client->ps.pmove.pm_flags |= PMF_NO_PREDICTION;
+    ent->client->ps.pmove.pm_flags |= G3PMF_NO_PREDICTION;
     gi.linkentity(ent);
 }
 

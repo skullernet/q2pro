@@ -73,9 +73,9 @@ fail:
     return false;
 }
 
-void CL_PackEntity(entity_packed_t *out, const centity_state_t *in)
+void CL_PackEntity(entity_packed_t *out, const entity_state_t *in)
 {
-    MSG_PackEntity(out, &in->s, cl.csr.extended ? &in->x : NULL);
+    MSG_PackEntity(out, in, cl.csr.extended);
 
     // repack solid 32 to 16
     if (!cl.csr.extended && cl.esFlags & MSG_ES_LONGSOLID && in->solid && in->solid != PACKED_BSP) {
@@ -89,7 +89,7 @@ void CL_PackEntity(entity_packed_t *out, const centity_state_t *in)
 static void emit_packet_entities(server_frame_t *from, server_frame_t *to)
 {
     entity_packed_t oldpack, newpack;
-    centity_state_t *oldent, *newent;
+    entity_state_t *oldent, *newent;
     int     oldindex, newindex;
     int     oldnum, newnum;
     int     i, from_num_entities;
@@ -148,7 +148,7 @@ static void emit_packet_entities(server_frame_t *from, server_frame_t *to)
         if (newnum > oldnum) {
             // the old entity isn't present in the new message
             CL_PackEntity(&oldpack, oldent);
-            MSG_WriteDeltaEntity(&oldpack, NULL, MSG_ES_FORCE);
+            MSG_WriteDeltaEntity(&oldpack, NULL, cls.demo.esFlags | MSG_ES_FORCE);
             oldindex++;
             continue;
         }
@@ -161,29 +161,51 @@ static void emit_delta_frame(server_frame_t *from, server_frame_t *to,
                              int fromnum, int tonum)
 {
     player_packed_t oldpack, newpack;
+    byte *bflags = NULL;
 
     MSG_WriteByte(svc_frame);
-    MSG_WriteLong(tonum);
-    MSG_WriteLong(fromnum); // what we are delta'ing from
-    if (cls.serverProtocol != PROTOCOL_VERSION_OLD)
-        MSG_WriteByte(0);   // rate dropped packets
+    if (cls.serverProtocol == PROTOCOL_VERSION_RERELEASE) {
+        int delta = from ? tonum - fromnum : 31;
+        MSG_WriteLong((tonum & FRAMENUM_MASK) | (delta << FRAMENUM_BITS));
+        MSG_WriteByte(0); // server: client->frameflags
+        bflags = SZ_GetSpace(&msg_write, 1);
+    } else {
+        MSG_WriteLong(tonum);
+        MSG_WriteLong(fromnum); // what we are delta'ing from
+        if (cls.serverProtocol != PROTOCOL_VERSION_OLD)
+            MSG_WriteByte(0);   // rate dropped packets
+    }
 
     // send over the areabits
     MSG_WriteByte(to->areabytes);
     MSG_WriteData(to->areabits, to->areabytes);
 
+    msgPsFlags_t psFlags = cl.psFlags;
+    if (cls.serverProtocol == PROTOCOL_VERSION_RERELEASE) {
+        psFlags |= MSG_PS_EXTENSIONS;
+        psFlags |= MSG_PS_RERELEASE;
+    }
     // delta encode the playerstate
-    MSG_WriteByte(svc_playerinfo);
-    MSG_PackPlayer(&newpack, &to->ps);
-    if (from) {
-        MSG_PackPlayer(&oldpack, &from->ps);
-        MSG_WriteDeltaPlayerstate_Default(&oldpack, &newpack, cl.psFlags);
+    MSG_PackPlayer(&newpack, &to->ps, psFlags);
+    if (from)
+        MSG_PackPlayer(&oldpack, &from->ps, psFlags);
+    if (cls.serverProtocol == PROTOCOL_VERSION_RERELEASE) {
+        uint32_t extraflags = MSG_WriteDeltaPlayerstate_Enhanced(from ? &oldpack : NULL, &newpack, psFlags);
+
+        // delta encode the clientNum
+        if ((from ? from->clientNum : 0) != to->clientNum) {
+            extraflags |= EPS_CLIENTNUM;
+            MSG_WriteShort(from->clientNum);
+        }
+        *bflags = extraflags;
     } else {
-        MSG_WriteDeltaPlayerstate_Default(NULL, &newpack, cl.psFlags);
+        MSG_WriteByte(svc_playerinfo);
+        MSG_WriteDeltaPlayerstate_Default(from ? &oldpack : NULL, &newpack, cl.psFlags);
     }
 
     // delta encode the entities
-    MSG_WriteByte(svc_packetentities);
+    if (cls.serverProtocol != PROTOCOL_VERSION_RERELEASE)
+        MSG_WriteByte(svc_packetentities);
     emit_packet_entities(from, to);
 }
 
@@ -334,7 +356,7 @@ static void CL_Record_f(void)
     char    buffer[MAX_OSPATH];
     int     i, c;
     size_t  len;
-    centity_state_t *ent;
+    entity_state_t  *ent;
     entity_packed_t pack;
     char            *s;
     qhandle_t       f;
@@ -416,7 +438,9 @@ static void CL_Record_f(void)
 
     // send the serverdata
     MSG_WriteByte(svc_serverdata);
-    if (cl.csr.extended)
+    if (cls.serverProtocol == PROTOCOL_VERSION_RERELEASE)
+        MSG_WriteLong(PROTOCOL_VERSION_RERELEASE);
+    else if (cl.csr.extended)
         MSG_WriteLong(PROTOCOL_VERSION_EXTENDED);
     else
         MSG_WriteLong(min(cls.serverProtocol, PROTOCOL_VERSION_DEFAULT));
@@ -426,13 +450,26 @@ static void CL_Record_f(void)
     MSG_WriteShort(cl.clientNum);
     MSG_WriteString(cl.configstrings[CS_NAME]);
 
+    if (cls.serverProtocol == PROTOCOL_VERSION_RERELEASE) {
+        MSG_WriteShort(PROTOCOL_VERSION_Q2PRO_CURRENT);
+        MSG_WriteByte(cl.serverstate);
+        int protocol_flags = 0;
+        if (cl.csr.extended)
+            protocol_flags |= Q2PRO_PF_EXTENSIONS;
+        if (!cl.is_rerelease_game)
+            protocol_flags |= Q2PRO_PF_GAME3_COMPAT;
+        MSG_WriteShort(protocol_flags);
+        int rate = cl.frametime_inv / 0.001f;
+        MSG_WriteByte(rate);
+    }
+
     // configstrings
     for (i = 0; i < cl.csr.end; i++) {
         s = cl.configstrings[i];
         if (!*s)
             continue;
 
-        len = Q_strnlen(s, MAX_QPATH);
+        len = Q_strnlen(s, CS_MAX_STRING_LENGTH);
         if (msg_write.cursize + len + 4 > size) {
             if (!CL_WriteDemoMessage(&msg_write))
                 return;
@@ -489,7 +526,7 @@ static void resume_record(void)
 
             s = cl.configstrings[index];
 
-            len = Q_strnlen(s, MAX_QPATH);
+            len = Q_strnlen(s, CS_MAX_STRING_LENGTH);
             if (cls.demo.buffer.cursize + len + 4 > cls.demo.buffer.maxsize) {
                 if (!CL_WriteDemoMessage(&cls.demo.buffer))
                     return;
@@ -841,7 +878,7 @@ void CL_EmitDemoSnapshot(void)
         if (!strcmp(from, to))
             continue;
 
-        len = Q_strnlen(to, MAX_QPATH);
+        len = Q_strnlen(to, CS_MAX_STRING_LENGTH);
         MSG_WriteByte(svc_configstring);
         MSG_WriteShort(i);
         MSG_WriteData(to, len);
@@ -850,7 +887,7 @@ void CL_EmitDemoSnapshot(void)
 
     // write layout
     MSG_WriteByte(svc_layout);
-    MSG_WriteString(cl.layout);
+    MSG_WriteString(cl.cgame_data.layout);
 
     snap = Z_Malloc(sizeof(*snap) + msg_write.cursize - 1);
     snap->framenum = cls.demo.frames_read;
@@ -1180,10 +1217,12 @@ demoInfo_t *CL_GetDemoInfo(const char *path, demoInfo_t *info)
         if (MSG_ReadByte() != svc_serverdata) {
             goto fail;
         }
-        c = MSG_ReadLong();
-        if (c == PROTOCOL_VERSION_EXTENDED) {
-            csr = &cs_remap_new;
-        } else if (c < PROTOCOL_VERSION_OLD || c > PROTOCOL_VERSION_DEFAULT) {
+        int protocol = MSG_ReadLong();
+        if (protocol == PROTOCOL_VERSION_RERELEASE) {
+            // Don't futz anything
+        } else if (protocol == PROTOCOL_VERSION_EXTENDED) {
+            csr = &cs_remap_q2pro_new;
+        } else if (protocol < PROTOCOL_VERSION_OLD || protocol > PROTOCOL_VERSION_DEFAULT) {
             goto fail;
         }
         MSG_ReadLong();
@@ -1191,6 +1230,17 @@ demoInfo_t *CL_GetDemoInfo(const char *path, demoInfo_t *info)
         MSG_ReadString(NULL, 0);
         clientNum = MSG_ReadShort();
         MSG_ReadString(NULL, 0);
+
+        if (protocol == PROTOCOL_VERSION_RERELEASE) {
+            MSG_ReadWord();
+            MSG_ReadByte();
+            int protocol_flags = MSG_ReadWord();
+            if (protocol_flags & Q2PRO_PF_EXTENSIONS)
+                csr = &cs_remap_q2pro_new;
+            if (!(protocol_flags & Q2PRO_PF_GAME3_COMPAT))
+                csr = &cs_remap_rerelease;
+            MSG_ReadByte();
+        }
 
         while (1) {
             c = MSG_ReadByte();
@@ -1214,13 +1264,16 @@ demoInfo_t *CL_GetDemoInfo(const char *path, demoInfo_t *info)
         if ((c & SVCMD_MASK) != mvd_serverdata) {
             goto fail;
         }
-        if (MSG_ReadLong() != PROTOCOL_VERSION_MVD) {
+        int mvd_protocol = MSG_ReadLong();
+        if (mvd_protocol != PROTOCOL_VERSION_MVD) {
             goto fail;
         }
         if (c & (MVF_EXTLIMITS << SVCMD_BITS)) {
-            csr = &cs_remap_new;
+            csr = &cs_remap_q2pro_new;
         }
-        MSG_ReadWord();
+        int protocol_version = MSG_ReadWord();
+        if (protocol_version == PROTOCOL_VERSION_MVD_RERELEASE)
+            csr = &cs_remap_rerelease;
         MSG_ReadLong();
         MSG_ReadString(NULL, 0);
         clientNum = MSG_ReadShort();

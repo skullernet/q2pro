@@ -44,8 +44,11 @@ static int          sv_numareanodes;
 
 static const vec_t  *area_mins, *area_maxs;
 static edict_t      **area_list;
-static int          area_count, area_maxcount;
+static size_t       area_count, area_maxcount;
 static int          area_type;
+static BoxEdictsFilter_t area_filter;
+static void         *area_filter_data;
+static bool         area_bail;
 
 /*
 ===============
@@ -101,8 +104,6 @@ SV_ClearWorld
 void SV_ClearWorld(void)
 {
     mmodel_t *cm;
-    edict_t *ent;
-    int i;
 
     memset(sv_areanodes, 0, sizeof(sv_areanodes));
     sv_numareanodes = 0;
@@ -113,9 +114,9 @@ void SV_ClearWorld(void)
     }
 
     // make sure all entities are unlinked
-    for (i = 0; i < ge->max_edicts; i++) {
-        ent = EDICT_NUM(i);
-        ent->area.next = ent->area.prev = NULL;
+    for (int i = 0; i < ge->max_edicts; i++) {
+        server_entity_t *sent = &sv.entities[i];
+        sent->area.next = sent->area.prev = NULL;
     }
 }
 
@@ -127,7 +128,7 @@ General purpose routine shared between game DLL and MVD code.
 Links entity to PVS leafs.
 ===============
 */
-void SV_LinkEdict(cm_t *cm, edict_t *ent)
+void SV_LinkEdict(cm_t *cm, edict_t *ent, server_entity_t* sv_ent)
 {
     mleaf_t     *leafs[MAX_TOTAL_ENT_LEAFS];
     int         clusters[MAX_TOTAL_ENT_LEAFS];
@@ -173,7 +174,7 @@ void SV_LinkEdict(cm_t *cm, edict_t *ent)
     ent->absmax[2] += 1;
 
 // link to PVS leafs
-    ent->num_clusters = 0;
+    sv_ent->num_clusters = 0;
     ent->areanum = 0;
     ent->areanum2 = 0;
 
@@ -200,10 +201,10 @@ void SV_LinkEdict(cm_t *cm, edict_t *ent)
 
     if (num_leafs >= MAX_TOTAL_ENT_LEAFS) {
         // assume we missed some leafs, and mark by headnode
-        ent->num_clusters = -1;
-        ent->headnode = CM_NumNode(cm, topnode);
+        sv_ent->num_clusters = -1;
+        sv_ent->headnode = CM_NumNode(cm, topnode);
     } else {
-        ent->num_clusters = 0;
+        sv_ent->num_clusters = 0;
         for (i = 0; i < num_leafs; i++) {
             if (clusters[i] == -1)
                 continue;        // not a visible leaf
@@ -211,27 +212,36 @@ void SV_LinkEdict(cm_t *cm, edict_t *ent)
                 if (clusters[j] == clusters[i])
                     break;
             if (j == i) {
-                if (ent->num_clusters == MAX_ENT_CLUSTERS) {
+                if (sv_ent->num_clusters == MAX_ENT_CLUSTERS) {
                     // assume we missed some leafs, and mark by headnode
-                    ent->num_clusters = -1;
-                    ent->headnode = CM_NumNode(cm, topnode);
+                    sv_ent->num_clusters = -1;
+                    sv_ent->headnode = CM_NumNode(cm, topnode);
                     break;
                 }
 
-                ent->clusternums[ent->num_clusters++] = clusters[i];
+                sv_ent->clusternums[sv_ent->num_clusters++] = clusters[i];
             }
         }
     }
+}
+
+static void unlink_sent(server_entity_t *sent)
+{
+    if (!sent->area.prev)
+        return;        // not linked in anywhere
+    List_Remove(&sent->area);
+    sent->area.prev = sent->area.next = NULL;
 }
 
 void PF_UnlinkEdict(edict_t *ent)
 {
     if (!ent)
         Com_Error(ERR_DROP, "%s: NULL", __func__);
-    if (!ent->area.next)
-        return;        // not linked in anywhere
-    List_Remove(&ent->area);
-    ent->area.next = ent->area.prev = NULL;
+    int entnum = NUM_FOR_EDICT(ent);
+    server_entity_t *sent = &sv.entities[entnum];
+    unlink_sent(sent);
+
+    ent->linked = sent->area.prev != NULL;
 }
 
 static uint32_t SV_PackSolid32(edict_t *ent)
@@ -276,8 +286,11 @@ void PF_LinkEdict(edict_t *ent)
     if (!ent)
         Com_Error(ERR_DROP, "%s: NULL", __func__);
 
-    if (ent->area.next)
-        PF_UnlinkEdict(ent);     // unlink from old position
+    entnum = NUM_FOR_EDICT(ent);
+    sent = &sv.entities[entnum];
+
+    if (ent->linked)
+        unlink_sent(sent);     // unlink from old position
 
     if (ent == ge->edicts)
         return;        // don't add the world
@@ -290,9 +303,6 @@ void PF_LinkEdict(edict_t *ent)
     if (!sv.cm.cache) {
         return;
     }
-
-    entnum = NUM_FOR_EDICT(ent);
-    sent = &sv.entities[entnum];
 
     // encode the size into the entity_state for client prediction
     switch (ent->solid) {
@@ -315,7 +325,7 @@ void PF_LinkEdict(edict_t *ent)
         break;
     }
 
-    SV_LinkEdict(&sv.cm, ent);
+    SV_LinkEdict(&sv.cm, ent, sent);
 
     // if first time, make sure old_origin is valid
     if (!ent->linkcount) {
@@ -353,9 +363,11 @@ void PF_LinkEdict(edict_t *ent)
 
     // link it in
     if (ent->solid == SOLID_TRIGGER)
-        List_Append(&node->trigger_edicts, &ent->area);
+        List_Append(&node->trigger_edicts, &sent->area);
     else
-        List_Append(&node->solid_edicts, &ent->area);
+        List_Append(&node->solid_edicts, &sent->area);
+
+    ent->linked = sent->area.prev != NULL;
 }
 
 
@@ -368,7 +380,10 @@ SV_AreaEdicts_r
 static void SV_AreaEdicts_r(areanode_t *node)
 {
     list_t      *start;
-    edict_t     *check;
+    server_entity_t *sent;
+
+    if (area_bail)
+        return;
 
     // touch linked edicts
     if (area_type == AREA_SOLID)
@@ -376,7 +391,8 @@ static void SV_AreaEdicts_r(areanode_t *node)
     else
         start = &node->trigger_edicts;
 
-    LIST_FOR_EACH(edict_t, check, start, area) {
+    LIST_FOR_EACH(server_entity_t, sent, start, area) {
+        edict_t *check = EDICT_NUM(sent - sv.entities);
         if (check->solid == SOLID_NOT)
             continue;        // deactivated
         if (check->absmin[0] > area_maxs[0]
@@ -387,13 +403,22 @@ static void SV_AreaEdicts_r(areanode_t *node)
             || check->absmax[2] < area_mins[2])
             continue;        // not touching
 
-        if (area_count == area_maxcount) {
+        if (area_maxcount > 0 && area_count == area_maxcount) {
             Com_WPrintf("SV_AreaEdicts: MAXCOUNT\n");
             return;
         }
 
-        area_list[area_count] = check;
-        area_count++;
+        BoxEdictsResult_t filter_result = area_filter ? area_filter(check, area_filter_data) : BoxEdictsResult_Keep;
+
+        if ((filter_result & ~BoxEdictsResult_End) == BoxEdictsResult_Keep) {
+            if (area_list)
+                area_list[area_count] = check;
+            area_count++;
+        }
+        if ((filter_result & BoxEdictsResult_End) != 0) {
+            area_bail = true;
+            return;
+        }
     }
 
     if (node->axis == -1)
@@ -411,8 +436,9 @@ static void SV_AreaEdicts_r(areanode_t *node)
 SV_AreaEdicts
 ================
 */
-int SV_AreaEdicts(const vec3_t mins, const vec3_t maxs,
-                  edict_t **list, int maxcount, int areatype)
+size_t SV_AreaEdicts(const vec3_t mins, const vec3_t maxs,
+                     edict_t **list, size_t maxcount, int areatype,
+                     BoxEdictsFilter_t filter, void *filter_data)
 {
     area_mins = mins;
     area_maxs = maxs;
@@ -420,6 +446,9 @@ int SV_AreaEdicts(const vec3_t mins, const vec3_t maxs,
     area_count = 0;
     area_maxcount = maxcount;
     area_type = areatype;
+    area_filter = filter;
+    area_filter_data = filter_data;
+    area_bail = false;
 
     SV_AreaEdicts_r(sv_areanodes);
 
@@ -474,7 +503,7 @@ static mnode_t *SV_WorldNodes(void)
 SV_PointContents
 =============
 */
-int SV_PointContents(const vec3_t p)
+contents_t SV_PointContents(const vec3_t p)
 {
     edict_t     *touch[MAX_EDICTS_OLD], *hit;
     int         i, num;
@@ -484,7 +513,7 @@ int SV_PointContents(const vec3_t p)
     contents = CM_PointContents(p, SV_WorldNodes());
 
     // or in contents from all the other entities
-    num = SV_AreaEdicts(p, p, touch, q_countof(touch), AREA_SOLID);
+    num = SV_AreaEdicts(p, p, touch, q_countof(touch), AREA_SOLID, NULL, NULL);
 
     for (i = 0; i < num; i++) {
         hit = touch[i];
@@ -523,7 +552,7 @@ static void SV_ClipMoveToEntities(const vec3_t start, const vec3_t mins,
         }
     }
 
-    num = SV_AreaEdicts(boxmins, boxmaxs, touchlist, MAX_EDICTS, AREA_SOLID);
+    num = SV_AreaEdicts(boxmins, boxmaxs, touchlist, MAX_EDICTS, AREA_SOLID, NULL, NULL);
 
     // be careful, it is possible to have an entity in this
     // list removed before we get to it (killtriggered)
@@ -574,7 +603,7 @@ Passedict and edicts owned by passedict are explicitly not checked.
 */
 trace_t q_gameabi SV_Trace(const vec3_t start, const vec3_t mins,
                            const vec3_t maxs, const vec3_t end,
-                           edict_t *passedict, int contentmask)
+                           edict_t *passedict, contents_t contentmask)
 {
     trace_t     trace;
 
@@ -604,7 +633,7 @@ Can be used to clip to SOLID_TRIGGER by its BSP tree.
 */
 trace_t q_gameabi SV_Clip(const vec3_t start, const vec3_t mins,
                           const vec3_t maxs, const vec3_t end,
-                          edict_t *clip, int contentmask)
+                          edict_t *clip, contents_t contentmask)
 {
     trace_t     trace;
 

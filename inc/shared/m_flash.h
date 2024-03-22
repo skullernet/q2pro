@@ -348,4 +348,6 @@ enum {
     MZ2_LAST
 };
 
+typedef uint16_t monster_muzzleflash_id_t;
+
 extern const vec3_t monster_flash_offset[MZ2_LAST];

@@ -28,12 +28,15 @@ Common between server and client so prediction matches
 ==============================================================
 */
 
+#define STEPSIZE    18
+
 typedef struct {
     bool        qwmode;
     bool        airaccelerate;
     bool        strafehack;
     bool        flyhack;
     bool        waterhack;
+    bool        remaster_rules;
     float       speedmult;
     float       watermult;
     float       maxspeed;
@@ -42,7 +45,7 @@ typedef struct {
     float       flyfriction;
 } pmoveParams_t;
 
-void Pmove(pmove_t *pmove, pmoveParams_t *params);
+void Pmove(pmove_t *pmove, const pmoveParams_t *params);
 
 void PmoveInit(pmoveParams_t *pmp);
 void PmoveEnableQW(pmoveParams_t *pmp);

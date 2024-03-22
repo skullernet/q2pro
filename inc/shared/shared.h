@@ -42,7 +42,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define q_countof(a)        (sizeof(a) / sizeof(a[0]))
 
+#define BIT(n)          (1U << (n))
+#define BIT_ULL(n)      (1ULL << (n))
+
 typedef unsigned char byte;
+typedef intptr_t ssize_t;
 typedef enum { qfalse, qtrue } qboolean;    // ABI compat only, don't use
 typedef int qhandle_t;
 
@@ -70,22 +74,21 @@ typedef int qhandle_t;
 #define MAX_LIGHTSTYLES     256
 #define MAX_ITEMS           256
 #define MAX_GENERAL         (MAX_CLIENTS * 2) // general config strings
+// [Sam-KEX]
+#define MAX_SHADOW_LIGHTS   256
 
-#if USE_PROTOCOL_EXTENSIONS
+#if !defined(GAME3_INCLUDE)
 #define MAX_EDICTS          8192    // sent as ENTITYNUM_BITS, can't be increased
 #define MAX_MODELS          8192    // half is reserved for inline BSP models
 #define MAX_SOUNDS          2048
-#define MAX_IMAGES          2048
-#else
-#define MAX_EDICTS          MAX_EDICTS_OLD
-#define MAX_MODELS          MAX_MODELS_OLD
-#define MAX_SOUNDS          MAX_SOUNDS_OLD
-#define MAX_IMAGES          MAX_IMAGES_OLD
-#endif
+#define MAX_IMAGES          512     // FIXME: Q2PRO extended protocol raises this to 2048
+#endif // !defined(GAME3_INCLUDE)
 
 #define MODELINDEX_PLAYER   (MAX_MODELS_OLD - 1)
 
+#if !defined(GAME3_INCLUDE)
 #define MAX_CLIENT_NAME     16
+#endif // !defined(GAME3_INCLUDE)
 
 typedef enum {
     ERR_FATAL,          // exit the entire game with a popup window
@@ -103,6 +106,7 @@ typedef enum {
     PRINT_NOTICE        // print in cyan color
 } print_type_t;
 
+#if !defined(GAME3_INCLUDE)
 q_printf(2, 3)
 void    Com_LPrintf(print_type_t type, const char *fmt, ...);
 
@@ -117,6 +121,8 @@ void    Com_Error(error_type_t code, const char *fmt, ...);
 #define Q_assert(expr) \
     do { if (!(expr)) Com_Error(ERR_FATAL, "%s: assertion `%s' failed", __func__, #expr); } while (0)
 
+#endif // !defined(GAME3_INCLUDE)
+
 // game print flags
 enum {
     PRINT_LOW,          // pickup messages
@@ -127,6 +133,10 @@ enum {
     PRINT_TYPEWRITER,
     PRINT_CENTER,
 // KEX
+    PRINT_TTS,
+
+    PRINT_BROADCAST     = BIT(3),  // Bitflag, add to message to broadcast print to all clients.
+    PRINT_NO_NOTIFY     = BIT(4),  // Bitflag, don't put on notify
 };
 
 // destination class for gi.multicast()
@@ -134,12 +144,14 @@ typedef enum {
     MULTICAST_ALL,
     MULTICAST_PHS,
     MULTICAST_PVS,
-    MULTICAST_ALL_R,
-    MULTICAST_PHS_R,
-    MULTICAST_PVS_R
 } multicast_t;
 
-typedef char configstring_t[MAX_QPATH];
+#if !defined(GAME3_INCLUDE)
+
+#define CS_MAX_STRING_LENGTH 96
+typedef char configstring_t[CS_MAX_STRING_LENGTH];
+
+#endif // !defined(GAME3_INCLUDE)
 
 /*
 ==============================================================
@@ -173,11 +185,15 @@ typedef struct vrect_s {
 
 #define ALIGN(x, a)     (((x) + (a) - 1) & ~((a) - 1))
 
-#define BIT(n)          (1U << (n))
-#define BIT_ULL(n)      (1ULL << (n))
-
 #define SWAP(type, a, b) \
     do { type SWAP_tmp = a; a = b; b = SWAP_tmp; } while (0)
+
+// slightly faster lerp that may not be as precise
+#define FASTLERP(a, b, c)   ((a)+(c)*((b)-(a)))
+// slower lerp, but you specify back & front lerp separately
+#define LERP2(a, b, c, d)   ((a)*(c)+(b)*(d))
+// slower lerp but is more mathematically precise
+#define LERP(a, b, c)       LERP2((a), (b), (1.0f - (c)), (c))
 
 #define DotProduct(x,y)         ((x)[0]*(y)[0]+(x)[1]*(y)[1]+(x)[2]*(y)[2])
 #define CrossProduct(v1,v2,cross) \
@@ -244,6 +260,26 @@ typedef struct vrect_s {
      (e)[2]=(a)[2]*(c)+(b)[2]*(d))
 #define PlaneDiff(v,p)   (DotProduct(v,(p)->normal)-(p)->dist)
 
+static inline float VectorDistanceSquared(const vec3_t a, const vec3_t b)
+{
+    vec3_t t;
+    VectorSubtract(a, b, t);
+    return VectorLengthSquared(t);
+}
+
+#define VectorDistance(a, b) (sqrtf(VectorDistanceSquared((a), (b))))
+    
+
+#define Dot2Product(x,y)         ((x)[0]*(y)[0]+(x)[1]*(y)[1])
+#define Vector2Length(v)     (sqrtf(Dot2Product((v),(v))))
+#define Vector2LengthSquared(v)      (Dot2Product((v),(v)))
+#define Vector2Clear(a)       ((a)[0]=(a)[1]=0)
+#define Vector2Set(v, x, y)   ((v)[0]=(x),(v)[1]=(y))
+#define Vector2Scale(in,scale,out) \
+        ((out)[0]=(in)[0]*(scale), \
+         (out)[1]=(in)[1]*(scale))
+#define Vector2Copy(a, b)   ((b)[0]=(a)[0],(b)[1]=(a)[1])
+
 #define Vector4Subtract(a,b,c)      ((c)[0]=(a)[0]-(b)[0],(c)[1]=(a)[1]-(b)[1],(c)[2]=(a)[2]-(b)[2],(c)[3]=(a)[3]-(b)[3])
 #define Vector4Add(a,b,c)           ((c)[0]=(a)[0]+(b)[0],(c)[1]=(a)[1]+(b)[1],(c)[2]=(a)[2]+(b)[2],(c)[3]=(a)[3]+(b)[3])
 #define Vector4Copy(a,b)            ((b)[0]=(a)[0],(b)[1]=(a)[1],(b)[2]=(a)[2],(b)[3]=(a)[3])
@@ -252,6 +288,11 @@ typedef struct vrect_s {
 #define Vector4Set(v, a, b, c, d)   ((v)[0]=(a),(v)[1]=(b),(v)[2]=(c),(v)[3]=(d))
 #define Vector4Compare(v1,v2)       ((v1)[0]==(v2)[0]&&(v1)[1]==(v2)[1]&&(v1)[2]==(v2)[2]&&(v1)[3]==(v2)[3])
 #define Dot4Product(x, y)           ((x)[0]*(y)[0]+(x)[1]*(y)[1]+(x)[2]*(y)[2]+(x)[3]*(y)[3])
+#define Vector4Lerp(a,b,c,d) \
+    ((d)[0]=(a)[0]+(c)*((b)[0]-(a)[0]), \
+     (d)[1]=(a)[1]+(c)*((b)[1]-(a)[1]), \
+     (d)[2]=(a)[2]+(c)*((b)[2]-(a)[2]), \
+     (d)[3]=(a)[3]+(c)*((b)[3]-(a)[3]))
 
 void AngleVectors(const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up);
 vec_t VectorNormalize(vec3_t v);        // returns vector length
@@ -260,6 +301,8 @@ void ClearBounds(vec3_t mins, vec3_t maxs);
 void AddPointToBounds(const vec3_t v, vec3_t mins, vec3_t maxs);
 vec_t RadiusFromBounds(const vec3_t mins, const vec3_t maxs);
 void UnionBounds(const vec3_t a[2], const vec3_t b[2], vec3_t c[2]);
+bool IntersectBounds(const vec3_t amins, const vec3_t amaxs, const vec3_t bmins, const vec3_t bmaxs);
+bool IntersectBoundLine(const vec3_t mins, const vec3_t maxs, const vec3_t start, const vec3_t end);
 
 static inline void AnglesToAxis(const vec3_t angles, vec3_t axis[3])
 {
@@ -552,7 +595,17 @@ bool COM_IsUint(const char *s);
 bool COM_IsPath(const char *s);
 bool COM_IsWhite(const char *s);
 
-char *COM_Parse(const char **data_p);
+// flags for COM_ParseEx
+
+// parse as UTF8
+// transform escape sequences into their
+// string counterparts (\\n becomes \n, \\ becomes \, etc)
+#define PARSE_FLAG_ESCAPE    BIT(0)
+
+char *COM_ParseEx(const char **data_p, int32_t flags, char *output, size_t output_length);
+
+#define COM_Parse(data_p) COM_ParseEx(data_p, 0, NULL, 0)
+
 // data is an in/out parm, returns a parsed out token
 size_t COM_Compress(char *data);
 
@@ -565,7 +618,9 @@ char *COM_TrimSpace(char *s);
 
 // buffer safe operations
 size_t Q_strlcpy(char *dst, const char *src, size_t size);
+size_t Q_strnlcpy(char *dst, const char *src, size_t count, size_t size);
 size_t Q_strlcat(char *dst, const char *src, size_t size);
+size_t Q_strnlcat(char *dst, const char *src, size_t count, size_t size);
 
 #define Q_concat(dest, size, ...) \
     Q_concat_array(dest, size, (const char *[]){__VA_ARGS__, NULL})
@@ -652,9 +707,9 @@ static inline int32_t SignExtend(uint32_t v, int bits)
      (b)[2]=LittleFloat((a)[2]))
 
 #if USE_BGRA
-#define MakeColor(r, g, b, a)   MakeRawLong(b, g, r, a)
+#define MakeColor(r, g, b, a)   MakeRawLong((b), (g), (r), (a))
 #else
-#define MakeColor(r, g, b, a)   MakeRawLong(r, g, b, a)
+#define MakeColor(r, g, b, a)   MakeRawLong((r), (g), (b), (a))
 #endif
 
 //=============================================
@@ -667,7 +722,7 @@ static inline int32_t SignExtend(uint32_t v, int bits)
 #define MAX_INFO_STRING     512
 
 char    *Info_ValueForKey(const char *s, const char *key);
-void    Info_RemoveKey(char *s, const char *key);
+bool    Info_RemoveKey(char *s, const char *key);
 bool    Info_SetValueForKey(char *s, const char *key, const char *value);
 bool    Info_Validate(const char *s);
 size_t  Info_SubValidate(const char *s);
@@ -692,6 +747,8 @@ CVARS (console variables)
                                 // but can be set from the command line
 #define CVAR_LATCH      BIT(4)  // save changes until server restart
 
+typedef uint32_t cvar_flags_t;
+
 #if USE_CLIENT || USE_SERVER
 struct cvar_s;
 struct genctx_s;
@@ -705,14 +762,14 @@ typedef struct cvar_s {
     char        *name;
     char        *string;
     char        *latched_string;    // for CVAR_LATCH vars
-    int         flags;
-    qboolean    modified;   // set each time the cvar is changed
+    cvar_flags_t flags;
+    int32_t     modified_count;   // set each time the cvar is changed
     float       value;
     struct cvar_s *next;
+    int         integer;
 
 // ------ new stuff ------
 #if USE_CLIENT || USE_SERVER
-    int         integer;
     char        *default_string;
     xchanged_t      changed;
     xgenerator_t    generator;
@@ -768,6 +825,8 @@ COLLISION DETECTION
 #define CONTENTS_PROJECTILE     BIT(31)
 //KEX
 
+typedef uint32_t contents_t;
+
 #define SURF_LIGHT              BIT(0)      // value will hold the light strength
 #define SURF_SLICK              BIT(1)      // effects game physics
 #define SURF_SKY                BIT(2)      // don't draw, but add to skybox
@@ -785,6 +844,8 @@ COLLISION DETECTION
 #define SURF_N64_SCROLL_Y       BIT(30)
 #define SURF_N64_SCROLL_FLIP    BIT(31)
 //KEX
+
+typedef uint32_t surfflags_t;
 
 // content masks
 #define MASK_ALL                (-1)
@@ -817,22 +878,40 @@ typedef struct cplane_s {
 #define PLANE_Z         2
 #define PLANE_NON_AXIAL 6
 
-typedef struct csurface_s {
+// csurface_t, but as expected by V3 games
+typedef struct csurface_v3_s {
     char        name[16];
-    int         flags;
-    int         value;
+    surfflags_t flags;
+    int32_t		value;
+} csurface_v3_t;
+
+#if !defined(GAME3_INCLUDE)
+typedef struct csurface_s {
+    char        name[32]; // KEX 32
+    surfflags_t flags;
+    int32_t		value;
+
+    // [Paril-KEX]
+    uint32_t    id; // unique texinfo ID, offset by 1 (0 is 'null')
+    char        material[16];
+
+    csurface_v3_t surface_v3; // used for V3 ABI games
 } csurface_t;
 
 // a trace is returned when a box is swept through the world
 typedef struct {
-    qboolean    allsolid;   // if true, plane is not valid
-    qboolean    startsolid; // if true, the initial point was in a solid area
+    bool        allsolid;   // if true, plane is not valid
+    bool        startsolid; // if true, the initial point was in a solid area
     float       fraction;   // time completed, 1.0 = didn't hit anything
     vec3_t      endpos;     // final position
     cplane_t    plane;      // surface normal at impact
     csurface_t  *surface;   // surface hit
-    int         contents;   // contents on other side of surface hit
+    contents_t  contents;   // contents on other side of surface hit
     struct edict_s  *ent;   // not set by CM_*() functions
+
+    // [Paril-KEX] the second-best surface hit from a trace
+    cplane_t	plane2;		// second surface normal at impact
+	csurface_t *surface2;	// second surface hit
 } trace_t;
 
 // pmove_state_t is the information necessary for client side movement
@@ -840,7 +919,9 @@ typedef struct {
 typedef enum {
     // can accelerate and turn
     PM_NORMAL,
-    PM_SPECTATOR,
+    PM_GRAPPLE, // [Paril-KEX] pull towards velocity, no gravity
+    PM_NOCLIP,
+    PM_SPECTATOR, // [Paril-KEX] clip against walls, but not entities
     // no acceleration or turning
     PM_DEAD,
     PM_GIB,     // different bounding box
@@ -848,18 +929,20 @@ typedef enum {
 } pmtype_t;
 
 // pmove->pm_flags
-#define PMF_DUCKED          BIT(0)
-#define PMF_JUMP_HELD       BIT(1)
-#define PMF_ON_GROUND       BIT(2)
-#define PMF_TIME_WATERJUMP  BIT(3)      // pm_time is waterjump
-#define PMF_TIME_LAND       BIT(4)      // pm_time is time before rejump
-#define PMF_TIME_TELEPORT   BIT(5)      // pm_time is non-moving time
-#define PMF_NO_PREDICTION   BIT(6)      // temporarily disables prediction (used for grappling hook)
-#define PMF_TELEPORT_BIT    BIT(7)      // used by Q2PRO (non-extended servers)
+#define PMF_DUCKED                      BIT(0)
+#define PMF_JUMP_HELD                   BIT(1)
+#define PMF_ON_GROUND                   BIT(2)
+#define PMF_TIME_WATERJUMP              BIT(3)  // pm_time is waterjump
+#define PMF_TIME_LAND                   BIT(4)  // pm_time is time before rejump
+#define PMF_TIME_TELEPORT               BIT(5)  // pm_time is non-moving time
+#define PMF_NO_PREDICTION               BIT(6)  // temporarily disables prediction (used for grappling hook)
+#define PMF_ON_LADDER                   BIT(7)  // signal to game that we are on a ladder
+#define PMF_NO_ANGULAR_PREDICTION       BIT(8)  // temporary disables angular prediction
+#define PMF_IGNORE_PLAYER_COLLISION     BIT(9)  // don't collide with other players
+#define PMF_TIME_TRICK                  BIT(10) // pm_time is trick jump time
+#define PMF_TELEPORT_BIT                BIT(15) // used by Q2PRO (non-extended servers)
 
-//KEX
-#define PMF_IGNORE_PLAYER_COLLISION     BIT(7)
-//KEX
+typedef uint16_t pmflags_t;
 
 // this structure needs to be communicated bit-accurate
 // from the server to the client to guarantee that
@@ -869,58 +952,91 @@ typedef enum {
 typedef struct {
     pmtype_t    pm_type;
 
-    short       origin[3];      // 12.3
-    short       velocity[3];    // 12.3
-    byte        pm_flags;       // ducked, jump_held, etc
-    byte        pm_time;        // each unit = 8 ms
-    short       gravity;
-    short       delta_angles[3];    // add to command angles to get view direction
-                                    // changed by spawns, rotating objects, and teleporters
+    vec3_t      origin;
+    vec3_t      velocity;
+    pmflags_t   pm_flags;       // ducked, jump_held, etc
+    uint16_t    pm_time;        // each unit = 1 ms (was 8 ms in vanilla)
+    int16_t     gravity;
+    vec3_t      delta_angles;   // add to command angles to get view direction
+                                // changed by spawns, rotating objects, and teleporters
+    int8_t      viewheight; // view height, added to origin[2] + viewoffset[2], for crouching
 } pmove_state_t;
+#endif // !defined(GAME3_INCLUDE)
 
 //
 // button bits
 //
 #define BUTTON_ATTACK   BIT(0)
 #define BUTTON_USE      BIT(1)
-#define BUTTON_ANY      BIT(7)  // any key whatsoever
+#define BUTTON_HOLSTER  BIT(2) // Kex
+#define BUTTON_JUMP     BIT(3) // Kex
+#define BUTTON_CROUCH   BIT(4) // Kex
+#define BUTTON_ANY      BIT(7) // any key whatsoever
 
+typedef uint8_t button_t;
+
+#if !defined(GAME3_INCLUDE)
 // usercmd_t is sent to the server each client frame
 typedef struct usercmd_s {
     byte    msec;
-    byte    buttons;
-    short   angles[3];
-    short   forwardmove, sidemove, upmove;
-    byte    impulse;        // remove?
-    byte    lightlevel;     // light level the player is standing on
+    button_t buttons;
+    vec3_t  angles;
+    float   forwardmove, sidemove;
+    uint32_t server_frame;
 } usercmd_t;
 
+// For RDF_xxx values
+typedef uint8_t refdef_flags_t;
+#endif // !defined(GAME3_INCLUDE)
+
 #define MAXTOUCH    32
+
+#if !defined(GAME3_INCLUDE)
+typedef struct
+{
+    uint32_t num;
+    trace_t traces[MAXTOUCH];
+} touch_list_t;
+
 typedef struct {
     // state (in / out)
     pmove_state_t   s;
 
     // command (in)
     usercmd_t       cmd;
-    qboolean        snapinitial;    // if s has been changed outside pmove
+    bool            snapinitial;    // if s has been changed outside pmove
 
     // results (out)
-    int         numtouch;
-    struct edict_s  *touchents[MAXTOUCH];
+    touch_list_t touch;
 
     vec3_t      viewangles;         // clamped
-    float       viewheight;
 
     vec3_t      mins, maxs;         // bounding box size
 
     struct edict_s  *groundentity;
-    int         watertype;
+    cplane_t    groundplane;
+    contents_t  watertype;
     int         waterlevel;
 
+    struct edict_s *player; // opaque handle
+
     // callbacks to test the world
-    trace_t     (* q_gameabi trace)(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end);
-    int         (*pointcontents)(const vec3_t point);
+    trace_t     (* q_gameabi trace)(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, const struct edict_s* passent, contents_t contentmask);
+    // [Paril-KEX] clip against world only
+    trace_t     (* q_gameabi clip)(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, contents_t contentmask);
+    contents_t  (*pointcontents)(const vec3_t point);
+
+    // [KEX] variables (in)
+    vec3_t viewoffset; // last viewoffset (for accurate calculation of blending)
+
+    // [KEX] results (out)
+    vec4_t screen_blend;
+    refdef_flags_t rdflags; // merged with rdflags from server
+    bool jump_sound; // play jump sound
+    bool step_clip; // we clipped on top of an object from below
+    float impact_delta; // impact delta, for falling damage
 } pmove_t;
+#endif // !defined(GAME3_INCLUDE)
 
 // entity_state_t->effects
 // Effects are things handled on the client side (lights, particles, frame animations)
@@ -965,15 +1081,16 @@ typedef struct {
 #define EF_TRACKERTRAIL     BIT(31)
 //ROGUE
 
-// entity_state_t->morefx flags
 //KEX
-#define EFX_DUALFIRE            BIT(0)
-#define EFX_HOLOGRAM            BIT(1)
-#define EFX_FLASHLIGHT          BIT(2)
-#define EFX_BARREL_EXPLODING    BIT(3)
-#define EFX_TELEPORTER2         BIT(4)
-#define EFX_GRENADE_LIGHT       BIT(5)
+#define EF_DUALFIRE            BIT_ULL(32)
+#define EF_HOLOGRAM            BIT_ULL(33)
+#define EF_FLASHLIGHT          BIT_ULL(34)
+#define EF_BARREL_EXPLODING    BIT_ULL(35)
+#define EF_TELEPORTER2         BIT_ULL(36)
+#define EF_GRENADE_LIGHT       BIT_ULL(37)
 //KEX
+
+typedef uint64_t effects_t;
 
 // entity_state_t->renderfx flags
 #define RF_MINLIGHT         BIT(0)      // allways have some light (viewmodel)
@@ -1013,6 +1130,8 @@ typedef struct {
 #define RF_FLARE_LOCK_ANGLE RF_MINLIGHT
 #define RF_BEAM_LIGHTNING   (RF_BEAM | RF_GLOW)
 //KEX
+
+typedef uint32_t renderfx_t;
 
 // player_state_t->refdef flags
 #define RDF_UNDERWATER      BIT(0)      // warp the screen as apropriate
@@ -1055,7 +1174,7 @@ enum {
     MZ_BFG2,
     MZ_PHALANX2,
 
-//ROGUE
+// ROGUE
     MZ_ETF_RIFLE = 30,
     MZ_PROX,        // KEX
     MZ_SHOTGUN2,    // MZ_ETF_RIFLE_2 in KEX
@@ -1066,7 +1185,7 @@ enum {
     MZ_NUKE2,
     MZ_NUKE4,
     MZ_NUKE8,
-//ROGUE
+// ROGUE
 
     MZ_SILENCED = BIT(7),  // bit flag ORed with one of the above numbers
 };
@@ -1177,12 +1296,37 @@ enum {
     CHAN_RELIABLE       = BIT(4),   // send by reliable message, not datagram
 };
 
+typedef uint8_t soundchan_t;
+
 // sound attenuation values
 #define ATTN_LOOP_NONE          -1  // ugly hack for remaster
 #define ATTN_NONE               0   // full volume the entire level
 #define ATTN_NORM               1
 #define ATTN_IDLE               2
 #define ATTN_STATIC             3   // diminish very rapidly with distance
+
+
+#if !defined(GAME3_INCLUDE)
+// ammo stats compressed in 9 bits per entry
+// since the range is 0-300
+#define BITS_PER_AMMO 9
+
+#define num_of_type_for_bits(TI, num_bits) (((num_bits) + (sizeof(TI) * 8) - 1) / ((sizeof(TI) * 8) + 1))
+
+#define NUM_BITS_FOR_AMMO 9
+#define AMMO_MAX 12
+
+#define NUM_AMMO_STATS num_of_type_for_bits(uint16_t, NUM_BITS_FOR_AMMO * AMMO_MAX)
+// if this value is set on an STAT_AMMO_INFO_xxx, don't render ammo
+#define AMMO_VALUE_INFINITE BIT(NUM_BITS_FOR_AMMO) - 1;
+
+// powerup stats compressed in 2 bits per entry;
+// 3 is the max you'll ever hold, and for some
+// (flashlight) it's to indicate on/off state
+#define NUM_BITS_PER_POWERUP 2
+#define POWERUP_MAX 23
+#define NUM_POWERUP_STATS num_of_type_for_bits(uint16_t, NUM_BITS_PER_POWERUP * POWERUP_MAX)
+#endif // !defined(GAME3_INCLUDE)
 
 // player_state->stats[] indexes
 enum {
@@ -1205,7 +1349,38 @@ enum {
     STAT_CHASE,
     STAT_SPECTATOR,
 
-    MAX_STATS = 32
+    MAX_STATS_OLD = 32,
+#if !defined(GAME3_INCLUDE)
+    MAX_STATS = 64, // KEX
+
+    // [Kex] More stats for weapon wheel
+    STAT_WEAPONS_OWNED_1 = 32,
+    STAT_WEAPONS_OWNED_2 = 33,
+    STAT_AMMO_INFO_START = 34,
+    STAT_AMMO_INFO_END = STAT_AMMO_INFO_START + NUM_AMMO_STATS - 1,
+	STAT_POWERUP_INFO_START,
+	STAT_POWERUP_INFO_END = STAT_POWERUP_INFO_START + NUM_POWERUP_STATS - 1,
+
+    // [Paril-KEX] Key display
+    STAT_KEY_A,
+    STAT_KEY_B,
+    STAT_KEY_C,
+
+    // [Paril-KEX] currently active wheel weapon (or one we're switching to)
+    STAT_ACTIVE_WHEEL_WEAPON = 47,
+	// [Paril-KEX] top of screen coop respawn state
+	STAT_COOP_RESPAWN,
+	// [Paril-KEX] respawns remaining
+	STAT_LIVES,
+	// [Paril-KEX] hit marker; # of damage we successfully landed
+	STAT_HIT_MARKER,
+	// [Paril-KEX]
+	STAT_SELECTED_ITEM_NAME,
+	// [Paril-KEX]
+	STAT_HEALTH_BARS, // two health bar values; 7 bits for value, 1 bit for active
+	// [Paril-KEX]
+	STAT_ACTIVE_WEAPON,
+#endif // !defined(GAME3_INCLUDE)
 };
 
 // STAT_LAYOUTS flags
@@ -1215,6 +1390,8 @@ enum {
 #define LAYOUTS_INTERMISSION    BIT(3)
 #define LAYOUTS_HELP            BIT(4)
 #define LAYOUTS_HIDE_CROSSHAIR  BIT(5)
+
+typedef int16_t layout_flags_t;
 
 // dmflags->value flags
 #define DF_NO_HEALTH        BIT(0)
@@ -1278,7 +1455,8 @@ enum {
 //
 // config strings are a general means of communication from
 // the server to all connected clients.
-// Each config string can be at most MAX_QPATH characters.
+// Each config string can be at most CS_MAX_STRING_LENGTH  characters
+// for rerelease game (was MAX_QPATH previously).
 //
 #define CS_NAME             0
 #define CS_CDTRACK          1
@@ -1287,6 +1465,7 @@ enum {
 #define CS_SKYROTATE        4
 #define CS_STATUSBAR        5       // display program string
 
+#if !defined(GAME3_INCLUDE)
 #define CS_AIRACCEL_OLD         29      // air acceleration control
 #define CS_MAXCLIENTS_OLD       30
 #define CS_MAPCHECKSUM_OLD      31      // for catching cheater maps
@@ -1299,7 +1478,9 @@ enum {
 #define CS_GENERAL_OLD          (CS_PLAYERSKINS_OLD + MAX_CLIENTS)
 #define MAX_CONFIGSTRINGS_OLD   (CS_GENERAL_OLD + MAX_GENERAL)
 
-#if USE_PROTOCOL_EXTENSIONS
+// bound by number of things we can fit in two stats
+#define MAX_WHEEL_ITEMS     32
+
 #define CS_AIRACCEL         59
 #define CS_MAXCLIENTS       60
 #define CS_MAPCHECKSUM      61
@@ -1307,25 +1488,49 @@ enum {
 #define CS_SOUNDS           (CS_MODELS + MAX_MODELS)
 #define CS_IMAGES           (CS_SOUNDS + MAX_SOUNDS)
 #define CS_LIGHTS           (CS_IMAGES + MAX_IMAGES)
-#define CS_ITEMS            (CS_LIGHTS + MAX_LIGHTSTYLES)
+#define CS_SHADOWLIGHTS     (CS_LIGHTS + MAX_LIGHTSTYLES) // [Sam-KEX]
+#define CS_ITEMS            (CS_SHADOWLIGHTS + MAX_SHADOW_LIGHTS)
 #define CS_PLAYERSKINS      (CS_ITEMS + MAX_ITEMS)
 #define CS_GENERAL          (CS_PLAYERSKINS + MAX_CLIENTS)
-#define MAX_CONFIGSTRINGS   (CS_GENERAL + MAX_GENERAL)
-#else
-#define CS_AIRACCEL         CS_AIRACCEL_OLD
-#define CS_MAXCLIENTS       CS_MAXCLIENTS_OLD
-#define CS_MAPCHECKSUM      CS_MAPCHECKSUM_OLD
-#define CS_MODELS           CS_MODELS_OLD
-#define CS_SOUNDS           CS_SOUNDS_OLD
-#define CS_IMAGES           CS_IMAGES_OLD
-#define CS_LIGHTS           CS_LIGHTS_OLD
-#define CS_ITEMS            CS_ITEMS_OLD
-#define CS_PLAYERSKINS      CS_PLAYERSKINS_OLD
-#define CS_GENERAL          CS_GENERAL_OLD
-#define MAX_CONFIGSTRINGS   MAX_CONFIGSTRINGS_OLD
-#endif
+#define CS_WHEEL_WEAPONS    (CS_GENERAL + MAX_GENERAL) // [Paril-KEX] see MAX_WHEEL_ITEMS
+#define CS_WHEEL_AMMO       (CS_WHEEL_WEAPONS + MAX_WHEEL_ITEMS) // [Paril-KEX] see MAX_WHEEL_ITEMS
+#define CS_WHEEL_POWERUPS   (CS_WHEEL_AMMO + MAX_WHEEL_ITEMS) // [Paril-KEX] see MAX_WHEEL_ITEMS
+#define CS_CD_LOOP_COUNT    (CS_WHEEL_POWERUPS + MAX_WHEEL_ITEMS) // [Paril-KEX] override default loop count
+#define CS_GAME_STYLE       (CS_CD_LOOP_COUNT + 1) // [Paril-KEX] see game_style_t
+#define MAX_CONFIGSTRINGS   (CS_GAME_STYLE + 1)
+#endif // !defined(GAME3_INCLUDE)
 
-#if USE_PROTOCOL_EXTENSIONS
+// Configuration strings for "Q2PRO extended" games
+#define MAX_IMAGES_EX           2048
+#define CS_AIRACCEL_EX          CS_AIRACCEL
+#define CS_MAXCLIENTS_EX        CS_MAXCLIENTS
+#define CS_MAPCHECKSUM_EX       CS_MAPCHECKSUM
+#define CS_MODELS_EX            CS_MODELS
+#define CS_SOUNDS_EX            CS_SOUNDS
+#define CS_IMAGES_EX            CS_IMAGES
+#define CS_LIGHTS_EX            (CS_IMAGES_EX + MAX_IMAGES_EX)
+#define CS_ITEMS_EX             (CS_LIGHTS_EX + MAX_LIGHTSTYLES)
+#define CS_PLAYERSKINS_EX       (CS_ITEMS_EX + MAX_ITEMS)
+#define CS_GENERAL_EX           (CS_PLAYERSKINS_EX + MAX_CLIENTS)
+#define MAX_CONFIGSTRINGS_EX    (CS_GENERAL_EX + MAX_GENERAL)
+
+#define MAX_MAX_CONFIGSTRINGS   max(MAX_CONFIGSTRINGS_OLD, max(MAX_CONFIGSTRINGS, MAX_CONFIGSTRINGS_EX))
+
+// Configuration strings for "Q2PRO extended" games
+#define MAX_IMAGES_EX           2048
+#define CS_AIRACCEL_EX          CS_AIRACCEL
+#define CS_MAXCLIENTS_EX        CS_MAXCLIENTS
+#define CS_MAPCHECKSUM_EX       CS_MAPCHECKSUM
+#define CS_MODELS_EX            CS_MODELS
+#define CS_SOUNDS_EX            CS_SOUNDS
+#define CS_IMAGES_EX            CS_IMAGES
+#define CS_LIGHTS_EX            (CS_IMAGES_EX + MAX_IMAGES_EX)
+#define CS_ITEMS_EX             (CS_LIGHTS_EX + MAX_LIGHTSTYLES)
+#define CS_PLAYERSKINS_EX       (CS_ITEMS_EX + MAX_ITEMS)
+#define CS_GENERAL_EX           (CS_PLAYERSKINS_EX + MAX_CLIENTS)
+#define MAX_CONFIGSTRINGS_EX    (CS_GENERAL_EX + MAX_GENERAL)
+
+#define MAX_MAX_CONFIGSTRINGS   max(MAX_CONFIGSTRINGS_OLD, max(MAX_CONFIGSTRINGS, MAX_CONFIGSTRINGS_EX))
 
 typedef struct {
     bool        extended;
@@ -1334,6 +1539,8 @@ typedef struct {
     uint16_t    max_models;
     uint16_t    max_sounds;
     uint16_t    max_images;
+    uint16_t    max_shadowlights;
+    uint16_t    max_wheelitems;
 
     uint16_t    airaccel;
     uint16_t    maxclients;
@@ -1343,17 +1550,22 @@ typedef struct {
     uint16_t    sounds;
     uint16_t    images;
     uint16_t    lights;
+    uint16_t    shadowlights;
     uint16_t    items;
     uint16_t    playerskins;
     uint16_t    general;
+    uint16_t    wheelweapons;
+    uint16_t    wheelammo;
+    uint16_t    wheelpowerups;
+    uint16_t    cdloopcount;
+    uint16_t    gamestyle;
 
     uint16_t    end;
 } cs_remap_t;
 
 extern const cs_remap_t     cs_remap_old;
-extern const cs_remap_t     cs_remap_new;
-
-#endif
+extern const cs_remap_t     cs_remap_rerelease;
+extern const cs_remap_t     cs_remap_q2pro_new;
 
 //==============================================
 
@@ -1361,7 +1573,7 @@ extern const cs_remap_t     cs_remap_new;
 // ertity events are for effects that take place reletive
 // to an existing entities origin.  Very network efficient.
 // All muzzle flashes really should be converted to events...
-typedef enum {
+enum {
     EV_NONE,
     EV_ITEM_RESPAWN,
     EV_FOOTSTEP,
@@ -1374,8 +1586,11 @@ typedef enum {
     EV_OTHER_FOOTSTEP,
     EV_LADDER_STEP,
 // KEX
-} entity_event_t;
+};
 
+typedef uint8_t entity_event_t;
+
+#if !defined(GAME3_INCLUDE)
 // entity_state_t is the information conveyed from the server
 // in an update message about entities that the client will
 // need to render in some way
@@ -1389,15 +1604,32 @@ typedef struct entity_state_s {
     int     modelindex2, modelindex3, modelindex4;  // weapons, CTF flags, etc
     int     frame;
     int     skinnum;
-    unsigned int        effects;        // PGM - we're filling it, so it needs to be unsigned
-    int     renderfx;
+    effects_t effects;        // PGM - we're filling it, so it needs to be unsigned
+    renderfx_t renderfx;
     int     solid;          // for client side prediction, 8*(bits 0-4) is x/y radius
                             // 8*(bits 5-9) is z down distance, 8(bits10-15) is z up
                             // gi.linkentity sets this properly
     int     sound;          // for looping sounds, to guarantee shutoff
-    int     event;          // impulse events -- muzzle flashes, footsteps, etc
+    entity_event_t event;      // (KEX: uint8_t) impulse events -- muzzle flashes, footsteps, etc
                             // events only go out for a single frame, they
                             // are automatically cleared each frame
+// KEX
+    float          alpha;   // [Paril-KEX] alpha scalar; 0 is a "default" value, which will respect other
+                            // settings (default 1.0 for most things, EF_TRANSLUCENT will default this
+                            // to 0.3, etc)
+    float          scale;   // [Paril-KEX] model scale scalar; 0 is a "default" value, like with alpha.
+    uint8_t        instance_bits; // [Paril-KEX] players that *can't* see this entity will have a bit of 1. handled by
+                                  // the server, do not set directly.
+    // [Paril-KEX] allow specifying volume/attn for looping noises; note that
+    // zero will be defaults (1.0 and 3.0 respectively); -1 attenuation is used
+    // for "none" (similar to target_speaker) for no phs/pvs looping noises
+    float          loop_volume;
+    float          loop_attenuation;
+    // [Paril-KEX] for proper client-side owner collision skipping
+    int32_t        owner;
+    // [Paril-KEX] for custom interpolation stuff
+    int32_t        old_frame;
+// KEX
 } entity_state_t;
 
 //==============================================
@@ -1419,20 +1651,31 @@ typedef struct {
     vec3_t      gunangles;
     vec3_t      gunoffset;
     int         gunindex;
+// KEX
+    int         gunskin;
+// KEX
     int         gunframe;
+// KEX
+    int         gunrate;
+// KEX
 
-    float       blend[4];       // rgba full screen effect
+    float       screen_blend[4];       // rgba full screen effect
+// KEX
+    float       damage_blend[4];
+// KEX
 
     float       fov;            // horizontal field of view
 
-    int         rdflags;        // refdef flags
+    refdef_flags_t rdflags;        // KEX uint8_t, refdef flags
 
     short       stats[MAX_STATS];       // fast status bar updates
+
+// KEX
+    uint8_t team_id; // team identifier
+// KEX
 } player_state_t;
 
 //==============================================
-
-#if USE_PROTOCOL_EXTENSIONS
 
 #define ENTITYNUM_BITS      13
 #define ENTITYNUM_MASK      (BIT(ENTITYNUM_BITS) - 1)
@@ -1440,12 +1683,4 @@ typedef struct {
 #define GUNINDEX_BITS       13  // upper 3 bits are skinnum
 #define GUNINDEX_MASK       (BIT(GUNINDEX_BITS) - 1)
 
-typedef struct {
-    int         morefx;
-    float       alpha;
-    float       scale;
-    float       loop_volume;
-    float       loop_attenuation;
-} entity_state_extension_t;
-
-#endif
+#endif // !defined(GAME3_INCLUDE)

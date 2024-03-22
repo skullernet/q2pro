@@ -37,6 +37,7 @@ typedef enum {
     TAG_MVD,
     TAG_SOUND,
     TAG_CMODEL,
+    TAG_NAV,
 
     TAG_MAX
 } memtag_t;

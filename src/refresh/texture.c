@@ -95,9 +95,14 @@ static void gl_texturemode_changed(cvar_t *self)
 
     // change all the existing mipmap texture objects
     for (i = 0, image = r_images; i < r_numImages; i++, image++) {
-        if (image->type == IT_WALL || image->type == IT_SKIN || image->type == IT_SKY) {
+        if (image->type == IT_WALL || image->type == IT_SKIN || image->type == IT_SKY || image->type == IT_CLASSIC_SKY) {
             GL_ForceTexture(0, image->texnum);
             GL_SetFilterAndRepeat(image->type, image->flags);
+
+            if (image->glow_texnum) {
+                GL_ForceTexture(0, image->glow_texnum);
+                GL_SetFilterAndRepeat(image->type, image->flags);
+            }
         }
     }
 }
@@ -128,6 +133,11 @@ static void gl_anisotropy_changed(cvar_t *self)
         if (image->type == IT_WALL || image->type == IT_SKIN) {
             GL_ForceTexture(0, image->texnum);
             GL_SetFilterAndRepeat(image->type, image->flags);
+
+            if (image->glow_texnum) {
+                GL_ForceTexture(0, image->glow_texnum);
+                GL_SetFilterAndRepeat(image->type, image->flags);
+            }
         }
     }
 }
@@ -625,7 +635,7 @@ static void GL_SetFilterAndRepeat(imagetype_t type, imageflags_t flags)
     if (type == IT_WALL || type == IT_SKIN) {
         qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
         qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
-    } else if (type == IT_SKY) {
+    } else if (type == IT_SKY || type == IT_CLASSIC_SKY) {
         qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_max);
         qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
     } else {
@@ -697,7 +707,7 @@ void IMG_Load(image_t *image, byte *pic)
     height = image->upload_height;
 
     // load small pics onto the scrap
-    if (image->type == IT_PIC && width < 64 && height < 64 &&
+    if (image->type == IT_PIC && !(image->flags & IF_SPECIAL) && width < 64 && height < 64 &&
         gl_noscrap->integer == 0 && Scrap_AllocBlock(width, height, &s, &t)) {
         src = pic;
         dst = &scrap_data[(t * SCRAP_BLOCK_WIDTH + s) * 4];
@@ -826,43 +836,33 @@ static void gl_gamma_changed(cvar_t *self)
         vid.update_gamma(gammatable);
 }
 
-static const byte dottexture[8][8] = {
-    {0, 0, 0, 0, 0, 0, 0, 0},
-    {0, 0, 1, 1, 0, 0, 0, 0},
-    {0, 1, 1, 1, 1, 0, 0, 0},
-    {0, 1, 1, 1, 1, 0, 0, 0},
-    {0, 0, 1, 1, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0},
-};
-
 static void GL_InitDefaultTexture(void)
 {
     int i, j;
-    byte pixels[8 * 8 * 4];
+    byte pixels[32 * 32 * 4];
     byte *dst;
     image_t *ntx;
 
     dst = pixels;
-    for (i = 0; i < 8; i++) {
-        for (j = 0; j < 8; j++) {
-            dst[0] = dottexture[i & 3][j & 3] * 255;
+    for (i = 0; i < 32; i++) {
+        for (j = 0; j < 32; j++) {
+            int c = ((i < 16 && j < 16) || (i > 16 && j > 16)) ? 255 : 0;
+            dst[0] = c;
             dst[1] = 0;
-            dst[2] = 0;
+            dst[2] = c;
             dst[3] = 255;
             dst += 4;
         }
     }
 
     GL_ForceTexture(0, TEXNUM_DEFAULT);
-    GL_Upload32(pixels, 8, 8, 0, IT_WALL, IF_TURBULENT);
+    GL_Upload32(pixels, 32, 32, 0, IT_WALL, IF_TURBULENT);
     GL_SetFilterAndRepeat(IT_WALL, IF_TURBULENT);
 
     // fill in notexture image
     ntx = R_NOTEXTURE;
-    ntx->width = ntx->upload_width = 8;
-    ntx->height = ntx->upload_height = 8;
+    ntx->width = ntx->upload_width = 32;
+    ntx->height = ntx->upload_height = 32;
     ntx->type = IT_WALL;
     ntx->flags = 0;
     ntx->texnum = TEXNUM_DEFAULT;
@@ -1024,7 +1024,7 @@ void GL_InitImages(void)
 
     gl_bilerp_chars = Cvar_Get("gl_bilerp_chars", "0", 0);
     gl_bilerp_chars->changed = gl_bilerp_chars_changed;
-    gl_bilerp_pics = Cvar_Get("gl_bilerp_pics", "1", 0);
+    gl_bilerp_pics = Cvar_Get("gl_bilerp_pics", "0", 0);
     gl_bilerp_pics->changed = gl_bilerp_pics_changed;
     gl_texturemode = Cvar_Get("gl_texturemode",
                               "GL_LINEAR_MIPMAP_LINEAR", CVAR_ARCHIVE);
@@ -1040,7 +1040,7 @@ void GL_InitImages(void)
     gl_gamma_scale_pics = Cvar_Get("gl_gamma_scale_pics", "0", CVAR_FILES);
     gl_upscale_pcx = Cvar_Get("gl_upscale_pcx", "0", CVAR_FILES);
     gl_saturation = Cvar_Get("gl_saturation", "1", CVAR_FILES);
-    gl_intensity = Cvar_Get("intensity", "2", 0);
+    gl_intensity = Cvar_Get("intensity", "1", 0);
     gl_invert = Cvar_Get("gl_invert", "0", CVAR_FILES);
     gl_gamma = Cvar_Get("vid_gamma", "1", CVAR_ARCHIVE);
     gl_partshape = Cvar_Get("gl_partshape", "0", 0);
@@ -1066,6 +1066,9 @@ void GL_InitImages(void)
 
     max_texture_size = min(integer, MAX_TEXTURE_SIZE);
 
+    // need to load this first for IMG_Init
+    gl_texturebits_changed(gl_texturebits);
+
     IMG_Init();
 
     IMG_GetPalette();
@@ -1086,7 +1089,6 @@ void GL_InitImages(void)
     colorscale = Cvar_ClampValue(gl_saturation, 0, 1);
 
     gl_texturemode_changed(gl_texturemode);
-    gl_texturebits_changed(gl_texturebits);
     gl_anisotropy_changed(gl_anisotropy);
     gl_bilerp_chars_changed(gl_bilerp_chars);
     gl_bilerp_pics_changed(gl_bilerp_pics);

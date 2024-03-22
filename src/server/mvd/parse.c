@@ -188,7 +188,7 @@ static void MVD_ParseMulticast(mvd_t *mvd, mvd_ops_t op, int extrabits)
         }
 
         if (leaf1) {
-            VectorScale(client->ps.pmove.origin, 0.125f, org);
+            VectorCopy(client->ps.pmove.origin, org);
             leaf2 = CM_PointLeaf(&mvd->cm, org);
             if (!CM_AreasConnected(&mvd->cm, leaf1->area, leaf2->area))
                 continue;
@@ -284,7 +284,7 @@ static void MVD_UnicastString(mvd_t *mvd, bool reliable, mvd_player_t *player)
         }
     }
     if (!cs) {
-        cs = MVD_Malloc(sizeof(*cs) + MAX_QPATH - 1);
+        cs = MVD_Malloc(sizeof(*cs) + CS_MAX_STRING_LENGTH - 1);
         cs->index = index;
         cs->next = player->configstrings;
         player->configstrings = cs;
@@ -397,7 +397,7 @@ static void MVD_ParseUnicast(mvd_t *mvd, mvd_ops_t op, int extrabits)
     while (msg_read.readcount < last) {
         cmd = MSG_ReadByte();
 
-        SHOWNET(1, "%3u:%s\n", msg_read.readcount - 1, MSG_ServerCommandString(cmd));
+        SHOWNET(1, "%3u:%s\n", msg_read.readcount - 1, MSG_ServerCommandString(cmd, PROTOCOL_VERSION_MVD));
 
         switch (cmd) {
         case svc_layout:
@@ -452,10 +452,9 @@ static void MVD_ParseSound(mvd_t *mvd, int extrabits)
     mleaf_t     *leaf1, *leaf2;
     message_packet_t    *msg;
     edict_t     *entity;
-    int         i;
 
     flags = MSG_ReadByte();
-    if (mvd->csr->extended && flags & SND_INDEX16)
+    if (flags & SND_INDEX16)
         index = MSG_ReadWord();
     else
         index = MSG_ReadByte();
@@ -494,8 +493,8 @@ static void MVD_ParseSound(mvd_t *mvd, int extrabits)
 
     // prepare multicast message
     MSG_WriteByte(svc_sound);
-    MSG_WriteByte(flags | SND_POS);
-    if (mvd->csr->extended && flags & SND_INDEX16)
+    MSG_WriteByte(flags | SND_POS | SND_ENT);
+    if (flags & SND_INDEX16)
         MSG_WriteShort(index);
     else
         MSG_WriteByte(index);
@@ -508,7 +507,7 @@ static void MVD_ParseSound(mvd_t *mvd, int extrabits)
         MSG_WriteByte(offset);
 
     MSG_WriteShort(sendchan);
-    MSG_WritePos(origin);
+    MSG_WritePos(origin, mvd->esFlags & MSG_ES_RERELEASE);
 
     leaf1 = NULL;
     if (!(extrabits & 1)) {
@@ -526,7 +525,7 @@ static void MVD_ParseSound(mvd_t *mvd, int extrabits)
 
         // PHS cull this sound
         if (!(extrabits & 1)) {
-            VectorScale(client->ps.pmove.origin, 0.125f, org);
+            VectorCopy(client->ps.pmove.origin, org);
             leaf2 = CM_PointLeaf(&mvd->cm, org);
             if (!CM_AreasConnected(&mvd->cm, leaf1->area, leaf2->area))
                 continue;
@@ -540,12 +539,6 @@ static void MVD_ParseSound(mvd_t *mvd, int extrabits)
         // as no one guarantees reliables to be delivered in time
         if (extrabits & 2) {
             SV_ClientAddMessage(cl, MSG_RELIABLE);
-            continue;
-        }
-
-        // default client doesn't know that bmodels have weird origins
-        if (entity->solid == SOLID_BSP && cl->protocol == PROTOCOL_VERSION_DEFAULT) {
-            SV_ClientAddMessage(cl, 0);
             continue;
         }
 
@@ -564,9 +557,7 @@ static void MVD_ParseSound(mvd_t *mvd, int extrabits)
         msg->attenuation = attenuation;
         msg->timeofs = offset;
         msg->sendchan = sendchan;
-        for (i = 0; i < 3; i++) {
-            msg->pos[i] = COORD2SHORT(origin[i]);
-        }
+        VectorCopy(origin, msg->pos);
 
         List_Remove(&msg->entry);
         List_Append(&cl->msg_unreliable_list, &msg->entry);
@@ -694,7 +685,7 @@ static void MVD_ParsePacketEntities(mvd_t *mvd)
         }
 #endif
 
-        MSG_ParseDeltaEntity(&ent->s, &ent->x, number, bits, mvd->esFlags);
+        MSG_ParseDeltaEntity(&ent->s, number, bits, mvd->esFlags);
 
         // lazily relink even if removed
         if ((bits & RELINK_MASK) && !mvd->demoseeking) {
@@ -924,11 +915,19 @@ static void MVD_ParseServerData(mvd_t *mvd, int extrabits)
     mvd->psFlags = 0;
     mvd->csr = &cs_remap_old;
 
-    if (mvd->version >= PROTOCOL_VERSION_MVD_EXTENDED_LIMITS && mvd->flags & MVF_EXTLIMITS) {
+    if (mvd->version == PROTOCOL_VERSION_MVD_RERELEASE) {
+        mvd->esFlags |= MSG_ES_LONGSOLID | MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS | MSG_ES_RERELEASE;
+        mvd->psFlags |= MSG_PS_EXTENSIONS | MSG_PS_RERELEASE;
+        mvd->csr = &cs_remap_rerelease;
+    } else if (mvd->version >= PROTOCOL_VERSION_MVD_EXTENDED_LIMITS && mvd->flags & MVF_EXTLIMITS) {
         mvd->esFlags |= MSG_ES_LONGSOLID | MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS;
         mvd->psFlags |= MSG_PS_EXTENSIONS;
-        mvd->csr = &cs_remap_new;
+        mvd->csr = &cs_remap_q2pro_new;
     }
+
+    /* HACKY: is_game_rerelease must match the value that was used on the server
+     * so matching CS limits are used */
+    svs.is_game_rerelease = mvd->version == PROTOCOL_VERSION_MVD_RERELEASE;
 
 #if 0
     // change gamedir unless playing a demo
@@ -1054,7 +1053,7 @@ static void MVD_ParseServerData(mvd_t *mvd, int extrabits)
 
 bool MVD_ParseMessage(mvd_t *mvd)
 {
-    int     cmd, extrabits;
+    int     cmd, extrabits = 0;
     bool    ret = false;
 
 #if USE_DEBUG

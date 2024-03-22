@@ -20,8 +20,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 game_locals_t   game;
 level_locals_t  level;
-game_import_t   gi;
-game_export_t   globals;
+game3_import_t  gi;
+game3_export_t  globals;
 spawn_temp_t    st;
 
 int sm_meat_index;
@@ -173,7 +173,7 @@ void InitGame(void)
     // enable protocol extensions if supported
     if (sv_features && (int)sv_features->value & GMF_PROTOCOL_EXTENSIONS && (int)g_protocol_extensions->value) {
         features |= GMF_PROTOCOL_EXTENSIONS;
-        game.csr = cs_remap_new;
+        game.csr = cs_remap_q2pro_new;
     } else {
         game.csr = cs_remap_old;
     }
@@ -207,11 +207,11 @@ Returns a pointer to the structure with all entry points
 and global variables
 =================
 */
-q_exported game_export_t *GetGameAPI(game_import_t *import)
+q_exported game3_export_t *GetGameAPI(game3_import_t *import)
 {
     gi = *import;
 
-    globals.apiversion = GAME_API_VERSION;
+    globals.apiversion = 3;
     globals.Init = InitGame;
     globals.Shutdown = ShutdownGame;
     globals.SpawnEntities = SpawnEntities;
@@ -376,11 +376,13 @@ CheckNeedPass
 void CheckNeedPass(void)
 {
     int need;
+    static int32_t password_modified, spectator_password_modified;
 
     // if password or spectator_password has changed, update needpass
     // as needed
-    if (password->modified || spectator_password->modified) {
-        password->modified = spectator_password->modified = false;
+    if (password->modified_count != password_modified || spectator_password->modified_count != spectator_password_modified) {
+        password_modified = password->modified_count;
+        spectator_password_modified = spectator_password->modified_count;
 
         need = 0;
 

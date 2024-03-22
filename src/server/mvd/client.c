@@ -557,7 +557,7 @@ static void demo_emit_snapshot(mvd_t *mvd)
     int64_t pos;
     char *from, *to;
     size_t len;
-    int i;
+    int i, bits;
 
     if (mvd_snaps->integer <= 0)
         return;
@@ -591,7 +591,7 @@ static void demo_emit_snapshot(mvd_t *mvd)
         if (!strcmp(from, to))
             continue;
 
-        len = Q_strnlen(to, MAX_QPATH);
+        len = Q_strnlen(to, CS_MAX_STRING_LENGTH);
         MSG_WriteByte(mvd_configstring);
         MSG_WriteShort(i);
         MSG_WriteData(to, len);
@@ -610,7 +610,10 @@ static void demo_emit_snapshot(mvd_t *mvd)
         for (cs = player->configstrings; cs; cs = cs->next)
             len += 4 + strlen(cs->string);
 
-        MSG_WriteByte(mvd_unicast | (len >> 8 << SVCMD_BITS));
+        bits = (len >> 8) & 7;
+        MSG_WriteByte(mvd_unicast | (bits ? 128 : 0));
+        if (bits)
+            MSG_WriteByte(bits);
         MSG_WriteByte(len & 255);
         MSG_WriteByte(i);
         for (cs = player->configstrings; cs; cs = cs->next) {
@@ -623,7 +626,10 @@ static void demo_emit_snapshot(mvd_t *mvd)
     // write layout
     if (mvd->clientNum != -1) {
         len = 2 + strlen(mvd->layout);
-        MSG_WriteByte(mvd_unicast | (len >> 8 << SVCMD_BITS));
+        bits = (len >> 8) & 7;
+        MSG_WriteByte(mvd_unicast | (bits ? 128 : 0));
+        if (bits)
+            MSG_WriteByte(bits);
         MSG_WriteByte(len & 255);
         MSG_WriteByte(mvd->clientNum);
         MSG_WriteByte(svc_layout);
@@ -1858,7 +1864,7 @@ static void emit_base_frame(mvd_t *mvd)
     // send base player states
     for (i = 0; i < mvd->maxclients; i++) {
         player = &mvd->players[i];
-        MSG_PackPlayer(&ps, &player->ps);
+        MSG_PackPlayer(&ps, &player->ps, mvd->psFlags);
         MSG_WriteDeltaPlayerstate_Packet(NULL, &ps, i, player_flags(mvd, player));
     }
     MSG_WriteByte(CLIENTNUM_NONE);
@@ -1869,7 +1875,7 @@ static void emit_base_frame(mvd_t *mvd)
         if (!(ent->svflags & SVF_MONSTER))
             continue;   // entity never seen
         ent->s.number = i;
-        MSG_PackEntity(&es, &ent->s, &ent->x);
+        MSG_PackEntity(&es, &ent->s, true);
         MSG_WriteDeltaEntity(NULL, &es, entity_flags(mvd, ent));
     }
     MSG_WriteShort(0);
@@ -1898,7 +1904,7 @@ static void emit_gamestate(mvd_t *mvd)
         if (!*s)
             continue;
 
-        len = Q_strnlen(s, MAX_QPATH);
+        len = Q_strnlen(s, CS_MAX_STRING_LENGTH);
         MSG_WriteShort(i);
         MSG_WriteData(s, len);
         MSG_WriteByte(0);

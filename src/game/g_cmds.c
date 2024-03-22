@@ -675,7 +675,7 @@ void Cmd_Wave_f(edict_t *ent)
     i = Q_atoi(gi.argv(1));
 
     // can't wave when ducked
-    if (ent->client->ps.pmove.pm_flags & PMF_DUCKED)
+    if (ent->client->ps.pmove.pm_flags & G3PMF_DUCKED)
         return;
 
     if (ent->client->anim_priority > ANIM_WAVE)

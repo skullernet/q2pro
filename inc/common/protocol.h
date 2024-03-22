@@ -29,7 +29,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define PROTOCOL_VERSION_R1Q2       35
 #define PROTOCOL_VERSION_Q2PRO      36
 #define PROTOCOL_VERSION_MVD        37 // not used for UDP connections
-#define PROTOCOL_VERSION_EXTENDED   3434
+#define PROTOCOL_VERSION_RERELEASE  1038
+#define PROTOCOL_VERSION_EXTENDED   3434  // used in demos
 
 #define PROTOCOL_VERSION_R1Q2_MINIMUM           1903    // b6377
 #define PROTOCOL_VERSION_R1Q2_UCMD              1904    // b7387
@@ -52,6 +53,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define PROTOCOL_VERSION_MVD_DEFAULT            2010    // r177
 #define PROTOCOL_VERSION_MVD_EXTENDED_LIMITS    2011    // r2894
 #define PROTOCOL_VERSION_MVD_CURRENT            2011    // r2894
+#define PROTOCOL_VERSION_MVD_RERELEASE          3038
 
 #define R1Q2_SUPPORTED(x) \
     ((x) >= PROTOCOL_VERSION_R1Q2_MINIMUM && \
@@ -62,8 +64,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
      (x) <= PROTOCOL_VERSION_Q2PRO_CURRENT)
 
 #define MVD_SUPPORTED(x) \
-    ((x) >= PROTOCOL_VERSION_MVD_MINIMUM && \
-     (x) <= PROTOCOL_VERSION_MVD_CURRENT)
+    (((x) >= PROTOCOL_VERSION_MVD_MINIMUM && \
+      (x) <= PROTOCOL_VERSION_MVD_CURRENT) \
+     || ((x) == PROTOCOL_VERSION_MVD_RERELEASE))
 
 #define VALIDATE_CLIENTNUM(csr, x) \
     ((x) >= -1 && (x) < (csr)->max_edicts - 1)
@@ -72,6 +75,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define Q2PRO_PF_QW_MODE            BIT(1)
 #define Q2PRO_PF_WATERJUMP_HACK     BIT(2)
 #define Q2PRO_PF_EXTENSIONS         BIT(3)
+#define Q2PRO_PF_GAME3_COMPAT       BIT(15) // This indicates the server game library is a version 3 game
 
 //=========================================
 
@@ -122,16 +126,28 @@ typedef enum {
     svc_temp_entity,
     svc_layout,
     svc_inventory,
+    // Q2PRO game
+    svc_stufftext = 11,         // [string] stuffed into client's console buffer
+                                // should be \n terminated
+    // Rerelease game
+    svc_level_restart = 24,     // [Paril-KEX] level was soft-rebooted
+    svc_damage,                 // [Paril-KEX] damage indicators
+    svc_locprint,               // [Kex] localized + libfmt version of print
+    svc_fog,                    // [Paril-KEX] change current fog values
+    svc_waitingforplayers,      // [Kex-Edward] Inform clients that the server is waiting for remaining players
+    svc_bot_chat,               // [Kex] bot specific chat
+    svc_poi,                    // [Paril-KEX] point of interest
+    svc_help_path,              // [Paril-KEX] help path
+    svc_muzzleflash3,           // [Paril-KEX] muzzleflashes, but ushort id
+    svc_achievement,            // [Paril-KEX]
 
     // the rest are private to the client and server
-    svc_nop,
+    svc_nop = 6,
     svc_disconnect,
     svc_reconnect,
     svc_sound,                  // <see code>
     svc_print,                  // [byte] id [string] null terminated string
-    svc_stufftext,              // [string] stuffed into client's console buffer
-                                // should be \n terminated
-    svc_serverdata,             // [long] protocol ...
+    svc_serverdata = 12,        // [long] protocol ...
     svc_configstring,           // [short] [string]
     svc_spawnbaseline,
     svc_centerprint,            // [string] to put in center of the screen
@@ -141,15 +157,30 @@ typedef enum {
     svc_deltapacketentities,    // [...]
     svc_frame,
 
+// KEX
+    // svc_splitclient,
+    // svc_configblast,            // [Kex] A compressed version of svc_configstring
+    // svc_spawnbaselineblast,     // [Kex] A compressed version of svc_spawnbaseline
+// KEX
+
+    // Same meaning as "r1q2 specific operations" below, but different values
+    svc_rr_zpacket = 34,
+    svc_rr_zdownload,
+    svc_rr_gamestate,
+    svc_rr_setting,
+
+    svc_rr_configstringstream,
+    svc_rr_baselinestream,
+
     // r1q2 specific operations
-    svc_zpacket,
-    svc_zdownload,
-    svc_gamestate, // q2pro specific, means svc_playerupdate in r1q2
-    svc_setting,
+    svc_q2pro_zpacket = 21,
+    svc_q2pro_zdownload,
+    svc_q2pro_gamestate, // q2pro specific, means svc_playerupdate in r1q2
+    svc_q2pro_setting,
 
     // q2pro specific operations
-    svc_configstringstream,
-    svc_baselinestream,
+    svc_q2pro_configstringstream,
+    svc_q2pro_baselinestream,
 
     svc_num_types
 } svc_ops_t;
@@ -230,7 +261,7 @@ typedef enum {
 #define PS_WEAPONINDEX      BIT(12)
 #define PS_WEAPONFRAME      BIT(13)
 #define PS_RDFLAGS          BIT(14)
-#define PS_RESERVED         BIT(15)
+#define PS_VIEWHEIGHT       BIT(15) // re-release
 
 // r1q2 protocol specific extra flags
 #define EPS_GUNOFFSET       BIT(0)
@@ -242,6 +273,18 @@ typedef enum {
 
 // q2pro protocol specific extra flags
 #define EPS_CLIENTNUM       BIT(6)
+// KEX
+#define EPS_GUNRATE         BIT(7)
+
+#define BLENDBITS_SCREEN_R  BIT(0)
+#define BLENDBITS_SCREEN_G  BIT(1)
+#define BLENDBITS_SCREEN_B  BIT(2)
+#define BLENDBITS_SCREEN_A  BIT(3)
+#define BLENDBITS_DAMAGE_R  BIT(4)
+#define BLENDBITS_DAMAGE_G  BIT(5)
+#define BLENDBITS_DAMAGE_B  BIT(6)
+#define BLENDBITS_DAMAGE_A  BIT(7)
+// KEX
 
 //==============================================
 

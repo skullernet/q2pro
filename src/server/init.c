@@ -17,6 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "server.h"
+#include "server/nav.h"
 
 server_static_t svs;                // persistant server info
 server_t        sv;                 // local server
@@ -37,18 +38,13 @@ void SV_ClientReset(client_t *client)
     memset(&client->lastcmd, 0, sizeof(client->lastcmd));
 }
 
-static void set_frame_time(void)
+static void set_frame_time(int rate, bool override)
 {
-#if USE_FPS
-    if (g_features->integer & GMF_VARIABLE_FPS)
-        sv.frametime = Com_ComputeFrametime(sv_fps->integer);
-    else
-        sv.frametime = Com_ComputeFrametime(BASE_FRAMERATE);
+    sv.framerate = rate;
+    sv.frametime = Com_ComputeFrametime(sv.framerate);
 
-    sv.framerate = sv.frametime.div * BASE_FRAMERATE;
-
-    Cvar_SetInteger(sv_fps, sv.framerate, FROM_CODE);
-#endif
+    if (!override)
+        Cvar_SetInteger(sv_fps, sv.framerate, FROM_CODE);
 }
 
 static void resolve_masters(void)
@@ -122,6 +118,7 @@ void SV_SpawnServer(const mapcmd_t *cmd)
 
     // free current level
     CM_FreeMap(&sv.cm);
+    Nav_Unload();
 
     // wipe the entire per-level structure
     memset(&sv, 0, sizeof(sv));
@@ -136,10 +133,22 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     svs.next_entity = 0;
 
     // set framerate parameters
-    set_frame_time();
+    if (svs.is_game_rerelease) {
+        // configured tick rate
+        set_frame_time(sv_fps->integer, false);
+    } else {
+        // Force frame rate to 10Hz for "old" games
+    #if USE_FPS
+        // (unless they support variable FPS)
+        if (g_features->integer & GMF_VARIABLE_FPS) {
+            set_frame_time(sv_fps->integer, false);
+        } else
+    #endif
+        set_frame_time(BASE_FRAMERATE, true);
+    }
 
     // save name for levels that don't set message
-    Q_strlcpy(sv.configstrings[CS_NAME], cmd->server, MAX_QPATH);
+    Q_strlcpy(sv.configstrings[CS_NAME], cmd->server, CS_MAX_STRING_LENGTH);
     Q_strlcpy(sv.name, cmd->server, sizeof(sv.name));
     Q_strlcpy(sv.mapcmd, cmd->buffer, sizeof(sv.mapcmd));
 
@@ -153,6 +162,7 @@ void SV_SpawnServer(const mapcmd_t *cmd)
 
     if (cmd->state == ss_game) {
         sv.cm = cmd->cm;
+        Nav_Load(cmd->server);
         sprintf(sv.configstrings[svs.csr.mapchecksum], "%d", sv.cm.checksum);
 
         // model indices 0 and 255 are reserved
@@ -160,7 +170,7 @@ void SV_SpawnServer(const mapcmd_t *cmd)
             Com_Error(ERR_DROP, "Too many inline models");
 
         // set inline model names
-        Q_concat(sv.configstrings[svs.csr.models + 1], MAX_QPATH, "maps/", cmd->server, ".bsp");
+        Q_concat(sv.configstrings[svs.csr.models + 1], CS_MAX_STRING_LENGTH, "maps/", cmd->server, ".bsp");
         for (i = 1, j = 2; i < sv.cm.cache->nummodels; i++, j++) {
             if (j == MODELINDEX_PLAYER)
                 j++;    // skip reserved index
@@ -189,8 +199,8 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     ge->SpawnEntities(sv.name, sv.cm.entitystring, cmd->spawnpoint);
 
     // run two frames to allow everything to settle
-    ge->RunFrame(); sv.framenum++;
-    ge->RunFrame(); sv.framenum++;
+    ge->RunFrame(false); sv.framenum++;
+    ge->RunFrame(false); sv.framenum++;
 
     // make sure maxclients string is correct
     sprintf(sv.configstrings[svs.csr.maxclients], "%d", sv_maxclients->integer);
@@ -207,7 +217,7 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     // set serverinfo variable
     SV_InfoSet("mapname", sv.name);
     SV_InfoSet("port", net_port->string);
-    SV_InfoSet("protocol", svs.csr.extended ? "36" : "34");
+    SV_InfoSet("protocol", STRINGIFY(PROTOCOL_VERSION_RERELEASE));
 
     Cvar_Set("sv_paused", "0");
     Cvar_Set("timedemo", "0");
@@ -266,6 +276,7 @@ static bool check_server(mapcmd_t *cmd, const char *server, bool nextserver)
     if (ret < 0) {
         Com_Printf("Couldn't load %s: %s\n", expanded, BSP_ErrorString(ret));
         CM_FreeMap(&cmd->cm);   // free entstring if overridden
+        Nav_Unload();
         return false;
     }
 
@@ -357,6 +368,7 @@ void SV_InitGame(unsigned mvd_spawn)
         SCR_BeginLoadingPlaque();
 
         CM_FreeMap(&sv.cm);
+        Nav_Unload();
         memset(&sv, 0, sizeof(sv));
 
 #if USE_FPS
@@ -367,6 +379,9 @@ void SV_InitGame(unsigned mvd_spawn)
 
     // get any latched variable changes (maxclients, etc)
     Cvar_GetLatchedVars();
+
+    // We need the time values before the game is loaded
+    set_frame_time(sv_fps->integer, false);
 
 #if !USE_CLIENT
     Cvar_Reset(sv_recycle);

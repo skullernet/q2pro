@@ -489,7 +489,7 @@ void player_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage
     if (!self->deadflag) {
         self->client->respawn_framenum = level.framenum + 1.0f * BASE_FRAMERATE;
         LookAtKiller(self, inflictor, attacker);
-        self->client->ps.pmove.pm_type = PM_DEAD;
+        self->client->ps.pmove.pm_type = G3PM_DEAD;
         ClientObituary(self, inflictor, attacker);
         TossClientWeapon(self);
         if (deathmatch->value)
@@ -527,7 +527,7 @@ void player_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage
             i = (i + 1) % 3;
             // start a death animation
             self->client->anim_priority = ANIM_DEATH;
-            if (self->client->ps.pmove.pm_flags & PMF_DUCKED) {
+            if (self->client->ps.pmove.pm_flags & G3PMF_DUCKED) {
                 self->s.frame = FRAME_crdeath1 - 1;
                 self->client->anim_end = FRAME_crdeath5;
             } else switch (i) {
@@ -937,7 +937,7 @@ void respawn(edict_t *self)
         self->s.event = EV_PLAYER_TELEPORT;
 
         // hold in place briefly
-        self->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
+        self->client->ps.pmove.pm_flags = G3PMF_TIME_TELEPORT;
         self->client->ps.pmove.pm_time = 14;
 
         self->client->respawn_framenum = level.framenum;
@@ -1017,7 +1017,7 @@ void spectator_respawn(edict_t *ent)
         gi.multicast(ent->s.origin, MULTICAST_PVS);
 
         // hold in place briefly
-        ent->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
+        ent->client->ps.pmove.pm_flags = G3PMF_TIME_TELEPORT;
         ent->client->ps.pmove.pm_time = 14;
     }
 
@@ -1235,7 +1235,7 @@ void ClientBeginDeathmatch(edict_t *ent)
         gi.multicast(ent->s.origin, MULTICAST_PVS);
 
         // hold in place briefly
-        ent->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
+        ent->client->ps.pmove.pm_flags = G3PMF_TIME_TELEPORT;
         ent->client->ps.pmove.pm_time = 200 >> 3;
     }
 
@@ -1283,7 +1283,7 @@ void ClientBegin(edict_t *ent)
         PutClientInServer(ent);
 
         // hold in place briefly
-        ent->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
+        ent->client->ps.pmove.pm_flags = G3PMF_TIME_TELEPORT;
         ent->client->ps.pmove.pm_time = 200 >> 3;
     }
 
@@ -1517,7 +1517,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
     client = ent->client;
 
     if (level.intermission_framenum) {
-        client->ps.pmove.pm_type = PM_FREEZE;
+        client->ps.pmove.pm_type = G3PM_FREEZE;
         // can exit intermission after five seconds
         if (level.framenum > level.intermission_framenum + 5.0f * BASE_FRAMERATE
             && (ucmd->buttons & BUTTON_ANY))
@@ -1539,13 +1539,13 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         memset(&pm, 0, sizeof(pm));
 
         if (ent->movetype == MOVETYPE_NOCLIP)
-            client->ps.pmove.pm_type = PM_SPECTATOR;
+            client->ps.pmove.pm_type = G3PM_SPECTATOR;
         else if (ent->s.modelindex != MODELINDEX_PLAYER)
-            client->ps.pmove.pm_type = PM_GIB;
+            client->ps.pmove.pm_type = G3PM_GIB;
         else if (ent->deadflag)
-            client->ps.pmove.pm_type = PM_DEAD;
+            client->ps.pmove.pm_type = G3PM_DEAD;
         else
-            client->ps.pmove.pm_type = PM_NORMAL;
+            client->ps.pmove.pm_type = G3PM_NORMAL;
 
         client->ps.pmove.gravity = sv_gravity->value;
         pm.s = client->ps.pmove;
@@ -1580,7 +1580,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         client->resp.cmd_angles[1] = SHORT2ANGLE(ucmd->angles[1]);
         client->resp.cmd_angles[2] = SHORT2ANGLE(ucmd->angles[2]);
 
-        if (~client->ps.pmove.pm_flags & pm.s.pm_flags & PMF_JUMP_HELD && pm.waterlevel == 0) {
+        if (~client->ps.pmove.pm_flags & pm.s.pm_flags & G3PMF_JUMP_HELD && pm.waterlevel == 0) {
             gi.sound(ent, CHAN_VOICE, gi.soundindex("*jump1.wav"), 1, ATTN_NORM, 0);
             PlayerNoise(ent, ent->s.origin, PNOISE_SELF);
         }
@@ -1641,7 +1641,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 
             if (client->chase_target) {
                 client->chase_target = NULL;
-                client->ps.pmove.pm_flags &= ~PMF_NO_PREDICTION;
+                client->ps.pmove.pm_flags &= ~G3PMF_NO_PREDICTION;
             } else
                 GetChaseTarget(ent);
 
@@ -1653,15 +1653,15 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 
     if (client->resp.spectator) {
         if (ucmd->upmove >= 10) {
-            if (!(client->ps.pmove.pm_flags & PMF_JUMP_HELD)) {
-                client->ps.pmove.pm_flags |= PMF_JUMP_HELD;
+            if (!(client->ps.pmove.pm_flags & G3PMF_JUMP_HELD)) {
+                client->ps.pmove.pm_flags |= G3PMF_JUMP_HELD;
                 if (client->chase_target)
                     ChaseNext(ent);
                 else
                     GetChaseTarget(ent);
             }
         } else
-            client->ps.pmove.pm_flags &= ~PMF_JUMP_HELD;
+            client->ps.pmove.pm_flags &= ~G3PMF_JUMP_HELD;
     }
 
     // update chase cam if being followed

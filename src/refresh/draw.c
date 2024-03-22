@@ -76,17 +76,198 @@ static inline void _GL_StretchPic(
 #define GL_StretchPic(x,y,w,h,s1,t1,s2,t2,color,image) \
     _GL_StretchPic(x,y,w,h,s1,t1,s2,t2,color,(image)->texnum,(image)->flags)
 
+static inline void _GL_StretchRotatePic(
+    float x, float y, float w, float h,
+    float s1, float t1, float s2, float t2,
+    float angle, float pivot_x, float pivot_y,
+    uint32_t color, int texnum, int flags)
+{
+    vec_t *dst_vert;
+    uint32_t *dst_color;
+    QGL_INDEX_TYPE *dst_indices;
+
+    if (tess.numverts + 4 > TESS_MAX_VERTICES ||
+        tess.numindices + 6 > TESS_MAX_INDICES ||
+        (tess.numverts && tess.texnum[0] != texnum)) {
+        GL_Flush2D();
+    }
+
+    tess.texnum[0] = texnum;
+
+    dst_vert = tess.vertices + tess.numverts * 4;
+    float hw = w / 2.0f;
+    float hh = h / 2.0f;
+
+    Vector4Set(dst_vert,      -hw + pivot_x, -hh + pivot_y, s1, t1);
+    Vector4Set(dst_vert +  4,  hw + pivot_x, -hh + pivot_y, s2, t1);
+    Vector4Set(dst_vert +  8,  hw + pivot_x,  hh + pivot_y, s2, t2);
+    Vector4Set(dst_vert + 12, -hw + pivot_x,  hh + pivot_y, s1, t2);
+
+    float s = sinf(angle);
+    float c = cosf(angle);
+    int i = 0;
+
+    for (dst_vert = tess.vertices + tess.numverts * 4; i < 4; dst_vert += 4, i++) {
+        float vert_x = *(dst_vert + 0);
+        float vert_y = *(dst_vert + 1);
+        
+        *(dst_vert + 0) = (vert_x * c - vert_y * s) + x;
+        *(dst_vert + 1) = (vert_x * s + vert_y * c) + y;
+    }
+
+    dst_color = (uint32_t *)tess.colors + tess.numverts;
+    dst_color[0] = color;
+    dst_color[1] = color;
+    dst_color[2] = color;
+    dst_color[3] = color;
+
+    dst_indices = tess.indices + tess.numindices;
+    dst_indices[0] = tess.numverts + 0;
+    dst_indices[1] = tess.numverts + 2;
+    dst_indices[2] = tess.numverts + 3;
+    dst_indices[3] = tess.numverts + 0;
+    dst_indices[4] = tess.numverts + 1;
+    dst_indices[5] = tess.numverts + 2;
+
+    if (flags & IF_TRANSPARENT) {
+        if ((flags & IF_PALETTED) && draw.scale == 1) {
+            tess.flags |= 1;
+        } else {
+            tess.flags |= 2;
+        }
+    }
+
+    if ((color & U32_ALPHA) != U32_ALPHA) {
+        tess.flags |= 2;
+    }
+
+    tess.numverts += 4;
+    tess.numindices += 6;
+}
+
+#define GL_StretchRotatePic(x,y,w,h,s1,t1,s2,t2,angle,px,py,color,image) \
+    _GL_StretchRotatePic(x,y,w,h,s1,t1,s2,t2,angle,px,py,color,(image)->texnum,(image)->flags)
+
+static void GL_DrawVignette(int distance, color_t color)
+{
+    vec_t *dst_vert;
+    uint32_t *dst_color;
+    QGL_INDEX_TYPE *dst_indices;
+
+    if (tess.numverts + 8 > TESS_MAX_VERTICES ||
+        tess.numindices + 24 > TESS_MAX_INDICES ||
+        (tess.numverts && tess.texnum[0] != TEXNUM_WHITE)) {
+        GL_Flush2D();
+    }
+
+    tess.texnum[0] = TEXNUM_WHITE;
+
+    int x = 0, y = 0;
+    int w = glr.fd.width, h = glr.fd.height;
+
+    // outer vertices
+    dst_vert = tess.vertices + tess.numverts * 4;
+    Vector2Set(dst_vert,      x,     y    );
+    Vector2Set(dst_vert +  4, x + w, y    );
+    Vector2Set(dst_vert +  8, x + w, y + h);
+    Vector2Set(dst_vert + 12, x,     y + h);
+
+    dst_color = (uint32_t *)tess.colors + tess.numverts;
+    dst_color[0] = color.u32;
+    dst_color[1] = color.u32;
+    dst_color[2] = color.u32;
+    dst_color[3] = color.u32;
+
+    // inner vertices
+    x += distance;
+    y += distance;
+    w -= distance * 2;
+    h -= distance * 2;
+    
+    dst_vert += 16;
+    Vector2Set(dst_vert,      x,     y    );
+    Vector2Set(dst_vert +  4, x + w, y    );
+    Vector2Set(dst_vert +  8, x + w, y + h);
+    Vector2Set(dst_vert + 12, x,     y + h);
+
+    /*
+    0             1
+    
+        4     5
+
+        7     6
+
+    3             2
+    */
+
+    dst_color += 4;
+    dst_color[0] = 0;
+    dst_color[1] = 0;
+    dst_color[2] = 0;
+    dst_color[3] = 0;
+
+    dst_indices = tess.indices + tess.numindices;
+    dst_indices[0] = tess.numverts + 0;
+    dst_indices[1] = tess.numverts + 5;
+    dst_indices[2] = tess.numverts + 4;
+    dst_indices[3] = tess.numverts + 0;
+    dst_indices[4] = tess.numverts + 1;
+    dst_indices[5] = tess.numverts + 5;
+
+    dst_indices[6]  = tess.numverts + 1;
+    dst_indices[7]  = tess.numverts + 6;
+    dst_indices[8]  = tess.numverts + 5;
+    dst_indices[9]  = tess.numverts + 1;
+    dst_indices[10] = tess.numverts + 2;
+    dst_indices[11] = tess.numverts + 6;
+
+    dst_indices[12] = tess.numverts + 6;
+    dst_indices[13] = tess.numverts + 2;
+    dst_indices[14] = tess.numverts + 3;
+    dst_indices[15] = tess.numverts + 6;
+    dst_indices[16] = tess.numverts + 3;
+    dst_indices[17] = tess.numverts + 7;
+
+    dst_indices[18] = tess.numverts + 0;
+    dst_indices[19] = tess.numverts + 7;
+    dst_indices[20] = tess.numverts + 3;
+    dst_indices[21] = tess.numverts + 0;
+    dst_indices[22] = tess.numverts + 4;
+    dst_indices[23] = tess.numverts + 7;
+
+    tess.flags |= 2;
+
+    tess.numverts += 8;
+    tess.numindices += 24;
+}
+
 void GL_Blend(void)
 {
     color_t color;
 
-    color.u8[0] = glr.fd.blend[0] * 255;
-    color.u8[1] = glr.fd.blend[1] * 255;
-    color.u8[2] = glr.fd.blend[2] * 255;
-    color.u8[3] = glr.fd.blend[3] * 255;
+    if (glr.fd.screen_blend[3]) {
+        color.u8[0] = glr.fd.screen_blend[0] * 255;
+        color.u8[1] = glr.fd.screen_blend[1] * 255;
+        color.u8[2] = glr.fd.screen_blend[2] * 255;
+        color.u8[3] = glr.fd.screen_blend[3] * 255;
 
-    _GL_StretchPic(glr.fd.x, glr.fd.y, glr.fd.width, glr.fd.height, 0, 0, 1, 1,
-                   color.u32, TEXNUM_WHITE, 0);
+        _GL_StretchPic(glr.fd.x, glr.fd.y, glr.fd.width, glr.fd.height, 0, 0, 1, 1,
+                       color.u32, TEXNUM_WHITE, 0);
+    }
+
+    if (glr.fd.damage_blend[3]) {
+        color.u8[0] = glr.fd.damage_blend[0] * 255;
+        color.u8[1] = glr.fd.damage_blend[1] * 255;
+        color.u8[2] = glr.fd.damage_blend[2] * 255;
+        color.u8[3] = glr.fd.damage_blend[3] * 255;
+
+        if (gl_damageblend_frac->value <= 0) {
+            _GL_StretchPic(glr.fd.x, glr.fd.y, glr.fd.width, glr.fd.height, 0, 0, 1, 1,
+                           color.u32, TEXNUM_WHITE, 0);
+        } else {
+            GL_DrawVignette(min(glr.fd.width * gl_damageblend_frac->value, glr.fd.height * gl_damageblend_frac->value), color);
+        }
+    }
 }
 
 void R_ClearColor(void)
@@ -156,7 +337,7 @@ static int get_auto_scale(void)
     if (r_config.height < r_config.width) {
         if (r_config.height >= 2160)
             scale = 4;
-        else if (r_config.height >= 1080)
+        else if (r_config.height >= 720)
             scale = 2;
     } else {
         if (r_config.width >= 3840)
@@ -204,6 +385,14 @@ void R_DrawStretchPic(int x, int y, int w, int h, qhandle_t pic)
 
     GL_StretchPic(x, y, w, h, image->sl, image->tl, image->sh, image->th,
                   draw.colors[0].u32, image);
+}
+
+void R_DrawStretchRotatePic(int x, int y, int w, int h, float angle, int pivot_x, int pivot_y, qhandle_t pic)
+{
+    image_t *image = IMG_ForHandle(pic);
+
+    GL_StretchRotatePic(x, y, w, h, image->sl, image->tl, image->sh, image->th,
+                        angle, pivot_x, pivot_y, draw.colors[0].u32, image);
 }
 
 void R_DrawKeepAspectPic(int x, int y, int w, int h, qhandle_t pic)
@@ -266,7 +455,7 @@ void R_DrawFill32(int x, int y, int w, int h, uint32_t color)
     _GL_StretchPic(x, y, w, h, 0, 0, 1, 1, color, TEXNUM_WHITE, 0);
 }
 
-static inline void draw_char(int x, int y, int flags, int c, image_t *image)
+static inline void draw_char(int x, int y, int w, int h, int flags, int c, image_t *image)
 {
     float s, t;
 
@@ -284,24 +473,29 @@ static inline void draw_char(int x, int y, int flags, int c, image_t *image)
     s = (c & 15) * 0.0625f;
     t = (c >> 4) * 0.0625f;
 
-    if (gl_fontshadow->integer > 0 && c != 0x83) {
+    if (((flags & UI_DROPSHADOW) || gl_fontshadow->integer > 0) && c != 0x83) {
         uint32_t black = MakeColor(0, 0, 0, draw.colors[0].u8[3]);
 
-        GL_StretchPic(x + 1, y + 1, CHAR_WIDTH, CHAR_HEIGHT, s, t,
+        GL_StretchPic(x + 1, y + 1, w, h, s, t,
                       s + 0.0625f, t + 0.0625f, black, image);
 
         if (gl_fontshadow->integer > 1)
-            GL_StretchPic(x + 2, y + 2, CHAR_WIDTH, CHAR_HEIGHT, s, t,
+            GL_StretchPic(x + 2, y + 2, w, h, s, t,
                           s + 0.0625f, t + 0.0625f, black, image);
     }
 
-    GL_StretchPic(x, y, CHAR_WIDTH, CHAR_HEIGHT, s, t,
+    GL_StretchPic(x, y, w, h, s, t,
                   s + 0.0625f, t + 0.0625f, draw.colors[c >> 7].u32, image);
 }
 
 void R_DrawChar(int x, int y, int flags, int c, qhandle_t font)
 {
-    draw_char(x, y, flags, c & 255, IMG_ForHandle(font));
+    draw_char(x, y, CHAR_WIDTH, CHAR_HEIGHT, flags, c & 255, IMG_ForHandle(font));
+}
+
+void R_DrawStretchChar(int x, int y, int w, int h, int flags, int c, qhandle_t font)
+{
+    draw_char(x, y, w, h, flags, c & 255, IMG_ForHandle(font));
 }
 
 int R_DrawString(int x, int y, int flags, size_t maxlen, const char *s, qhandle_t font)
@@ -310,11 +504,127 @@ int R_DrawString(int x, int y, int flags, size_t maxlen, const char *s, qhandle_
 
     while (maxlen-- && *s) {
         byte c = *s++;
-        draw_char(x, y, flags, c, image);
+        draw_char(x, y, CHAR_WIDTH, CHAR_HEIGHT, flags, c, image);
         x += CHAR_WIDTH;
     }
 
     return x;
+}
+
+static inline int draw_kfont_char(int x, int y, int scale, int flags, uint32_t codepoint, const kfont_t *kfont)
+{
+    const kfont_char_t *ch = SCR_KFontLookup(kfont, codepoint);
+
+    if (!ch)
+        return 0;
+    
+    image_t *image = IMG_ForHandle(kfont->pic);
+
+    float s = ch->x * kfont->sw;
+    float t = ch->y * kfont->sh;
+    
+    float sw = ch->w * kfont->sw;
+    float sh = ch->h * kfont->sh;
+
+    int w = ch->w * scale;
+    int h = ch->h * scale;
+
+    int shadow_offset = 0;
+
+    if ((flags & UI_DROPSHADOW) || gl_fontshadow->integer > 0) {
+        shadow_offset = (1 * scale);
+
+        uint32_t black = MakeColor(0, 0, 0, draw.colors[0].u8[3]);
+
+        GL_StretchPic(x + shadow_offset, y + shadow_offset, w, h, s, t,
+                      s + sw, t + sh, black, image);
+
+        if (gl_fontshadow->integer > 1)
+            GL_StretchPic(x + (shadow_offset * 2), y + (shadow_offset * 2), w, h, s, t,
+                          s + sw, t + sh, black, image);
+    }
+
+    GL_StretchPic(x, y, w, h, s, t,
+                  s + sw, t + sh, draw.colors[0].u32, image);
+
+    return ch->w * scale;
+}
+
+int R_DrawKFontChar(int x, int y, int scale, int flags, uint32_t codepoint, const kfont_t *kfont)
+{
+    return draw_kfont_char(x, y, scale, flags, codepoint, kfont);
+}
+
+const kfont_char_t *SCR_KFontLookup(const kfont_t *kfont, uint32_t codepoint)
+{
+    if (codepoint < KFONT_ASCII_MIN || codepoint > KFONT_ASCII_MAX)
+        return NULL;
+
+    const kfont_char_t *ch = &kfont->chars[codepoint - KFONT_ASCII_MIN];
+
+    if (!ch->w)
+        return NULL;
+
+    return ch;
+}
+
+void SCR_LoadKFont(kfont_t *font, const char *filename)
+{
+    memset(font, 0, sizeof(*font));
+
+    char *buffer;
+
+    if (FS_LoadFile(filename, (void **) &buffer) < 0)
+        return;
+
+    const char *data = buffer;
+
+    while (true) {
+        const char *token = COM_Parse(&data);
+
+        if (!*token)
+            break;
+
+        if (!strcmp(token, "texture")) {
+            token = COM_Parse(&data);
+            font->pic = R_RegisterFont(va("/%s", token));
+        } else if (!strcmp(token, "unicode")) {
+        } else if (!strcmp(token, "mapchar")) {
+            token = COM_Parse(&data);
+
+            while (true) {
+                token = COM_Parse(&data);
+
+                if (!strcmp(token, "}"))
+                    break;
+
+                uint32_t codepoint = strtoul(token, NULL, 10);
+                uint32_t x, y, w, h;
+                
+                x = strtoul(COM_Parse(&data), NULL, 10);
+                y = strtoul(COM_Parse(&data), NULL, 10);
+                w = strtoul(COM_Parse(&data), NULL, 10);
+                h = strtoul(COM_Parse(&data), NULL, 10);
+                COM_Parse(&data);
+
+                codepoint -= KFONT_ASCII_MIN;
+
+                if (codepoint < KFONT_ASCII_MAX) {
+                    font->chars[codepoint].x = x;
+                    font->chars[codepoint].y = y;
+                    font->chars[codepoint].w = w;
+                    font->chars[codepoint].h = h;
+
+                    font->line_height = max(font->line_height, h);
+                }
+            }
+        }
+    }
+    
+    font->sw = 1.0f / IMG_ForHandle(font->pic)->width;
+    font->sh = 1.0f / IMG_ForHandle(font->pic)->height;
+
+    FS_FreeFile(buffer);
 }
 
 #if USE_DEBUG

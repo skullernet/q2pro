@@ -38,6 +38,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <dlfcn.h>
 #include <errno.h>
 
+#if USE_MEMORY_TRACES && HAVE_BACKTRACE
+#include <execinfo.h>
+#endif
+
 #if USE_SDL
 #include <SDL.h>
 #endif
@@ -319,6 +323,21 @@ void *Sys_GetProcAddress(void *handle, const char *sym)
     return entry;
 }
 
+#if USE_MEMORY_TRACES
+void Sys_BackTrace(void **output, size_t count, size_t offset)
+{
+#if HAVE_BACKTRACE
+    int num_entries = backtrace(output, count);
+    if (offset > 0) {
+        int move_entries = num_entries - min(offset, num_entries);
+        memmove(output, output + offset, move_entries);
+        memset(output + move_entries, 0, sizeof(void *) * (num_entries - move_entries));
+    }
+#endif
+}
+#endif
+
+
 /*
 ===============================================================================
 
@@ -433,6 +452,24 @@ void Sys_ListFiles_r(listfiles_t *list, const char *path, int depth)
     }
 
     closedir(dir);
+}
+
+/*
+========================================================================
+
+GAME PATH DETECTION
+
+========================================================================
+*/
+
+/*
+================
+Sys_GetInstalledGamePath
+================
+*/
+bool Sys_GetInstalledGamePath(game_path_t path_type, char *path, size_t path_length)
+{
+    return false;
 }
 
 /*

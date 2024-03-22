@@ -27,40 +27,46 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // comparsion easier
 typedef struct {
     uint16_t    number;
-    int16_t     origin[3];
+    vec3_t      origin;
     int16_t     angles[3];
-    int16_t     old_origin[3];
+    vec3_t      old_origin;
     uint16_t    modelindex;
     uint16_t    modelindex2;
     uint16_t    modelindex3;
     uint16_t    modelindex4;
     uint32_t    skinnum;
-    uint32_t    effects;
+    effects_t   effects; // KEX
     uint32_t    renderfx;
     uint32_t    solid;
-    uint32_t    morefx;
+// KEX
     uint16_t    frame;
     uint16_t    sound;
     uint8_t     event;
+// KEX
     uint8_t     alpha;
     uint8_t     scale;
     uint8_t     loop_volume;
     uint8_t     loop_attenuation;
+// KEX
 } entity_packed_t;
 
 typedef struct {
     pmove_state_t   pmove;
     int16_t         viewangles[3];
-    int8_t          viewoffset[3];
-    int8_t          kick_angles[3];
-    int8_t          gunangles[3];
-    int8_t          gunoffset[3];
+    int16_t         viewoffset[3];
+    int16_t         kick_angles[3];
+    int16_t         gunangles[3];
+    int16_t         gunoffset[3];
     uint16_t        gunindex;
     uint8_t         gunframe;
-    uint8_t         blend[4];
+    uint8_t         screen_blend[4];
     uint8_t         fov;
     uint8_t         rdflags;
     int16_t         stats[MAX_STATS];
+// KEX
+    int8_t          gunrate;
+    uint8_t         damage_blend[4];
+// KEX
 } player_packed_t;
 
 typedef enum {
@@ -71,8 +77,11 @@ typedef enum {
     MSG_PS_IGNORE_DELTAANGLES   = BIT(4),   // ignore delta_angles
     MSG_PS_IGNORE_PREDICTION    = BIT(5),   // mutually exclusive with IGNORE_VIEWANGLES
     MSG_PS_EXTENSIONS           = BIT(6),   // enable protocol extensions
-    MSG_PS_FORCE                = BIT(7),   // send even if unchanged (MVD stream only)
-    MSG_PS_REMOVE               = BIT(8),   // player is removed (MVD stream only)
+    MSG_PS_RERELEASE            = BIT(7),   // rerelease extensions: floating point coordinates,
+                                            // increased stats numbers,
+                                            // wider pm_time and pm_flags
+    MSG_PS_FORCE                = BIT(8),   // send even if unchanged (MVD stream only)
+    MSG_PS_REMOVE               = BIT(9),  // player is removed (MVD stream only)
 } msgPsFlags_t;
 
 typedef enum {
@@ -84,7 +93,8 @@ typedef enum {
     MSG_ES_BEAMORIGIN   = BIT(5),   // client has RF_BEAM old_origin fix
     MSG_ES_SHORTANGLES  = BIT(6),   // higher precision angles encoding
     MSG_ES_EXTENSIONS   = BIT(7),   // enable protocol extensions
-    MSG_ES_REMOVE       = BIT(8),   // entity is removed (MVD stream only)
+    MSG_ES_RERELEASE    = BIT(8),   // rerelease extensions: floating point coordinates
+    MSG_ES_REMOVE       = BIT(9),   // entity is removed (MVD stream only)
 } msgEsFlags_t;
 
 extern sizebuf_t    msg_write;
@@ -106,18 +116,19 @@ void    MSG_WriteShort(int c);
 void    MSG_WriteLong(int c);
 void    MSG_WriteLong64(int64_t c);
 void    MSG_WriteString(const char *s);
-void    MSG_WritePos(const vec3_t pos);
+void    MSG_WritePos(const vec3_t pos, bool float_coord);
 void    MSG_WriteAngle(float f);
+void    MSG_WriteFloat(float f);
 #if USE_CLIENT
 void    MSG_FlushBits(void);
 void    MSG_WriteBits(int value, int bits);
-int     MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *cmd, int version);
-int     MSG_WriteDeltaUsercmd_Enhanced(const usercmd_t *from, const usercmd_t *cmd);
+int     MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *cmd, int serverProtocol, int version);
+int     MSG_WriteDeltaUsercmd_Enhanced(const usercmd_t *from, const usercmd_t *cmd, int serverProtocol);
 #endif
 void    MSG_WriteDir(const vec3_t vector);
-void    MSG_PackEntity(entity_packed_t *out, const entity_state_t *in, const entity_state_extension_t *ext);
+void    MSG_PackEntity(entity_packed_t *out, const entity_state_t *in, bool ext);
 void    MSG_WriteDeltaEntity(const entity_packed_t *from, const entity_packed_t *to, msgEsFlags_t flags);
-void    MSG_PackPlayer(player_packed_t *out, const player_state_t *in);
+void    MSG_PackPlayer(player_packed_t *out, const player_state_t *in, msgPsFlags_t flags);
 void    MSG_WriteDeltaPlayerstate_Default(const player_packed_t *from, const player_packed_t *to, msgPsFlags_t flags);
 int     MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t *from, player_packed_t *to, msgPsFlags_t flags);
 void    MSG_WriteDeltaPlayerstate_Packet(const player_packed_t *from, const player_packed_t *to, int number, msgPsFlags_t flags);
@@ -143,16 +154,16 @@ int     MSG_ReadLong(void);
 int64_t MSG_ReadLong64(void);
 size_t  MSG_ReadString(char *dest, size_t size);
 size_t  MSG_ReadStringLine(char *dest, size_t size);
+float   MSG_ReadFloat(void);
+void    MSG_ReadPos(vec3_t pos, bool float_coord);
 #if USE_CLIENT
-void    MSG_ReadPos(vec3_t pos);
 void    MSG_ReadDir(vec3_t vector);
 #endif
 int     MSG_ReadBits(int bits);
 void    MSG_ReadDeltaUsercmd(const usercmd_t *from, usercmd_t *cmd);
-void    MSG_ReadDeltaUsercmd_Hacked(const usercmd_t *from, usercmd_t *to);
 void    MSG_ReadDeltaUsercmd_Enhanced(const usercmd_t *from, usercmd_t *to);
 int     MSG_ParseEntityBits(uint64_t *bits, msgEsFlags_t flags);
-void    MSG_ParseDeltaEntity(entity_state_t *to, entity_state_extension_t *ext, int number, uint64_t bits, msgEsFlags_t flags);
+void    MSG_ParseDeltaEntity(entity_state_t *to, int number, uint64_t bits, msgEsFlags_t flags);
 #if USE_CLIENT
 void    MSG_ParseDeltaPlayerstate_Default(const player_state_t *from, player_state_t *to, int flags, msgPsFlags_t psflags);
 void    MSG_ParseDeltaPlayerstate_Enhanced(const player_state_t *from, player_state_t *to, int flags, int extraflags, msgPsFlags_t psflags);
@@ -168,7 +179,7 @@ void    MSG_ShowDeltaUsercmdBits_Enhanced(int bits);
 #if USE_CLIENT || USE_MVD_CLIENT
 void    MSG_ShowDeltaEntityBits(uint64_t bits);
 void    MSG_ShowDeltaPlayerstateBits_Packet(int flags);
-const char *MSG_ServerCommandString(int cmd);
+const char *MSG_ServerCommandString(int cmd, int version);
 #endif // USE_CLIENT || USE_MVD_CLIENT
 #endif // USE_DEBUG
 

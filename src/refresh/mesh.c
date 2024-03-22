@@ -47,7 +47,7 @@ static void setup_dotshading(void)
 
     dotshading = false;
 
-    if (!gl_dotshading->integer)
+    if (!gl_dotshading->integer || (gl_static.use_shaders && gl_per_pixel_lighting->integer))
         return;
 
     if (glr.ent->flags & RF_SHELL_MASK)
@@ -106,7 +106,8 @@ static void tess_static_shell(const maliasmesh_t *mesh)
                       src_vert->pos[1] * newscale[1] + translate[1];
         dst_vert[2] = normal[2] * shellscale +
                       src_vert->pos[2] * newscale[2] + translate[2];
-        dst_vert += 4;
+        VectorCopy(normal, dst_vert + 4);
+        dst_vert += 8;
 
         src_vert++;
     }
@@ -145,7 +146,8 @@ static void tess_static_plain(const maliasmesh_t *mesh)
         dst_vert[0] = src_vert->pos[0] * newscale[0] + translate[0];
         dst_vert[1] = src_vert->pos[1] * newscale[1] + translate[1];
         dst_vert[2] = src_vert->pos[2] * newscale[2] + translate[2];
-        dst_vert += 4;
+        get_static_normal(dst_vert + 4, src_vert);
+        dst_vert += 8;
 
         src_vert++;
     }
@@ -190,7 +192,8 @@ static void tess_lerped_shell(const maliasmesh_t *mesh)
         dst_vert[2] = normal[2] * shellscale +
                       src_oldvert->pos[2] * oldscale[2] +
                       src_newvert->pos[2] * newscale[2] + translate[2];
-        dst_vert += 4;
+        VectorCopy(normal, dst_vert + 4);
+        dst_vert += 8;
 
         src_oldvert++;
         src_newvert++;
@@ -245,7 +248,8 @@ static void tess_lerped_plain(const maliasmesh_t *mesh)
         dst_vert[2] =
             src_oldvert->pos[2] * oldscale[2] +
             src_newvert->pos[2] * newscale[2] + translate[2];
-        dst_vert += 4;
+        get_lerped_normal(dst_vert + 4, src_oldvert, src_newvert);
+        dst_vert += 8;
 
         src_oldvert++;
         src_newvert++;
@@ -385,10 +389,6 @@ static void setup_color(void)
                     color[i] = m;
             }
         }
-
-        color[0] = Q_clipf(color[0], 0, 1);
-        color[1] = Q_clipf(color[1], 0, 1);
-        color[2] = Q_clipf(color[2], 0, 1);
     }
 
     if (flags & RF_TRANSLUCENT) {
@@ -422,7 +422,7 @@ static void draw_celshading(const QGL_INDEX_TYPE *indices, int num_indices)
         return;
 
     GL_BindTexture(0, TEXNUM_BLACK);
-    GL_StateBits(GLS_BLEND_BLEND);
+    GL_StateBits(GLS_BLEND_BLEND | GLS_FOG_ENABLE);
     GL_ArrayBits(GLA_VERTEX);
 
     qglLineWidth(gl_celshading->value * celscale);
@@ -495,7 +495,7 @@ static void draw_shadow(const QGL_INDEX_TYPE *indices, int num_indices)
         return;
 
     // load shadow projection matrix
-    GL_LoadMatrix(shadowmatrix);
+    GL_LoadMatrix(glr.entmatrix, shadowmatrix);
 
     // eliminate z-fighting by utilizing stencil buffer, if available
     if (gl_config.stencilbits) {
@@ -504,7 +504,7 @@ static void draw_shadow(const QGL_INDEX_TYPE *indices, int num_indices)
         qglStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
     }
 
-    GL_StateBits(GLS_BLEND_BLEND);
+    GL_StateBits(GLS_BLEND_BLEND | GLS_FOG_ENABLE);
     GL_BindTexture(0, TEXNUM_WHITE);
     GL_ArrayBits(GLA_VERTEX);
 
@@ -554,11 +554,11 @@ static void draw_alias_mesh(const QGL_INDEX_TYPE *indices, int num_indices,
                             const maliastc_t *tcoords, int num_verts,
                             image_t **skins, int num_skins)
 {
-    glStateBits_t state = GLS_INTENSITY_ENABLE;
+    glStateBits_t state = GLS_INTENSITY_ENABLE | GLS_FOG_ENABLE;
     image_t *skin = skin_for_mesh(skins, num_skins);
 
     // fall back to entity matrix
-    GL_LoadMatrix(glr.entmatrix);
+    GL_LoadMatrix(glr.entmatrix, glr.viewmatrix);
 
     // avoid drawing hidden faces for transparent gun
     if ((glr.ent->flags & (RF_TRANSLUCENT | RF_WEAPONMODEL | RF_FULLBRIGHT)) == (RF_TRANSLUCENT | RF_WEAPONMODEL)) {
@@ -580,6 +580,8 @@ static void draw_alias_mesh(const QGL_INDEX_TYPE *indices, int num_indices,
     if (skin->glow_texnum)
         state |= GLS_GLOWMAP_ENABLE;
 
+    state |= GLS_DYNAMIC_LIGHTS;
+
     GL_StateBits(state);
 
     GL_BindTexture(0, skin->texnum);
@@ -592,8 +594,9 @@ static void draw_alias_mesh(const QGL_INDEX_TYPE *indices, int num_indices,
         GL_VertexPointer(3, VERTEX_SIZE, tess.vertices);
         GL_ColorFloatPointer(4, VERTEX_SIZE, tess.vertices + 4);
     } else {
-        GL_ArrayBits(GLA_VERTEX | GLA_TC);
-        GL_VertexPointer(3, 4, tess.vertices);
+        GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_NORMAL);
+        GL_VertexPointer(3, 8, tess.vertices);
+        GL_NormalPointer(3, 8, tess.vertices + 4);
         GL_Color(color[0], color[1], color[2], color[3]);
     }
 
@@ -636,10 +639,11 @@ static inline void calc_skel_vert(const md5_vertex_t *vert,
         const md5_joint_t *joint = &skeleton[weight->joint];
 
         vec3_t local_pos;
-        VectorScale(weight->pos, joint->scale, local_pos);
+        VectorCopy(weight->pos, local_pos);
 
         vec3_t wv;
         Quat_RotatePoint(joint->orient, local_pos, wv);
+        VectorScale(wv, joint->scale, wv);
 
         VectorAdd(joint->pos, wv, wv);
         VectorMA(out_position, weight->bias, wv, out_position);
@@ -654,7 +658,7 @@ static inline void calc_skel_vert(const md5_vertex_t *vert,
 static void tess_plain_skel(const md5_mesh_t *mesh, const md5_joint_t *skeleton)
 {
     for (int i = 0; i < mesh->num_verts; i++)
-        calc_skel_vert(&mesh->vertices[i], mesh->weights, skeleton, &tess.vertices[i * 4], NULL);
+        calc_skel_vert(&mesh->vertices[i], mesh->weights, skeleton, &tess.vertices[i * 8], &tess.vertices[(i * 8) + 4]);
 }
 
 static void tess_shade_skel(const md5_mesh_t *mesh, const md5_joint_t *skeleton)
@@ -670,7 +674,6 @@ static void tess_shade_skel(const md5_mesh_t *mesh, const md5_joint_t *skeleton)
         dst_vert[5] = color[1] * d;
         dst_vert[6] = color[2] * d;
         dst_vert[7] = color[3];
-
         dst_vert += VERTEX_SIZE;
     }
 }
@@ -680,8 +683,9 @@ static void tess_shell_skel(const md5_mesh_t *mesh, const md5_joint_t *skeleton)
     for (int i = 0; i < mesh->num_verts; i++) {
         vec3_t position, normal;
         calc_skel_vert(&mesh->vertices[i], mesh->weights, skeleton, position, normal);
-
-        VectorMA(position, shellscale, normal, &tess.vertices[i * 4]);
+        
+        VectorMA(position, shellscale, normal, &tess.vertices[i * 8]);
+        VectorCopy(normal, &tess.vertices[(i * 8) + 4]);
     }
 }
 
@@ -817,8 +821,6 @@ void GL_DrawAliasModel(const model_t *model)
         tessfunc = newframenum == oldframenum ?
             tess_static_plain : tess_lerped_plain;
     }
-
-    GL_RotateForEntity();
 
     if (ent->flags & RF_WEAPONMODEL)
         setup_weaponmodel();

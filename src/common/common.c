@@ -105,6 +105,8 @@ cvar_t  *com_debug_break;
 #endif
 cvar_t  *com_fatal_error;
 
+cvar_t  *com_rerelease;
+
 cvar_t  *allow_download;
 cvar_t  *allow_download_players;
 cvar_t  *allow_download_models;
@@ -901,6 +903,7 @@ void Qcommon_Init(int argc, char **argv)
     com_debug_break = Cvar_Get("com_debug_break", "0", 0);
 #endif
     com_fatal_error = Cvar_Get("com_fatal_error", "0", 0);
+    com_rerelease = Cvar_Get("com_rerelease", va("%i", RERELEASE_MODE_YES), CVAR_ARCHIVE);
     com_version = Cvar_Get("version", com_version_string, CVAR_SERVERINFO | CVAR_ROM);
 
     allow_download = Cvar_Get("allow_download", COM_DEDICATED ? "0" : "1", CVAR_ARCHIVE);
@@ -1065,11 +1068,17 @@ void Qcommon_Frame(void)
         // host OS was hibernated or something
     }
 
+#if USE_CLIENT
+    float ts = CL_Wheel_TimeScale() * timescale->value;
+#else
+    float ts = timescale->value;
+#endif
+
     if (fixedtime->integer) {
         Cvar_ClampInteger(fixedtime, 1, 1000);
         msec = fixedtime->integer;
-    } else if (timescale->value > 0) {
-        frac += msec * timescale->value;
+    } else if (ts > 0) {
+        frac += msec * ts;
         msec = frac;
         frac -= msec;
     }

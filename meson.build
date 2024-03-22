@@ -1,9 +1,10 @@
 project('q2pro', 'c',
   license: 'GPL-2.0-or-later',
   version: run_command(find_program('python3'), 'version.py', check: true).stdout().strip(),
-  meson_version: '>= 0.59.0',
+  meson_version: '>= 0.60.0',
   default_options: [
-    'c_std=c11',
+    meson.version().version_compare('>=1.3.0') ? 'c_std=gnu11,c11' : 'c_std=gnu11',
+    'cpp_std=c++17',
     'buildtype=debugoptimized',
   ],
 )
@@ -18,7 +19,9 @@ common_src = [
   'src/common/field.c',
   'src/common/fifo.c',
   'src/common/files.c',
+  'src/common/natsort.c',
   'src/common/hash_map.c',
+  'src/common/loc.c',
   'src/common/math.c',
   'src/common/mdfour.c',
   'src/common/msg.c',
@@ -29,11 +32,65 @@ common_src = [
   'src/common/sizebuf.c',
   'src/common/utils.c',
   'src/common/zone.c',
+  'src/common/features.h',
   'src/shared/shared.c',
+
+  'inc/shared/atomic.h',
+  'inc/shared/base85.h',
+  'inc/shared/files.h',
+  'inc/shared/game.h',
+  'inc/shared/game3_shared.h',
+  'inc/shared/list.h',
+  'inc/shared/m_flash.h',
+  'inc/shared/platform.h',
+  'inc/shared/shared.h',
+
+  'inc/common/natsort.h',
+  'inc/common/async.h',
+  'inc/common/bsp.h',
+  'inc/common/cmd.h',
+  'inc/common/cmodel.h',
+  'inc/common/common.h',
+  'inc/common/cvar.h',
+  'inc/common/error.h',
+  'inc/common/field.h',
+  'inc/common/fifo.h',
+  'inc/common/files.h',
+  'inc/common/gamedll.h',
+  'inc/common/hash_map.h',
+  'inc/common/intreadwrite.h',
+  'inc/common/loc.h',
+  'inc/common/math.h',
+  'inc/common/mdfour.h',
+  'inc/common/msg.h',
+  'inc/common/pmove.h',
+  'inc/common/prompt.h',
+  'inc/common/protocol.h',
+  'inc/common/sizebuf.h',
+  'inc/common/tests.h',
+  'inc/common/utils.h',
+  'inc/common/zone.h',
+
+  'inc/common/net/chan.h',
+  'inc/common/net/net.h',
+
+  'inc/format/bsp.h',
+  'inc/format/md2.h',
+  'inc/format/md3.h',
+  'inc/format/pak.h',
+  'inc/format/pcx.h',
+  'inc/format/sp2.h',
+  'inc/format/wal.h',
+
+  'inc/system/hunk.h',
+  'inc/system/pthread.h',
+  'inc/system/system.h',
 ]
 
 client_src = [
   'src/client/ascii.c',
+  'src/client/cgame.c',
+  'src/client/cgame_classic.c',
   'src/client/console.c',
   'src/client/crc.c',
   'src/client/demo.c',
@@ -52,18 +109,40 @@ client_src = [
   'src/client/screen.c',
   'src/client/sound/main.c',
   'src/client/sound/mem.c',
+  'src/client/sound/qal.h',
+  'src/client/sound/sound.h',
   'src/client/tent.c',
   'src/client/view.c',
+  'src/client/wheel.c',
+  'src/client/client.h',
+  'src/client/cgame_classic.h',
   'src/common/async.c',
+  'src/common/gamedll.c',
   'src/server/commands.c',
   'src/server/entities.c',
   'src/server/game.c',
+  'src/server/game3_proxy/game3_pmove.c',
+  'src/server/game3_proxy/game3_proxy.c',
   'src/server/init.c',
   'src/server/main.c',
   'src/server/send.c',
   'src/server/user.c',
+  'src/server/nav.c',
   'src/server/world.c',
+  'src/server/server.h',
+  'src/shared/base85.c',
   'src/shared/m_flash.c',
+
+  'inc/server/server.h',
+
+  'inc/client/client.h',
+  'inc/client/input.h',
+  'inc/client/keys.h',
+  'inc/client/ui.h',
+  'inc/client/video.h',
+
+  'inc/client/sound/dma.h',
+  'inc/client/sound/sound.h',
 ]
 
 ui_src = [
@@ -74,6 +153,7 @@ ui_src = [
   'src/client/ui/script.c',
   'src/client/ui/servers.c',
   'src/client/ui/ui.c',
+  'src/client/ui/ui.h',
 ]
 
 refresh_src = [
@@ -92,18 +172,33 @@ refresh_src = [
   'src/refresh/tess.c',
   'src/refresh/texture.c',
   'src/refresh/world.c',
+  'src/refresh/debug.c',
+  'src/refresh/arbfp.h',
+  'src/refresh/gl.h',
+  'src/refresh/images.h',
+  'src/refresh/qgl.h',
+
+  'inc/refresh/refresh.h',
 ]
 
 server_src = [
   'src/client/null.c',
+  'src/common/gamedll.c',
   'src/server/commands.c',
   'src/server/entities.c',
   'src/server/game.c',
+  'src/server/game3_proxy/game3_pmove.c',
+  'src/server/game3_proxy/game3_proxy.c',
   'src/server/init.c',
   'src/server/main.c',
   'src/server/send.c',
   'src/server/user.c',
+  'src/server/nav.c',
   'src/server/world.c',
+  'src/server/server.h',
+  'src/shared/base85.c',
+
+  'inc/server/server.h',
 ]
 
 game_src = [
@@ -154,8 +249,10 @@ game_src = [
   'src/game/p_trail.c',
   'src/game/p_view.c',
   'src/game/p_weapon.c',
+  'src/shared/base85.c',
   'src/shared/m_flash.c',
   'src/shared/shared.c',
+  'src/common/pmove.c',
 ]
 
 cc = meson.get_compiler('c')
@@ -183,18 +280,20 @@ else
   sys = sys[0].to_upper() + sys.substring(1)
 endif
 
+bindir = '.'
 datadir = '.'
 libdir = '.'
 homedir = ''
 
 system_wide = not win32 and get_option('system-wide')
 if system_wide
+  bindir = get_option('prefix') / get_option('bindir')
   datadir = get_option('prefix') / get_option('datadir') / meson.project_name()
   libdir = get_option('prefix') / get_option('libdir') / meson.project_name()
   homedir = get_option('homedir')
 endif
 
-common_args = ['-DHAVE_CONFIG_H', '-DUSE_PROTOCOL_EXTENSIONS=1']
+common_args = ['-DHAVE_CONFIG_H']
 if win32
   common_args += '-D_USE_MATH_DEFINES'
 else
@@ -244,7 +343,7 @@ if cc.get_argument_syntax() == 'gcc'
     dll_link_args += '-static-libgcc'
   endif
 elif cc.get_id() == 'msvc'
-  common_args += ['/wd4146', '/wd4244', '/wd4305']
+  common_args += ['/wd4146', '/wd4244', '/wd4305', '/D_CRT_SECURE_NO_WARNINGS', '/wd4267', '/wd4018']
 endif
 
 add_project_arguments(common_args, language: 'c')
@@ -318,7 +417,7 @@ openal = dependency('openal',
   default_options: fallback_opt,
 )
 if openal.found()
-  client_src += [ 'src/client/sound/al.c', 'src/client/sound/qal.c' ]
+  client_src += [ 'src/client/sound/al.c', 'src/client/sound/qal.c', 'inc/common/jsmn.h' ]
   client_deps += openal.partial_dependency(compile_args: true, includes: true)
   config.set10('USE_OPENAL', true)
 endif
@@ -350,11 +449,21 @@ if get_option('client-gtv')
 endif
 
 if get_option('client-ui')
+
+  # embed q2pro.menu
+  prog_embed = find_program('embed.py')
+
+  q2pro_menu_c = custom_target(
+      'q2pro.menu.c',
+      output : 'q2pro.menu.c',
+      input : 'src/client/ui/q2pro.menu',
+      command : [prog_embed, '@INPUT@', '@OUTPUT@', 'res_q2pro_menu'],
+  )
+  client_src += q2pro_menu_c
+
   client_src += ui_src
   config.set10('USE_UI', true)
-  if system_wide
-    install_data('src/client/ui/q2pro.menu', install_dir: datadir / get_option('base-game'))
-  endif
+  install_data('src/client/ui/q2pro.menu', install_dir: datadir / get_option('base-game'), install_tag: 'runtime')
 endif
 
 if get_option('software-sound').require(win32 or sdl2.found()).allowed()
@@ -373,7 +482,11 @@ if get_option('anticheat-server')
 endif
 
 if get_option('mvd-server')
-  common_src += 'src/server/mvd.c'
+  common_src += [
+    'src/server/mvd.c',
+    'inc/server/mvd/client.h',
+    'inc/server/mvd/protocol.h'
+  ]
   config.set10('USE_MVD_SERVER', true)
 endif
 
@@ -415,7 +528,8 @@ executable('q2pro', common_src, client_src, refresh_src,
   win_subsystem:         'windows,6.0',
   link_args:             exe_link_args,
   c_args:                ['-DUSE_CLIENT=1', '-DUSE_REF=1', engine_args],
-  install:               system_wide,
+  install:               true,
+  install_dir:           bindir,
 )
 
 executable('q2proded', common_src, server_src,
@@ -425,7 +539,8 @@ executable('q2proded', common_src, server_src,
   win_subsystem:         'console,6.0',
   link_args:             exe_link_args,
   c_args:                ['-DUSE_SERVER=1', engine_args],
-  install:               system_wide,
+  install:               true,
+  install_dir:           bindir,
 )
 
 shared_library('game' + cpu, game_src,
@@ -434,9 +549,24 @@ shared_library('game' + cpu, game_src,
   include_directories:   'inc',
   gnu_symbol_visibility: 'hidden',
   link_args:             dll_link_args,
-  install:               system_wide,
+  install:               true,
   install_dir:           libdir / get_option('base-game'),
   override_options:      get_option('game-build-options'),
+)
+
+rr_game_subproject = subproject('rerelease-game')
+rr_game_dll = rr_game_subproject.get_variable('game_dll')
+
+prog_copy_game_dll = find_program('copy-game-dll.py')
+custom_target(
+    'copy_game_dll',
+    build_by_default: true,
+    input : rr_game_dll,
+    output: '@PLAINNAME@',
+    command : [prog_copy_game_dll, '@OUTPUT@', '@INPUT@'],
+    install: true,
+    install_dir: libdir / get_option('base-game'),
+    install_tag: 'runtime',
 )
 
 config.set('REVISION',            meson.project_version().substring(1).split('~')[0].to_int())
@@ -459,9 +589,15 @@ config.set10('USE_FPS',           get_option('variable-fps'))
 config.set10('USE_ICMP',          get_option('icmp-errors').require(win32 or cc.has_header('linux/errqueue.h')).allowed())
 config.set10('USE_MD3',           get_option('md3'))
 config.set10('USE_MD5',           get_option('md5'))
+config.set10('USE_MEMORY_TRACES', get_option('memory-traces'))
 config.set10('USE_PACKETDUP',     get_option('packetdup-hack'))
 config.set10('USE_TGA',           get_option('tga'))
 config.set10('USE_' + host_machine.endian().to_upper() + '_ENDIAN', true)
+
+if not win32
+  have_backtrace = cc.has_header('execinfo.h') and cc.has_function('backtrace')
+  config.set10('HAVE_BACKTRACE',  have_backtrace)
+endif
 
 configure_file(output: 'config.h', configuration: config)
 
@@ -483,6 +619,7 @@ summary({
   'libpng'             : config.get('USE_PNG', 0) != 0,
   'md3'                : config.get('USE_MD3', 0) != 0,
   'md5'                : config.get('USE_MD5', 0) != 0,
+  'memory-traces'      : config.get('USE_MEMORY_TRACES', 0) != 0,
   'mvd-client'         : config.get('USE_MVD_CLIENT', 0) != 0,
   'mvd-server'         : config.get('USE_MVD_SERVER', 0) != 0,
   'openal'             : config.get('USE_OPENAL', 0) != 0,

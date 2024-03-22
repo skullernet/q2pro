@@ -321,21 +321,13 @@ void GL_LightPoint(const vec3_t origin, vec3_t color)
     }
 
     // add dynamic lights
-    GL_AddLights(origin, color);
-
-    if (gl_doublelight_entities->integer) {
-        // apply modulate twice to mimic original ref_gl behavior
-        VectorScale(color, gl_static.entity_modulate, color);
-    }
+    if (!gl_static.backend.use_dlights())
+        GL_AddLights(origin, color);
 }
 
 void R_LightPoint(const vec3_t origin, vec3_t color)
 {
     GL_LightPoint(origin, color);
-
-    color[0] = Q_clipf(color[0], 0, 1);
-    color[1] = Q_clipf(color[1], 0, 1);
-    color[2] = Q_clipf(color[2], 0, 1);
 }
 
 static void GL_MarkLeaves(void)
@@ -473,7 +465,8 @@ void GL_DrawBspModel(mmodel_t *model)
         VectorSubtract(glr.fd.vieworg, ent->origin, transformed);
     }
 
-    GL_TransformLights(model);
+    if (!gl_static.backend.use_dlights())
+        GL_TransformLights(model);
 
     GL_RotateForEntity();
 
@@ -506,7 +499,7 @@ void GL_DrawBspModel(mmodel_t *model)
         }
 
         GL_AddSolidFace(face);
-    }
+        }
 
     if (gl_dynamic->integer) {
         GL_UploadLightmaps();
@@ -597,8 +590,8 @@ static inline void GL_DrawNode(mnode_t *node)
             continue;
         }
 
-        GL_AddSolidFace(face);
-    }
+            GL_AddSolidFace(face);
+        }
 
     c.nodesDrawn++;
 }
@@ -643,11 +636,11 @@ void GL_DrawWorld(void)
 
     R_ClearSkyBox();
 
-    GL_LoadMatrix(glr.viewmatrix);
+    GL_LoadMatrix(NULL, glr.viewmatrix);
 
     GL_BindArrays();
 
-    GL_ClearSolidFaces();
+        GL_ClearSolidFaces();
 
     GL_WorldNode_r(gl_static.world.cache->nodes,
                    gl_cull_nodes->integer ? NODE_CLIPPED : NODE_UNCLIPPED);
@@ -656,7 +649,7 @@ void GL_DrawWorld(void)
         GL_UploadLightmaps();
     }
 
-    GL_DrawSolidFaces();
+        GL_DrawSolidFaces();
 
     GL_Flush3D();
 

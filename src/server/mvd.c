@@ -395,7 +395,7 @@ static int dummy_create(void)
     // get the game a chance to reject this connection or modify the userinfo
     sv_client = newcl;
     sv_player = newcl->edict;
-    allow = ge->ClientConnect(newcl->edict, userinfo);
+    allow = ge->ClientConnect(newcl->edict, userinfo, "", false);
     sv_client = NULL;
     sv_player = NULL;
     if (!allow) {
@@ -572,7 +572,7 @@ static void build_gamestate(void)
             continue;
         }
 
-        MSG_PackPlayer(&mvd.players[i], &ent->client->ps);
+        MSG_PackPlayer(&mvd.players[i], &ent->client->ps, mvd.psFlags);
         PPS_INUSE(&mvd.players[i]) = true;
     }
 
@@ -585,7 +585,7 @@ static void build_gamestate(void)
         }
 
         ent->s.number = i;
-        MSG_PackEntity(&mvd.entities[i], &ent->s, ENT_EXTENSION(&svs.csr, ent));
+        MSG_PackEntity(&mvd.entities[i], &ent->s, svs.csr.extended);
         if (svs.csr.extended)
             mvd.entities[i].solid = sv.entities[i].solid32;
     }
@@ -620,7 +620,9 @@ static void emit_gamestate(void)
     // send the serverdata
     MSG_WriteByte(mvd_serverdata | extra);
     MSG_WriteLong(PROTOCOL_VERSION_MVD);
-    if (svs.csr.extended)
+    if (svs.is_game_rerelease)
+        MSG_WriteShort(PROTOCOL_VERSION_MVD_RERELEASE);
+    else if (svs.csr.extended)
         MSG_WriteShort(PROTOCOL_VERSION_MVD_CURRENT);
     else
         MSG_WriteShort(PROTOCOL_VERSION_MVD_DEFAULT);
@@ -637,7 +639,7 @@ static void emit_gamestate(void)
         if (!string[0]) {
             continue;
         }
-        length = Q_strnlen(string, MAX_QPATH);
+        length = Q_strnlen(string, CS_MAX_STRING_LENGTH);
         MSG_WriteShort(i);
         MSG_WriteData(string, length);
         MSG_WriteByte(0);
@@ -698,7 +700,6 @@ static void copy_entity_state(entity_packed_t *dst, const entity_packed_t *src, 
     dst->sound = src->sound;
     dst->event = 0;
     if (svs.csr.extended) {
-        dst->morefx = src->morefx;
         dst->alpha = src->alpha;
         dst->scale = src->scale;
         dst->loop_volume = src->loop_volume;
@@ -742,7 +743,7 @@ static void emit_frame(void)
         }
 
         // quantize
-        MSG_PackPlayer(&newps, &ent->client->ps);
+        MSG_PackPlayer(&newps, &ent->client->ps, mvd.psFlags);
 
         if (PPS_INUSE(oldps)) {
             // delta update from old position
@@ -799,7 +800,7 @@ static void emit_frame(void)
         }
 
         // quantize
-        MSG_PackEntity(&newes, &ent->s, ENT_EXTENSION(&svs.csr, ent));
+        MSG_PackEntity(&newes, &ent->s, svs.csr.extended);
         if (svs.csr.extended)
             newes.solid = sv.entities[i].solid32;
 
@@ -1109,10 +1110,11 @@ out-of-band data into the MVD stream.
 SV_MvdMulticast
 ==============
 */
-void SV_MvdMulticast(int leafnum, multicast_t to)
+void SV_MvdMulticast(int leafnum, multicast_t to, bool reliable)
 {
     mvd_ops_t   op;
     sizebuf_t   *buf;
+    int         bits;
 
     // do nothing if not active
     if (!mvd.active) {
@@ -1127,10 +1129,13 @@ void SV_MvdMulticast(int leafnum, multicast_t to)
         return;
     }
 
-    op = mvd_multicast_all + to;
-    buf = to < MULTICAST_ALL_R ? &mvd.datagram : &mvd.message;
+    op = mvd_multicast_all + to + (reliable ? 3 : 0);
+    buf = reliable ? &mvd.datagram : &mvd.message;
+    bits = (msg_write.cursize >> 8) & 7;
 
-    SZ_WriteByte(buf, op | (msg_write.cursize >> 8 << SVCMD_BITS));
+    SZ_WriteByte(buf, op | (bits ? 128 : 0));
+    if (bits)
+        SZ_WriteByte(buf, bits);
     SZ_WriteByte(buf, msg_write.cursize & 255);
 
     if (op != mvd_multicast_all && op != mvd_multicast_all_r) {
@@ -1181,6 +1186,7 @@ void SV_MvdUnicast(edict_t *ent, int clientNum, bool reliable)
 {
     mvd_ops_t   op;
     sizebuf_t   *buf;
+    int         bits;
 
     // do nothing if not active
     if (!mvd.active) {
@@ -1211,7 +1217,10 @@ void SV_MvdUnicast(edict_t *ent, int clientNum, bool reliable)
     }
 
     // write it
-    SZ_WriteByte(buf, op | (msg_write.cursize >> 8 << SVCMD_BITS));
+    bits = (msg_write.cursize >> 8) & 7;
+    SZ_WriteByte(buf, op | (bits ? 128 : 0));
+    if (bits)
+        SZ_WriteByte(buf, bits);
     SZ_WriteByte(buf, msg_write.cursize & 255);
     SZ_WriteByte(buf, clientNum);
     SZ_Write(buf, msg_write.data, msg_write.cursize);
@@ -1266,11 +1275,11 @@ void SV_MvdStartSound(int entnum, int channel, int flags,
 
     extrabits = 0;
     if (channel & CHAN_NO_PHS_ADD) {
-        extrabits |= 1 << SVCMD_BITS;
+        extrabits |= 1;
     }
     if (channel & CHAN_RELIABLE) {
         // FIXME: write to mvd.message
-        extrabits |= 2 << SVCMD_BITS;
+        extrabits |= 2;
     }
 
     SZ_WriteByte(&mvd.datagram, mvd_sound | extrabits);
@@ -2121,6 +2130,10 @@ void SV_MvdPostInit(void)
     if (svs.csr.extended) {
         mvd.esFlags |= MSG_ES_LONGSOLID | MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS;
         mvd.psFlags |= MSG_PS_EXTENSIONS;
+    }
+    if (svs.is_game_rerelease) {
+        mvd.esFlags |= MSG_ES_LONGSOLID | MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS | MSG_ES_RERELEASE;
+        mvd.psFlags |= MSG_PS_EXTENSIONS | MSG_PS_RERELEASE;
     }
 }
 

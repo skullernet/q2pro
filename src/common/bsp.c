@@ -137,12 +137,22 @@ LOAD(Texinfo)
 #endif
         out->c.flags = BSP_Long();
         out->c.value = BSP_Long();
+        out->c.id = i + 1; // Kex
 
         memcpy(out->c.name, in, sizeof(out->c.name) - 1);
         memcpy(out->name, in, sizeof(out->name) - 1);
         in += MAX_TEXNAME;
 
+        Q_strlcpy(out->c.surface_v3.name, out->c.name, sizeof(out->c.surface_v3.name));
+        out->c.surface_v3.flags = out->c.flags;
+        out->c.surface_v3.value = out->c.value;
+
 #if USE_REF
+        // check if we have a classic sky
+        if (!bsp->classic_sky && Q_stristr(out->name, "env/sky") && (out->c.flags & SURF_SKY)) {
+            bsp->classic_sky = out->name;
+        }
+
         next = (int32_t)BSP_Long();
         if (next > 0) {
             if (next >= count) {
@@ -990,12 +1000,15 @@ void BSP_Free(bsp_t *bsp)
     if (--bsp->refcount == 0) {
         Hunk_Free(&bsp->hunk);
         List_Remove(&bsp->entry);
+#if USE_REF
+        Z_Free(bsp->normals.normals);
+        Z_Free(bsp->normals.normal_indices);
+#endif
         Z_Free(bsp);
     }
 }
 
 #if USE_CLIENT
-
 int BSP_LoadMaterials(bsp_t *bsp)
 {
     char path[MAX_QPATH];
@@ -1008,7 +1021,7 @@ int BSP_LoadMaterials(bsp_t *bsp)
         for (j = i - 1; j >= 0; j--) {
             tex = &bsp->texinfo[j];
             if (!Q_stricmp(tex->name, out->name)) {
-                strcpy(out->material, tex->material);
+                strcpy(out->c.material, tex->c.material);
                 out->step_id = tex->step_id;
                 break;
             }
@@ -1020,21 +1033,21 @@ int BSP_LoadMaterials(bsp_t *bsp)
         Q_concat(path, sizeof(path), "textures/", out->name, ".mat");
         FS_OpenFile(path, &f, FS_MODE_READ | FS_FLAG_LOADFILE);
         if (f) {
-            FS_Read(out->material, sizeof(out->material) - 1, f);
+            FS_Read(out->c.material, sizeof(out->c.material) - 1, f);
             FS_CloseFile(f);
         }
 
-        if (out->material[0] && !COM_IsPath(out->material)) {
-            Com_WPrintf("Bad material \"%s\" in %s\n", Com_MakePrintable(out->material), path);
-            out->material[0] = 0;
+        if (out->c.material[0] && !COM_IsPath(out->c.material)) {
+            Com_WPrintf("Bad material \"%s\" in %s\n", Com_MakePrintable(out->c.material), path);
+            out->c.material[0] = 0;
         }
 
-        if (!out->material[0] || !Q_stricmp(out->material, "default")) {
+        if (!out->c.material[0] || !Q_stricmp(out->c.material, "default")) {
             out->step_id = FOOTSTEP_ID_DEFAULT;
             continue;
         }
 
-        if (!Q_stricmp(out->material, "ladder")) {
+        if (!Q_stricmp(out->c.material, "ladder")) {
             out->step_id = FOOTSTEP_ID_LADDER;
             continue;
         }
@@ -1042,7 +1055,7 @@ int BSP_LoadMaterials(bsp_t *bsp)
         // see if already allocated step_id for this material
         for (j = i - 1; j >= 0; j--) {
             tex = &bsp->texinfo[j];
-            if (!Q_stricmp(tex->material, out->material)) {
+            if (!Q_stricmp(tex->c.material, out->c.material)) {
                 out->step_id = tex->step_id;
                 break;
             }
@@ -1056,7 +1069,6 @@ int BSP_LoadMaterials(bsp_t *bsp)
     Com_DPrintf("%s: %d materials loaded\n", __func__, step_id);
     return step_id;
 }
-
 #endif
 
 #if USE_REF
@@ -1310,9 +1322,69 @@ static void BSP_ParseLightgrid(bsp_t *bsp, const byte *in, size_t filelen)
     }
 }
 
+static bool BSP_ParseFaceNormalsHeader_(bsp_t *bsp, bsp_normals_t *normals, sizebuf_t *s)
+{
+    normals->num_normals = SZ_ReadLong(s);
+
+    if (sizeof(vec3_t) * normals->num_normals > SZ_Remaining(s))
+        return false;
+
+    return true;
+}
+
+static bool BSP_ParseFaceNormalsHeader(bsp_t *bsp, const byte *in, size_t filelen)
+{
+    bsp_normals_t *normals = &bsp->normals;
+    sizebuf_t s;
+
+    SZ_Init(&s, (void *)in, filelen);
+    s.cursize = filelen;
+
+    if (!BSP_ParseFaceNormalsHeader_(bsp, normals, &s)) {
+        Com_WPrintf("Bad FACENORMALS header\n");
+        memset(normals, 0, sizeof(*normals));
+        return false;
+    }
+
+    return true;
+}
+
+static void BSP_ParseFaceNormals(bsp_t *bsp, const byte *in, size_t filelen)
+{
+    if (!BSP_ParseFaceNormalsHeader(bsp, in, filelen))
+        return;
+
+    bsp->normals.normals = Z_Malloc(sizeof(vec3_t) * bsp->normals.num_normals);
+
+    size_t off = sizeof(uint32_t);
+
+    memcpy(bsp->normals.normals, in + off, sizeof(vec3_t) * bsp->normals.num_normals);
+
+    off += sizeof(vec3_t) * bsp->normals.num_normals;
+
+    size_t num_indices = 0;
+
+    for (int i = 0; i < bsp->numfaces; i++)
+        num_indices += bsp->faces[i].numsurfedges;
+
+    // bad normals
+    if (off + (sizeof(uint32_t) * 3 * num_indices) > filelen) {
+        Z_Free(bsp->normals.normals);
+        return;
+    }
+
+    bsp->normals.normal_indices = Z_Malloc(sizeof(uint32_t) * num_indices);
+
+    for (size_t i = 0; i < num_indices; i++) {
+        memcpy(&bsp->normals.normal_indices[i], in + off, sizeof(uint32_t));
+        off += sizeof(uint32_t) * 3;
+    }
+}
+
 static const xlump_info_t bspx_lumps[] = {
     { "DECOUPLED_LM", BSP_ParseDecoupledLM },
     { "LIGHTGRID_OCTREE", BSP_ParseLightgrid, BSP_ParseLightgridHeader },
+    { "FACENORMALS", BSP_ParseFaceNormals }
 };
 
 // returns amount of extra space to allocate

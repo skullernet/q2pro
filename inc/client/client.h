@@ -100,6 +100,8 @@ int SCR_CheckForCinematic(const char *name);
 void SCR_ModeChanged(void);
 void SCR_UpdateScreen(void);
 
+float CL_Wheel_TimeScale(void);
+
 #define U32_BLACK   MakeColor(  0,   0,   0, 255)
 #define U32_RED     MakeColor(255,   0,   0, 255)
 #define U32_GREEN   MakeColor(  0, 255,   0, 255)
@@ -128,6 +130,8 @@ extern const uint32_t   colorTable[8];
 bool SCR_ParseColor(const char *s, color_t *color);
 
 float V_CalcFov(float fov_x, float width, float height);
+
+int CL_ServerTime(void);
 
 #else // USE_CLIENT
 

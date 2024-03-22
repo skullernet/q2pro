@@ -86,6 +86,7 @@ static const alsection_t sections[] = {
             QAL_FN(SourceUnqueueBuffers),
             QAL_FN(Sourcef),
             QAL_FN(Sourcei),
+            QAL_FN(Source3i),
             { NULL }
         }
     },
@@ -96,6 +97,15 @@ static const alsection_t sections[] = {
             QAL_FN(Filterf),
             QAL_FN(Filteri),
             QAL_FN(GenFilters),
+            QAL_FN(GenEffects),
+            QAL_FN(DeleteEffects),
+            QAL_FN(Effecti),
+            QAL_FN(Effectiv),
+            QAL_FN(Effectf),
+            QAL_FN(Effectfv),
+            QAL_FN(GenAuxiliaryEffectSlots),
+            QAL_FN(DeleteAuxiliaryEffectSlots),
+            QAL_FN(AuxiliaryEffectSloti),
             { NULL }
         }
     },

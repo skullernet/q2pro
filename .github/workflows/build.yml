@@ -2,20 +2,18 @@ name: build
 
 on:
   push:
-    branches: [master, ci]
+    branches: [rerelease-game, ci]
   pull_request:
-    branches: [master]
+    branches: [rerelease-game]
 
 env:
   MESON_ARGS: >-
     --auto-features=enabled
     --fatal-meson-warnings
-    -Danticheat-server=true
     -Davcodec=disabled
-    -Dclient-gtv=true
+    -Danticheat-server=true
     -Dpacketdup-hack=true
     -Dtests=true
-    -Dvariable-fps=true
     -Dwerror=true
 
   MESON_ARGS_WIN: >-
@@ -27,6 +25,7 @@ env:
   MESON_ARGS_LINUX: >-
     -Dwindows-crash-dumps=disabled
     -Dwrap_mode=nofallback
+    --force-fallback-for=fmt,jsoncpp
 
 jobs:
   mingw:
@@ -36,6 +35,8 @@ jobs:
         arch: ["i686", "x86_64"]
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - uses: actions/cache@v4
         with:
@@ -45,7 +46,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-mingw-w64 nasm python3-pip ninja-build
+          sudo apt-get install -y gcc-mingw-w64 g++-mingw-w64 nasm python3-pip ninja-build
           sudo python3 -m pip install meson
 
       - name: Build
@@ -61,6 +62,8 @@ jobs:
         arch: ["x86", "x64"]
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - uses: actions/cache@v4
         with:
@@ -80,6 +83,18 @@ jobs:
         run: |
           meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_WIN }} builddir
           meson compile -C builddir
+          meson install -C builddir --tags runtime --destdir ${{ github.workspace }}/installdir
+
+      - name: Setup variables
+        uses: actions/github-script@v6
+        with:
+          script: core.exportVariable('GITHUB_SHA_SHORT', context.sha.substring(0, 7))
+
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: q2pro-rr-windows-${{ matrix.arch }}-${{env.GITHUB_SHA_SHORT}}
+          path: installdir/
 
   linux:
     runs-on: ubuntu-latest
@@ -88,6 +103,8 @@ jobs:
         cc: [gcc, clang]
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Install dependencies
         run: |
@@ -101,5 +118,17 @@ jobs:
         run: |
           meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_LINUX }} builddir
           meson compile -C builddir
+          meson install -C builddir --tags runtime --destdir ${{ github.workspace }}/installdir
         env:
           CC: ${{ matrix.cc }}
+
+      - name: Setup variables
+        uses: actions/github-script@v6
+        with:
+          script: core.exportVariable('GITHUB_SHA_SHORT', context.sha.substring(0, 7))
+
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: q2pro-rr-linux-${{ matrix.cc }}-x86_64-${{env.GITHUB_SHA_SHORT}}
+          path: installdir/

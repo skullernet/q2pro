@@ -86,6 +86,7 @@ cvar_t  *cl_vwep;
 cvar_t  *info_password;
 cvar_t  *info_spectator;
 cvar_t  *info_name;
+cvar_t  *info_dogtag;
 cvar_t  *info_skin;
 cvar_t  *info_rate;
 cvar_t  *info_fov;
@@ -206,7 +207,7 @@ static void CL_UpdateGunSetting(void)
 
 static void CL_UpdateGibSetting(void)
 {
-    if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO) {
+    if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO && cls.serverProtocol != PROTOCOL_VERSION_RERELEASE) {
         return;
     }
 
@@ -218,7 +219,7 @@ static void CL_UpdateGibSetting(void)
 
 static void CL_UpdateFootstepsSetting(void)
 {
-    if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO) {
+    if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO && cls.serverProtocol != PROTOCOL_VERSION_RERELEASE) {
         return;
     }
 
@@ -230,7 +231,7 @@ static void CL_UpdateFootstepsSetting(void)
 
 static void CL_UpdatePredictSetting(void)
 {
-    if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO) {
+    if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO && cls.serverProtocol != PROTOCOL_VERSION_RERELEASE) {
         return;
     }
 
@@ -243,6 +244,7 @@ static void CL_UpdatePredictSetting(void)
 #if USE_FPS
 static void CL_UpdateRateSetting(void)
 {
+    // Rerelease protocol sends framerate in server data
     if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO) {
         return;
     }
@@ -282,7 +284,7 @@ void CL_UpdateRecordingSetting(void)
 
 static void CL_UpdateFlaresSetting(void)
 {
-    if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO) {
+    if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO && cls.serverProtocol != PROTOCOL_VERSION_RERELEASE) {
         return;
     }
     if (!cl.csr.extended) {
@@ -404,9 +406,8 @@ void CL_CheckForResend(void)
         strcpy(cls.servername, "localhost");
         cls.serverAddress.type = NA_LOOPBACK;
         cls.serverProtocol = cl_protocol->integer;
-        if (cls.serverProtocol < PROTOCOL_VERSION_DEFAULT ||
-            cls.serverProtocol > PROTOCOL_VERSION_Q2PRO) {
-            cls.serverProtocol = PROTOCOL_VERSION_Q2PRO;
+        if (cls.serverProtocol != PROTOCOL_VERSION_RERELEASE) {
+            cls.serverProtocol = PROTOCOL_VERSION_RERELEASE;
         }
 
         // we don't need a challenge on the localhost
@@ -462,6 +463,11 @@ void CL_CheckForResend(void)
         Q_snprintf(tail, sizeof(tail), " %d %d %d %d",
                    maxmsglen, net_chantype->integer, USE_ZLIB,
                    PROTOCOL_VERSION_Q2PRO_CURRENT);
+        cls.quakePort = net_qport->integer & 0xff;
+        break;
+    case PROTOCOL_VERSION_RERELEASE:
+        Q_snprintf(tail, sizeof(tail), " %d %d",
+                   maxmsglen, USE_ZLIB);
         cls.quakePort = net_qport->integer & 0xff;
         break;
     default:
@@ -679,11 +685,11 @@ void CL_ClearState(void)
     S_StopAllSounds();
     OGG_Stop();
     SCR_StopCinematic();
-    SCR_ClearCenterPrints();
     CL_ClearEffects();
     CL_ClearTEnts();
     LOC_FreeLocations();
     CL_FreeDemoSnapshots();
+    SCR_Clear();
 
     // wipe the entire cl structure
     BSP_Free(cl.bsp);
@@ -758,6 +764,10 @@ void CL_Disconnect(error_type_t type)
     CL_ClearState();
 
     CL_GTV_Suspend();
+
+    // Shutdown client game
+    if (cgame)
+        cgame->Shutdown();
 
     cls.state = ca_disconnected;
     cls.userinfo_modified = 0;
@@ -1281,6 +1291,8 @@ static void CL_ConnectionlessPacket(void)
                         mask |= 1;
                     } else if (k == PROTOCOL_VERSION_Q2PRO) {
                         mask |= 2;
+                    } else if (k == PROTOCOL_VERSION_RERELEASE) {
+                        mask |= 4;
                     }
                     s = strchr(s, ',');
                     if (s == NULL) {
@@ -1292,11 +1304,17 @@ static void CL_ConnectionlessPacket(void)
         }
 
         if (!cls.serverProtocol) {
-            cls.serverProtocol = PROTOCOL_VERSION_Q2PRO;
+            cls.serverProtocol = PROTOCOL_VERSION_RERELEASE;
         }
 
         // choose supported protocol
         switch (cls.serverProtocol) {
+        case PROTOCOL_VERSION_RERELEASE:
+            if (mask & 4) {
+                break;
+            }
+            cls.serverProtocol = PROTOCOL_VERSION_Q2PRO;
+            // fall through
         case PROTOCOL_VERSION_Q2PRO:
             if (mask & 2) {
                 break;
@@ -1338,7 +1356,8 @@ static void CL_ConnectionlessPacket(void)
             return;
         }
 
-        if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO) {
+        if ((cls.serverProtocol == PROTOCOL_VERSION_Q2PRO)
+            || (cls.serverProtocol == PROTOCOL_VERSION_RERELEASE)){
             type = NETCHAN_NEW;
         } else {
             type = NETCHAN_OLD;
@@ -1558,7 +1577,7 @@ static void CL_FixUpGender(void)
         Cvar_Set("gender", "female");
     else
         Cvar_Set("gender", "none");
-    info_gender->modified = false;
+    info_gender->modified_count = 0;
 }
 
 void CL_UpdateUserinfo(cvar_t *var, from_t from)
@@ -2087,7 +2106,7 @@ static void CL_DumpStatusbar_f(void)
 
 static void CL_DumpLayout_f(void)
 {
-    dump_program(cl.layout, "layout");
+    dump_program(cl.cgame_data.layout, "layout");
 }
 
 static const cmd_option_t o_writeconfig[] = {
@@ -2202,7 +2221,7 @@ static size_t CL_Ups_m(char *buffer, size_t size)
         !(cl.frame.ps.pmove.pm_flags & PMF_NO_PREDICTION)) {
         VectorCopy(cl.predicted_velocity, vel);
     } else {
-        VectorScale(cl.frame.ps.pmove.velocity, 0.125f, vel);
+        VectorCopy(cl.frame.ps.pmove.velocity, vel);
     }
 
     return Q_scnprintf(buffer, size, "%.f", VectorLength(vel));
@@ -2731,6 +2750,7 @@ static void CL_InitLocal(void)
     CL_InitEffects();
     CL_InitTEnts();
     CL_InitDownloads();
+    CL_Wheel_Init();
     CL_GTV_Init();
 
     List_Init(&cl_ignore_text);
@@ -2841,6 +2861,7 @@ static void CL_InitLocal(void)
     info_password = Cvar_Get("password", "", CVAR_USERINFO);
     info_spectator = Cvar_Get("spectator", "0", CVAR_USERINFO);
     info_name = Cvar_Get("name", "unnamed", CVAR_USERINFO | CVAR_ARCHIVE);
+    info_dogtag = Cvar_Get("dogtag", "default", CVAR_USERINFO | CVAR_ARCHIVE);
     info_skin = Cvar_Get("skin", "male/grunt", CVAR_USERINFO | CVAR_ARCHIVE);
     info_rate = Cvar_Get("rate", "15000", CVAR_USERINFO | CVAR_ARCHIVE);
     info_msg = Cvar_Get("msg", "1", CVAR_USERINFO | CVAR_ARCHIVE);
@@ -2848,7 +2869,7 @@ static void CL_InitLocal(void)
     info_hand->changed = info_hand_changed;
     info_fov = Cvar_Get("fov", "90", CVAR_USERINFO | CVAR_ARCHIVE);
     info_gender = Cvar_Get("gender", "male", CVAR_USERINFO | CVAR_ARCHIVE);
-    info_gender->modified = false; // clear this so we know when user sets it manually
+    info_gender->modified_count = 0; // clear this so we know when user sets it manually
     info_uf = Cvar_Get("uf", "", CVAR_USERINFO);
 
 
@@ -2950,7 +2971,7 @@ static void CL_SetClientTime(void)
         cl.lerpfrac = (cl.time - prevtime) * CL_1_FRAMETIME;
     }
 
-    SHOWCLAMP(2, "time %d %d, lerpfrac %.3f\n",
+    SHOWCLAMP(2, "time %d %d, lerpfrac %f\n",
               cl.time, cl.servertime, cl.lerpfrac);
 
 #if USE_FPS
@@ -3291,6 +3312,9 @@ unsigned CL_Frame(unsigned msec)
     // predict all unacknowledged movements
     CL_PredictMovement();
 
+    // update weapon wheel stuff
+    CL_Wheel_Update();
+
     Con_RunConsole();
 
     SCR_RunCinematic();
@@ -3381,10 +3405,10 @@ void CL_Init(void)
     // start with full screen console
     cls.key_dest = KEY_CONSOLE;
 
+    CL_InitLocal();
     CL_InitRefresh();
     S_Init();   // sound must be initialized after window is created
 
-    CL_InitLocal();
     IN_Init();
 
 #if USE_ZLIB
@@ -3449,6 +3473,7 @@ void CL_Shutdown(void)
     Con_Shutdown();
     CL_ShutdownRefresh();
     CL_WriteConfig();
+    CG_Unload();
 
     memset(&cls, 0, sizeof(cls));
 

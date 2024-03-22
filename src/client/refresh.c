@@ -406,6 +406,7 @@ void CL_InitRefresh(void)
     // Initialize the rest of graphics subsystems
     V_Init();
     SCR_Init();
+    CG_Init();
     UI_Init();
 
     SCR_RegisterMedia();

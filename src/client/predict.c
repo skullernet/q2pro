@@ -60,14 +60,10 @@ void CL_CheckPredictionError(void)
     SHOWMISS("prediction miss on %i: %i (%d %d %d)\n",
              cl.frame.number, len, delta[0], delta[1], delta[2]);
 
-    // don't predict steps against server returned data
-    if (cl.predicted_step_frame <= cmd)
-        cl.predicted_step_frame = cmd + 1;
-
     VectorCopy(cl.frame.ps.pmove.origin, cl.predicted_origins[cmd & CMD_MASK]);
 
     // save for error interpolation
-    VectorScale(delta, 0.125f, cl.prediction_error);
+    VectorCopy(delta, cl.prediction_error);
 }
 
 /*
@@ -115,7 +111,7 @@ static void CL_ClipMoveToEntities(trace_t *tr, const vec3_t start, const vec3_t 
 CL_Trace
 ================
 */
-void CL_Trace(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int contentmask)
+void CL_Trace(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, const struct edict_s* passent, contents_t contentmask)
 {
     // check against world
     CM_BoxTrace(tr, start, end, mins, maxs, cl.bsp->nodes, contentmask);
@@ -126,16 +122,27 @@ void CL_Trace(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t m
     CL_ClipMoveToEntities(tr, start, mins, maxs, end, contentmask);
 }
 
-static int pm_clipmask;
-
-static trace_t q_gameabi CL_PMTrace(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end)
+static trace_t q_gameabi CL_PMTrace(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, const struct edict_s* passent, contents_t contentmask)
 {
     trace_t t;
-    CL_Trace(&t, start, mins, maxs, end, pm_clipmask);
+    CL_Trace(&t, start, mins, maxs, end, passent, contentmask);
     return t;
 }
 
-static int CL_PointContents(const vec3_t point)
+static trace_t q_gameabi CL_Clip(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, contents_t contentmask)
+{
+    trace_t     trace;
+
+    if (!mins)
+        mins = vec3_origin;
+    if (!maxs)
+        maxs = vec3_origin;
+
+    CM_BoxTrace(&trace, start, end, mins, maxs, cl.bsp->nodes, contentmask);
+    return trace;
+}
+
+static contents_t CL_PointContents(const vec3_t point)
 {
     int         i;
     centity_t   *ent;
@@ -172,16 +179,18 @@ Sets cl.predicted_origin and cl.predicted_angles
 */
 void CL_PredictAngles(void)
 {
-    cl.predicted_angles[0] = cl.viewangles[0] + SHORT2ANGLE(cl.frame.ps.pmove.delta_angles[0]);
-    cl.predicted_angles[1] = cl.viewangles[1] + SHORT2ANGLE(cl.frame.ps.pmove.delta_angles[1]);
-    cl.predicted_angles[2] = cl.viewangles[2] + SHORT2ANGLE(cl.frame.ps.pmove.delta_angles[2]);
+    cl.predicted_angles[0] = cl.viewangles[0] + cl.frame.ps.pmove.delta_angles[0];
+    cl.predicted_angles[1] = cl.viewangles[1] + cl.frame.ps.pmove.delta_angles[1];
+    cl.predicted_angles[2] = cl.viewangles[2] + cl.frame.ps.pmove.delta_angles[2];
 }
+
+#define	MAX_STEP_CHANGE 32
 
 void CL_PredictMovement(void)
 {
     unsigned    ack, current, frame;
     pmove_t     pm;
-    int         step, oldz;
+    float       step;
 
     if (cls.state != ca_active) {
         return;
@@ -215,27 +224,18 @@ void CL_PredictMovement(void)
         return;
     }
 
-    pm_clipmask = MASK_PLAYERSOLID;
-
-    // remaster player collision rules
-    if (cl.csr.extended) {
-        if (cl.frame.ps.pmove.pm_type == PM_DEAD || cl.frame.ps.pmove.pm_type == PM_GIB)
-            pm_clipmask = MASK_DEADSOLID;
-
-        if (!(cl.frame.ps.pmove.pm_flags & PMF_IGNORE_PLAYER_COLLISION))
-            pm_clipmask |= CONTENTS_PLAYER;
-    }
-
     // copy current state to pmove
     memset(&pm, 0, sizeof(pm));
     pm.trace = CL_PMTrace;
+    pm.clip = CL_Clip;
     pm.pointcontents = CL_PointContents;
     pm.s = cl.frame.ps.pmove;
+    VectorCopy(cl.frame.ps.viewoffset, pm.viewoffset);
 
     // run frames
     while (++ack <= current) {
         pm.cmd = cl.cmds[ack & CMD_MASK];
-        Pmove(&pm, &cl.pmp);
+        cgame->Pmove(&pm);
 
         // save for debug checking
         VectorCopy(pm.s.origin, cl.predicted_origins[ack & CMD_MASK]);
@@ -246,8 +246,7 @@ void CL_PredictMovement(void)
         pm.cmd = cl.cmd;
         pm.cmd.forwardmove = cl.localmove[0];
         pm.cmd.sidemove = cl.localmove[1];
-        pm.cmd.upmove = cl.localmove[2];
-        Pmove(&pm, &cl.pmp);
+        cgame->Pmove(&pm);
         frame = current;
 
         // save for debug checking
@@ -256,22 +255,48 @@ void CL_PredictMovement(void)
         frame = current - 1;
     }
 
-    if (pm.s.pm_type != PM_SPECTATOR && (pm.s.pm_flags & PMF_ON_GROUND)) {
-        oldz = cl.predicted_origins[cl.predicted_step_frame & CMD_MASK][2];
+    if (pm.s.pm_type != PM_SPECTATOR) {
+        // Step detection
+        float oldz = cl.predicted_origins[frame & CMD_MASK][2];
         step = pm.s.origin[2] - oldz;
-        if (step > 63 && step < 160) {
-            cl.predicted_step = step * 0.125f;
+        float fabsStep = fabsf( step );
+        // Consider a Z change being "stepping" if...
+        bool step_detected = (fabsStep > 1 && fabsStep < 20) // absolute change is in this limited range
+            && ((cl.frame.ps.pmove.pm_flags & PMF_ON_GROUND) || pm.step_clip) // and we started off on the ground
+            && ((pm.s.pm_flags & PMF_ON_GROUND) && pm.s.pm_type <= PM_GRAPPLE) // and are still predicted to be on the ground
+            && (memcmp(&cl.last_groundplane, &pm.groundplane, sizeof(cplane_t)) != 0
+                || cl.last_groundentity != pm.groundentity);                   // and don't stand on another plane or entity
+        if (step_detected) {
+            // Code below adapted from Q3A.
+            // check for stepping up before a previous step is completed
+            float delta = cls.realtime - cl.predicted_step_time;
+            float old_step;
+            if (delta < STEP_TIME) {
+                old_step = cl.predicted_step * (STEP_TIME - delta) / STEP_TIME;
+            } else {
+                old_step = 0;
+            }
+
+            // add this amount
+            cl.predicted_step = Q_clip(old_step + step, -MAX_STEP_CHANGE, MAX_STEP_CHANGE);
             cl.predicted_step_time = cls.realtime;
-            cl.predicted_step_frame = frame + 1;    // don't double step
         }
     }
 
-    if (cl.predicted_step_frame < frame) {
-        cl.predicted_step_frame = frame;
+    // copy results out for rendering
+    VectorCopy(pm.s.origin, cl.predicted_origin);
+    VectorCopy(pm.s.velocity, cl.predicted_velocity);
+    VectorCopy(pm.viewangles, cl.predicted_angles);
+    Vector4Copy(pm.screen_blend, cl.predicted_screen_blend);
+    cl.predicted_rdflags = pm.rdflags;
+
+    // Record viewheight changes
+    if (cl.current_viewheight != pm.s.viewheight) {
+        cl.prev_viewheight = cl.current_viewheight;
+        cl.current_viewheight = pm.s.viewheight;
+        cl.viewheight_change_time = cl.time;
     }
 
-    // copy results out for rendering
-    VectorScale(pm.s.origin, 0.125f, cl.predicted_origin);
-    VectorScale(pm.s.velocity, 0.125f, cl.predicted_velocity);
-    VectorCopy(pm.viewangles, cl.predicted_angles);
+    cl.last_groundplane = pm.groundplane;
+    cl.last_groundentity = pm.groundentity;
 }

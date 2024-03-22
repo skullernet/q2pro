@@ -1400,13 +1400,14 @@ static void IMG_List_f(void)
 
     while ((c = Cmd_ParseOptions(o_imagelist)) != -1) {
         switch (c) {
-        case 'p': mask |= 1 << IT_PIC;      break;
-        case 'f': mask |= 1 << IT_FONT;     break;
-        case 'm': mask |= 1 << IT_SKIN;     break;
-        case 's': mask |= 1 << IT_SPRITE;   break;
-        case 'w': mask |= 1 << IT_WALL;     break;
-        case 'y': mask |= 1 << IT_SKY;      break;
-        case 'P': placeholder = true;       break;
+        case 'p': mask |= 1 << IT_PIC;          break;
+        case 'f': mask |= 1 << IT_FONT;         break;
+        case 'm': mask |= 1 << IT_SKIN;         break;
+        case 's': mask |= 1 << IT_SPRITE;       break;
+        case 'w': mask |= 1 << IT_WALL;         break;
+        case 'y': mask |= (1 << IT_SKY)
+                       | (1 << IT_CLASSIC_SKY); break;
+        case 'P': placeholder = true;           break;
         case 'h':
             Cmd_PrintUsage(o_imagelist, "[wildcard]");
             Com_Printf("List registered images.\n");
@@ -1790,6 +1791,12 @@ static void check_for_glow_map(image_t *image)
     Z_Free(glow_pic);
 }
 
+static void load_special_image(image_t *image, byte **pic) {
+    image->width = image->height = image->upload_width = image->upload_height = 1;
+    byte *p = *pic = Z_Malloc(4);
+    p[0] = p[1] = p[2] = p[3] = 0xFF;
+}
+
 // finds or loads the given image, adding it to the hash table.
 static image_t *find_or_load_image(const char *name, size_t len,
                                    imagetype_t type, imageflags_t flags)
@@ -1834,40 +1841,67 @@ static image_t *find_or_load_image(const char *name, size_t len,
     image->flags = flags;
     image->registration_sequence = registration_sequence;
 
-    // find out original extension
-    for (fmt = 0; fmt < IM_MAX; fmt++) {
-        if (!Q_stricmp(image->name + image->baselen + 1, img_loaders[fmt].ext)) {
-            break;
+    if (!(flags & IF_SPECIAL)) {
+        // find out original extension
+        for (fmt = 0; fmt < IM_MAX; fmt++) {
+            if (!Q_stricmp(image->name + image->baselen + 1, img_loaders[fmt].ext)) {
+                break;
+            }
         }
-    }
 
-    // load the pic from disk
-    pic = NULL;
+        // load the pic from disk
+        pic = NULL;
 
-    ret = load_image_data(image, fmt, true, &pic);
+        ret = load_image_data(image, fmt, true, &pic);
 
-    if (ret < 0) {
-        print_error(image->name, flags, ret);
-        if (flags & IF_PERMANENT) {
-            memset(image, 0, sizeof(*image));
-        } else {
-            // don't reload temp pics every frame
-            image->upload_width = image->upload_height = 0;
-            List_Append(&r_imageHash[hash], &image->entry);
+        if (ret < 0) {
+            print_error(image->name, flags, ret);
+            if (flags & IF_PERMANENT) {
+                memset(image, 0, sizeof(*image));
+            } else {
+                // don't reload temp pics every frame
+                image->upload_width = image->upload_height = 0;
+                List_Append(&r_imageHash[hash], &image->entry);
+            }
+            return NULL;
         }
-        return NULL;
-    }
 
-    image->aspect = (float)image->upload_width / image->upload_height;
+        image->aspect = (float)image->upload_width / image->upload_height;
+    } else {
+        load_special_image(image, &pic);
+    }
 
     List_Append(&r_imageHash[hash], &image->entry);
+    
+    if (!(flags & IF_SPECIAL)) {
+        // check for glow maps
+        if (r_glowmaps->integer && (type == IT_SKIN || type == IT_WALL))
+            check_for_glow_map(image);
+    }
 
-    // check for glow maps
-    if (r_glowmaps->integer && (type == IT_SKIN || type == IT_WALL))
-        check_for_glow_map(image);
+    if (type == IT_CLASSIC_SKY) {
+        // upload the top half of the image (solid)
+        image->height /= 2;
+        image->upload_height /= 2;
 
-    // upload the image
-    IMG_Load(image, pic);
+        IMG_Load(image, pic + (image->width * image->height * 4));
+
+        // upload the bottom half (alpha)
+        image_t temporary = {
+            .type = type,
+            .flags = flags,
+            .width = image->width,
+            .height = image->height,
+            .upload_width = image->upload_width,
+            .upload_height = image->upload_height
+        };
+
+        IMG_Load(&temporary, pic);
+        image->glow_texnum = temporary.texnum;
+    } else {
+        // upload the image
+        IMG_Load(image, pic);
+    }
 
     // don't need pics in memory after GL upload
     Z_Free(pic);
@@ -2134,6 +2168,9 @@ void IMG_Init(void)
 
     // &r_images[0] == R_NOTEXTURE
     r_numImages = 1;
+    
+    // &r_images[1] == white pic
+    R_RegisterImage("_white", IT_PIC, IF_PERMANENT | IF_REPEAT | IF_SPECIAL);
 }
 
 void IMG_Shutdown(void)

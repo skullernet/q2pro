@@ -22,6 +22,43 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "client.h"
 
+#if 0
+// Testing for CL_ParsePlayerSkin()
+static void test_parse_player_skin(const char* string, bool parse_dogtag, const char* expect_name, const char* expect_model, const char* expect_skin, const char* expect_dogtag)
+{
+    char name[MAX_QPATH];
+    char model[MAX_QPATH];
+    char skin[MAX_QPATH];
+    char dogtag[MAX_QPATH];
+
+    CL_ParsePlayerSkin(name, model, skin, dogtag, parse_dogtag, string);
+    Q_assert(strcmp(name, expect_name) == 0);
+    Q_assert(strcmp(model, expect_model) == 0);
+    Q_assert(strcmp(skin, expect_skin) == 0);
+    Q_assert(strcmp(dogtag, expect_dogtag) == 0);
+}
+
+void test_CL_ParsePlayerSkin(void)
+{
+    test_parse_player_skin("unnamed\\male/grunt\\default", true, "unnamed", "male", "grunt", "default");
+    test_parse_player_skin("unnamed\\male/grunt", false, "unnamed", "male", "grunt", "default");
+    test_parse_player_skin("unnamed\\male\\grunt", false, "unnamed", "male", "grunt", "default");
+
+    test_parse_player_skin("unnamed\\/grunt\\default", true, "unnamed", "male", "grunt", "default");
+    test_parse_player_skin("unnamed\\/grunt", false, "unnamed", "male", "grunt", "default");
+
+    test_parse_player_skin("Name\\Model/Skin\\Dogtag", true, "Name", "Model", "Skin", "Dogtag");
+
+    test_parse_player_skin("Name\\Model\\Dogtag", true, "Name", "male", "grunt", "Dogtag");
+    test_parse_player_skin("Name\\\\Dogtag", true, "Name", "male", "grunt", "Dogtag");
+    test_parse_player_skin("Name\\\\", true, "Name", "male", "grunt", "default");
+
+    test_parse_player_skin("Name\\Model/Skin\\", true, "Name", "Model", "Skin", "default");
+    test_parse_player_skin("Name\\male\\Dogtag", true, "Name", "male", "grunt", "Dogtag");
+    test_parse_player_skin("Name\\female\\Dogtag", true, "Name", "female", "athena", "Dogtag");
+}
+#endif
+
 /*
 ================
 CL_ParsePlayerSkin
@@ -30,44 +67,75 @@ Breaks up playerskin into name (optional), model and skin components.
 If model or skin are found to be invalid, replaces them with sane defaults.
 ================
 */
-void CL_ParsePlayerSkin(char *name, char *model, char *skin, const char *s)
+void CL_ParsePlayerSkin(char *name, char *model, char *skin, char *dogtag, bool parse_dogtag, const char *s)
 {
+    char buf[MAX_QPATH * 4];
     size_t len;
     char *t;
 
     len = strlen(s);
-    Q_assert(len < MAX_QPATH);
+    Q_assert(len < sizeof(buf));
+    Q_strlcpy(buf, s, sizeof(buf));
 
     // isolate the player's name
-    t = strchr(s, '\\');
+    size_t name_len;
+    char *model_str;
+    t = strchr(buf, '\\');
     if (t) {
-        len = t - s;
-        strcpy(model, t + 1);
+        name_len = t - buf;
+        *t = 0;
+        model_str = t + 1;
     } else {
-        len = 0;
-        strcpy(model, s);
+        model_str = buf;
+        name_len = 0;
+    }
+
+    char *skin_str = NULL;
+    // isolate the model name
+    t = strchr(model_str, '/');
+    if (!t && !parse_dogtag) {
+        /* Using '\\' as a separator for the skin name is technically incorrect;
+         * even early game code always produced "model/skin", yet the backslash
+         * was considered as a separator.
+         * This means it's probably a compatibility measure for even earlier code,
+         * and probably not needed any more...
+         * Still, keep it for compatibility's sake when dealing with userinfo
+         * from non-rerelease servers. */
+        t = strchr(model, '\\');
+    }
+    if (t) {
+        skin_str = t + 1;
+        *t = 0;
+    }
+
+    // isolate the dogtag name
+    const char *dogtag_str = "";
+    if (parse_dogtag) {
+        char *search_str = skin_str ? skin_str : model_str;
+        t = strchr(search_str, '\\');
+        if (t) {
+            dogtag_str = t + 1;
+            *t = 0;
+        }
     }
 
     // copy the player's name
     if (name) {
-        memcpy(name, s, len);
-        name[len] = 0;
+        Q_strnlcpy(name, buf, name_len, MAX_QPATH);
     }
-
-    // isolate the model name
-    t = strchr(model, '/');
-    if (!t)
-        t = strchr(model, '\\');
-    if (!t)
-        goto default_model;
-    *t = 0;
-
-    // isolate the skin name
-    strcpy(skin, t + 1);
-
     // fix empty model to male
-    if (t == model)
-        strcpy(model, "male");
+    if (!*model_str)
+        Q_strlcpy(model, "male", MAX_QPATH);
+    else
+        Q_strlcpy(model, model_str, MAX_QPATH);
+    if (skin_str)
+        Q_strlcpy(skin, skin_str, MAX_QPATH);
+    else
+        skin[0] = 0;
+    if (!*dogtag_str)
+        Q_strlcpy(dogtag, "default", MAX_QPATH);
+    else
+        Q_strlcpy(dogtag, dogtag_str, MAX_QPATH);
 
     // apply restrictions on skins
     if (cl_noskins->integer == 2 || !COM_IsPath(skin))
@@ -80,12 +148,12 @@ void CL_ParsePlayerSkin(char *name, char *model, char *skin, const char *s)
 
 default_skin:
     if (!Q_stricmp(model, "female")) {
-        strcpy(model, "female");
-        strcpy(skin, "athena");
+        Q_strlcpy(model, "female", MAX_QPATH);
+        Q_strlcpy(skin, "athena", MAX_QPATH);
     } else {
 default_model:
-        strcpy(model, "male");
-        strcpy(skin, "grunt");
+        Q_strlcpy(model, "male", MAX_QPATH);
+        Q_strlcpy(skin, "grunt", MAX_QPATH);
     }
 }
 
@@ -100,12 +168,15 @@ void CL_LoadClientinfo(clientinfo_t *ci, const char *s)
     int         i;
     char        model_name[MAX_QPATH];
     char        skin_name[MAX_QPATH];
+    char        dogtag_name[MAX_QPATH];
     char        model_filename[MAX_QPATH];
     char        skin_filename[MAX_QPATH];
     char        weapon_filename[MAX_QPATH];
     char        icon_filename[MAX_QPATH];
+    char        dogtag_filename[MAX_QPATH];
+    bool        parse_dogtag = cls.serverProtocol == PROTOCOL_VERSION_RERELEASE;
 
-    CL_ParsePlayerSkin(ci->name, model_name, skin_name, s);
+    CL_ParsePlayerSkin(ci->name, model_name, skin_name, dogtag_name, parse_dogtag, s);
 
     // model file
     Q_concat(model_filename, sizeof(model_filename),
@@ -169,23 +240,26 @@ void CL_LoadClientinfo(clientinfo_t *ci, const char *s)
     // icon file
     Q_concat(icon_filename, sizeof(icon_filename),
              "/players/", model_name, "/", skin_name, "_i.pcx");
-    ci->icon = R_RegisterTempPic(icon_filename);
+    Q_strlcpy(ci->icon_name, icon_filename, sizeof(ci->icon_name));
 
     strcpy(ci->model_name, model_name);
     strcpy(ci->skin_name, skin_name);
+    Q_concat(dogtag_filename, sizeof(dogtag_filename), dogtag_name, ".pcx");
+    Q_strlcpy(ci->dogtag_name, dogtag_filename, sizeof(ci->dogtag_name));
 
     // base info should be at least partially valid
     if (ci == &cl.baseclientinfo)
         return;
 
     // must have loaded all data types to be valid
-    if (!ci->skin || !ci->icon || !ci->model || !ci->weaponmodel[0]) {
+    if (!ci->skin || !ci->model || !ci->weaponmodel[0]) {
         ci->skin = 0;
-        ci->icon = 0;
+        ci->icon_name[0] = 0;
         ci->model = 0;
         ci->weaponmodel[0] = 0;
         ci->model_name[0] = 0;
         ci->skin_name[0] = 0;
+        ci->dogtag_name[0] = 0;
     }
 }
 
@@ -313,7 +387,8 @@ void CL_SetSky(void)
         VectorClear(axis);
     }
 
-    R_SetSky(cl.configstrings[CS_SKY], rotate, autorotate, axis);
+    if (!cl.bsp->classic_sky || !R_SetClassicSky(cl.bsp->classic_sky))
+        R_SetSky(cl.configstrings[CS_SKY], rotate, autorotate, axis);
 }
 
 /*
@@ -335,6 +410,111 @@ static qhandle_t CL_RegisterImage(const char *s)
     }
 
     return R_RegisterTempPic(s);
+}
+
+#define MAX_WHEEL_VALUES 8
+
+/*
+=================
+CL_LoadWheelIcons
+=================
+*/
+static cl_wheel_icon_t CL_LoadWheelIcons(int icon_index)
+{
+    cl_wheel_icon_t icons = { .main = cl.image_precache[icon_index] };
+
+    char path[MAX_QPATH];
+    Q_snprintf(path, sizeof(path), "wheel/%s", cl.configstrings[cl.csr.images + icon_index]);
+
+    icons.wheel = R_RegisterTempPic(path);
+
+    if (!icons.wheel) {
+        icons.wheel = icons.selected = icons.main;
+    } else {
+        Q_snprintf(path, sizeof(path), "wheel/%s_selected", cl.configstrings[cl.csr.images + icon_index]);
+
+        icons.selected = R_RegisterTempPic(path);
+
+        if (!icons.selected) {
+            icons.selected = icons.wheel;
+        }
+    }
+
+    return icons;
+}
+
+/*
+=================
+CL_LoadWheelEntry
+=================
+*/
+static void CL_LoadWheelEntry(int index, const char *s)
+{
+    configstring_t entry;
+    Q_strlcpy(entry, s, sizeof(entry));
+    int values[MAX_WHEEL_VALUES];
+    size_t num_values = 0;
+
+    for (char *start = entry; num_values < MAX_WHEEL_VALUES && start && *start; ) {
+        char *end = strchr(start, '|');
+
+        if (end) {
+            *end = '\0';
+        }
+
+        char *endptr;
+        values[num_values++] = strtol(start, &endptr, 10);
+
+        // sanity
+        if (endptr == start) {
+            return;
+        }
+
+        start = end ? (end + 1) : NULL;
+    }
+
+    // parse & sanity check
+    if (index >= cl.csr.wheelammo + MAX_WHEEL_ITEMS) {
+        if (num_values != 6) {
+            return;
+        }
+
+        index = index - cl.csr.wheelpowerups;
+        
+        cl.wheel_data.powerups[index].item_index = values[0];
+        cl.wheel_data.powerups[index].icons = CL_LoadWheelIcons(values[1]);
+        cl.wheel_data.powerups[index].is_toggle = values[2];
+        cl.wheel_data.powerups[index].sort_id = values[3];
+        cl.wheel_data.powerups[index].can_drop = values[4];
+        cl.wheel_data.powerups[index].ammo_index = values[5];
+        cl.wheel_data.num_powerups = max(index + 1, cl.wheel_data.num_powerups);
+    } else if (index >= cl.csr.wheelweapons + MAX_WHEEL_ITEMS) {
+        if (num_values != 2) {
+            return;
+        }
+
+        index = index - cl.csr.wheelammo;
+        
+        cl.wheel_data.ammo[index].item_index = values[0];
+        cl.wheel_data.ammo[index].icons = CL_LoadWheelIcons(values[1]);
+        cl.wheel_data.num_ammo = max(index + 1, cl.wheel_data.num_ammo);
+    } else {
+        if (num_values != 8) {
+            return;
+        }
+
+        index = index - cl.csr.wheelweapons;
+        
+        cl.wheel_data.weapons[index].item_index = values[0];
+        cl.wheel_data.weapons[index].icons = CL_LoadWheelIcons(values[1]);
+        cl.wheel_data.weapons[index].ammo_index = values[2];
+        cl.wheel_data.weapons[index].min_ammo = values[3];
+        cl.wheel_data.weapons[index].is_powerup = values[4];
+        cl.wheel_data.weapons[index].sort_id = values[5];
+        cl.wheel_data.weapons[index].quantity_warn = values[6];
+        cl.wheel_data.weapons[index].can_drop = values[7];
+        cl.wheel_data.num_weapons = max(index + 1, cl.wheel_data.num_weapons);
+    }
 }
 
 /*
@@ -380,6 +560,10 @@ void CL_PrepRefresh(void)
         }
         cl.image_precache[i] = CL_RegisterImage(name);
     }
+    
+    cgame->TouchPics();
+
+    CL_Wheel_Precache();
 
     CL_LoadState(LOAD_CLIENTS);
     for (i = 0; i < MAX_CLIENTS; i++) {
@@ -390,10 +574,18 @@ void CL_PrepRefresh(void)
         CL_LoadClientinfo(&cl.clientinfo[i], name);
     }
 
-    CL_LoadClientinfo(&cl.baseclientinfo, "unnamed\\male/grunt");
+    CL_LoadClientinfo(&cl.baseclientinfo, "unnamed\\male/grunt\\default");
 
     // set sky textures and speed
     CL_SetSky();
+
+    // load wheel data
+    int n;
+    for (n = cl.csr.wheelweapons, i = 0; i < MAX_WHEEL_ITEMS * 3; i++, n++) {
+        if (*cl.configstrings[n]) {
+            CL_LoadWheelEntry(n, cl.configstrings[n]);
+        }
+    }
 
     // the renderer can now free unneeded stuff
     R_EndRegistration();
@@ -407,14 +599,8 @@ void CL_PrepRefresh(void)
     OGG_Play();
 }
 
-/*
-=================
-CL_UpdateConfigstring
-
-A configstring update has been parsed.
-=================
-*/
-void CL_UpdateConfigstring(int index)
+// parse configstring, internal method
+static void update_configstring(int index)
 {
     const char *s = cl.configstrings[index];
 
@@ -478,4 +664,23 @@ void CL_UpdateConfigstring(int index)
         CL_SetSky();
         return;
     }
+
+    if (index >= cl.csr.wheelweapons && index <= cl.csr.wheelpowerups + MAX_WHEEL_ITEMS) {
+        CL_LoadWheelEntry(index, s);
+        return;
+    }
+}
+
+/*
+=================
+CL_UpdateConfigstring
+
+A configstring update has been parsed.
+=================
+*/
+void CL_UpdateConfigstring(int index)
+{
+    update_configstring(index);
+
+    cgame->ParseConfigString(index, cl.configstrings[index]);
 }

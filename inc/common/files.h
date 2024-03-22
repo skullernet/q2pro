@@ -22,6 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/error.h"
 #include "common/zone.h"
 #include "shared/files.h"
+#include "common/natsort.h"
 
 #define MIN_LISTED_FILES    1024
 #define MAX_LISTED_FILES    250000000
@@ -39,9 +40,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define FS_AllocTempMem(size)   FS_Malloc(size)
 #define FS_FreeTempMem(buf)     Z_Free(buf)
 
-// just regular caseless string comparsion
-#define FS_pathcmp      Q_strcasecmp
-#define FS_pathcmpn     Q_strncasecmp
+#define FS_pathcmp      strnatcasecmp
+#define FS_pathcmpn     strnatcasencmp
 
 #define FS_HashPath(s, size)            Com_HashStringLen(s, SIZE_MAX, size)
 #define FS_HashPathLen(s, len, size)    Com_HashStringLen(s, len, size)

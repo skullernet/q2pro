@@ -1276,6 +1276,9 @@ void Key_Console(int key)
             con.display = con.current;
         }
         return;
+    } else if (key == K_END) {
+        con.display = con.current;
+        return;
     }
 
     if (key == K_HOME && Key_IsDown(K_CTRL)) {

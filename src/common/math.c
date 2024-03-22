@@ -75,6 +75,134 @@ void MakeNormalVectors(const vec3_t forward, vec3_t right, vec3_t up)
     CrossProduct(right, forward, up);
 }
 
+void Matrix_TransformVec4(const vec4_t a, const mat4_t m, vec4_t out)
+{
+    const float x = a[0];
+    const float y = a[1];
+    const float z = a[2];
+    const float w = a[3];
+    out[0] = m[0] * x + m[4] * y + m[8] * z + m[12] * w;
+    out[1] = m[1] * x + m[5] * y + m[9] * z + m[13] * w;
+    out[2] = m[2] * x + m[6] * y + m[10] * z + m[14] * w;
+    out[3] = m[3] * x + m[7] * y + m[11] * z + m[15] * w;
+}
+
+void Matrix_Multiply(const mat4_t a, const mat4_t b, mat4_t out)
+{
+    const float a00 = a[0];
+    const float a01 = a[1];
+    const float a02 = a[2];
+    const float a03 = a[3];
+    const float a10 = a[4];
+    const float a11 = a[5];
+    const float a12 = a[6];
+    const float a13 = a[7];
+    const float a20 = a[8];
+    const float a21 = a[9];
+    const float a22 = a[10];
+    const float a23 = a[11];
+    const float a30 = a[12];
+    const float a31 = a[13];
+    const float a32 = a[14];
+    const float a33 = a[15];
+
+    // Cache only the current line of the second matrix
+    float b0 = b[0];
+    float b1 = b[1];
+    float b2 = b[2];
+    float b3 = b[3];
+    out[0] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+    out[1] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+    out[2] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+    out[3] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
+
+    b0 = b[4];
+    b1 = b[5];
+    b2 = b[6];
+    b3 = b[7];
+    out[4] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+    out[5] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+    out[6] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+    out[7] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
+
+    b0 = b[8];
+    b1 = b[9];
+    b2 = b[10];
+    b3 = b[11];
+    out[8] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+    out[9] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+    out[10] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+    out[11] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
+
+    b0 = b[12];
+    b1 = b[13];
+    b2 = b[14];
+    b3 = b[15];
+    out[12] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+    out[13] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+    out[14] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+    out[15] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
+}
+
+void Matrix_Frustum(float fov_x, float fov_y, float reflect_x, float znear, float zfar, float *matrix)
+{
+    float xmin, xmax, ymin, ymax;
+    float width, height, depth;
+
+    xmax = znear * tan(fov_x * (M_PI / 360));
+    xmin = -xmax;
+
+    ymax = znear * tan(fov_y * (M_PI / 360));
+    ymin = -ymax;
+
+    width = xmax - xmin;
+    height = ymax - ymin;
+    depth = zfar - znear;
+
+    matrix[0] = reflect_x * 2 * znear / width;
+    matrix[4] = 0;
+    matrix[8] = (xmax + xmin) / width;
+    matrix[12] = 0;
+
+    matrix[1] = 0;
+    matrix[5] = 2 * znear / height;
+    matrix[9] = (ymax + ymin) / height;
+    matrix[13] = 0;
+
+    matrix[2] = 0;
+    matrix[6] = 0;
+    matrix[10] = -(zfar + znear) / depth;
+    matrix[14] = -2 * zfar * znear / depth;
+
+    matrix[3] = 0;
+    matrix[7] = 0;
+    matrix[11] = -1;
+    matrix[15] = 0;
+}
+
+void Matrix_FromOriginAxis(const vec3_t origin, const vec3_t axis[3], mat4_t out)
+{
+    out[0] = -axis[1][0];
+    out[4] = -axis[1][1];
+    out[8] = -axis[1][2];
+    out[12] = DotProduct(axis[1], origin);
+
+    out[1] = axis[2][0];
+    out[5] = axis[2][1];
+    out[9] = axis[2][2];
+    out[13] = -DotProduct(axis[2], origin);
+
+    out[2] = -axis[0][0];
+    out[6] = -axis[0][1];
+    out[10] = -axis[0][2];
+    out[14] = DotProduct(axis[0], origin);
+
+    out[3] = 0;
+    out[7] = 0;
+    out[11] = 0;
+    out[15] = 1;
+}
+
 #endif  // USE_CLIENT
 
 const vec3_t bytedirs[NUMVERTEXNORMALS] = {

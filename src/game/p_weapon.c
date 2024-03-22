@@ -193,7 +193,7 @@ void ChangeWeapon(edict_t *ent)
     ent->client->ps.gunindex = gi.modelindex(ent->client->pers.weapon->view_model);
 
     ent->client->anim_priority = ANIM_PAIN;
-    if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+    if (ent->client->ps.pmove.pm_flags & G3PMF_DUCKED) {
         ent->s.frame = FRAME_crpain1;
         ent->client->anim_end = FRAME_crpain4;
     } else {
@@ -352,7 +352,7 @@ static void Weapon_Generic(edict_t *ent, int FRAME_ACTIVATE_LAST, int FRAME_FIRE
             return;
         } else if ((FRAME_DEACTIVATE_LAST - ent->client->ps.gunframe) == 4) {
             ent->client->anim_priority = ANIM_REVERSE;
-            if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+            if (ent->client->ps.pmove.pm_flags & G3PMF_DUCKED) {
                 ent->s.frame = FRAME_crpain4 + 1;
                 ent->client->anim_end = FRAME_crpain1;
             } else {
@@ -383,7 +383,7 @@ static void Weapon_Generic(edict_t *ent, int FRAME_ACTIVATE_LAST, int FRAME_FIRE
 
         if ((FRAME_DEACTIVATE_LAST - FRAME_DEACTIVATE_FIRST) < 4) {
             ent->client->anim_priority = ANIM_REVERSE;
-            if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+            if (ent->client->ps.pmove.pm_flags & G3PMF_DUCKED) {
                 ent->s.frame = FRAME_crpain4 + 1;
                 ent->client->anim_end = FRAME_crpain1;
             } else {
@@ -405,7 +405,7 @@ static void Weapon_Generic(edict_t *ent, int FRAME_ACTIVATE_LAST, int FRAME_FIRE
 
                 // start the animation
                 ent->client->anim_priority = ANIM_ATTACK;
-                if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+                if (ent->client->ps.pmove.pm_flags & G3PMF_DUCKED) {
                     ent->s.frame = FRAME_crattak1 - 1;
                     ent->client->anim_end = FRAME_crattak9;
                 } else {
@@ -504,7 +504,7 @@ void weapon_grenade_fire(edict_t *ent, bool held)
     if (ent->health <= 0)
         return;
 
-    if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+    if (ent->client->ps.pmove.pm_flags & G3PMF_DUCKED) {
         ent->client->anim_priority = ANIM_ATTACK;
         ent->s.frame = FRAME_crattak1 - 1;
         ent->client->anim_end = FRAME_crattak3;
@@ -802,7 +802,7 @@ void Weapon_HyperBlaster_Fire(edict_t *ent)
                 ent->client->pers.inventory[ent->client->ammo_index]--;
 
             ent->client->anim_priority = ANIM_ATTACK;
-            if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+            if (ent->client->ps.pmove.pm_flags & G3PMF_DUCKED) {
                 ent->s.frame = FRAME_crattak1 - 1;
                 ent->client->anim_end = FRAME_crattak9;
             } else {
@@ -907,7 +907,7 @@ void Machinegun_Fire(edict_t *ent)
         ent->client->pers.inventory[ent->client->ammo_index]--;
 
     ent->client->anim_priority = ANIM_ATTACK;
-    if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+    if (ent->client->ps.pmove.pm_flags & G3PMF_DUCKED) {
         ent->s.frame = FRAME_crattak1 - (int)(random() + 0.25f);
         ent->client->anim_end = FRAME_crattak9;
     } else {
@@ -962,7 +962,7 @@ void Chaingun_Fire(edict_t *ent)
     }
 
     ent->client->anim_priority = ANIM_ATTACK;
-    if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+    if (ent->client->ps.pmove.pm_flags & G3PMF_DUCKED) {
         ent->s.frame = FRAME_crattak1 - (ent->client->ps.gunframe & 1);
         ent->client->anim_end = FRAME_crattak9;
     } else {

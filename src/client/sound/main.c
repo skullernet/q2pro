@@ -136,7 +136,7 @@ S_Init
 */
 void S_Init(void)
 {
-    s_enable = Cvar_Get("s_enable", "1", CVAR_SOUND);
+    s_enable = Cvar_Get("s_enable", "2", CVAR_SOUND);
     if (s_enable->integer <= SS_NOT) {
         Com_Printf("Sound initialization disabled.\n");
         return;
@@ -149,7 +149,7 @@ void S_Init(void)
 #if USE_DEBUG
     s_show = Cvar_Get("s_show", "0", 0);
 #endif
-    s_auto_focus = Cvar_Get("s_auto_focus", "0", 0);
+    s_auto_focus = Cvar_Get("s_auto_focus", "2", 0);
     s_underwater = Cvar_Get("s_underwater", "1", 0);
     s_underwater_gain_hf = Cvar_Get("s_underwater_gain_hf", "0.25", 0);
 
@@ -514,6 +514,9 @@ void S_EndRegistration(void)
         S_LoadSound(sfx);
     }
 
+    if (s_api.end_registration)
+        s_api.end_registration();
+
     s_registering = false;
 }
 
@@ -803,7 +806,7 @@ void S_BuildSoundList(int *sounds)
 {
     int         i;
     int         num;
-    centity_state_t *ent;
+    entity_state_t *ent;
 
     for (i = 0; i < cl.frame.numEntities; i++) {
         num = (cl.frame.firstEntity + i) & PARSE_ENTITIES_MASK;
@@ -818,7 +821,7 @@ void S_BuildSoundList(int *sounds)
     }
 }
 
-float S_GetEntityLoopVolume(const centity_state_t *ent)
+float S_GetEntityLoopVolume(const entity_state_t *ent)
 {
     if (ent->loop_volume)
         return ent->loop_volume;
@@ -826,7 +829,7 @@ float S_GetEntityLoopVolume(const centity_state_t *ent)
     return 1.0f;
 }
 
-float S_GetEntityLoopDistMult(const centity_state_t *ent)
+float S_GetEntityLoopDistMult(const entity_state_t *ent)
 {
     if (ent->loop_attenuation) {
         if (ent->loop_attenuation == ATTN_LOOP_NONE)
@@ -837,6 +840,8 @@ float S_GetEntityLoopDistMult(const centity_state_t *ent)
 
     return SOUND_LOOPATTENUATE;
 }
+
+int32_t volume_modified = 0;
 
 /*
 ============

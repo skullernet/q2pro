@@ -47,7 +47,6 @@ cvar_t *gl_brightness;
 cvar_t *gl_dynamic;
 cvar_t *gl_dlight_falloff;
 cvar_t *gl_modulate_entities;
-cvar_t *gl_doublelight_entities;
 cvar_t *gl_glowmap_intensity;
 cvar_t *gl_fontshadow;
 cvar_t *gl_shaders;
@@ -57,6 +56,7 @@ cvar_t *gl_md5_use;
 #endif
 cvar_t *gl_waterwarp;
 cvar_t *gl_swapinterval;
+cvar_t *gl_fog;
 
 // development variables
 cvar_t *gl_znear;
@@ -84,6 +84,7 @@ cvar_t *gl_vertexlight;
 cvar_t *gl_lightgrid;
 cvar_t *gl_polyblend;
 cvar_t *gl_showerrors;
+cvar_t *gl_damageblend_frac;
 
 // ==============================================================================
 
@@ -323,11 +324,8 @@ void GL_RotationMatrix(GLfloat *matrix)
 
 void GL_RotateForEntity(void)
 {
-    GLfloat matrix[16];
-
-    GL_RotationMatrix(matrix);
-    GL_MultMatrix(glr.entmatrix, glr.viewmatrix, matrix);
-    GL_ForceMatrix(glr.entmatrix);
+    GL_RotationMatrix(glr.entmatrix);
+    GL_ForceMatrix(glr.entmatrix, glr.viewmatrix);
 }
 
 static void GL_DrawSpriteModel(const model_t *model)
@@ -352,7 +350,7 @@ static void GL_DrawSpriteModel(const model_t *model)
         bits |= GLS_BLEND_BLEND;
     }
 
-    GL_LoadMatrix(glr.viewmatrix);
+    GL_LoadMatrix(NULL, glr.viewmatrix);
     GL_BindTexture(0, image->texnum);
     GL_StateBits(bits);
     GL_ArrayBits(GLA_VERTEX | GLA_TC);
@@ -391,7 +389,7 @@ static void GL_DrawNullModel(void)
     VectorMA(e->origin, 16, glr.entaxis[1], points[3]);
     VectorMA(e->origin, 16, glr.entaxis[2], points[5]);
 
-    GL_LoadMatrix(glr.viewmatrix);
+    GL_LoadMatrix(glr.entmatrix, glr.viewmatrix);
     GL_BindTexture(0, TEXNUM_WHITE);
     GL_StateBits(GLS_DEFAULT);
     GL_ArrayBits(GLA_VERTEX | GLA_COLOR);
@@ -429,7 +427,7 @@ static void GL_OccludeFlares(void)
     if (!gl_static.queries)
         return;
 
-    GL_LoadMatrix(glr.viewmatrix);
+    GL_LoadMatrix(glr.entmatrix, glr.viewmatrix);
     GL_StateBits(GLS_DEPTHMASK_FALSE);
     GL_ArrayBits(GLA_VERTEX);
     qglColorMask(0, 0, 0, 0);
@@ -493,7 +491,7 @@ static void GL_DrawFlare(const entity_t *e)
     if (!q->visible)
         return;
 
-    GL_LoadMatrix(glr.viewmatrix);
+    GL_LoadMatrix(glr.entmatrix, glr.viewmatrix);
     GL_BindTexture(0, IMG_ForHandle(e->skin)->texnum);
     GL_StateBits(GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE | GLS_BLEND_ADD);
     GL_ArrayBits(GLA_VERTEX | GLA_TC);
@@ -537,6 +535,8 @@ static void GL_DrawEntities(int musthave, int canthave)
 
         // convert angles to axis
         GL_SetEntityAxis();
+
+        GL_RotateForEntity();
 
         // inline BSP model
         if (ent->model & BIT(31)) {
@@ -647,7 +647,8 @@ static void GL_WaterWarp(void)
 {
     GL_ForceTexture(0, gl_static.warp_texture);
     GL_StateBits(GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE |
-                 GLS_CULL_DISABLE | GLS_TEXTURE_REPLACE | GLS_WARP_ENABLE);
+                 GLS_CULL_DISABLE | GLS_TEXTURE_REPLACE | GLS_WARP_ENABLE |
+                 GLS_DYNAMIC_LIGHTS);
     GL_ArrayBits(GLA_VERTEX | GLA_TC);
 
     vec_t points[8] = {
@@ -723,11 +724,15 @@ void R_RenderFrame(refdef_t *fd)
         GL_DrawAlphaFaces();
     }
 
+    GL_DrawEntities(RF_WEAPONMODEL, RF_TRANSLUCENT);
+
     GL_DrawEntities(RF_TRANSLUCENT | RF_WEAPONMODEL, 0);
 
     if (waterwarp) {
         qglBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
+
+    GL_DrawDebugLines();
 
     // go back into 2D mode
     GL_Setup2D();
@@ -736,7 +741,7 @@ void R_RenderFrame(refdef_t *fd)
         GL_WaterWarp();
     }
 
-    if (gl_polyblend->integer && glr.fd.blend[3] != 0) {
+    if (gl_polyblend->integer && (glr.fd.screen_blend[3] != 0 || glr.fd.damage_blend[3] != 0)) {
         GL_Blend();
     }
 
@@ -891,9 +896,9 @@ static void GL_Register(void)
     gl_partscale = Cvar_Get("gl_partscale", "2", 0);
     gl_partstyle = Cvar_Get("gl_partstyle", "0", 0);
     gl_celshading = Cvar_Get("gl_celshading", "0", 0);
-    gl_dotshading = Cvar_Get("gl_dotshading", "1", 0);
+    gl_dotshading = Cvar_Get("gl_dotshading", "0", 0);
     gl_shadows = Cvar_Get("gl_shadows", "0", CVAR_ARCHIVE);
-    gl_modulate = Cvar_Get("gl_modulate", "1", CVAR_ARCHIVE);
+    gl_modulate = Cvar_Get("gl_modulate", "2", CVAR_ARCHIVE);
     gl_modulate->changed = gl_modulate_changed;
     gl_modulate_world = Cvar_Get("gl_modulate_world", "1", 0);
     gl_modulate_world->changed = gl_lightmap_changed;
@@ -906,8 +911,7 @@ static void GL_Register(void)
     gl_dlight_falloff = Cvar_Get("gl_dlight_falloff", "1", 0);
     gl_modulate_entities = Cvar_Get("gl_modulate_entities", "1", 0);
     gl_modulate_entities->changed = gl_modulate_entities_changed;
-    gl_doublelight_entities = Cvar_Get("gl_doublelight_entities", "1", 0);
-    gl_glowmap_intensity = Cvar_Get("gl_glowmap_intensity", "0.75", 0);
+    gl_glowmap_intensity = Cvar_Get("gl_glowmap_intensity", "1.0", 0);
     gl_fontshadow = Cvar_Get("gl_fontshadow", "0", 0);
     gl_shaders = Cvar_Get("gl_shaders", (gl_config.caps & QGL_CAP_SHADER) ? "1" : "0", CVAR_REFRESH);
 #if USE_MD5
@@ -917,6 +921,7 @@ static void GL_Register(void)
     gl_waterwarp = Cvar_Get("gl_waterwarp", "0", 0);
     gl_swapinterval = Cvar_Get("gl_swapinterval", "1", CVAR_ARCHIVE);
     gl_swapinterval->changed = gl_swapinterval_changed;
+    gl_fog = Cvar_Get("gl_fog", "1", 0);
 
     // development variables
     gl_znear = Cvar_Get("gl_znear", "2", CVAR_CHEAT);
@@ -948,6 +953,7 @@ static void GL_Register(void)
     gl_lightgrid = Cvar_Get("gl_lightgrid", "1", 0);
     gl_polyblend = Cvar_Get("gl_polyblend", "1", 0);
     gl_showerrors = Cvar_Get("gl_showerrors", "1", 0);
+    gl_damageblend_frac = Cvar_Get("gl_damageblend_frac", "0.2", 0);
 
     gl_lightmap_changed(NULL);
     gl_modulate_entities_changed(NULL);
@@ -1104,6 +1110,8 @@ bool R_Init(bool total)
     // register our variables
     GL_Register();
 
+    GL_InitDebugDraw();
+
     GL_InitState();
 
     GL_InitQueries();
@@ -1154,6 +1162,8 @@ void R_Shutdown(bool total)
     vid.shutdown();
 
     GL_Unregister();
+
+    GL_ShutdownDebugDraw();
 
     memset(&gl_static, 0, sizeof(gl_static));
     memset(&gl_config, 0, sizeof(gl_config));
@@ -1210,6 +1220,8 @@ void R_BeginRegistration(const char *name)
     }
 
     GL_ClearQueries();
+
+    GL_ClearDebugLines();
 }
 
 /*

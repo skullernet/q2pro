@@ -240,6 +240,8 @@ static kbutton_t    in_left, in_right, in_forward, in_back;
 static kbutton_t    in_lookup, in_lookdown, in_moveleft, in_moveright;
 static kbutton_t    in_strafe, in_speed, in_use, in_attack;
 static kbutton_t    in_up, in_down;
+// Kex stuff
+static kbutton_t    in_holster;
 
 static int          in_impulse;
 static bool         in_mlooking;
@@ -331,10 +333,34 @@ static void KeyClear(kbutton_t *b)
 
 static void IN_KLookDown(void) { KeyDown(&in_klook); }
 static void IN_KLookUp(void) { KeyUp(&in_klook); }
-static void IN_UpDown(void) { KeyDown(&in_up); }
-static void IN_UpUp(void) { KeyUp(&in_up); }
-static void IN_DownDown(void) { KeyDown(&in_down); }
-static void IN_DownUp(void) { KeyUp(&in_down); }
+
+static inline void CL_CheckInstantPacket(void)
+{
+    if (cl_instantpacket->integer && cls.state == ca_active && !cls.demo.playback) {
+        cl.sendPacketNow = true;
+    }
+}
+
+static void IN_UpDown(void)
+{
+    KeyDown(&in_up);
+    CL_CheckInstantPacket();
+}
+static void IN_UpUp(void)
+{
+    KeyUp(&in_up);
+    CL_CheckInstantPacket();
+}
+static void IN_DownDown(void)
+{
+    KeyDown(&in_down);
+    CL_CheckInstantPacket();
+}
+static void IN_DownUp(void)
+{
+    KeyUp(&in_down);
+    CL_CheckInstantPacket();
+}
 static void IN_LeftDown(void) { KeyDown(&in_left); }
 static void IN_LeftUp(void) { KeyUp(&in_left); }
 static void IN_RightDown(void) { KeyDown(&in_right); }
@@ -359,10 +385,7 @@ static void IN_StrafeUp(void) { KeyUp(&in_strafe); }
 static void IN_AttackDown(void)
 {
     KeyDown(&in_attack);
-
-    if (cl_instantpacket->integer && cls.state == ca_active && !cls.demo.playback) {
-        cl.sendPacketNow = true;
-    }
+    CL_CheckInstantPacket();
 }
 
 static void IN_AttackUp(void)
@@ -373,10 +396,7 @@ static void IN_AttackUp(void)
 static void IN_UseDown(void)
 {
     KeyDown(&in_use);
-
-    if (cl_instantpacket->integer && cls.state == ca_active && !cls.demo.playback) {
-        cl.sendPacketNow = true;
-    }
+    CL_CheckInstantPacket();
 }
 
 static void IN_UseUp(void)
@@ -391,7 +411,7 @@ static void IN_Impulse(void)
 
 static void IN_CenterView(void)
 {
-    cl.viewangles[PITCH] = -SHORT2ANGLE(cl.frame.ps.pmove.delta_angles[PITCH]);
+    cl.viewangles[PITCH] = -cl.frame.ps.pmove.delta_angles[PITCH];
 }
 
 static void IN_MLookDown(void)
@@ -405,6 +425,33 @@ static void IN_MLookUp(void)
 
     if (!freelook->integer && lookspring->integer)
         IN_CenterView();
+}
+
+static void IN_HolsterDown(void) { KeyDown(&in_holster); }
+static void IN_HolsterUp(void) { KeyUp(&in_holster); }
+static void IN_WheelDown(void) { CL_Wheel_Open(false); }
+static void IN_WheelUp(void) { CL_Wheel_Close(true); }
+static void IN_Wheel2Down(void) { CL_Wheel_Open(true); }
+static void IN_Wheel2Up(void) { CL_Wheel_Close(true); }
+
+static void IN_WeapNext(void)
+{
+    if (!cl.is_rerelease_game) {
+        Cbuf_AddText(&cmd_buffer, "weapnext\n");
+        return;
+    }
+
+    CL_Wheel_WeapNext();
+}
+
+static void IN_WeapPrev(void)
+{
+    if (!cl.is_rerelease_game) {
+        Cbuf_AddText(&cmd_buffer, "weapprev\n");
+        return;
+    }
+
+    CL_Wheel_WeapPrev();
 }
 
 /*
@@ -470,6 +517,11 @@ static void CL_MouseMove(void)
     input.old_dx = dx;
     input.old_dy = dy;
 
+    // always send input to wheel even if we didn't move
+    if (cl.wheel.state == WHEEL_OPEN) {
+        CL_Wheel_Input(dx, dy);
+    }
+
     if (!mx && !my) {
         return;
     }
@@ -490,12 +542,14 @@ static void CL_MouseMove(void)
 // add mouse X/Y movement
     if ((in_strafe.state & 1) || (lookstrafe->integer && !in_mlooking)) {
         cl.mousemove[1] += m_side->value * mx;
-    } else {
+    } else if (cl.wheel.state != WHEEL_OPEN) {
         cl.viewangles[YAW] -= m_yaw->value * mx;
     }
 
     if ((in_mlooking || freelook->integer) && !(in_strafe.state & 1)) {
-        cl.viewangles[PITCH] += m_pitch->value * my;
+        if (cl.wheel.state != WHEEL_OPEN) {
+            cl.viewangles[PITCH] += m_pitch->value * my;
+        }
     } else {
         cl.mousemove[0] -= m_forward->value * my;
     }
@@ -538,7 +592,7 @@ CL_BaseMove
 Build the intended movement vector
 ================
 */
-static void CL_BaseMove(vec3_t move)
+static void CL_BaseMove(vec2_t move)
 {
     if (in_strafe.state & 1) {
         move[1] += cl_sidespeed->value * CL_KeyState(&in_right);
@@ -548,9 +602,6 @@ static void CL_BaseMove(vec3_t move)
     move[1] += cl_sidespeed->value * CL_KeyState(&in_moveright);
     move[1] -= cl_sidespeed->value * CL_KeyState(&in_moveleft);
 
-    move[2] += cl_upspeed->value * CL_KeyState(&in_up);
-    move[2] -= cl_upspeed->value * CL_KeyState(&in_down);
-
     if (!(in_klook.state & 1)) {
         move[0] += cl_forwardspeed->value * CL_KeyState(&in_forward);
         move[0] -= cl_forwardspeed->value * CL_KeyState(&in_back);
@@ -558,24 +609,23 @@ static void CL_BaseMove(vec3_t move)
 
 // adjust for speed key / running
     if ((in_speed.state & 1) ^ cl_run->integer) {
-        VectorScale(move, 2, move);
+        Vector2Scale(move, 2, move);
     }
 }
 
-static void CL_ClampSpeed(vec3_t move)
+static void CL_ClampSpeed(vec2_t move)
 {
     const float speed = 400;    // default (maximum) running speed
 
     move[0] = Q_clipf(move[0], -speed, speed);
     move[1] = Q_clipf(move[1], -speed, speed);
-    move[2] = Q_clipf(move[2], -speed, speed);
 }
 
 static void CL_ClampPitch(void)
 {
     float pitch, angle;
 
-    pitch = SHORT2ANGLE(cl.frame.ps.pmove.delta_angles[PITCH]);
+    pitch = cl.frame.ps.pmove.delta_angles[PITCH];
     angle = cl.viewangles[PITCH] + pitch;
 
     if (angle < -180)
@@ -597,7 +647,7 @@ Doesn't touch command forward/side/upmove, these are filled by CL_FinalizeCmd.
 */
 void CL_UpdateCmd(int msec)
 {
-    VectorClear(cl.localmove);
+    Vector2Clear(cl.localmove);
 
     if (sv_paused->integer) {
         return;
@@ -609,8 +659,12 @@ void CL_UpdateCmd(int msec)
     // adjust viewangles
     CL_AdjustAngles(msec);
 
-    // get basic movement from keyboard
+    // get basic movement from keyboard, including jump/crouch
     CL_BaseMove(cl.localmove);
+    if (in_up.state & 3)
+        cl.cmd.buttons |= BUTTON_JUMP;
+    if (in_down.state & 3)
+        cl.cmd.buttons |= BUTTON_CROUCH;
 
     // allow mice to add to the move
     CL_MouseMove();
@@ -624,9 +678,9 @@ void CL_UpdateCmd(int msec)
 
     CL_ClampPitch();
 
-    cl.cmd.angles[0] = ANGLE2SHORT(cl.viewangles[0]);
-    cl.cmd.angles[1] = ANGLE2SHORT(cl.viewangles[1]);
-    cl.cmd.angles[2] = ANGLE2SHORT(cl.viewangles[2]);
+    cl.cmd.angles[0] = cl.viewangles[0];
+    cl.cmd.angles[1] = cl.viewangles[1];
+    cl.cmd.angles[2] = cl.viewangles[2];
 }
 
 static void m_autosens_changed(cvar_t *self)
@@ -678,6 +732,15 @@ static const cmdreg_t c_input[] = {
     { "+mlook", IN_MLookDown },
     { "-mlook", IN_MLookUp },
     { "in_restart", IN_Restart_f },
+    // Kex stuff
+    { "+holster", IN_HolsterDown },
+    { "-holster", IN_HolsterUp },
+    { "+wheel", IN_WheelDown },
+    { "-wheel", IN_WheelUp },
+    { "+wheel2", IN_Wheel2Down },
+    { "-wheel2", IN_Wheel2Up },
+    { "cl_weapnext", IN_WeapNext },
+    { "cl_weapprev", IN_WeapPrev },
     { NULL }
 };
 
@@ -734,7 +797,7 @@ and angles are already set for this frame by CL_UpdateCmd.
 */
 void CL_FinalizeCmd(void)
 {
-    vec3_t move;
+    vec2_t move;
 
     // command buffer ticks in sync with cl_maxfps
     Cbuf_Frame(&cmd_buffer);
@@ -751,10 +814,16 @@ void CL_FinalizeCmd(void)
 //
 // figure button bits
 //
-    if (in_attack.state & 3)
+    if (in_attack.state & 3 && cl.weapon_lock_time <= cl.time)
         cl.cmd.buttons |= BUTTON_ATTACK;
     if (in_use.state & 3)
         cl.cmd.buttons |= BUTTON_USE;
+    if (in_holster.state & 3)
+        cl.cmd.buttons |= BUTTON_HOLSTER;
+    if (in_up.state & 3)
+        cl.cmd.buttons |= BUTTON_JUMP;
+    if (in_down.state & 3)
+        cl.cmd.buttons |= BUTTON_CROUCH;
 
     if (cls.key_dest == KEY_GAME && Key_AnyKeyDown()) {
         cl.cmd.buttons |= BUTTON_ANY;
@@ -765,7 +834,7 @@ void CL_FinalizeCmd(void)
     }
 
     // rebuild the movement vector
-    VectorClear(move);
+    Vector2Clear(move);
 
     // get basic movement from keyboard
     CL_BaseMove(move);
@@ -780,9 +849,9 @@ void CL_FinalizeCmd(void)
     // store the movement vector
     cl.cmd.forwardmove = move[0];
     cl.cmd.sidemove = move[1];
-    cl.cmd.upmove = move[2];
 
-    cl.cmd.impulse = in_impulse;
+    // update wheels before we save it off
+    CL_Carousel_Input();
 
     // save this command off for prediction
     cl.cmdNumber++;
@@ -798,6 +867,7 @@ clear:
 
     in_attack.state &= ~2;
     in_use.state &= ~2;
+    in_holster.state &= ~2;
 
     KeyClear(&in_right);
     KeyClear(&in_left);
@@ -913,17 +983,17 @@ static void CL_SendDefaultCmd(void)
     // send this and the previous cmds in the message, so
     // if the last packet was dropped, it can be recovered
     cmd = &cl.cmds[(cl.cmdNumber - 2) & CMD_MASK];
-    MSG_WriteDeltaUsercmd(NULL, cmd, version);
+    MSG_WriteDeltaUsercmd(NULL, cmd, cls.serverProtocol, version);
     MSG_WriteByte(cl.lightlevel);
     oldcmd = cmd;
 
     cmd = &cl.cmds[(cl.cmdNumber - 1) & CMD_MASK];
-    MSG_WriteDeltaUsercmd(oldcmd, cmd, version);
+    MSG_WriteDeltaUsercmd(oldcmd, cmd, cls.serverProtocol, version);
     MSG_WriteByte(cl.lightlevel);
     oldcmd = cmd;
 
     cmd = &cl.cmds[cl.cmdNumber & CMD_MASK];
-    MSG_WriteDeltaUsercmd(oldcmd, cmd, version);
+    MSG_WriteDeltaUsercmd(oldcmd, cmd, cls.serverProtocol, version);
     MSG_WriteByte(cl.lightlevel);
 
     if (cls.serverProtocol <= PROTOCOL_VERSION_DEFAULT) {
@@ -997,7 +1067,10 @@ static void CL_SendBatchedCmd(void)
     Cvar_ClampInteger(cl_packetdup, 0, MAX_PACKET_FRAMES - 1);
     numDups = cl_packetdup->integer;
 
-    *patch |= numDups << SVCMD_BITS;
+    if(cls.serverProtocol == PROTOCOL_VERSION_RERELEASE)
+        MSG_WriteByte(numDups);
+    else
+        *patch |= numDups << SVCMD_BITS;
 
     // send lightlevel
     MSG_WriteByte(cl.lightlevel);
@@ -1022,7 +1095,7 @@ static void CL_SendBatchedCmd(void)
         for (j = oldest->cmdNumber + 1; j <= history->cmdNumber; j++) {
             cmd = &cl.cmds[j & CMD_MASK];
             totalMsec += cmd->msec;
-            bits = MSG_WriteDeltaUsercmd_Enhanced(oldcmd, cmd);
+            bits = MSG_WriteDeltaUsercmd_Enhanced(oldcmd, cmd, cls.serverProtocol);
 #if USE_DEBUG
             if (cl_showpackets->integer == 3) {
                 MSG_ShowDeltaUsercmdBits_Enhanced(bits);
@@ -1088,7 +1161,7 @@ static void CL_SendUserinfo(void)
         MSG_WriteByte(clc_userinfo);
         MSG_WriteData(userinfo, len + 1);
         MSG_FlushTo(&cls.netchan.message);
-    } else if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO) {
+    } else if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO || cls.serverProtocol == PROTOCOL_VERSION_RERELEASE) {
         Com_DDPrintf("%s: %u: %d updates\n", __func__, com_framenum,
                      cls.userinfo_modified);
         for (i = 0; i < cls.userinfo_modified; i++) {
@@ -1154,11 +1227,14 @@ void CL_SendCmd(void)
     // send a userinfo update if needed
     CL_SendReliable();
 
-    if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO && cl_batchcmds->integer) {
+    if ((cls.serverProtocol == PROTOCOL_VERSION_Q2PRO || cls.serverProtocol == PROTOCOL_VERSION_RERELEASE) && cl_batchcmds->integer) {
         CL_SendBatchedCmd();
     } else {
         CL_SendDefaultCmd();
     }
+    
+    CL_Carousel_ClearInput();
+    CL_Wheel_ClearInput();
 
     cl.sendPacketNow = false;
 }

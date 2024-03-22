@@ -181,7 +181,9 @@ static void change_string_value(cvar_t *var, const char *value, from_t from)
         CL_UpdateUserinfo(var, from);
     }
 
-    var->modified = true;
+    var->modified_count++;
+    if (var->modified_count == 0)
+        var->modified_count++;
     if (from != FROM_CODE) {
         cvar_modified |= var->flags & CVAR_MODIFYMASK;
         var->flags |= CVAR_MODIFIED;
@@ -299,7 +301,9 @@ cvar_t *Cvar_Get(const char *var_name, const char *var_value, int flags)
     var->flags = flags;
     var->changed = NULL;
     var->generator = Cvar_Default_g;
-    var->modified = true;
+    var->modified_count++;
+    if (var->modified_count == 0)
+        var->modified_count++;
 
     // sort the variable in
     for (c = cvar_vars, p = &cvar_vars; c; p = &c->next, c = c->next) {
@@ -617,7 +621,9 @@ void Cvar_GetLatchedVars(void)
         var->string = var->latched_string;
         var->latched_string = NULL;
         parse_string_value(var);
-        var->modified = true;
+        var->modified_count++;
+        if (var->modified_count == 0)
+            var->modified_count++;
         cvar_modified |= var->flags & CVAR_MODIFYMASK;
         if (var->changed) {
             var->changed(var);

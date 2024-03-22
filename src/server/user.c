@@ -74,14 +74,10 @@ static void SV_CreateBaselines(void)
         }
 
         base = *chunk + (i & SV_BASELINES_MASK);
-        MSG_PackEntity(base, &ent->s, ENT_EXTENSION(sv_client->csr, ent));
+        MSG_PackEntity(base, &ent->s, true);
 
 #if USE_MVD_CLIENT
-        if (sv.state == ss_broadcast) {
-            // spectators only need to know about inline BSP models
-            if (!sv_client->csr->extended && base->solid != PACKED_BSP)
-                base->solid = 0;
-        } else
+        if (sv.state != ss_broadcast)
 #endif
         if (sv_client->esFlags & MSG_ES_LONGSOLID) {
             base->solid = sv.entities[i].solid32;
@@ -112,7 +108,7 @@ static void write_configstrings(void)
         if (!string[0]) {
             continue;
         }
-        length = Q_strnlen(string, MAX_QPATH);
+        length = Q_strnlen(string, CS_MAX_STRING_LENGTH);
 
         // check if this configstring will overflow
         maybe_flush_msg(length + 4);
@@ -163,7 +159,7 @@ static void write_configstring_stream(void)
     char    *string;
     size_t  length;
 
-    MSG_WriteByte(svc_configstringstream);
+    MSG_WriteByte(svc_rr_configstringstream);
 
     // write a packet full of data
     for (i = 0; i < sv_client->csr->end; i++) {
@@ -171,13 +167,13 @@ static void write_configstring_stream(void)
         if (!string[0]) {
             continue;
         }
-        length = Q_strnlen(string, MAX_QPATH);
+        length = Q_strnlen(string, CS_MAX_STRING_LENGTH);
 
         // check if this configstring will overflow
         if (msg_write.cursize + length + 5 > msg_write.maxsize) {
             MSG_WriteShort(sv_client->csr->end);
             SV_ClientAddMessage(sv_client, MSG_GAMESTATE);
-            MSG_WriteByte(svc_configstringstream);
+            MSG_WriteByte(svc_rr_configstringstream);
         }
 
         MSG_WriteShort(i);
@@ -194,7 +190,7 @@ static void write_baseline_stream(void)
     int i, j;
     entity_packed_t *base;
 
-    MSG_WriteByte(svc_baselinestream);
+    MSG_WriteByte(svc_rr_baselinestream);
 
     // write a packet full of data
     for (i = 0; i < SV_BASELINES_CHUNKS; i++) {
@@ -210,53 +206,13 @@ static void write_baseline_stream(void)
             if (msg_write.cursize + MAX_PACKETENTITY_BYTES > msg_write.maxsize) {
                 MSG_WriteShort(0);
                 SV_ClientAddMessage(sv_client, MSG_GAMESTATE);
-                MSG_WriteByte(svc_baselinestream);
+                MSG_WriteByte(svc_rr_baselinestream);
             }
             write_baseline(base);
         }
     }
 
     MSG_WriteShort(0);
-    SV_ClientAddMessage(sv_client, MSG_GAMESTATE);
-}
-
-static void write_gamestate(void)
-{
-    entity_packed_t  *base;
-    int         i, j;
-    size_t      length;
-    char        *string;
-
-    MSG_WriteByte(svc_gamestate);
-
-    // write configstrings
-    for (i = 0; i < sv_client->csr->end; i++) {
-        string = sv_client->configstrings[i];
-        if (!string[0]) {
-            continue;
-        }
-        length = Q_strnlen(string, MAX_QPATH);
-        MSG_WriteShort(i);
-        MSG_WriteData(string, length);
-        MSG_WriteByte(0);
-    }
-    MSG_WriteShort(i);      // end of configstrings
-
-    // write baselines
-    for (i = 0; i < SV_BASELINES_CHUNKS; i++) {
-        base = sv_client->baselines[i];
-        if (!base) {
-            continue;
-        }
-        for (j = 0; j < SV_BASELINES_PER_CHUNK; j++) {
-            if (base->number) {
-                write_baseline(base);
-            }
-            base++;
-        }
-    }
-    MSG_WriteShort(0);   // end of baselines
-
     SV_ClientAddMessage(sv_client, MSG_GAMESTATE);
 }
 
@@ -333,6 +289,9 @@ static int q2pro_protocol_flags(void)
     if (sv_client->csr->extended)
         flags |= Q2PRO_PF_EXTENSIONS;
 
+    if (!svs.is_game_rerelease)
+        flags |= Q2PRO_PF_GAME3_COMPAT;
+
     return flags;
 }
 
@@ -393,40 +352,12 @@ void SV_New_f(void)
     MSG_WriteString(sv_client->configstrings[CS_NAME]);
 
     // send protocol specific stuff
-    switch (sv_client->protocol) {
-    case PROTOCOL_VERSION_R1Q2:
-        MSG_WriteByte(0);   // not enhanced
-        MSG_WriteShort(sv_client->version);
-        MSG_WriteByte(0);   // no advanced deltas
-        MSG_WriteByte(sv_client->pmp.strafehack);
-        break;
-    case PROTOCOL_VERSION_Q2PRO:
-        MSG_WriteShort(sv_client->version);
-        if (sv.state == ss_cinematic && sv_client->version < PROTOCOL_VERSION_Q2PRO_CINEMATICS)
-            MSG_WriteByte(ss_pic);
-        else
-            MSG_WriteByte(sv.state);
-        if (sv_client->version >= PROTOCOL_VERSION_Q2PRO_EXTENDED_LIMITS) {
-            MSG_WriteShort(q2pro_protocol_flags());
-        } else {
-            MSG_WriteByte(sv_client->pmp.strafehack);
-            MSG_WriteByte(sv_client->pmp.qwmode);
-            MSG_WriteByte(sv_client->pmp.waterhack);
-        }
-        break;
-    }
+    MSG_WriteShort(sv_client->version);
+    MSG_WriteByte(sv.state);
+    MSG_WriteShort(q2pro_protocol_flags());
+    MSG_WriteByte(SV_FRAMERATE);
 
     SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
-
-    if (sv_client->protocol == PROTOCOL_VERSION_Q2PRO &&
-        sv_client->version < PROTOCOL_VERSION_Q2PRO_CLIENTNUM_SHORT &&
-        sv_client->slot == CLIENTNUM_NONE && oldstate == cs_assigned)
-    {
-        SV_ClientPrintf(sv_client, PRINT_HIGH,
-                        "WARNING: Server has allocated client slot number 255. "
-                        "This is known to be broken in your Q2PRO client version. "
-                        "Please update your client to latest version.\n");
-    }
 
     SV_ClientCommand(sv_client, "\n");
 
@@ -461,14 +392,12 @@ void SV_New_f(void)
         return;
 
     // send gamestate
-    if (sv_client->netchan.type == NETCHAN_OLD) {
-        write_configstrings();
-        write_baselines();
-    } else if (sv_client->version >= PROTOCOL_VERSION_Q2PRO_EXTENDED_LIMITS) {
+    if (sv_client->netchan.type == NETCHAN_NEW) {
         write_configstring_stream();
         write_baseline_stream();
     } else {
-        write_gamestate();
+        write_configstrings();
+        write_baselines();
     }
 
     // send next command
@@ -636,13 +565,11 @@ static void SV_BeginDownload_f(void)
 
 #if USE_ZLIB
     // prefer raw deflate stream from .pkz if supported
-    if (sv_client->protocol == PROTOCOL_VERSION_Q2PRO &&
-        sv_client->version >= PROTOCOL_VERSION_Q2PRO_ZLIB_DOWNLOADS &&
-        sv_client->has_zlib && offset == 0) {
+    if (sv_client->has_zlib && offset == 0) {
         downloadsize = FS_OpenFile(name, &f, FS_MODE_READ | FS_FLAG_DEFLATE);
         if (f) {
             Com_DPrintf("Serving compressed download to %s\n", sv_client->name);
-            downloadcmd = svc_zdownload;
+            downloadcmd = svc_rr_zdownload;
         }
     }
 #endif
@@ -1107,8 +1034,7 @@ static inline void SV_ClientThink(usercmd_t *cmd)
 
     if (cmd->buttons != old->buttons
         || cmd->forwardmove != old->forwardmove
-        || cmd->sidemove != old->sidemove
-        || cmd->upmove != old->upmove) {
+        || cmd->sidemove != old->sidemove) {
         // don't timeout
         sv_client->lastactivity = svs.realtime;
     }
@@ -1162,23 +1088,12 @@ static void SV_OldClientExecuteMove(void)
 
     moveIssued = true;
 
-    if (sv_client->protocol == PROTOCOL_VERSION_DEFAULT) {
-        MSG_ReadByte();    // skip over checksum
-    }
-
     lastframe = MSG_ReadLong();
 
     // read all cmds
-    if (sv_client->protocol == PROTOCOL_VERSION_R1Q2 &&
-        sv_client->version >= PROTOCOL_VERSION_R1Q2_UCMD) {
-        MSG_ReadDeltaUsercmd_Hacked(NULL, &oldest);
-        MSG_ReadDeltaUsercmd_Hacked(&oldest, &oldcmd);
-        MSG_ReadDeltaUsercmd_Hacked(&oldcmd, &newcmd);
-    } else {
-        MSG_ReadDeltaUsercmd(NULL, &oldest);
-        MSG_ReadDeltaUsercmd(&oldest, &oldcmd);
-        MSG_ReadDeltaUsercmd(&oldcmd, &newcmd);
-    }
+    MSG_ReadDeltaUsercmd(NULL, &oldest);
+    MSG_ReadDeltaUsercmd(&oldest, &oldcmd);
+    MSG_ReadDeltaUsercmd(&oldcmd, &newcmd);
 
     if (sv_client->state != cs_spawned) {
         SV_SetLastFrame(-1);
@@ -1223,7 +1138,7 @@ static void SV_NewClientExecuteMove(int c)
     usercmd_t   *lastcmd, *cmd;
     int         lastframe;
     int         numCmds[MAX_PACKET_FRAMES], numDups;
-    int         i, j, lightlevel;
+    int         i, j;
     int         net_drop;
 
     if (moveIssued) {
@@ -1233,21 +1148,20 @@ static void SV_NewClientExecuteMove(int c)
 
     moveIssued = true;
 
-    numDups = c >> SVCMD_BITS;
-    c &= SVCMD_MASK;
-
-    if (numDups >= MAX_PACKET_FRAMES) {
-        SV_DropClient(sv_client, "too many frames in packet");
-        return;
-    }
-
     if (c == clc_move_nodelta) {
         lastframe = -1;
     } else {
         lastframe = MSG_ReadLong();
     }
 
-    lightlevel = MSG_ReadByte();
+    numDups = MSG_ReadByte();
+
+    if (numDups >= MAX_PACKET_FRAMES) {
+        SV_DropClient(sv_client, "too many frames in packet");
+        return;
+    }
+
+    MSG_ReadByte(); // skip lightlevel
 
     // read all cmds
     lastcmd = NULL;
@@ -1268,7 +1182,6 @@ static void SV_NewClientExecuteMove(int c)
             }
             cmd = &cmds[i][j];
             MSG_ReadDeltaUsercmd_Enhanced(lastcmd, cmd);
-            cmd->lightlevel = lightlevel;
             lastcmd = cmd;
         }
     }
@@ -1505,7 +1418,7 @@ static void set_client_fps(int value)
     // save for status inspection
     sv_client->settings[CLS_FPS] = framerate;
 
-    MSG_WriteByte(svc_setting);
+    MSG_WriteByte(sv_client->protocol == PROTOCOL_VERSION_RERELEASE ? svc_rr_setting : svc_q2pro_setting);
     MSG_WriteLong(SVS_FPS);
     MSG_WriteLong(framerate);
     SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
@@ -1562,7 +1475,7 @@ The current net_message is parsed for the given client
 */
 void SV_ExecuteClientMessage(client_t *client)
 {
-    int c;
+    int c, last_cmd = -1;
 
     sv_client = client;
     sv_player = sv_client->edict;
@@ -1582,19 +1495,17 @@ void SV_ExecuteClientMessage(client_t *client)
         if (c == -1)
             break;
 
-        if (client->protocol == PROTOCOL_VERSION_Q2PRO) {
-            switch (c & SVCMD_MASK) {
-            case clc_move_nodelta:
-            case clc_move_batched:
-                SV_NewClientExecuteMove(c);
-                goto nextcmd;
-            }
+        switch (c) {
+        case clc_move_nodelta:
+        case clc_move_batched:
+            SV_NewClientExecuteMove(c);
+            last_cmd = c;
+            goto nextcmd;
         }
 
         switch (c) {
         default:
-badbyte:
-            SV_DropClient(client, "unknown command byte");
+            SV_DropClient(client, va("unknown command byte, last was %i", last_cmd));
             break;
 
         case clc_nop:
@@ -1613,16 +1524,10 @@ badbyte:
             break;
 
         case clc_setting:
-            if (client->protocol < PROTOCOL_VERSION_R1Q2)
-                goto badbyte;
-
             SV_ParseClientSetting();
             break;
 
         case clc_userinfo_delta:
-            if (client->protocol != PROTOCOL_VERSION_Q2PRO)
-                goto badbyte;
-
             SV_ParseDeltaUserinfo();
             break;
         }
@@ -1630,6 +1535,8 @@ badbyte:
 nextcmd:
         if (client->state <= cs_zombie)
             break;    // disconnect command
+
+        last_cmd = c;
     }
 
     sv_client = NULL;

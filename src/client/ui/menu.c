@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "ui.h"
 #include "server/server.h"
+#include "common/files.h"
 
 /*
 ===================================================================
@@ -527,7 +528,6 @@ static void SpinControl_Free(menuSpinControl_t *s)
     Z_Free(s);
 }
 
-
 /*
 =================
 SpinControl_Init
@@ -636,6 +636,108 @@ static void SpinControl_Draw(menuSpinControl_t *s)
 
     UI_DrawString(s->generic.x + RCOLUMN_OFFSET, s->generic.y,
                   s->generic.uiFlags, name);
+}
+
+/*
+===================================================================
+
+IMAGE SPIN CONTROL
+
+===================================================================
+*/
+
+/*
+=================
+ImageSpinControl_Push
+=================
+*/
+static void ImageSpinControl_Push(menuSpinControl_t *s)
+{
+}
+
+/*
+=================
+ImageSpinControl_Pop
+=================
+*/
+void ImageSpinControl_Pop(menuSpinControl_t *s)
+{
+    if (s->curvalue >= 0 && s->curvalue < s->numItems) {
+        size_t path_offset = strlen(s->path) + (strchr(s->filter, '*') - s->filter) + 1;
+        const char *file_value = s->itemnames[s->curvalue] + path_offset;
+        const char *dot = strchr(file_value, '.');
+        size_t file_name_length = dot - file_value;
+        Cvar_SetEx(s->cvar->name, va("%.*s", (int)file_name_length, file_value), FROM_MENU);
+    }
+
+    FS_FreeList((void **) s->itemnames);
+    s->itemnames = NULL;
+}
+
+/*
+=================
+ImageSpinControl_Free
+=================
+*/
+static void ImageSpinControl_Free(menuSpinControl_t *s)
+{
+    Z_Free(s->generic.name);
+    Z_Free(s->generic.status);
+    Z_Free(s->filter);
+    Z_Free(s->path);
+    FS_FreeList((void **) s->itemnames);
+    Z_Free(s);
+}
+
+/*
+=================
+ImageSpinControl_Draw
+=================
+*/
+static void ImageSpinControl_Draw(menuSpinControl_t *s)
+{
+    SpinControl_Draw(s);
+
+    bool in_range = !(s->curvalue < 0 || s->curvalue >= s->numItems);
+
+    if (in_range) {
+        qhandle_t pic = R_RegisterTempPic(va("/%s", s->itemnames[s->curvalue]));
+        int w, h;
+        R_GetPicSize(&w, &h, pic);
+
+        R_DrawPic(s->generic.x + LCOLUMN_OFFSET + ((s->generic.width / 2) - (w / 2)), s->generic.y + MENU_SPACING + ((s->generic.height / 2) - (h / 2)), pic);
+    }
+}
+
+/*
+=================
+ImageSpinControl_Init
+=================
+*/
+void ImageSpinControl_Init(menuSpinControl_t *s)
+{
+    s->numItems = 0;
+    s->itemnames = (char **) FS_ListFiles(NULL, va("%s/%s", s->path, s->filter), FS_SEARCH_BYFILTER, &s->numItems);
+
+    SpinControl_Init(s);
+
+    // find the selected value
+    const char *val = s->cvar->string;
+
+    s->curvalue = -1;
+
+    size_t path_offset = strlen(s->path) + (strchr(s->filter, '*') - s->filter) + 1;
+
+    for (int i = 0; i < s->numItems; i++) {
+        const char *file_value = s->itemnames[i] + path_offset;
+        const char *dot = strchr(file_value, '.');
+        size_t file_name_length = dot - file_value;
+
+        if (!Q_strncasecmp(val, file_value, file_name_length)) {
+            s->curvalue = i;
+            break;
+        }
+    }
 }
 
 /*
@@ -1817,6 +1919,9 @@ void Menu_Init(menuFrameWork_t *menu)
         case MTYPE_TOGGLE:
             SpinControl_Init(item);
             break;
+        case MTYPE_IMAGESPINCONTROL:
+            ImageSpinControl_Init(item);
+            break;
         case MTYPE_ACTION:
         case MTYPE_SAVEGAME:
         case MTYPE_LOADGAME:
@@ -1888,6 +1993,8 @@ void Menu_Size(menuFrameWork_t *menu)
             if (widest < item->width) {
                 widest = item->width;
             }
+        } else if (item->type == MTYPE_IMAGESPINCONTROL) {
+            h += GENERIC_SPACING(item->height);
         } else {
             h += MENU_SPACING;
         }
@@ -1962,6 +2069,8 @@ void Menu_Size(menuFrameWork_t *menu)
         item->x = x;
         item->y = y;
         if (item->type == MTYPE_BITMAP) {
+            y += GENERIC_SPACING(item->height);
+        } else if (item->type == MTYPE_IMAGESPINCONTROL) {
             y += GENERIC_SPACING(item->height);
         } else {
             y += MENU_SPACING;
@@ -2211,6 +2320,9 @@ void Menu_Draw(menuFrameWork_t *menu)
         case MTYPE_BITMAP:
             Bitmap_Draw(item);
             break;
+        case MTYPE_IMAGESPINCONTROL:
+            ImageSpinControl_Draw(item);
+            break;
         default:
             Q_assert(!"unknown item type");
         }
@@ -2245,6 +2357,7 @@ menuSound_t Menu_SelectItem(menuFrameWork_t *s)
     case MTYPE_VALUES:
     case MTYPE_STRINGS:
     case MTYPE_TOGGLE:
+    case MTYPE_IMAGESPINCONTROL:
         return SpinControl_DoEnter((menuSpinControl_t *)item);
     case MTYPE_KEYBIND:
         return Keybind_DoEnter((menuKeybind_t *)item);
@@ -2277,6 +2390,7 @@ menuSound_t Menu_SlideItem(menuFrameWork_t *s, int dir)
     case MTYPE_VALUES:
     case MTYPE_STRINGS:
     case MTYPE_TOGGLE:
+    case MTYPE_IMAGESPINCONTROL:
         return SpinControl_DoSlide((menuSpinControl_t *)item, dir);
     default:
         return QMS_NOTHANDLED;
@@ -2470,6 +2584,9 @@ bool Menu_Push(menuFrameWork_t *menu)
         case MTYPE_LOADGAME:
             Savegame_Push(item);
             break;
+        case MTYPE_IMAGESPINCONTROL:
+            ImageSpinControl_Push(item);
+            break;
         default:
             break;
         }
@@ -2509,6 +2626,9 @@ void Menu_Pop(menuFrameWork_t *menu)
             break;
         case MTYPE_FIELD:
             Field_Pop(item);
+            break;
+        case MTYPE_IMAGESPINCONTROL:
+            ImageSpinControl_Pop(item);
             break;
         default:
             break;
@@ -2555,6 +2675,9 @@ void Menu_Free(menuFrameWork_t *menu)
             break;
         case MTYPE_BITMAP:
             Bitmap_Free(item);
+            break;
+        case MTYPE_IMAGESPINCONTROL:
+            ImageSpinControl_Free(item);
             break;
         default:
             break;

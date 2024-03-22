@@ -115,6 +115,12 @@ typedef struct {
 typedef struct {
     int         solid32;
 
+    list_t area; // linked to a division node or leaf
+
+    int num_clusters; // if -1, use headnode instead
+    int clusternums[MAX_ENT_CLUSTERS];
+    int headnode; // unused if num_clusters != -1
+
 #if USE_FPS
 
 // must be > MAX_FRAMEDIV
@@ -132,16 +138,13 @@ typedef struct {
 } server_entity_t;
 
 // variable server FPS
-#if USE_FPS
 #define SV_FRAMERATE        sv.framerate
 #define SV_FRAMETIME        sv.frametime.time
 #define SV_FRAMEDIV         sv.frametime.div
+#if USE_FPS
 #define SV_FRAMESYNC        !(sv.framenum % sv.frametime.div)
 #define SV_CLIENTSYNC(cl)   !(sv.framenum % (cl)->framediv)
 #else
-#define SV_FRAMERATE        BASE_FRAMERATE
-#define SV_FRAMETIME        BASE_FRAMETIME
-#define SV_FRAMEDIV         1
 #define SV_FRAMESYNC        1
 #define SV_CLIENTSYNC(cl)   1
 #endif
@@ -154,10 +157,8 @@ typedef struct {
     int         gamedetecthack;
 #endif
 
-#if USE_FPS
     int         framerate;
     frametime_t frametime;
-#endif
 
     int         framenum;
     unsigned    frameresidual;
@@ -167,7 +168,7 @@ typedef struct {
     char        name[MAX_QPATH];            // map name, or cinematic name
     cm_t        cm;
 
-    configstring_t  configstrings[MAX_CONFIGSTRINGS];
+    configstring_t  configstrings[MAX_MAX_CONFIGSTRINGS];
 
     server_entity_t entities[MAX_EDICTS];
 } server_t;
@@ -177,12 +178,6 @@ typedef struct {
 #define NUM_FOR_EDICT(e) ((int)(((byte *)(e) - (byte *)ge->edicts) / ge->edict_size))
 
 #define MAX_TOTAL_ENT_LEAFS        128
-
-#define CLIENT_COMPATIBLE(csr, c) \
-    (!(csr)->extended || ((c)->protocol == PROTOCOL_VERSION_Q2PRO && \
-                          (c)->version >= PROTOCOL_VERSION_Q2PRO_EXTENDED_LIMITS))
-
-#define ENT_EXTENSION(csr, ent)  ((csr)->extended ? &(ent)->x : NULL)
 
 typedef enum {
     cs_free,        // can be reused for a new connection
@@ -234,7 +229,7 @@ typedef struct {
             uint8_t     volume;
             uint8_t     attenuation;
             uint8_t     timeofs;
-            int16_t     pos[3];     // saved in case entity is freed
+            vec3_t      pos;     // saved in case entity is freed
         };
     };
 } message_packet_t;
@@ -478,6 +473,7 @@ typedef struct server_static_s {
 #endif
 
     cs_remap_t      csr;
+    bool            is_game_rerelease;
 
     unsigned        last_heartbeat;
     unsigned        last_timescale_check;
@@ -517,9 +513,7 @@ extern cvar_t       *sv_reserved_slots;
 extern cvar_t       *sv_airaccelerate;        // development tool
 extern cvar_t       *sv_qwmod;                // atu QW Physics modificator
 extern cvar_t       *sv_enforcetime;
-#if USE_FPS
 extern cvar_t       *sv_fps;
-#endif
 extern cvar_t       *sv_force_reconnect;
 extern cvar_t       *sv_iplimit;
 
@@ -620,7 +614,7 @@ void SV_FlushRedirect(int redirected, char *outputbuf, size_t len);
 void SV_SendClientMessages(void);
 void SV_SendAsyncPackets(void);
 
-void SV_Multicast(const vec3_t origin, multicast_t to);
+void SV_Multicast(const vec3_t origin, multicast_t to, bool reliable);
 void SV_ClientPrintf(client_t *cl, int level, const char *fmt, ...) q_printf(3, 4);
 void SV_BroadcastPrintf(int level, const char *fmt, ...) q_printf(2, 3);
 void SV_ClientCommand(client_t *cl, const char *fmt, ...) q_printf(2, 3);
@@ -645,7 +639,7 @@ void SV_MvdMapChanged(void);
 void SV_MvdClientDropped(client_t *client);
 
 void SV_MvdUnicast(edict_t *ent, int clientNum, bool reliable);
-void SV_MvdMulticast(int leafnum, multicast_t to);
+void SV_MvdMulticast(int leafnum, multicast_t to, bool reliable);
 void SV_MvdConfigstring(int index, const char *string, size_t len);
 void SV_MvdBroadcastPrint(int level, const char *string);
 void SV_MvdStartSound(int entnum, int channel, int flags,
@@ -667,7 +661,7 @@ void SV_MvdStop_f(void);
 #define SV_MvdClientDropped(client) (void)0
 
 #define SV_MvdUnicast(ent, clientNum, reliable)     (void)0
-#define SV_MvdMulticast(leafnum, to)                (void)0
+#define SV_MvdMulticast(leafnum, to, reliable)      (void)0
 #define SV_MvdConfigstring(index, string, len)      (void)0
 #define SV_MvdBroadcastPrint(level, string)         (void)0
 #define SV_MvdStartSound(entnum, channel, flags, \
@@ -755,7 +749,7 @@ void SV_WriteFrameToClient_Enhanced(client_t *client);
 // sv_game.c
 //
 extern const game_export_t      *ge;
-extern const game_export_ex_t   *gex;
+extern const game_q2pro_restart_filesystem_t *g_restart_fs;
 
 void SV_InitGameProgs(void);
 void SV_ShutdownGameProgs(void);
@@ -793,7 +787,7 @@ void PF_UnlinkEdict(edict_t *ent);
 // call before removing an entity, and before trying to move one,
 // so it doesn't clip against itself
 
-void SV_LinkEdict(cm_t *cm, edict_t *ent);
+void SV_LinkEdict(cm_t *cm, edict_t *ent, server_entity_t* sv_ent);
 void PF_LinkEdict(edict_t *ent);
 // Needs to be called any time an entity changes origin, mins, maxs,
 // or solid.  Automatically unlinks if needed.
@@ -801,7 +795,7 @@ void PF_LinkEdict(edict_t *ent);
 // sets ent->leafnums[] for pvs determination even if the entity
 // is not solid
 
-int SV_AreaEdicts(const vec3_t mins, const vec3_t maxs, edict_t **list, int maxcount, int areatype);
+size_t SV_AreaEdicts(const vec3_t mins, const vec3_t maxs, edict_t **list, size_t maxcount, int areatype, BoxEdictsFilter_t filter, void *filter_data);
 // fills in a table of edict pointers with edicts that have bounding boxes
 // that intersect the given area.  It is possible for a non-axial bmodel
 // to be returned that doesn't actually intersect the area on an exact
@@ -814,13 +808,13 @@ int SV_AreaEdicts(const vec3_t mins, const vec3_t maxs, edict_t **list, int maxc
 //
 // functions that interact with everything apropriate
 //
-int SV_PointContents(const vec3_t p);
+contents_t SV_PointContents(const vec3_t p);
 // returns the CONTENTS_* value from the world at the given point.
 // Quake 2 extends this to also check entities, to allow moving liquids
 
 trace_t q_gameabi SV_Trace(const vec3_t start, const vec3_t mins,
                            const vec3_t maxs, const vec3_t end,
-                           edict_t *passedict, int contentmask);
+                           edict_t *passedict, contents_t contentmask);
 // mins and maxs are relative
 
 // if the entire move stays in a solid volume, trace.allsolid will be set,
@@ -833,4 +827,4 @@ trace_t q_gameabi SV_Trace(const vec3_t start, const vec3_t mins,
 
 trace_t q_gameabi SV_Clip(const vec3_t start, const vec3_t mins,
                           const vec3_t maxs, const vec3_t end,
-                          edict_t *clip, int contentmask);
+                          edict_t *clip, contents_t contentmask);

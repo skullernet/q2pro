@@ -20,6 +20,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client.h"
 #include "common/mdfour.h"
 
+static cvar_t *cl_compass_time;
+
 qhandle_t   cl_sfx_ric1;
 qhandle_t   cl_sfx_ric2;
 qhandle_t   cl_sfx_ric3;
@@ -46,17 +48,21 @@ qhandle_t   cl_mod_powerscreen;
 qhandle_t   cl_mod_laser;
 qhandle_t   cl_mod_dmspot;
 
+qhandle_t   cl_img_flare;
+
 qhandle_t   cl_mod_lightning;
 qhandle_t   cl_mod_heatbeam;
 qhandle_t   cl_mod_explo4_big;
 
 qhandle_t   cl_mod_muzzles[MFLASH_TOTAL];
 
+static qhandle_t   cl_mod_marker;
+
 qhandle_t   cl_img_flare;
 
 static cvar_t   *cl_muzzleflashes;
 
-#define MAX_FOOTSTEP_SFX    9
+#define MAX_FOOTSTEP_SFX    16
 
 typedef struct {
     int         num_sfx;
@@ -83,26 +89,29 @@ static int CL_FindFootstepSurface(int entnum)
     if (cl_num_footsteps <= FOOTSTEP_RESERVED_COUNT)
         return footstep_id;
 
+    // not in our frame so don't bother doing calculations
+    if (cent->serverframe != cl.frame.number) {
+        return footstep_id;
+    }
+
     // allow custom footsteps to be disabled
     if (cl_footsteps->integer >= 2)
         return footstep_id;
 
     // use an X/Y only mins/maxs copy of the entity,
     // since we don't want it to get caught inside of any geometry above or below
-    const vec3_t trace_mins = { cent->mins[0], cent->mins[1], 0 };
-    const vec3_t trace_maxs = { cent->maxs[0], cent->maxs[1], 0 };
+    const vec3_t trace_mins = {cent->mins[0], cent->mins[1], 0};
+    const vec3_t trace_maxs = {cent->maxs[0], cent->maxs[1], 0};
 
-    // trace start position is the entity's current origin + { 0 0 1 },
-    // so that entities with their mins at 0 won't get caught in the floor
     vec3_t trace_start;
-    VectorCopy(cent->current.origin, trace_start);
+    LerpVector(cent->prev.origin, cent->current.origin, cl.lerpfrac, trace_start);
     trace_start[2] += 1;
 
     // the end of the trace starts down by half of STEPSIZE
     vec3_t trace_end;
     VectorCopy(trace_start, trace_end);
-    trace_end[2] -= 9;
-    if (cent->current.solid && cent->current.solid != PACKED_BSP) {
+    trace_end[2] -= STEPSIZE / 2;
+    if(cent->current.solid && cent->current.solid != PACKED_BSP) {
         // if the entity is a bbox'd entity, the mins.z is added to the end point as well
         trace_end[2] += cent->mins[2];
     } else {
@@ -112,26 +121,26 @@ static int CL_FindFootstepSurface(int entnum)
 
     // first, a trace done solely against MASK_SOLID
     trace_t tr;
-    CL_Trace(&tr, trace_start, trace_mins, trace_maxs, trace_end, MASK_SOLID);
+    CL_Trace(&tr, trace_start, trace_mins, trace_maxs, trace_end, NULL, MASK_SOLID);
 
-    if (tr.fraction == 1.0f) {
+    if(tr.fraction == 1.0f) {
         // if we didn't hit anything, use default step ID
         return footstep_id;
     }
 
     if (tr.surface != &(nulltexinfo.c)) {
         // copy over the surfaces' step ID
-        footstep_id = ((mtexinfo_t *)tr.surface)->step_id;
+        footstep_id = cl.bsp->texinfo[tr.surface->id - 1].step_id;
 
         // do another trace that ends instead at endpos + { 0 0 1 }, and is against MASK_SOLID | MASK_WATER
         vec3_t new_end;
         VectorCopy(tr.endpos, new_end);
         new_end[2] += 1;
 
-        CL_Trace(&tr, trace_start, trace_mins, trace_maxs, new_end, MASK_SOLID | MASK_WATER);
+        CL_Trace(&tr, trace_start, trace_mins, trace_maxs, new_end, NULL, MASK_SOLID | MASK_WATER);
         // if we hit something else, use that new footstep id instead of the first traces' value
         if (tr.surface != &(nulltexinfo.c))
-            footstep_id = ((mtexinfo_t *)tr.surface)->step_id;
+            footstep_id = cl.bsp->texinfo[tr.surface->id - 1].step_id;
     }
 
     return footstep_id;
@@ -232,7 +241,7 @@ static void CL_RegisterFootsteps(void)
     for (i = 0, tex = cl.bsp->texinfo; i < cl.bsp->numtexinfo; i++, tex++) {
         cl_footstep_sfx_t *sfx = &cl_footstep_sfx[tex->step_id];
         if (sfx->num_sfx == -1)
-            CL_RegisterFootstep(sfx, tex->material);
+            CL_RegisterFootstep(sfx, tex->c.material);
     }
 }
 
@@ -303,12 +312,27 @@ void CL_RegisterTEntModels(void)
     cl_mod_muzzles[MFLASH_BFG] = R_RegisterModel("models/weapons/v_bfg/flash/tris.md2");
     cl_mod_muzzles[MFLASH_BEAMER] = R_RegisterModel("models/weapons/v_beamer/flash/tris.md2");
 
+    cl_mod_marker = R_RegisterModel("models/objects/pointer/tris.md2");
+
     cl_img_flare = R_RegisterSprite("misc/flare.tga");
 
     // check for remaster powerscreen model (ugly!)
     len = FS_LoadFile("models/items/armor/effect/tris.md2", &data);
     cl.need_powerscreen_scale = len == 2300 && Com_BlockChecksum(data, len) == 0x19fca65b;
     FS_FreeFile(data);
+    
+    cl_mod_muzzles[MFLASH_MACHN] = R_RegisterModel("models/weapons/v_machn/flash/tris.md2");
+    cl_mod_muzzles[MFLASH_SHOTG2] = R_RegisterModel("models/weapons/v_shotg2/flash/tris.md2");
+    cl_mod_muzzles[MFLASH_SHOTG] = R_RegisterModel("models/weapons/v_shotg/flash/tris.md2");
+    cl_mod_muzzles[MFLASH_ROCKET] = R_RegisterModel("models/weapons/v_rocket/flash/tris.md2");
+    cl_mod_muzzles[MFLASH_RAIL] = R_RegisterModel("models/weapons/v_rail/flash/tris.md2");
+    cl_mod_muzzles[MFLASH_LAUNCH] = R_RegisterModel("models/weapons/v_launch/flash/tris.md2");
+    cl_mod_muzzles[MFLASH_ETF_RIFLE] = R_RegisterModel("models/weapons/v_etf_rifle/flash/tris.md2");
+    cl_mod_muzzles[MFLASH_DIST] = R_RegisterModel("models/weapons/v_dist/flash/tris.md2");
+    cl_mod_muzzles[MFLASH_BOOMER] = R_RegisterModel("models/weapons/v_boomer/flash/tris.md2");
+    cl_mod_muzzles[MFLASH_BLAST] = R_RegisterModel("models/weapons/v_blast/flash/tris.md2");
+    cl_mod_muzzles[MFLASH_BFG] = R_RegisterModel("models/weapons/v_bfg/flash/tris.md2");
+    cl_mod_muzzles[MFLASH_BEAMER] = R_RegisterModel("models/weapons/v_beamer/flash/tris.md2");
 }
 
 /*
@@ -329,7 +353,8 @@ typedef struct {
         ex_mflash,
         ex_poly,
         ex_poly2,
-        ex_light
+        ex_light,
+        ex_marker
     } type;
 
     entity_t    ent;
@@ -409,6 +434,7 @@ static void CL_BFGExplosion(const vec3_t pos)
     ex->frames = 4;
 }
 
+// muzzleflashes
 void CL_AddWeaponMuzzleFX(cl_muzzlefx_t fx, const vec3_t offset, float scale)
 {
     if (!cl_muzzleflashes->integer)
@@ -455,6 +481,34 @@ void CL_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, 
     ex->ent.scale = scale;
     if (fx != MFLASH_BOOMER)
         ex->ent.angles[2] = Q_rand() % 360;
+}
+
+// help stuff
+void CL_AddHelpPath(const vec3_t origin, const vec3_t dir, bool first)
+{
+    if (first) {
+        int i;
+        explosion_t *ex;
+        
+        for (i = 0, ex = cl_explosions; i < MAX_EXPLOSIONS; i++, ex++) {
+            if (ex->type == ex_marker) {
+                ex->type = ex_free;
+                continue;
+            }
+        }
+    }
+
+    explosion_t *ex = CL_AllocExplosion();
+    VectorCopy(origin, ex->ent.origin);
+    ex->ent.origin[2] += 16.0f;
+    ex->lightcolor[0] = ex->ent.origin[2];
+    vectoangles2(dir, ex->ent.angles);
+    ex->type = ex_marker;
+    ex->ent.flags = RF_NOSHADOW | RF_MINLIGHT | RF_TRANSLUCENT;
+    ex->ent.alpha = 1.0f;
+    ex->start = cl.servertime - CL_FRAMETIME;
+    ex->ent.model = cl_mod_marker;
+    ex->ent.scale = 2.5f;
 }
 
 /*
@@ -530,14 +584,17 @@ static void CL_AddExplosions(void)
                 break;
             }
 
-            ent->alpha = (16.0f - (float)f) / 16.0f;
+            ent->alpha = (16.0f - frac) / 16.0f;
+            ent->alpha = 1.0f - ent->alpha;
+            ent->alpha *= ent->alpha * ent->alpha;
+            ent->alpha = 1.0f - ent->alpha;
+            ent->flags |= RF_TRANSLUCENT;
 
             if (f < 10) {
                 ent->skinnum = (f >> 1);
                 if (ent->skinnum < 0)
                     ent->skinnum = 0;
             } else {
-                ent->flags |= RF_TRANSLUCENT;
                 if (f < 13)
                     ent->skinnum = 5;
                 else
@@ -550,10 +607,34 @@ static void CL_AddExplosions(void)
                 break;
             }
 
-            ent->alpha = (5.0f - (float)f) / 5.0f;
+            ent->alpha = (5.0f - frac) / 5.0f;
             ent->skinnum = 0;
             ent->flags |= RF_TRANSLUCENT;
             break;
+        case ex_marker: {
+            frac = (cl.time - ex->start) / (cl_compass_time->value * 1000);
+
+            if (frac > 1.0f) {
+                ex->type = ex_free;
+                break;
+            }
+
+            float z_frac = (cl.time - ex->start) / 1000.f;
+            
+            if (z_frac < 1) {
+                z_frac = 1.0f - z_frac;
+                z_frac = z_frac * z_frac * z_frac * z_frac;
+                z_frac *= z_frac;
+                z_frac = 1.0f - z_frac;
+                ex->ent.origin[2] = FASTLERP(ex->lightcolor[0] + 512.f, ex->lightcolor[0], z_frac);
+            } else {
+                ex->ent.origin[2] = ex->lightcolor[0];
+            }
+
+            ent->alpha = (1.0f - frac) * 0.5f;
+            f = 0.0f;
+            break;
+        }
         default:
             Q_assert(!"bad type");
         }
@@ -1645,4 +1726,5 @@ void CL_InitTEnts(void)
     cl_railspiral_color->generator = Com_Color_g;
     cl_railspiral_color_changed(cl_railspiral_color);
     cl_railspiral_radius = Cvar_Get("cl_railspiral_radius", "3", 0);
+    cl_compass_time = Cvar_Get("cl_compass_time", "10", 0);
 }

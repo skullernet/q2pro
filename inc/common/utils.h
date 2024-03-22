@@ -74,15 +74,14 @@ char *Com_MakePrintable(const char *s);
 static inline size_t CS_SIZE(const cs_remap_t *csr, int cs)
 {
     if (cs >= CS_STATUSBAR && cs < csr->airaccel)
-        return MAX_QPATH * (csr->airaccel - cs);
+        return CS_MAX_STRING_LENGTH * (csr->airaccel - cs);
 
     if (cs >= csr->general && cs < csr->end)
-        return MAX_QPATH * (csr->end - cs);
+        return CS_MAX_STRING_LENGTH * (csr->end - cs);
 
-    return MAX_QPATH;
+    return CS_MAX_STRING_LENGTH;
 }
 
-#if USE_FPS
 typedef struct frametime_s {
     int         time;      // variable server frame time
     int         div;       // BASE_FRAMETIME/frametime
@@ -94,5 +93,3 @@ static inline frametime_t Com_ComputeFrametime(int rate)
     int framediv = Q_clip(rate / BASE_FRAMERATE, 1, MAX_FRAMEDIV);
     return (frametime_t){ .time = BASE_FRAMETIME / framediv, .div = framediv };
 }
-
-#endif // USE_FPS

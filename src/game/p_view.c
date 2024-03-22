@@ -93,7 +93,7 @@ void P_DamageFeedback(edict_t *player)
         static int      i;
 
         client->anim_priority = ANIM_PAIN;
-        if (client->ps.pmove.pm_flags & PMF_DUCKED) {
+        if (client->ps.pmove.pm_flags & G3PMF_DUCKED) {
             player->s.frame = FRAME_crpain1 - 1;
             client->anim_end = FRAME_crpain4;
         } else {
@@ -254,11 +254,11 @@ void SV_CalcViewOffset(edict_t *ent)
         // add angles based on bob
 
         delta = bobfracsin * bob_pitch->value * xyspeed;
-        if (ent->client->ps.pmove.pm_flags & PMF_DUCKED)
+        if (ent->client->ps.pmove.pm_flags & G3PMF_DUCKED)
             delta *= 6;     // crouching
         angles[PITCH] += delta;
         delta = bobfracsin * bob_roll->value * xyspeed;
-        if (ent->client->ps.pmove.pm_flags & PMF_DUCKED)
+        if (ent->client->ps.pmove.pm_flags & G3PMF_DUCKED)
             delta *= 6;     // crouching
         if (bobcycle & 1)
             delta = -delta;
@@ -771,7 +771,7 @@ void G_SetClientFrame(edict_t *ent)
 
     client = ent->client;
 
-    if (client->ps.pmove.pm_flags & PMF_DUCKED)
+    if (client->ps.pmove.pm_flags & G3PMF_DUCKED)
         duck = true;
     else
         duck = false;
@@ -923,7 +923,7 @@ void ClientEndServerFrame(edict_t *ent)
 
     bobtime = (current_client->bobtime += bobmove);
 
-    if (current_client->ps.pmove.pm_flags & PMF_DUCKED)
+    if (current_client->ps.pmove.pm_flags & G3PMF_DUCKED)
         bobtime *= 4;
 
     bobcycle = (int)bobtime;

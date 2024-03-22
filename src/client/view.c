@@ -79,7 +79,19 @@ V_AddEntity
 void V_AddEntity(entity_t *ent)
 {
     if (r_numentities >= MAX_ENTITIES)
+    {
+        if (ent->flags & RF_LOW_PRIORITY)
+            return;
+
+        for (size_t i = 0; i < r_numentities; i++) {
+            if (r_entities[i].flags & RF_LOW_PRIORITY) {
+                r_entities[i] = *ent;
+                return;
+            }
+        }
+
         return;
+    }
 
     r_entities[r_numentities++] = *ent;
 }
@@ -344,6 +356,70 @@ float V_CalcFov(float fov_x, float width, float height)
     return a;
 }
 
+/*
+====================
+CL_ServerTime
+====================
+*/
+int CL_ServerTime(void)
+{
+    return cl.servertime;
+}
+
+/*
+==================
+V_RenderView
+
+==================
+*/
+void V_FogParamsChanged(fog_bits_t bits, const fog_params_t *params, int time)
+{
+    if (time != 0) {
+        // shift the current fog values back to start
+        cl.fog.start = cl.fog.end;
+        cl.fog.lerp_time = time;
+        cl.fog.lerp_time_start = cl.time;
+    } else {
+        // no lerp, just disable lerp entirely
+        cl.fog.lerp_time = 0;
+    }
+
+    fog_params_t *cur = &cl.fog.end;
+
+    // fill in updated values in end
+    if (bits & FOG_BIT_DENSITY) {
+        cur->global.density = params->global.density / 64.f; // Kex divides the density by 64, prob because of exp2
+        cur->global.sky_factor = params->global.sky_factor;
+    }
+
+    if (bits & FOG_BIT_R)
+        cur->global.r = params->global.r;
+    if (bits & FOG_BIT_G)
+        cur->global.g = params->global.g;
+    if (bits & FOG_BIT_B)
+        cur->global.b = params->global.b;
+    
+    if (bits & FOG_BIT_HEIGHTFOG_FALLOFF)
+        cur->height.falloff = params->height.falloff;
+    if (bits & FOG_BIT_HEIGHTFOG_DENSITY)
+        cur->height.density = params->height.density;
+    if (bits & FOG_BIT_HEIGHTFOG_START_R)
+        cur->height.start.r = params->height.start.r;
+    if (bits & FOG_BIT_HEIGHTFOG_START_G)
+        cur->height.start.g = params->height.start.g;
+    if (bits & FOG_BIT_HEIGHTFOG_START_B)
+        cur->height.start.b = params->height.start.b;
+    if (bits & FOG_BIT_HEIGHTFOG_START_DIST)
+        cur->height.start.dist = params->height.start.dist;
+    if (bits & FOG_BIT_HEIGHTFOG_END_R)
+        cur->height.end.r = params->height.end.r;
+    if (bits & FOG_BIT_HEIGHTFOG_END_G)
+        cur->height.end.g = params->height.end.g;
+    if (bits & FOG_BIT_HEIGHTFOG_END_B)
+        cur->height.end.b = params->height.end.b;
+    if (bits & FOG_BIT_HEIGHTFOG_END_DIST)
+        cur->height.end.dist = params->height.end.dist;
+}
 
 /*
 ==================
@@ -371,10 +447,15 @@ void V_RenderView(void)
         if (cl_testlights->integer)
             V_TestLights();
         if (cl_testblend->integer) {
-            cl.refdef.blend[0] = 1;
-            cl.refdef.blend[1] = 0.5f;
-            cl.refdef.blend[2] = 0.25f;
-            cl.refdef.blend[3] = 0.5f;
+            cl.refdef.screen_blend[0] = 1;
+            cl.refdef.screen_blend[1] = 0.5f;
+            cl.refdef.screen_blend[2] = 0.25f;
+            cl.refdef.screen_blend[3] = 0.5f;
+
+            cl.refdef.damage_blend[0] = 0.25f;
+            cl.refdef.damage_blend[1] = 0.5f;
+            cl.refdef.damage_blend[2] = 0.7f;
+            cl.refdef.damage_blend[3] = 0.5f;
         }
 #endif
 
@@ -385,10 +466,10 @@ void V_RenderView(void)
         cl.refdef.vieworg[1] += 1.0f / 16;
         cl.refdef.vieworg[2] += 1.0f / 16;
 
-        cl.refdef.x = scr_vrect.x;
-        cl.refdef.y = scr_vrect.y;
-        cl.refdef.width = scr_vrect.width;
-        cl.refdef.height = scr_vrect.height;
+        cl.refdef.x = scr.vrect.x;
+        cl.refdef.y = scr.vrect.y;
+        cl.refdef.width = scr.vrect.width;
+        cl.refdef.height = scr.vrect.height;
 
         // adjust for non-4/3 screens
         if (cl_adjustfov->integer) {
@@ -414,7 +495,10 @@ void V_RenderView(void)
         if (!cl_add_lights->integer)
             r_numdlights = 0;
         if (!cl_add_blend->integer)
-            Vector4Clear(cl.refdef.blend);
+        {
+            Vector4Clear(cl.refdef.screen_blend);
+            Vector4Clear(cl.refdef.damage_blend);
+        }
 
         cl.refdef.num_entities = r_numentities;
         cl.refdef.entities = r_entities;
@@ -423,10 +507,40 @@ void V_RenderView(void)
         cl.refdef.num_dlights = r_numdlights;
         cl.refdef.dlights = r_dlights;
         cl.refdef.lightstyles = r_lightstyles;
-        cl.refdef.rdflags = cl.frame.ps.rdflags;
+        cl.refdef.rdflags = cl.frame.ps.rdflags | cl.predicted_rdflags;
 
         // sort entities for better cache locality
         qsort(cl.refdef.entities, cl.refdef.num_entities, sizeof(cl.refdef.entities[0]), entitycmpfnc);
+
+        if (cl.fog.lerp_time == 0 || cl.time > cl.fog.lerp_time_start + cl.fog.lerp_time) {
+            cl.refdef.fog = cl.fog.end;
+        } else {
+            float fog_frontlerp = (cl.time - cl.fog.lerp_time_start) / (float) cl.fog.lerp_time;
+            float fog_backlerp = 1.0f - fog_frontlerp;
+
+#define Q_FP(p) \
+                cl.refdef.fog.p = LERP2(cl.fog.start.p, cl.fog.end.p, fog_backlerp, fog_frontlerp)
+
+            Q_FP(global.r);
+            Q_FP(global.g);
+            Q_FP(global.b);
+            Q_FP(global.density);
+            Q_FP(global.sky_factor);
+
+            Q_FP(height.start.r);
+            Q_FP(height.start.g);
+            Q_FP(height.start.b);
+            Q_FP(height.start.dist);
+
+            Q_FP(height.end.r);
+            Q_FP(height.end.g);
+            Q_FP(height.end.b);
+            Q_FP(height.end.dist);
+            
+            Q_FP(height.density);
+            Q_FP(height.falloff);
+#undef Q_FP
+        }
     }
 
     R_RenderFrame(&cl.refdef);
@@ -449,11 +563,25 @@ static void V_Viewpos_f(void)
     Com_Printf("%s : %.f\n", vtos(cl.refdef.vieworg), cl.refdef.viewangles[YAW]);
 }
 
+static void V_Fog_f(void)
+{
+    fog_params_t p;
+    p.global.r = atof(Cmd_Argv(1));
+    p.global.g = atof(Cmd_Argv(2));
+    p.global.b = atof(Cmd_Argv(3));
+    p.global.density = atof(Cmd_Argv(4));
+    p.global.sky_factor = atof(Cmd_Argv(5));
+    int time = atoi(Cmd_Argv(6));
+
+    V_FogParamsChanged(FOG_BIT_R | FOG_BIT_G | FOG_BIT_B | FOG_BIT_DENSITY, &p, time);
+}
+
 static const cmdreg_t v_cmds[] = {
     { "gun_next", V_Gun_Next_f },
     { "gun_prev", V_Gun_Prev_f },
     { "gun_model", V_Gun_Model_f },
     { "viewpos", V_Viewpos_f },
+    { "fog", V_Fog_f },
     { NULL }
 };
 

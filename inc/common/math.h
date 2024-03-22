@@ -68,6 +68,11 @@ static inline vec_t PlaneDiffFast(const vec3_t v, const cplane_t *p)
 
 void SetupRotationMatrix(vec3_t matrix[3], const vec3_t dir, float degrees);
 
+void Matrix_TransformVec4(const vec4_t a, const mat4_t m, vec4_t out);
+void Matrix_Multiply(const mat4_t a, const mat4_t b, mat4_t out);
+void Matrix_Frustum(float fov_x, float fov_y, float reflect_x, float znear, float zfar, float *matrix);
+void Matrix_FromOriginAxis(const vec3_t origin, const vec3_t axis[3], mat4_t out);
+
 // quaternion routines, for MD5 skeletons
 #if USE_MD5
 

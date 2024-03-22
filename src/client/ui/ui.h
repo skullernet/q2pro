@@ -38,6 +38,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MIN_MENU_ITEMS  64
 #define MAX_MENU_ITEMS  250000000
 
+#define UI_DEFAULT_FILE     APPLICATION ".menu"
+
 typedef enum {
     MTYPE_BAD,
     MTYPE_SLIDER,
@@ -55,7 +57,8 @@ typedef enum {
     MTYPE_KEYBIND,
     MTYPE_BITMAP,
     MTYPE_SAVEGAME,
-    MTYPE_LOADGAME
+    MTYPE_LOADGAME,
+    MTYPE_IMAGESPINCONTROL
 } menuType_t;
 
 #define QMF_LEFT_JUSTIFY    BIT(0)
@@ -224,6 +227,10 @@ typedef struct menuSpinControl_s {
 
     int         mask;
     bool        negate;
+
+    // for image spin control
+    char *path;
+    char *filter;
 } menuSpinControl_t;
 
 typedef struct menuAction_s {
@@ -264,6 +271,9 @@ typedef struct playerModelInfo_s {
 
 void PlayerModel_Load(void);
 void PlayerModel_Free(void);
+
+void ImageSpinControl_Pop(menuSpinControl_t *s);
+void ImageSpinControl_Init(menuSpinControl_t *s);
 
 #define MAX_MENU_DEPTH    8
 
