@@ -924,6 +924,10 @@ static void start_next_download(void)
         return;
     }
 
+    // Check if HTTP download was aborted
+    if (!curl_multi)
+        return;
+
     //not enough downloads running, queue some more!
     FOR_EACH_DLQ(q) {
         if (q->state == DL_PENDING) {
