@@ -1,11 +1,11 @@
 [wrap-file]
-directory = curl-8.6.0
-source_url = https://curl.se/download/curl-8.6.0.tar.xz
-source_filename = curl-8.6.0.tar.xz
-source_hash = 3ccd55d91af9516539df80625f818c734dc6f2ecf9bada33c76765e99121db15
-patch_url = https://skuller.net/meson/libcurl_8.6.0-1_patch.zip
-patch_filename = libcurl_8.6.0-1_patch.zip
-patch_hash = 0bfb2990a3db9b83ed359a62c68aa25a8007853b8872480d90a040fd3736761d
+directory = curl-8.7.1
+source_url = https://curl.se/download/curl-8.7.1.tar.xz
+source_filename = curl-8.7.1.tar.xz
+source_hash = 6fea2aac6a4610fbd0400afb0bcddbe7258a64c63f1f68e5855ebc0c659710cd
+patch_url = https://skuller.net/meson/libcurl_8.7.1-1_patch.zip
+patch_filename = libcurl_8.7.1-1_patch.zip
+patch_hash = 10bae69337beb371526ff85aba2492eddf77b39278a8fba2128226b598fa3687
 
 [provide]
 libcurl = libcurl_dep
