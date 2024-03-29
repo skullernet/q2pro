@@ -308,8 +308,6 @@ typedef struct {
 #define MD5_MAX_WEIGHTS     4096
 #define MD5_MAX_FRAMES      1024
 
-typedef char md5_jointname_t[MD5_MAX_JOINTNAME];
-
 /* Joint */
 typedef struct {
     int parent;
@@ -357,7 +355,6 @@ typedef struct {
     md5_mesh_t *meshes;
     md5_joint_t *base_skeleton;
     md5_joint_t *skeleton_frames; // [num_joints][num_frames]
-    md5_jointname_t *jointnames;
     image_t **skins;
 } md5_model_t;
 
