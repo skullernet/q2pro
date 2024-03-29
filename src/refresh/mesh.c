@@ -628,13 +628,10 @@ static inline void calc_skel_vert(const md5_vertex_t *vert,
         const md5_weight_t *weight = &weights[vert->start + i];
         const md5_joint_t *joint = &skeleton[weight->joint];
 
-        vec3_t local_pos;
-        VectorScale(weight->pos, joint->scale, local_pos);
-
         vec3_t wv;
-        Quat_RotatePoint(joint->orient, local_pos, wv);
+        Quat_RotatePoint(joint->orient, weight->pos, wv);
 
-        VectorAdd(joint->pos, wv, wv);
+        VectorMA(joint->pos, joint->scale, wv, wv);
         VectorMA(out_position, weight->bias, wv, out_position);
 
         if (out_normal) {
