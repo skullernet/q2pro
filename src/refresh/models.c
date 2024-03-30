@@ -1076,6 +1076,7 @@ static void MD5_BuildFrameSkeleton(const joint_info_t *joint_infos,
             continue;
         }
 
+        Q_assert(parent < num_joints);
         md5_joint_t *parentJoint = &skeleton_frame[parent];
 
         // add positions
