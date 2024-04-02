@@ -19,6 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define CURL_DISABLE_DEPRECATION
 
 #include "client.h"
+#include <assert.h>
 #include <curl/curl.h>
 
 #include "shared/atomic.h"
@@ -112,6 +113,7 @@ static int progress_func(void *clientp, curl_off_t dltotal, curl_off_t dlnow, cu
 }
 
 // libcurl callback for filelists.
+// must be thread safe!
 static size_t recv_func(void *ptr, size_t size, size_t nmemb, void *stream)
 {
     dlhandle_t *dl = (dlhandle_t *)stream;
@@ -120,11 +122,8 @@ static size_t recv_func(void *ptr, size_t size, size_t nmemb, void *stream)
     if (!size || !nmemb)
         return 0;
 
-    if (size > SIZE_MAX / nmemb)
-        return 0;
-
-    if (dl->position > MAX_DLSIZE)
-        return 0;
+    assert(size <= SIZE_MAX / nmemb);
+    assert(dl->position < MAX_DLSIZE);
 
     bytes = size * nmemb;
     if (bytes >= MAX_DLSIZE - dl->position)
@@ -133,7 +132,6 @@ static size_t recv_func(void *ptr, size_t size, size_t nmemb, void *stream)
     // grow buffer in MIN_DLSIZE chunks. +1 for NUL.
     new_size = ALIGN(dl->position + bytes + 1, MIN_DLSIZE);
     if (new_size > dl->size) {
-        // can't use Z_Realloc here because it's not threadsafe!
         char *buf = realloc(dl->buffer, new_size);
         if (!buf)
             return 0;
