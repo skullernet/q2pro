@@ -341,6 +341,10 @@ void Sys_ListFiles_r(listfiles_t *list, const char *path, int depth)
     char *name;
     void *info;
 
+    if (list->count >= MAX_LISTED_FILES) {
+        return;
+    }
+
     if ((dir = opendir(path)) == NULL) {
         return;
     }

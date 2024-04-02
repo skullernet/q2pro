@@ -1022,6 +1022,10 @@ void Sys_ListFiles_r(listfiles_t *list, const char *path, int depth)
     void        *info;
     const char  *filter = list->filter;
 
+    if (list->count >= MAX_LISTED_FILES) {
+        return;
+    }
+
     // optimize single extension search
     if (!(list->flags & (FS_SEARCH_BYFILTER | FS_SEARCH_RECURSIVE)) &&
         filter && !strchr(filter, ';')) {
