@@ -591,11 +591,9 @@ int HTTP_QueueDownload(const char *path, dltype_t type)
     //special case for map file lists, i really wanted a server-push mechanism for this, but oh well
     len = strlen(path);
     if (len > 4 && !Q_stricmp(path + len - 4, ".bsp")) {
-        len = Q_snprintf(temp, sizeof(temp), "%s/%s", http_gamedir(), path);
-        if (len < sizeof(temp) - 5) {
-            memcpy(temp + len - 4, ".filelist", 10);
+        len = Q_snprintf(temp, sizeof(temp), "%s/%.*s.filelist", http_gamedir(), (int)(len - 4), path);
+        if (len < sizeof(temp))
             CL_QueueDownload(temp, DL_LIST);
-        }
     }
 
     return Q_ERR_SUCCESS;
