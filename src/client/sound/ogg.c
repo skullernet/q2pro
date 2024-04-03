@@ -155,7 +155,7 @@ done:
     return fmt_ctx;
 }
 
-static bool ogg_play_(void)
+static bool ogg_try_play(void)
 {
     AVStream        *st;
     const AVCodec   *dec;
@@ -229,7 +229,7 @@ static void ogg_play(AVFormatContext *fmt_ctx)
     Q_assert(!ogg.fmt_ctx);
     ogg.fmt_ctx = fmt_ctx;
 
-    if (!ogg_play_())
+    if (!ogg_try_play())
         ogg_stop();
 }
 
@@ -287,7 +287,7 @@ static int read_packet(AVPacket *pkt)
     }
 }
 
-static int decode_frame_(void)
+static int decode_frame(void)
 {
     AVCodecContext *dec = ogg.dec_ctx;
     AVPacket *pkt = ogg.pkt;
@@ -312,9 +312,9 @@ static int decode_frame_(void)
     }
 }
 
-static bool decode_frame(void)
+static bool decode_next_frame(void)
 {
-    int ret = decode_frame_();
+    int ret = decode_frame();
     if (ret >= 0)
         return true;
 
@@ -326,7 +326,7 @@ static bool decode_frame(void)
     // play next file
     OGG_Play();
 
-    return ogg.dec_ctx && decode_frame_() >= 0;
+    return ogg.dec_ctx && decode_frame() >= 0;
 }
 
 static int convert_samples(AVFrame *in)
@@ -387,7 +387,7 @@ void OGG_Update(void)
 
         // if swr buffer is empty, decode more input
         if (ret == 0) {
-            if (!decode_frame())
+            if (!decode_next_frame())
                 break;
 
             // now that we have a frame, configure output
