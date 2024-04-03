@@ -1010,6 +1010,20 @@ skip:
     }
 }
 
+static float player_alpha_hack(void)
+{
+    centity_t   *ent;
+
+    ent = &cl_entities[cl.frame.clientNum + 1];
+    if (ent->serverframe != cl.frame.number)
+        return 1;
+
+    if (!ent->current.modelindex || !ent->current.alpha)
+        return 1;
+
+    return ent->current.alpha;
+}
+
 static int shell_effect_hack(void)
 {
     centity_t   *ent;
@@ -1104,6 +1118,10 @@ static void CL_AddViewWeapon(void)
     if (cl_gunalpha->value != 1) {
         gun.alpha = Cvar_ClampValue(cl_gunalpha, 0.1f, 1.0f);
         gun.flags |= RF_TRANSLUCENT;
+    } else {
+        gun.alpha = player_alpha_hack();
+        if (gun.alpha != 1)
+            gun.flags |= RF_TRANSLUCENT;
     }
 
     V_AddEntity(&gun);
