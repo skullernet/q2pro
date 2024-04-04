@@ -759,7 +759,6 @@ extern const game_export_ex_t   *gex;
 
 void SV_InitGameProgs(void);
 void SV_ShutdownGameProgs(void);
-void SV_InitEdict(edict_t *e);
 
 void PF_Pmove(pmove_t *pm);
 
