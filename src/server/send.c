@@ -525,7 +525,7 @@ static bool check_entity(client_t *client, int entnum)
 }
 
 // sounds reliative to entities are handled specially
-static void emit_snd(client_t *client, message_packet_t *msg)
+static void emit_snd(client_t *client, const message_packet_t *msg)
 {
     int flags, entnum;
     int i;

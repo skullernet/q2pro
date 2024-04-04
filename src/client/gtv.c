@@ -195,7 +195,7 @@ static void drop_client(const char *reason)
     cls.gtv.state = ca_disconnected;
 }
 
-static void write_stream(void *data, size_t len)
+static void write_stream(const void *data, size_t len)
 {
     if (cls.gtv.state <= ca_disconnected) {
         return;
@@ -217,7 +217,7 @@ static void write_message(gtv_serverop_t op)
     write_stream(msg_write.data, msg_write.cursize);
 }
 
-void CL_GTV_WriteMessage(byte *data, size_t len)
+void CL_GTV_WriteMessage(const byte *data, size_t len)
 {
     if (cls.gtv.state != ca_active)
         return;

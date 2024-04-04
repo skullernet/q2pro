@@ -80,7 +80,7 @@ bool        CM_AreasConnected(cm_t *cm, int area1, int area2);
 
 int         CM_WriteAreaBits(cm_t *cm, byte *buffer, int area);
 int         CM_WritePortalBits(cm_t *cm, byte *buffer);
-void        CM_SetPortalStates(cm_t *cm, byte *buffer, int bytes);
+void        CM_SetPortalStates(cm_t *cm, const byte *buffer, int bytes);
 bool        CM_HeadnodeVisible(mnode_t *headnode, byte *visbits);
 
 void        CM_WritePortalState(cm_t *cm, qhandle_t f);

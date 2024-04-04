@@ -237,9 +237,9 @@ The input line scrolls horizontally if typing goes beyond the right edge.
 Returns x offset of the rightmost character drawn.
 ================
 */
-int IF_Draw(inputField_t *field, int x, int y, int flags, qhandle_t font)
+int IF_Draw(const inputField_t *field, int x, int y, int flags, qhandle_t font)
 {
-    char *text = field->text;
+    const char *text = field->text;
     size_t cursorPos = field->cursorPos;
     size_t offset = 0;
     int ret;

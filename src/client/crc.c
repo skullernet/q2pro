@@ -145,7 +145,7 @@ COM_BlockSequenceCRCByte
 For proxy protecting
 ====================
 */
-byte COM_BlockSequenceCRCByte(byte *base, size_t length, int sequence)
+byte COM_BlockSequenceCRCByte(const byte *base, size_t length, int sequence)
 {
     int     n;
     const byte  *p;

@@ -291,7 +291,7 @@ static void finish_udp_download(const char *msg)
     CL_StartNextDownload();
 }
 
-static bool write_udp_download(byte *data, int size)
+static bool write_udp_download(const byte *data, int size)
 {
     int ret;
 

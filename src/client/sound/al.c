@@ -300,7 +300,7 @@ static void AL_StopAllSounds(void)
     }
 }
 
-static channel_t *AL_FindLoopingSound(int entnum, sfx_t *sfx)
+static channel_t *AL_FindLoopingSound(int entnum, const sfx_t *sfx)
 {
     int         i;
     channel_t   *ch;

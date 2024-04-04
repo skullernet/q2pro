@@ -666,7 +666,7 @@ static BOOL check_cursor_pos(void)
 #define BTN_DN(i)   BIT((i) * 2 + 0)
 #define BTN_UP(i)   BIT((i) * 2 + 1)
 
-static void raw_mouse_event(PRAWMOUSE rm)
+static void raw_mouse_event(const RAWMOUSE *rm)
 {
     int i;
 
@@ -764,7 +764,7 @@ static void pos_changing_event(HWND wnd, WINDOWPOS *pos)
     pos->cy = max(pos->cy, rc.bottom - rc.top);
 }
 
-static void pos_changed_event(HWND wnd, WINDOWPOS *pos)
+static void pos_changed_event(HWND wnd, const WINDOWPOS *pos)
 {
     RECT rc;
 

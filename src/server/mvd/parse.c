@@ -202,7 +202,7 @@ static void MVD_ParseMulticast(mvd_t *mvd, mvd_ops_t op, int extrabits)
     }
 }
 
-static void MVD_UnicastSend(mvd_t *mvd, bool reliable, byte *data, size_t length, mvd_player_t *player)
+static void MVD_UnicastSend(mvd_t *mvd, bool reliable, const byte *data, size_t length, mvd_player_t *player)
 {
     mvd_player_t *target;
     mvd_client_t *client;

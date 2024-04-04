@@ -126,7 +126,7 @@ static void write_configstrings(void)
     SV_ClientAddMessage(sv_client, MSG_GAMESTATE);
 }
 
-static void write_baseline(entity_packed_t *base)
+static void write_baseline(const entity_packed_t *base)
 {
     MSG_WriteDeltaEntity(NULL, base, sv_client->esFlags | MSG_ES_FORCE);
 }
@@ -260,7 +260,7 @@ static void write_gamestate(void)
     SV_ClientAddMessage(sv_client, MSG_GAMESTATE);
 }
 
-static void stuff_cmds(list_t *list)
+static void stuff_cmds(const list_t *list)
 {
     stuffcmd_t *stuff;
 
@@ -997,7 +997,7 @@ static const ucmd_t ucmds[] = {
     { NULL, NULL }
 };
 
-static void handle_filtercmd(filtercmd_t *filter)
+static void handle_filtercmd(const filtercmd_t *filter)
 {
     if (filter->action == FA_IGNORE)
         return;

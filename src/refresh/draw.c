@@ -266,7 +266,7 @@ void R_DrawFill32(int x, int y, int w, int h, uint32_t color)
     _GL_StretchPic(x, y, w, h, 0, 0, 1, 1, color, TEXNUM_WHITE, 0);
 }
 
-static inline void draw_char(int x, int y, int flags, int c, image_t *image)
+static inline void draw_char(int x, int y, int flags, int c, const image_t *image)
 {
     float s, t;
 

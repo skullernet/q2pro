@@ -1040,7 +1040,7 @@ int CM_WritePortalBits(cm_t *cm, byte *buffer)
     return bytes;
 }
 
-void CM_SetPortalStates(cm_t *cm, byte *buffer, int bytes)
+void CM_SetPortalStates(cm_t *cm, const byte *buffer, int bytes)
 {
     int     i, numportals;
 
