@@ -58,7 +58,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 typedef struct {
     const char *name;
-    void (* const func)(void);
+    void (*func)(void);
 } ucmd_t;
 
 static inline const ucmd_t *Com_Find(const ucmd_t *u, const char *c)
