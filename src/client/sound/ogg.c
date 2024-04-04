@@ -338,7 +338,10 @@ static int convert_samples(AVFrame *in)
     if (out->format < 0)
         return 0;
 
+    // get available free space
     out->nb_samples = s_api.need_raw_samples();
+    Q_assert((unsigned)out->nb_samples <= MAX_RAW_SAMPLES);
+
     ret = swr_convert_frame(ogg.swr_ctx, out, in);
     if (ret < 0)
         return ret;
