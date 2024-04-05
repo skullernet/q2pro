@@ -21,7 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <mmsystem.h>
 #include <dsound.h>
 
-typedef HRESULT(WINAPI *LPDIRECTSOUNDCREATE)(LPCGUID, LPDIRECTSOUND *, LPUNKNOWN);
+typedef HRESULT (WINAPI *LPDIRECTSOUNDCREATE)(LPCGUID, LPDIRECTSOUND *, LPUNKNOWN);
 
 #define SECONDARY_BUFFER_SIZE   0x10000
 
@@ -197,8 +197,6 @@ static bool DS_CreateBuffers(void)
 
     return true;
 }
-
-
 
 /*
 ==================

@@ -450,8 +450,7 @@ static void MVD_FollowStop(mvd_client_t *client)
     client->ps.viewangles[ROLL] = 0;
 
     for (i = 0; i < 3; i++) {
-        client->ps.pmove.delta_angles[i] = ANGLE2SHORT(
-                                               client->ps.viewangles[i]) - client->lastcmd.angles[i];
+        client->ps.pmove.delta_angles[i] = ANGLE2SHORT(client->ps.viewangles[i]) - client->lastcmd.angles[i];
     }
 
     VectorClear(client->ps.kick_angles);
