@@ -648,7 +648,7 @@ size_t Com_UptimeLong_m(char *buffer, size_t size)
 
 static size_t Com_Random_m(char *buffer, size_t size)
 {
-    return Q_snprintf(buffer, size, "%d", Q_rand() % 10);
+    return Q_snprintf(buffer, size, "%d", Q_rand_uniform(10));
 }
 
 static size_t Com_MapList_m(char *buffer, size_t size)
