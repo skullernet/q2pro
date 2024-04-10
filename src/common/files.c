@@ -1025,6 +1025,8 @@ static int read_zip_file(file_t *file, void *buf, size_t len)
     size_t block, result;
     int ret;
 
+    Q_assert(file->position <= file->length);
+
     len = min(len, file->length - file->position);
     if (!len) {
         return 0;
@@ -1436,6 +1438,8 @@ static int64_t expand_open_file_read(file_t *file, const char *name)
 static int read_pak_file(file_t *file, void *buf, size_t len)
 {
     size_t result;
+
+    Q_assert(file->position <= file->length);
 
     len = min(len, file->length - file->position);
     if (!len) {
