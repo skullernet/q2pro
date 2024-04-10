@@ -2205,7 +2205,7 @@ static size_t CL_Ups_m(char *buffer, size_t size)
         VectorScale(cl.frame.ps.pmove.velocity, 0.125f, vel);
     }
 
-    return Q_scnprintf(buffer, size, "%.f", VectorLength(vel));
+    return Q_snprintf(buffer, size, "%.f", VectorLength(vel));
 }
 
 static size_t CL_Timer_m(char *buffer, size_t size)
@@ -2217,9 +2217,9 @@ static size_t CL_Timer_m(char *buffer, size_t size)
     hour = min / 60; min %= 60;
 
     if (hour) {
-        return Q_scnprintf(buffer, size, "%i:%i:%02i", hour, min, sec);
+        return Q_snprintf(buffer, size, "%i:%i:%02i", hour, min, sec);
     }
-    return Q_scnprintf(buffer, size, "%i:%02i", min, sec);
+    return Q_snprintf(buffer, size, "%i:%02i", min, sec);
 }
 
 static size_t CL_DemoPos_m(char *buffer, size_t size)
@@ -2234,32 +2234,32 @@ static size_t CL_DemoPos_m(char *buffer, size_t size)
     sec = framenum / 10; framenum %= 10;
     min = sec / 60; sec %= 60;
 
-    return Q_scnprintf(buffer, size, "%d:%02d.%d", min, sec, framenum);
+    return Q_snprintf(buffer, size, "%d:%02d.%d", min, sec, framenum);
 }
 
 static size_t CL_Fps_m(char *buffer, size_t size)
 {
-    return Q_scnprintf(buffer, size, "%i", C_FPS);
+    return Q_snprintf(buffer, size, "%i", C_FPS);
 }
 
 static size_t R_Fps_m(char *buffer, size_t size)
 {
-    return Q_scnprintf(buffer, size, "%i", R_FPS);
+    return Q_snprintf(buffer, size, "%i", R_FPS);
 }
 
 static size_t CL_Mps_m(char *buffer, size_t size)
 {
-    return Q_scnprintf(buffer, size, "%i", C_MPS);
+    return Q_snprintf(buffer, size, "%i", C_MPS);
 }
 
 static size_t CL_Pps_m(char *buffer, size_t size)
 {
-    return Q_scnprintf(buffer, size, "%i", C_PPS);
+    return Q_snprintf(buffer, size, "%i", C_PPS);
 }
 
 static size_t CL_Ping_m(char *buffer, size_t size)
 {
-    return Q_scnprintf(buffer, size, "%i", cls.measure.ping);
+    return Q_snprintf(buffer, size, "%i", cls.measure.ping);
 }
 
 static size_t CL_Lag_m(char *buffer, size_t size)
@@ -2269,22 +2269,22 @@ static size_t CL_Lag_m(char *buffer, size_t size)
     if (cls.netchan.total_received)
         f = (float)cls.netchan.total_dropped / cls.netchan.total_received;
 
-    return Q_scnprintf(buffer, size, "%.2f%%", f * 100.0f);
+    return Q_snprintf(buffer, size, "%.2f%%", f * 100.0f);
 }
 
 static size_t CL_Health_m(char *buffer, size_t size)
 {
-    return Q_scnprintf(buffer, size, "%i", cl.frame.ps.stats[STAT_HEALTH]);
+    return Q_snprintf(buffer, size, "%i", cl.frame.ps.stats[STAT_HEALTH]);
 }
 
 static size_t CL_Ammo_m(char *buffer, size_t size)
 {
-    return Q_scnprintf(buffer, size, "%i", cl.frame.ps.stats[STAT_AMMO]);
+    return Q_snprintf(buffer, size, "%i", cl.frame.ps.stats[STAT_AMMO]);
 }
 
 static size_t CL_Armor_m(char *buffer, size_t size)
 {
-    return Q_scnprintf(buffer, size, "%i", cl.frame.ps.stats[STAT_ARMOR]);
+    return Q_snprintf(buffer, size, "%i", cl.frame.ps.stats[STAT_ARMOR]);
 }
 
 static size_t CL_WeaponModel_m(char *buffer, size_t size)
@@ -2295,7 +2295,7 @@ static size_t CL_WeaponModel_m(char *buffer, size_t size)
 
 static size_t CL_NumEntities_m(char *buffer, size_t size)
 {
-    return Q_scnprintf(buffer, size, "%i", cl.frame.numEntities);
+    return Q_snprintf(buffer, size, "%i", cl.frame.numEntities);
 }
 
 /*

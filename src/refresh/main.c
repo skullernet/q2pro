@@ -840,7 +840,7 @@ static void GL_Strings_f(void)
 
 static size_t GL_ViewCluster_m(char *buffer, size_t size)
 {
-    return Q_scnprintf(buffer, size, "%d", glr.viewcluster1);
+    return Q_snprintf(buffer, size, "%d", glr.viewcluster1);
 }
 
 static void gl_lightmap_changed(cvar_t *self)

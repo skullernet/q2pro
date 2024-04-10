@@ -524,12 +524,12 @@ static void NET_Stats_f(void)
 
 static size_t NET_UpRate_m(char *buffer, size_t size)
 {
-    return Q_scnprintf(buffer, size, "%zu", net_rate_up);
+    return Q_snprintf(buffer, size, "%zu", net_rate_up);
 }
 
 static size_t NET_DnRate_m(char *buffer, size_t size)
 {
-    return Q_scnprintf(buffer, size, "%zu", net_rate_dn);
+    return Q_snprintf(buffer, size, "%zu", net_rate_dn);
 }
 
 //=============================================================================
