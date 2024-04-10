@@ -614,9 +614,6 @@ UI_Init
 */
 void UI_Init(void)
 {
-    char buffer[MAX_QPATH];
-    int i;
-
     Cmd_Register(c_ui);
 
     ui_debug = Cvar_Get("ui_debug", "0", 0);
@@ -628,9 +625,8 @@ void UI_Init(void)
     uis.cursorHandle = R_RegisterPic("ch1");
     R_GetPicSize(&uis.cursorWidth, &uis.cursorHeight, uis.cursorHandle);
 
-    for (i = 0; i < NUM_CURSOR_FRAMES; i++) {
-        Q_snprintf(buffer, sizeof(buffer), "m_cursor%d", i);
-        uis.bitmapCursors[i] = R_RegisterPic(buffer);
+    for (int i = 0; i < NUM_CURSOR_FRAMES; i++) {
+        uis.bitmapCursors[i] = R_RegisterPic(va("m_cursor%d", i));
     }
 
     uis.color.background.u32    = MakeColor(0,   0,   0, 255);
