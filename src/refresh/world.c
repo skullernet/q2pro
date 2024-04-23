@@ -153,7 +153,7 @@ static bool GL_LightGridPoint(lightgrid_t *grid, const vec3_t start, vec3_t colo
     return true;
 }
 
-static bool _GL_LightPoint(const vec3_t start, vec3_t color)
+static bool GL_LightPoint_(const vec3_t start, vec3_t color)
 {
     bsp_t           *bsp;
     int             i, index;
@@ -316,7 +316,7 @@ void GL_LightPoint(const vec3_t origin, vec3_t color)
     }
 
     // get lighting from world
-    if (!_GL_LightPoint(origin, color)) {
+    if (!GL_LightPoint_(origin, color)) {
         VectorSet(color, 1, 1, 1);
     }
 

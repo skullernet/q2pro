@@ -1521,7 +1521,7 @@ static image_t *lookup_image(const char *name,
     return NULL;
 }
 
-static int _try_image_format(imageformat_t fmt, image_t *image, byte **pic)
+static int try_image_format_(imageformat_t fmt, image_t *image, byte **pic)
 {
     byte    *data;
     int     len, ret;
@@ -1544,7 +1544,7 @@ static int try_image_format(imageformat_t fmt, image_t *image, byte **pic)
 {
     // replace the extension
     memcpy(image->name + image->baselen + 1, img_loaders[fmt].ext, 4);
-    return _try_image_format(fmt, image, pic);
+    return try_image_format_(fmt, image, pic);
 }
 
 
@@ -1715,7 +1715,7 @@ static int load_image_data(image_t *image, imageformat_t fmt, bool check_dimensi
         ret = try_other_formats(IM_MAX, image, pic);
     } else {
         // first try with original extension
-        ret = _try_image_format(fmt, image, pic);
+        ret = try_image_format_(fmt, image, pic);
         if (ret == Q_ERR(ENOENT)) {
             // retry with remaining extensions
             ret = try_other_formats(fmt, image, pic);
@@ -1731,7 +1731,7 @@ static int load_image_data(image_t *image, imageformat_t fmt, bool check_dimensi
     if (fmt == IM_MAX) {
         ret = Q_ERR_INVALID_PATH;
     } else {
-        ret = _try_image_format(fmt, image, pic);
+        ret = try_image_format_(fmt, image, pic);
     }
 #endif
 

@@ -20,7 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 drawStatic_t draw;
 
-static inline void _GL_StretchPic(
+static inline void GL_StretchPic_(
     float x, float y, float w, float h,
     float s1, float t1, float s2, float t2,
     uint32_t color, int texnum, int flags)
@@ -74,7 +74,7 @@ static inline void _GL_StretchPic(
 }
 
 #define GL_StretchPic(x,y,w,h,s1,t1,s2,t2,color,image) \
-    _GL_StretchPic(x,y,w,h,s1,t1,s2,t2,color,(image)->texnum,(image)->flags)
+    GL_StretchPic_(x,y,w,h,s1,t1,s2,t2,color,(image)->texnum,(image)->flags)
 
 void GL_Blend(void)
 {
@@ -85,7 +85,7 @@ void GL_Blend(void)
     color.u8[2] = glr.fd.blend[2] * 255;
     color.u8[3] = glr.fd.blend[3] * 255;
 
-    _GL_StretchPic(glr.fd.x, glr.fd.y, glr.fd.width, glr.fd.height, 0, 0, 1, 1,
+    GL_StretchPic_(glr.fd.x, glr.fd.y, glr.fd.width, glr.fd.height, 0, 0, 1, 1,
                    color.u32, TEXNUM_WHITE, 0);
 }
 
@@ -98,7 +98,7 @@ void R_ClearColor(void)
 void R_SetAlpha(float alpha)
 {
     draw.colors[0].u8[3] =
-        draw.colors[1].u8[3] = alpha * 255;
+    draw.colors[1].u8[3] = alpha * 255;
 }
 
 void R_SetColor(uint32_t color)
@@ -235,7 +235,7 @@ void R_DrawPic(int x, int y, qhandle_t pic)
 
 void R_DrawStretchRaw(int x, int y, int w, int h)
 {
-    _GL_StretchPic(x, y, w, h, 0, 0, 1, 1, U32_WHITE, TEXNUM_RAW, 0);
+    GL_StretchPic_(x, y, w, h, 0, 0, 1, 1, U32_WHITE, TEXNUM_RAW, 0);
 }
 
 void R_UpdateRawPic(int pic_w, int pic_h, const uint32_t *pic)
@@ -256,14 +256,14 @@ void R_DrawFill8(int x, int y, int w, int h, int c)
 {
     if (!w || !h)
         return;
-    _GL_StretchPic(x, y, w, h, 0, 0, 1, 1, d_8to24table[c & 0xff], TEXNUM_WHITE, 0);
+    GL_StretchPic_(x, y, w, h, 0, 0, 1, 1, d_8to24table[c & 0xff], TEXNUM_WHITE, 0);
 }
 
 void R_DrawFill32(int x, int y, int w, int h, uint32_t color)
 {
     if (!w || !h)
         return;
-    _GL_StretchPic(x, y, w, h, 0, 0, 1, 1, color, TEXNUM_WHITE, 0);
+    GL_StretchPic_(x, y, w, h, 0, 0, 1, 1, color, TEXNUM_WHITE, 0);
 }
 
 static inline void draw_char(int x, int y, int flags, int c, const image_t *image)
@@ -382,7 +382,7 @@ void Draw_Lightmaps(void)
         for (int j = 0; j < rows; j++) {
             int k = j * cols + i;
             if (k < lm.nummaps)
-                _GL_StretchPic(block * i, block * j, block, block,
+                GL_StretchPic_(block * i, block * j, block, block,
                                0, 0, 1, 1, U32_WHITE, lm.texnums[k], 0);
         }
     }
@@ -390,7 +390,7 @@ void Draw_Lightmaps(void)
 
 void Draw_Scrap(void)
 {
-    _GL_StretchPic(0, 0, 256, 256,
+    GL_StretchPic_(0, 0, 256, 256,
                    0, 0, 1, 1, U32_WHITE, TEXNUM_SCRAP, IF_PALETTED | IF_TRANSPARENT);
 }
 
