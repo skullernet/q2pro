@@ -176,6 +176,9 @@ typedef struct vrect_s {
 #define BIT(n)          (1U << (n))
 #define BIT_ULL(n)      (1ULL << (n))
 
+#define MASK(n)         (BIT(n) - 1U)
+#define MASK_ULL(n)     (BIT_ULL(n) - 1ULL)
+
 #define SWAP(type, a, b) \
     do { type SWAP_tmp = a; a = b; b = SWAP_tmp; } while (0)
 
@@ -1435,10 +1438,10 @@ typedef struct {
 #if USE_PROTOCOL_EXTENSIONS
 
 #define ENTITYNUM_BITS      13
-#define ENTITYNUM_MASK      (BIT(ENTITYNUM_BITS) - 1)
+#define ENTITYNUM_MASK      MASK(ENTITYNUM_BITS)
 
 #define GUNINDEX_BITS       13  // upper 3 bits are skinnum
-#define GUNINDEX_MASK       (BIT(GUNINDEX_BITS) - 1)
+#define GUNINDEX_MASK       MASK(GUNINDEX_BITS)
 
 typedef struct {
     int         morefx;

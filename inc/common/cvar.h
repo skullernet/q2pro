@@ -48,7 +48,7 @@ interface from being ambiguous.
 #define CVAR_INFOMASK       (CVAR_USERINFO | CVAR_SERVERINFO)
 #define CVAR_MODIFYMASK     (CVAR_INFOMASK | CVAR_FILES | CVAR_REFRESH | CVAR_SOUND)
 #define CVAR_NOARCHIVEMASK  (CVAR_NOSET | CVAR_CHEAT | CVAR_PRIVATE | CVAR_ROM | CVAR_NOARCHIVE)
-#define CVAR_EXTENDED_MASK  (~31)
+#define CVAR_EXTENDED_MASK  (~MASK(5))
 
 extern cvar_t   *cvar_vars;
 extern int      cvar_modified;

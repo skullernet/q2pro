@@ -168,7 +168,7 @@ typedef enum {
 #define SFL_CROSS_TRIGGER_6     BIT(5)
 #define SFL_CROSS_TRIGGER_7     BIT(6)
 #define SFL_CROSS_TRIGGER_8     BIT(7)
-#define SFL_CROSS_TRIGGER_MASK  (BIT(8) - 1)
+#define SFL_CROSS_TRIGGER_MASK  MASK(8)
 
 // noise types for PlayerNoise
 #define PNOISE_SELF             0

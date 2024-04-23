@@ -522,7 +522,7 @@ void GL_DrawBspModel(mmodel_t *model)
 }
 
 #define NODE_CLIPPED    0
-#define NODE_UNCLIPPED  (BIT(4) - 1)
+#define NODE_UNCLIPPED  MASK(4)
 
 static inline bool GL_ClipNode(mnode_t *node, int *clipflags)
 {

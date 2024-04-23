@@ -85,13 +85,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 
 #define SVCMD_BITS              5
-#define SVCMD_MASK              (BIT(SVCMD_BITS) - 1)
+#define SVCMD_MASK              MASK(SVCMD_BITS)
 
 #define FRAMENUM_BITS           27
-#define FRAMENUM_MASK           (BIT(FRAMENUM_BITS) - 1)
+#define FRAMENUM_MASK           MASK(FRAMENUM_BITS)
 
 #define SUPPRESSCOUNT_BITS      4
-#define SUPPRESSCOUNT_MASK      (BIT(SUPPRESSCOUNT_BITS) - 1)
+#define SUPPRESSCOUNT_MASK      MASK(SUPPRESSCOUNT_BITS)
 
 #define MAX_PACKET_ENTITIES_OLD 128
 
