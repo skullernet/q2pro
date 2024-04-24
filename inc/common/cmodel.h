@@ -40,8 +40,8 @@ void        CM_FreeMap(cm_t *cm);
 int         CM_LoadMap(cm_t *cm, const char *name);
 void        CM_LoadOverrides(cm_t *cm, char *server, size_t server_size);
 
-mnode_t     *CM_NodeNum(cm_t *cm, int number);
-mleaf_t     *CM_LeafNum(cm_t *cm, int number);
+const mnode_t   *CM_NodeNum(const cm_t *cm, int number);
+const mleaf_t   *CM_LeafNum(const cm_t *cm, int number);
 
 #define CM_InlineModel(cm, name) BSP_InlineModel((cm)->cache, name)
 
@@ -49,36 +49,36 @@ mleaf_t     *CM_LeafNum(cm_t *cm, int number);
 #define CM_NumLeaf(cm, leaf) ((cm)->cache ? ((leaf) - (cm)->cache->leafs) : 0)
 
 // creates a clipping hull for an arbitrary box
-mnode_t     *CM_HeadnodeForBox(const vec3_t mins, const vec3_t maxs);
+const mnode_t   *CM_HeadnodeForBox(const vec3_t mins, const vec3_t maxs);
 
 // returns an ORed contents mask
-int         CM_PointContents(const vec3_t p, mnode_t *headnode);
-int         CM_TransformedPointContents(const vec3_t p, mnode_t *headnode,
+int         CM_PointContents(const vec3_t p, const mnode_t *headnode);
+int         CM_TransformedPointContents(const vec3_t p, const mnode_t *headnode,
                                         const vec3_t origin, const vec3_t angles);
 
 void        CM_BoxTrace(trace_t *trace,
                         const vec3_t start, const vec3_t end,
                         const vec3_t mins, const vec3_t maxs,
-                        mnode_t *headnode, int brushmask);
+                        const mnode_t *headnode, int brushmask);
 void        CM_TransformedBoxTrace(trace_t *trace,
                                    const vec3_t start, const vec3_t end,
                                    const vec3_t mins, const vec3_t maxs,
-                                   mnode_t *headnode, int brushmask,
+                                   const mnode_t *headnode, int brushmask,
                                    const vec3_t origin, const vec3_t angles);
 void        CM_ClipEntity(trace_t *dst, const trace_t *src, struct edict_s *ent);
 
 // call with topnode set to the headnode, returns with topnode
 // set to the first node that splits the box
-int         CM_BoxLeafs(cm_t *cm, const vec3_t mins, const vec3_t maxs,
-                        mleaf_t **list, int listsize, mnode_t **topnode);
-mleaf_t     *CM_PointLeaf(cm_t *cm, const vec3_t p);
+int         CM_BoxLeafs(const cm_t *cm, const vec3_t mins, const vec3_t maxs,
+                        const mleaf_t **list, int listsize, const mnode_t **topnode);
+const mleaf_t   *CM_PointLeaf(const cm_t *cm, const vec3_t p);
 
-byte        *CM_FatPVS(cm_t *cm, byte *mask, const vec3_t org);
+byte        *CM_FatPVS(const cm_t *cm, byte *mask, const vec3_t org);
 
-void        CM_SetAreaPortalState(cm_t *cm, int portalnum, bool open);
-bool        CM_AreasConnected(cm_t *cm, int area1, int area2);
+void        CM_SetAreaPortalState(const cm_t *cm, int portalnum, bool open);
+bool        CM_AreasConnected(const cm_t *cm, int area1, int area2);
 
-int         CM_WriteAreaBits(cm_t *cm, byte *buffer, int area);
-int         CM_WritePortalBits(cm_t *cm, byte *buffer);
-void        CM_SetPortalStates(cm_t *cm, const byte *buffer, int bytes);
-bool        CM_HeadnodeVisible(mnode_t *headnode, byte *visbits);
+int         CM_WriteAreaBits(const cm_t *cm, byte *buffer, int area);
+int         CM_WritePortalBits(const cm_t *cm, byte *buffer);
+void        CM_SetPortalStates(const cm_t *cm, const byte *buffer, int bytes);
+bool        CM_HeadnodeVisible(const mnode_t *headnode, const byte *visbits);

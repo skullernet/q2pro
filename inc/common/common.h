@@ -76,7 +76,7 @@ typedef struct string_entry_s {
     char string[1];
 } string_entry_t;
 
-typedef void (*rdflush_t)(int target, char *buffer, size_t len);
+typedef void (*rdflush_t)(int target, const char *buffer, size_t len);
 
 void        Com_BeginRedirect(int target, char *buffer, size_t buffersize, rdflush_t flush);
 void        Com_EndRedirect(void);

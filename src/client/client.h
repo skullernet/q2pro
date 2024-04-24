@@ -287,7 +287,7 @@ typedef struct client_state_s {
     bsp_t        *bsp;
 
     qhandle_t model_draw[MAX_MODELS];
-    mmodel_t *model_clip[MAX_MODELS];
+    const mmodel_t *model_clip[MAX_MODELS];
 
     qhandle_t sound_precache[MAX_SOUNDS];
     qhandle_t image_precache[MAX_IMAGES];

@@ -324,7 +324,7 @@ Build a client frame structure
 
 #if USE_FPS
 static void
-fix_old_origin(client_t *client, entity_packed_t *state, edict_t *ent, int e)
+fix_old_origin(const client_t *client, entity_packed_t *state, const edict_t *ent, int e)
 {
     server_entity_t *sent = &sv.entities[e];
     int i, j, k;
@@ -367,7 +367,7 @@ fix_old_origin(client_t *client, entity_packed_t *state, edict_t *ent, int e)
 }
 #endif
 
-static bool SV_EntityVisible(client_t *client, edict_t *ent, byte *mask)
+static bool SV_EntityVisible(const client_t *client, const edict_t *ent, const byte *mask)
 {
     if (ent->num_clusters == -1)
         // too many leafs for individual check, go by headnode
@@ -381,7 +381,7 @@ static bool SV_EntityVisible(client_t *client, edict_t *ent, byte *mask)
     return false;
 }
 
-static bool SV_EntityAttenuatedAway(vec3_t org, edict_t *ent)
+static bool SV_EntityAttenuatedAway(const vec3_t org, const edict_t *ent)
 {
     float dist = Distance(org, ent->s.origin);
     float dist_mult = SOUND_LOOPATTENUATE;
@@ -410,7 +410,7 @@ void SV_BuildClientFrame(client_t *client)
     entity_packed_t *state;
     player_state_t  *ps;
     int         clientarea, clientcluster;
-    mleaf_t     *leaf;
+    const mleaf_t   *leaf;
     byte        clientphs[VIS_MAX_BYTES];
     byte        clientpvs[VIS_MAX_BYTES];
     bool        need_clientnum_fix;

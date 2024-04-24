@@ -820,7 +820,7 @@ static const bsp_stat_t bsp_stats[] = {
 
 static list_t   bsp_cache;
 
-static void BSP_PrintStats(bsp_t *bsp)
+static void BSP_PrintStats(const bsp_t *bsp)
 {
     for (int i = 0; i < q_countof(bsp_stats); i++) {
         const bsp_stat_t *s = &bsp_stats[i];
@@ -828,7 +828,7 @@ static void BSP_PrintStats(bsp_t *bsp)
     }
 #if USE_REF
     if (bsp->lightgrid.numleafs) {
-        lightgrid_t *grid = &bsp->lightgrid;
+        const lightgrid_t *grid = &bsp->lightgrid;
         Com_Printf(
             "%8u : lightgrid styles\n"
             "%8u : lightgrid nodes\n"
@@ -1099,7 +1099,7 @@ static void BSP_ParseDecoupledLM(bsp_t *bsp, const byte *in, size_t filelen)
 #define FLAG_OCCLUDED   BIT(30)
 #define FLAG_LEAF       BIT(31)
 
-lightgrid_sample_t *BSP_LookupLightgrid(lightgrid_t *grid, uint32_t point[3])
+const lightgrid_sample_t *BSP_LookupLightgrid(const lightgrid_t *grid, const uint32_t point[3])
 {
     uint32_t nodenum = grid->rootnode;
 
@@ -1108,7 +1108,7 @@ lightgrid_sample_t *BSP_LookupLightgrid(lightgrid_t *grid, uint32_t point[3])
             return NULL;
 
         if (nodenum & FLAG_LEAF) {
-            lightgrid_leaf_t *leaf = &grid->leafs[nodenum & ~FLAG_LEAF];
+            const lightgrid_leaf_t *leaf = &grid->leafs[nodenum & ~FLAG_LEAF];
 
             uint32_t pos[3];
             VectorSubtract(point, leaf->mins, pos);
@@ -1122,7 +1122,7 @@ lightgrid_sample_t *BSP_LookupLightgrid(lightgrid_t *grid, uint32_t point[3])
             return &grid->samples[leaf->firstsample + index * grid->numstyles];
         }
 
-        lightgrid_node_t *node = &grid->nodes[nodenum];
+        const lightgrid_node_t *node = &grid->nodes[nodenum];
         nodenum = node->children[
             (point[0] >= node->point[0]) << 2 |
             (point[1] >= node->point[1]) << 1 |
@@ -1202,7 +1202,7 @@ static size_t BSP_ParseLightgridHeader(bsp_t *bsp, const byte *in, size_t filele
         ALIGN(sizeof(grid->samples[0]) * grid->numsamples * grid->numstyles, 64);
 }
 
-static bool BSP_ValidateLightgrid_r(lightgrid_t *grid, uint32_t nodenum)
+static bool BSP_ValidateLightgrid_r(const lightgrid_t *grid, uint32_t nodenum)
 {
     if (nodenum & FLAG_OCCLUDED)
         return true;
@@ -1555,7 +1555,7 @@ HELPER FUNCTIONS
 static lightpoint_t *light_point;
 static int          light_mask;
 
-static bool BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, const vec3_t p1, const vec3_t p2)
+static bool BSP_RecursiveLightPoint(const mnode_t *node, float p1f, float p2f, const vec3_t p1, const vec3_t p2)
 {
     vec_t d1, d2, frac, midf, s, t;
     vec3_t mid;
@@ -1611,7 +1611,7 @@ static bool BSP_RecursiveLightPoint(mnode_t *node, float p1f, float p2f, const v
     return false;
 }
 
-void BSP_LightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end, mnode_t *headnode, int nolm_mask)
+void BSP_LightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end, const mnode_t *headnode, int nolm_mask)
 {
     light_point = point;
     light_point->surf = NULL;
@@ -1622,7 +1622,7 @@ void BSP_LightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end, m
 }
 
 void BSP_TransformedLightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end,
-                               mnode_t *headnode, int nolm_mask, const vec3_t origin, const vec3_t angles)
+                               const mnode_t *headnode, int nolm_mask, const vec3_t origin, const vec3_t angles)
 {
     vec3_t start_l, end_l;
     vec3_t axis[3];
@@ -1659,7 +1659,7 @@ void BSP_TransformedLightPoint(lightpoint_t *point, const vec3_t start, const ve
 
 #endif
 
-byte *BSP_ClusterVis(bsp_t *bsp, byte *mask, int cluster, int vis)
+byte *BSP_ClusterVis(const bsp_t *bsp, byte *mask, int cluster, int vis)
 {
     byte    *in, *out, *in_end, *out_end;
     int     c;
@@ -1744,7 +1744,7 @@ overrun:
     return mask;
 }
 
-mleaf_t *BSP_PointLeaf(mnode_t *node, const vec3_t p)
+const mleaf_t *BSP_PointLeaf(const mnode_t *node, const vec3_t p)
 {
     float d;
 
@@ -1756,7 +1756,7 @@ mleaf_t *BSP_PointLeaf(mnode_t *node, const vec3_t p)
             node = node->children[0];
     }
 
-    return (mleaf_t *)node;
+    return (const mleaf_t *)node;
 }
 
 /*
@@ -1764,7 +1764,7 @@ mleaf_t *BSP_PointLeaf(mnode_t *node, const vec3_t p)
 BSP_InlineModel
 ==================
 */
-mmodel_t *BSP_InlineModel(bsp_t *bsp, const char *name)
+const mmodel_t *BSP_InlineModel(const bsp_t *bsp, const char *name)
 {
     int     num;
 

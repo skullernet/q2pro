@@ -127,7 +127,7 @@ static void MVD_ParseMulticast(mvd_t *mvd, mvd_ops_t op, int extrabits)
     mvd_client_t    *client;
     client_t    *cl;
     byte        mask[VIS_MAX_BYTES];
-    mleaf_t     *leaf1 = NULL, *leaf2;
+    const mleaf_t   *leaf1 = NULL, *leaf2;
     vec3_t      org;
     bool        reliable = false;
     byte        *data;
@@ -449,7 +449,7 @@ static void MVD_ParseSound(mvd_t *mvd, int extrabits)
     mvd_client_t        *client;
     client_t    *cl;
     byte        mask[VIS_MAX_BYTES];
-    mleaf_t     *leaf1, *leaf2;
+    const mleaf_t       *leaf1, *leaf2;
     message_packet_t    *msg;
     edict_t     *entity;
     int         i;

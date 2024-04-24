@@ -232,7 +232,7 @@ static inline void SkyInverseRotate(vec3_t out, const vec3_t in)
 R_AddSkySurface
 =================
 */
-void R_AddSkySurface(mface_t *fa)
+void R_AddSkySurface(const mface_t *fa)
 {
     int         i;
     vec3_t      verts[MAX_CLIP_VERTS];

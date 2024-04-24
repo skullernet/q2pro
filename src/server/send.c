@@ -29,7 +29,7 @@ MISC
 
 char sv_outputbuf[SV_OUTPUTBUF_LENGTH];
 
-void SV_FlushRedirect(int redirected, char *outputbuf, size_t len)
+void SV_FlushRedirect(int redirected, const char *outputbuf, size_t len)
 {
     byte    buffer[MAX_PACKETLEN_DEFAULT];
 
@@ -257,7 +257,7 @@ void SV_Multicast(const vec3_t origin, multicast_t to)
 {
     client_t    *client;
     byte        mask[VIS_MAX_BYTES];
-    mleaf_t     *leaf1 = NULL, *leaf2;
+    const mleaf_t   *leaf1 = NULL, *leaf2;
     int         leafnum q_unused = 0;
     int         flags = 0;
 

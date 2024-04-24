@@ -339,8 +339,6 @@ Also sets mins and maxs for inline bmodels
 */
 static void PF_setmodel(edict_t *ent, const char *name)
 {
-    mmodel_t    *mod;
-
     if (!ent || !name)
         Com_Error(ERR_DROP, "PF_setmodel: NULL");
 
@@ -348,7 +346,7 @@ static void PF_setmodel(edict_t *ent, const char *name)
 
 // if it is an inline model, get the size information for it
     if (name[0] == '*') {
-        mod = CM_InlineModel(&sv.cm, name);
+        const mmodel_t *mod = CM_InlineModel(&sv.cm, name);
         VectorCopy(mod->mins, ent->mins);
         VectorCopy(mod->maxs, ent->maxs);
         PF_LinkEdict(ent);
@@ -444,7 +442,7 @@ static void PF_WriteFloat(float f)
 
 static qboolean PF_inVIS(const vec3_t p1, const vec3_t p2, vis_t vis)
 {
-    mleaf_t *leaf1, *leaf2;
+    const mleaf_t *leaf1, *leaf2;
     byte mask[VIS_MAX_BYTES];
 
     leaf1 = CM_PointLeaf(&sv.cm, p1);
@@ -518,7 +516,7 @@ static void SV_StartSound(const vec3_t origin, edict_t *edict,
     vec3_t      origin_v;
     client_t    *client;
     byte        mask[VIS_MAX_BYTES];
-    mleaf_t     *leaf1, *leaf2;
+    const mleaf_t       *leaf1, *leaf2;
     message_packet_t    *msg;
     bool        force_pos;
 

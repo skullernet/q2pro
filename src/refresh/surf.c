@@ -99,7 +99,7 @@ DYNAMIC BLOCKLIGHTS
 
 static float blocklights[MAX_BLOCKLIGHTS * 3];
 
-static void put_blocklights(mface_t *surf)
+static void put_blocklights(const mface_t *surf)
 {
     float *bl, add, modulate, scale = lm.scale;
     int i, j, smax, tmax, stride = 1 << lm.block_shift;
@@ -131,7 +131,7 @@ static void put_blocklights(mface_t *surf)
     }
 }
 
-static void add_dynamic_lights(mface_t *surf)
+static void add_dynamic_lights(const mface_t *surf)
 {
     dlight_t    *light;
     vec3_t      point;

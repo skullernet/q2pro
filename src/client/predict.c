@@ -79,9 +79,9 @@ static void CL_ClipMoveToEntities(trace_t *tr, const vec3_t start, const vec3_t 
 {
     int         i;
     trace_t     trace;
-    mnode_t     *headnode;
-    centity_t   *ent;
-    mmodel_t    *cmodel;
+    const mnode_t   *headnode;
+    const centity_t *ent;
+    const mmodel_t  *cmodel;
 
     for (i = 0; i < cl.numSolidEntities; i++) {
         ent = cl.solidEntities[i];
@@ -137,10 +137,9 @@ static trace_t q_gameabi CL_PMTrace(const vec3_t start, const vec3_t mins, const
 
 static int CL_PointContents(const vec3_t point)
 {
-    int         i;
-    centity_t   *ent;
-    mmodel_t    *cmodel;
-    int         contents;
+    const centity_t *ent;
+    const mmodel_t  *cmodel;
+    int i, contents;
 
     contents = CM_PointContents(point, cl.bsp->nodes);
 
