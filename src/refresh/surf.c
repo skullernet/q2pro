@@ -97,6 +97,8 @@ DYNAMIC BLOCKLIGHTS
 #define MAX_LIGHTMAP_EXTENTS    513
 #define MAX_BLOCKLIGHTS         (MAX_LIGHTMAP_EXTENTS * MAX_LIGHTMAP_EXTENTS)
 
+#define LM_PIXELS(map, s, t)    ((map)->buffer + ((t) << lm.block_shift) + ((s) << 2))
+
 static float blocklights[MAX_BLOCKLIGHTS * 3];
 
 static void put_blocklights(const mface_t *surf)
@@ -116,7 +118,7 @@ static void put_blocklights(const mface_t *surf)
     smax = surf->lm_width;
     tmax = surf->lm_height;
 
-    out = surf->light_m->buffer + (surf->light_t << lm.block_shift) + surf->light_s * 4;
+    out = LM_PIXELS(surf->light_m, surf->light_s, surf->light_t);
 
     for (i = 0, bl = blocklights; i < tmax; i++, out += stride) {
         byte *dst;
@@ -332,8 +334,7 @@ void GL_UploadLightmaps(void)
         // upload lightmap subimage
         GL_ForceTexture(1, lm.texnums[i]);
         qglTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h,
-                         GL_RGBA, GL_UNSIGNED_BYTE,
-                         m->buffer + (y << lm.block_shift) + x * 4);
+                         GL_RGBA, GL_UNSIGNED_BYTE, LM_PIXELS(m, x, y));
         clear_dirty_region(m);
         c.texUploads++;
         c.lightTexels += w * h;
