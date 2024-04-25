@@ -346,10 +346,9 @@ static void GL_MarkLeaves(void)
     const mleaf_t *leaf;
     mnode_t *node;
     size_t *src1, *src2;
-    int cluster1, cluster2, longs;
+    int i, cluster1, cluster2, longs;
     vec3_t tmp;
-    int i;
-    bsp_t *bsp = gl_static.world.cache;
+    const bsp_t *bsp = gl_static.world.cache;
 
     leaf = BSP_PointLeaf(bsp->nodes, glr.fd.vieworg);
     cluster1 = cluster2 = leaf->cluster;
@@ -405,24 +404,18 @@ static void GL_MarkLeaves(void)
         if (cluster1 == -1) {
             continue;
         }
-        if (Q_IsBitSet(vis1, cluster1)) {
-            node = (mnode_t *)leaf;
-
-            // mark parent nodes visible
-            do {
-                if (node->visframe == glr.visframe) {
-                    break;
-                }
-                node->visframe = glr.visframe;
-                node = node->parent;
-                lastNodesVisible++;
-            } while (node);
+        if (!Q_IsBitSet(vis1, cluster1)) {
+            continue;
+        }
+        // mark parent nodes visible
+        for (node = (mnode_t *)leaf; node && node->visframe != glr.visframe; node = node->parent) {
+            node->visframe = glr.visframe;
+            lastNodesVisible++;
         }
     }
 
 finish:
     c.nodesVisible = lastNodesVisible;
-
 }
 
 #define BACKFACE_EPSILON    0.01f
