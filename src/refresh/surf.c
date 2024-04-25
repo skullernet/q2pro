@@ -469,7 +469,7 @@ static void build_primary_lightmap(mface_t *surf)
     put_blocklights(surf);
 }
 
-static void LM_BuildSurface(mface_t *surf, vec_t *vbo)
+static void LM_BuildSurface(mface_t *surf)
 {
     int smax, tmax, s, t;
 
@@ -770,7 +770,7 @@ static void build_surface_light(mface_t *surf, vec_t *vbo)
     if (gl_vertexlight->integer)
         sample_surface_verts(surf, vbo);
     else
-        LM_BuildSurface(surf, vbo);
+        LM_BuildSurface(surf);
 }
 
 // normalizes and stores lightmap texture coordinates in vertices
