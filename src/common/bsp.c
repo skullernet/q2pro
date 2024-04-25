@@ -1664,6 +1664,8 @@ byte *BSP_ClusterVis(const bsp_t *bsp, byte *mask, int cluster, int vis)
     byte    *in, *out, *in_end, *out_end;
     int     c;
 
+    Q_assert(vis == DVIS_PVS || vis == DVIS_PHS);
+
     if (!bsp || !bsp->vis) {
         return memset(mask, 0xff, VIS_MAX_BYTES);
     }

@@ -645,7 +645,7 @@ void SV_MvdMapChanged(void);
 void SV_MvdClientDropped(client_t *client);
 
 void SV_MvdUnicast(edict_t *ent, int clientNum, bool reliable);
-void SV_MvdMulticast(int leafnum, multicast_t to);
+void SV_MvdMulticast(const mleaf_t *leaf, multicast_t to, bool reliable);
 void SV_MvdConfigstring(int index, const char *string, size_t len);
 void SV_MvdBroadcastPrint(int level, const char *string);
 void SV_MvdStartSound(int entnum, int channel, int flags,

@@ -255,36 +255,22 @@ MULTICAST_PHS    send to clients potentially hearable from org
 */
 void SV_Multicast(const vec3_t origin, multicast_t to)
 {
-    client_t    *client;
-    byte        mask[VIS_MAX_BYTES];
-    const mleaf_t   *leaf1 = NULL, *leaf2;
-    int         leafnum q_unused = 0;
-    int         flags = 0;
+    client_t        *client;
+    byte            mask[VIS_MAX_BYTES];
+    const mleaf_t   *leaf1 = NULL;
+    int             flags = 0;
 
-    switch (to) {
-    case MULTICAST_ALL_R:
+    if (to < MULTICAST_ALL || to > MULTICAST_PVS_R)
+        Com_Error(ERR_DROP, "%s: bad to: %d", __func__, to);
+
+    if (to >= MULTICAST_ALL_R) {
         flags |= MSG_RELIABLE;
-        // intentional fallthrough
-    case MULTICAST_ALL:
-        break;
-    case MULTICAST_PHS_R:
-        flags |= MSG_RELIABLE;
-        // intentional fallthrough
-    case MULTICAST_PHS:
+        to -= MULTICAST_ALL_R;
+    }
+
+    if (to) {
         leaf1 = CM_PointLeaf(&sv.cm, origin);
-        leafnum = CM_NumLeaf(&sv.cm, leaf1);
-        BSP_ClusterVis(sv.cm.cache, mask, leaf1->cluster, DVIS_PHS);
-        break;
-    case MULTICAST_PVS_R:
-        flags |= MSG_RELIABLE;
-        // intentional fallthrough
-    case MULTICAST_PVS:
-        leaf1 = CM_PointLeaf(&sv.cm, origin);
-        leafnum = CM_NumLeaf(&sv.cm, leaf1);
-        BSP_ClusterVis(sv.cm.cache, mask, leaf1->cluster, DVIS_PVS);
-        break;
-    default:
-        Com_Error(ERR_DROP, "SV_Multicast: bad to: %i", to);
+        BSP_ClusterVis(sv.cm.cache, mask, leaf1->cluster, MULTICAST_PVS - to);
     }
 
     // send the data to all relevent clients
@@ -297,8 +283,8 @@ void SV_Multicast(const vec3_t origin, multicast_t to)
             continue;
         }
 
-        if (leaf1) {
-            leaf2 = CM_PointLeaf(&sv.cm, client->edict->s.origin);
+        if (to) {
+            const mleaf_t *leaf2 = CM_PointLeaf(&sv.cm, client->edict->s.origin);
             if (!CM_AreasConnected(&sv.cm, leaf1->area, leaf2->area))
                 continue;
             if (leaf2->cluster == -1)
@@ -311,7 +297,7 @@ void SV_Multicast(const vec3_t origin, multicast_t to)
     }
 
     // add to MVD datagram
-    SV_MvdMulticast(leafnum, to);
+    SV_MvdMulticast(leaf1, to, flags & MSG_RELIABLE);
 
     // clear the buffer
     SZ_Clear(&msg_write);
