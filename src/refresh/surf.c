@@ -182,9 +182,7 @@ static void add_dynamic_lights(const mface_t *surf)
                     dist = td + sd * 0.5f;
                 if (dist < minlight) {
                     frac = rad - dist * scale;
-                    bl[0] += light->color[0] * frac;
-                    bl[1] += light->color[1] * frac;
-                    bl[2] += light->color[2] * frac;
+                    VectorMA(bl, frac, light->color, bl);
                 }
                 bl += 3;
             }
@@ -211,17 +209,11 @@ static void add_light_styles(mface_t *surf)
     src = surf->lightmap;
     bl = blocklights;
     if (style->white == 1) {
-        for (j = 0; j < size; j++, bl += 3, src += 3) {
-            bl[0] = src[0];
-            bl[1] = src[1];
-            bl[2] = src[2];
-        }
+        for (j = 0; j < size; j++, bl += 3, src += 3)
+            VectorCopy(src, bl);
     } else {
-        for (j = 0; j < size; j++, bl += 3, src += 3) {
-            bl[0] = src[0] * style->white;
-            bl[1] = src[1] * style->white;
-            bl[2] = src[2] * style->white;
-        }
+        for (j = 0; j < size; j++, bl += 3, src += 3)
+            VectorScale(src, style->white, bl);
     }
 
     surf->stylecache[0] = style->white;
@@ -231,11 +223,8 @@ static void add_light_styles(mface_t *surf)
         style = LIGHT_STYLE(surf->styles[i]);
 
         bl = blocklights;
-        for (j = 0; j < size; j++, bl += 3, src += 3) {
-            bl[0] += src[0] * style->white;
-            bl[1] += src[1] * style->white;
-            bl[2] += src[2] * style->white;
-        }
+        for (j = 0; j < size; j++, bl += 3, src += 3)
+            VectorMA(bl, style->white, src, bl);
 
         surf->stylecache[i] = style->white;
     }
