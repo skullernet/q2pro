@@ -20,6 +20,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "gl.h"
 #include "common/prompt.h"
 
+#include <float.h>
+
 static int gl_filter_min;
 static int gl_filter_max;
 static float gl_filter_anisotropy;
@@ -778,11 +780,29 @@ void IMG_ReadPixels(screenshot_t *s)
 static void GL_BuildIntensityTable(void)
 {
     int i, j;
-    float f;
+    float f, rgb_scale = 1.f;
 
+    // Use both intensity and modulate to obtain "lightmap brightness"
     f = Cvar_ClampValue(gl_intensity, 1, 5);
+    f *= gl_modulate->value;
     if (gl_static.use_shaders)
         f = 1;
+    else if (gl_config.caps & QGL_CAP_LEGACY_TEXCOMBINE) {
+        // COMBINE allows for RGB scale factors of 1, 2, or 4; find the nearest one
+        float min_d = FLT_MAX;
+        int scale_exp = 0;
+        for (int i = 0; i < 3; i++) {
+            float d = fabsf((1 << i) - f);
+            if (d < min_d) {
+                min_d = d;
+                scale_exp = i;
+            }
+        }
+        rgb_scale = 1 << scale_exp;
+        // Adjust f so f * lm_scale == intensity
+        f *= 1.f / rgb_scale;
+    }
+
     for (i = 0; i < 256; i++) {
         j = i * f;
         if (j > 255) {
@@ -795,6 +815,8 @@ static void GL_BuildIntensityTable(void)
     gl_static.inverse_intensity_33 = MakeColor(j, j, j, 85);
     gl_static.inverse_intensity_66 = MakeColor(j, j, j, 170);
     gl_static.inverse_intensity_100 = MakeColor(j, j, j, 255);
+
+    gl_static.legacy_rgb_scale = rgb_scale;
 }
 
 static void GL_BuildGammaTables(void)
