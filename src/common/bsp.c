@@ -822,10 +822,13 @@ static list_t   bsp_cache;
 
 static void BSP_PrintStats(const bsp_t *bsp)
 {
+    bool extended = bsp->extended;
+
     for (int i = 0; i < q_countof(bsp_stats); i++) {
         const bsp_stat_t *s = &bsp_stats[i];
         Com_Printf("%8d : %s\n", *(int *)((byte *)bsp + s->ofs), s->name);
     }
+
 #if USE_REF
     if (bsp->lightgrid.numleafs) {
         const lightgrid_t *grid = &bsp->lightgrid;
@@ -836,11 +839,20 @@ static void BSP_PrintStats(const bsp_t *bsp)
             "%8u : lightgrid samples\n",
             grid->numstyles, grid->numnodes, grid->numleafs, grid->numsamples);
     }
-    if (bsp->lm_decoupled)
-        Com_Printf("DECOUPLED_LM lump present\n");
+    extended |= bsp->lm_decoupled;
 #endif
-    if (bsp->extended)
-        Com_Printf("QBSP extended format\n");
+
+    if (extended) {
+        Com_Printf("Features :");
+        if (bsp->extended)
+            Com_Printf(" QBSP");
+#if USE_REF
+        if (bsp->lm_decoupled)
+            Com_Printf(" DECOUPLED_LM");
+#endif
+        Com_Printf("\n");
+    }
+
     Com_Printf("------------------\n");
 }
 
