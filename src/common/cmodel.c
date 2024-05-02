@@ -789,11 +789,9 @@ void CM_BoxTrace(trace_t *trace,
         int             numleafs;
         vec3_t          c1, c2;
 
-        VectorAdd(start, mins, c1);
-        VectorAdd(start, maxs, c2);
         for (i = 0; i < 3; i++) {
-            c1[i] -= 1;
-            c2[i] += 1;
+            c1[i] = start[i] + mins[i] - 1;
+            c2[i] = start[i] + maxs[i] + 1;
         }
 
         numleafs = CM_BoxLeafs_headnode(c1, c2, leafs, q_countof(leafs), headnode, NULL);
