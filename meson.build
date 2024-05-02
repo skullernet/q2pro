@@ -314,6 +314,7 @@ if jpeg.found()
 endif
 
 openal = dependency('openal',
+  version:         '>= 1.18.0',
   required:        get_option('openal'),
   default_options: fallback_opt,
 )

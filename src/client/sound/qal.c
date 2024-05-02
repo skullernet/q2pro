@@ -22,11 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/common.h"
 #include "common/files.h"
 
-#ifdef __APPLE__
-#include <OpenAL/alc.h>
-#else
 #include <AL/alc.h>
-#endif
 
 #define QALAPI
 #include "qal.h"
@@ -142,6 +138,8 @@ void QAL_Shutdown(void)
 static const char *const al_drivers[] = {
 #ifdef _WIN32
     "soft_oal", "openal32"
+#elif (defined __APPLE__)
+    "libopenal.1.dylib", "libopenal.dylib"
 #else
     "libopenal.so.1", "libopenal.so"
 #endif

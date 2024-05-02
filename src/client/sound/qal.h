@@ -20,15 +20,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define AL_NO_PROTOTYPES
 
-#ifdef __APPLE__
-#include <OpenAL/al.h>
-#include <OpenAL/alext.h>
-#include <OpenAL/efx.h>
-#else
 #include <AL/al.h>
 #include <AL/alext.h>
 #include <AL/efx.h>
-#endif
 
 #ifndef QALAPI
 #define QALAPI extern
