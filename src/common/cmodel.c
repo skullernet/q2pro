@@ -953,9 +953,7 @@ void CM_SetAreaPortalState(const cm_t *cm, int portalnum, bool open)
 
 bool CM_AreasConnected(const cm_t *cm, int area1, int area2)
 {
-    const bsp_t *cache = cm->cache;
-
-    if (!cache) {
+    if (!cm->cache) {
         return false;
     }
     if (map_noareas->integer) {
@@ -964,7 +962,7 @@ bool CM_AreasConnected(const cm_t *cm, int area1, int area2)
     if (area1 < 1 || area2 < 1) {
         return false;
     }
-    if (area1 >= cache->numareas || area2 >= cache->numareas) {
+    if (area1 >= cm->cache->numareas || area2 >= cm->cache->numareas) {
         Com_EPrintf("%s: area > numareas\n", __func__);
         return false;
     }
@@ -987,16 +985,15 @@ This is used by the client refreshes to cull visibility
 */
 int CM_WriteAreaBits(const cm_t *cm, byte *buffer, int area)
 {
-    const bsp_t *cache = cm->cache;
     int     i;
     int     floodnum;
     int     bytes;
 
-    if (!cache) {
+    if (!cm->cache) {
         return 0;
     }
 
-    bytes = (cache->numareas + 7) >> 3;
+    bytes = (cm->cache->numareas + 7) >> 3;
     Q_assert(bytes <= MAX_MAP_AREA_BYTES);
 
     if (map_noareas->integer || !area) {
@@ -1006,7 +1003,7 @@ int CM_WriteAreaBits(const cm_t *cm, byte *buffer, int area)
         memset(buffer, 0, bytes);
 
         floodnum = cm->floodnums[area];
-        for (i = 0; i < cache->numareas; i++) {
+        for (i = 0; i < cm->cache->numareas; i++) {
             if (cm->floodnums[i] == floodnum) {
                 Q_SetBit(buffer, i);
             }
