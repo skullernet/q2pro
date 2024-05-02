@@ -19,6 +19,10 @@ Linux distributions already provide libjpeg-turbo in place of libjpeg.
 For playing back cinematics in Ogg Theora format and music in Ogg Vorbis format
 FFmpeg libraries are required.
 
+OpenAL sound backend requires OpenAL Soft development headers for compilation.
+At runtime, OpenAL library from any vendor can be used (but OpenAL Soft is
+strongly recommended).
+
 To install the *full* set of dependencies for building Q2PRO on Debian or
 Ubuntu use the following command:
 
@@ -28,6 +32,11 @@ Ubuntu use the following command:
                     libwayland-dev wayland-protocols libdecor-0-dev \
                     libavcodec-dev libavformat-dev libavutil-dev \
                     libswresample-dev libswscale-dev
+
+If you intend to build just dedicated server, smaller set of dependencies can
+be installed:
+
+    apt-get install meson gcc libc6-dev zlib1g-dev
 
 Users of other distributions should look for equivalent development packages
 and install them.
