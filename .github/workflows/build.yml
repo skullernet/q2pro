@@ -28,6 +28,14 @@ env:
     -Dwindows-crash-dumps=disabled
     -Dwrap_mode=nofallback
 
+  MESON_ARGS_MACOS: >-
+    -Dicmp-errors=disabled
+    -Dpkg_config_path=/opt/homebrew/opt/openal-soft/lib/pkgconfig
+    -Dwayland=disabled
+    -Dwindows-crash-dumps=disabled
+    -Dwrap_mode=nofallback
+    -Dx11=disabled
+
 jobs:
   mingw:
     runs-on: ubuntu-latest
@@ -103,3 +111,18 @@ jobs:
           meson compile -C builddir
         env:
           CC: ${{ matrix.cc }}
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew update
+          brew install meson sdl2 openal-soft libpng jpeg-turbo
+
+      - name: Build
+        run: |
+          meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_MACOS }} builddir
+          meson compile -C builddir
