@@ -441,13 +441,15 @@ static const mnode_t *SV_HullForEntity(const edict_t *ent, bool triggers)
         const bsp_t *bsp = sv.cm.cache;
         int i = ent->s.modelindex - 1;
 
-        // account for "hole" in configstring namespace
-        if (i >= MODELINDEX_PLAYER && bsp->nummodels >= MODELINDEX_PLAYER)
-            i--;
+        if (bsp) {
+            // account for "hole" in configstring namespace
+            if (i >= MODELINDEX_PLAYER && bsp->nummodels >= MODELINDEX_PLAYER)
+                i--;
 
-        // explicit hulls in the BSP model
-        if (i > 0 && i < bsp->nummodels)
-            return bsp->models[i].headnode;
+            // explicit hulls in the BSP model
+            if (i > 0 && i < bsp->nummodels)
+                return bsp->models[i].headnode;
+        }
 
         if (ent->solid == SOLID_BSP)
             Com_Error(ERR_DROP, "%s: inline model %d out of range", __func__, i);
