@@ -53,7 +53,7 @@ static void set_frame_time(void)
 
 static void resolve_masters(void)
 {
-#if !USE_CLIENT
+#if USE_SERVER
     time_t now = time(NULL);
 
     for (int i = 0; i < MAX_MASTERS; i++) {
@@ -368,7 +368,7 @@ void SV_InitGame(unsigned mvd_spawn)
     // get any latched variable changes (maxclients, etc)
     Cvar_GetLatchedVars();
 
-#if !USE_CLIENT
+#if USE_SERVER
     Cvar_Reset(sv_recycle);
 #endif
 

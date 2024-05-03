@@ -611,7 +611,7 @@ static void Com_Quit_f(void)
     Com_Quit(Cmd_Args(), ERR_DISCONNECT);
 }
 
-#if !USE_CLIENT
+#if USE_SERVER
 static void Com_Recycle_f(void)
 {
     Com_Quit(Cmd_Args(), ERR_RECONNECT);
@@ -958,7 +958,7 @@ void Qcommon_Init(int argc, char **argv)
     Cmd_AddCommand("lasterror", Com_LastError_f);
 
     Cmd_AddCommand("quit", Com_Quit_f);
-#if !USE_CLIENT
+#if USE_SERVER
     Cmd_AddCommand("recycle", Com_Recycle_f);
 #endif
 

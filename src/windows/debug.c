@@ -223,7 +223,7 @@ static LONG WINAPI exception_filter(LPEXCEPTION_POINTERS exceptionInfo)
                       "Would you like to generate a crash report?",
                       CRASH_TITLE,
                       MB_ICONERROR | MB_YESNO
-#if !USE_CLIENT
+#if USE_SERVER
                       | MB_SERVICE_NOTIFICATION
 #endif
                       );

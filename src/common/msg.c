@@ -1546,7 +1546,7 @@ static inline float MSG_ReadCoord(void)
     return SHORT2COORD(MSG_ReadShort());
 }
 
-#if !USE_CLIENT
+#if USE_SERVER
 static inline
 #endif
 void MSG_ReadPos(vec3_t pos)

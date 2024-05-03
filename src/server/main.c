@@ -88,7 +88,7 @@ cvar_t  *sv_packetdup_hack;
 #endif
 cvar_t  *sv_allow_map;
 cvar_t  *sv_cinematics;
-#if !USE_CLIENT
+#if USE_SERVER
 cvar_t  *sv_recycle;
 #endif
 cvar_t  *sv_enhanced_setplayer;
@@ -2228,7 +2228,7 @@ void SV_Init(void)
     sv_allow_map = Cvar_Get("sv_allow_map", "0", 0);
     sv_cinematics = Cvar_Get("sv_cinematics", "1", 0);
 
-#if !USE_CLIENT
+#if USE_SERVER
     sv_recycle = Cvar_Get("sv_recycle", "0", 0);
 #endif
 

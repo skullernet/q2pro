@@ -331,7 +331,7 @@ static void SV_GameMap_f(void)
         return;
     }
 
-#if !USE_CLIENT
+#if USE_SERVER
     // admin option to reload the game DLL or entire server
     if (sv_recycle->integer > 0) {
         if (sv_recycle->integer > 1) {
@@ -352,7 +352,7 @@ static int should_really_restart(void)
     if (sv.state < ss_game || sv.state == ss_broadcast)
         return 1;   // the game is just starting
 
-#if !USE_CLIENT
+#if USE_SERVER
     if (sv_recycle->integer)
         return 1;   // there is recycle pending
 #endif
