@@ -631,7 +631,7 @@ typedef struct {
 
 // small hack to permit one-line return statement :)
 #define reject(...) reject_printf(__VA_ARGS__), false
-#define reject2(...) reject_printf(__VA_ARGS__), NULL
+#define reject_ptr(...) reject_printf(__VA_ARGS__), NULL
 
 static bool parse_basic_params(conn_params_t *p)
 {
@@ -955,13 +955,13 @@ static client_t *find_client_slot(conn_params_t *params)
 
     // clients that know the password are never redirected
     if (sv_reserved_slots->integer != params->reserved)
-        return reject2("Server and reserved slots are full.\n");
+        return reject_ptr("Server and reserved slots are full.\n");
 
     // optionally redirect them to a different address
     if (*s)
         return redirect(s);
 
-    return reject2("Server is full.\n");
+    return reject_ptr("Server is full.\n");
 }
 
 static void init_pmove_and_es_flags(client_t *newcl)
