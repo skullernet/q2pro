@@ -254,20 +254,20 @@ mvd_t *MVD_SetChannel(int arg)
         }
     } else
 #endif
-        if (COM_IsUint(s)) {
-            id = Q_atoi(s);
-            FOR_EACH_MVD(mvd) {
-                if (mvd->id == id) {
-                    return mvd;
-                }
-            }
-        } else {
-            FOR_EACH_MVD(mvd) {
-                if (!strcmp(mvd->name, s)) {
-                    return mvd;
-                }
+    if (COM_IsUint(s)) {
+        id = Q_atoi(s);
+        FOR_EACH_MVD(mvd) {
+            if (mvd->id == id) {
+                return mvd;
             }
         }
+    } else {
+        FOR_EACH_MVD(mvd) {
+            if (!strcmp(mvd->name, s)) {
+                return mvd;
+            }
+        }
+    }
 
     Com_Printf("No such channel ID: %s\n", s);
     return NULL;
