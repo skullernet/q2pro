@@ -662,7 +662,7 @@ fail:
 void OGG_LoadTrackList(void)
 {
     FS_FreeList(tracklist);
-    tracklist = FS_ListFiles("music", extensions, FS_SEARCH_STRIPEXT, &trackcount);
+    tracklist = FS_ListFiles("music", extensions, FS_SEARCH_STRIPEXT | FS_TYPE_REAL, &trackcount);
     trackindex = 0;
 }
 
@@ -715,7 +715,7 @@ static void OGG_Cmd_c(genctx_t *ctx, int argnum)
     }
 
     if (argnum == 2 && !strcmp(Cmd_Argv(1), "play"))
-        FS_File_g("music", extensions, FS_SEARCH_STRIPEXT, ctx);
+        FS_File_g("music", extensions, FS_SEARCH_STRIPEXT | FS_TYPE_REAL, ctx);
 }
 
 static void OGG_Cmd_f(void)
