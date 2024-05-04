@@ -639,7 +639,7 @@ static void demo_emit_snapshot(mvd_t *mvd)
     if (!mvd->snapshots)
         mvd->snapshots = MVD_Malloc(sizeof(mvd->snapshots[0]) * MIN_SNAPSHOTS);
     else
-        mvd->snapshots = Z_Realloc(mvd->snapshots, sizeof(mvd->snapshots[0]) * ALIGN(mvd->numsnapshots + 1, MIN_SNAPSHOTS));
+        mvd->snapshots = Z_Realloc(mvd->snapshots, sizeof(mvd->snapshots[0]) * Q_ALIGN(mvd->numsnapshots + 1, MIN_SNAPSHOTS));
     mvd->snapshots[mvd->numsnapshots++] = snap;
 
     Com_DPrintf("[%d] snaplen %u\n", mvd->framenum, msg_write.cursize);

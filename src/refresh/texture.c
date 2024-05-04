@@ -766,7 +766,7 @@ void IMG_ReadPixels(screenshot_t *s)
     qglGetIntegerv(GL_PACK_ALIGNMENT, &align);
 
     s->bpp = format == GL_RGBA ? 4 : 3;
-    s->rowbytes = ALIGN(r_config.width * s->bpp, align);
+    s->rowbytes = Q_ALIGN(r_config.width * s->bpp, align);
     s->pixels = Z_Malloc(s->rowbytes * r_config.height);
     s->width = r_config.width;
     s->height = r_config.height;

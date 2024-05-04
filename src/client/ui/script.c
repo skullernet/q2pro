@@ -51,7 +51,7 @@ static const cmd_option_t o_common[] = {
 static void add_string(menuSpinControl_t *s, const char *tok)
 {
     if (s->numItems < MAX_MENU_ITEMS) {
-        s->itemnames = Z_Realloc(s->itemnames, ALIGN(s->numItems + 2, MIN_MENU_ITEMS) * sizeof(char *));
+        s->itemnames = Z_Realloc(s->itemnames, Q_ALIGN(s->numItems + 2, MIN_MENU_ITEMS) * sizeof(char *));
         s->itemnames[s->numItems++] = UI_CopyString(tok);
     }
 }

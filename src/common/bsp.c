@@ -1209,9 +1209,9 @@ static size_t BSP_ParseLightgridHeader(bsp_t *bsp, const byte *in, size_t filele
     }
 
     return
-        ALIGN(sizeof(grid->nodes[0]) * grid->numnodes, 64) +
-        ALIGN(sizeof(grid->leafs[0]) * grid->numleafs, 64) +
-        ALIGN(sizeof(grid->samples[0]) * grid->numsamples * grid->numstyles, 64);
+        Q_ALIGN(sizeof(grid->nodes[0]) * grid->numnodes, 64) +
+        Q_ALIGN(sizeof(grid->leafs[0]) * grid->numleafs, 64) +
+        Q_ALIGN(sizeof(grid->samples[0]) * grid->numsamples * grid->numstyles, 64);
 }
 
 static bool BSP_ValidateLightgrid_r(const lightgrid_t *grid, uint32_t nodenum)
@@ -1330,7 +1330,7 @@ static const xlump_info_t bspx_lumps[] = {
 // returns amount of extra space to allocate
 static size_t BSP_ParseExtensionHeader(bsp_t *bsp, lump_t *out, const byte *buf, uint32_t pos, uint32_t filelen)
 {
-    pos = ALIGN(pos, 4);
+    pos = Q_ALIGN(pos, 4);
     if (pos > filelen - 8)
         return 0;
     if (RL32(buf + pos) != BSPXHEADER)
@@ -1478,7 +1478,7 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
             count++;
 
         // round to cacheline
-        memsize += ALIGN(count * info->memsize, 64);
+        memsize += Q_ALIGN(count * info->memsize, 64);
         maxpos = max(maxpos, ofs + len);
     }
 

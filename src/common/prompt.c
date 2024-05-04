@@ -144,7 +144,7 @@ void Prompt_AddMatch(genctx_t *ctx, const char *s)
     if (ctx->ignoredups && find_dup(ctx, s))
         return;
 
-    ctx->matches = Z_Realloc(ctx->matches, ALIGN(ctx->count + 1, MIN_MATCHES) * sizeof(char *));
+    ctx->matches = Z_Realloc(ctx->matches, Q_ALIGN(ctx->count + 1, MIN_MATCHES) * sizeof(char *));
     ctx->matches[ctx->count++] = Z_CopyString(s);
 }
 

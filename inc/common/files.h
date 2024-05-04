@@ -97,7 +97,7 @@ bool FS_ExtCmp(const char *extension, const char *string);
 const char *FS_NextPath(const char *path);
 
 #define FS_ReallocList(list, count) \
-    Z_Realloc(list, ALIGN(count, MIN_LISTED_FILES) * sizeof(void *))
+    Z_Realloc(list, Q_ALIGN(count, MIN_LISTED_FILES) * sizeof(void *))
 
 void    **FS_ListFiles(const char *path, const char *filter, unsigned flags, int *count_p);
 void    **FS_CopyList(void **list, int count);

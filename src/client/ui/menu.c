@@ -1752,7 +1752,7 @@ void Menu_AddItem(menuFrameWork_t *menu, void *item)
     if (!menu->nitems) {
         menu->items = UI_Malloc(MIN_MENU_ITEMS * sizeof(void *));
     } else {
-        menu->items = Z_Realloc(menu->items, ALIGN(menu->nitems + 1, MIN_MENU_ITEMS) * sizeof(void *));
+        menu->items = Z_Realloc(menu->items, Q_ALIGN(menu->nitems + 1, MIN_MENU_ITEMS) * sizeof(void *));
     }
 
     menu->items[menu->nitems++] = item;

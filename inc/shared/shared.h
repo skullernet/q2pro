@@ -171,7 +171,7 @@ typedef struct vrect_s {
 #define DEG2RAD(a)      ((a) * (M_PI / 180))
 #define RAD2DEG(a)      ((a) * (180 / M_PI))
 
-#define ALIGN(x, a)     (((x) + (a) - 1) & ~((a) - 1))
+#define Q_ALIGN(x, a)   (((x) + (a) - 1) & ~((a) - 1))
 
 #define BIT(n)          (1U << (n))
 #define BIT_ULL(n)      (1ULL << (n))

@@ -38,7 +38,7 @@ void Hunk_Begin(memhunk_t *hunk, size_t maxsize)
 
     // reserve a huge chunk of memory, but don't commit any yet
     hunk->cursize = 0;
-    hunk->maxsize = ALIGN(maxsize, pagesize);
+    hunk->maxsize = Q_ALIGN(maxsize, pagesize);
     buf = mmap(NULL, hunk->maxsize, PROT_READ | PROT_WRITE,
                MAP_PRIVATE | MAP_ANON, -1, 0);
     if (buf == MAP_FAILED)
@@ -56,7 +56,7 @@ void *Hunk_TryAlloc(memhunk_t *hunk, size_t size)
     Q_assert(hunk->cursize <= hunk->maxsize);
 
     // round to cacheline
-    size = ALIGN(size, 64);
+    size = Q_ALIGN(size, 64);
     if (size > hunk->maxsize - hunk->cursize)
         return NULL;
 
@@ -78,7 +78,7 @@ void Hunk_End(memhunk_t *hunk)
     size_t newsize;
 
     Q_assert(hunk->cursize <= hunk->maxsize);
-    newsize = ALIGN(hunk->cursize, pagesize);
+    newsize = Q_ALIGN(hunk->cursize, pagesize);
 
     if (newsize < hunk->maxsize) {
 #if defined(__linux__)

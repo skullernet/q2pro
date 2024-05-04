@@ -879,7 +879,7 @@ static void DMA_Update(void)
     endtime = soundtime + sec * dma.speed;
 
     // mix to an even submission block size
-    endtime = ALIGN(endtime, dma.submission_chunk);
+    endtime = Q_ALIGN(endtime, dma.submission_chunk);
     samples = dma.samples >> (dma.channels - 1);
     endtime = min(endtime, soundtime + samples);
 
