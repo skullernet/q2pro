@@ -36,6 +36,11 @@ env:
     -Dwrap_mode=nofallback
     -Dx11=disabled
 
+  MESON_ARGS_FREEBSD: >-
+    -Dicmp-errors=disabled
+    -Dwindows-crash-dumps=disabled
+    -Dwrap_mode=nofallback
+
 jobs:
   mingw:
     runs-on: ubuntu-latest
@@ -126,3 +131,22 @@ jobs:
         run: |
           meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_MACOS }} builddir
           meson compile -C builddir
+
+  freebsd:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        uses: cross-platform-actions/action@v0.24.0
+        with:
+          operating_system: freebsd
+          architecture: x86-64
+          version: '14.0'
+          run: |
+            sudo pkg update
+            sudo pkg install -y git meson pkgconf openal-soft \
+            sdl2 curl png jpeg-turbo libx11 libdecor evdev-proto wayland-protocols
+            meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_FREEBSD }} builddir
+            meson compile -C builddir
