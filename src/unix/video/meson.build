@@ -40,7 +40,7 @@ foreach dep: wayland_deps
   endif
 endforeach
 
-if not cc.has_header('linux/input-event-codes.h', required: wayland_opt)
+if not cc.has_header('linux/input-event-codes.h', dependencies: wayland_deps[0], required: wayland_opt)
   subdir_done()
 endif
 
@@ -67,7 +67,7 @@ foreach p: wayland_protocols
   )
 endforeach
 
-wl_protocols_lib = static_library('wl_protocols', wl_protocols_source + wl_protocols_headers)
+wl_protocols_lib = static_library('wl_protocols', wl_protocols_source + wl_protocols_headers, dependencies: wayland_deps[0])
 wl_protocols_dep = declare_dependency(link_with: wl_protocols_lib, sources: wl_protocols_headers)
 
 client_src += files('wayland.c', 'keytables/evdev.c')
