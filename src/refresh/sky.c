@@ -321,10 +321,6 @@ static void MakeSkyVec(float s, float t, int axis, vec_t *out)
     out[4] = 1.0f - t;
 }
 
-#define SKY_VISIBLE(side) \
-    (skymins[0][side] < skymaxs[0][side] && \
-     skymins[1][side] < skymaxs[1][side])
-
 /*
 ==============
 R_DrawSkyBox
@@ -332,7 +328,6 @@ R_DrawSkyBox
 */
 void R_DrawSkyBox(void)
 {
-    static const uint8_t skytexorder[6] = {0, 2, 1, 3, 4, 5};
     vec5_t verts[4];
     int i;
 
@@ -346,11 +341,11 @@ void R_DrawSkyBox(void)
     GL_TexCoordPointer(2, 5, &verts[0][3]);
 
     for (i = 0; i < 6; i++) {
-        if (!SKY_VISIBLE(i)) {
+        if (skymins[0][i] >= skymaxs[0][i] ||
+            skymins[1][i] >= skymaxs[1][i])
             continue;
-        }
 
-        GL_BindTexture(0, sky_images[skytexorder[i]]);
+        GL_BindTexture(0, sky_images[i]);
 
         MakeSkyVec(skymaxs[0][i], skymins[1][i], i, verts[0]);
         MakeSkyVec(skymins[0][i], skymins[1][i], i, verts[1]);
@@ -381,7 +376,7 @@ void R_SetSky(const char *name, float rotate, bool autorotate, const vec3_t axis
     char    pathname[MAX_QPATH];
     image_t *image;
     // 3dstudio environment map names
-    static const char suf[6][3] = { "rt", "bk", "lf", "ft", "up", "dn" };
+    static const char suf[6][3] = { "rt", "lf", "bk", "ft", "up", "dn" };
 
     if (!gl_drawsky->integer) {
         R_UnsetSky();
