@@ -542,6 +542,18 @@ void SV_BuildClientFrame(client_t *client)
         state = &svs.entities[svs.next_entity % svs.num_entities];
         MSG_PackEntity(state, &ent->s, ENT_EXTENSION(client->csr, ent));
 
+        // optionally customize it
+        if (gex && gex->apiversion >= GAME_API_VERSION_EX_CUSTOMIZE_ENTITY && gex->CustomizeEntity) {
+            customize_entity_t temp;
+            customize_entity_result_t res = gex->CustomizeEntity(clent, ent, &temp);
+            if (res == CE_SKIP)
+                continue;
+            if (res == CE_CUSTOMIZE) {
+                Q_assert(temp.s.number == e);
+                MSG_PackEntity(state, &temp.s, ENT_EXTENSION(client->csr, &temp));
+            }
+        }
+
 #if USE_FPS
         // fix old entity origins for clients not running at
         // full server frame rate

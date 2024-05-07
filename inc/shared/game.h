@@ -276,15 +276,34 @@ typedef game_export_t *(*game_entry_t)(game_import_t *);
  *
  * New fields can be safely added at the end of game_import_ex_t and
  * game_export_ex_t structures, provided GAME_API_VERSION_EX is also bumped.
+ *
+ * API version history:
+ * 1 - Initial release.
+ * 2 - Added CustomizeEntity().
  */
 
-#define GAME_API_VERSION_EX     1
+#define GAME_API_VERSION_EX_MINIMUM             1
+#define GAME_API_VERSION_EX_CUSTOMIZE_ENTITY    2
+#define GAME_API_VERSION_EX                     2
 
 typedef enum {
     VIS_PVS     = 0,
     VIS_PHS     = 1,
     VIS_NOAREAS = 2     // can be OR'ed with one of above
 } vis_t;
+
+typedef enum {
+    CE_SKIP,            // don't send this entity to client
+    CE_PASS,            // pass unmodified
+    CE_CUSTOMIZE        // customize (game must fill `temp')
+} customize_entity_result_t;
+
+typedef struct {
+    entity_state_t s;
+#if USE_PROTOCOL_EXTENSIONS
+    entity_state_extension_t x;
+#endif
+} customize_entity_t;
 
 typedef struct {
     uint32_t    apiversion;
@@ -307,6 +326,7 @@ typedef struct {
     qboolean    (*CanSave)(void);
     void        (*PrepFrame)(void);
     void        (*RestartFilesystem)(void); // called when fs_restart is issued
+    customize_entity_result_t   (*CustomizeEntity)(edict_t *client, edict_t *ent, customize_entity_t *temp);
 } game_export_ex_t;
 
 typedef const game_export_ex_t *(*game_entry_ex_t)(const game_import_ex_t *);
