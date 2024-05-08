@@ -182,7 +182,7 @@ static int error_handler(Display *dpy, XErrorEvent *event)
     return 0;
 }
 
-static bool choose_fb_config(r_opengl_config_t *cfg, GLXFBConfig *fbc)
+static bool choose_fb_config(const r_opengl_config_t *cfg, GLXFBConfig *fbc)
 {
     int glx_attr[] = {
         GLX_X_RENDERABLE, True,

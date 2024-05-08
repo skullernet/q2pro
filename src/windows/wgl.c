@@ -77,7 +77,7 @@ static void print_error(const char *what)
 #define FAIL_SOFT   -1
 #define FAIL_HARD   -2
 
-static int wgl_setup_gl(r_opengl_config_t *cfg)
+static int wgl_setup_gl(const r_opengl_config_t *cfg)
 {
     PIXELFORMATDESCRIPTOR pfd;
     int pixelformat;

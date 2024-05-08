@@ -53,7 +53,7 @@ static void print_error(const char *what)
     Com_EPrintf("%s failed with error %#x\n", what, qeglGetError());
 }
 
-static bool choose_config(r_opengl_config_t *cfg, EGLConfig *config)
+static bool choose_config(const r_opengl_config_t *cfg, EGLConfig *config)
 {
     EGLint cfg_attr[] = {
         EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
