@@ -662,7 +662,7 @@ static void GL_WaterWarp(void)
     qglDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
-void R_RenderFrame(refdef_t *fd)
+void R_RenderFrame(const refdef_t *fd)
 {
     GL_Flush2D();
 
