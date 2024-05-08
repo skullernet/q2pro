@@ -53,7 +53,7 @@ typedef struct {
     char        name[1];
 } demoEntry_t;
 
-typedef struct m_demos_s {
+typedef struct {
     menuFrameWork_t menu;
     menuList_t      list;
     int             numDirs;

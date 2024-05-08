@@ -212,7 +212,7 @@ void Cbuf_Frame(cmdbuf_t *buf)
 #define FOR_EACH_ALIAS(alias) \
     LIST_FOR_EACH(cmdalias_t, alias, &cmd_alias, listEntry)
 
-typedef struct cmdalias_s {
+typedef struct {
     list_t  hashEntry;
     list_t  listEntry;
     char    *value;
@@ -769,7 +769,7 @@ void Cmd_AddMacro(const char *name, xmacro_t function)
 #define FOR_EACH_CMD(cmd) \
     LIST_FOR_EACH(cmd_function_t, cmd, &cmd_functions, listEntry)
 
-typedef struct cmd_function_s {
+typedef struct {
     list_t          hashEntry;
     list_t          listEntry;
 

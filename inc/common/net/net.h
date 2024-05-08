@@ -76,7 +76,7 @@ typedef union {
     uint64_t u64[2];
 } netadrip_t;
 
-typedef struct netadr_s {
+typedef struct {
     netadrtype_t type;
     netadrip_t ip;
     uint16_t port;
@@ -91,7 +91,7 @@ typedef enum netstate_e {
     NS_BROKEN       // fatal error has been signaled
 } netstate_t;
 
-typedef struct netstream_s {
+typedef struct {
     struct pollfd *socket;
     netadr_t address;
     netstate_t state;

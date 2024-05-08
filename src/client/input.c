@@ -228,7 +228,7 @@ Key_Event (int key, bool down, unsigned time);
 ===============================================================================
 */
 
-typedef struct kbutton_s {
+typedef struct {
     int         down[2];        // key nums holding it down
     unsigned    downtime;        // msec timestamp
     unsigned    msec;            // msec down this frame

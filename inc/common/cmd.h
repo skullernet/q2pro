@@ -111,7 +111,7 @@ typedef struct {
     const char *sh, *lo, *help;
 } cmd_option_t;
 
-typedef struct cmdreg_s {
+typedef struct {
     const char      *name;
     xcommand_t      function;
     xcompleter_t    completer;

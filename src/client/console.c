@@ -45,7 +45,7 @@ typedef struct {
     char    text[CON_LINEWIDTH];
 } consoleLine_t;
 
-typedef struct console_s {
+typedef struct {
     bool    initialized;
 
     consoleLine_t   text[CON_TOTALLINES];

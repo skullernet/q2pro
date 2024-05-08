@@ -70,7 +70,7 @@ typedef union {
     };
 } centity_state_t;
 
-typedef struct centity_s {
+typedef struct {
     centity_state_t     current;
     centity_state_t     prev;           // will always be valid, but might just be a copy of current
 
@@ -98,7 +98,7 @@ extern centity_t    cl_entities[MAX_EDICTS];
 
 #define MAX_CLIENTWEAPONMODELS        256       // PGM -- upped from 16 to fit the chainfist vwep
 
-typedef struct clientinfo_s {
+typedef struct {
     char name[MAX_QPATH];
     qhandle_t skin;
     qhandle_t icon;
@@ -160,7 +160,7 @@ typedef struct {
 // the client_state_t structure is wiped completely at every
 // server map change
 //
-typedef struct client_state_s {
+typedef struct {
     int         timeoutcount;
 
     unsigned    lastTransmitTime;
@@ -378,7 +378,7 @@ typedef struct {
     byte        data[1];
 } demosnap_t;
 
-typedef struct client_static_s {
+typedef struct {
     connstate_t state;
     keydest_t   key_dest;
 
@@ -843,7 +843,7 @@ typedef struct cparticle_s {
     color_t rgba;
 } cparticle_t;
 
-typedef struct cdlight_s {
+typedef struct {
     int     key;        // so entities can reuse same entry
     vec3_t  color;
     vec3_t  origin;

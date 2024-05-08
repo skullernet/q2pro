@@ -27,7 +27,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MIN_MATCHES     64
 #define MAX_MATCHES     250000000
 
-typedef struct commandPrompt_s {
+typedef struct {
     int     inputLineNum;
     int     historyLineNum;
 

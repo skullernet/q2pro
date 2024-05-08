@@ -83,7 +83,7 @@ static inline size_t CS_SIZE(const cs_remap_t *csr, int cs)
 }
 
 #if USE_FPS
-typedef struct frametime_s {
+typedef struct {
     int         time;      // variable server frame time
     int         div;       // BASE_FRAMETIME/frametime
 } frametime_t;

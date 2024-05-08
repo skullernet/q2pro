@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #pragma once
 
-typedef struct dma_s {
+typedef struct {
     int         channels;
     int         samples;                // mono samples in buffer
     int         submission_chunk;       // don't mix less than this #

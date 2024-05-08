@@ -461,7 +461,7 @@ typedef struct {
     cm_t            cm;
 } mapcmd_t;
 
-typedef struct server_static_s {
+typedef struct {
     bool        initialized;        // sv_init has completed
     unsigned    realtime;           // always increasing, no clamping, etc
 

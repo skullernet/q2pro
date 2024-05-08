@@ -24,7 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define MAX_FIELD_TEXT  256
 
-typedef struct inputField_s {
+typedef struct {
     char    text[MAX_FIELD_TEXT];
     size_t  maxChars;
     size_t  visibleChars;

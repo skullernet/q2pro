@@ -30,7 +30,7 @@ PLAYER CONFIG MENU
 #define ID_MODEL 103
 #define ID_SKIN    104
 
-typedef struct m_player_s {
+typedef struct {
     menuFrameWork_t     menu;
     menuField_t         name;
     menuSpinControl_t   model;

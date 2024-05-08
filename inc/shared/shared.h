@@ -164,8 +164,8 @@ typedef union {
 
 extern const vec3_t vec3_origin;
 
-typedef struct vrect_s {
-    int             x, y, width, height;
+typedef struct {
+    int x, y, width, height;
 } vrect_t;
 
 #define DEG2RAD(a)      ((a) * (M_PI / 180))
@@ -806,7 +806,7 @@ COLLISION DETECTION
 #define AREA_TRIGGERS   2
 
 // plane_t structure
-typedef struct cplane_s {
+typedef struct {
     vec3_t  normal;
     float   dist;
     byte    type;           // for fast side tests
@@ -820,7 +820,7 @@ typedef struct cplane_s {
 #define PLANE_Z         2
 #define PLANE_NON_AXIAL 6
 
-typedef struct csurface_s {
+typedef struct {
     char        name[16];
     int         flags;
     int         value;
@@ -889,7 +889,7 @@ typedef struct {
 #define BUTTON_ANY      BIT(7)  // any key whatsoever
 
 // usercmd_t is sent to the server each client frame
-typedef struct usercmd_s {
+typedef struct {
     byte    msec;
     byte    buttons;
     short   angles[3];
@@ -1382,7 +1382,7 @@ typedef enum {
 // entity_state_t is the information conveyed from the server
 // in an update message about entities that the client will
 // need to render in some way
-typedef struct entity_state_s {
+typedef struct {
     int     number;         // edict index
 
     vec3_t  origin;

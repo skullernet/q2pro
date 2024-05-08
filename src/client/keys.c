@@ -40,7 +40,7 @@ static byte     buttondown[256 / 8];
 
 static bool     key_overstrike;
 
-typedef struct keyname_s {
+typedef struct {
     const char  *name;
     int         keynum;
 } keyname_t;

@@ -83,25 +83,25 @@ typedef struct entity_s {
     float       scale;
 } entity_t;
 
-typedef struct dlight_s {
+typedef struct {
     vec3_t  origin;
     vec3_t  transformed;
     vec3_t  color;
     float   intensity;
 } dlight_t;
 
-typedef struct particle_s {
+typedef struct {
     vec3_t  origin;
     int     color;              // -1 => use rgba
     float   alpha;
     color_t rgba;
 } particle_t;
 
-typedef struct lightstyle_s {
-    float           white;          // highest of RGB
+typedef struct {
+    float   white;              // highest of RGB
 } lightstyle_t;
 
-typedef struct refdef_s {
+typedef struct {
     int         x, y, width, height;// in virtual screen coordinates
     float       fov_x, fov_y;
     vec3_t      vieworg;

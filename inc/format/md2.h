@@ -70,8 +70,7 @@ typedef struct {
 // a vertex consists of a floating point s, a floating point t,
 // and an integer vertex index.
 
-
-typedef struct dmd2header_s {
+typedef struct {
     uint32_t        ident;
     uint32_t        version;
 
