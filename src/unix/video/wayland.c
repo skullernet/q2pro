@@ -779,10 +779,11 @@ static bool init(void)
 
     CHECK_EGL(eglBindAPI(EGL_OPENGL_API), "eglBindAPI");
 
-    r_opengl_config_t *cfg = R_GetGLConfig();
+    r_opengl_config_t cfg;
+    R_GetGLConfig(&cfg);
 
     EGLConfig config;
-    if (!choose_config(cfg, &config)) {
+    if (!choose_config(&cfg, &config)) {
         Com_Printf("Falling back to failsafe config\n");
         r_opengl_config_t failsafe = { .depthbits = 24 };
         if (!choose_config(&failsafe, &config))
@@ -807,7 +808,7 @@ static bool init(void)
     reload_cursor();
 
     EGLint ctx_attr[] = {
-        EGL_CONTEXT_OPENGL_DEBUG, cfg->debug,
+        EGL_CONTEXT_OPENGL_DEBUG, cfg.debug,
         EGL_NONE
     };
     if (egl_major == 1 && egl_minor < 5)

@@ -232,4 +232,4 @@ void    R_BeginFrame(void);
 void    R_EndFrame(void);
 void    R_ModeChanged(int width, int height, int flags);
 
-r_opengl_config_t *R_GetGLConfig(void);
+void R_GetGLConfig(r_opengl_config_t *cfg);

@@ -117,10 +117,11 @@ static bool egl_init(void)
         goto fail;
     }
 
-    r_opengl_config_t *cfg = R_GetGLConfig();
+    r_opengl_config_t cfg;
+    R_GetGLConfig(&cfg);
 
     EGLConfig config;
-    if (!choose_config(cfg, &config)) {
+    if (!choose_config(&cfg, &config)) {
         Com_Printf("Falling back to failsafe config\n");
         r_opengl_config_t failsafe = { .depthbits = 24 };
         if (!choose_config(&failsafe, &config))
@@ -135,7 +136,7 @@ static bool egl_init(void)
 
     EGLint ctx_attr[] = {
         EGL_CONTEXT_MAJOR_VERSION, 3,
-        EGL_CONTEXT_OPENGL_DEBUG, cfg->debug,
+        EGL_CONTEXT_OPENGL_DEBUG, cfg.debug,
         EGL_NONE
     };
     egl.ctx = qeglCreateContext(egl.dpy, config, EGL_NO_CONTEXT, ctx_attr);

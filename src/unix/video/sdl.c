@@ -59,22 +59,23 @@ OPENGL STUFF
 
 static void set_gl_attributes(void)
 {
-    r_opengl_config_t *cfg = R_GetGLConfig();
+    r_opengl_config_t cfg;
+    R_GetGLConfig(&cfg);
 
-    int colorbits = cfg->colorbits > 16 ? 8 : 5;
+    int colorbits = cfg.colorbits > 16 ? 8 : 5;
     SDL_GL_SetAttribute(SDL_GL_RED_SIZE, colorbits);
     SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, colorbits);
     SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, colorbits);
 
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, cfg->depthbits);
-    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, cfg->stencilbits);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, cfg.depthbits);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, cfg.stencilbits);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-    if (cfg->multisamples) {
+    if (cfg.multisamples) {
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, cfg->multisamples);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, cfg.multisamples);
     }
-    if (cfg->debug) {
+    if (cfg.debug) {
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
     }
 

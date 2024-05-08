@@ -244,15 +244,16 @@ static bool init(void)
 
     x11.extensions = glx_parse_extension_string(glXQueryExtensionsString(x11.dpy, x11.screen));
 
-    r_opengl_config_t *cfg = R_GetGLConfig();
+    r_opengl_config_t cfg;
+    R_GetGLConfig(&cfg);
 
-    if (cfg->multisamples && !(x11.extensions & QGLX_ARB_multisample)) {
-        Com_WPrintf("GLX_ARB_multisample not found for %d multisamples\n", cfg->multisamples);
-        cfg->multisamples = 0;
+    if (cfg.multisamples && !(x11.extensions & QGLX_ARB_multisample)) {
+        Com_WPrintf("GLX_ARB_multisample not found for %d multisamples\n", cfg.multisamples);
+        cfg.multisamples = 0;
     }
 
     GLXFBConfig fbc;
-    if (!choose_fb_config(cfg, &fbc)) {
+    if (!choose_fb_config(&cfg, &fbc)) {
         Com_Printf("Falling back to failsafe config\n");
         r_opengl_config_t failsafe = { .depthbits = 24 };
         if (!choose_fb_config(&failsafe, &fbc))
@@ -343,7 +344,7 @@ static bool init(void)
         XFree(list);
     }
 
-    if (cfg->debug) {
+    if (cfg.debug) {
         PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB = NULL;
 
         if (x11.extensions & QGLX_ARB_create_context)

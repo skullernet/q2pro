@@ -268,6 +268,7 @@ static bool wgl_init(void)
 {
     const char *extensions = NULL;
     unsigned fake_extensions = 0;
+    r_opengl_config_t cfg;
     int ret;
 
     gl_allow_software = Cvar_Get("gl_allow_software", "0", 0);
@@ -278,31 +279,31 @@ static bool wgl_init(void)
         return false;
     }
 
-    r_opengl_config_t *cfg = R_GetGLConfig();
+    R_GetGLConfig(&cfg);
 
     // check for extensions by creating a fake window
-    if (cfg->multisamples || cfg->debug)
+    if (cfg.multisamples || cfg.debug)
         fake_extensions = get_fake_window_extensions();
 
-    if (cfg->multisamples) {
+    if (cfg.multisamples) {
         if (fake_extensions & QWGL_ARB_multisample) {
             if (!wgl.ChoosePixelFormatARB) {
                 Com_WPrintf("Ignoring WGL_ARB_multisample, WGL_ARB_pixel_format not found\n");
-                cfg->multisamples = 0;
+                cfg.multisamples = 0;
             }
         } else {
-            Com_WPrintf("WGL_ARB_multisample not found for %d multisamples\n", cfg->multisamples);
-            cfg->multisamples = 0;
+            Com_WPrintf("WGL_ARB_multisample not found for %d multisamples\n", cfg.multisamples);
+            cfg.multisamples = 0;
         }
     }
 
-    if (cfg->debug && !wgl.CreateContextAttribsARB) {
+    if (cfg.debug && !wgl.CreateContextAttribsARB) {
         Com_WPrintf("WGL_ARB_create_context not found\n");
-        cfg->debug = false;
+        cfg.debug = false;
     }
 
     // create window, choose PFD, setup OpenGL context
-    ret = wgl_setup_gl(cfg);
+    ret = wgl_setup_gl(&cfg);
 
     // attempt to recover
     if (ret == FAIL_SOFT) {
