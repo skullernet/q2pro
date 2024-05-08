@@ -162,8 +162,8 @@ typedef struct {
     int             contents;
     int             cluster;
     int             area;
-    mbrush_t        **firstleafbrush;
     int             numleafbrushes;
+    mbrush_t        **firstleafbrush;
 #if USE_REF
     mface_t         **firstleafface;
     int             numleaffaces;
