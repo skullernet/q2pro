@@ -181,12 +181,7 @@ typedef struct {
     unsigned        floodvalid;
 } marea_t;
 
-typedef struct mmodel_s {
-#if USE_REF
-    /* ======> */
-    int             type;
-    /* <====== */
-#endif
+typedef struct {
     vec3_t          mins, maxs;
     vec3_t          origin;        // for sounds or lights
     mnode_t         *headnode;
