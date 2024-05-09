@@ -309,7 +309,7 @@ static bool write_udp_download(const byte *data, int size)
 #if USE_ZLIB
 // handles both continuous deflate stream for entire download and chunked
 // per-packet streams for compatibility.
-static bool inflate_udp_download(byte *data, int size, int decompressed_size)
+static bool inflate_udp_download(const byte *data, int size, int decompressed_size)
 {
     z_streamp   z = &cls.download.z;
     byte        buffer[0x10000];
@@ -322,7 +322,7 @@ static bool inflate_udp_download(byte *data, int size, int decompressed_size)
         return true;
 
     // run inflate() until output buffer not full
-    z->next_in = data;
+    z->next_in = (Bytef *)data;
     z->avail_in = size;
     do {
         z->next_out = buffer;
@@ -362,7 +362,7 @@ CL_HandleDownload
 An UDP download data has been received from the server.
 =====================
 */
-void CL_HandleDownload(byte *data, int size, int percent, int decompressed_size)
+void CL_HandleDownload(const byte *data, int size, int percent, int decompressed_size)
 {
     dlqueue_t *q = cls.download.current;
     int ret;
