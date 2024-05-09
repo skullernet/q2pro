@@ -329,7 +329,7 @@ static bool inflate_udp_download(byte *data, int size, int decompressed_size)
         z->avail_out = sizeof(buffer);
 
         ret = inflate(z, Z_SYNC_FLUSH);
-        if (ret != Z_OK && ret != Z_STREAM_END) {
+        if (ret != Z_OK && ret != Z_STREAM_END && ret != Z_BUF_ERROR) {
             Com_EPrintf("[UDP] Error %d decompressing download\n", ret);
             finish_udp_download(NULL);
             return false;
