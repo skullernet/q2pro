@@ -802,12 +802,8 @@ void CL_RequestNextDownload(void)
         }
 
         if (allow_download_textures->integer) {
-            static const char env_suf[6][3] = {
-                "rt", "bk", "lf", "ft", "up", "dn"
-            };
-
             for (i = 0; i < 6; i++) {
-                len = Q_concat(fn, sizeof(fn), "env/", cl.configstrings[CS_SKY], env_suf[i], ".tga");
+                len = Q_concat(fn, sizeof(fn), "env/", cl.configstrings[CS_SKY], com_env_suf[i], ".tga");
                 check_file_len(fn, len, DL_OTHER);
             }
         }

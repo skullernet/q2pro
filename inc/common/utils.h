@@ -18,6 +18,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #pragma once
 
+#if USE_CLIENT
+extern const char com_env_suf[6][3];
+#endif
+
 typedef enum {
     COLOR_BLACK,
     COLOR_RED,
