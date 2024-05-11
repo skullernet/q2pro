@@ -32,20 +32,122 @@ Encode a client frame onto the network channel
 
 /*
 =============
+SV_TruncPacketEntities
+
+Truncates remainder of entity_packed_t list, patching current frame to make
+delta compression happy.
+=============
+*/
+static bool SV_TruncPacketEntities(client_t         *client,
+                                   client_frame_t   *from,
+                                   client_frame_t   *to,
+                                   int              oldindex,
+                                   int              newindex)
+{
+    entity_packed_t *newent;
+    const entity_packed_t *oldent;
+    int i, oldnum, newnum, from_num_entities, to_num_entities;
+    bool ret = true;
+
+    if (!sv_trunc_packet_entities->integer || client->netchan.type)
+        return false;
+
+    SV_DPrintf(0, "Truncating frame %d at %u bytes for %s\n",
+               client->framenum, msg_write.cursize, client->name);
+
+    if (!from)
+        from_num_entities = 0;
+    else
+        from_num_entities = from->num_entities;
+    to_num_entities = to->num_entities;
+
+    oldent = newent = NULL;
+    while (newindex < to->num_entities || oldindex < from_num_entities) {
+        if (newindex >= to->num_entities) {
+            newnum = MAX_EDICTS;
+        } else {
+            i = (to->first_entity + newindex) % svs.num_entities;
+            newent = &svs.entities[i];
+            newnum = newent->number;
+        }
+
+        if (oldindex >= from_num_entities) {
+            oldnum = MAX_EDICTS;
+        } else {
+            i = (from->first_entity + oldindex) % svs.num_entities;
+            oldent = &svs.entities[i];
+            oldnum = oldent->number;
+        }
+
+        if (newnum == oldnum) {
+            // skip delta update
+            *newent = *oldent;
+            oldindex++;
+            newindex++;
+            continue;
+        }
+
+        if (newnum < oldnum) {
+            // remove new entity from frame
+            to->num_entities--;
+            for (i = newindex; i < to->num_entities; i++) {
+                svs.entities[(to->first_entity + i    ) % svs.num_entities] =
+                svs.entities[(to->first_entity + i + 1) % svs.num_entities];
+            }
+            continue;
+        }
+
+        if (newnum > oldnum) {
+            // drop the frame if entity list got too big.
+            // should not normally happen.
+            if (to->num_entities >= MAX_PACKET_ENTITIES) {
+                ret = false;
+                break;
+            }
+
+            // insert old entity into frame
+            for (i = to->num_entities - 1; i >= newindex; i--) {
+                svs.entities[(to->first_entity + i + 1) % svs.num_entities] =
+                svs.entities[(to->first_entity + i    ) % svs.num_entities];
+            }
+
+            svs.entities[(to->first_entity + newindex) % svs.num_entities] = *oldent;
+            to->num_entities++;
+
+            // should never go backwards
+            to_num_entities = max(to_num_entities, to->num_entities);
+
+            oldindex++;
+            newindex++;
+            continue;
+        }
+    }
+
+    svs.next_entity = to->first_entity + to_num_entities;
+    return ret;
+}
+
+/*
+=============
 SV_EmitPacketEntities
 
 Writes a delta update of an entity_packed_t list to the message.
 =============
 */
-static void SV_EmitPacketEntities(client_t         *client,
-                                  client_frame_t   *from,
-                                  client_frame_t   *to,
-                                  int              clientEntityNum)
+static bool SV_EmitPacketEntities(client_t          *client,
+                                  client_frame_t    *from,
+                                  client_frame_t    *to,
+                                  int               clientEntityNum,
+                                  unsigned          maxsize)
 {
     entity_packed_t *newent;
     const entity_packed_t *oldent;
     int i, oldnum, newnum, oldindex, newindex, from_num_entities;
     msgEsFlags_t flags;
+    bool ret = true;
+
+    if (msg_write.cursize + 2 > maxsize)
+        return false;
 
     if (!from)
         from_num_entities = 0;
@@ -56,8 +158,8 @@ static void SV_EmitPacketEntities(client_t         *client,
     oldindex = 0;
     oldent = newent = NULL;
     while (newindex < to->num_entities || oldindex < from_num_entities) {
-        if (msg_write.cursize + MAX_PACKETENTITY_BYTES > msg_write.maxsize) {
-            Com_WPrintf("%s: frame got too large, aborting.\n", __func__);
+        if (msg_write.cursize + MAX_PACKETENTITY_BYTES > maxsize) {
+            ret = SV_TruncPacketEntities(client, from, to, oldindex, newindex);
             break;
         }
 
@@ -126,6 +228,7 @@ static void SV_EmitPacketEntities(client_t         *client,
     }
 
     MSG_WriteShort(0);      // end of packetentities
+    return ret;
 }
 
 static client_frame_t *get_last_frame(client_t *client)
@@ -168,7 +271,7 @@ static client_frame_t *get_last_frame(client_t *client)
 SV_WriteFrameToClient_Default
 ==================
 */
-void SV_WriteFrameToClient_Default(client_t *client)
+bool SV_WriteFrameToClient_Default(client_t *client, unsigned maxsize)
 {
     client_frame_t  *frame, *oldframe;
     player_packed_t *oldstate;
@@ -204,7 +307,7 @@ void SV_WriteFrameToClient_Default(client_t *client)
 
     // delta encode the entities
     MSG_WriteByte(svc_packetentities);
-    SV_EmitPacketEntities(client, oldframe, frame, 0);
+    return SV_EmitPacketEntities(client, oldframe, frame, 0, maxsize);
 }
 
 /*
@@ -212,7 +315,7 @@ void SV_WriteFrameToClient_Default(client_t *client)
 SV_WriteFrameToClient_Enhanced
 ==================
 */
-void SV_WriteFrameToClient_Enhanced(client_t *client)
+bool SV_WriteFrameToClient_Enhanced(client_t *client, unsigned maxsize)
 {
     client_frame_t  *frame, *oldframe;
     player_packed_t *oldstate;
@@ -311,7 +414,7 @@ void SV_WriteFrameToClient_Enhanced(client_t *client)
     client->frameflags = 0;
 
     // delta encode the entities
-    SV_EmitPacketEntities(client, oldframe, frame, clientEntityNum);
+    return SV_EmitPacketEntities(client, oldframe, frame, clientEntityNum, maxsize);
 }
 
 /*

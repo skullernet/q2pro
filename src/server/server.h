@@ -361,7 +361,7 @@ typedef struct client_s {
 
     // netchan type dependent methods
     void            (*AddMessage)(struct client_s *, const byte *, size_t, bool);
-    void            (*WriteFrame)(struct client_s *);
+    bool            (*WriteFrame)(struct client_s *, unsigned);
     void            (*WriteDatagram)(struct client_s *);
 
     // netchan
@@ -533,6 +533,7 @@ extern cvar_t       *sv_calcpings_method;
 extern cvar_t       *sv_changemapcmd;
 extern cvar_t       *sv_max_download_size;
 extern cvar_t       *sv_max_packet_entities;
+extern cvar_t       *sv_trunc_packet_entities;
 
 extern cvar_t       *sv_strafejump_hack;
 #if USE_PACKETDUP
@@ -748,8 +749,8 @@ void SV_PrintMiscInfo(void);
     ((ent)->s.modelindex || (ent)->s.effects || (ent)->s.sound || (ent)->s.event)
 
 void SV_BuildClientFrame(client_t *client);
-void SV_WriteFrameToClient_Default(client_t *client);
-void SV_WriteFrameToClient_Enhanced(client_t *client);
+bool SV_WriteFrameToClient_Default(client_t *client, unsigned maxsize);
+bool SV_WriteFrameToClient_Enhanced(client_t *client, unsigned maxsize);
 
 //
 // sv_game.c

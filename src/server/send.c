@@ -713,26 +713,9 @@ static void write_datagram_old(client_t *client)
 
     // send over all the relevant entity_state_t
     // and the player_state_t
-    client->WriteFrame(client);
-    if (msg_write.cursize > maxsize) {
-        unsigned size = msg_write.cursize;
-        int len = 0;
-
-        // try to compress if it has a chance to fit
-        // assume it can be compressed by at least 20%
-        if (size - size / 5 < maxsize)
-            len = compress_message(client);
-
+    if (!client->WriteFrame(client, maxsize)) {
+        SV_DPrintf(0, "Frame %d overflowed for %s\n", client->framenum, client->name);
         SZ_Clear(&msg_write);
-
-        if (len > 0 && len <= maxsize) {
-            SV_DPrintf(0, "Frame %d compressed for %s: %u into %d\n",
-                       client->framenum, client->name, size, len);
-            SZ_Write(&msg_write, get_compressed_data(), len);
-        } else {
-            SV_DPrintf(0, "Frame %d overflowed for %s: %u > %u (comp %d)\n",
-                       client->framenum, client->name, size, maxsize, len);
-        }
     }
 
     // now write unreliable messages
@@ -797,9 +780,7 @@ static void write_datagram_new(client_t *client)
 
     // send over all the relevant entity_state_t
     // and the player_state_t
-    client->WriteFrame(client);
-
-    if (msg_write.overflowed) {
+    if (!client->WriteFrame(client, msg_write.maxsize)) {
         // should never really happen
         Com_WPrintf("Frame overflowed for %s\n", client->name);
         SZ_Clear(&msg_write);

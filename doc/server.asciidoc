@@ -272,8 +272,14 @@ sv_cinematics::
     is 1.
 
 sv_max_packet_entities::
-    Maximum number of entities in client frame. Default value is 0, which picks
-    optimal value automatically.
+    Maximum number of entities in client frame. Default value is 0, which is
+    equivalent to 128 for non-extended servers and 512 for extended servers.
+
+sv_trunc_packet_entities::
+    Truncates packetentities instead of dropping client frame on overflow. This
+    does not break delta compression and should be generally safe to use. Only
+    relevant for legacy clients not using Q2PRO network channel implementation.
+    Default value is 1 (enabled).
 
 Downloads
 ~~~~~~~~~
