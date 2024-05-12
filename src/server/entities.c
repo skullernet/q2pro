@@ -495,6 +495,41 @@ static bool SV_EntityAttenuatedAway(const vec3_t org, const edict_t *ent)
     return (dist - SOUND_FULLVOLUME) * dist_mult > 1.0f;
 }
 
+#define HI_PRIO(ent) \
+    (ent->s.number <= sv_client->maxclients || ((ent->svflags & (SVF_MONSTER | SVF_DEADMONSTER)) == SVF_MONSTER) || ent->solid == SOLID_BSP)
+
+#define LO_PRIO(ent) \
+    ((ent->s.renderfx & RF_LOW_PRIORITY) || (ent->s.effects & EF_GIB) || (!ent->s.modelindex && !ent->s.effects))
+
+static int entpriocmp(const void *p1, const void *p2)
+{
+    const edict_t *a = *(const edict_t **)p1;
+    const edict_t *b = *(const edict_t **)p2;
+
+    bool hi_a = HI_PRIO(a);
+    bool hi_b = HI_PRIO(b);
+    if (hi_a != hi_b)
+        return hi_b - hi_a;
+
+    bool lo_a = LO_PRIO(a);
+    bool lo_b = LO_PRIO(b);
+    if (lo_a != lo_b)
+        return lo_a - lo_b;
+
+    float dist_a = DistanceSquared(a->s.origin, sv_player->s.origin);
+    float dist_b = DistanceSquared(b->s.origin, sv_player->s.origin);
+    if (dist_a > dist_b)
+        return 1;
+    return -1;
+}
+
+static int entnumcmp(const void *p1, const void *p2)
+{
+    const edict_t *a = *(const edict_t **)p1;
+    const edict_t *b = *(const edict_t **)p2;
+    return a->s.number - b->s.number;
+}
+
 /*
 =============
 SV_BuildClientFrame
@@ -505,7 +540,7 @@ copies off the playerstat and areabits.
 */
 void SV_BuildClientFrame(client_t *client)
 {
-    int         e;
+    int         i, e;
     vec3_t      org;
     edict_t     *ent;
     edict_t     *clent;
@@ -518,6 +553,10 @@ void SV_BuildClientFrame(client_t *client)
     byte        clientpvs[VIS_MAX_BYTES];
     bool        need_clientnum_fix;
     int         max_packet_entities;
+    edict_t     *edicts[MAX_EDICTS];
+    int         num_edicts;
+    customize_entity_result_t (*customize)(edict_t *, edict_t *, customize_entity_t *) = NULL;
+    customize_entity_t temp;
 
     clent = client->edict;
     if (!clent->client)
@@ -571,6 +610,9 @@ void SV_BuildClientFrame(client_t *client)
         sv_max_packet_entities->integer > 0 ? sv_max_packet_entities->integer :
         client->csr->extended ? MAX_PACKET_ENTITIES : MAX_PACKET_ENTITIES_OLD;
 
+    if (gex && gex->apiversion >= GAME_API_VERSION_EX_CUSTOMIZE_ENTITY)
+        customize = gex->CustomizeEntity;
+
     CM_FatPVS(client->cm, clientpvs, org);
     BSP_ClusterVis(client->cm->cache, clientphs, clientcluster, DVIS_PHS);
 
@@ -578,6 +620,7 @@ void SV_BuildClientFrame(client_t *client)
     frame->num_entities = 0;
     frame->first_entity = svs.next_entity;
 
+    num_edicts = 0;
     for (e = 1; e < client->ge->num_edicts; e++) {
         ent = EDICT_NUM2(client->ge, e);
 
@@ -641,20 +684,40 @@ void SV_BuildClientFrame(client_t *client)
             ent->s.number = e;
         }
 
+        // optionally skip it
+        if (customize && customize(clent, ent, NULL) == CE_SKIP)
+            continue;
+
+        edicts[num_edicts++] = ent;
+
+        if (num_edicts == max_packet_entities && !sv_prioritize_entities->integer)
+            break;
+    }
+
+    // prioritize entities on overflow
+    if (num_edicts > max_packet_entities) {
+        sv_client = client;
+        sv_player = client->edict;
+        qsort(edicts, num_edicts, sizeof(edicts[0]), entpriocmp);
+        sv_client = NULL;
+        sv_player = NULL;
+        num_edicts = max_packet_entities;
+        qsort(edicts, num_edicts, sizeof(edicts[0]), entnumcmp);
+    }
+
+    for (i = 0; i < num_edicts; i++) {
+        ent = edicts[i];
+        e = ent->s.number;
+
         // add it to the circular client_entities array
         state = &svs.entities[svs.next_entity % svs.num_entities];
-        MSG_PackEntity(state, &ent->s, ENT_EXTENSION(client->csr, ent));
 
         // optionally customize it
-        if (gex && gex->apiversion >= GAME_API_VERSION_EX_CUSTOMIZE_ENTITY && gex->CustomizeEntity) {
-            customize_entity_t temp;
-            customize_entity_result_t res = gex->CustomizeEntity(clent, ent, &temp);
-            if (res == CE_SKIP)
-                continue;
-            if (res == CE_CUSTOMIZE) {
-                Q_assert(temp.s.number == e);
-                MSG_PackEntity(state, &temp.s, ENT_EXTENSION(client->csr, &temp));
-            }
+        if (customize && customize(clent, ent, &temp) == CE_CUSTOMIZE) {
+            Q_assert(temp.s.number == e);
+            MSG_PackEntity(state, &temp.s, ENT_EXTENSION(client->csr, &temp));
+        } else {
+            MSG_PackEntity(state, &ent->s, ENT_EXTENSION(client->csr, ent));
         }
 
 #if USE_FPS
@@ -691,11 +754,8 @@ void SV_BuildClientFrame(client_t *client)
             state->solid = sv.entities[e].solid32;
         }
 
+        frame->num_entities++;
         svs.next_entity++;
-
-        if (++frame->num_entities == max_packet_entities) {
-            break;
-        }
     }
 
     if (need_clientnum_fix)

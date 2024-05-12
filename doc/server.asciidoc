@@ -281,6 +281,11 @@ sv_trunc_packet_entities::
     relevant for legacy clients not using Q2PRO network channel implementation.
     Default value is 1 (enabled).
 
+sv_prioritize_entities::
+    Sort entities by priority if number of entities in client frame exceeds
+    ‘sv_max_packet_entities’ limit. Default value is 0, which simply throws
+    out entities with higher numbers that don't fit into frame.
+
 Downloads
 ~~~~~~~~~
 
