@@ -495,16 +495,25 @@ overflowed:
 // check if this entity is present in current client frame
 static bool check_entity(client_t *client, int entnum)
 {
-    client_frame_t *frame;
-    int i, j;
+    const client_frame_t *frame;
+    int left, right;
 
     frame = &client->frames[client->framenum & UPDATE_MASK];
 
-    for (i = 0; i < frame->num_entities; i++) {
+    left = 0;
+    right = frame->num_entities - 1;
+    while (left <= right) {
+        int i, j;
+
+        i = (left + right) / 2;
         j = (frame->first_entity + i) % svs.num_entities;
-        if (svs.entities[j].number == entnum) {
+        j = svs.entities[j].number;
+        if (j < entnum)
+            left = i + 1;
+        else if (j > entnum)
+            right = i - 1;
+        else
             return true;
-        }
     }
 
     return false;
