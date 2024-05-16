@@ -555,7 +555,8 @@ void SV_BuildClientFrame(client_t *client)
     int         max_packet_entities;
     edict_t     *edicts[MAX_EDICTS];
     int         num_edicts;
-    customize_entity_result_t (*customize)(edict_t *, edict_t *, customize_entity_t *) = NULL;
+    qboolean (*visible)(edict_t *, edict_t *) = NULL;
+    qboolean (*customize)(edict_t *, edict_t *, customize_entity_t *) = NULL;
     customize_entity_t temp;
 
     clent = client->edict;
@@ -610,8 +611,10 @@ void SV_BuildClientFrame(client_t *client)
         sv_max_packet_entities->integer > 0 ? sv_max_packet_entities->integer :
         client->csr->extended ? MAX_PACKET_ENTITIES : MAX_PACKET_ENTITIES_OLD;
 
-    if (gex && gex->apiversion >= GAME_API_VERSION_EX_CUSTOMIZE_ENTITY)
-        customize = gex->CustomizeEntity;
+    if (gex && gex->apiversion >= GAME_API_VERSION_EX_ENTITY_VISIBLE) {
+        visible = gex->EntityVisibleToClient;
+        customize = gex->CustomizeEntityToClient;
+    }
 
     CM_FatPVS(client->cm, clientpvs, org);
     BSP_ClusterVis(client->cm->cache, clientphs, clientcluster, DVIS_PHS);
@@ -678,7 +681,7 @@ void SV_BuildClientFrame(client_t *client)
         SV_CheckEntityNumber(ent, e);
 
         // optionally skip it
-        if (customize && customize(clent, ent, NULL) == CE_SKIP)
+        if (visible && !visible(clent, ent))
             continue;
 
         edicts[num_edicts++] = ent;
@@ -706,7 +709,7 @@ void SV_BuildClientFrame(client_t *client)
         state = &svs.entities[svs.next_entity % svs.num_entities];
 
         // optionally customize it
-        if (customize && customize(clent, ent, &temp) == CE_CUSTOMIZE) {
+        if (customize && customize(clent, ent, &temp)) {
             Q_assert(temp.s.number == e);
             MSG_PackEntity(state, &temp.s, ENT_EXTENSION(client->csr, &temp));
         } else {
