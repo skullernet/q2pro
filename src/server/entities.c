@@ -499,7 +499,7 @@ static bool SV_EntityAttenuatedAway(const vec3_t org, const edict_t *ent)
     (ent->s.number <= sv_client->maxclients || ((ent->svflags & (SVF_MONSTER | SVF_DEADMONSTER)) == SVF_MONSTER) || ent->solid == SOLID_BSP)
 
 #define LO_PRIO(ent) \
-    ((ent->s.renderfx & RF_LOW_PRIORITY) || (ent->s.effects & EF_GIB) || (!ent->s.modelindex && !ent->s.effects))
+    ((ent->s.renderfx & RF_LOW_PRIORITY) || (ent->s.effects & (EF_GIB | EF_GREENGIB)) || (!ent->s.modelindex && !ent->s.effects))
 
 static int entpriocmp(const void *p1, const void *p2)
 {
@@ -636,7 +636,7 @@ void SV_BuildClientFrame(client_t *client)
         if (!HAS_EFFECTS(ent))
             continue;
 
-        if ((ent->s.effects & EF_GIB) && client->settings[CLS_NOGIBS])
+        if (ent->s.effects & (EF_GIB | EF_GREENGIB) && client->settings[CLS_NOGIBS])
             continue;
 
         if (client->csr->extended && ent->s.renderfx & RF_FLARE && client->settings[CLS_NOFLARES])
