@@ -547,8 +547,8 @@ void SV_BuildClientFrame(client_t *client)
     client_frame_t  *frame;
     entity_packed_t *state;
     player_state_t  *ps;
-    int         clientarea, clientcluster;
     const mleaf_t   *leaf;
+    int         clientarea, clientcluster;
     byte        clientphs[VIS_MAX_BYTES];
     byte        clientpvs[VIS_MAX_BYTES];
     bool        need_clientnum_fix;
@@ -625,22 +625,19 @@ void SV_BuildClientFrame(client_t *client)
         ent = EDICT_NUM2(client->ge, e);
 
         // ignore entities not in use
-        if (!ent->inuse && (g_features->integer & GMF_PROPERINUSE)) {
+        if (!ent->inuse && (g_features->integer & GMF_PROPERINUSE))
             continue;
-        }
 
         // ignore ents without visible models
         if (ent->svflags & SVF_NOCLIENT)
             continue;
 
         // ignore ents without visible models unless they have an effect
-        if (!HAS_EFFECTS(ent)) {
+        if (!HAS_EFFECTS(ent))
             continue;
-        }
 
-        if ((ent->s.effects & EF_GIB) && client->settings[CLS_NOGIBS]) {
+        if ((ent->s.effects & EF_GIB) && client->settings[CLS_NOGIBS])
             continue;
-        }
 
         if (client->csr->extended && ent->s.renderfx & RF_FLARE && client->settings[CLS_NOFLARES])
             continue;
