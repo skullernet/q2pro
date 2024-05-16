@@ -66,7 +66,7 @@ static void SV_CreateBaselines(void)
             continue;
         }
 
-        ent->s.number = i;
+        SV_CheckEntityNumber(ent, i);
 
         chunk = &sv_client->baselines[i >> SV_BASELINES_SHIFT];
         if (*chunk == NULL) {

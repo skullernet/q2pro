@@ -678,11 +678,7 @@ void SV_BuildClientFrame(client_t *client)
             }
         }
 
-        if (ent->s.number != e) {
-            Com_WPrintf("%s: fixing ent->s.number: %d to %d\n",
-                        __func__, ent->s.number, e);
-            ent->s.number = e;
-        }
+        SV_CheckEntityNumber(ent, e);
 
         // optionally skip it
         if (customize && customize(clent, ent, NULL) == CE_SKIP)
