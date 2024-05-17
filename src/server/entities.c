@@ -495,24 +495,30 @@ static bool SV_EntityAttenuatedAway(const vec3_t org, const edict_t *ent)
     return (dist - SOUND_FULLVOLUME) * dist_mult > 1.0f;
 }
 
-#define HI_PRIO(ent) \
-    (ent->s.number <= sv_client->maxclients || ((ent->svflags & (SVF_MONSTER | SVF_DEADMONSTER)) == SVF_MONSTER) || ent->solid == SOLID_BSP)
+#define IS_MONSTER(ent) \
+    ((ent->svflags & (SVF_MONSTER | SVF_DEADMONSTER)) == SVF_MONSTER)
 
-#define LO_PRIO(ent) \
-    ((sv_client->csr->extended ? (ent->s.renderfx & RF_LOW_PRIORITY) : (ent->s.effects & (EF_GIB | EF_GREENGIB))) || (!ent->s.modelindex && !ent->s.effects))
+#define IS_HI_PRIO(ent) \
+    (ent->s.number <= sv_client->maxclients || IS_MONSTER(ent) || ent->solid == SOLID_BSP)
+
+#define IS_GIB(ent) \
+    (sv_client->csr->extended ? (ent->s.renderfx & RF_LOW_PRIORITY) : (ent->s.effects & (EF_GIB | EF_GREENGIB)))
+
+#define IS_LO_PRIO(ent) \
+    (IS_GIB(ent) || (!ent->s.modelindex && !ent->s.effects))
 
 static int entpriocmp(const void *p1, const void *p2)
 {
     const edict_t *a = *(const edict_t **)p1;
     const edict_t *b = *(const edict_t **)p2;
 
-    bool hi_a = HI_PRIO(a);
-    bool hi_b = HI_PRIO(b);
+    bool hi_a = IS_HI_PRIO(a);
+    bool hi_b = IS_HI_PRIO(b);
     if (hi_a != hi_b)
         return hi_b - hi_a;
 
-    bool lo_a = LO_PRIO(a);
-    bool lo_b = LO_PRIO(b);
+    bool lo_a = IS_LO_PRIO(a);
+    bool lo_b = IS_LO_PRIO(b);
     if (lo_a != lo_b)
         return lo_a - lo_b;
 
