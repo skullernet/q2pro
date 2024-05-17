@@ -33,14 +33,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SVF_MONSTER             BIT(2)      // treat as CONTENTS_MONSTER for collision
 
 #if USE_PROTOCOL_EXTENSIONS
-#define SVF_PLAYER              BIT(3)
+#define SVF_PLAYER              BIT(3)      // treat as CONTENTS_PLAYER for collision
 #define SVF_BOT                 BIT(4)
 #define SVF_NOBOTS              BIT(5)
 #define SVF_RESPAWNING          BIT(6)
-#define SVF_PROJECTILE          BIT(7)
+#define SVF_PROJECTILE          BIT(7)      // treat as CONTENTS_PROJECTILE for collision
 #define SVF_INSTANCED           BIT(8)
 #define SVF_DOOR                BIT(9)
-#define SVF_NOCULL              BIT(10)
+#define SVF_NOCULL              BIT(10)     // always send entity to clients (no PVS checks)
 #define SVF_HULL                BIT(11)
 #endif
 
@@ -115,9 +115,11 @@ struct edict_s {
 
     //================================
 
+#if USE_PROTOCOL_EXTENSIONS
     // extra entity state communicated to clients
     // only valid if g_features has GMF_PROTOCOL_EXTENSIONS bit
     entity_state_extension_t    x;
+#endif
 
     // the game dll can add anything it wants after
     // this point in the structure
@@ -323,7 +325,7 @@ typedef struct {
     qboolean    (*CanSave)(void);
     void        (*PrepFrame)(void);
     void        (*RestartFilesystem)(void); // called when fs_restart is issued
-    qboolean    (*CustomizeEntityToClient)(edict_t *client, edict_t *ent, customize_entity_t *temp);
+    qboolean    (*CustomizeEntityToClient)(edict_t *client, edict_t *ent, customize_entity_t *temp); // must initialize `temp'
     qboolean    (*EntityVisibleToClient)(edict_t *client, edict_t *ent);
 } game_export_ex_t;
 
