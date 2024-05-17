@@ -453,7 +453,9 @@ static qboolean PF_inVIS(const vec3_t p1, const vec3_t p2, vis_t vis)
         return false;
     if (!Q_IsBitSet(mask, leaf2->cluster))
         return false;
-    if (!(vis & VIS_NOAREAS) && !CM_AreasConnected(&sv.cm, leaf1->area, leaf2->area))
+    if (vis & VIS_NOAREAS)
+        return true;
+    if (!CM_AreasConnected(&sv.cm, leaf1->area, leaf2->area))
         return false;       // a door blocks it
     return true;
 }
