@@ -45,10 +45,10 @@ static void    FloodAreaConnections(const cm_t *cm);
 //=======================================================================
 
 enum {
-    OVERRIDE_NAME   = 1,
-    OVERRIDE_CSUM   = 2,
-    OVERRIDE_ENTS   = 4,
-    OVERRIDE_ALL    = 7
+    OVERRIDE_NAME   = BIT(0),
+    OVERRIDE_CSUM   = BIT(1),
+    OVERRIDE_ENTS   = BIT(2),
+    OVERRIDE_ALL    = MASK(3)
 };
 
 static void load_entstring_override(cm_t *cm, const char *server)
