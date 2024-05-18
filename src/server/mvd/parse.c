@@ -682,7 +682,7 @@ static void MVD_ParsePacketEntities(mvd_t *mvd)
         }
 
         // mark this entity as seen even if removed
-        ent->svflags |= SVF_MONSTER;
+        ent->svflags |= SVF_MVD_SEEN;
 
         // shuffle current origin to old if removed
         if (bits & U_REMOVE) {

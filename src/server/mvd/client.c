@@ -1866,7 +1866,7 @@ static void emit_base_frame(mvd_t *mvd)
     // send base entity states
     for (i = 1; i < mvd->csr->max_edicts; i++) {
         ent = &mvd->edicts[i];
-        if (!(ent->svflags & SVF_MONSTER))
+        if (!(ent->svflags & SVF_MVD_SEEN))
             continue;   // entity never seen
         ent->s.number = i;
         MSG_PackEntity(&es, &ent->s, &ent->x);
@@ -2409,7 +2409,7 @@ static void MVD_Seek_f(void)
     for (i = 1; i < mvd->csr->max_edicts; i++) {
         ent = &mvd->edicts[i];
 
-        if (ent->svflags & SVF_MONSTER)
+        if (ent->svflags & SVF_MVD_SEEN)
             MVD_LinkEdict(mvd, ent);
 
         if (!ent->inuse)
