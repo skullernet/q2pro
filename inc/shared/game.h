@@ -30,7 +30,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define SVF_NOCLIENT            BIT(0)      // don't send entity to clients, even if it has effects
 #define SVF_DEADMONSTER         BIT(1)      // treat as CONTENTS_DEADMONSTER for collision
-#define SVF_MONSTER             BIT(2)      // treat as CONTENTS_MONSTER for collision
+#define SVF_MONSTER             BIT(2)      // only used by server as entity priority hint
 
 #if USE_PROTOCOL_EXTENSIONS
 #define SVF_PLAYER              BIT(3)      // treat as CONTENTS_PLAYER for collision
