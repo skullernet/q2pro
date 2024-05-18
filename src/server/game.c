@@ -534,8 +534,11 @@ static void SV_StartSound(const vec3_t origin, edict_t *edict,
         Com_Error(ERR_DROP, "%s: soundindex = %d", __func__, soundindex);
 
     vol = volume * 255;
-    att = min(attenuation * 64, 255);   // need to clip due to check above
+    att = attenuation * 64;
     ofs = timeofs * 1000;
+
+    // need to clip due to faulty range check above
+    att = min(att, 255);
 
     ent = NUM_FOR_EDICT(edict);
 
