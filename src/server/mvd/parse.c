@@ -537,7 +537,7 @@ static void MVD_ParseSound(mvd_t *mvd, int extrabits)
 
         msg = LIST_FIRST(message_packet_t, &cl->msg_free_list, entry);
 
-        msg->cursize = 0;
+        msg->cursize = SOUND_PACKET;
         msg->flags = flags;
         msg->index = index;
         msg->volume = volume;
@@ -550,7 +550,7 @@ static void MVD_ParseSound(mvd_t *mvd, int extrabits)
 
         List_Remove(&msg->entry);
         List_Append(&cl->msg_unreliable_list, &msg->entry);
-        cl->msg_unreliable_bytes += MAX_SOUND_PACKET;
+        cl->msg_unreliable_bytes += msg_write.cursize;
     }
 
     // clear multicast buffer

@@ -649,7 +649,7 @@ static void SV_StartSound(const vec3_t origin, edict_t *edict,
 
         msg = LIST_FIRST(message_packet_t, &client->msg_free_list, entry);
 
-        msg->cursize = 0;
+        msg->cursize = SOUND_PACKET;
         msg->flags = flags;
         msg->index = soundindex;
         msg->volume = vol;
@@ -662,7 +662,7 @@ static void SV_StartSound(const vec3_t origin, edict_t *edict,
 
         List_Remove(&msg->entry);
         List_Append(&client->msg_unreliable_list, &msg->entry);
-        client->msg_unreliable_bytes += MAX_SOUND_PACKET;
+        client->msg_unreliable_bytes += msg_write.cursize;
     }
 
     // clear multicast buffer

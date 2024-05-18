@@ -220,7 +220,8 @@ typedef enum {
 
 #define ZPACKET_HEADER      5
 
-#define MAX_SOUND_PACKET   14
+#define MAX_SOUND_PACKET    15
+#define SOUND_PACKET        0       // special value for cursize
 
 typedef struct {
     list_t              entry;
