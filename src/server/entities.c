@@ -496,7 +496,7 @@ static bool SV_EntityAttenuatedAway(const vec3_t org, const edict_t *ent)
 }
 
 #define IS_MONSTER(ent) \
-    ((ent->svflags & (SVF_MONSTER | SVF_DEADMONSTER)) == SVF_MONSTER)
+    ((ent->svflags & (SVF_MONSTER | SVF_DEADMONSTER)) == SVF_MONSTER || (ent->s.renderfx & RF_FRAMELERP))
 
 #define IS_HI_PRIO(ent) \
     (ent->s.number <= sv_client->maxclients || IS_MONSTER(ent) || ent->solid == SOLID_BSP)
