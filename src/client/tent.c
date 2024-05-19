@@ -112,7 +112,7 @@ static int CL_FindFootstepSurface(int entnum)
 
     // first, a trace done solely against MASK_SOLID
     trace_t tr;
-    CL_Trace(&tr, trace_start, trace_mins, trace_maxs, trace_end, MASK_SOLID);
+    CL_Trace(&tr, trace_start, trace_end, trace_mins, trace_maxs, MASK_SOLID);
 
     if (tr.fraction == 1.0f) {
         // if we didn't hit anything, use default step ID
@@ -128,7 +128,7 @@ static int CL_FindFootstepSurface(int entnum)
         VectorCopy(tr.endpos, new_end);
         new_end[2] += 1;
 
-        CL_Trace(&tr, trace_start, trace_mins, trace_maxs, new_end, MASK_SOLID | MASK_WATER);
+        CL_Trace(&tr, trace_start, new_end, trace_mins, trace_maxs, MASK_SOLID | MASK_WATER);
         // if we hit something else, use that new footstep id instead of the first traces' value
         if (tr.surface != &(nulltexinfo.c))
             footstep_id = ((mtexinfo_t *)tr.surface)->step_id;

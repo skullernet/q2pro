@@ -500,12 +500,12 @@ int SV_PointContents(const vec3_t p)
 /*
 ====================
 SV_ClipMoveToEntities
-
 ====================
 */
-static void SV_ClipMoveToEntities(const vec3_t start, const vec3_t mins,
-                                  const vec3_t maxs, const vec3_t end,
-                                  edict_t *passedict, int contentmask, trace_t *tr)
+static void SV_ClipMoveToEntities(trace_t *tr,
+                                  const vec3_t start, const vec3_t end,
+                                  const vec3_t mins, const vec3_t maxs,
+                                  edict_t *passedict, int contentmask)
 {
     vec3_t      boxmins, boxmaxs;
     int         i, num;
@@ -590,7 +590,7 @@ trace_t q_gameabi SV_Trace(const vec3_t start, const vec3_t mins,
         return trace;   // blocked by the world
 
     // clip to other solid entities
-    SV_ClipMoveToEntities(start, mins, maxs, end, passedict, contentmask, &trace);
+    SV_ClipMoveToEntities(&trace, start, end, mins, maxs, passedict, contentmask);
     return trace;
 }
 
