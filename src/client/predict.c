@@ -119,8 +119,9 @@ void CL_Trace(trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mi
 {
     // check against world
     CM_BoxTrace(tr, start, end, mins, maxs, cl.bsp->nodes, contentmask);
-    if (tr->fraction < 1.0f)
-        tr->ent = (struct edict_s *)cl_entities;
+    tr->ent = (struct edict_s *)cl_entities;
+    if (tr->fraction == 0)
+        return;     // blocked by the world
 
     // check all other solid models
     CL_ClipMoveToEntities(tr, start, end, mins, maxs, contentmask);
