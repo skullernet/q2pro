@@ -507,6 +507,8 @@ static bool SV_EntityAttenuatedAway(const vec3_t org, const edict_t *ent)
 #define IS_LO_PRIO(ent) \
     (IS_GIB(ent) || (!ent->s.modelindex && !ent->s.effects))
 
+static vec3_t clientorg;
+
 static int entpriocmp(const void *p1, const void *p2)
 {
     const edict_t *a = *(const edict_t **)p1;
@@ -522,8 +524,8 @@ static int entpriocmp(const void *p1, const void *p2)
     if (lo_a != lo_b)
         return lo_a - lo_b;
 
-    float dist_a = DistanceSquared(a->s.origin, sv_player->s.origin);
-    float dist_b = DistanceSquared(b->s.origin, sv_player->s.origin);
+    float dist_a = DistanceSquared(a->s.origin, clientorg);
+    float dist_b = DistanceSquared(b->s.origin, clientorg);
     if (dist_a > dist_b)
         return 1;
     return -1;
@@ -698,6 +700,7 @@ void SV_BuildClientFrame(client_t *client)
 
     // prioritize entities on overflow
     if (num_edicts > max_packet_entities) {
+        VectorCopy(org, clientorg);
         sv_client = client;
         sv_player = client->edict;
         qsort(edicts, num_edicts, sizeof(edicts[0]), entpriocmp);
