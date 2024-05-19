@@ -1766,10 +1766,7 @@ const mleaf_t *BSP_PointLeaf(const mnode_t *node, const vec3_t p)
 
     while (node->plane) {
         d = PlaneDiffFast(p, node->plane);
-        if (d < 0)
-            node = node->children[1];
-        else
-            node = node->children[0];
+        node = node->children[d < 0];
     }
 
     return (const mleaf_t *)node;

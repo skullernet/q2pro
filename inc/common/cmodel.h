@@ -34,6 +34,8 @@ typedef struct {
     char        *entitystring;
 } cm_t;
 
+extern const mleaf_t    nullleaf;
+
 void        CM_Init(void);
 
 void        CM_FreeMap(cm_t *cm);
@@ -52,7 +54,13 @@ const mleaf_t   *CM_LeafNum(const cm_t *cm, int number);
 const mnode_t   *CM_HeadnodeForBox(const vec3_t mins, const vec3_t maxs);
 
 // returns an ORed contents mask
-int         CM_PointContents(const vec3_t p, const mnode_t *headnode);
+static inline int CM_PointContents(const vec3_t p, const mnode_t *headnode)
+{
+    if (!headnode)
+        return 0;   // map not loaded
+    return BSP_PointLeaf(headnode, p)->contents;
+}
+
 int         CM_TransformedPointContents(const vec3_t p, const mnode_t *headnode,
                                         const vec3_t origin, const vec3_t angles);
 
@@ -69,9 +77,24 @@ void        CM_ClipEntity(trace_t *dst, const trace_t *src, struct edict_s *ent)
 
 // call with topnode set to the headnode, returns with topnode
 // set to the first node that splits the box
-int         CM_BoxLeafs(const cm_t *cm, const vec3_t mins, const vec3_t maxs,
-                        const mleaf_t **list, int listsize, const mnode_t **topnode);
-const mleaf_t   *CM_PointLeaf(const cm_t *cm, const vec3_t p);
+int CM_BoxLeafs_headnode(const vec3_t mins, const vec3_t maxs,
+                         const mleaf_t **list, int listsize,
+                         const mnode_t *headnode, const mnode_t **topnode);
+
+static inline int CM_BoxLeafs(const cm_t *cm, const vec3_t mins, const vec3_t maxs,
+                              const mleaf_t **list, int listsize, const mnode_t **topnode)
+{
+    if (!cm->cache)
+        return 0;   // map not loaded
+    return CM_BoxLeafs_headnode(mins, maxs, list, listsize, cm->cache->nodes, topnode);
+}
+
+static inline const mleaf_t *CM_PointLeaf(const cm_t *cm, const vec3_t p)
+{
+    if (!cm->cache)
+        return &nullleaf;   // map not loaded
+    return BSP_PointLeaf(cm->cache->nodes, p);
+}
 
 byte        *CM_FatPVS(const cm_t *cm, byte *mask, const vec3_t org);
 

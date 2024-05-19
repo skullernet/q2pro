@@ -31,7 +31,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 mtexinfo_t nulltexinfo;
 
-static const mleaf_t    nullleaf = { .cluster = -1 };
+const mleaf_t       nullleaf = { .cluster = -1 };
 
 static unsigned     floodvalid;
 static unsigned     checkcount;
@@ -332,14 +332,6 @@ const mnode_t *CM_HeadnodeForBox(const vec3_t mins, const vec3_t maxs)
     return box_headnode;
 }
 
-const mleaf_t *CM_PointLeaf(const cm_t *cm, const vec3_t p)
-{
-    if (!cm->cache) {
-        return &nullleaf;       // server may call this without map loaded
-    }
-    return BSP_PointLeaf(cm->cache->nodes, p);
-}
-
 /*
 =============
 CM_BoxLeafnums
@@ -377,9 +369,9 @@ static void CM_BoxLeafs_r(const mnode_t *node)
     }
 }
 
-static int CM_BoxLeafs_headnode(const vec3_t mins, const vec3_t maxs,
-                                const mleaf_t **list, int listsize,
-                                const mnode_t *headnode, const mnode_t **topnode)
+int CM_BoxLeafs_headnode(const vec3_t mins, const vec3_t maxs,
+                         const mleaf_t **list, int listsize,
+                         const mnode_t *headnode, const mnode_t **topnode)
 {
     leaf_list = list;
     leaf_count = 0;
@@ -395,26 +387,6 @@ static int CM_BoxLeafs_headnode(const vec3_t mins, const vec3_t maxs,
         *topnode = leaf_topnode;
 
     return leaf_count;
-}
-
-int CM_BoxLeafs(const cm_t *cm, const vec3_t mins, const vec3_t maxs,
-                const mleaf_t **list, int listsize, const mnode_t **topnode)
-{
-    if (!cm->cache)     // map not loaded
-        return 0;
-    return CM_BoxLeafs_headnode(mins, maxs, list, listsize, cm->cache->nodes, topnode);
-}
-
-/*
-==================
-CM_PointContents
-==================
-*/
-int CM_PointContents(const vec3_t p, const mnode_t *headnode)
-{
-    if (!headnode)
-        return 0;
-    return BSP_PointLeaf(headnode, p)->contents;
 }
 
 /*
