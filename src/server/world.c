@@ -100,21 +100,17 @@ SV_ClearWorld
 */
 void SV_ClearWorld(void)
 {
-    mmodel_t *cm;
-    edict_t *ent;
-    int i;
-
     memset(sv_areanodes, 0, sizeof(sv_areanodes));
     sv_numareanodes = 0;
 
     if (sv.cm.cache) {
-        cm = &sv.cm.cache->models[0];
+        const mmodel_t *cm = &sv.cm.cache->models[0];
         SV_CreateAreaNode(0, cm->mins, cm->maxs);
     }
 
     // make sure all entities are unlinked
-    for (i = 0; i < ge->max_edicts; i++) {
-        ent = EDICT_NUM(i);
+    for (int i = 0; i < ge->max_edicts; i++) {
+        edict_t *ent = EDICT_NUM(i);
         ent->area.next = ent->area.prev = NULL;
     }
 }
@@ -175,9 +171,9 @@ void SV_LinkEdict(const cm_t *cm, edict_t *ent)
     ent->areanum = 0;
     ent->areanum2 = 0;
 
-    //get all leafs, including solids
+    // get all leafs, including solids
     num_leafs = CM_BoxLeafs(cm, ent->absmin, ent->absmax,
-                            leafs, MAX_TOTAL_ENT_LEAFS, &topnode);
+                            leafs, q_countof(leafs), &topnode);
 
     // set areas
     for (i = 0; i < num_leafs; i++) {
@@ -187,16 +183,15 @@ void SV_LinkEdict(const cm_t *cm, edict_t *ent)
             // doors may legally straggle two areas,
             // but nothing should evern need more than that
             if (ent->areanum && ent->areanum != area) {
-                if (ent->areanum2 && ent->areanum2 != area && sv.state == ss_loading) {
+                if (ent->areanum2 && ent->areanum2 != area && sv.state == ss_loading)
                     Com_DPrintf("Object touching 3 areas at %s\n", vtos(ent->absmin));
-                }
                 ent->areanum2 = area;
             } else
                 ent->areanum = area;
         }
     }
 
-    if (num_leafs >= MAX_TOTAL_ENT_LEAFS) {
+    if (num_leafs == q_countof(leafs)) {
         // assume we missed some leafs, and mark by headnode
         ent->num_clusters = -1;
         ent->headnode = CM_NumNode(cm, topnode);
@@ -285,9 +280,8 @@ void PF_LinkEdict(edict_t *ent)
         return;
     }
 
-    if (!sv.cm.cache) {
+    if (!sv.cm.cache)
         return;
-    }
 
     entnum = NUM_FOR_EDICT(ent);
     sent = &sv.entities[entnum];
@@ -523,7 +517,7 @@ static void SV_ClipMoveToEntities(trace_t *tr,
         }
     }
 
-    num = SV_AreaEdicts(boxmins, boxmaxs, touchlist, MAX_EDICTS, AREA_SOLID);
+    num = SV_AreaEdicts(boxmins, boxmaxs, touchlist, q_countof(touchlist), AREA_SOLID);
 
     // be careful, it is possible to have an entity in this
     // list removed before we get to it (killtriggered)
