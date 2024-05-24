@@ -778,7 +778,7 @@ static void MVD_SetServerState(client_t *cl, mvd_t *mvd)
     cl->mapname = mvd->mapname;
     cl->configstrings = mvd->configstrings;
     cl->csr = mvd->csr;
-    cl->slot = mvd->clientNum;
+    cl->infonum = mvd->clientNum;
     cl->cm = &mvd->cm;
     cl->ge = &mvd->ge;
     cl->spawncount = mvd->servercount;

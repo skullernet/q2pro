@@ -375,7 +375,7 @@ static int dummy_create(void)
 
     memset(newcl, 0, sizeof(*newcl));
     number = newcl - svs.client_pool;
-    newcl->number = newcl->slot = number;
+    newcl->number = newcl->infonum = number;
     newcl->protocol = -1;
     newcl->state = cs_connected;
     newcl->AddMessage = dummy_add_message;

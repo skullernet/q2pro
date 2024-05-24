@@ -356,7 +356,7 @@ typedef struct client_s {
     char                *gamedir, *mapname;
     const game_export_t *ge;
     cm_t                *cm;
-    int                 slot;
+    int                 infonum;    // slot number visible to client
     int                 spawncount;
     int                 maxclients;
 

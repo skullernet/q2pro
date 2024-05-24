@@ -389,7 +389,7 @@ void SV_New_f(void)
     if (sv.state == ss_pic || sv.state == ss_cinematic)
         MSG_WriteShort(-1);
     else
-        MSG_WriteShort(sv_client->slot);
+        MSG_WriteShort(sv_client->infonum);
     MSG_WriteString(sv_client->configstrings[CS_NAME]);
 
     // send protocol specific stuff
@@ -420,7 +420,7 @@ void SV_New_f(void)
 
     if (sv_client->protocol == PROTOCOL_VERSION_Q2PRO &&
         sv_client->version < PROTOCOL_VERSION_Q2PRO_CLIENTNUM_SHORT &&
-        sv_client->slot == CLIENTNUM_NONE && oldstate == cs_assigned)
+        sv_client->infonum == CLIENTNUM_NONE && oldstate == cs_assigned)
     {
         SV_ClientPrintf(sv_client, PRINT_HIGH,
                         "WARNING: Server has allocated client slot number 255. "

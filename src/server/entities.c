@@ -764,5 +764,5 @@ void SV_BuildClientFrame(client_t *client)
     }
 
     if (need_clientnum_fix)
-        frame->clientNum = client->slot;
+        frame->clientNum = client->infonum;
 }
