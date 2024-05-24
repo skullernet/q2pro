@@ -525,11 +525,11 @@ static void SV_ClipMoveToEntities(trace_t *tr,
         touch = touchlist[i];
         if (touch->solid == SOLID_NOT)
             continue;
-        if (touch == passedict)
-            continue;
         if (tr->allsolid)
             return;
         if (passedict) {
+            if (touch == passedict)
+                continue;
             if (touch->owner == passedict)
                 continue;    // don't clip against own missiles
             if (passedict->owner == touch)
