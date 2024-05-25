@@ -76,6 +76,16 @@ static void SV_CreateBaselines(void)
         base = *chunk + (i & SV_BASELINES_MASK);
         MSG_PackEntity(base, &ent->s, ENT_EXTENSION(sv_client->csr, ent));
 
+        // no need to transmit data that will change anyway
+        if (i <= sv_client->maxclients) {
+            VectorClear(base->origin);
+            VectorClear(base->angles);
+            base->frame = 0;
+        }
+
+        // don't ever transmit event
+        base->event = 0;
+
 #if USE_MVD_CLIENT
         if (sv.state == ss_broadcast) {
             // spectators only need to know about inline BSP models
