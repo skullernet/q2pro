@@ -1786,8 +1786,7 @@ static void MVD_ListServers_f(void)
         ratio = 100;
 #if USE_ZLIB
         if (gtv->z_act && gtv->z_str.total_out) {
-            ratio = 100 * ((double)gtv->z_str.total_in /
-                           gtv->z_str.total_out);
+            ratio = gtv->z_str.total_in * 100ULL / gtv->z_str.total_out;
         }
 #endif
         Com_Printf("%2d %-12.12s %-12.12s %4u%% %7u %s\n",
