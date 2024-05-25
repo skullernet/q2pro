@@ -1690,7 +1690,7 @@ void MVD_Spawn(void)
 #endif
 
     // generate spawncount for Waiting Room
-    sv.spawncount = Q_rand() & 0x7fffffff;
+    sv.spawncount = Q_rand() & INT_MAX;
 
 #if USE_FPS
     // just fixed base FPS

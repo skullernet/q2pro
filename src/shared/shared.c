@@ -921,8 +921,8 @@ uint32_t Q_rand(void)
         mt_index = 0;
 
 #define STEP(j, k) do {                 \
-        x  = mt_state[i] & 0x80000000;  \
-        x |= mt_state[j] & 0x7FFFFFFF;  \
+        x  = mt_state[i] & BIT(31);     \
+        x |= mt_state[j] & MASK(31);    \
         y  = x >> 1;                    \
         y ^= 0x9908B0DF & -(x & 1);     \
         mt_state[i] = mt_state[k] ^ y;  \

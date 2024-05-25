@@ -536,7 +536,7 @@ channel_t *S_PickChannel(int entnum, int entchannel)
 
 // Check for replacement sound, or find the best one to replace
     first_to_die = -1;
-    life_left = 0x7fffffff;
+    life_left = INT_MAX;
     for (ch_idx = 0; ch_idx < s_numchannels; ch_idx++) {
         ch = &s_channels[ch_idx];
         // channel 0 never overrides unless out of channels

@@ -574,7 +574,7 @@ static void SVC_GetChallenge(void)
     unsigned    oldestTime;
 
     oldest = 0;
-    oldestTime = 0xffffffff;
+    oldestTime = UINT_MAX;
 
     // see if we already have a challenge for this ip
     for (i = 0; i < MAX_CHALLENGES; i++) {
@@ -589,7 +589,7 @@ static void SVC_GetChallenge(void)
         }
     }
 
-    challenge = Q_rand() & 0x7fffffff;
+    challenge = Q_rand() & INT_MAX;
     if (i == MAX_CHALLENGES) {
         // overwrite the oldest
         svs.challenges[oldest].challenge = challenge;
