@@ -268,6 +268,14 @@ void SV_Multicast(const vec3_t origin, multicast_t to)
         to -= MULTICAST_ALL_R;
     }
 
+    if (to && !origin)
+        Com_Error(ERR_DROP, "%s: NULL origin", __func__);
+
+    if (!msg_write.cursize) {
+        Com_DPrintf("%s with empty data\n", __func__);
+        return;
+    }
+
     if (to) {
         leaf1 = CM_PointLeaf(&sv.cm, origin);
         BSP_ClusterVis(sv.cm.cache, mask, leaf1->cluster, MULTICAST_PVS - to);
