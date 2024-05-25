@@ -1721,12 +1721,19 @@ static void list_generic(void)
         "-- ------------ -------- --- --- ---- --- ---- --------------\n");
 
     FOR_EACH_MVD(mvd) {
+        gtv_t *gtv = mvd->gtv;
+        int percent;
+
+        if (gtv && gtv->demoplayback)
+            percent = gtv->demoprogress * 100;
+        else
+            percent = FIFO_Percent(&mvd->delay);
+
         Com_Printf("%2d %-12.12s %-8.8s %3d %3d %-4.4s %3d %4u %s\n",
                    mvd->id, mvd->name, mvd->mapname,
                    List_Count(&mvd->clients), mvd->numplayers,
-                   mvd_states[mvd->state],
-                   FIFO_Percent(&mvd->delay), mvd->num_packets,
-                   mvd->gtv ? mvd->gtv->address : "<disconnected>");
+                   mvd_states[mvd->state], percent, mvd->num_packets,
+                   gtv ? gtv->address : "<disconnected>");
     }
 }
 
