@@ -29,7 +29,7 @@ static bool wav_init;
 
 // starts at 0 for disabled
 static int  sample16;
-static int  snd_sent, snd_completed;
+static unsigned     snd_sent, snd_completed;
 
 static HANDLE       hData;
 static HPSTR        lpData;
