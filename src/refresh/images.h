@@ -92,17 +92,17 @@ image_t *IMG_ForHandle(qhandle_t h);
 void IMG_Unload(image_t *image);
 void IMG_Load(image_t *image, byte *pic);
 
-struct screenshot_s;
+typedef struct screenshot_s screenshot_t;
 
-typedef int (*save_cb_t)(const struct screenshot_s *restrict);
+typedef int (*save_cb_t)(const screenshot_t *);
 
-typedef struct screenshot_s {
+struct screenshot_s {
     save_cb_t save_cb;
     byte *pixels;
     FILE *fp;
     char *filename;
     int width, height, rowbytes, bpp, status, param;
     bool async;
-} screenshot_t;
+};
 
 void IMG_ReadPixels(screenshot_t *s);

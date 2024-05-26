@@ -561,7 +561,7 @@ IMG_LOAD(TGA)
     return Q_ERR_SUCCESS;
 }
 
-static int IMG_SaveTGA(const screenshot_t *restrict s)
+static int IMG_SaveTGA(const screenshot_t *s)
 {
     byte header[TARGA_HEADER_SIZE] = { 0 };
 
@@ -759,7 +759,7 @@ static int my_jpeg_compress(j_compress_ptr cinfo, JSAMPARRAY row_pointers, const
     return 0;
 }
 
-static int IMG_SaveJPG(const screenshot_t *restrict s)
+static int IMG_SaveJPG(const screenshot_t *s)
 {
     struct jpeg_compress_struct cinfo;
     struct my_error_mgr jerr;
@@ -994,7 +994,7 @@ static int my_png_write_image(png_structp png_ptr, png_infop info_ptr,
     return 0;
 }
 
-static int IMG_SavePNG(const screenshot_t *restrict s)
+static int IMG_SavePNG(const screenshot_t *s)
 {
     png_structp png_ptr;
     png_infop info_ptr;
