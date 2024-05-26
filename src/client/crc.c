@@ -61,7 +61,7 @@ static const uint16_t crctable[256] = {
     0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0x0ed1, 0x1ef0
 };
 
-static uint16_t CRC_Block(byte *start, size_t count)
+static uint16_t CRC_Block(const byte *start, size_t count)
 {
     uint16_t    crc = CRC_INIT_VALUE;
 

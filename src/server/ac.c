@@ -1094,7 +1094,7 @@ void AC_ClientAnnounce(client_t *cl)
     }
 }
 
-char *AC_ClientConnect(client_t *cl)
+const char *AC_ClientConnect(client_t *cl)
 {
     if (!ac_required->integer) {
         return ""; // anticheat is not in use

@@ -414,7 +414,7 @@ CL_KeyState
 Returns the fraction of the frame that the key was down
 ===============
 */
-static float CL_KeyState(kbutton_t *key)
+static float CL_KeyState(const kbutton_t *key)
 {
     unsigned msec = key->msec;
 

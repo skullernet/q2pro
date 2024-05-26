@@ -94,7 +94,7 @@ void IMG_Load(image_t *image, byte *pic);
 
 struct screenshot_s;
 
-typedef int (*save_cb_t)(struct screenshot_s *restrict);
+typedef int (*save_cb_t)(const struct screenshot_s *restrict);
 
 typedef struct screenshot_s {
     save_cb_t save_cb;

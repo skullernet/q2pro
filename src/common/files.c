@@ -421,7 +421,7 @@ static file_t *file_for_handle(qhandle_t f)
 }
 
 // expects a buffer of at least MAX_OSPATH bytes!
-static symlink_t *expand_links(list_t *list, char *buffer, size_t *len_p)
+static symlink_t *expand_links(const list_t *list, char *buffer, size_t *len_p)
 {
     symlink_t   *link;
     size_t      namelen = *len_p;
@@ -503,7 +503,7 @@ int64_t FS_Tell(qhandle_t f)
     }
 }
 
-static int64_t get_seek_offset(file_t *file, int64_t offset, int whence)
+static int64_t get_seek_offset(const file_t *file, int64_t offset, int whence)
 {
     switch (whence) {
     case SEEK_SET:
@@ -2273,7 +2273,7 @@ static bool parse_zip64_extra_data(packfile_t *file, const byte *buf, int size)
     return true;
 }
 
-static bool parse_extra_data(pack_t *pack, packfile_t *file, int xtra_size)
+static bool parse_extra_data(const pack_t *pack, packfile_t *file, int xtra_size)
 {
     byte buf[0xffff];
     int pos = 0;
@@ -2294,7 +2294,7 @@ static bool parse_extra_data(pack_t *pack, packfile_t *file, int xtra_size)
     return false;
 }
 
-static bool get_file_info(pack_t *pack, packfile_t *file, char *name, size_t *len, bool zip64)
+static bool get_file_info(const pack_t *pack, packfile_t *file, char *name, size_t *len, bool zip64)
 {
     unsigned comp_mtd, comp_len, file_len, name_size, xtra_size, comm_size, file_pos;
     byte header[ZIP_SIZECENTRALDIRITEM]; // we can't use a struct here because of packing

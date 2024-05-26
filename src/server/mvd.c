@@ -1154,7 +1154,7 @@ void SV_MvdMulticast(const mleaf_t *leaf, multicast_t to, bool reliable)
 
 // Performs some basic filtering of the unicast data that would be
 // otherwise discarded by the MVD client.
-static bool filter_unicast_data(edict_t *ent)
+static bool filter_unicast_data(const edict_t *ent)
 {
     int cmd = msg_write.data[0];
 
@@ -1189,7 +1189,7 @@ static bool filter_unicast_data(edict_t *ent)
 SV_MvdUnicast
 ==============
 */
-void SV_MvdUnicast(edict_t *ent, int clientNum, bool reliable)
+void SV_MvdUnicast(const edict_t *ent, int clientNum, bool reliable)
 {
     mvd_ops_t   op;
     sizebuf_t   *buf;
@@ -1446,7 +1446,7 @@ static void write_message(gtv_client_t *client, gtv_serverop_t op)
     write_stream(client, msg_write.data, msg_write.cursize);
 }
 
-static bool auth_client(gtv_client_t *client, const char *password)
+static bool auth_client(const gtv_client_t *client, const char *password)
 {
     if (SV_MatchAddress(&gtv_white_list, &client->stream.address))
         return true; // ALLOW whitelisted hosts without password

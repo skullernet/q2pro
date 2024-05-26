@@ -371,7 +371,7 @@ void SV_RateInit(ratelimit_t *r, const char *s)
     r->cost = rate2credits(rate);
 }
 
-addrmatch_t *SV_MatchAddress(list_t *list, netadr_t *addr)
+addrmatch_t *SV_MatchAddress(const list_t *list, const netadr_t *addr)
 {
     addrmatch_t *match;
 
@@ -1341,14 +1341,14 @@ int SV_CountClients(void)
     return count;
 }
 
-static int ping_nop(client_t *cl)
+static int ping_nop(const client_t *cl)
 {
     return 0;
 }
 
-static int ping_min(client_t *cl)
+static int ping_min(const client_t *cl)
 {
-    client_frame_t *frame;
+    const client_frame_t *frame;
     int i, j, count = INT_MAX;
 
     for (i = 0; i < UPDATE_BACKUP; i++) {
@@ -1365,9 +1365,9 @@ static int ping_min(client_t *cl)
     return count == INT_MAX ? 0 : count;
 }
 
-static int ping_avg(client_t *cl)
+static int ping_avg(const client_t *cl)
 {
-    client_frame_t *frame;
+    const client_frame_t *frame;
     int i, j, total = 0, count = 0;
 
     for (i = 0; i < UPDATE_BACKUP; i++) {
@@ -1394,7 +1394,7 @@ Updates the cl->ping and cl->fps variables
 static void SV_CalcPings(void)
 {
     client_t    *cl;
-    int         (*calc)(client_t *);
+    int         (*calc)(const client_t *);
     int         res;
 
     switch (sv_calcpings_method->integer) {
@@ -1597,7 +1597,7 @@ static void update_client_mtu(client_t *client, int ee_info)
 SV_ErrorEvent
 =================
 */
-void SV_ErrorEvent(netadr_t *from, int ee_errno, int ee_info)
+void SV_ErrorEvent(const netadr_t *from, int ee_errno, int ee_info)
 {
     client_t    *client;
     netchan_t   *netchan;

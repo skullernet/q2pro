@@ -601,7 +601,7 @@ static bool NET_SendLoopPacket(netsrc_t sock, const void *data,
 
 static const char *os_error_string(int err);
 
-static void NET_ErrorEvent(qsocket_t sock, netadr_t *from,
+static void NET_ErrorEvent(qsocket_t sock, const netadr_t *from,
                            int ee_errno, int ee_info)
 {
     struct pollfd *s;
@@ -1635,7 +1635,7 @@ error:
 
 //===================================================================
 
-static void dump_addrinfo(struct addrinfo *ai)
+static void dump_addrinfo(const struct addrinfo *ai)
 {
     char buf1[MAX_QPATH], buf2[MAX_STRING_CHARS];
     const char *fa = ai->ai_addr->sa_family == AF_INET6 ? "6" : "";
@@ -1649,7 +1649,7 @@ static void dump_addrinfo(struct addrinfo *ai)
         Com_Printf("IP%1s     : %s\n", fa, buf1);
 }
 
-static void dump_socket(struct pollfd *s, const char *s1, const char *s2)
+static void dump_socket(const struct pollfd *s, const char *s1, const char *s2)
 {
     netadr_t adr;
 

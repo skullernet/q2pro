@@ -538,7 +538,7 @@ POLYGONS BUILDING
      (double)(x)[1]*(y)[1]+\
      (double)(x)[2]*(y)[2])
 
-static uint32_t color_for_surface(mface_t *surf)
+static uint32_t color_for_surface(const mface_t *surf)
 {
     if (surf->drawflags & SURF_TRANS33)
         return gl_static.inverse_intensity_33;
@@ -763,7 +763,7 @@ static void build_surface_light(mface_t *surf, vec_t *vbo)
 }
 
 // normalizes and stores lightmap texture coordinates in vertices
-static void normalize_surface_lmtc(mface_t *surf, vec_t *vbo)
+static void normalize_surface_lmtc(const mface_t *surf, vec_t *vbo)
 {
     float s, t;
     int i;
@@ -783,7 +783,7 @@ static void normalize_surface_lmtc(mface_t *surf, vec_t *vbo)
 
 // duplicates normalized texture0 coordinates for non-lit surfaces in texture1
 // to make them render properly when gl_lightmap hack is used
-static void duplicate_surface_lmtc(mface_t *surf, vec_t *vbo)
+static void duplicate_surface_lmtc(const mface_t *surf, vec_t *vbo)
 {
     int i;
 

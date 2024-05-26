@@ -86,7 +86,7 @@ void CL_PackEntity(entity_packed_t *out, const centity_state_t *in)
 }
 
 // writes a delta update of an entity_state_t list to the message.
-static void emit_packet_entities(server_frame_t *from, server_frame_t *to)
+static void emit_packet_entities(const server_frame_t *from, const server_frame_t *to)
 {
     entity_packed_t oldpack, newpack;
     centity_state_t *oldent, *newent;
@@ -157,7 +157,7 @@ static void emit_packet_entities(server_frame_t *from, server_frame_t *to)
     MSG_WriteShort(0);      // end of packetentities
 }
 
-static void emit_delta_frame(server_frame_t *from, server_frame_t *to,
+static void emit_delta_frame(const server_frame_t *from, const server_frame_t *to,
                              int fromnum, int tonum)
 {
     player_packed_t oldpack, newpack;

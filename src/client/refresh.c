@@ -184,7 +184,7 @@ bool VID_GetGeometry(vrect_t *rc)
     return true;
 }
 
-void VID_SetGeometry(vrect_t *rc)
+void VID_SetGeometry(const vrect_t *rc)
 {
     char buffer[MAX_QPATH];
 

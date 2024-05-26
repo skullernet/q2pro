@@ -30,7 +30,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 static cvar_t   *com_completion_mode;
 static cvar_t   *com_completion_treshold;
 
-static void Prompt_ShowMatches(commandPrompt_t *prompt, char **matches, int count)
+static void Prompt_ShowMatches(const commandPrompt_t *prompt, char **matches, int count)
 {
     int numCols = 7, numLines;
     int i, j, k;
@@ -71,12 +71,8 @@ static void Prompt_ShowMatches(commandPrompt_t *prompt, char **matches, int coun
     }
 }
 
-static void Prompt_ShowIndividualMatches(
-    commandPrompt_t *prompt,
-    char            **matches,
-    int             numCommands,
-    int             numAliases,
-    int             numCvars)
+static void Prompt_ShowIndividualMatches(const commandPrompt_t *prompt, char **matches,
+                                         int numCommands, int numAliases, int numCvars)
 {
     if (numCommands) {
         qsort(matches, numCommands, sizeof(matches[0]), SortStrcmp);

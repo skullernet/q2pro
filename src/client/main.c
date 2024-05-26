@@ -1512,7 +1512,7 @@ static void CL_PacketEvent(void)
 }
 
 #if USE_ICMP
-void CL_ErrorEvent(netadr_t *from)
+void CL_ErrorEvent(const netadr_t *from)
 {
     UI_ErrorEvent(from);
 

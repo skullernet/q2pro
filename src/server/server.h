@@ -583,7 +583,7 @@ bool SV_RateLimited(ratelimit_t *r);
 void SV_RateRecharge(ratelimit_t *r);
 void SV_RateInit(ratelimit_t *r, const char *s);
 
-addrmatch_t *SV_MatchAddress(list_t *list, netadr_t *address);
+addrmatch_t *SV_MatchAddress(const list_t *list, const netadr_t *address);
 
 int SV_CountClients(void);
 
@@ -647,7 +647,7 @@ void SV_MvdStatus_f(void);
 void SV_MvdMapChanged(void);
 void SV_MvdClientDropped(client_t *client);
 
-void SV_MvdUnicast(edict_t *ent, int clientNum, bool reliable);
+void SV_MvdUnicast(const edict_t *ent, int clientNum, bool reliable);
 void SV_MvdMulticast(const mleaf_t *leaf, multicast_t to, bool reliable);
 void SV_MvdConfigstring(int index, const char *string, size_t len);
 void SV_MvdBroadcastPrint(int level, const char *string);
@@ -685,7 +685,7 @@ void SV_MvdStop_f(void);
 // sv_ac.c
 //
 #if USE_AC_SERVER
-char *AC_ClientConnect(client_t *cl);
+const char *AC_ClientConnect(client_t *cl);
 void AC_ClientDisconnect(client_t *cl);
 bool AC_ClientBegin(client_t *cl);
 void AC_ClientAnnounce(client_t *cl);

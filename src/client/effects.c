@@ -1630,7 +1630,7 @@ void CL_FlyEffect(centity_t *ent, const vec3_t origin)
 CL_BfgParticles
 ===============
 */
-void CL_BfgParticles(entity_t *ent)
+void CL_BfgParticles(const entity_t *ent)
 {
     int         i;
     cparticle_t *p;

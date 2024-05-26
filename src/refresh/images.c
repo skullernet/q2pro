@@ -46,7 +46,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define R_COLORMAP_PCX    "pics/colormap.pcx"
 
 #define IMG_LOAD(x) \
-    static int IMG_Load##x(byte *rawdata, size_t rawlen, \
+    static int IMG_Load##x(const byte *rawdata, size_t rawlen, \
         image_t *image, byte **pic)
 
 static bool check_image_size(unsigned w, unsigned h)
@@ -213,11 +213,11 @@ static int uncompress_pcx(const byte *raw, const byte *end,
     return Q_ERR_SUCCESS;
 }
 
-static int load_pcx(byte *rawdata, size_t rawlen, byte **pixels_p,
+static int load_pcx(const byte *rawdata, size_t rawlen, byte **pixels_p,
                     byte *palette, int *width, int *height)
 {
-    dpcx_t  *pcx;
-    int     w, h, scan;
+    const dpcx_t    *pcx;
+    int             w, h, scan;
 
     //
     // parse the PCX file
@@ -226,7 +226,7 @@ static int load_pcx(byte *rawdata, size_t rawlen, byte **pixels_p,
         return Q_ERR_FILE_TOO_SMALL;
     }
 
-    pcx = (dpcx_t *)rawdata;
+    pcx = (const dpcx_t *)rawdata;
 
     if (pcx->manufacturer != 10 || pcx->version != 5) {
         return Q_ERR_UNKNOWN_FORMAT;
@@ -320,14 +320,14 @@ WAL LOADING
 
 IMG_LOAD(WAL)
 {
-    miptex_t    *mt;
-    unsigned    w, h, offset;
+    const miptex_t  *mt;
+    unsigned        w, h, offset;
 
     if (rawlen < sizeof(miptex_t)) {
         return Q_ERR_FILE_TOO_SMALL;
     }
 
-    mt = (miptex_t *)rawdata;
+    mt = (const miptex_t *)rawdata;
 
     w = LittleLong(mt->width);
     h = LittleLong(mt->height);
@@ -346,7 +346,7 @@ IMG_LOAD(WAL)
 
     image->upload_width = image->width = w;
     image->upload_height = image->height = h;
-    image->flags |= IMG_Unpack8((uint32_t *)*pic, (uint8_t *)mt + offset, w, h);
+    image->flags |= IMG_Unpack8((uint32_t *)*pic, rawdata + offset, w, h);
 
     return Q_ERR_SUCCESS;
 }
@@ -561,7 +561,7 @@ IMG_LOAD(TGA)
     return Q_ERR_SUCCESS;
 }
 
-static int IMG_SaveTGA(screenshot_t *restrict s)
+static int IMG_SaveTGA(const screenshot_t *restrict s)
 {
     byte header[TARGA_HEADER_SIZE] = { 0 };
 
@@ -646,7 +646,7 @@ static void my_error_exit(j_common_ptr cinfo)
     longjmp(jerr->setjmp_buffer, 1);
 }
 
-static int my_jpeg_start_decompress(j_decompress_ptr cinfo, byte *rawdata, size_t rawlen)
+static int my_jpeg_start_decompress(j_decompress_ptr cinfo, const byte *rawdata, size_t rawlen)
 {
     my_error_ptr jerr = (my_error_ptr)cinfo->err;
 
@@ -733,7 +733,7 @@ fail:
     return ret;
 }
 
-static int my_jpeg_compress(j_compress_ptr cinfo, JSAMPARRAY row_pointers, screenshot_t *s)
+static int my_jpeg_compress(j_compress_ptr cinfo, JSAMPARRAY row_pointers, const screenshot_t *s)
 {
     my_error_ptr jerr = (my_error_ptr)cinfo->err;
 
@@ -759,7 +759,7 @@ static int my_jpeg_compress(j_compress_ptr cinfo, JSAMPARRAY row_pointers, scree
     return 0;
 }
 
-static int IMG_SaveJPG(screenshot_t *restrict s)
+static int IMG_SaveJPG(const screenshot_t *restrict s)
 {
     struct jpeg_compress_struct cinfo;
     struct my_error_mgr jerr;
@@ -798,7 +798,7 @@ PNG IMAGES
 #if USE_PNG
 
 typedef struct {
-    png_bytep next_in;
+    png_const_bytep next_in;
     png_size_t avail_in;
 } my_png_io;
 
@@ -977,7 +977,7 @@ fail:
 }
 
 static int my_png_write_image(png_structp png_ptr, png_infop info_ptr,
-                              png_bytepp row_pointers, screenshot_t *s)
+                              png_bytepp row_pointers, const screenshot_t *s)
 {
     my_png_error *err = png_get_error_ptr(png_ptr);
 
@@ -994,7 +994,7 @@ static int my_png_write_image(png_structp png_ptr, png_infop info_ptr,
     return 0;
 }
 
-static int IMG_SavePNG(screenshot_t *restrict s)
+static int IMG_SavePNG(const screenshot_t *restrict s)
 {
     png_structp png_ptr;
     png_infop info_ptr;
@@ -1345,7 +1345,7 @@ uint32_t    d_8to24table[256];
 
 static const struct {
     char    ext[4];
-    int     (*load)(byte *, size_t, image_t *, byte **);
+    int     (*load)(const byte *, size_t, image_t *, byte **);
 } img_loaders[IM_MAX] = {
     { "pcx", IMG_LoadPCX },
     { "wal", IMG_LoadWAL },

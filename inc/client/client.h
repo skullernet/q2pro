@@ -63,7 +63,7 @@ typedef enum {
 
 bool CL_ProcessEvents(void);
 #if USE_ICMP
-void CL_ErrorEvent(netadr_t *from);
+void CL_ErrorEvent(const netadr_t *from);
 #endif
 void CL_Init(void);
 void CL_Disconnect(error_type_t type);

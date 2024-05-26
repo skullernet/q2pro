@@ -27,10 +27,10 @@ void     HashMap_Destroy(hash_map_t *map);
 void     HashMap_Reserve(hash_map_t *map, uint32_t capacity);
 bool     HashMap_InsertImpl(hash_map_t *map, const uint32_t key_size, const uint32_t value_size, const void *const key, const void *const value);
 bool     HashMap_EraseImpl(hash_map_t *map, const uint32_t key_size, const void *const key);
-void    *HashMap_LookupImpl(hash_map_t *map, const uint32_t key_size, const void *const key);
-uint32_t HashMap_Size(hash_map_t *map);
-void    *HashMap_GetKeyImpl(hash_map_t *map, uint32_t index);
-void    *HashMap_GetValueImpl(hash_map_t *map, uint32_t index);
+void    *HashMap_LookupImpl(const hash_map_t *map, const uint32_t key_size, const void *const key);
+uint32_t HashMap_Size(const hash_map_t *map);
+void    *HashMap_GetKeyImpl(const hash_map_t *map, uint32_t index);
+void    *HashMap_GetValueImpl(const hash_map_t *map, uint32_t index);
 
 #define HashMap_Create(key_type, value_type, hasher, comp) HashMap_CreateImpl(sizeof(key_type), sizeof(value_type), hasher, comp)
 #define HashMap_Insert(map, key, value)                    HashMap_InsertImpl(map, sizeof(*key), sizeof(*value), key, value)

@@ -44,7 +44,7 @@ typedef struct hash_map_s {
 HashMap_GetKeyImpl
 =================
 */
-void *HashMap_GetKeyImpl(hash_map_t *map, uint32_t index)
+void *HashMap_GetKeyImpl(const hash_map_t *map, uint32_t index)
 {
     return (byte *)map->keys + (map->key_size * index);
 }
@@ -54,7 +54,7 @@ void *HashMap_GetKeyImpl(hash_map_t *map, uint32_t index)
 HashMap_GetValueImpl
 =================
 */
-void *HashMap_GetValueImpl(hash_map_t *map, uint32_t index)
+void *HashMap_GetValueImpl(const hash_map_t *map, uint32_t index)
 {
     return (byte *)map->values + (map->value_size * index);
 }
@@ -253,7 +253,7 @@ bool HashMap_EraseImpl(hash_map_t *map, const uint32_t key_size, const void *con
 HashMap_LookupImpl
 =================
 */
-void *HashMap_LookupImpl(hash_map_t *map, const uint32_t key_size, const void *const key)
+void *HashMap_LookupImpl(const hash_map_t *map, const uint32_t key_size, const void *const key)
 {
     Q_assert(map->key_size == key_size);
     if (map->num_entries == 0)
@@ -277,7 +277,7 @@ void *HashMap_LookupImpl(hash_map_t *map, const uint32_t key_size, const void *c
 HashMap_Size
 =================
 */
-uint32_t HashMap_Size(hash_map_t *map)
+uint32_t HashMap_Size(const hash_map_t *map)
 {
     return map->num_entries;
 }

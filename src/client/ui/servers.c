@@ -324,7 +324,7 @@ UI_ErrorEvent
 An ICMP destination-unreachable error has been received.
 =================
 */
-void UI_ErrorEvent(netadr_t *from)
+void UI_ErrorEvent(const netadr_t *from)
 {
     serverslot_t *slot;
     netadr_t address;

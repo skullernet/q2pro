@@ -38,11 +38,11 @@ Truncates remainder of entity_packed_t list, patching current frame to make
 delta compression happy.
 =============
 */
-static bool SV_TruncPacketEntities(client_t         *client,
-                                   client_frame_t   *from,
-                                   client_frame_t   *to,
-                                   int              oldindex,
-                                   int              newindex)
+static bool SV_TruncPacketEntities(const client_t       *client,
+                                   const client_frame_t *from,
+                                   client_frame_t       *to,
+                                   int                  oldindex,
+                                   int                  newindex)
 {
     entity_packed_t *newent;
     const entity_packed_t *oldent;
@@ -134,11 +134,11 @@ SV_EmitPacketEntities
 Writes a delta update of an entity_packed_t list to the message.
 =============
 */
-static bool SV_EmitPacketEntities(client_t          *client,
-                                  client_frame_t    *from,
-                                  client_frame_t    *to,
-                                  int               clientEntityNum,
-                                  unsigned          maxsize)
+static bool SV_EmitPacketEntities(const client_t        *client,
+                                  const client_frame_t  *from,
+                                  client_frame_t        *to,
+                                  int                   clientEntityNum,
+                                  unsigned              maxsize)
 {
     entity_packed_t *newent;
     const entity_packed_t *oldent;

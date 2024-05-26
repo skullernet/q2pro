@@ -176,7 +176,7 @@ PAINTBUFFER TRANSFER
 ===============================================================================
 */
 
-static void TransferStereo16(samplepair_t *samp, int endtime)
+static void TransferStereo16(const samplepair_t *samp, int endtime)
 {
     int ltime = s_paintedtime;
     int size = dma.samples >> 1;
@@ -197,9 +197,9 @@ static void TransferStereo16(samplepair_t *samp, int endtime)
     }
 }
 
-static void TransferStereo(samplepair_t *samp, int endtime)
+static void TransferStereo(const samplepair_t *samp, int endtime)
 {
-    float *p = (float *)samp;
+    const float *p = (const float *)samp;
     int count = (endtime - s_paintedtime) * dma.channels;
     int out_mask = dma.samples - 1;
     int out_idx = s_paintedtime * dma.channels & out_mask;
@@ -325,16 +325,16 @@ CHANNEL MIXING
 ===============================================================================
 */
 
-typedef void (*paintfunc_t)(channel_t *, sfxcache_t *, int, samplepair_t *);
+typedef void (*paintfunc_t)(const channel_t *, const sfxcache_t *, int, samplepair_t *);
 
 #define PAINTFUNC(name) \
-    static void name(channel_t *ch, sfxcache_t *sc, int count, samplepair_t *samp)
+    static void name(const channel_t *ch, const sfxcache_t *sc, int count, samplepair_t *samp)
 
 PAINTFUNC(PaintMono8)
 {
     float leftvol = ch->leftvol * snd_vol * 256;
     float rightvol = ch->rightvol * snd_vol * 256;
-    uint8_t *sfx = sc->data + ch->pos;
+    const uint8_t *sfx = sc->data + ch->pos;
 
     for (int i = 0; i < count; i++, samp++, sfx++) {
         samp->left += (*sfx - 128) * leftvol;
@@ -346,7 +346,7 @@ PAINTFUNC(PaintStereoDmix8)
 {
     float leftvol = ch->leftvol * snd_vol * (256 * M_SQRT1_2);
     float rightvol = ch->rightvol * snd_vol * (256 * M_SQRT1_2);
-    uint8_t *sfx = sc->data + ch->pos * 2;
+    const uint8_t *sfx = sc->data + ch->pos * 2;
 
     for (int i = 0; i < count; i++, samp++, sfx += 2) {
         int sum = (sfx[0] - 128) + (sfx[1] - 128);
@@ -358,7 +358,7 @@ PAINTFUNC(PaintStereoDmix8)
 PAINTFUNC(PaintStereoFull8)
 {
     float vol = ch->leftvol * snd_vol * 256;
-    uint8_t *sfx = sc->data + ch->pos * 2;
+    const uint8_t *sfx = sc->data + ch->pos * 2;
 
     for (int i = 0; i < count; i++, samp++, sfx += 2) {
         samp->left += (sfx[0] - 128) * vol;
@@ -370,7 +370,7 @@ PAINTFUNC(PaintMono16)
 {
     float leftvol = ch->leftvol * snd_vol;
     float rightvol = ch->rightvol * snd_vol;
-    int16_t *sfx = (int16_t *)sc->data + ch->pos;
+    const int16_t *sfx = (const int16_t *)sc->data + ch->pos;
 
     for (int i = 0; i < count; i++, samp++, sfx++) {
         samp->left += *sfx * leftvol;
@@ -382,7 +382,7 @@ PAINTFUNC(PaintStereoDmix16)
 {
     float leftvol = ch->leftvol * snd_vol * M_SQRT1_2;
     float rightvol = ch->rightvol * snd_vol * M_SQRT1_2;
-    int16_t *sfx = (int16_t *)sc->data + ch->pos * 2;
+    const int16_t *sfx = (const int16_t *)sc->data + ch->pos * 2;
 
     for (int i = 0; i < count; i++, samp++, sfx += 2) {
         int sum = sfx[0] + sfx[1];
@@ -394,7 +394,7 @@ PAINTFUNC(PaintStereoDmix16)
 PAINTFUNC(PaintStereoFull16)
 {
     float vol = ch->leftvol * snd_vol;
-    int16_t *sfx = (int16_t *)sc->data + ch->pos * 2;
+    const int16_t *sfx = (const int16_t *)sc->data + ch->pos * 2;
 
     for (int i = 0; i < count; i++, samp++, sfx += 2) {
         samp->left += sfx[0] * vol;

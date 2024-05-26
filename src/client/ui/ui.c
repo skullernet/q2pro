@@ -285,7 +285,7 @@ char *UI_GetColumn(char *s, int n)
 UI_CursorInRect
 =================
 */
-bool UI_CursorInRect(vrect_t *rect)
+bool UI_CursorInRect(const vrect_t *rect)
 {
     if (uis.mouseCoords[0] < rect->x) {
         return false;

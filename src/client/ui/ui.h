@@ -317,7 +317,7 @@ void        UI_ForceMenuOff(void);
 void        UI_PopMenu(void);
 void        UI_StartSound(menuSound_t sound);
 bool        UI_DoHitTest(void);
-bool        UI_CursorInRect(vrect_t *rect);
+bool        UI_CursorInRect(const vrect_t *rect);
 void        *UI_FormatColumns(int extrasize, ...) q_sentinel;
 char        *UI_GetColumn(char *s, int n);
 void        UI_DrawString(int x, int y, int flags, const char *string);

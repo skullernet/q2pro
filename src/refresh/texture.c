@@ -233,7 +233,7 @@ static void IMG_ResampleTexture(const byte *in, int inwidth, int inheight,
     }
 }
 
-static void IMG_MipMap(byte *out, byte *in, int width, int height)
+static void IMG_MipMap(byte *out, const byte *in, int width, int height)
 {
     int     i, j;
 
@@ -419,10 +419,10 @@ static void GL_ColorInvertTexture(byte *in, int inwidth, int inheight, imagetype
     }
 }
 
-static bool GL_TextureHasAlpha(byte *data, int width, int height)
+static bool GL_TextureHasAlpha(const byte *data, int width, int height)
 {
     int         i, c;
-    byte        *scan;
+    const byte  *scan;
 
     c = width * height;
     scan = data + 3;
