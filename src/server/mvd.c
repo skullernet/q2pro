@@ -1429,10 +1429,9 @@ static void write_stream(gtv_client_t *client, void *data, size_t len)
         } while (z->avail_in);
     } else
 #endif
-
-        if (FIFO_Write(fifo, data, len) != len) {
-            drop_client(client, "overflowed");
-        }
+    if (FIFO_Write(fifo, data, len) != len) {
+        drop_client(client, "overflowed");
+    }
 }
 
 static void write_message(gtv_client_t *client, gtv_serverop_t op)
