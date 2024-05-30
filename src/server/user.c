@@ -297,14 +297,12 @@ static void stuff_junk(void)
     static const char junkchars[] =
         "!#&'()*+,-./0123456789:<=>?@[\\]^_``````````abcdefghijklmnopqrstuvwxyz|~~~~~~~~~~";
     char junk[8][16];
-    int i, j, k;
+    int i, j;
 
     for (i = 0; i < 8; i++) {
-        for (j = 0; j < 15; j++) {
-            k = Q_rand() % (sizeof(junkchars) - 1);
-            junk[i][j] = junkchars[k];
-        }
-        junk[i][15] = 0;
+        for (j = 0; j < 15; j++)
+            junk[i][j] = junkchars[Q_rand_uniform(sizeof(junkchars) - 1)];
+        junk[i][j] = 0;
     }
 
     Q_strlcpy(sv_client->reconnect_var, junk[2], sizeof(sv_client->reconnect_var));
