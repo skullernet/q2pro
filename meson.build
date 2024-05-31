@@ -194,7 +194,7 @@ if system_wide
   homedir = get_option('homedir')
 endif
 
-common_args = ['-DHAVE_CONFIG_H', '-DUSE_PROTOCOL_EXTENSIONS=1']
+common_args = ['-DHAVE_CONFIG_H']
 if win32
   common_args += '-D_USE_MATH_DEFINES'
 else
@@ -463,6 +463,7 @@ config.set10('USE_MD5',           get_option('md5'))
 config.set10('USE_PACKETDUP',     get_option('packetdup-hack'))
 config.set10('USE_TGA',           get_option('tga'))
 config.set10('USE_' + host_machine.endian().to_upper() + '_ENDIAN', true)
+config.set10('USE_PROTOCOL_EXTENSIONS', true)
 
 configure_file(output: 'config.h', configuration: config)
 
