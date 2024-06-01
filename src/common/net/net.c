@@ -539,7 +539,7 @@ static size_t NET_DnRate_m(char *buffer, size_t size)
 static void NET_GetLoopPackets(netsrc_t sock, void (*packet_cb)(void))
 {
     loopback_t *loop;
-    loopmsg_t *loopmsg;
+    loopmsg_t *msg;
 
     loop = &loopbacks[sock];
 
@@ -548,19 +548,19 @@ static void NET_GetLoopPackets(netsrc_t sock, void (*packet_cb)(void))
     }
 
     while (loop->get != loop->send) {
-        loopmsg = &loop->msgs[loop->get & (MAX_LOOPBACK - 1)];
+        msg = &loop->msgs[loop->get & (MAX_LOOPBACK - 1)];
         loop->get++;
 
-        memcpy(msg_read_buffer, loopmsg->data, loopmsg->datalen);
+        memcpy(msg_read_buffer, msg->data, msg->datalen);
 
-        NET_LogPacket(&net_from, "LP recv", loopmsg->data, loopmsg->datalen);
+        NET_LogPacket(&net_from, "LP recv", msg->data, msg->datalen);
 
         if (sock == NS_CLIENT) {
-            net_rate_rcvd += loopmsg->datalen;
+            net_rate_rcvd += msg->datalen;
         }
 
         SZ_Init(&msg_read, msg_read_buffer, sizeof(msg_read_buffer));
-        msg_read.cursize = loopmsg->datalen;
+        msg_read.cursize = msg->datalen;
 
         (*packet_cb)();
     }
