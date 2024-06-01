@@ -73,14 +73,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MAX_LOOPBACK    4
 
 typedef struct {
-    byte    data[MAX_PACKETLEN];
-    size_t  datalen;
+    byte        data[MAX_PACKETLEN];
+    unsigned    datalen;
 } loopmsg_t;
 
 typedef struct {
-    loopmsg_t       msgs[MAX_LOOPBACK];
-    unsigned long   get;
-    unsigned long   send;
+    loopmsg_t   msgs[MAX_LOOPBACK];
+    unsigned    get;
+    unsigned    send;
 } loopback_t;
 
 static loopback_t   loopbacks[NS_COUNT];
@@ -543,11 +543,11 @@ static void NET_GetLoopPackets(netsrc_t sock, void (*packet_cb)(void))
 
     loop = &loopbacks[sock];
 
-    if (loop->send - loop->get > MAX_LOOPBACK - 1) {
-        loop->get = loop->send - MAX_LOOPBACK + 1;
+    if (loop->send - loop->get > MAX_LOOPBACK) {
+        loop->get = loop->send - MAX_LOOPBACK;
     }
 
-    while (loop->get < loop->send) {
+    while (loop->get != loop->send) {
         loopmsg = &loop->msgs[loop->get & (MAX_LOOPBACK - 1)];
         loop->get++;
 
