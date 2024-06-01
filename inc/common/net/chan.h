@@ -81,7 +81,7 @@ void Netchan_Setup(netchan_t *chan, netsrc_t sock, netchan_type_t type,
 int Netchan_Transmit(netchan_t *chan, size_t length, const void *data, int numpackets);
 int Netchan_TransmitNextFragment(netchan_t *chan);
 bool Netchan_Process(netchan_t *chan);
-bool Netchan_ShouldUpdate(netchan_t *chan);
+bool Netchan_ShouldUpdate(const netchan_t *chan);
 void Netchan_Close(netchan_t *chan);
 
 #define OOB_PRINT(sock, addr, data) \

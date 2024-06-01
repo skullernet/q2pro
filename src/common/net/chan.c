@@ -712,7 +712,7 @@ int Netchan_Transmit(netchan_t *chan, size_t length, const void *data, int numpa
 Netchan_ShouldUpdate
 ==============
 */
-bool Netchan_ShouldUpdate(netchan_t *chan)
+bool Netchan_ShouldUpdate(const netchan_t *chan)
 {
     return chan->message.cursize
         || chan->reliable_ack_pending
