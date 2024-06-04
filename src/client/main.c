@@ -2497,9 +2497,15 @@ static bool allow_stufftext(const char *text)
 {
     string_entry_t *entry;
 
+    if (cl_ignore_stufftext->integer <= 0)
+        return true;
+
     for (entry = cls.stufftextwhitelist; entry; entry = entry->next)
         if (Com_WildCmp(entry->string, text))
             return true;
+
+    if (cl_ignore_stufftext->integer >= 2)
+        Com_WPrintf("Ignored stufftext: %s\n", text);
 
     return false;
 }
@@ -2547,9 +2553,8 @@ static void exec_server_string(cmdbuf_t *buf, const char *text)
         return;
     }
 
-    if (cl_ignore_stufftext->integer >= 1 && !allow_stufftext(text)) {
-        if (cl_ignore_stufftext->integer >= 2)
-            Com_WPrintf("Ignored stufftext: %s\n", text);
+    // optional whitelist filtering
+    if (!allow_stufftext(text)) {
         return;
     }
 
