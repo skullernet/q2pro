@@ -2594,49 +2594,9 @@ static void cl_flares_changed(cvar_t *self)
     CL_UpdateFlaresSetting();
 }
 
-static inline int fps_to_msec(int fps)
-{
-#if 0
-    return (1000 + fps / 2) / fps;
-#else
-    return 1000 / fps;
-#endif
-}
-
-static void warn_on_fps_rounding(cvar_t *cvar)
-{
-    static bool warned = false;
-    int msec, real_maxfps;
-
-    if (cvar->integer <= 0 || cl_warn_on_fps_rounding->integer <= 0)
-        return;
-
-    msec = fps_to_msec(cvar->integer);
-    if (!msec)
-        return;
-
-    real_maxfps = 1000 / msec;
-    if (cvar->integer == real_maxfps)
-        return;
-
-    Com_WPrintf("%s value `%d' is inexact, using `%d' instead.\n",
-                cvar->name, cvar->integer, real_maxfps);
-    if (!warned) {
-        Com_Printf("(Set `%s' to `0' to disable this warning.)\n",
-                   cl_warn_on_fps_rounding->name);
-        warned = true;
-    }
-}
-
 static void cl_sync_changed(cvar_t *self)
 {
     CL_UpdateFrameTimes();
-}
-
-static void cl_maxfps_changed(cvar_t *self)
-{
-    CL_UpdateFrameTimes();
-    warn_on_fps_rounding(self);
 }
 
 // allow downloads to be permanently disabled as a
@@ -2762,11 +2722,11 @@ static void CL_InitLocal(void)
     cl_kickangles = Cvar_Get("cl_kickangles", "1", CVAR_CHEAT);
     cl_warn_on_fps_rounding = Cvar_Get("cl_warn_on_fps_rounding", "1", 0);
     cl_maxfps = Cvar_Get("cl_maxfps", "62", 0);
-    cl_maxfps->changed = cl_maxfps_changed;
+    cl_maxfps->changed = cl_sync_changed;
     cl_async = Cvar_Get("cl_async", "1", 0);
     cl_async->changed = cl_sync_changed;
     r_maxfps = Cvar_Get("r_maxfps", "0", 0);
-    r_maxfps->changed = cl_maxfps_changed;
+    r_maxfps->changed = cl_sync_changed;
     cl_autopause = Cvar_Get("cl_autopause", "1", 0);
     cl_rollhack = Cvar_Get("cl_rollhack", "1", 0);
     cl_noglow = Cvar_Get("cl_noglow", "0", 0);
@@ -2777,8 +2737,6 @@ static void CL_InitLocal(void)
     com_timedemo->changed = cl_sync_changed;
 
     CL_UpdateFrameTimes();
-    warn_on_fps_rounding(cl_maxfps);
-    warn_on_fps_rounding(r_maxfps);
 
 #if USE_DEBUG
     cl_shownet = Cvar_Get("cl_shownet", "0", 0);
@@ -3121,12 +3079,50 @@ static sync_mode_t sync_mode;
 #define MIN_REF_HZ MIN_PHYS_HZ
 #define MAX_REF_HZ 1000
 
+static inline int fps_to_msec(int fps)
+{
+    return 1000 / fps;
+}
+
+static void warn_on_fps_rounding(const cvar_t *cvar, int msec)
+{
+    static bool warned = false;
+    int real_maxfps;
+
+    if (cl_warn_on_fps_rounding->integer <= 0)
+        return;
+
+    if (!msec)
+        return;
+
+    real_maxfps = 1000 / msec;
+    if (cvar->integer == real_maxfps)
+        return;
+
+    Com_WPrintf("%s value `%d' is inexact and will be rounded to `%d'.\n",
+                cvar->name, cvar->integer, real_maxfps);
+    if (!warned) {
+        Com_Printf("(Set `%s' to `0' to disable this warning.)\n",
+                   cl_warn_on_fps_rounding->name);
+        warned = true;
+    }
+}
+
 static int fps_to_clamped_msec(cvar_t *cvar, int min, int max)
 {
+    int msec;
+
     if (cvar->integer == 0)
         return fps_to_msec(max);
-    else
-        return fps_to_msec(Cvar_ClampInteger(cvar, min, max));
+
+    msec = fps_to_msec(Cvar_ClampInteger(cvar, min, max));
+
+    if (cvar->modified) {
+        warn_on_fps_rounding(cvar, msec);
+        cvar->modified = false;
+    }
+
+    return msec;
 }
 
 /*
