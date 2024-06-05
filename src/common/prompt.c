@@ -510,6 +510,10 @@ void Prompt_SaveHistory(commandPrompt_t *prompt, const char *filename, int lines
     char *s;
     int i;
 
+    if (!prompt->inputLineNum) {
+        return;
+    }
+
     FS_OpenFile(filename, &f, FS_MODE_WRITE | FS_PATH_BASE);
     if (!f) {
         return;

@@ -64,6 +64,7 @@ static HANDLE   houtput = INVALID_HANDLE_VALUE;
 static commandPrompt_t  sys_con;
 static int              sys_hidden;
 static bool             gotConsole;
+static cvar_t           *sys_history;
 
 static void write_console_data(const char *data, size_t len)
 {
@@ -487,6 +488,24 @@ void Sys_RunConsole(void)
                 break;
             }
         }
+    }
+}
+
+void Sys_LoadHistory(void)
+{
+    if (!gotConsole) {
+        return;
+    }
+    sys_history = Cvar_Get("sys_history", "0", 0);
+    if (sys_history->integer > 0) {
+        Prompt_LoadHistory(&sys_con, SYS_HISTORYFILE_NAME);
+    }
+}
+
+void Sys_SaveHistory(void)
+{
+    if (sys_history && sys_history->integer > 0) {
+        Prompt_SaveHistory(&sys_con, SYS_HISTORYFILE_NAME, sys_history->integer);
     }
 }
 

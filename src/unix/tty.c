@@ -44,6 +44,7 @@ enum {
 };
 
 static cvar_t           *sys_console;
+static cvar_t           *sys_history;
 
 static bool             tty_enabled;
 static struct termios   tty_orig;
@@ -581,6 +582,24 @@ void tty_shutdown_input(void)
         Sys_SetNonBlock(STDOUT_FILENO, false);
     }
     Cvar_Set("sys_console", "0");
+}
+
+void Sys_LoadHistory(void)
+{
+    if (!tty_enabled) {
+        return;
+    }
+    sys_history = Cvar_Get("sys_history", "0", 0);
+    if (sys_history->integer > 0) {
+        Prompt_LoadHistory(&tty_prompt, SYS_HISTORYFILE_NAME);
+    }
+}
+
+void Sys_SaveHistory(void)
+{
+    if (sys_history && sys_history->integer > 0) {
+        Prompt_SaveHistory(&tty_prompt, SYS_HISTORYFILE_NAME, sys_history->integer);
+    }
 }
 
 void Sys_RunConsole(void)

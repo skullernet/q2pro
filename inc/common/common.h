@@ -47,6 +47,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // FIXME: rename these
 #define COM_HISTORYFILE_NAME    ".conhistory"
 #define COM_DEMOCACHE_NAME      ".democache"
+#define SYS_HISTORYFILE_NAME    ".syshistory"
 
 #define MAXPRINTMSG     4096
 #define MAXERRORMSG     1024
