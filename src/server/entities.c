@@ -38,15 +38,12 @@ Truncates remainder of entity_packed_t list, patching current frame to make
 delta compression happy.
 =============
 */
-static bool SV_TruncPacketEntities(const client_t       *client,
-                                   const client_frame_t *from,
-                                   client_frame_t       *to,
-                                   int                  oldindex,
-                                   int                  newindex)
+static bool SV_TruncPacketEntities(client_t *client, const client_frame_t *from,
+                                   client_frame_t *to, int oldindex, int newindex)
 {
     entity_packed_t *newent;
     const entity_packed_t *oldent;
-    int i, oldnum, newnum, from_num_entities, to_num_entities;
+    int i, oldnum, newnum, entities_mask, from_num_entities, to_num_entities;
     bool ret = true;
 
     if (!sv_trunc_packet_entities->integer || client->netchan.type)
@@ -61,21 +58,22 @@ static bool SV_TruncPacketEntities(const client_t       *client,
         from_num_entities = from->num_entities;
     to_num_entities = to->num_entities;
 
+    entities_mask = client->num_entities - 1;
     oldent = newent = NULL;
     while (newindex < to->num_entities || oldindex < from_num_entities) {
         if (newindex >= to->num_entities) {
             newnum = MAX_EDICTS;
         } else {
-            i = (to->first_entity + newindex) % svs.num_entities;
-            newent = &svs.entities[i];
+            i = (to->first_entity + newindex) & entities_mask;
+            newent = &client->entities[i];
             newnum = newent->number;
         }
 
         if (oldindex >= from_num_entities) {
             oldnum = MAX_EDICTS;
         } else {
-            i = (from->first_entity + oldindex) % svs.num_entities;
-            oldent = &svs.entities[i];
+            i = (from->first_entity + oldindex) & entities_mask;
+            oldent = &client->entities[i];
             oldnum = oldent->number;
         }
 
@@ -91,8 +89,8 @@ static bool SV_TruncPacketEntities(const client_t       *client,
             // remove new entity from frame
             to->num_entities--;
             for (i = newindex; i < to->num_entities; i++) {
-                svs.entities[(to->first_entity + i    ) % svs.num_entities] =
-                svs.entities[(to->first_entity + i + 1) % svs.num_entities];
+                client->entities[(to->first_entity + i    ) & entities_mask] =
+                client->entities[(to->first_entity + i + 1) & entities_mask];
             }
             continue;
         }
@@ -107,11 +105,11 @@ static bool SV_TruncPacketEntities(const client_t       *client,
 
             // insert old entity into frame
             for (i = to->num_entities - 1; i >= newindex; i--) {
-                svs.entities[(to->first_entity + i + 1) % svs.num_entities] =
-                svs.entities[(to->first_entity + i    ) % svs.num_entities];
+                client->entities[(to->first_entity + i + 1) & entities_mask] =
+                client->entities[(to->first_entity + i    ) & entities_mask];
             }
 
-            svs.entities[(to->first_entity + newindex) % svs.num_entities] = *oldent;
+            client->entities[(to->first_entity + newindex) & entities_mask] = *oldent;
             to->num_entities++;
 
             // should never go backwards
@@ -123,7 +121,7 @@ static bool SV_TruncPacketEntities(const client_t       *client,
         }
     }
 
-    svs.next_entity = to->first_entity + to_num_entities;
+    client->next_entity = to->first_entity + to_num_entities;
     return ret;
 }
 
@@ -134,11 +132,8 @@ SV_EmitPacketEntities
 Writes a delta update of an entity_packed_t list to the message.
 =============
 */
-static bool SV_EmitPacketEntities(const client_t        *client,
-                                  const client_frame_t  *from,
-                                  client_frame_t        *to,
-                                  int                   clientEntityNum,
-                                  unsigned              maxsize)
+static bool SV_EmitPacketEntities(client_t *client, const client_frame_t *from,
+                                  client_frame_t *to, int clientEntityNum, unsigned maxsize)
 {
     entity_packed_t *newent;
     const entity_packed_t *oldent;
@@ -166,16 +161,16 @@ static bool SV_EmitPacketEntities(const client_t        *client,
         if (newindex >= to->num_entities) {
             newnum = MAX_EDICTS;
         } else {
-            i = (to->first_entity + newindex) % svs.num_entities;
-            newent = &svs.entities[i];
+            i = (to->first_entity + newindex) & (client->num_entities - 1);
+            newent = &client->entities[i];
             newnum = newent->number;
         }
 
         if (oldindex >= from_num_entities) {
             oldnum = MAX_EDICTS;
         } else {
-            i = (from->first_entity + oldindex) % svs.num_entities;
-            oldent = &svs.entities[i];
+            i = (from->first_entity + oldindex) & (client->num_entities - 1);
+            oldent = &client->entities[i];
             oldnum = oldent->number;
         }
 
@@ -257,7 +252,7 @@ static client_frame_t *get_last_frame(client_t *client)
         return NULL;
     }
 
-    if (svs.next_entity - frame->first_entity > svs.num_entities) {
+    if (client->next_entity - frame->first_entity > client->num_entities) {
         // but entities are too old
         Com_DPrintf("%s: delta request from out-of-date entities.\n", client->name);
         return NULL;
@@ -571,6 +566,8 @@ void SV_BuildClientFrame(client_t *client)
     if (!clent->client)
         return;        // not in game yet
 
+    Q_assert(client->entities);
+
     // this is the frame we are creating
     frame = &client->frames[client->framenum & UPDATE_MASK];
     frame->number = client->framenum;
@@ -629,7 +626,7 @@ void SV_BuildClientFrame(client_t *client)
 
     // build up the list of visible entities
     frame->num_entities = 0;
-    frame->first_entity = svs.next_entity;
+    frame->first_entity = client->next_entity;
 
     num_edicts = 0;
     for (e = 1; e < client->ge->num_edicts; e++) {
@@ -715,7 +712,7 @@ void SV_BuildClientFrame(client_t *client)
         e = ent->s.number;
 
         // add it to the circular client_entities array
-        state = &svs.entities[svs.next_entity % svs.num_entities];
+        state = &client->entities[client->next_entity & (client->num_entities - 1)];
 
         // optionally customize it
         if (customize && customize(clent, ent, &temp)) {
@@ -760,7 +757,7 @@ void SV_BuildClientFrame(client_t *client)
         }
 
         frame->num_entities++;
-        svs.next_entity++;
+        client->next_entity++;
     }
 
     if (need_clientnum_fix)

@@ -350,6 +350,11 @@ typedef struct client_s {
     // per-client baseline chunks
     entity_packed_t     *baselines[SV_BASELINES_CHUNKS];
 
+    // per-client packet entities
+    unsigned            num_entities;   // UPDATE_BACKUP*MAX_PACKET_ENTITIES(_OLD)
+    unsigned            next_entity;    // next state to use
+    entity_packed_t     *entities;      // [num_entities]
+
     // server state pointers (hack for MVD channels implementation)
     configstring_t      *configstrings;
     const cs_remap_t    *csr;
@@ -467,10 +472,6 @@ typedef struct {
     unsigned    realtime;           // always increasing, no clamping, etc
 
     client_t    *client_pool;   // [maxclients]
-
-    unsigned        num_entities;   // maxclients*UPDATE_BACKUP*MAX_PACKET_ENTITIES
-    unsigned        next_entity;    // next state to use
-    entity_packed_t *entities;      // [num_entities]
 
 #if USE_ZLIB
     z_stream        z;  // for compressing messages at once

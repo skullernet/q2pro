@@ -534,6 +534,13 @@ void SV_Begin_f(void)
 
     stuff_cmds(&sv_cmdlist_begin);
 
+    // allocate packet entities if not done yet
+    if (!sv_client->entities) {
+        int max_packet_entities = sv_client->csr->extended ? MAX_PACKET_ENTITIES : MAX_PACKET_ENTITIES_OLD;
+        sv_client->num_entities = max_packet_entities * UPDATE_BACKUP;
+        sv_client->entities = SV_Mallocz(sizeof(sv_client->entities[0]) * sv_client->num_entities);
+    }
+
     // call the game begin function
     ge->ClientBegin(sv_player);
 

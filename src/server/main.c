@@ -160,6 +160,10 @@ void SV_CleanClient(client_t *client)
     for (i = 0; i < SV_BASELINES_CHUNKS; i++) {
         Z_Freep(&client->baselines[i]);
     }
+
+    // free packet entities
+    Z_Freep(&client->entities);
+    client->num_entities = 0;
 }
 
 static void print_drop_reason(client_t *client, const char *reason, clstate_t oldstate)
@@ -2377,7 +2381,6 @@ void SV_Shutdown(const char *finalmsg, error_type_t type)
 
     // free server static data
     Z_Free(svs.client_pool);
-    Z_Free(svs.entities);
 #if USE_ZLIB
     deflateEnd(&svs.z);
     Z_Free(svs.z_buffer);

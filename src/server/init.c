@@ -34,6 +34,7 @@ void SV_ClientReset(client_t *client)
     client->frames_nodelta = 0;
     client->send_delta = 0;
     client->suppress_count = 0;
+    client->next_entity = 0;
     memset(&client->lastcmd, 0, sizeof(client->lastcmd));
 }
 
@@ -131,9 +132,6 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     FOR_EACH_CLIENT(client) {
         client->spawncount = sv.spawncount;
     }
-
-    // reset entity counter
-    svs.next_entity = 0;
 
     // set framerate parameters
     set_frame_time();
@@ -344,7 +342,7 @@ If mvd_spawn is non-zero, load the built-in MVD game module.
 */
 void SV_InitGame(unsigned mvd_spawn)
 {
-    int     i, entnum, max_packet_entities;
+    int     i, entnum;
     edict_t *ent;
     client_t *client;
 
@@ -442,11 +440,6 @@ void SV_InitGame(unsigned mvd_spawn)
         SV_CheckForEnhancedSavegames();
         SV_MvdPostInit();
     }
-
-    // allocate packet entities
-    max_packet_entities = svs.csr.extended ? MAX_PACKET_ENTITIES : MAX_PACKET_ENTITIES_OLD;
-    svs.num_entities = sv_maxclients->integer * max_packet_entities * UPDATE_BACKUP;
-    svs.entities = SV_Mallocz(sizeof(svs.entities[0]) * svs.num_entities);
 
     // send heartbeat very soon
     svs.last_heartbeat = -(HEARTBEAT_SECONDS - 5) * 1000;

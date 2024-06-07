@@ -774,6 +774,10 @@ void MVD_BroadcastPrintf(mvd_t *mvd, int level, int mask, const char *fmt, ...)
 
 static void MVD_SetServerState(client_t *cl, mvd_t *mvd)
 {
+    if (cl->csr != mvd->csr) {
+        Z_Freep(&cl->entities);
+        cl->num_entities = 0;
+    }
     cl->gamedir = mvd->gamedir;
     cl->mapname = mvd->mapname;
     cl->configstrings = mvd->configstrings;

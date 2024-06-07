@@ -514,8 +514,8 @@ static bool check_entity(const client_t *client, int entnum)
         int i, j;
 
         i = (left + right) / 2;
-        j = (frame->first_entity + i) % svs.num_entities;
-        j = svs.entities[j].number;
+        j = (frame->first_entity + i) & (client->num_entities - 1);
+        j = client->entities[j].number;
         if (j < entnum)
             left = i + 1;
         else if (j > entnum)
