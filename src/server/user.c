@@ -502,6 +502,10 @@ void SV_Begin_f(void)
         Com_DPrintf("Begin not valid -- already spawned\n");
         return;
     }
+    if (sv.state == ss_pic || sv.state == ss_cinematic) {
+        Com_DPrintf("Begin not valid -- map not loaded\n");
+        return;
+    }
 
     if (!sv_client->version_string) {
         SV_DropClient(sv_client, "!failed version probe");
