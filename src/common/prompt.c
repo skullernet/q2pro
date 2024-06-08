@@ -514,10 +514,6 @@ void Prompt_SaveHistory(const commandPrompt_t *prompt, const char *filename, int
     const char *s;
     unsigned i;
 
-    if (!prompt->inputLineNum) {
-        return;
-    }
-
     if (lines < 1) {
         return;
     }
