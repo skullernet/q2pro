@@ -553,13 +553,14 @@ void Prompt_LoadHistory(commandPrompt_t *prompt, const char *filename)
         int len = FS_ReadLine(f, buffer, sizeof(buffer));
         if (len <= 0)
             break;
-        if (buffer[len - 1] == '\n')
-            buffer[len - 1] = 0;
-        if (buffer[0]) {
-            Z_Free(prompt->history[i & HISTORY_MASK]);
-            prompt->history[i & HISTORY_MASK] = Z_CopyString(buffer);
-            i++;
-        }
+        while (len > 0 && (buffer[len - 1] == '\n' || buffer[len - 1] == '\r'))
+            len--;
+        if (!len)
+            continue;
+        buffer[len] = 0;
+        Z_Free(prompt->history[i & HISTORY_MASK]);
+        prompt->history[i & HISTORY_MASK] = Z_CopyString(buffer);
+        i++;
     }
 
     FS_CloseFile(f);
