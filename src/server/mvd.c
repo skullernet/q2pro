@@ -339,7 +339,7 @@ static client_t *dummy_find_slot(void)
 }
 
 #define MVD_USERINFO1 \
-    "\\name\\[MVDSPEC]\\skin\\male/grunt"
+    "\\name\\[MVDSPEC]\\skin\\male/grunt\\spectator\\1"
 
 #define MVD_USERINFO2 \
     "\\mvdspec\\" STRINGIFY(PROTOCOL_VERSION_MVD_CURRENT) "\\ip\\loopback"
