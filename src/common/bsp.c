@@ -840,6 +840,7 @@ static void BSP_PrintStats(const bsp_t *bsp)
             "%8u : lightgrid leafs\n"
             "%8u : lightgrid samples\n",
             grid->numstyles, grid->numnodes, grid->numleafs, grid->numsamples);
+        extended = true;
     }
     extended |= bsp->lm_decoupled;
 #endif
@@ -851,6 +852,8 @@ static void BSP_PrintStats(const bsp_t *bsp)
 #if USE_REF
         if (bsp->lm_decoupled)
             Com_Printf(" DECOUPLED_LM");
+        if (bsp->lightgrid.numleafs)
+            Com_Printf(" LIGHTGRID_OCTREE");
 #endif
         Com_Printf("\n");
     }
