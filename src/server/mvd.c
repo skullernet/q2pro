@@ -349,7 +349,7 @@ static int dummy_create(void)
     client_t *newcl;
     char userinfo[MAX_INFO_STRING * 2];
     const char *s;
-    int allow;
+    qboolean allow;
     int number;
 
     // do nothing if already created
