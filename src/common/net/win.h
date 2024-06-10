@@ -165,9 +165,11 @@ static int os_udp_send(qsocket_t sock, const void *data,
     if (net_error == WSAEWOULDBLOCK || net_error == WSAEINTR)
         return NET_AGAIN;
 
+#if USE_CLIENT
     // some PPP links do not allow broadcasts
     if (net_error == WSAEADDRNOTAVAIL && to->type == NA_BROADCAST)
         return NET_AGAIN;
+#endif
 
     return NET_ERROR;
 }

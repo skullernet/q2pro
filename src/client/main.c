@@ -581,7 +581,7 @@ static void CL_FollowIP_f(void)
 
     a = &cls.recent_addr[i & RECENT_MASK];
     if (a->type) {
-        char *s = NET_AdrToString(a);
+        const char *s = NET_AdrToString(a);
         Com_Printf("Following %s...\n", s);
         Cbuf_InsertText(cmd_current, va("connect %s\n", s));
     }
@@ -1415,16 +1415,18 @@ static void CL_ConnectionlessPacket(void)
     }
 
     if (!strcmp(c, "passive_connect")) {
+        const char *adr;
+
         if (!cls.passive) {
             Com_DPrintf("Passive connect received while not connecting.  Ignored.\n");
             return;
         }
-        s = NET_AdrToString(&net_from);
-        Com_Printf("Received passive connect from %s.\n", s);
+        adr = NET_AdrToString(&net_from);
+        Com_Printf("Received passive connect from %s.\n", adr);
 
         cls.serverAddress = net_from;
         cls.serverProtocol = cl_protocol->integer;
-        Q_strlcpy(cls.servername, s, sizeof(cls.servername));
+        Q_strlcpy(cls.servername, adr, sizeof(cls.servername));
         cls.passive = false;
 
         cls.state = ca_challenging;

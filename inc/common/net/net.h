@@ -51,8 +51,10 @@ struct pollfd;
 
 typedef enum {
     NA_UNSPECIFIED,
+#if USE_CLIENT
     NA_LOOPBACK,
     NA_BROADCAST,
+#endif
     NA_IP,
     NA_IP6
 } netadrtype_t;
@@ -83,7 +85,7 @@ typedef struct {
     uint32_t scope_id;  // IPv6 crap
 } netadr_t;
 
-typedef enum netstate_e {
+typedef enum {
     NS_DISCONNECTED,// no socket opened
     NS_CONNECTING,  // connect() not yet completed
     NS_CONNECTED,   // may transmit data
@@ -99,17 +101,24 @@ typedef struct {
     fifo_t send;
 } netstream_t;
 
+#if USE_CLIENT
+#define     NET_IsLocalAddress(adr)     ((adr)->type == NA_LOOPBACK)
+#else
+#define     NET_IsLocalAddress(adr)     false
+#endif
+
 static inline bool NET_IsEqualAdr(const netadr_t *a, const netadr_t *b)
 {
     if (a->type != b->type) {
         return false;
     }
 
-    switch (a->type) {
-    case NA_LOOPBACK:
+    if (NET_IsLocalAddress(a)) {
         return true;
+    }
+
+    switch (a->type) {
     case NA_IP:
-    case NA_BROADCAST:
         return a->ip.u32[0] == b->ip.u32[0] && a->port == b->port;
     case NA_IP6:
         return !memcmp(a->ip.u8, b->ip.u8, 16) && a->port == b->port;
@@ -124,11 +133,12 @@ static inline bool NET_IsEqualBaseAdr(const netadr_t *a, const netadr_t *b)
         return false;
     }
 
-    switch (a->type) {
-    case NA_LOOPBACK:
+    if (NET_IsLocalAddress(a)) {
         return true;
+    }
+
+    switch (a->type) {
     case NA_IP:
-    case NA_BROADCAST:
         return a->ip.u32[0] == b->ip.u32[0];
     case NA_IP6:
         return !memcmp(a->ip.u8, b->ip.u8, 16);
@@ -149,15 +159,8 @@ static inline bool NET_IsEqualBaseAdrMask(const netadr_t *a,
     case NA_IP:
         return !((a->ip.u32[0] ^ b->ip.u32[0]) & m->ip.u32[0]);
     case NA_IP6:
-#if (defined __amd64__) || (defined _M_AMD64)
         return !(((a->ip.u64[0] ^ b->ip.u64[0]) & m->ip.u64[0]) |
                  ((a->ip.u64[1] ^ b->ip.u64[1]) & m->ip.u64[1]));
-#else
-        return !(((a->ip.u32[0] ^ b->ip.u32[0]) & m->ip.u32[0]) |
-                 ((a->ip.u32[1] ^ b->ip.u32[1]) & m->ip.u32[1]) |
-                 ((a->ip.u32[2] ^ b->ip.u32[2]) & m->ip.u32[2]) |
-                 ((a->ip.u32[3] ^ b->ip.u32[3]) & m->ip.u32[3]));
-#endif
     default:
         return false;
     }
@@ -165,11 +168,12 @@ static inline bool NET_IsEqualBaseAdrMask(const netadr_t *a,
 
 static inline bool NET_IsLanAddress(const netadr_t *adr)
 {
-    switch (adr->type) {
-    case NA_LOOPBACK:
+    if (NET_IsLocalAddress(adr)) {
         return true;
+    }
+
+    switch (adr->type) {
     case NA_IP:
-    case NA_BROADCAST:
         return adr->ip.u8[0] == 127 || adr->ip.u8[0] == 10 ||
             adr->ip.u16[0] == MakeRawShort(192, 168) ||
             adr->ip.u16[0] == MakeRawShort(172,  16);
@@ -179,12 +183,6 @@ static inline bool NET_IsLanAddress(const netadr_t *adr)
         return false;
     }
 }
-
-#if USE_CLIENT
-#define     NET_IsLocalAddress(adr)     ((adr)->type == NA_LOOPBACK)
-#else
-#define     NET_IsLocalAddress(adr)     false
-#endif
 
 void        NET_Init(void);
 void        NET_Shutdown(void);
@@ -196,11 +194,11 @@ void        NET_GetPackets(netsrc_t sock, void (*packet_cb)(void));
 bool        NET_SendPacket(netsrc_t sock, const void *data,
                            size_t len, const netadr_t *to);
 
-char        *NET_AdrToString(const netadr_t *a);
+const char  *NET_AdrToString(const netadr_t *a);
 bool        NET_StringToAdr(const char *s, netadr_t *a, int default_port);
 bool        NET_StringPairToAdr(const char *host, const char *port, netadr_t *a);
 
-char        *NET_BaseAdrToString(const netadr_t *a);
+const char  *NET_BaseAdrToString(const netadr_t *a);
 #define     NET_StringToBaseAdr(s, a)   NET_StringPairToAdr(s, NULL, a)
 
 const char  *NET_ErrorString(void);

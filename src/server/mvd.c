@@ -380,7 +380,6 @@ static int dummy_create(void)
     newcl->state = cs_connected;
     newcl->AddMessage = dummy_add_message;
     newcl->edict = EDICT_NUM(number + 1);
-    newcl->netchan.remote_address.type = NA_LOOPBACK;
 
     List_Init(&newcl->entry);
 

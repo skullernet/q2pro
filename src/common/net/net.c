@@ -156,11 +156,13 @@ static size_t NET_NetadrToSockadr(const netadr_t *a, struct sockaddr_storage *s)
     memset(s, 0, sizeof(*s));
 
     switch (a->type) {
+#if USE_CLIENT
     case NA_BROADCAST:
         s4->sin_family = AF_INET;
         s4->sin_addr.s_addr = INADDR_BROADCAST;
         s4->sin_port = a->port;
         return sizeof(*s4);
+#endif
     case NA_IP:
         s4->sin_family = AF_INET;
         memcpy(&s4->sin_addr, &a->ip, 4);
@@ -208,21 +210,23 @@ static void NET_SockadrToNetadr(const struct sockaddr_storage *s, netadr_t *a)
     }
 }
 
-char *NET_BaseAdrToString(const netadr_t *a)
+const char *NET_BaseAdrToString(const netadr_t *a)
 {
     static char s[MAX_QPATH];
 
     switch (a->type) {
     case NA_UNSPECIFIED:
-        return strcpy(s, "<unspecified>");
+        return "<unspecified>";
+#if USE_CLIENT
     case NA_LOOPBACK:
-        return strcpy(s, "loopback");
-    case NA_IP:
+        return "loopback";
     case NA_BROADCAST:
+#endif
+    case NA_IP:
         if (inet_ntop(AF_INET, &a->ip, s, sizeof(s)))
             return s;
         else
-            return strcpy(s, "<invalid>");
+            return "<invalid>";
     case NA_IP6:
         if (a->scope_id) {
             struct sockaddr_storage addr;
@@ -236,7 +240,7 @@ char *NET_BaseAdrToString(const netadr_t *a)
         if (inet_ntop(AF_INET6, &a->ip, s, sizeof(s)))
             return s;
         else
-            return strcpy(s, "<invalid>");
+            return "<invalid>";
     default:
         Q_assert(!"bad address type");
     }
@@ -249,15 +253,17 @@ char *NET_BaseAdrToString(const netadr_t *a)
 NET_AdrToString
 ===================
 */
-char *NET_AdrToString(const netadr_t *a)
+const char *NET_AdrToString(const netadr_t *a)
 {
     static char s[MAX_QPATH];
 
     switch (a->type) {
     case NA_UNSPECIFIED:
-        return strcpy(s, "<unspecified>");
+        return "<unspecified>";
+#if USE_CLIENT
     case NA_LOOPBACK:
-        return strcpy(s, "loopback");
+        return "loopback";
+#endif
     default:
         Q_snprintf(s, sizeof(s), (a->type == NA_IP6) ? "[%s]:%u" : "%s:%u",
                    NET_BaseAdrToString(a), BigShort(a->port));
@@ -837,9 +843,9 @@ bool NET_SendPacket(netsrc_t sock, const void *data,
 #if USE_CLIENT
     case NA_LOOPBACK:
         return NET_SendLoopPacket(sock, data, len, to);
+    case NA_BROADCAST:
 #endif
     case NA_IP:
-    case NA_BROADCAST:
         s = udp_sockets[sock];
         break;
     case NA_IP6:
