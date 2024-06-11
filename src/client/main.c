@@ -2649,10 +2649,6 @@ static const cmdreg_t c_client[] = {
     { "reconnect", CL_Reconnect_f },
     { "rcon", CL_Rcon_f, CL_Rcon_c },
     { "serverstatus", CL_ServerStatus_f, CL_ServerStatus_c },
-    { "ignoretext", CL_IgnoreText_f },
-    { "unignoretext", CL_UnIgnoreText_f },
-    { "ignorenick", CL_IgnoreNick_f, CL_IgnoreNick_c },
-    { "unignorenick", CL_UnIgnoreNick_f, CL_UnIgnoreNick_c },
     { "dumpclients", CL_DumpClients_f },
     { "dumpstatusbar", CL_DumpStatusbar_f },
     { "dumplayout", CL_DumpLayout_f },
@@ -2699,9 +2695,6 @@ static void CL_InitLocal(void)
     CL_InitTEnts();
     CL_InitDownloads();
     CL_GTV_Init();
-
-    List_Init(&cl_ignore_text);
-    List_Init(&cl_ignore_nick);
 
     Cmd_Register(c_client);
 
@@ -2836,6 +2829,32 @@ static void CL_InitLocal(void)
     Cmd_AddMacro("cl_armor", CL_Armor_m);
     Cmd_AddMacro("cl_weaponmodel", CL_WeaponModel_m);
     Cmd_AddMacro("cl_numentities", CL_NumEntities_m);
+}
+
+static const cmdreg_t c_ignores[] = {
+    { "ignoretext", CL_IgnoreText_f },
+    { "unignoretext", CL_UnIgnoreText_f },
+    { "ignorenick", CL_IgnoreNick_f, CL_IgnoreNick_c },
+    { "unignorenick", CL_UnIgnoreNick_f, CL_UnIgnoreNick_c },
+    { NULL }
+};
+
+/*
+=================
+CL_PreInit
+
+Called before executing configs to register commands such as `bind' or
+`ignoretext'.
+=================
+*/
+void CL_PreInit(void)
+{
+    Key_Init();
+
+    List_Init(&cl_ignore_text);
+    List_Init(&cl_ignore_nick);
+
+    Cmd_Register(c_ignores);
 }
 
 /*

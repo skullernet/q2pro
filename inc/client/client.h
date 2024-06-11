@@ -32,6 +32,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define SOUND_LOOPATTENUATE_MULT    0.0006f
 
+void CL_PreInit(void);
+
 #if USE_CLIENT
 
 #define MAX_LOCAL_SERVERS   16

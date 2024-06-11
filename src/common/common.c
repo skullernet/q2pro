@@ -45,7 +45,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/zone.h"
 
 #include "client/client.h"
-#include "client/keys.h"
 #include "server/server.h"
 #include "system/system.h"
 #include "system/hunk.h"
@@ -860,7 +859,7 @@ void Qcommon_Init(int argc, char **argv)
     Cbuf_Init();
     Cmd_Init();
     Cvar_Init();
-    Key_Init();
+    CL_PreInit();
     Prompt_Init();
     Con_Init();
 
