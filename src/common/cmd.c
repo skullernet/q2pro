@@ -1536,8 +1536,11 @@ void Cmd_Command_g(genctx_t *ctx)
 {
     cmd_function_t *cmd;
 
-    FOR_EACH_CMD(cmd)
+    FOR_EACH_CMD(cmd) {
+        if (COM_DEDICATED && !cmd->function)
+            continue;
         Prompt_AddMatch(ctx, cmd->name);
+    }
 }
 
 void Cmd_ExecuteCommand(cmdbuf_t *buf)
@@ -1559,7 +1562,7 @@ void Cmd_ExecuteCommand(cmdbuf_t *buf)
     if (cmd) {
         if (cmd->function) {
             cmd->function();
-        } else if (!CL_ForwardToServer()) {
+        } else if (!COM_DEDICATED && !CL_ForwardToServer()) {
             Com_Printf("Can't \"%s\", not connected\n", cmd_argv[0]);
         }
         return;
@@ -1847,6 +1850,9 @@ static void Cmd_List_f(void)
     i = total = 0;
     FOR_EACH_CMD(cmd) {
         total++;
+        if (COM_DEDICATED && !cmd->function) {
+            continue;
+        }
         if (filter && !Com_WildCmp(filter, cmd->name)) {
             continue;
         }
@@ -1894,6 +1900,9 @@ static void Cmd_Complete_f(void)
     cmd_function_t *cmd;
     char *name;
     size_t len;
+
+    if (COM_DEDICATED)
+        return;
 
     if (cmd_argc < 2) {
         Com_Printf("Usage: %s <command>", cmd_argv[0]);
