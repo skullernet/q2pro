@@ -57,7 +57,13 @@ bind g "impulse 5 ; +attack ; wait ; -attack ; impulse 2"
 static void Cmd_Wait_f(void)
 {
     int count = Q_atoi(Cmd_Argv(1));
-    cmd_current->waitCount += max(count, 1);
+
+    if (cmd_current->waitCount >= 1000) {
+        Com_WPrintf("Runaway wait count\n");
+        return;
+    }
+
+    cmd_current->waitCount += Q_clip(count, 1, 1000 - cmd_current->waitCount);
 }
 
 /*
