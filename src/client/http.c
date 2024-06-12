@@ -602,11 +602,11 @@ int HTTP_QueueDownload(const char *path, dltype_t type)
 // Validate a path supplied by a filelist.
 static void check_and_queue_download(char *path)
 {
-    size_t      len;
-    char        *ext;
-    dltype_t    type;
-    unsigned    flags;
-    int         valid;
+    size_t          len;
+    char            *ext;
+    dltype_t        type;
+    unsigned        flags;
+    path_valid_t    valid;
 
     len = strlen(path);
     if (len >= MAX_QPATH)

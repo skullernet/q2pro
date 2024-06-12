@@ -79,8 +79,6 @@ QUAKE FILESYSTEM
 #define FS_ERR_READ(fp) \
     (ferror(fp) ? Q_ERR_FAILURE : Q_ERR_UNEXPECTED_EOF)
 
-#define PATH_NOT_CHECKED    -1
-
 #define FOR_EACH_SYMLINK(link, list) \
     LIST_FOR_EACH(symlink_t, link, list, entry)
 
@@ -271,9 +269,9 @@ FS_ValidatePath
 Checks for bad (OS specific) and mixed case characters in path.
 ================
 */
-int FS_ValidatePath(const char *s)
+path_valid_t FS_ValidatePath(const char *s)
 {
-    int res = PATH_VALID;
+    path_valid_t res = PATH_VALID;
 
     if (!*s)
         return PATH_INVALID;
@@ -1317,7 +1315,7 @@ static int64_t open_file_read(file_t *file, const char *normalized, size_t namel
     unsigned        hash;
     packfile_t      *entry;
     int64_t         ret;
-    int             valid;
+    path_valid_t    valid;
 
     FS_COUNT_READ;
 
@@ -2738,7 +2736,7 @@ void **FS_ListFiles(const char *path, const char *filter, unsigned flags, int *c
     listfiles_t     list;
     size_t          len, pathlen;
     char            *s, *p;
-    int             valid;
+    path_valid_t    valid;
 
     memset(&list, 0, sizeof(list));
     valid = PATH_NOT_CHECKED;
@@ -3051,7 +3049,8 @@ static void FS_WhereIs_f(void)
     symlink_t       *link;
     unsigned        hash;
     file_info_t     info;
-    int             ret, total, valid;
+    int             ret, total;
+    path_valid_t    valid;
     size_t          len, namelen;
     bool            report_all;
 

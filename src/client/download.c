@@ -453,8 +453,8 @@ bool CL_CheckDownloadExtension(const char *ext)
 static int check_file_len(const char *path, size_t len, dltype_t type)
 {
     char buffer[MAX_QPATH], *ext;
+    path_valid_t valid;
     int ret;
-    int valid;
 
     // check for oversize path
     if (len >= MAX_QPATH)
