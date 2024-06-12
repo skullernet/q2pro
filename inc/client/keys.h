@@ -112,7 +112,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define K_MWHEELLEFT    213
 #define K_MOUSELAST     213
 
-typedef enum keydest_e {
+typedef enum {
     KEY_GAME    = 0,
     KEY_CONSOLE = BIT(0),
     KEY_MESSAGE = BIT(1),
