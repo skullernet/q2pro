@@ -33,14 +33,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MAX_PACKETLEN_WRITABLE          (MAX_PACKETLEN - PACKET_HEADER)
 #define MAX_PACKETLEN_WRITABLE_DEFAULT  (MAX_PACKETLEN_DEFAULT - PACKET_HEADER)
 
-// portable network error codes
-#define NET_OK       0  // success
-#define NET_ERROR   -1  // failure (NET_ErrorString returns error message)
-#define NET_AGAIN   -2  // operation would block, try again
-#define NET_CLOSED  -3  // peer has closed connection
-
-typedef int neterr_t;
-
 #ifdef _WIN32
 typedef intptr_t qsocket_t;
 #else
@@ -48,6 +40,14 @@ typedef int qsocket_t;
 #endif
 
 struct pollfd;
+
+// portable network error codes
+typedef enum {
+    NET_OK      =  0,   // success
+    NET_ERROR   = -1,   // failure (NET_ErrorString returns error message)
+    NET_AGAIN   = -2,   // operation would block, try again
+    NET_CLOSED  = -3,   // peer has closed connection
+} neterr_t;
 
 typedef enum {
     NA_UNSPECIFIED,
