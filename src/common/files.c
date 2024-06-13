@@ -2064,7 +2064,13 @@ static void pack_calc_hashes(pack_t *pack)
     pack->file_hash = FS_Mallocz(pack->hash_size * sizeof(pack->file_hash[0]));
 
     for (i = 0, file = pack->files; i < pack->num_files; i++, file++) {
-        unsigned hash = FS_HashPath(pack->names + file->nameofs, pack->hash_size);
+        char *name = pack->names + file->nameofs;
+        unsigned hash;
+
+        // force conversion to lower case. mixed case paths are annoying.
+        Q_strlwr(name);
+
+        hash = Com_HashString(name, pack->hash_size);
         file->hash_next = pack->file_hash[hash];
         pack->file_hash[hash] = file;
     }
