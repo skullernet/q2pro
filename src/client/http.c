@@ -151,7 +151,7 @@ static size_t recv_func(void *ptr, size_t size, size_t nmemb, void *stream)
 static void escape_path(char *escaped, const char *path)
 {
     while (*path) {
-        int c = *path++;
+        byte c = *path++;
         if (!Q_isalnum(c) && !strchr("/-_.~", c)) {
             sprintf(escaped, "%%%02x", c);
             escaped += 3;
