@@ -2113,8 +2113,8 @@ void SV_MvdPostInit(void)
     }
 
     // allocate buffers
-    SZ_Init(&mvd.message, SV_Malloc(MAX_MSGLEN), MAX_MSGLEN);
-    SZ_Init(&mvd.datagram, SV_Malloc(MAX_MSGLEN), MAX_MSGLEN);
+    SZ_InitWrite(&mvd.message, SV_Malloc(MAX_MSGLEN), MAX_MSGLEN);
+    SZ_InitWrite(&mvd.datagram, SV_Malloc(MAX_MSGLEN), MAX_MSGLEN);
     mvd.players = SV_Malloc(sizeof(mvd.players[0]) * sv_maxclients->integer);
     mvd.entities = SV_Malloc(sizeof(mvd.entities[0]) * svs.csr.max_edicts);
 

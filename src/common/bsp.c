@@ -1204,8 +1204,7 @@ static size_t BSP_ParseLightgridHeader(bsp_t *bsp, const byte *in, size_t filele
     lightgrid_t *grid = &bsp->lightgrid;
     sizebuf_t s;
 
-    SZ_Init(&s, (void *)in, filelen);
-    s.cursize = filelen;
+    SZ_InitRead(&s, in, filelen);
 
     if (!BSP_ParseLightgridHeader_(grid, &s)) {
         Com_WPrintf("Bad LIGHTGRID_OCTREE header\n");
@@ -1266,8 +1265,7 @@ static void BSP_ParseLightgrid(bsp_t *bsp, const byte *in, size_t filelen)
         return;
     }
 
-    SZ_Init(&s, (void *)in, filelen);
-    s.cursize = filelen;
+    SZ_InitRead(&s, in, filelen);
 
     grid->nodes = ALLOC(sizeof(grid->nodes[0]) * grid->numnodes);
 

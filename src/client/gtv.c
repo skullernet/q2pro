@@ -257,7 +257,7 @@ void CL_GTV_Resume(void)
     if (cls.gtv.state != ca_active)
         return;
 
-    SZ_Init(&cls.gtv.message, gtv_message_buffer, sizeof(gtv_message_buffer));
+    SZ_InitWrite(&cls.gtv.message, gtv_message_buffer, sizeof(gtv_message_buffer));
 
     build_gamestate();
     emit_gamestate();

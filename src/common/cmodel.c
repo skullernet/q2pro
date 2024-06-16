@@ -98,8 +98,7 @@ static void load_binary_override(cm_t *cm, char *server, size_t server_size)
         goto fail;
     }
 
-    SZ_Init(&sz, data, ret);
-    sz.cursize = ret;
+    SZ_InitRead(&sz, data, ret);
 
     ret = Q_ERR_INVALID_FORMAT;
 

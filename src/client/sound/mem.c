@@ -245,8 +245,7 @@ sfxcache_t *S_LoadSound(sfx_t *s)
     memset(&s_info, 0, sizeof(s_info));
     s_info.name = name;
 
-    SZ_Init(&sz, data, len);
-    sz.cursize = len;
+    SZ_InitRead(&sz, data, len);
 
     if (!GetWavinfo(&sz)) {
         s->error = Q_ERR_INVALID_FORMAT;

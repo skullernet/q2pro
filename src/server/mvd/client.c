@@ -505,9 +505,7 @@ static int demo_skip_map(qhandle_t f)
         }
     }
 
-    SZ_Init(&msg_read, msg_read_buffer, sizeof(msg_read_buffer));
-    msg_read.cursize = msglen;
-
+    SZ_InitRead(&msg_read, msg_read_buffer, msglen);
     return msglen;
 }
 
@@ -519,9 +517,7 @@ static int demo_read_message(qhandle_t f)
         return msglen;
     }
 
-    SZ_Init(&msg_read, msg_read_buffer, sizeof(msg_read_buffer));
-    msg_read.cursize = msglen;
-
+    SZ_InitRead(&msg_read, msg_read_buffer, msglen);
     return msglen;
 }
 
@@ -2341,8 +2337,7 @@ static void MVD_Seek_f(void)
             // set player names
             MVD_SetPlayerNames(mvd);
 
-            SZ_Init(&msg_read, snap->data, snap->msglen);
-            msg_read.cursize = snap->msglen;
+            SZ_InitRead(&msg_read, snap->data, snap->msglen);
 
             MVD_ParseMessage(mvd);
             mvd->framenum = snap->framenum;

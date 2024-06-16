@@ -31,8 +31,9 @@ typedef struct {
     const char  *tag;           // for debugging
 } sizebuf_t;
 
-void SZ_Init(sizebuf_t *buf, void *data, size_t size);
 void SZ_TagInit(sizebuf_t *buf, void *data, size_t size, const char *tag);
+void SZ_InitWrite(sizebuf_t *buf, void *data, size_t size);
+void SZ_InitRead(sizebuf_t *buf, const void *data, size_t size);
 void SZ_Clear(sizebuf_t *buf);
 void *SZ_GetSpace(sizebuf_t *buf, size_t len);
 void SZ_WriteByte(sizebuf_t *sb, int c);

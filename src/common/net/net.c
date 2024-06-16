@@ -565,8 +565,7 @@ static void NET_GetLoopPackets(netsrc_t sock, void (*packet_cb)(void))
             net_rate_rcvd += msg->datalen;
         }
 
-        SZ_Init(&msg_read, msg_read_buffer, sizeof(msg_read_buffer));
-        msg_read.cursize = msg->datalen;
+        SZ_InitRead(&msg_read, msg_read_buffer, msg->datalen);
 
         (*packet_cb)();
     }
@@ -784,8 +783,7 @@ static void NET_GetUdpPackets(struct pollfd *sock, void (*packet_cb)(void))
         net_bytes_rcvd += ret;
         net_packets_rcvd++;
 
-        SZ_Init(&msg_read, msg_read_buffer, sizeof(msg_read_buffer));
-        msg_read.cursize = ret;
+        SZ_InitRead(&msg_read, msg_read_buffer, ret);
 
         (*packet_cb)();
     }

@@ -30,15 +30,17 @@ void SZ_TagInit(sizebuf_t *buf, void *data, size_t size, const char *tag)
     buf->tag = tag;
 }
 
-void SZ_Init(sizebuf_t *buf, void *data, size_t size)
+void SZ_InitWrite(sizebuf_t *buf, void *data, size_t size)
 {
-    Q_assert(size <= INT32_MAX);
-    memset(buf, 0, sizeof(*buf));
-    buf->data = data;
-    buf->maxsize = size;
+    SZ_TagInit(buf, data, size, "none");
     buf->allowoverflow = true;
+}
+
+void SZ_InitRead(sizebuf_t *buf, const void *data, size_t size)
+{
+    SZ_TagInit(buf, (void *)data, size, "none");
+    buf->cursize = size;
     buf->allowunderflow = true;
-    buf->tag = "none";
 }
 
 void SZ_Clear(sizebuf_t *buf)

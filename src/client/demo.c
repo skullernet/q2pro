@@ -403,7 +403,7 @@ static void CL_Record_f(void)
     if (cl.csr.extended)
         size = MAX_MSGLEN;
 
-    SZ_Init(&cls.demo.buffer, demo_buffer, size);
+    SZ_InitWrite(&cls.demo.buffer, demo_buffer, size);
 
     // clear dirty configstrings
     memset(cl.dcs, 0, sizeof(cl.dcs));
@@ -598,15 +598,13 @@ static int read_first_message(qhandle_t f)
         return Q_ERR_INVALID_FORMAT;
     }
 
-    SZ_Init(&msg_read, msg_read_buffer, sizeof(msg_read_buffer));
-    msg_read.cursize = msglen;
-
     // read packet data
-    read = FS_Read(msg_read.data, msglen, f);
+    read = FS_Read(msg_read_buffer, msglen, f);
     if (read != msglen) {
         return read < 0 ? read : Q_ERR_UNEXPECTED_EOF;
     }
 
+    SZ_InitRead(&msg_read, msg_read_buffer, msglen);
     return type;
 }
 
@@ -631,15 +629,13 @@ static int read_next_message(qhandle_t f)
         return Q_ERR_INVALID_FORMAT;
     }
 
-    SZ_Init(&msg_read, msg_read_buffer, sizeof(msg_read_buffer));
-    msg_read.cursize = msglen;
-
     // read packet data
-    read = FS_Read(msg_read.data, msglen, f);
+    read = FS_Read(msg_read_buffer, msglen, f);
     if (read != msglen) {
         return read < 0 ? read : Q_ERR_UNEXPECTED_EOF;
     }
 
+    SZ_InitRead(&msg_read, msg_read_buffer, msglen);
     return 1;
 }
 
@@ -1061,8 +1057,7 @@ static void CL_Seek_f(void)
                 strcpy(to, from);
             }
 
-            SZ_Init(&msg_read, snap->data, snap->msglen);
-            msg_read.cursize = snap->msglen;
+            SZ_InitRead(&msg_read, snap->data, snap->msglen);
 
             CL_SeekDemoMessage();
             cls.demo.frames_read = snap->framenum;

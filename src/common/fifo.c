@@ -97,13 +97,12 @@ bool FIFO_ReadMessage(fifo_t *fifo, size_t msglen)
         if (!FIFO_TryRead(fifo, msg_read_buffer, msglen)) {
             return false; // not yet available
         }
-        SZ_Init(&msg_read, msg_read_buffer, sizeof(msg_read_buffer));
+        SZ_InitRead(&msg_read, msg_read_buffer, msglen);
     } else {
         // read in a single block without copying any memory
-        SZ_Init(&msg_read, data, msglen);
+        SZ_InitRead(&msg_read, data, msglen);
         FIFO_Decommit(fifo, msglen);
     }
 
-    msg_read.cursize = msglen;
     return true;
 }

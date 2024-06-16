@@ -658,8 +658,8 @@ static bool NetchanNew_Process(netchan_t *chan)
         }
 
         // message has been sucessfully assembled
-        SZ_Init(&msg_read, msg_read_buffer, sizeof(msg_read_buffer));
-        SZ_Write(&msg_read, chan->fragment_in.data, chan->fragment_in.cursize);
+        memcpy(msg_read_buffer, chan->fragment_in.data, chan->fragment_in.cursize);
+        SZ_InitRead(&msg_read, msg_read_buffer, chan->fragment_in.cursize);
         SZ_Clear(&chan->fragment_in);
     }
 
@@ -751,12 +751,12 @@ void Netchan_Setup(netchan_t *chan, netsrc_t sock, netchan_type_t type,
     switch (type) {
     case NETCHAN_OLD:
         chan->reliable_buf = buf = Z_TagMalloc(maxpacketlen * 2, tag);
-        SZ_Init(&chan->message, buf + maxpacketlen, maxpacketlen);
+        SZ_InitWrite(&chan->message, buf + maxpacketlen, maxpacketlen);
         break;
 
     case NETCHAN_NEW:
         chan->reliable_buf = buf = Z_TagMalloc(MAX_MSGLEN * 4, tag);
-        SZ_Init(&chan->message, buf + MAX_MSGLEN, MAX_MSGLEN);
+        SZ_InitWrite(&chan->message, buf + MAX_MSGLEN, MAX_MSGLEN);
         SZ_TagInit(&chan->fragment_in, buf + MAX_MSGLEN * 2, MAX_MSGLEN, "nc_frg_in");
         SZ_TagInit(&chan->fragment_out, buf + MAX_MSGLEN * 3, MAX_MSGLEN, "nc_frg_out");
         break;
