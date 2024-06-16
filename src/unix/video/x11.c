@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
+#include <X11/Xresource.h>
 #include <X11/XKBlib.h>
 #include <X11/extensions/XInput2.h>
 
@@ -219,6 +220,53 @@ static bool choose_fb_config(const r_opengl_config_t *cfg, GLXFBConfig *fbc)
     return true;
 }
 
+static bool get_dpi_scale_xft(void)
+{
+    char *resman = XResourceManagerString(x11.dpy);
+    if (!resman)
+        return false;
+
+    XrmInitialize();
+
+    XrmDatabase db = XrmGetStringDatabase(resman);
+    if (!db)
+        return false;
+
+    bool ret = false;
+    char *type, *end;
+    XrmValue value;
+    if (XrmGetResource(db, "Xft.dpi", "String", &type, &value) &&
+        value.addr && !strcmp(type, "String") && *value.addr) {
+        unsigned long dpi = strtoul(value.addr, &end, 10);
+        if (dpi && !*end) {
+            x11.dpi_scale = Q_clip((dpi + 48) / 96, 1, 10);
+            Com_DPrintf("Using Xft DPI scale: %d\n", x11.dpi_scale);
+            ret = true;
+        }
+    }
+    XrmDestroyDatabase(db);
+    return ret;
+}
+
+static void get_dpi_scale_physical(void)
+{
+    int width = DisplayWidth(x11.dpy, x11.screen);
+    int height = DisplayHeight(x11.dpy, x11.screen);
+    int mm_width = DisplayWidthMM(x11.dpy, x11.screen);
+    int mm_height = DisplayHeightMM(x11.dpy, x11.screen);
+
+    if (mm_width > 0 && mm_height > 0) {
+        float dpi_x = width * 25.4f / mm_width;
+        float dpi_y = height * 25.4f / mm_height;
+        int scale_x = Q_rint(dpi_x / 96.0f);
+        int scale_y = Q_rint(dpi_y / 96.0f);
+        if (scale_x == scale_y) {
+            x11.dpi_scale = Q_clip(scale_x, 1, 10);
+            Com_DPrintf("Using physical DPI scale: %d\n", x11.dpi_scale);
+        }
+    }
+}
+
 static bool init(void)
 {
     if (!(x11.dpy = XOpenDisplay(NULL))) {
@@ -291,20 +339,8 @@ static bool init(void)
     }
 
     x11.dpi_scale = 1;
-
-    int width = DisplayWidth(x11.dpy, x11.screen);
-    int height = DisplayHeight(x11.dpy, x11.screen);
-    int mm_width = DisplayWidthMM(x11.dpy, x11.screen);
-    int mm_height = DisplayHeightMM(x11.dpy, x11.screen);
-
-    if (mm_width > 0 && mm_height > 0) {
-        float dpi_x = width * 25.4f / mm_width;
-        float dpi_y = height * 25.4f / mm_height;
-        int scale_x = Q_rint(dpi_x / 96.0f);
-        int scale_y = Q_rint(dpi_y / 96.0f);
-        if (scale_x == scale_y)
-            x11.dpi_scale = Q_clip(scale_x, 1, 10);
-    }
+    if (!get_dpi_scale_xft())
+        get_dpi_scale_physical();
 
     XSizeHints hints = {
         .flags = PMinSize,
