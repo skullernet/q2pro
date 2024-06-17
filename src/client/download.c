@@ -201,7 +201,7 @@ static bool start_udp_download(dlqueue_t *q)
     ret = FS_OpenFile(cls.download.temp, &f, FS_MODE_RDWR);
     if (ret > INT_MAX) {
         FS_CloseFile(f);
-        ret = -EFBIG;
+        ret = Q_ERR(EFBIG);
     }
     if (ret >= 0) {  // it exists
         cls.download.file = f;
