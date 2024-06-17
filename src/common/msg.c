@@ -57,8 +57,8 @@ the allow underflow flag as appropriate.
 */
 void MSG_Init(void)
 {
-    SZ_TagInit(&msg_read, msg_read_buffer, MAX_MSGLEN, "msg_read");
-    SZ_TagInit(&msg_write, msg_write_buffer, MAX_MSGLEN, "msg_write");
+    SZ_Init(&msg_read, msg_read_buffer, MAX_MSGLEN, "msg_read");
+    SZ_Init(&msg_write, msg_write_buffer, MAX_MSGLEN, "msg_write");
 }
 
 

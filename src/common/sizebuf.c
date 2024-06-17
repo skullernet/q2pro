@@ -17,11 +17,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "shared/shared.h"
-#include "common/protocol.h"
 #include "common/sizebuf.h"
 #include "common/intreadwrite.h"
 
-void SZ_TagInit(sizebuf_t *buf, void *data, size_t size, const char *tag)
+void SZ_Init(sizebuf_t *buf, void *data, size_t size, const char *tag)
 {
     Q_assert(size <= INT32_MAX);
     memset(buf, 0, sizeof(*buf));
@@ -32,13 +31,13 @@ void SZ_TagInit(sizebuf_t *buf, void *data, size_t size, const char *tag)
 
 void SZ_InitWrite(sizebuf_t *buf, void *data, size_t size)
 {
-    SZ_TagInit(buf, data, size, "none");
+    SZ_Init(buf, data, size, "none");
     buf->allowoverflow = true;
 }
 
 void SZ_InitRead(sizebuf_t *buf, const void *data, size_t size)
 {
-    SZ_TagInit(buf, (void *)data, size, "none");
+    SZ_Init(buf, (void *)data, size, "none");
     buf->cursize = size;
     buf->allowunderflow = true;
 }
