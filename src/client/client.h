@@ -173,7 +173,7 @@ typedef struct {
     unsigned     cmdNumber;
     short        predicted_origins[CMD_BACKUP][3];    // for debug comparing against server
     client_history_t    history[CMD_BACKUP];
-    int         initialSeq;
+    unsigned    initialSeq;
 
     float       predicted_step;                // for stair up smoothing
     unsigned    predicted_step_time;

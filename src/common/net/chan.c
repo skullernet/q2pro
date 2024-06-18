@@ -178,7 +178,7 @@ static int NetchanOld_Transmit(netchan_t *chan, size_t length, const void *data,
     sizebuf_t   send;
     byte        send_buf[MAX_PACKETLEN];
     bool        send_reliable;
-    int         i, w1, w2;
+    unsigned    w1, w2;
 
     send_reliable = false;
 
@@ -234,18 +234,18 @@ static int NetchanOld_Transmit(netchan_t *chan, size_t length, const void *data,
     else
         Com_WPrintf("%s: dumped unreliable\n", NET_AdrToString(&chan->remote_address));
 
-    SHOWPACKET("send %4u : s=%d ack=%d rack=%d",
+    SHOWPACKET("send %4u : s=%u ack=%u rack=%d",
                send.cursize,
                chan->outgoing_sequence,
                chan->incoming_sequence,
                chan->incoming_reliable_sequence);
     if (send_reliable) {
-        SHOWPACKET(" reliable=%i", chan->reliable_sequence);
+        SHOWPACKET(" reliable=%d", chan->reliable_sequence);
     }
     SHOWPACKET("\n");
 
     // send the datagram
-    for (i = 0; i < numpackets; i++) {
+    for (int i = 0; i < numpackets; i++) {
         NET_SendPacket(chan->sock, send.data, send.cursize, &chan->remote_address);
     }
 
@@ -266,8 +266,8 @@ modifies net_message so that it points to the packet payload
 */
 static bool NetchanOld_Process(netchan_t *chan)
 {
-    int     sequence, sequence_ack;
-    bool    reliable_ack, reliable_message;
+    unsigned    sequence, sequence_ack;
+    bool        reliable_ack, reliable_message;
 
 // get sequence numbers
     MSG_BeginReading();
@@ -295,7 +295,7 @@ static bool NetchanOld_Process(netchan_t *chan)
     sequence &= OLD_MASK;
     sequence_ack &= OLD_MASK;
 
-    SHOWPACKET("recv %4u : s=%d ack=%d rack=%d",
+    SHOWPACKET("recv %4u : s=%u ack=%u rack=%d",
                msg_read.cursize,
                sequence,
                sequence_ack,
@@ -309,7 +309,7 @@ static bool NetchanOld_Process(netchan_t *chan)
 // discard stale or duplicated packets
 //
     if (sequence <= chan->incoming_sequence) {
-        SHOWDROP("%s: out of order packet %i at %i\n",
+        SHOWDROP("%s: out of order packet %u at %u\n",
                  NET_AdrToString(&chan->remote_address),
                  sequence, chan->incoming_sequence);
         return false;
@@ -320,7 +320,7 @@ static bool NetchanOld_Process(netchan_t *chan)
 //
     chan->dropped = sequence - (chan->incoming_sequence + 1);
     if (chan->dropped > 0) {
-        SHOWDROP("%s: dropped %i packets at %i\n",
+        SHOWDROP("%s: dropped %u packets at %u\n",
                  NET_AdrToString(&chan->remote_address),
                  chan->dropped, sequence);
     }
@@ -366,8 +366,7 @@ int Netchan_TransmitNextFragment(netchan_t *chan)
     sizebuf_t   send;
     byte        send_buf[MAX_PACKETLEN];
     bool        send_reliable, more_fragments;
-    int         w1, w2, offset;
-    unsigned    fragment_length;
+    unsigned    w1, w2, offset, fragment_length;
 
     Q_assert(chan->type);
 
@@ -413,7 +412,7 @@ int Netchan_TransmitNextFragment(netchan_t *chan)
     // write fragment contents
     SZ_Write(&send, chan->fragment_out.data + chan->fragment_out.readcount, fragment_length);
 
-    SHOWPACKET("send %4u : s=%d ack=%d rack=%d "
+    SHOWPACKET("send %4u : s=%u ack=%u rack=%d "
                "fragment_offset=%u more_fragments=%d",
                send.cursize,
                chan->outgoing_sequence,
@@ -422,7 +421,7 @@ int Netchan_TransmitNextFragment(netchan_t *chan)
                chan->fragment_out.readcount,
                more_fragments);
     if (send_reliable) {
-        SHOWPACKET(" reliable=%i ", chan->reliable_sequence);
+        SHOWPACKET(" reliable=%d", chan->reliable_sequence);
     }
     SHOWPACKET("\n");
 
@@ -452,7 +451,7 @@ static int NetchanNew_Transmit(netchan_t *chan, size_t length, const void *data,
     sizebuf_t   send;
     byte        send_buf[MAX_PACKETLEN];
     bool        send_reliable;
-    int         i, w1, w2;
+    unsigned    w1, w2;
 
     if (chan->fragment_pending) {
         return Netchan_TransmitNextFragment(chan);
@@ -519,7 +518,7 @@ static int NetchanNew_Transmit(netchan_t *chan, size_t length, const void *data,
     // add the unreliable part
     SZ_Write(&send, data, length);
 
-    SHOWPACKET("send %4u : s=%d ack=%d rack=%d",
+    SHOWPACKET("send %4u : s=%u ack=%u rack=%d",
                send.cursize,
                chan->outgoing_sequence,
                chan->incoming_sequence,
@@ -530,7 +529,7 @@ static int NetchanNew_Transmit(netchan_t *chan, size_t length, const void *data,
     SHOWPACKET("\n");
 
     // send the datagram
-    for (i = 0; i < numpackets; i++) {
+    for (int i = 0; i < numpackets; i++) {
         NET_SendPacket(chan->sock, send.data, send.cursize, &chan->remote_address);
     }
 
@@ -548,9 +547,8 @@ NetchanNew_Process
 */
 static bool NetchanNew_Process(netchan_t *chan)
 {
-    int         sequence, sequence_ack, fragment_offset;
+    unsigned    sequence, sequence_ack, fragment_offset, length;
     bool        reliable_message, reliable_ack, fragmented_message, more_fragments;
-    unsigned    length;
 
 // get sequence numbers
     MSG_BeginReading();
@@ -583,10 +581,10 @@ static bool NetchanNew_Process(netchan_t *chan)
         return false;
     }
 
-    SHOWPACKET("recv %4u : s=%d ack=%d rack=%d",
+    SHOWPACKET("recv %4u : s=%u ack=%u rack=%d",
                msg_read.cursize, sequence, sequence_ack, reliable_ack);
     if (fragmented_message) {
-        SHOWPACKET(" fragment_offset=%d more_fragments=%d",
+        SHOWPACKET(" fragment_offset=%u more_fragments=%d",
                    fragment_offset, more_fragments);
     }
     if (reliable_message) {
@@ -598,7 +596,7 @@ static bool NetchanNew_Process(netchan_t *chan)
 // discard stale or duplicated packets
 //
     if (sequence <= chan->incoming_sequence) {
-        SHOWDROP("%s: out of order packet %i at %i\n",
+        SHOWDROP("%s: out of order packet %u at %u\n",
                  NET_AdrToString(&chan->remote_address),
                  sequence, chan->incoming_sequence);
         return false;
@@ -609,7 +607,7 @@ static bool NetchanNew_Process(netchan_t *chan)
 //
     chan->dropped = sequence - (chan->incoming_sequence + 1);
     if (chan->dropped > 0) {
-        SHOWDROP("%s: dropped %i packets at %i\n",
+        SHOWDROP("%s: dropped %u packets at %u\n",
                  NET_AdrToString(&chan->remote_address),
                  chan->dropped, sequence);
     }
@@ -634,20 +632,20 @@ static bool NetchanNew_Process(netchan_t *chan)
         }
 
         if (fragment_offset < chan->fragment_in.cursize) {
-            SHOWDROP("%s: out of order fragment at %i\n",
+            SHOWDROP("%s: out of order fragment at %u\n",
                      NET_AdrToString(&chan->remote_address), sequence);
             return false;
         }
 
         if (fragment_offset > chan->fragment_in.cursize) {
-            SHOWDROP("%s: dropped fragment(s) at %i\n",
+            SHOWDROP("%s: dropped fragment(s) at %u\n",
                      NET_AdrToString(&chan->remote_address), sequence);
             return false;
         }
 
         length = msg_read.cursize - msg_read.readcount;
         if (length > chan->fragment_in.maxsize - chan->fragment_in.cursize) {
-            SHOWDROP("%s: oversize fragment at %i\n",
+            SHOWDROP("%s: oversize fragment at %u\n",
                      NET_AdrToString(&chan->remote_address), sequence);
             return false;
         }
