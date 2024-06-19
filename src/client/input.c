@@ -1111,6 +1111,10 @@ static void CL_SendUserinfo(void)
 
 static void CL_SendReliable(void)
 {
+    if (Netchan_SeqTooBig(&cls.netchan)) {
+        Com_Error(ERR_DROP, "Outgoing sequence too big");
+    }
+
     if (cls.userinfo_modified) {
         CL_SendUserinfo();
         cls.userinfo_modified = 0;

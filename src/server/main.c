@@ -1653,6 +1653,11 @@ static void SV_CheckTimeouts(void)
     unsigned    delta;
 
     FOR_EACH_CLIENT(client) {
+        if (Netchan_SeqTooBig(&client->netchan)) {
+            SV_DropClient(client, "outgoing sequence too big");
+            continue;
+        }
+
         // never timeout local clients
         if (NET_IsLocalAddress(&client->netchan.remote_address)) {
             continue;

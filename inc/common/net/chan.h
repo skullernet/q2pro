@@ -83,5 +83,10 @@ bool Netchan_Process(netchan_t *chan);
 bool Netchan_ShouldUpdate(const netchan_t *chan);
 void Netchan_Close(netchan_t *chan);
 
+static inline bool Netchan_SeqTooBig(const netchan_t *chan)
+{
+    return chan->outgoing_sequence >= BIT(31 - chan->type) - 256;
+}
+
 #define OOB_PRINT(sock, addr, data) \
     NET_SendPacket(sock, CONST_STR_LEN("\xff\xff\xff\xff" data), addr)
