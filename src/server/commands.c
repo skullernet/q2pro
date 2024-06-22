@@ -646,7 +646,6 @@ static void dump_settings(void)
         "num name            proto options upd fps\n"
         "--- --------------- ----- ------- --- ---\n");
 
-    opt[6] = ' ';
     opt[7] = 0;
     FOR_EACH_CLIENT(cl) {
         opt[0] = cl->settings[CLS_NOGUN]          ? 'G' : ' ';
@@ -655,6 +654,7 @@ static void dump_settings(void)
         opt[3] = cl->settings[CLS_NOGIBS]         ? 'I' : ' ';
         opt[4] = cl->settings[CLS_NOFOOTSTEPS]    ? 'F' : ' ';
         opt[5] = cl->settings[CLS_NOPREDICT]      ? 'P' : ' ';
+        opt[6] = cl->settings[CLS_NOFLARES]       ? 'L' : ' ';
         Com_Printf("%3i %-15.15s %5d %s %3d %3d\n",
                    cl->number, cl->name, cl->protocol, opt,
                    cl->settings[CLS_PLAYERUPDATES], cl->settings[CLS_FPS]);
