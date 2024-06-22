@@ -503,41 +503,39 @@ static void dump_clients(void)
     Com_Printf(
         "num score ping name            lastmsg address                rate pr fps\n"
         "--- ----- ---- --------------- ------- --------------------- ----- -- ---\n");
+
     FOR_EACH_CLIENT(client) {
-        Com_Printf("%3i %5i ", client->number,
-                   client->edict->client->ps.stats[STAT_FRAGS]);
+        const char *ping;
 
         switch (client->state) {
         case cs_zombie:
-            Com_Printf("ZMBI ");
+            ping = "ZMBI";
             break;
         case cs_assigned:
-            Com_Printf("ASGN ");
+            ping = "ASGN";
             break;
         case cs_connected:
         case cs_primed:
             if (client->download) {
-                Com_Printf("DNLD ");
+                ping = "DNLD";
             } else if (client->http_download) {
-                Com_Printf("HTTP ");
+                ping = "HTTP";
             } else if (client->state == cs_connected) {
-                Com_Printf("CNCT ");
+                ping = "CNCT";
             } else {
-                Com_Printf("PRIM ");
+                ping = "PRIM";
             }
             break;
         default:
-            Com_Printf("%4i ", client->ping < 9999 ? client->ping : 9999);
+            ping = va("%4i", min(client->ping, 9999));
             break;
         }
 
-        Com_Printf("%-15.15s ", client->name);
-        Com_Printf("%7u ", svs.realtime - client->lastmessage);
-        Com_Printf("%-21s ", NET_AdrToString(&client->netchan.remote_address));
-        Com_Printf("%5i ", client->rate);
-        Com_Printf("%2i ", client->protocol);
-        Com_Printf("%3i ", client->moves_per_sec);
-        Com_Printf("\n");
+        Com_Printf("%3i %5i %s %-15.15s %7u %-21s %5i %2i %3i\n", client->number,
+                   client->edict->client->ps.stats[STAT_FRAGS],
+                   ping, client->name, svs.realtime - client->lastmessage,
+                   NET_AdrToString(&client->netchan.remote_address),
+                   client->rate, client->protocol, client->moves_per_sec);
     }
 }
 
