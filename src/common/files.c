@@ -181,10 +181,10 @@ static int          fs_num_files;
 static bool         fs_non_uniq_open;
 
 #if USE_DEBUG
-static int          fs_count_read;
-static int          fs_count_open;
-static int          fs_count_strcmp;
-static int          fs_count_strlwr;
+static unsigned     fs_count_read;
+static unsigned     fs_count_open;
+static unsigned     fs_count_strcmp;
+static unsigned     fs_count_strlwr;
 #define FS_COUNT_READ       fs_count_read++
 #define FS_COUNT_OPEN       fs_count_open++
 #define FS_COUNT_STRCMP     fs_count_strcmp++
@@ -3287,10 +3287,10 @@ static void FS_Stats_f(void)
     }
 
     Com_Printf("File slots allocated: %d\n", fs_num_files);
-    Com_Printf("Total calls to open_file_read: %d\n", fs_count_read);
-    Com_Printf("Total path comparsions: %d\n", fs_count_strcmp);
-    Com_Printf("Total calls to open_from_disk: %d\n", fs_count_open);
-    Com_Printf("Total mixed-case reopens: %d\n", fs_count_strlwr);
+    Com_Printf("Total calls to open_file_read: %u\n", fs_count_read);
+    Com_Printf("Total path comparsions: %u\n", fs_count_strcmp);
+    Com_Printf("Total calls to open_from_disk: %u\n", fs_count_open);
+    Com_Printf("Total mixed-case reopens: %u\n", fs_count_strlwr);
 
     if (!totalHashSize) {
         Com_Printf("No stats to display\n");
