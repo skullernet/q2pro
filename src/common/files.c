@@ -2123,7 +2123,7 @@ static pack_t *load_pak_file(const char *packfile)
     }
 
     header.dirofs = LittleLong(header.dirofs);
-    if (header.dirofs > INT_MAX) {
+    if (header.dirofs > INT32_MAX) {
         Com_SetLastError("bad directory offset");
         goto fail1;
     }
@@ -2141,7 +2141,7 @@ static pack_t *load_pak_file(const char *packfile)
     for (i = 0, dfile = info; i < num_files; i++, dfile++) {
         dfile->filepos = LittleLong(dfile->filepos);
         dfile->filelen = LittleLong(dfile->filelen);
-        if (dfile->filelen > INT_MAX || dfile->filepos > INT_MAX - dfile->filelen) {
+        if (dfile->filelen > INT32_MAX || dfile->filepos > INT32_MAX - dfile->filelen) {
             Com_SetLastError("file length or position too big");
             goto fail2;
         }
