@@ -127,7 +127,7 @@ typedef struct {
     int             clientNum;
 
     int             numEntities;
-    int             firstEntity;
+    unsigned        firstEntity;
 } server_frame_t;
 
 // locally calculated frame flags for debug display
@@ -191,7 +191,7 @@ typedef struct {
     centity_state_t baselines[MAX_EDICTS];
 
     centity_state_t entityStates[MAX_PARSE_ENTITIES];
-    int             numEntityStates;
+    unsigned        numEntityStates;
 
     msgEsFlags_t    esFlags;
     msgPsFlags_t    psFlags;

@@ -92,8 +92,8 @@ static void CL_ParsePacketEntities(server_frame_t *oldframe,
         if (oldindex >= oldframe->numEntities) {
             oldnum = MAX_EDICTS;
         } else {
-            i = oldframe->firstEntity + oldindex;
-            oldstate = &cl.entityStates[i & PARSE_ENTITIES_MASK];
+            i = (oldframe->firstEntity + oldindex) & PARSE_ENTITIES_MASK;
+            oldstate = &cl.entityStates[i];
             oldnum = oldstate->number;
         }
     }
@@ -118,8 +118,8 @@ static void CL_ParsePacketEntities(server_frame_t *oldframe,
             if (oldindex >= oldframe->numEntities) {
                 oldnum = MAX_EDICTS;
             } else {
-                i = oldframe->firstEntity + oldindex;
-                oldstate = &cl.entityStates[i & PARSE_ENTITIES_MASK];
+                i = (oldframe->firstEntity + oldindex) & PARSE_ENTITIES_MASK;
+                oldstate = &cl.entityStates[i];
                 oldnum = oldstate->number;
             }
         }
@@ -139,8 +139,8 @@ static void CL_ParsePacketEntities(server_frame_t *oldframe,
             if (oldindex >= oldframe->numEntities) {
                 oldnum = MAX_EDICTS;
             } else {
-                i = oldframe->firstEntity + oldindex;
-                oldstate = &cl.entityStates[i & PARSE_ENTITIES_MASK];
+                i = (oldframe->firstEntity + oldindex) & PARSE_ENTITIES_MASK;
+                oldstate = &cl.entityStates[i];
                 oldnum = oldstate->number;
             }
             continue;
@@ -159,8 +159,8 @@ static void CL_ParsePacketEntities(server_frame_t *oldframe,
             if (oldindex >= oldframe->numEntities) {
                 oldnum = MAX_EDICTS;
             } else {
-                i = oldframe->firstEntity + oldindex;
-                oldstate = &cl.entityStates[i & PARSE_ENTITIES_MASK];
+                i = (oldframe->firstEntity + oldindex) & PARSE_ENTITIES_MASK;
+                oldstate = &cl.entityStates[i];
                 oldnum = oldstate->number;
             }
             continue;
@@ -189,8 +189,8 @@ static void CL_ParsePacketEntities(server_frame_t *oldframe,
         if (oldindex >= oldframe->numEntities) {
             oldnum = MAX_EDICTS;
         } else {
-            i = oldframe->firstEntity + oldindex;
-            oldstate = &cl.entityStates[i & PARSE_ENTITIES_MASK];
+            i = (oldframe->firstEntity + oldindex) & PARSE_ENTITIES_MASK;
+            oldstate = &cl.entityStates[i];
             oldnum = oldstate->number;
         }
     }
