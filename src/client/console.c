@@ -46,9 +46,8 @@ typedef struct {
 } consoleLine_t;
 
 typedef struct {
-    bool    initialized;
-
     consoleLine_t   text[CON_TOTALLINES];
+
     int     current;        // line where next message will be printed
     int     x;              // offset in current line for next print
     int     display;        // bottom of console displays this line
@@ -63,6 +62,7 @@ typedef struct {
     unsigned    times[CON_TIMES];   // cls.realtime time the line was generated
                                     // for transparent notify lines
     bool    skipNotify;
+    bool    initialized;
 
     qhandle_t   backImage;
     qhandle_t   charsetImage;
