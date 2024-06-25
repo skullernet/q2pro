@@ -1154,15 +1154,16 @@ static void parse_info_string(demoInfo_t *info, int clientNum, int index, const 
 CL_GetDemoInfo
 ====================
 */
-demoInfo_t *CL_GetDemoInfo(const char *path, demoInfo_t *info)
+bool CL_GetDemoInfo(const char *path, demoInfo_t *info)
 {
     qhandle_t f;
     int c, index, clientNum, type;
     const cs_remap_t *csr = &cs_remap_old;
+    bool res = false;
 
     FS_OpenFile(path, &f, FS_MODE_READ | FS_FLAG_GZIP);
     if (!f) {
-        return NULL;
+        return false;
     }
 
     type = read_first_message(f);
@@ -1232,13 +1233,11 @@ demoInfo_t *CL_GetDemoInfo(const char *path, demoInfo_t *info)
             parse_info_string(info, clientNum, index, csr);
         }
     }
-
-    FS_CloseFile(f);
-    return info;
+    res = true;
 
 fail:
     FS_CloseFile(f);
-    return NULL;
+    return res;
 }
 
 // =========================================================================
