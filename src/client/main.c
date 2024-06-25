@@ -478,15 +478,8 @@ void CL_CheckForResend(void)
 
 static void CL_RecentIP_g(genctx_t *ctx)
 {
-    netadr_t *a;
-    int i, j;
-
-    j = cls.recent_head - RECENT_ADDR;
-    if (j < 0) {
-        j = 0;
-    }
-    for (i = cls.recent_head - 1; i >= j; i--) {
-        a = &cls.recent_addr[i & RECENT_MASK];
+    for (int i = 0; i < RECENT_ADDR; i++) {
+        const netadr_t *a = &cls.recent_addr[(cls.recent_head - i - 1) & RECENT_MASK];
         if (a->type) {
             Prompt_AddMatch(ctx, NET_AdrToString(a));
         }
@@ -563,27 +556,21 @@ static void CL_Connect_f(void)
 
 static void CL_FollowIP_f(void)
 {
-    netadr_t *a;
-    int i, j;
+    const netadr_t *a;
+    int i = 0;
 
     if (Cmd_Argc() > 1) {
         // optional second argument references less recent address
-        j = Q_clip(Q_atoi(Cmd_Argv(1)), 0, RECENT_ADDR - 1) + 1;
-    } else {
-        j = 1;
+        i = Q_clip(Q_atoi(Cmd_Argv(1)), 0, RECENT_ADDR - 1);
     }
 
-    i = cls.recent_head - j;
-    if (i < 0) {
-        Com_Printf("No IP address to follow.\n");
-        return;
-    }
-
-    a = &cls.recent_addr[i & RECENT_MASK];
+    a = &cls.recent_addr[(cls.recent_head - i - 1) & RECENT_MASK];
     if (a->type) {
         const char *s = NET_AdrToString(a);
         Com_Printf("Following %s...\n", s);
         Cbuf_InsertText(cmd_current, va("connect %s\n", s));
+    } else {
+        Com_Printf("No IP address to follow.\n");
     }
 }
 
