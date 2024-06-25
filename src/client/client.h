@@ -392,7 +392,6 @@ typedef struct {
 // this is set each time a CVAR_USERINFO variable is changed
 // so that the client knows to send it to the server
 
-    int         framecount;
     unsigned    realtime;           // always increasing, no clamping, etc
     float       frametime;          // seconds since last frame
 
