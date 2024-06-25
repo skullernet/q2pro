@@ -209,7 +209,8 @@ Con_Clear_f
 static void Con_Clear_f(void)
 {
     memset(con.text, 0, sizeof(con.text));
-    con.display = con.current;
+    con.display = con.current = 0;
+    con.newline = '\r';
 }
 
 static void Con_Dump_c(genctx_t *ctx, int argnum)
@@ -486,7 +487,7 @@ void Con_Init(void)
     con.linewidth = -1;
     con.scale = 1;
     con.color = COLOR_NONE;
-    con.text[0].color = COLOR_NONE;
+    con.newline = '\r';
 
     Con_CheckResize();
 
