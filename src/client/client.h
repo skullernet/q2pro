@@ -210,7 +210,7 @@ typedef struct {
     int             keyservertime;
 #endif
 
-    byte            dcs[CS_BITMAP_BYTES];
+    size_t          dcs[BC_COUNT(MAX_CONFIGSTRINGS)];
 
     // the client maintains its own idea of view angles, which are
     // sent to the server each frame.  It is cleared to 0 upon entering each level.

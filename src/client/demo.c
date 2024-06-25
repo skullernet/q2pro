@@ -479,12 +479,12 @@ static void resume_record(void)
     char *s;
 
     // write dirty configstrings
-    for (i = 0; i < CS_BITMAP_LONGS; i++) {
-        if (((uint32_t *)cl.dcs)[i] == 0)
+    for (i = 0; i < q_countof(cl.dcs); i++) {
+        if (cl.dcs[i] == 0)
             continue;
 
-        index = i << 5;
-        for (j = 0; j < 32; j++, index++) {
+        index = i * BC_BITS;
+        for (j = 0; j < BC_BITS; j++, index++) {
             if (!Q_IsBitSet(cl.dcs, index))
                 continue;
 
@@ -1092,12 +1092,12 @@ static void CL_Seek_f(void)
     Com_DPrintf("[%d] after skip %d\n", cls.demo.frames_read, cl.frame.number);
 
     // update dirty configstrings
-    for (i = 0; i < CS_BITMAP_LONGS; i++) {
-        if (((uint32_t *)cl.dcs)[i] == 0)
+    for (i = 0; i < q_countof(cl.dcs); i++) {
+        if (cl.dcs[i] == 0)
             continue;
 
-        index = i << 5;
-        for (j = 0; j < 32; j++, index++) {
+        index = i * BC_BITS;
+        for (j = 0; j < BC_BITS; j++, index++) {
             if (Q_IsBitSet(cl.dcs, index))
                 CL_UpdateConfigstring(index);
         }

@@ -2373,12 +2373,12 @@ static void MVD_Seek_f(void)
     Com_DPrintf("[%d] after skip\n", mvd->framenum);
 
     // update dirty configstrings
-    for (i = 0; i < CS_BITMAP_LONGS; i++) {
-        if (((uint32_t *)mvd->dcs)[i] == 0)
+    for (i = 0; i < q_countof(mvd->dcs); i++) {
+        if (mvd->dcs[i] == 0)
             continue;
 
-        index = i << 5;
-        for (j = 0; j < 32; j++, index++) {
+        index = i * BC_BITS;
+        for (j = 0; j < BC_BITS; j++, index++) {
             if (Q_IsBitSet(mvd->dcs, index))
                 MVD_UpdateConfigstring(mvd, index);
         }

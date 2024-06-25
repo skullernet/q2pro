@@ -74,6 +74,10 @@ unsigned Com_ParseExtensionString(const char *s, const char *const extnames[]);
 
 char *Com_MakePrintable(const char *s);
 
+// Bitmap chunks (for sparse bitmaps)
+#define BC_BITS         (sizeof(size_t) * CHAR_BIT)
+#define BC_COUNT(n)     (((n) + BC_BITS - 1) / BC_BITS)
+
 // Some mods actually exploit CS_STATUSBAR to take space up to CS_AIRACCEL
 static inline size_t CS_SIZE(const cs_remap_t *csr, int cs)
 {

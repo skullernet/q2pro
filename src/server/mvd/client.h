@@ -163,7 +163,7 @@ typedef struct mvd_s {
     vec3_t          spawnOrigin;
     vec3_t          spawnAngles;
     int             pm_type;
-    byte            dcs[CS_BITMAP_BYTES];
+    size_t          dcs[BC_COUNT(MAX_CONFIGSTRINGS)];
     configstring_t  baseconfigstrings[MAX_CONFIGSTRINGS];
     configstring_t  configstrings[MAX_CONFIGSTRINGS];
     const cs_remap_t *csr;
