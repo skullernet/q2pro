@@ -548,6 +548,12 @@ static void Con_Linefeed(void)
     } else {
         Con_CheckTop();
     }
+
+    // wrap to avoid integer overflow
+    if (con.current >= CON_TOTALLINES * 2) {
+        con.current -= CON_TOTALLINES;
+        con.display -= CON_TOTALLINES;
+    }
 }
 
 void Con_SetColor(color_index_t color)
