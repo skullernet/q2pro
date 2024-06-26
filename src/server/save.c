@@ -435,7 +435,7 @@ static int read_level_file(void)
         if (index < 0 || index >= svs.csr.end)
             Com_Error(ERR_DROP, "Bad savegame configstring index");
 
-        maxlen = CS_SIZE(&svs.csr, index);
+        maxlen = Com_ConfigstringSize(&svs.csr, index);
         if (MSG_ReadString(sv.configstrings[index], maxlen) >= maxlen)
             Com_Error(ERR_DROP, "Savegame configstring too long");
     }

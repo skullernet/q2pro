@@ -569,7 +569,7 @@ static void MVD_ParseConfigstring(mvd_t *mvd)
     }
 
     s = mvd->configstrings[index];
-    maxlen = CS_SIZE(mvd->csr, index);
+    maxlen = Com_ConfigstringSize(mvd->csr, index);
     if (MSG_ReadString(s, maxlen) >= maxlen) {
         MVD_Destroyf(mvd, "%s: index %d overflowed", __func__, index);
     }
@@ -927,7 +927,7 @@ static void MVD_ParseServerData(mvd_t *mvd, int extrabits)
         }
 
         string = mvd->configstrings[index];
-        maxlen = CS_SIZE(mvd->csr, index);
+        maxlen = Com_ConfigstringSize(mvd->csr, index);
         if (MSG_ReadString(string, maxlen) >= maxlen) {
             MVD_Destroyf(mvd, "Configstring %d overflowed", index);
         }

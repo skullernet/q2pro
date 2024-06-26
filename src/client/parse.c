@@ -427,7 +427,7 @@ static void CL_ParseConfigstring(int index)
     }
 
     s = cl.configstrings[index];
-    maxlen = CS_SIZE(&cl.csr, index);
+    maxlen = Com_ConfigstringSize(&cl.csr, index);
     len = MSG_ReadString(s, maxlen);
 
     SHOWNET(2, "    %d \"%s\"\n", index, Com_MakePrintable(s));
