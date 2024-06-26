@@ -73,12 +73,11 @@ static void CL_ParseDeltaEntity(server_frame_t           *frame,
     }
 }
 
-static void CL_ParsePacketEntities(server_frame_t *oldframe,
-                                   server_frame_t *frame)
+static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_t *frame)
 {
-    uint64_t        bits;
-    centity_state_t *oldstate;
-    int             i, oldindex, oldnum, newnum;
+    uint64_t                bits;
+    const centity_state_t   *oldstate;
+    int                     i, oldindex, oldnum, newnum;
 
     frame->firstEntity = cl.numEntityStates;
     frame->numEntities = 0;
@@ -198,12 +197,11 @@ static void CL_ParsePacketEntities(server_frame_t *oldframe,
 
 static void CL_ParseFrame(int extrabits)
 {
-    uint32_t bits, extraflags;
-    int     currentframe, deltaframe,
-            delta, suppressed;
-    server_frame_t  frame, *oldframe;
-    player_state_t  *from;
-    int     length;
+    uint32_t                bits, extraflags;
+    int                     currentframe, deltaframe, delta, suppressed, length;
+    server_frame_t          frame;
+    const server_frame_t    *oldframe;
+    const player_state_t    *from;
 
     memset(&frame, 0, sizeof(frame));
 
@@ -868,7 +866,7 @@ static void CL_ParseStartSoundPacket(void)
 {
     int flags, channel, entity;
 
-    flags = MSG_ReadByte();
+    snd.flags = flags = MSG_ReadByte();
 
     if (cl.csr.extended && flags & SND_INDEX16)
         snd.index = MSG_ReadWord();
@@ -909,8 +907,6 @@ static void CL_ParseStartSoundPacket(void)
     // positioned in space
     if (flags & SND_POS)
         MSG_ReadPos(snd.pos);
-
-    snd.flags = flags;
 
     SHOWNET(2, "    %s\n", cl.configstrings[cl.csr.sounds + snd.index]);
 }
