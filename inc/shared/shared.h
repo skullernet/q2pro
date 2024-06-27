@@ -317,7 +317,13 @@ static inline float anglemod(float a)
     return a;
 }
 
-static inline int Q_align(int value, int align)
+static inline int Q_align_down(int value, int align)
+{
+    int mod = value % align;
+    return value - mod;
+}
+
+static inline int Q_align_up(int value, int align)
 {
     int mod = value % align;
     return mod ? value + align - mod : value;

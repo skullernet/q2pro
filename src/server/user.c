@@ -1495,7 +1495,7 @@ void SV_AlignKeyFrames(client_t *client)
     int framediv = sv.frametime.div / client->framediv;
     int framenum = sv.framenum / client->framediv;
     int frameofs = framenum % framediv;
-    int newnum = frameofs + Q_align(client->framenum, framediv);
+    int newnum = frameofs + Q_align_up(client->framenum, framediv);
 
     Com_DDPrintf("[%d] align %d --> %d (num = %d, div = %d, ofs = %d)\n",
                  sv.framenum, client->framenum, newnum, framenum, framediv, frameofs);

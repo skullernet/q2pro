@@ -1180,7 +1180,7 @@ static void set_server_fps(int value)
     // fix time delta
     if (cls.state == ca_active) {
         int delta = cl.frame.number - cl.servertime / cl.frametime.time;
-        cl.serverdelta = Q_align(delta, cl.frametime.div);
+        cl.serverdelta = Q_align_down(delta, cl.frametime.div);
     }
 
     Com_DPrintf("client framediv=%d time=%d delta=%d\n",
