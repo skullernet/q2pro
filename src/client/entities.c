@@ -379,6 +379,13 @@ void CL_DeltaFrame(void)
 
     // set server time
     framenum = cl.frame.number - cl.serverdelta;
+
+    if (framenum < 0)
+        Com_Error(ERR_DROP, "%s: server time went backwards", __func__);
+
+    if (framenum > INT_MAX / CL_FRAMETIME)
+        Com_Error(ERR_DROP, "%s: server time overflowed", __func__);
+
     cl.servertime = framenum * CL_FRAMETIME;
 #if USE_FPS
     cl.keyservertime = (framenum / cl.frametime.div) * BASE_FRAMETIME;

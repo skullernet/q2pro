@@ -237,6 +237,10 @@ static void CL_ParseFrame(int extrabits)
         currentframe = MSG_ReadLong();
         deltaframe = MSG_ReadLong();
 
+        if (currentframe < 0) {
+            Com_Error(ERR_DROP, "%s: currentframe < 0", __func__);
+        }
+
         // BIG HACK to let old demos continue to work
         if (cls.serverProtocol != PROTOCOL_VERSION_OLD) {
             suppressed = MSG_ReadByte();
