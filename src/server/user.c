@@ -1493,7 +1493,7 @@ static void SV_ParseDeltaUserinfo(void)
 void SV_AlignKeyFrames(client_t *client)
 {
     int framediv = sv.frametime.div / client->framediv;
-    int framenum = sv.framenum / client->framediv;
+    int framenum = (sv.framenum + client->framediv - 1) / client->framediv;
     int frameofs = framenum % framediv;
     int newnum = frameofs + Q_align_up(client->framenum, framediv);
 
