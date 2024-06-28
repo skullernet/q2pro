@@ -558,7 +558,7 @@ static void demo_emit_snapshot(mvd_t *mvd)
     if (mvd_snaps->integer <= 0)
         return;
 
-    if (mvd->framenum < mvd->last_snapshot + mvd_snaps->integer * 10)
+    if (mvd->framenum < mvd->last_snapshot + mvd_snaps->integer * BASE_FRAMERATE)
         return;
 
     if (mvd->numsnapshots >= MAX_SNAPSHOTS)
@@ -2677,7 +2677,7 @@ static const cmdreg_t c_mvd[] = {
 
 static void mvd_wait_delay_changed(cvar_t *self)
 {
-    self->integer = 10 * Cvar_ClampValue(self, 0, 60 * 60);
+    self->integer = BASE_FRAMERATE * Cvar_ClampValue(self, 0, 60 * 60);
 }
 
 /*

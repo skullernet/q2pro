@@ -254,7 +254,7 @@ static size_t format_demo_status(char *buffer, size_t size)
     size_t len = format_demo_size(buffer, size);
     int min, sec, frames = cls.demo.frames_written;
 
-    sec = frames / 10; frames %= 10;
+    sec = frames / BASE_FRAMERATE; frames %= BASE_FRAMERATE;
     min = sec / 60; sec %= 60;
 
     len += Q_scnprintf(buffer + len, size - len, ", %d:%02d.%d",
@@ -797,7 +797,7 @@ void CL_EmitDemoSnapshot(void)
     if (cl_demosnaps->integer <= 0)
         return;
 
-    if (cls.demo.frames_read < cls.demo.last_snapshot + cl_demosnaps->integer * 10)
+    if (cls.demo.frames_read < cls.demo.last_snapshot + cl_demosnaps->integer * BASE_FRAMERATE)
         return;
 
     if (cls.demo.numsnapshots >= MAX_SNAPSHOTS)

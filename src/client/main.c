@@ -2220,7 +2220,7 @@ static size_t CL_DemoPos_m(char *buffer, size_t size)
     else if (!MVD_GetDemoStatus(NULL, NULL, &framenum))
         framenum = 0;
 
-    sec = framenum / 10; framenum %= 10;
+    sec = framenum / BASE_FRAMERATE; framenum %= BASE_FRAMERATE;
     min = sec / 60; sec %= 60;
 
     return Q_snprintf(buffer, size, "%d:%02d.%d", min, sec, framenum);
