@@ -684,7 +684,7 @@ DRAWING
 ==============================================================================
 */
 
-static int Con_DrawLine(int v, int row, float alpha)
+static int Con_DrawLine(int v, int row, float alpha, bool notify)
 {
     consoleLine_t *line = &con.text[row & CON_TOTALLINES_MASK];
     char *s = line->text;
@@ -692,7 +692,9 @@ static int Con_DrawLine(int v, int row, float alpha)
     int x = CHAR_WIDTH;
     int w = con.linewidth;
 
-    if (line->ts_len) {
+    if (notify) {
+        s += line->ts_len;
+    } else if (line->ts_len) {
         R_SetColor(con.ts_color.u32);
         R_SetAlpha(alpha);
         x = R_DrawString(x, v, 0, line->ts_len, s, con.charsetImage);
@@ -767,7 +769,7 @@ static void Con_DrawNotify(void)
             alpha = 1;  // don't fade
         }
 
-        Con_DrawLine(v, i, alpha);
+        Con_DrawLine(v, i, alpha, true);
 
         v += CHAR_HEIGHT;
     }
@@ -853,7 +855,7 @@ static void Con_DrawSolidConsole(void)
         if (con.current - row > CON_TOTALLINES - 1)
             break;      // past scrollback wrap point
 
-        x = Con_DrawLine(y, row, 1);
+        x = Con_DrawLine(y, row, 1, false);
         if (i < 2) {
             widths[i] = x;
         }
