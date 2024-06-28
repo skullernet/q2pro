@@ -254,7 +254,7 @@ static void Con_Dump_f(void)
     // write the remaining lines
     for (; l <= con.current; l++) {
         char buffer[CON_LINEWIDTH + 1];
-        char *p = con.text[l & CON_TOTALLINES_MASK].text;
+        const char *p = con.text[l & CON_TOTALLINES_MASK].text;
         int i;
 
         for (i = 0; i < CON_LINEWIDTH && p[i]; i++)
@@ -686,8 +686,8 @@ DRAWING
 
 static int Con_DrawLine(int v, int row, float alpha, bool notify)
 {
-    consoleLine_t *line = &con.text[row & CON_TOTALLINES_MASK];
-    char *s = line->text;
+    const consoleLine_t *line = &con.text[row & CON_TOTALLINES_MASK];
+    const char *s = line->text;
     int flags = 0;
     int x = CHAR_WIDTH;
     int w = con.linewidth;
@@ -1057,7 +1057,7 @@ void Con_DrawConsole(void)
 ==============================================================================
 */
 
-static void Con_Say(char *msg)
+static void Con_Say(const char *msg)
 {
     CL_ClientCommand(va("say%s \"%s\"", con.chat == CHAT_TEAM ? "_team" : "", msg));
 }
@@ -1072,7 +1072,7 @@ static void Con_InteractiveMode(void)
 
 static void Con_Action(void)
 {
-    char *cmd = Prompt_Action(&con.prompt);
+    const char *cmd = Prompt_Action(&con.prompt);
 
     Con_InteractiveMode();
 
@@ -1147,8 +1147,8 @@ static void Con_Paste(char *(*func)(void))
 // console lines are not necessarily NUL-terminated
 static void Con_ClearLine(char *buf, int row)
 {
-    consoleLine_t *line = &con.text[row & CON_TOTALLINES_MASK];
-    char *s = line->text + line->ts_len;
+    const consoleLine_t *line = &con.text[row & CON_TOTALLINES_MASK];
+    const char *s = line->text + line->ts_len;
     int w = con.linewidth - line->ts_len;
 
     while (w-- > 0 && *s)
@@ -1159,7 +1159,7 @@ static void Con_ClearLine(char *buf, int row)
 static void Con_SearchUp(void)
 {
     char buf[CON_LINEWIDTH + 1];
-    char *s = con.prompt.inputLine.text;
+    const char *s = con.prompt.inputLine.text;
     int top = con.current - CON_TOTALLINES + 1;
 
     if (top < 0)
@@ -1180,7 +1180,7 @@ static void Con_SearchUp(void)
 static void Con_SearchDown(void)
 {
     char buf[CON_LINEWIDTH + 1];
-    char *s = con.prompt.inputLine.text;
+    const char *s = con.prompt.inputLine.text;
 
     if (!*s)
         return;
@@ -1329,7 +1329,7 @@ void Key_Message(int key)
     }
 
     if (key == K_ENTER || key == K_KP_ENTER) {
-        char *cmd = Prompt_Action(&con.chatPrompt);
+        const char *cmd = Prompt_Action(&con.chatPrompt);
 
         if (cmd) {
             Con_Say(cmd);
