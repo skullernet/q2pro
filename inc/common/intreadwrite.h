@@ -18,7 +18,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #pragma once
 
+//
+// intreadwrite.h -- macros for fast unaligned integer R/W.
+//
+
 #if (defined __GNUC__)
+// For GCC/Clang use a trick (stolen from FFmpeg) with packed structure.
 
 struct unaligned16 { uint16_t u; } __attribute__((packed, may_alias));
 struct unaligned32 { uint32_t u; } __attribute__((packed, may_alias));
@@ -33,6 +38,7 @@ struct unaligned64 { uint64_t u; } __attribute__((packed, may_alias));
 #define WN64(p, v)  (((struct unaligned64 *)(p))->u = (v))
 
 #elif (defined _MSC_VER)
+// MSVC doesn't have strict aliasing, and allows unaligned access.
 
 #define RN16(p) (*(const uint16_t *)(p))
 #define RN32(p) (*(const uint32_t *)(p))
@@ -45,6 +51,7 @@ struct unaligned64 { uint64_t u; } __attribute__((packed, may_alias));
 #endif
 
 #if USE_LITTLE_ENDIAN
+// We only optimize for little-endian arches here.
 
 #ifdef RN16
 #define RL16(p) RN16(p)
@@ -59,6 +66,8 @@ struct unaligned64 { uint64_t u; } __attribute__((packed, may_alias));
 #endif
 
 #endif  // USE_LITTLE_ENDIAN
+
+// Slow (but portable) macros for big-endian arches (or unsupported compilers).
 
 #ifndef RL16
 #define RL16(p) ((((const uint8_t *)(p))[1] << 8) | ((const uint8_t *)(p))[0])

@@ -27,6 +27,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MAX_LISTED_FILES    250000000
 #define MAX_LISTED_DEPTH    8
 
+// prevents integer overflows
 #define MAX_LOADFILE            0x4001000   // 64 MiB + some slop
 
 #define FS_Malloc(size)         Z_TagMalloc(size, TAG_FILESYSTEM)

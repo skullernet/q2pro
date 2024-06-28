@@ -1490,6 +1490,8 @@ static void SV_ParseDeltaUserinfo(void)
 }
 
 #if USE_FPS
+// key frames must be aligned for all clients (and game) to ensure there isn't
+// additional frame of latency for clients with framediv > 1.
 void SV_AlignKeyFrames(client_t *client)
 {
     int framediv = sv.frametime.div / client->framediv;
