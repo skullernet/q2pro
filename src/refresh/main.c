@@ -446,9 +446,12 @@ static void GL_OccludeFlares(void)
 
         if (!q) {
             glquery_t new = { 0 };
+            uint32_t map_size = HashMap_Size(gl_static.queries);
+            if (map_size >= MAX_EDICTS)
+                continue;
             qglGenQueries(1, &new.query);
-            HashMap_Insert(gl_static.queries, &e->skinnum, &new);
-            q = HashMap_GetValue(glquery_t, gl_static.queries, HashMap_Size(gl_static.queries) - 1);
+            Q_assert(!HashMap_Insert(gl_static.queries, &e->skinnum, &new));
+            q = HashMap_GetValue(glquery_t, gl_static.queries, map_size);
         }
 
         make_flare_quad(e, 2.5f, points);
