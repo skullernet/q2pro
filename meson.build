@@ -219,6 +219,7 @@ if cc.get_argument_syntax() == 'gcc'
     '-fsigned-char',
     '-fms-extensions',
     '-fno-math-errno',
+    '-fno-trapping-math',
     '-Wpointer-arith',
     '-Wformat-security',
     '-Werror=vla',
