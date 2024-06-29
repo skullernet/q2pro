@@ -232,7 +232,7 @@ static void TransferPaintBuffer(samplepair_t *samp, int endtime)
     if (s_testsound->integer) {
         // write a fixed sine wave
         for (i = 0; i < endtime - s_paintedtime; i++) {
-            samp[i].left = samp[i].right = sin((s_paintedtime + i) * 0.1f) * 20000;
+            samp[i].left = samp[i].right = sinf((s_paintedtime + i) * 0.1f) * 20000;
         }
     }
 
@@ -276,10 +276,10 @@ static void s_underwater_gain_hf_changed(cvar_t *self)
     // Limit to -60dB
     gain = max(gain, 0.001f);
 
-    float w0 = M_PI * 2.0f * f0norm;
-    float sin_w0 = sin(w0);
-    float cos_w0 = cos(w0);
-    float alpha = sin_w0 / 2.0f * M_SQRT2;
+    float w0 = M_PIf * 2.0f * f0norm;
+    float sin_w0 = sinf(w0);
+    float cos_w0 = cosf(w0);
+    float alpha = sin_w0 / 2.0f * M_SQRT2f;
     float sqrtgain_alpha_2 = 2.0f * sqrtf(gain) * alpha;
     float a0;
 
@@ -344,8 +344,8 @@ PAINTFUNC(PaintMono8)
 
 PAINTFUNC(PaintStereoDmix8)
 {
-    float leftvol = ch->leftvol * snd_vol * (256 * M_SQRT1_2);
-    float rightvol = ch->rightvol * snd_vol * (256 * M_SQRT1_2);
+    float leftvol = ch->leftvol * snd_vol * (256 * M_SQRT1_2f);
+    float rightvol = ch->rightvol * snd_vol * (256 * M_SQRT1_2f);
     const uint8_t *sfx = sc->data + ch->pos * 2;
 
     for (int i = 0; i < count; i++, samp++, sfx += 2) {
@@ -380,8 +380,8 @@ PAINTFUNC(PaintMono16)
 
 PAINTFUNC(PaintStereoDmix16)
 {
-    float leftvol = ch->leftvol * snd_vol * M_SQRT1_2;
-    float rightvol = ch->rightvol * snd_vol * M_SQRT1_2;
+    float leftvol = ch->leftvol * snd_vol * M_SQRT1_2f;
+    float rightvol = ch->rightvol * snd_vol * M_SQRT1_2f;
     const int16_t *sfx = (const int16_t *)sc->data + ch->pos * 2;
 
     for (int i = 0; i < count; i++, samp++, sfx += 2) {

@@ -504,7 +504,7 @@ static void CL_AddPacketEntities(void)
     // brush models can auto animate their frames
     autoanim = 2 * cl.time / 1000;
 
-    autobob = 5 * sin(cl.time / 400.0f);
+    autobob = 5 * sinf(cl.time / 400.0f);
 
     memset(&ent, 0, sizeof(ent));
 
@@ -990,7 +990,7 @@ static void CL_AddPacketEntities(void)
             V_AddLight(ent.origin, 225, 1.0f, 1.0f, 0.0f);
         } else if (effects & EF_TRACKERTRAIL) {
             if (effects & EF_TRACKER) {
-                float intensity = 50 + (500 * (sin(cl.time / 500.0f) + 1.0f));
+                float intensity = 50 + (500 * (sinf(cl.time / 500.0f) + 1.0f));
                 V_AddLight(ent.origin, intensity, -1.0f, -1.0f, -1.0f);
             } else {
                 CL_Tracker_Shell(cent, ent.origin);
@@ -1222,8 +1222,8 @@ static void CL_SetupThirdPersionView(void)
 
     angle = DEG2RAD(cl_thirdperson_angle->value);
     range = cl_thirdperson_range->value;
-    fscale = cos(angle);
-    rscale = sin(angle);
+    fscale = cosf(angle);
+    rscale = sinf(angle);
     VectorMA(cl.refdef.vieworg, -range * fscale, cl.v_forward, cl.refdef.vieworg);
     VectorMA(cl.refdef.vieworg, -range * rscale, cl.v_right, cl.refdef.vieworg);
 
@@ -1236,7 +1236,7 @@ static void CL_SetupThirdPersionView(void)
     VectorSubtract(focus, cl.refdef.vieworg, focus);
     dist = sqrtf(focus[0] * focus[0] + focus[1] * focus[1]);
 
-    cl.refdef.viewangles[PITCH] = -RAD2DEG(atan2(focus[2], dist));
+    cl.refdef.viewangles[PITCH] = -RAD2DEG(atan2f(focus[2], dist));
     cl.refdef.viewangles[YAW] -= cl_thirdperson_angle->value;
 
     cl.thirdPersonView = true;

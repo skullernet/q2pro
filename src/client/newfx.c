@@ -204,12 +204,12 @@ void CL_Heatbeam(const vec3_t start, const vec3_t forward)
 
     VectorScale(vec, step, vec);
 
-    rstep = M_PI / 10.0f;
+    rstep = M_PIf / 10.0f;
     for (i = start_pt; i < len; i += step) {
         if (i > step * 5) // don't bother after the 5th ring
             break;
 
-        for (rot = 0; rot < M_PI * 2; rot += rstep) {
+        for (rot = 0; rot < M_PIf * 2; rot += rstep) {
             p = CL_AllocParticle();
             if (!p)
                 return;
@@ -217,8 +217,8 @@ void CL_Heatbeam(const vec3_t start, const vec3_t forward)
             p->time = cl.time;
             VectorClear(p->accel);
             variance = 0.5f;
-            c = cos(rot) * variance;
-            s = sin(rot) * variance;
+            c = cosf(rot) * variance;
+            s = sinf(rot) * variance;
 
             // trim it so it looks like it's starting at the origin
             if (i < 10) {
@@ -332,7 +332,7 @@ void CL_TrackerTrail(const vec3_t start, const vec3_t end, int particleColor)
         p->alphavel = -2.0f;
         p->color = particleColor;
         dist = DotProduct(move, forward);
-        VectorMA(move, 8 * cos(dist), up, p->org);
+        VectorMA(move, 8 * cosf(dist), up, p->org);
         for (j = 0; j < 3; j++) {
             p->vel[j] = 0;
             p->accel[j] = 0;

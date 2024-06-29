@@ -446,7 +446,7 @@ void LookAtKiller(edict_t *self, edict_t *inflictor, edict_t *attacker)
     }
 
     if (dir[0])
-        self->client->killer_yaw = RAD2DEG(atan2(dir[1], dir[0]));
+        self->client->killer_yaw = RAD2DEG(atan2f(dir[1], dir[0]));
     else {
         self->client->killer_yaw = 0;
         if (dir[1] > 0)

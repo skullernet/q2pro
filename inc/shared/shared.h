@@ -169,8 +169,14 @@ typedef struct {
     int x, y, width, height;
 } vrect_t;
 
-#define DEG2RAD(a)      ((a) * (M_PI / 180))
-#define RAD2DEG(a)      ((a) * (180 / M_PI))
+#ifndef M_PIf
+#define M_PIf       3.14159265358979323846f
+#define M_SQRT2f    1.41421356237309504880f
+#define M_SQRT1_2f  0.70710678118654752440f
+#endif
+
+#define DEG2RAD(a)      ((a) * (M_PIf / 180))
+#define RAD2DEG(a)      ((a) * (180 / M_PIf))
 
 #define Q_ALIGN(x, a)   (((x) + (a) - 1) & ~((a) - 1))
 

@@ -319,8 +319,8 @@ bool SV_StepDirection(edict_t *ent, float yaw, float dist)
     M_ChangeYaw(ent);
 
     yaw = DEG2RAD(yaw);
-    move[0] = cos(yaw) * dist;
-    move[1] = sin(yaw) * dist;
+    move[0] = cosf(yaw) * dist;
+    move[1] = sinf(yaw) * dist;
     move[2] = 0;
 
     VectorCopy(ent->s.origin, oldorigin);
@@ -490,8 +490,8 @@ bool M_walkmove(edict_t *ent, float yaw, float dist)
         return false;
 
     yaw = DEG2RAD(yaw);
-    move[0] = cos(yaw) * dist;
-    move[1] = sin(yaw) * dist;
+    move[0] = cosf(yaw) * dist;
+    move[1] = sinf(yaw) * dist;
     move[2] = 0;
 
     return SV_movestep(ent, move, true);

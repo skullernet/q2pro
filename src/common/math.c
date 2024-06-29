@@ -39,7 +39,7 @@ void vectoangles2(const vec3_t value1, vec3_t angles)
             pitch = 270;
     } else {
         if (value1[0])
-            yaw = RAD2DEG(atan2(value1[1], value1[0]));
+            yaw = RAD2DEG(atan2f(value1[1], value1[0]));
         else if (value1[1] > 0)
             yaw = 90;
         else
@@ -49,7 +49,7 @@ void vectoangles2(const vec3_t value1, vec3_t angles)
             yaw += 360;
 
         forward = sqrtf(value1[0] * value1[0] + value1[1] * value1[1]);
-        pitch = RAD2DEG(atan2(value1[2], forward));
+        pitch = RAD2DEG(atan2f(value1[2], forward));
         if (pitch < 0)
             pitch += 360;
     }
@@ -360,8 +360,8 @@ void SetupRotationMatrix(vec3_t matrix[3], const vec3_t dir, float degrees)
     vec_t   angle, s, c, one_c, xx, yy, zz, xy, yz, zx, xs, ys, zs;
 
     angle = DEG2RAD(degrees);
-    s = sin(angle);
-    c = cos(angle);
+    s = sinf(angle);
+    c = cosf(angle);
     one_c = 1.0F - c;
 
     xx = dir[0] * dir[0];

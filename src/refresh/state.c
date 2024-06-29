@@ -187,10 +187,10 @@ void GL_Frustum(GLfloat fov_x, GLfloat fov_y, GLfloat reflect_x)
     else
         zfar = gl_static.world.size * 2;
 
-    xmax = znear * tan(fov_x * (M_PI / 360));
+    xmax = znear * tanf(fov_x * (M_PIf / 360));
     xmin = -xmax;
 
-    ymax = znear * tan(fov_y * (M_PI / 360));
+    ymax = znear * tanf(fov_y * (M_PIf / 360));
     ymin = -ymax;
 
     width = xmax - xmin;

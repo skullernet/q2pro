@@ -57,10 +57,10 @@ static void setup_dotshading(void)
 
     // matches the anormtab.h precalculations
     yaw = -DEG2RAD(glr.ent->angles[YAW]);
-    cy = cos(yaw);
-    sy = sin(yaw);
-    cp = cos(-M_PI / 4);
-    sp = sin(-M_PI / 4);
+    cy = cosf(yaw);
+    sy = sinf(yaw);
+    cp = cosf(-M_PIf / 4);
+    sp = sinf(-M_PIf / 4);
     shadedir[0] = cp * cy;
     shadedir[1] = cp * sy;
     shadedir[2] = -sp;
@@ -377,7 +377,7 @@ static void setup_color(void)
         }
 
         if (flags & RF_GLOW) {
-            f = 0.1f * sin(glr.fd.time * 7);
+            f = 0.1f * sinf(glr.fd.time * 7);
             for (i = 0; i < 3; i++) {
                 m = color[i] * 0.8f;
                 color[i] += f;

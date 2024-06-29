@@ -385,8 +385,8 @@ static void shader_setup_2d(void)
 
     gls.u_block.w_amp[0] = 0.00666f;
     gls.u_block.w_amp[1] = 0.00666f;
-    gls.u_block.w_phase[0] = M_PI * 10;
-    gls.u_block.w_phase[1] = M_PI * 10;
+    gls.u_block.w_phase[0] = M_PIf * 10;
+    gls.u_block.w_phase[1] = M_PIf * 10;
 }
 
 static void shader_setup_3d(void)

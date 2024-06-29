@@ -168,8 +168,8 @@ void turret_breach_think(edict_t *self)
         // x & y
         angle = self->s.angles[1] + self->owner->move_origin[1];
         angle = DEG2RAD(angle);
-        target[0] = SnapToEights(self->s.origin[0] + cos(angle) * self->owner->move_origin[0]);
-        target[1] = SnapToEights(self->s.origin[1] + sin(angle) * self->owner->move_origin[0]);
+        target[0] = SnapToEights(self->s.origin[0] + cosf(angle) * self->owner->move_origin[0]);
+        target[1] = SnapToEights(self->s.origin[1] + sinf(angle) * self->owner->move_origin[0]);
         target[2] = self->owner->s.origin[2];
 
         VectorSubtract(target, self->owner->s.origin, dir);
@@ -178,7 +178,7 @@ void turret_breach_think(edict_t *self)
 
         // z
         angle = DEG2RAD(self->s.angles[PITCH]);
-        target_z = SnapToEights(self->s.origin[2] + self->owner->move_origin[0] * tan(angle) + self->owner->move_origin[2]);
+        target_z = SnapToEights(self->s.origin[2] + self->owner->move_origin[0] * tanf(angle) + self->owner->move_origin[2]);
 
         diff = target_z - self->owner->s.origin[2];
         self->owner->velocity[2] = diff * 1.0f / FRAMETIME;

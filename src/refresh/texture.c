@@ -613,7 +613,7 @@ static void GL_Upscale32(byte *data, int width, int height, int maxlevel, imaget
     if (upload_width != width || upload_height != height) {
         float du    = upload_width / (float)width;
         float dv    = upload_height / (float)height;
-        float bias  = -log(max(du, dv)) / M_LN2;
+        float bias  = -log2f(max(du, dv));
 
         if (gl_config.caps & QGL_CAP_TEXTURE_LOD_BIAS)
             qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, bias);

@@ -819,7 +819,7 @@ static void MD5_ComputeNormals(md5_mesh_t *mesh, const md5_joint_t *base_skeleto
         CrossProduct(d1, d2, norm);
         VectorNormalize(norm);
 
-        float angle = acos(DotProduct(d1, d2));
+        float angle = acosf(DotProduct(d1, d2));
         VectorScale(norm, angle, norm);
 
         for (j = 0; j < 3; j++) {
