@@ -96,7 +96,6 @@ static void DMA_PageInSfx(sfx_t *sfx)
         Com_PageInMemory(sc->data, sc->size);
 }
 
-
 /*
 ===============================================================================
 
@@ -166,7 +165,6 @@ static void DMA_DropRawSamples(void)
     memset(s_rawsamples, 0, sizeof(s_rawsamples));
     s_rawend = s_paintedtime;
 }
-
 
 /*
 ===============================================================================
@@ -266,16 +264,11 @@ typedef struct {
 static hist_t hist[2];
 static float a1, a2, b0, b1, b2;
 
-// Implements "high shelf" biquad filter. This is what OpenAL Soft uses for
-// AL_FILTER_LOWPASS.
+// Implementation of "high shelf" biquad filter from OpenAL Soft.
 static void s_underwater_gain_hf_changed(cvar_t *self)
 {
+    float gain = Cvar_ClampValue(self, 0.001f, 1);
     float f0norm = 5000.0f / dma.speed;
-    float gain = Cvar_ClampValue(self, 0, 1);
-
-    // Limit to -60dB
-    gain = max(gain, 0.001f);
-
     float w0 = M_PIf * 2.0f * f0norm;
     float sin_w0 = sinf(w0);
     float cos_w0 = cosf(w0);
@@ -291,7 +284,7 @@ static void s_underwater_gain_hf_changed(cvar_t *self)
     a1 = ((gain-1.0f) - (gain+1.0f) * cos_w0) * 2.0f;
     a2 =  (gain+1.0f) - (gain-1.0f) * cos_w0 - sqrtgain_alpha_2;
 
-    a1 /= a0; a2 /= a0; b0 /= a0; b1 /= a0; b2 /= a0;
+    a1 /= a0, a2 /= a0, b0 /= a0, b1 /= a0, b2 /= a0;
 }
 
 static void filter_ch(hist_t *hist, float *samp, int count)
