@@ -172,6 +172,10 @@ extern cvar_t   *rcon_password;
 
 extern cvar_t   *sys_forcegamelib;
 
+#if USE_SAVEGAMES
+extern cvar_t   *sys_allow_unsafe_savegames;
+#endif
+
 #if USE_CLIENT
 // host_speeds times
 extern unsigned     time_before_game;

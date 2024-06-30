@@ -581,6 +581,12 @@ void SV_CheckForEnhancedSavegames(void)
         return;
     }
 
+    if (sys_allow_unsafe_savegames->integer) {
+        Com_WPrintf("Use of unsafe savegames forced from command line.\n");
+        Cvar_SetInteger(g_features, g_features->integer | GMF_ENHANCED_SAVEGAMES, FROM_CODE);
+        return;
+    }
+
     Com_WPrintf("Game does not support enhanced savegames. Savegames will not work.\n");
 }
 

@@ -117,6 +117,10 @@ cvar_t  *rcon_password;
 
 cvar_t  *sys_forcegamelib;
 
+#if USE_SAVEGAMES
+cvar_t  *sys_allow_unsafe_savegames;
+#endif
+
 const char  com_version_string[] =
     APPLICATION " " VERSION " " __DATE__ " " BUILDSTRING " " CPUSTRING;
 
@@ -918,6 +922,10 @@ void Qcommon_Init(int argc, char **argv)
     rcon_password = Cvar_Get("rcon_password", "", CVAR_PRIVATE);
 
     sys_forcegamelib = Cvar_Get("sys_forcegamelib", "", CVAR_NOSET);
+
+#if USE_SAVEGAMES
+    sys_allow_unsafe_savegames = Cvar_Get("sys_allow_unsafe_savegames", "0", CVAR_NOSET);
+#endif
 
     Cmd_AddCommand("z_stats", Z_Stats_f);
 
