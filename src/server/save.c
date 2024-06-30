@@ -538,6 +538,8 @@ void SV_AutoSaveEnd(void)
 
 void SV_CheckForSavegame(const mapcmd_t *cmd)
 {
+    int frames;
+
     if (no_save_games())
         return;
     if (sv_noreload->integer)
@@ -553,16 +555,15 @@ void SV_CheckForSavegame(const mapcmd_t *cmd)
 
     if (cmd->loadgame == LOAD_NORMAL) {
         // called from SV_Loadgame_f
-        ge->RunFrame();
-        ge->RunFrame();
+        frames = 2;
     } else {
-        int i;
-
         // coming back to a level after being in a different
         // level, so run it for ten seconds
-        for (i = 0; i < 100; i++)
-            ge->RunFrame();
+        frames = 10 * SV_FRAMERATE;
     }
+
+    for (int i = 0; i < frames; i++, sv.framenum++)
+        ge->RunFrame();
 }
 
 void SV_CheckForEnhancedSavegames(void)
