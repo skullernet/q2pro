@@ -56,8 +56,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SV_Malloc(size)         Z_TagMalloc(size, TAG_SERVER)
 #define SV_Mallocz(size)        Z_TagMallocz(size, TAG_SERVER)
 #define SV_CopyString(s)        Z_TagCopyString(s, TAG_SERVER)
-#define SV_LoadFile(path, buf)  FS_LoadFileEx(path, buf, 0, TAG_SERVER)
-#define SV_FreeFile(buf)        Z_Free(buf)
 
 #if USE_DEBUG
 #define SV_DPrintf(level,...) \
