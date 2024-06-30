@@ -80,4 +80,3 @@ bool Sys_SetNonBlock(int fd, bool nb);
 extern cvar_t   *sys_basedir;
 extern cvar_t   *sys_libdir;
 extern cvar_t   *sys_homedir;
-extern cvar_t   *sys_forcegamelib;

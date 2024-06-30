@@ -170,6 +170,8 @@ extern cvar_t   *allow_download_others;
 
 extern cvar_t   *rcon_password;
 
+extern cvar_t   *sys_forcegamelib;
+
 #if USE_CLIENT
 // host_speeds times
 extern unsigned     time_before_game;

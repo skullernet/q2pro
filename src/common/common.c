@@ -115,6 +115,8 @@ cvar_t  *allow_download_others;
 
 cvar_t  *rcon_password;
 
+cvar_t  *sys_forcegamelib;
+
 const char  com_version_string[] =
     APPLICATION " " VERSION " " __DATE__ " " BUILDSTRING " " CPUSTRING;
 
@@ -914,6 +916,8 @@ void Qcommon_Init(int argc, char **argv)
     allow_download_others = Cvar_Get("allow_download_others", "0", 0);
 
     rcon_password = Cvar_Get("rcon_password", "", CVAR_PRIVATE);
+
+    sys_forcegamelib = Cvar_Get("sys_forcegamelib", "", CVAR_NOSET);
 
     Cmd_AddCommand("z_stats", Z_Stats_f);
 

@@ -44,7 +44,6 @@ static cvar_t                   *sys_exitonerror;
 cvar_t  *sys_basedir;
 cvar_t  *sys_libdir;
 cvar_t  *sys_homedir;
-cvar_t  *sys_forcegamelib;
 
 /*
 ===============================================================================
@@ -933,8 +932,6 @@ void Sys_Init(void)
     // homedir <path>
     // specifies per-user writable directory for demos, screenshots, etc
     sys_homedir = Cvar_Get("homedir", "", CVAR_NOSET);
-
-    sys_forcegamelib = Cvar_Get("sys_forcegamelib", "", CVAR_NOSET);
 
     sys_exitonerror = Cvar_Get("sys_exitonerror", "0", 0);
 

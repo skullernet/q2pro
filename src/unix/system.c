@@ -45,7 +45,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 cvar_t  *sys_basedir;
 cvar_t  *sys_libdir;
 cvar_t  *sys_homedir;
-cvar_t  *sys_forcegamelib;
 
 extern cvar_t   *console_prefix;
 
@@ -207,7 +206,6 @@ void Sys_Init(void)
     }
     sys_homedir = Cvar_Get("homedir", homedir, CVAR_NOSET);
     sys_libdir = Cvar_Get("libdir", LIBDIR, CVAR_NOSET);
-    sys_forcegamelib = Cvar_Get("sys_forcegamelib", "", CVAR_NOSET);
     sys_parachute = Cvar_Get("sys_parachute", "1", CVAR_NOSET);
 
     if (sys_parachute->integer) {
