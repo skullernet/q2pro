@@ -60,7 +60,7 @@ typedef struct image_s {
     char            name[MAX_QPATH]; // game path
     uint8_t         baselen; // without extension
     uint8_t         type;
-    imageflags_t    flags;
+    uint16_t        flags;
     uint16_t        width, height; // source image
     uint16_t        upload_width, upload_height; // after power of two and picmip
     int             registration_sequence; // 0 = free
