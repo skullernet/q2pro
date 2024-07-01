@@ -553,6 +553,8 @@ size_t Q_strnlen(const char *s, size_t maxlen);
 int Q_atoi(const char *s);
 #endif
 
+#define Q_atof(s) strtof(s, NULL)
+
 char *COM_SkipPath(const char *pathname);
 size_t COM_StripExtension(char *out, const char *in, size_t size);
 size_t COM_DefaultExtension(char *path, const char *ext, size_t size);

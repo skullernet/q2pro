@@ -1147,7 +1147,7 @@ static void MOD_LoadMD5Scale(md5_model_t *model, const char *path, joint_info_t 
                 continue;
             }
 
-            model->skeleton_frames[frame_id * model->num_joints + joint_id].scale = strtof(tok2, NULL);
+            model->skeleton_frames[frame_id * model->num_joints + joint_id].scale = Q_atof(tok2);
         }
     }
 
