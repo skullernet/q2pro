@@ -861,8 +861,7 @@ r_override_textures::
 
 r_texture_formats::
     Specifies the order in which truecolor texture replacements are searched.
-    Default value is "pjt", which means to try ‘.png’ extension first, then
-    ‘.jpg’, then ‘.tga’.
+    Default value is "png jpg tga".
 
 r_texture_overrides::
     Specifies what types of textures are affected by ‘r_override_textures’.

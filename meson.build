@@ -253,6 +253,8 @@ add_project_link_arguments(common_link_args, language: 'c')
 
 config = configuration_data()
 
+texture_formats = []
+
 fallback_opt = ['default_library=static']
 
 zlib = dependency('zlib',
@@ -269,6 +271,9 @@ png = dependency('libpng',
   required:        get_option('libpng'),
   default_options: fallback_opt,
 )
+if png.found()
+  texture_formats += 'png'
+endif
 
 config.set10('USE_ZLIB', zlib.found())
 config.set10('USE_PNG', png.found())
@@ -310,8 +315,13 @@ if jpeg.found()
   endif
   if has_rgba
     client_deps += jpeg
+    texture_formats += 'jpg'
     config.set10('USE_JPG', true)
   endif
+endif
+
+if get_option('tga')
+  texture_formats += 'tga'
 endif
 
 openal = dependency('openal',
@@ -452,6 +462,7 @@ if not win32
   config.set_quoted('LIBDIR',     libdir)
   config.set_quoted('HOMEDIR',    homedir)
 endif
+config.set_quoted('R_TEXTURE_FORMATS', ' '.join(texture_formats))
 config.set_quoted('VID_GEOMETRY', get_option('vid-geometry'))
 config.set_quoted('VID_MODELIST', get_option('vid-modelist'))
 

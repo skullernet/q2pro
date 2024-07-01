@@ -1617,39 +1617,49 @@ static void get_image_dimensions(imageformat_t fmt, image_t *image)
     image->height = h;
 }
 
+static void add_texture_format(imageformat_t fmt)
+{
+    // don't let format to be specified more than once
+    for (int i = 0; i < img_total; i++)
+        if (img_search[i] == fmt)
+            return;
+
+    Q_assert(img_total < IM_MAX);
+    img_search[img_total++] = fmt;
+}
+
 static void r_texture_formats_changed(cvar_t *self)
 {
-    char *s;
-    int i, j;
+    const char *s;
 
     // reset the search order
     img_total = 0;
 
     // parse the string
-    for (s = self->string; *s; s++) {
-        switch (*s) {
-#if USE_TGA
-            case 't': case 'T': i = IM_TGA; break;
-#endif
-#if USE_JPG
-            case 'j': case 'J': i = IM_JPG; break;
-#endif
-#if USE_PNG
-            case 'p': case 'P': i = IM_PNG; break;
-#endif
-            default: continue;
-        }
+    s = self->string;
+    while (s) {
+        char *tok = COM_Parse(&s);
+        int i;
 
-        // don't let format to be specified more than once
-        for (j = 0; j < img_total; j++)
-            if (img_search[j] == i)
+        // handle "png jpg tga" format
+        for (i = IM_WAL + 1; i < IM_MAX; i++) {
+            if (!Q_stricmp(tok, img_loaders[i].ext)) {
+                add_texture_format(i);
                 break;
-        if (j != img_total)
+            }
+        }
+        if (i != IM_MAX)
             continue;
 
-        img_search[img_total++] = i;
-        if (img_total == IM_MAX) {
-            break;
+        // handle legacy "pjt" format
+        while (*tok) {
+            for (i = IM_WAL + 1; i < IM_MAX; i++) {
+                if (Q_tolower(*tok) == img_loaders[i].ext[0]) {
+                    add_texture_format(i);
+                    break;
+                }
+            }
+            tok++;
         }
     }
 }
@@ -2094,17 +2104,7 @@ void IMG_Init(void)
 
 #if USE_PNG || USE_JPG || USE_TGA
     r_override_textures = Cvar_Get("r_override_textures", "1", CVAR_FILES);
-    r_texture_formats = Cvar_Get("r_texture_formats",
-#if USE_PNG
-                                 "p"
-#endif
-#if USE_JPG
-                                 "j"
-#endif
-#if USE_TGA
-                                 "t"
-#endif
-                                 , 0);
+    r_texture_formats = Cvar_Get("r_texture_formats", R_TEXTURE_FORMATS, 0);
     r_texture_formats->changed = r_texture_formats_changed;
     r_texture_formats_changed(r_texture_formats);
     r_texture_overrides = Cvar_Get("r_texture_overrides", "-1", CVAR_FILES);
