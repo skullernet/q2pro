@@ -1524,16 +1524,16 @@ static image_t *lookup_image(const char *name,
 static int try_image_format_(imageformat_t fmt, image_t *image, byte **pic)
 {
     byte    *data;
-    int     len, ret;
+    int     ret;
 
     // load the file
-    len = FS_LoadFile(image->name, (void **)&data);
+    ret = FS_LoadFile(image->name, (void **)&data);
     if (!data) {
-        return len;
+        return ret;
     }
 
     // decompress the image
-    ret = img_loaders[fmt].load(data, len, image, pic);
+    ret = img_loaders[fmt].load(data, ret, image, pic);
 
     FS_FreeFile(data);
 
@@ -2043,16 +2043,15 @@ R_GetPalette
 void IMG_GetPalette(void)
 {
     byte        pal[768], *src, *data;
-    int         i, ret, len;
+    int         i, ret;
 
     // get the palette
-    len = FS_LoadFile(R_COLORMAP_PCX, (void **)&data);
+    ret = FS_LoadFile(R_COLORMAP_PCX, (void **)&data);
     if (!data) {
-        ret = len;
         goto fail;
     }
 
-    ret = load_pcx(data, len, NULL, pal, NULL, NULL);
+    ret = load_pcx(data, ret, NULL, pal, NULL, NULL);
 
     FS_FreeFile(data);
 

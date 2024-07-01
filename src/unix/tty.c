@@ -543,13 +543,12 @@ void tty_init_input(void)
 #endif
 
     // determine terminal width
-    int width = tty_get_width();
-    tty_prompt.widthInChars = width;
+    tty_prompt.widthInChars = tty_get_width();
     tty_prompt.printf = Sys_Printf;
     tty_enabled = true;
 
     // figure out input line width
-    IF_Init(&tty_prompt.inputLine, width - 1, MAX_FIELD_TEXT - 1);
+    IF_Init(&tty_prompt.inputLine, tty_prompt.widthInChars - 1, MAX_FIELD_TEXT - 1);
 
     // display command prompt
     tty_stdout_write("]", 1);

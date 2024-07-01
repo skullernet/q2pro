@@ -1402,10 +1402,8 @@ qhandle_t R_RegisterModel(const char *name)
     char normalized[MAX_QPATH];
     qhandle_t index;
     size_t namelen;
-    int filelen;
     model_t *model;
     byte *rawdata;
-    uint32_t ident;
     int (*load)(model_t *, const void *, size_t);
     int ret;
 
@@ -1443,25 +1441,22 @@ qhandle_t R_RegisterModel(const char *name)
         goto done;
     }
 
-    filelen = FS_LoadFile(normalized, (void **)&rawdata);
+    ret = FS_LoadFile(normalized, (void **)&rawdata);
     if (!rawdata) {
         // don't spam about missing models
-        if (filelen == Q_ERR(ENOENT)) {
+        if (ret == Q_ERR(ENOENT)) {
             return 0;
         }
-
-        ret = filelen;
         goto fail1;
     }
 
-    if (filelen < 4) {
+    if (ret < 4) {
         ret = Q_ERR_FILE_TOO_SMALL;
         goto fail2;
     }
 
     // check ident
-    ident = LittleLong(*(uint32_t *)rawdata);
-    switch (ident) {
+    switch (LittleLong(*(uint32_t *)rawdata)) {
     case MD2_IDENT:
         load = MOD_LoadMD2;
         break;
@@ -1487,11 +1482,11 @@ qhandle_t R_RegisterModel(const char *name)
     memcpy(model->name, normalized, namelen + 1);
     model->registration_sequence = registration_sequence;
 
-    ret = load(model, rawdata, filelen);
+    ret = load(model, rawdata, ret);
 
     FS_FreeFile(rawdata);
 
-    if (ret) {
+    if (ret < 0) {
         memset(model, 0, sizeof(*model));
         goto fail1;
     }
