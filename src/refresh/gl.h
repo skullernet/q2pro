@@ -167,7 +167,7 @@ extern glRefdef_t glr;
 
 extern entity_t gl_world;
 
-extern int registration_sequence;
+extern unsigned r_registration_sequence;
 
 typedef struct {
     int nodesVisible;
@@ -369,7 +369,7 @@ typedef struct {
     } type;
 
     char name[MAX_QPATH];
-    int registration_sequence;
+    unsigned registration_sequence;
     memhunk_t hunk;
 
     int nummeshes;

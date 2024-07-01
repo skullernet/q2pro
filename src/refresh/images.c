@@ -1442,7 +1442,7 @@ static void IMG_List_f(void)
     texels = count = 0;
 
     for (i = 1, image = r_images + 1; i < r_numImages; i++, image++) {
-        if (!image->registration_sequence)
+        if (!image->name[0])
             continue;
         if (mask && !(mask & (1 << image->type)))
             continue;
@@ -1476,7 +1476,7 @@ static image_t *alloc_image(void)
 
     // find a free image_t slot
     for (i = 1, image = r_images + 1; i < r_numImages; i++, image++) {
-        if (!image->registration_sequence)
+        if (!image->name[0])
             return image;
         if (!image->upload_width && !image->upload_height && !placeholder)
             placeholder = image;
@@ -1816,7 +1816,7 @@ static image_t *find_or_load_image(const char *name, size_t len,
 
     // look for it
     if ((image = lookup_image(name, type, hash, len - 4)) != NULL) {
-        image->registration_sequence = registration_sequence;
+        image->registration_sequence = r_registration_sequence;
         if (image->upload_width && image->upload_height) {
             image->flags |= flags & IF_PERMANENT;
             return image;
@@ -1836,7 +1836,7 @@ static image_t *find_or_load_image(const char *name, size_t len,
     image->baselen = len - 4;
     image->type = type;
     image->flags = flags;
-    image->registration_sequence = registration_sequence;
+    image->registration_sequence = r_registration_sequence;
 
     // find out original extension
     for (fmt = 0; fmt < IM_MAX; fmt++) {
@@ -1984,11 +1984,10 @@ void IMG_FreeUnused(void)
     int i, count = 0;
 
     for (i = 1, image = r_images + 1; i < r_numImages; i++, image++) {
-        if (image->registration_sequence == registration_sequence) {
-            continue;        // used this sequence
-        }
-        if (!image->registration_sequence)
+        if (!image->name[0])
             continue;        // free image_t slot
+        if (image->registration_sequence == r_registration_sequence)
+            continue;        // used this sequence
         if (image->flags & (IF_PERMANENT | IF_SCRAP))
             continue;        // don't free pics
 
@@ -2013,7 +2012,7 @@ void IMG_FreeAll(void)
     int i, count = 0;
 
     for (i = 1, image = r_images + 1; i < r_numImages; i++, image++) {
-        if (!image->registration_sequence)
+        if (!image->name[0])
             continue;        // free image_t slot
         // free it
         IMG_Unload(image);

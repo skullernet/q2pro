@@ -32,7 +32,7 @@ entity_t gl_world;
 
 refcfg_t r_config;
 
-int registration_sequence;
+unsigned r_registration_sequence;
 
 // regular variables
 cvar_t *gl_partscale;
@@ -1025,7 +1025,7 @@ static void GL_InitTables(void)
 
 static void GL_PostInit(void)
 {
-    registration_sequence = 1;
+    r_registration_sequence = 1;
 
     GL_ClearState();
     GL_InitImages();
@@ -1201,7 +1201,7 @@ void R_BeginRegistration(const char *name)
     char fullname[MAX_QPATH];
 
     gl_static.registering = true;
-    registration_sequence++;
+    r_registration_sequence++;
 
     memset(&glr, 0, sizeof(glr));
     glr.viewcluster1 = glr.viewcluster2 = -2;

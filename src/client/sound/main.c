@@ -23,7 +23,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // Internal sound data & structures
 // =======================================================================
 
-int         s_registration_sequence;
+unsigned    s_registration_sequence;
 
 channel_t   s_channels[MAX_CHANNELS];
 int         s_numchannels;

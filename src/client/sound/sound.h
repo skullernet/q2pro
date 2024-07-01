@@ -47,7 +47,7 @@ typedef struct {
     char        name[MAX_QPATH];
     char        *truename;
     sfxcache_t  *cache;
-    int         registration_sequence;
+    unsigned    registration_sequence;
     int         error;
 } sfx_t;
 

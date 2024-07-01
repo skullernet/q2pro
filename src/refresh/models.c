@@ -114,7 +114,7 @@ void MOD_FreeUnused(void)
         if (!model->type) {
             continue;
         }
-        if (model->registration_sequence == registration_sequence) {
+        if (model->registration_sequence == r_registration_sequence) {
             // make sure it is paged in
             Com_PageInMemory(model->hunk.base, model->hunk.cursize);
 #if USE_MD5
@@ -1372,20 +1372,20 @@ static void MOD_Reference(model_t *model)
         for (i = 0; i < model->nummeshes; i++) {
             maliasmesh_t *mesh = &model->meshes[i];
             for (j = 0; j < mesh->numskins; j++) {
-                mesh->skins[j]->registration_sequence = registration_sequence;
+                mesh->skins[j]->registration_sequence = r_registration_sequence;
             }
         }
 #if USE_MD5
         if (model->skeleton) {
             for (j = 0; j < model->skeleton->num_skins; j++) {
-                model->skeleton->skins[j]->registration_sequence = registration_sequence;
+                model->skeleton->skins[j]->registration_sequence = r_registration_sequence;
             }
         }
 #endif
         break;
     case MOD_SPRITE:
         for (i = 0; i < model->numframes; i++) {
-            model->spriteframes[i].image->registration_sequence = registration_sequence;
+            model->spriteframes[i].image->registration_sequence = r_registration_sequence;
         }
         break;
     case MOD_EMPTY:
@@ -1394,7 +1394,7 @@ static void MOD_Reference(model_t *model)
         Q_assert(!"bad model type");
     }
 
-    model->registration_sequence = registration_sequence;
+    model->registration_sequence = r_registration_sequence;
 }
 
 qhandle_t R_RegisterModel(const char *name)
@@ -1480,7 +1480,7 @@ qhandle_t R_RegisterModel(const char *name)
     }
 
     memcpy(model->name, normalized, namelen + 1);
-    model->registration_sequence = registration_sequence;
+    model->registration_sequence = r_registration_sequence;
 
     ret = load(model, rawdata, ret);
 

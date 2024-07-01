@@ -63,7 +63,7 @@ typedef struct image_s {
     uint16_t        flags;
     uint16_t        width, height; // source image
     uint16_t        upload_width, upload_height; // after power of two and picmip
-    int             registration_sequence; // 0 = free
+    unsigned        registration_sequence;
     unsigned        texnum, glow_texnum; // gl texture binding
     float           sl, sh, tl, th;
     float           aspect;
@@ -74,7 +74,7 @@ typedef struct image_s {
 extern image_t  r_images[MAX_RIMAGES];
 extern int      r_numImages;
 
-extern int registration_sequence;
+extern unsigned r_registration_sequence;
 
 #define R_NOTEXTURE &r_images[0]
 
