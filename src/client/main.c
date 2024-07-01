@@ -146,14 +146,10 @@ static request_t *CL_AddRequest(const netadr_t *adr, requestType_t type)
 static request_t *CL_FindRequest(void)
 {
     request_t *r;
-    int i, count;
-
-    count = MAX_REQUESTS;
-    if (count > nextRequest)
-        count = nextRequest;
+    int i;
 
     // find the most recent request sent to this address
-    for (i = 0; i < count; i++) {
+    for (i = 0; i < MAX_REQUESTS; i++) {
         r = &clientRequests[(nextRequest - i - 1) & REQUEST_MASK];
         if (!r->type) {
             continue;
