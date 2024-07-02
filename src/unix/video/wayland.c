@@ -666,10 +666,12 @@ static void init_clipboard(void);
 
 static void shutdown(void)
 {
-    struct output *output, *next;
-    wl_list_for_each_safe(output, next, &wl.outputs, link) {
-        wl_output_destroy(output->wl_output);
-        Z_Free(output);
+    if (wl.outputs.next) {
+        struct output *output, *next;
+        wl_list_for_each_safe(output, next, &wl.outputs, link) {
+            wl_output_destroy(output->wl_output);
+            Z_Free(output);
+        }
     }
 
     if (wl.egl_display)
