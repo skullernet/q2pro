@@ -121,6 +121,10 @@ cvar_t  *sys_forcegamelib;
 cvar_t  *sys_allow_unsafe_savegames;
 #endif
 
+#if USE_SYSCON
+cvar_t  *sys_history;
+#endif
+
 const char  com_version_string[] =
     APPLICATION " " VERSION " " __DATE__ " " BUILDSTRING " " CPUSTRING;
 
@@ -925,6 +929,10 @@ void Qcommon_Init(int argc, char **argv)
 
 #if USE_SAVEGAMES
     sys_allow_unsafe_savegames = Cvar_Get("sys_allow_unsafe_savegames", "0", CVAR_NOSET);
+#endif
+
+#if USE_SYSCON
+    sys_history = Cvar_Get("sys_history", "0", 0);
 #endif
 
     Cmd_AddCommand("z_stats", Z_Stats_f);

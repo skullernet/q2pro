@@ -176,6 +176,10 @@ extern cvar_t   *sys_forcegamelib;
 extern cvar_t   *sys_allow_unsafe_savegames;
 #endif
 
+#if USE_SYSCON
+extern cvar_t   *sys_history;
+#endif
+
 #if USE_CLIENT
 // host_speeds times
 extern unsigned     time_before_game;
