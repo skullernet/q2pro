@@ -492,10 +492,12 @@ static void tty_parse_input(const char *text)
     }
 }
 
-static void q_unused winch_handler(int signum)
+#ifdef TIOCGWINSZ
+static void winch_handler(int signum)
 {
     tty_prompt.inputLine.visibleChars = 0;  // force refresh
 }
+#endif
 
 void tty_init_input(void)
 {
