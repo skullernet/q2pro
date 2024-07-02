@@ -606,10 +606,6 @@ void Sys_RunConsole(void)
     char text[MAX_STRING_CHARS];
     int ret;
 
-    if (!sys_console || !sys_console->integer) {
-        return;
-    }
-
     if (!tty_input || !(tty_input->revents & (POLLIN | POLLERR | POLLHUP))) {
         return;
     }
@@ -675,10 +671,6 @@ void Sys_SetConsoleTitle(const char *title)
     char buf[MAX_STRING_CHARS];
     size_t len;
 
-    if (!sys_console || !sys_console->integer) {
-        return;
-    }
-
     if (!tty_enabled) {
         return;
     }
@@ -705,10 +697,6 @@ void Sys_SetConsoleColor(color_index_t color)
 {
     char buf[5];
     size_t len;
-
-    if (!sys_console || !sys_console->integer) {
-        return;
-    }
 
     if (!tty_enabled) {
         return;
