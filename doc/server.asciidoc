@@ -552,13 +552,6 @@ In Windows console additional key bindings are supported:
 * Ctrl+PGDN — scroll to console bottom
 ****************************
 
-sys_parachute::
-    On UNIX-like systems, specifies if a fatal termination handler is
-    installed. Default value is 1, which means Q2PRO will do some cleanup when
-    it crashes, like restoring terminal settings.  However, this will prevent
-    core dump from being generated. To enable core dumps, set this variable to
-    0.
-
 sys_forcegamelib::
     Specifies the full path to the game library server should attempt to load
     first, before normal search paths are tried. Useful mainly for debugging or

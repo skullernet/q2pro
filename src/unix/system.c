@@ -48,7 +48,7 @@ cvar_t  *sys_homedir;
 
 extern cvar_t   *console_prefix;
 
-static bool terminate;
+static int terminate;
 static bool flush_logs;
 
 /*
@@ -149,23 +149,7 @@ static void usr1_handler(int signum)
 
 static void term_handler(int signum)
 {
-    Com_Printf("%s\n", strsignal(signum));
-
-    terminate = true;
-}
-
-static void kill_handler(int signum)
-{
-    tty_shutdown_input();
-
-#if USE_REF
-    if (vid.fatal_shutdown)
-        vid.fatal_shutdown();
-#endif
-
-    fprintf(stderr, "%s\n", strsignal(signum));
-
-    exit(EXIT_FAILURE);
+    terminate = signum;
 }
 
 /*
@@ -175,8 +159,7 @@ Sys_Init
 */
 void Sys_Init(void)
 {
-    const char  *homedir;
-    cvar_t  *sys_parachute;
+    const char *homedir;
 
     signal(SIGTERM, term_handler);
     signal(SIGINT, term_handler);
@@ -204,17 +187,9 @@ void Sys_Init(void)
     } else {
         homedir = HOMEDIR;
     }
+
     sys_homedir = Cvar_Get("homedir", homedir, CVAR_NOSET);
     sys_libdir = Cvar_Get("libdir", LIBDIR, CVAR_NOSET);
-    sys_parachute = Cvar_Get("sys_parachute", "1", CVAR_NOSET);
-
-    if (sys_parachute->integer) {
-        // perform some cleanup when crashing
-        signal(SIGSEGV, kill_handler);
-        signal(SIGILL, kill_handler);
-        signal(SIGFPE, kill_handler);
-        signal(SIGTRAP, kill_handler);
-    }
 
     tty_init_input();
 }
@@ -462,6 +437,7 @@ int main(int argc, char **argv)
     }
 
     Qcommon_Init(argc, argv);
+
     while (!terminate) {
         if (flush_logs) {
             Com_FlushLogs();
@@ -470,6 +446,8 @@ int main(int argc, char **argv)
         Qcommon_Frame();
     }
 
+    Com_Printf("%s\n", strsignal(terminate));
     Com_Quit(NULL, ERR_DISCONNECT);
+
     return EXIT_FAILURE; // never gets here
 }
