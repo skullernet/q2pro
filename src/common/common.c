@@ -932,7 +932,7 @@ void Qcommon_Init(int argc, char **argv)
 #endif
 
 #if USE_SYSCON
-    sys_history = Cvar_Get("sys_history", "0", 0);
+    sys_history = Cvar_Get("sys_history", STRINGIFY(HISTORY_SIZE), 0);
 #endif
 
     Cmd_AddCommand("z_stats", Z_Stats_f);
