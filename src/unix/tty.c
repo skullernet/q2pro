@@ -567,22 +567,26 @@ static void tty_kill_stdin(void)
         NET_FreePollFd(tty_input);
         tty_input = NULL;
     }
+
     if (tty_enabled) {
-        tty_hide_input();
+        if (!tty_hidden)
+            if (write(STDOUT_FILENO, CONST_STR_LEN("\r\033[K")) < 0)
+                (void)"Shut up GCC";
         tcsetattr(STDIN_FILENO, TCSADRAIN, &tty_orig);
         tty_enabled = false;
     }
-    Cvar_Set("sys_console", "1");
 }
 
 void tty_shutdown_input(void)
 {
     tty_kill_stdin();
+
     if (sys_console && sys_console->integer) {
         Sys_SetNonBlock(STDIN_FILENO, false);
         Sys_SetNonBlock(STDOUT_FILENO, false);
     }
-    Cvar_Set("sys_console", "0");
+
+    sys_console = NULL;
 }
 
 void Sys_LoadHistory(void)
