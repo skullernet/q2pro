@@ -612,7 +612,13 @@ void Sys_RunConsole(void)
     char text[MAX_STRING_CHARS];
     int ret;
 
-    if (!tty_input || !(tty_input->revents & (POLLIN | POLLERR | POLLHUP))) {
+    if (!tty_input) {
+        return;
+    }
+
+    Q_assert(!(tty_input->revents & POLLNVAL));
+
+    if (!(tty_input->revents & (POLLIN | POLLERR | POLLHUP))) {
         return;
     }
 
