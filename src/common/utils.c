@@ -373,7 +373,7 @@ unsigned Com_HashString(const char *s, unsigned size)
         hash = 127 * hash + c;
     }
 
-    hash = (hash >> 20) ^(hash >> 10) ^ hash;
+    hash = (hash >> 20) ^ (hash >> 10) ^ hash;
     return hash & (size - 1);
 }
 
@@ -395,7 +395,7 @@ unsigned Com_HashStringLen(const char *s, size_t len, unsigned size)
         hash = 127 * hash + c;
     }
 
-    hash = (hash >> 20) ^(hash >> 10) ^ hash;
+    hash = (hash >> 20) ^ (hash >> 10) ^ hash;
     return hash & (size - 1);
 }
 

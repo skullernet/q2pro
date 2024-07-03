@@ -202,11 +202,10 @@ Sys_ConsoleInput
 void Sys_RunConsole(void)
 {
     INPUT_RECORD    recs[MAX_CONSOLE_INPUT_EVENTS];
-    int     ch;
-    DWORD   numread, numevents;
-    int     i;
+    int             i, ch;
+    DWORD           numread, numevents;
     inputField_t    *f = &sys_con.inputLine;
-    char    *s;
+    char            *s;
 
     if (hinput == INVALID_HANDLE_VALUE) {
         return;

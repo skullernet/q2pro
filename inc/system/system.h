@@ -34,7 +34,7 @@ void    Sys_FreeLibrary(void *handle);
 void    *Sys_GetProcAddress(void *handle, const char *sym);
 
 unsigned    Sys_Milliseconds(void);
-void    Sys_Sleep(int msec);
+void        Sys_Sleep(int msec);
 
 void    Sys_Init(void);
 void    Sys_AddDefaultConfig(void);
@@ -70,11 +70,11 @@ void    Sys_ListFiles_r(listfiles_t *list, const char *path, int depth);
 void    Sys_DebugBreak(void);
 
 #if USE_AC_CLIENT
-bool Sys_GetAntiCheatAPI(void);
+bool    Sys_GetAntiCheatAPI(void);
 #endif
 
 #ifndef _WIN32
-bool Sys_SetNonBlock(int fd, bool nb);
+bool    Sys_SetNonBlock(int fd, bool nb);
 #endif
 
 extern cvar_t   *sys_basedir;

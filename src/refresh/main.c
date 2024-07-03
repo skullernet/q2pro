@@ -971,9 +971,9 @@ static void APIENTRY myDebugProc(GLenum source, GLenum type, GLuint id, GLenum s
     int level = PRINT_DEVELOPER;
 
     switch (severity) {
-    case GL_DEBUG_SEVERITY_HIGH:   level = PRINT_ERROR;   break;
-    case GL_DEBUG_SEVERITY_MEDIUM: level = PRINT_WARNING; break;
-    case GL_DEBUG_SEVERITY_LOW:    level = PRINT_ALL;     break;
+        case GL_DEBUG_SEVERITY_HIGH:   level = PRINT_ERROR;   break;
+        case GL_DEBUG_SEVERITY_MEDIUM: level = PRINT_WARNING; break;
+        case GL_DEBUG_SEVERITY_LOW:    level = PRINT_ALL;     break;
     }
 
     Com_LPrintf(level, "%s\n", message);

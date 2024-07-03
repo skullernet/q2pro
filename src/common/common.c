@@ -1044,7 +1044,7 @@ void Qcommon_Frame(void)
     static float frac;
 
     if (setjmp(com_abortframe)) {
-        return;            // an ERR_DROP was thrown
+        return; // an ERR_DROP was thrown
     }
 
     Com_CompleteAsyncWork();
@@ -1083,8 +1083,7 @@ void Qcommon_Frame(void)
 
     if (msec > 250) {
         Com_DPrintf("Hitch warning: %u msec frame time\n", msec);
-        msec = 100; // time was unreasonable,
-        // host OS was hibernated or something
+        msec = 100; // time was unreasonable
     }
 
     if (fixedtime->integer) {

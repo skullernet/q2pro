@@ -105,7 +105,7 @@ static void PM_StepSlideMove_(void)
     vec3_t      planes[MAX_CLIP_PLANES];
     vec3_t      primal_velocity;
     int         i, j;
-    trace_t trace;
+    trace_t     trace;
     vec3_t      end;
     float       time_left;
 
@@ -751,8 +751,8 @@ PM_FlyMove
 */
 static void PM_FlyMove(void)
 {
-    float   speed, drop, friction, control, newspeed;
-    float   currentspeed, addspeed, accelspeed;
+    float       speed, drop, friction, control, newspeed;
+    float       currentspeed, addspeed, accelspeed;
     int         i;
     vec3_t      wishvel;
     float       fmove, smove;
