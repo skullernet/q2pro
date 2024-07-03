@@ -353,6 +353,21 @@ static void console_write(print_type_t type, const char *text)
     Sys_ConsoleOutput(buf, len);
 }
 
+#if USE_SYSCON
+void Sys_Printf(const char *fmt, ...)
+{
+    va_list     argptr;
+    char        msg[MAXPRINTMSG];
+    size_t      len;
+
+    va_start(argptr, fmt);
+    len = Q_vscnprintf(msg, sizeof(msg), fmt, argptr);
+    va_end(argptr);
+
+    Sys_ConsoleOutput(msg, len);
+}
+#endif
+
 #ifndef _WIN32
 /*
 =============

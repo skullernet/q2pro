@@ -111,6 +111,12 @@ void        Com_FlushLogs(void);
 
 void        Com_AddConfigFile(const char *name, unsigned flags);
 
+#if USE_SYSCON
+void        Sys_Printf(const char *fmt, ...) q_printf(1, 2);
+#else
+#define     Sys_Printf(...) (void)0
+#endif
+
 #if USE_CLIENT
 #define COM_DEDICATED   (dedicated->integer != 0)
 #else

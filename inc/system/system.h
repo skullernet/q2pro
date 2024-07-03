@@ -46,7 +46,6 @@ void    Sys_RunConsole(void);
 void    Sys_ConsoleOutput(const char *text, size_t len);
 void    Sys_SetConsoleTitle(const char *title);
 void    Sys_SetConsoleColor(color_index_t color);
-void    Sys_Printf(const char *fmt, ...) q_printf(1, 2);
 void    Sys_LoadHistory(void);
 void    Sys_SaveHistory(void);
 #else
@@ -54,7 +53,6 @@ void    Sys_SaveHistory(void);
 #define Sys_ConsoleOutput(text, len)    (void)0
 #define Sys_SetConsoleTitle(title)      (void)0
 #define Sys_SetConsoleColor(color)      (void)0
-#define Sys_Printf(...)                 (void)0
 #define Sys_LoadHistory()               (void)0
 #define Sys_SaveHistory()               (void)0
 #endif
