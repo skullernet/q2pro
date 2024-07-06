@@ -63,24 +63,24 @@ IMAGE FLOOD FILLING
 */
 
 typedef struct {
-    short       x, y;
+    uint16_t    x, y;
 } floodfill_t;
 
 // must be a power of 2
 #define FLOODFILL_FIFO_SIZE 0x1000
 #define FLOODFILL_FIFO_MASK (FLOODFILL_FIFO_SIZE - 1)
 
-#define FLOODFILL_STEP(off, dx, dy) \
-    do { \
-        if (pos[off] == fillcolor) { \
-            pos[off] = 255; \
-            fifo[inpt].x = x + (dx); \
-            fifo[inpt].y = y + (dy); \
-            inpt = (inpt + 1) & FLOODFILL_FIFO_MASK; \
-        } else if (pos[off] != 255) { \
-            fdc = pos[off]; \
-        } \
-    } while(0)
+#define FLOODFILL_STEP(off, dx, dy)                     \
+    do {                                                \
+        if (pos[off] == fillcolor) {                    \
+            pos[off] = 255;                             \
+            fifo[inpt].x = x + (dx);                    \
+            fifo[inpt].y = y + (dy);                    \
+            inpt = (inpt + 1) & FLOODFILL_FIFO_MASK;    \
+        } else if (pos[off] != 255) {                   \
+            fdc = pos[off];                             \
+        }                                               \
+    } while (0)
 
 /*
 =================
@@ -89,7 +89,7 @@ IMG_FloodFill
 Fill background pixels so mipmapping doesn't have haloes
 =================
 */
-static q_noinline void IMG_FloodFill(byte *skin, int skinwidth, int skinheight)
+static void IMG_FloodFill(byte *skin, int skinwidth, int skinheight)
 {
     byte                fillcolor = *skin; // assume this is the pixel to fill
     floodfill_t         fifo[FLOODFILL_FIFO_SIZE];
@@ -98,9 +98,8 @@ static q_noinline void IMG_FloodFill(byte *skin, int skinwidth, int skinheight)
 
     // can't fill to filled color or to transparent color
     // (used as visited marker)
-    if (fillcolor == filledcolor || fillcolor == 255) {
+    if (fillcolor == filledcolor || fillcolor == 255)
         return;
-    }
 
     fifo[inpt].x = 0, fifo[inpt].y = 0;
     inpt = (inpt + 1) & FLOODFILL_FIFO_MASK;
@@ -1791,7 +1790,7 @@ static void check_for_glow_map(image_t *image)
         byte *dst = glow_pic;
 
         for (int i = 0; i < size; i++, dst += 4) {
-            float alpha = dst[3] / 255.f;
+            float alpha = dst[3] / 255.0f;
             dst[0] *= alpha;
             dst[1] *= alpha;
             dst[2] *= alpha;
