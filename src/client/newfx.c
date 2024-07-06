@@ -199,7 +199,7 @@ void CL_Heatbeam(const vec3_t start, const vec3_t forward)
     len = VectorNormalize(vec);
 
     ltime = cl.time * 0.001f;
-    start_pt = fmod(ltime * 96.0f, step);
+    start_pt = fmodf(ltime * 96.0f, step);
     VectorMA(move, start_pt, vec, move);
 
     VectorScale(vec, step, vec);
