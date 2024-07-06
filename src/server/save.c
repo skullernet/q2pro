@@ -39,6 +39,8 @@ typedef enum {
 
 static cvar_t   *sv_noreload;
 
+static bool have_enhanced_savegames(void);
+
 static int write_server_file(savetype_t autosave)
 {
     char        name[MAX_OSPATH];
@@ -377,7 +379,7 @@ static int read_server_file(void)
     SV_InitGame(MVD_SPAWN_DISABLED);
 
     // error out immediately if game doesn't support safe savegames
-    if (!(g_features->integer & GMF_ENHANCED_SAVEGAMES))
+    if (!have_enhanced_savegames())
         Com_Error(ERR_DROP, "Game does not support enhanced savegames");
 
     // read game state
@@ -458,7 +460,7 @@ static int read_level_file(void)
 
 static bool no_save_games(void)
 {
-    if (!(g_features->integer & GMF_ENHANCED_SAVEGAMES))
+    if (!have_enhanced_savegames())
         return true;
 
     if (Cvar_VariableInteger("deathmatch"))
@@ -566,29 +568,25 @@ void SV_CheckForSavegame(const mapcmd_t *cmd)
         ge->RunFrame();
 }
 
+static bool have_enhanced_savegames(void)
+{
+    return (g_features->integer & GMF_ENHANCED_SAVEGAMES)
+        || (svs.gamedetecthack == 4) || sys_allow_unsafe_savegames->integer;
+}
+
 void SV_CheckForEnhancedSavegames(void)
 {
     if (Cvar_VariableInteger("deathmatch"))
         return;
 
-    if (g_features->integer & GMF_ENHANCED_SAVEGAMES) {
+    if (g_features->integer & GMF_ENHANCED_SAVEGAMES)
         Com_Printf("Game supports Q2PRO enhanced savegames.\n");
-        return;
-    }
-
-    if (sv.gamedetecthack == 4) {
+    else if (svs.gamedetecthack == 4)
         Com_Printf("Game supports YQ2 enhanced savegames.\n");
-        Cvar_SetInteger(g_features, g_features->integer | GMF_ENHANCED_SAVEGAMES, FROM_CODE);
-        return;
-    }
-
-    if (sys_allow_unsafe_savegames->integer) {
+    else if (sys_allow_unsafe_savegames->integer)
         Com_WPrintf("Use of unsafe savegames forced from command line.\n");
-        Cvar_SetInteger(g_features, g_features->integer | GMF_ENHANCED_SAVEGAMES, FROM_CODE);
-        return;
-    }
-
-    Com_WPrintf("Game does not support enhanced savegames. Savegames will not work.\n");
+    else
+        Com_WPrintf("Game does not support enhanced savegames. Savegames will not work.\n");
 }
 
 static void SV_Savegame_c(genctx_t *ctx, int argnum)
@@ -650,7 +648,7 @@ static void SV_Savegame_f(void)
     }
 
     // don't bother saving if we can't read them back!
-    if (!(g_features->integer & GMF_ENHANCED_SAVEGAMES)) {
+    if (!have_enhanced_savegames()) {
         Com_Printf("Game does not support enhanced savegames.\n");
         return;
     }

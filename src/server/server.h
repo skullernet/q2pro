@@ -148,10 +148,6 @@ typedef struct {
     server_state_t  state;      // precache commands are only valid during load
     int             spawncount; // random number generated each server spawn
 
-#if USE_SAVEGAMES
-    int         gamedetecthack;
-#endif
-
 #if USE_FPS
     int         framerate;
     frametime_t frametime;
@@ -475,6 +471,10 @@ typedef struct {
     z_stream        z;  // for compressing messages at once
     byte            *z_buffer;
     unsigned        z_buffer_size;
+#endif
+
+#if USE_SAVEGAMES
+    int             gamedetecthack;
 #endif
 
     cs_remap_t      csr;
