@@ -502,7 +502,7 @@ static void CL_AddPacketEntities(void)
     autorotate = anglemod(cl.time * 0.1f);
 
     // brush models can auto animate their frames
-    autoanim = 2 * cl.time / 1000;
+    autoanim = cl.time / 500;
 
     autobob = 5 * sinf(cl.time / 400.0f);
 
