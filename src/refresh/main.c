@@ -55,6 +55,7 @@ cvar_t *gl_shaders;
 cvar_t *gl_md5_load;
 cvar_t *gl_md5_use;
 #endif
+cvar_t *gl_damageblend_frac;
 cvar_t *gl_waterwarp;
 cvar_t *gl_swapinterval;
 
@@ -739,7 +740,7 @@ void R_RenderFrame(const refdef_t *fd)
         GL_WaterWarp();
     }
 
-    if (gl_polyblend->integer && glr.fd.blend[3] != 0) {
+    if (gl_polyblend->integer) {
         GL_Blend();
     }
 
@@ -917,6 +918,7 @@ static void GL_Register(void)
     gl_md5_load = Cvar_Get("gl_md5_load", "1", CVAR_FILES);
     gl_md5_use = Cvar_Get("gl_md5_use", "1", 0);
 #endif
+    gl_damageblend_frac = Cvar_Get("gl_damageblend_frac", "0.2", 0);
     gl_waterwarp = Cvar_Get("gl_waterwarp", "0", 0);
     gl_swapinterval = Cvar_Get("gl_swapinterval", "1", CVAR_ARCHIVE);
     gl_swapinterval->changed = gl_swapinterval_changed;

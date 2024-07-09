@@ -213,6 +213,7 @@ extern cvar_t *gl_shaders;
 extern cvar_t *gl_md5_load;
 extern cvar_t *gl_md5_use;
 #endif
+extern cvar_t *gl_damageblend_frac;
 
 // development variables
 extern cvar_t *gl_znear;

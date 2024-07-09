@@ -1358,7 +1358,8 @@ void CL_CalcViewValues(void)
     }
 
     // don't interpolate blend color
-    Vector4Copy(ps->blend, cl.refdef.blend);
+    Vector4Copy(ps->blend, cl.refdef.screen_blend);
+    Vector4Copy(ps->damage_blend, cl.refdef.damage_blend);
 
 #if USE_FPS
     ps = &cl.keyframe.ps;
