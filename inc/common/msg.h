@@ -21,15 +21,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/protocol.h"
 #include "common/sizebuf.h"
 
-#define MAX_PACKETENTITY_BYTES  64  // 62 bytes worst case + margin
+#define MAX_PACKETENTITY_BYTES  70  // 68 bytes worst case + 2 byte eof
 
 // entity and player states are pre-quantized before sending to make delta
 // comparsion easier
 typedef struct {
     uint16_t    number;
-    int16_t     origin[3];
     int16_t     angles[3];
-    int16_t     old_origin[3];
+    int32_t     origin[3];
+    int32_t     old_origin[3];
     uint16_t    modelindex;
     uint16_t    modelindex2;
     uint16_t    modelindex3;
@@ -49,18 +49,19 @@ typedef struct {
 } entity_packed_t;
 
 typedef struct {
-    pmove_state_t   pmove;
-    int16_t         viewangles[3];
-    int8_t          viewoffset[3];
-    int8_t          kick_angles[3];
-    int8_t          gunangles[3];
-    int8_t          gunoffset[3];
-    uint16_t        gunindex;
-    uint8_t         gunframe;
-    uint8_t         blend[4];
-    uint8_t         fov;
-    uint8_t         rdflags;
-    int16_t         stats[MAX_STATS];
+    pmove_state_new_t   pmove;
+    int16_t             viewangles[3];
+    int8_t              viewoffset[3];
+    int8_t              kick_angles[3];
+    int8_t              gunangles[3];
+    int8_t              gunoffset[3];
+    uint16_t            gunindex;
+    uint8_t             gunframe;
+    uint8_t             blend[4];
+    uint8_t             damage_blend[4];
+    uint8_t             fov;
+    uint8_t             rdflags;
+    int16_t             stats[MAX_STATS_NEW];
 } player_packed_t;
 
 typedef enum {
@@ -71,8 +72,9 @@ typedef enum {
     MSG_PS_IGNORE_DELTAANGLES   = BIT(4),   // ignore delta_angles
     MSG_PS_IGNORE_PREDICTION    = BIT(5),   // mutually exclusive with IGNORE_VIEWANGLES
     MSG_PS_EXTENSIONS           = BIT(6),   // enable protocol extensions
-    MSG_PS_FORCE                = BIT(7),   // send even if unchanged (MVD stream only)
-    MSG_PS_REMOVE               = BIT(8),   // player is removed (MVD stream only)
+    MSG_PS_EXTENSIONS_2         = BIT(7),   // enable more protocol extensions
+    MSG_PS_FORCE                = BIT(8),   // send even if unchanged (MVD stream only)
+    MSG_PS_REMOVE               = BIT(9),   // player is removed (MVD stream only)
 } msgPsFlags_t;
 
 typedef enum {
@@ -84,7 +86,8 @@ typedef enum {
     MSG_ES_BEAMORIGIN   = BIT(5),   // client has RF_BEAM old_origin fix
     MSG_ES_SHORTANGLES  = BIT(6),   // higher precision angles encoding
     MSG_ES_EXTENSIONS   = BIT(7),   // enable protocol extensions
-    MSG_ES_REMOVE       = BIT(8),   // entity is removed (MVD stream only)
+    MSG_ES_EXTENSIONS_2 = BIT(8),   // enable more protocol extensions
+    MSG_ES_REMOVE       = BIT(9),   // entity is removed (MVD stream only)
 } msgEsFlags_t;
 
 extern sizebuf_t    msg_write;
@@ -106,7 +109,8 @@ void    MSG_WriteShort(int c);
 void    MSG_WriteLong(int c);
 void    MSG_WriteLong64(int64_t c);
 void    MSG_WriteString(const char *s);
-void    MSG_WritePos(const vec3_t pos);
+void    MSG_WritePos(const vec3_t pos, bool extended);
+void    MSG_WriteIntPos(const int32_t pos[3], bool extended);
 void    MSG_WriteAngle(float f);
 #if USE_CLIENT
 void    MSG_FlushBits(void);
@@ -117,7 +121,8 @@ int     MSG_WriteDeltaUsercmd_Enhanced(const usercmd_t *from, const usercmd_t *c
 void    MSG_WriteDir(const vec3_t vector);
 void    MSG_PackEntity(entity_packed_t *out, const entity_state_t *in, const entity_state_extension_t *ext);
 void    MSG_WriteDeltaEntity(const entity_packed_t *from, const entity_packed_t *to, msgEsFlags_t flags);
-void    MSG_PackPlayer(player_packed_t *out, const player_state_t *in);
+void    MSG_PackPlayerOld(player_packed_t *out, const player_state_old_t *in);
+void    MSG_PackPlayerNew(player_packed_t *out, const player_state_new_t *in);
 void    MSG_WriteDeltaPlayerstate_Default(const player_packed_t *from, const player_packed_t *to, msgPsFlags_t flags);
 int     MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t *from, player_packed_t *to, msgPsFlags_t flags);
 void    MSG_WriteDeltaPlayerstate_Packet(const player_packed_t *from, const player_packed_t *to, int number, msgPsFlags_t flags);
@@ -144,7 +149,7 @@ int64_t MSG_ReadLong64(void);
 size_t  MSG_ReadString(char *dest, size_t size);
 size_t  MSG_ReadStringLine(char *dest, size_t size);
 #if USE_CLIENT
-void    MSG_ReadPos(vec3_t pos);
+void    MSG_ReadPos(vec3_t pos, bool extended);
 void    MSG_ReadDir(vec3_t vector);
 #endif
 int     MSG_ReadBits(int bits);

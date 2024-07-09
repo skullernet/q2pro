@@ -532,7 +532,7 @@ static void dump_clients(void)
         }
 
         Com_Printf("%3i %5i %s %-15.15s %7u %-21s %5i %2i %3i\n", client->number,
-                   client->edict->client->ps.stats[STAT_FRAGS],
+                   SV_GetClient_Stat(client, STAT_FRAGS),
                    ping, client->name, svs.realtime - client->lastmessage,
                    NET_AdrToString(&client->netchan.remote_address),
                    client->rate, client->protocol, client->moves_per_sec);

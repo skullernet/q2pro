@@ -24,34 +24,37 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define MAX_MSGLEN  0x8000      // max length of a message, 32 KiB
 
-#define PROTOCOL_VERSION_OLD        26
-#define PROTOCOL_VERSION_DEFAULT    34
-#define PROTOCOL_VERSION_R1Q2       35
-#define PROTOCOL_VERSION_Q2PRO      36
-#define PROTOCOL_VERSION_MVD        37 // not used for UDP connections
-#define PROTOCOL_VERSION_EXTENDED   3434
+#define PROTOCOL_VERSION_OLD            26
+#define PROTOCOL_VERSION_DEFAULT        34
+#define PROTOCOL_VERSION_R1Q2           35
+#define PROTOCOL_VERSION_Q2PRO          36
+#define PROTOCOL_VERSION_MVD            37      // not used for UDP connections
+#define PROTOCOL_VERSION_EXTENDED_OLD   3434
+#define PROTOCOL_VERSION_EXTENDED       3435
 
 #define PROTOCOL_VERSION_R1Q2_MINIMUM           1903    // b6377
 #define PROTOCOL_VERSION_R1Q2_UCMD              1904    // b7387
 #define PROTOCOL_VERSION_R1Q2_LONG_SOLID        1905    // b7759
 #define PROTOCOL_VERSION_R1Q2_CURRENT           1905    // b7759
 
-#define PROTOCOL_VERSION_Q2PRO_MINIMUM          1015    // r335
-#define PROTOCOL_VERSION_Q2PRO_RESERVED         1016    // r364
-#define PROTOCOL_VERSION_Q2PRO_BEAM_ORIGIN      1017    // r1037-8
-#define PROTOCOL_VERSION_Q2PRO_SHORT_ANGLES     1018    // r1037-44
-#define PROTOCOL_VERSION_Q2PRO_SERVER_STATE     1019    // r1302
-#define PROTOCOL_VERSION_Q2PRO_EXTENDED_LAYOUT  1020    // r1354
-#define PROTOCOL_VERSION_Q2PRO_ZLIB_DOWNLOADS   1021    // r1358
-#define PROTOCOL_VERSION_Q2PRO_CLIENTNUM_SHORT  1022    // r2161
-#define PROTOCOL_VERSION_Q2PRO_CINEMATICS       1023    // r2263
-#define PROTOCOL_VERSION_Q2PRO_EXTENDED_LIMITS  1024    // r2894
-#define PROTOCOL_VERSION_Q2PRO_CURRENT          1024    // r2894
+#define PROTOCOL_VERSION_Q2PRO_MINIMUM              1015    // r335
+#define PROTOCOL_VERSION_Q2PRO_RESERVED             1016    // r364
+#define PROTOCOL_VERSION_Q2PRO_BEAM_ORIGIN          1017    // r1037-8
+#define PROTOCOL_VERSION_Q2PRO_SHORT_ANGLES         1018    // r1037-44
+#define PROTOCOL_VERSION_Q2PRO_SERVER_STATE         1019    // r1302
+#define PROTOCOL_VERSION_Q2PRO_EXTENDED_LAYOUT      1020    // r1354
+#define PROTOCOL_VERSION_Q2PRO_ZLIB_DOWNLOADS       1021    // r1358
+#define PROTOCOL_VERSION_Q2PRO_CLIENTNUM_SHORT      1022    // r2161
+#define PROTOCOL_VERSION_Q2PRO_CINEMATICS           1023    // r2263
+#define PROTOCOL_VERSION_Q2PRO_EXTENDED_LIMITS      1024    // r2894
+#define PROTOCOL_VERSION_Q2PRO_EXTENDED_LIMITS_2    1025    // r3300
+#define PROTOCOL_VERSION_Q2PRO_CURRENT              1025    // r3300
 
 #define PROTOCOL_VERSION_MVD_MINIMUM            2009    // r168
 #define PROTOCOL_VERSION_MVD_DEFAULT            2010    // r177
 #define PROTOCOL_VERSION_MVD_EXTENDED_LIMITS    2011    // r2894
-#define PROTOCOL_VERSION_MVD_CURRENT            2011    // r2894
+#define PROTOCOL_VERSION_MVD_EXTENDED_LIMITS_2  2012    // r3300
+#define PROTOCOL_VERSION_MVD_CURRENT            2012    // r3300
 
 #define R1Q2_SUPPORTED(x) \
     ((x) >= PROTOCOL_VERSION_R1Q2_MINIMUM && \
@@ -72,6 +75,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define Q2PRO_PF_QW_MODE            BIT(1)
 #define Q2PRO_PF_WATERJUMP_HACK     BIT(2)
 #define Q2PRO_PF_EXTENSIONS         BIT(3)
+#define Q2PRO_PF_EXTENSIONS_2       BIT(4)
 
 //=========================================
 
@@ -178,11 +182,12 @@ typedef enum {
     mvd_num_types
 } mvd_ops_t;
 
-// MVD stream flags (only 3 bits can be used)
+// MVD stream flags
 typedef enum {
     MVF_NOMSGS      = BIT(0),
     MVF_SINGLEPOV   = BIT(1),
-    MVF_EXTLIMITS   = BIT(2)
+    MVF_EXTLIMITS   = BIT(2),
+    MVF_EXTLIMITS_2 = BIT(3),
 } mvd_flags_t;
 
 //==============================================

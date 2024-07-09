@@ -681,6 +681,8 @@ static void MVD_UpdateClient(mvd_client_t *client)
             Vector4Set(client->ps.blend, 0.5f, 0.3f, 0.2f, 0.4f);
         else
             Vector4Clear(client->ps.blend);
+
+        Vector4Clear(client->ps.damage_blend);
     } else {
         // copy entire player state
         client->ps = target->ps;
@@ -695,7 +697,7 @@ static void MVD_UpdateClient(mvd_client_t *client)
         if (target != mvd->dummy) {
             if (mvd_stats_hack->integer && mvd->dummy) {
                 // copy stats of the dummy MVD observer
-                for (i = 0; i < MAX_STATS; i++) {
+                for (i = 0; i < MAX_STATS_OLD; i++) {
                     if (mvd_stats_hack->integer & BIT(i)) {
                         client->ps.stats[i] = mvd->dummy->ps.stats[i];
                     }
@@ -772,12 +774,16 @@ void MVD_BroadcastPrintf(mvd_t *mvd, int level, int mask, const char *fmt, ...)
     SZ_Clear(&msg_write);
 }
 
+#define ES_MASK     (MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS | MSG_ES_EXTENSIONS_2)
+#define PS_MASK     (MSG_PS_EXTENSIONS | MSG_PS_EXTENSIONS_2)
+
 static void MVD_SetServerState(client_t *cl, mvd_t *mvd)
 {
     if (cl->csr != mvd->csr) {
         Z_Freep(&cl->entities);
         cl->num_entities = 0;
     }
+
     cl->gamedir = mvd->gamedir;
     cl->mapname = mvd->mapname;
     cl->configstrings = mvd->configstrings;
@@ -787,10 +793,11 @@ static void MVD_SetServerState(client_t *cl, mvd_t *mvd)
     cl->ge = &mvd->ge;
     cl->spawncount = mvd->servercount;
     cl->maxclients = mvd->maxclients;
-    if (cl->csr->extended)
-        cl->esFlags |= MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS;
-    else
-        cl->esFlags &= ~(MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS);
+
+    cl->esFlags &= ~ES_MASK;
+    cl->psFlags &= ~PS_MASK;
+    cl->esFlags |= mvd->esFlags & ES_MASK;
+    cl->psFlags |= mvd->psFlags & PS_MASK;
 }
 
 void MVD_SwitchChannel(mvd_client_t *client, mvd_t *mvd)
@@ -845,6 +852,21 @@ static bool MVD_PartFilter(mvd_client_t *client)
     return delta < treshold;
 }
 
+static bool MVD_ClientCompatible(client_t *cl, mvd_t *mvd)
+{
+    int minimal;
+
+    if (!(mvd->flags & (MVF_EXTLIMITS | MVF_EXTLIMITS_2)))
+        return true;
+    if (cl->protocol != PROTOCOL_VERSION_Q2PRO)
+        return false;
+
+    minimal = (mvd->flags & MVF_EXTLIMITS_2) ?
+        PROTOCOL_VERSION_Q2PRO_EXTENDED_LIMITS_2 :
+        PROTOCOL_VERSION_Q2PRO_EXTENDED_LIMITS;
+    return cl->version >= minimal;
+}
+
 static void MVD_TrySwitchChannel(mvd_client_t *client, mvd_t *mvd)
 {
     if (mvd == client->mvd) {
@@ -853,7 +875,7 @@ static void MVD_TrySwitchChannel(mvd_client_t *client, mvd_t *mvd)
                         "in the Waiting Room" : "on this channel");
         return; // nothing to do
     }
-    if (!CLIENT_COMPATIBLE(mvd->csr, client->cl)) {
+    if (!MVD_ClientCompatible(client->cl, mvd)) {
         SV_ClientPrintf(client->cl, PRINT_HIGH,
                         "[MVD] This channel is not compatible with your client version.\n");
         return;
@@ -1770,7 +1792,7 @@ static void MVD_GameInit(void)
 
     for (i = 0; i < sv_maxclients->integer; i++) {
         mvd_clients[i].cl = &svs.client_pool[i];
-        edicts[i + 1].client = (gclient_t *)&mvd_clients[i];
+        edicts[i + 1].client = &mvd_clients[i];
     }
 
     mvd_ge.edicts = edicts;
@@ -1864,7 +1886,7 @@ static qboolean MVD_GameClientConnect(edict_t *ent, char *userinfo)
     if (LIST_SINGLE(&mvd_channel_list)) {
         mvd = LIST_FIRST(mvd_t, &mvd_channel_list, entry);
     }
-    if (!mvd || !CLIENT_COMPATIBLE(mvd->csr, client->cl)) {
+    if (!mvd || !MVD_ClientCompatible(client->cl, mvd)) {
         mvd = &mvd_waitingRoom;
     }
     List_SeqAdd(&mvd->clients, &client->entry);

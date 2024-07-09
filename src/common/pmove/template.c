@@ -16,9 +16,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include "shared/shared.h"
-#include "common/pmove.h"
-
 #define STEPSIZE    18
 
 // all of the locals will be zeroed before each
@@ -36,11 +33,11 @@ typedef struct {
     cplane_t    groundplane;
     int         groundcontents;
 
-    short       previous_origin[3];
+    int         previous_origin[3];
     bool        ladder;
 } pml_t;
 
-static pmove_t      *pm;
+static PMOVE_TYPE   *pm;
 static pml_t        pml;
 
 static const pmoveParams_t  *pmp;
@@ -596,9 +593,9 @@ static void PM_CategorizePosition(void)
                     pm->s.pm_flags |= PMF_TIME_LAND;
                     // don't allow another jump for a little while
                     if (pml.velocity[2] < -400)
-                        pm->s.pm_time = 25;
+                        pm->s.pm_time = 200 >> PMOVE_TIME_SHIFT;
                     else
-                        pm->s.pm_time = 18;
+                        pm->s.pm_time = 144 >> PMOVE_TIME_SHIFT;
                 }
             }
         }
@@ -741,7 +738,7 @@ static void PM_CheckSpecialMovement(void)
     pml.velocity[2] = 350;
 
     pm->s.pm_flags |= PMF_TIME_WATERJUMP;
-    pm->s.pm_time = 255;
+    pm->s.pm_time = 2040 >> PMOVE_TIME_SHIFT;
 }
 
 /*
@@ -924,20 +921,20 @@ static void PM_SnapPosition(void)
 {
     int     sign[3];
     int     i, j, bits;
-    short   base[3];
+    int     base[3];
     // try all single bits first
-    static const byte jitterbits[8] = {0, 4, 1, 2, 3, 5, 6, 7};
+    static const byte jitterbits[8] = { 0, 4, 1, 2, 3, 5, 6, 7 };
 
     // snap velocity to eigths
     for (i = 0; i < 3; i++)
-        pm->s.velocity[i] = (int)(pml.velocity[i] * 8);
+        pm->s.velocity[i] = PMOVE_C2S(pml.velocity[i]);
 
     for (i = 0; i < 3; i++) {
         if (pml.origin[i] >= 0)
             sign[i] = 1;
         else
             sign[i] = -1;
-        pm->s.origin[i] = (int)(pml.origin[i] * 8);
+        pm->s.origin[i] = PMOVE_C2S(pml.origin[i]);
         if (pm->s.origin[i] * 0.125f == pml.origin[i])
             sign[i] = 0;
     }
@@ -968,8 +965,8 @@ PM_InitialSnapPosition
 static void PM_InitialSnapPosition(void)
 {
     int        x, y, z;
-    short      base[3];
-    static const short offset[3] = { 0, -1, 1 };
+    int        base[3];
+    static const int offset[3] = { 0, -1, 1 };
 
     VectorCopy(pm->s.origin, base);
 
@@ -1024,7 +1021,7 @@ Pmove
 Can be called by either the server or the client
 ================
 */
-void Pmove(pmove_t *pmove, const pmoveParams_t *params)
+void PMOVE_FUNC(PMOVE_TYPE *pmove, const pmoveParams_t *params)
 {
     pm = pmove;
     pmp = params;
@@ -1085,7 +1082,7 @@ void Pmove(pmove_t *pmove, const pmoveParams_t *params)
     if (pm->s.pm_time) {
         int     msec;
 
-        msec = pm->cmd.msec >> 3;
+        msec = pm->cmd.msec >> PMOVE_TIME_SHIFT;
         if (!msec)
             msec = 1;
         if (msec >= pm->s.pm_time) {
@@ -1132,28 +1129,12 @@ void Pmove(pmove_t *pmove, const pmoveParams_t *params)
     PM_CategorizePosition();
 
     PM_SnapPosition();
-}
 
-void PmoveInit(pmoveParams_t *pmp)
-{
-    // set up default pmove parameters
-    memset(pmp, 0, sizeof(*pmp));
-
-    pmp->speedmult = 1;
-    pmp->watermult = 0.5f;
-    pmp->maxspeed = 300;
-    pmp->friction = 6;
-    pmp->waterfriction = 1;
-    pmp->flyfriction = 9;
-}
-
-void PmoveEnableQW(pmoveParams_t *pmp)
-{
-    pmp->qwmode = true;
-    pmp->watermult = 0.7f;
-    pmp->maxspeed = 320;
-    //pmp->upspeed = (sv_qwmod->integer > 1) ? 310 : 350;
-    pmp->friction = 4;
-    pmp->waterfriction = 4;
-    pmp->airaccelerate = true;
+#ifdef PMOVE_NEW
+    // export "on ladder" flag to game
+    if (pml.ladder)
+        pm->s.pm_flags |= PMF_ON_LADDER;
+    else
+        pm->s.pm_flags &= ~PMF_ON_LADDER;
+#endif
 }

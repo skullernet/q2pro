@@ -305,10 +305,17 @@ static const save_field_t clientfields[] = {
 #define _OFS CLOFS
     I(ps.pmove.pm_type),
 
+#if USE_NEW_GAME_API
+    IA(ps.pmove.origin, 3),
+    IA(ps.pmove.velocity, 3),
+    S(ps.pmove.pm_flags),
+    S(ps.pmove.pm_time),
+#else
     SA(ps.pmove.origin, 3),
     SA(ps.pmove.velocity, 3),
     B(ps.pmove.pm_flags),
     B(ps.pmove.pm_time),
+#endif
     S(ps.pmove.gravity),
     SA(ps.pmove.delta_angles, 3),
 
@@ -799,7 +806,11 @@ static void read_fields(gzFile f, const save_field_t *fields, void *base)
 
 #define SAVE_MAGIC1     MakeLittleLong('S','S','V','1')
 #define SAVE_MAGIC2     MakeLittleLong('S','A','V','1')
+#if USE_NEW_GAME_API
+#define SAVE_VERSION    0x100
+#else
 #define SAVE_VERSION    8
+#endif
 
 static void check_gzip(int magic)
 {

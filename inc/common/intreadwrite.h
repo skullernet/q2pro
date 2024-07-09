@@ -73,6 +73,13 @@ struct unaligned64 { uint64_t u; } __attribute__((packed, may_alias));
 #define RL16(p) ((((const uint8_t *)(p))[1] << 8) | ((const uint8_t *)(p))[0])
 #endif
 
+#ifndef RL24
+#define RL24(p)                                     \
+    (((uint32_t)((const uint8_t *)(p))[2] << 16) |  \
+     ((uint32_t)((const uint8_t *)(p))[1] <<  8) |  \
+     ((uint32_t)((const uint8_t *)(p))[0]))
+#endif
+
 #ifndef RL32
 #define RL32(p)                                     \
     (((uint32_t)((const uint8_t *)(p))[3] << 24) |  \
@@ -99,6 +106,16 @@ struct unaligned64 { uint64_t u; } __attribute__((packed, may_alias));
         uint16_t _v = (v);                      \
         ((uint8_t *)p)[0] =  _v       & 0xff;   \
         ((uint8_t *)p)[1] = (_v >> 8) & 0xff;   \
+    } while (0)
+#endif
+
+#ifndef WL24
+#define WL24(p, v)                              \
+    do {                                        \
+        uint32_t _v = (v);                      \
+        ((uint8_t *)p)[0] =  _v        & 0xff;  \
+        ((uint8_t *)p)[1] = (_v >>  8) & 0xff;  \
+        ((uint8_t *)p)[2] = (_v >> 16) & 0xff;  \
     } while (0)
 #endif
 

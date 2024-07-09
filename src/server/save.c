@@ -662,7 +662,7 @@ static void SV_Savegame_f(void)
         if (!gex->CanSave())
             return;
     } else {
-        if (sv_maxclients->integer == 1 && svs.client_pool[0].edict->client->ps.stats[STAT_HEALTH] <= 0) {
+        if (sv_maxclients->integer == 1 && SV_GetClient_Stat(&svs.client_pool[0], STAT_HEALTH) <= 0) {
             Com_Printf("Can't savegame while dead!\n");
             return;
         }

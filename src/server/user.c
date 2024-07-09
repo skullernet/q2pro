@@ -341,6 +341,9 @@ static int q2pro_protocol_flags(void)
     if (sv_client->csr->extended)
         flags |= Q2PRO_PF_EXTENSIONS;
 
+    if (sv_client->esFlags & MSG_ES_EXTENSIONS_2)
+        flags |= Q2PRO_PF_EXTENSIONS_2;
+
     return flags;
 }
 

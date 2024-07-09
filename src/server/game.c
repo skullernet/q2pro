@@ -440,6 +440,11 @@ static void PF_WriteFloat(float f)
     Com_Error(ERR_DROP, "PF_WriteFloat not implemented");
 }
 
+static void PF_WritePos(const vec3_t pos)
+{
+    MSG_WritePos(pos, svs.csr.extended && IS_NEW_GAME_API);
+}
+
 static qboolean PF_inVIS(const vec3_t p1, const vec3_t p2, vis_t vis)
 {
     const mleaf_t *leaf1, *leaf2;
@@ -586,7 +591,7 @@ static void SV_StartSound(const vec3_t origin, edict_t *edict,
         MSG_WriteByte(ofs);
 
     MSG_WriteShort(sendchan);
-    MSG_WritePos(origin);
+    PF_WritePos(origin);
 
     // if the sound doesn't attenuate, send it to everyone
     // (global radio chatter, voiceovers, etc)
@@ -704,13 +709,14 @@ static void PF_LocalSound(edict_t *target, const vec3_t origin,
     PF_Unicast(target, !!(channel & CHAN_RELIABLE));
 }
 
-void PF_Pmove(pmove_t *pm)
+void PF_Pmove(void *pm)
 {
-    if (sv_client) {
-        Pmove(pm, &sv_client->pmp);
-    } else {
-        Pmove(pm, &sv_pmp);
-    }
+    const pmoveParams_t *pmp = sv_client ? &sv_client->pmp : &svs.pmp;
+
+    if (IS_NEW_GAME_API)
+        PmoveNew(pm, pmp);
+    else
+        PmoveOld(pm, pmp);
 }
 
 static cvar_t *PF_cvar(const char *name, const char *value, int flags)
@@ -813,7 +819,7 @@ static const game_import_t game_import = {
     .WriteLong = MSG_WriteLong,
     .WriteFloat = PF_WriteFloat,
     .WriteString = MSG_WriteString,
-    .WritePosition = MSG_WritePos,
+    .WritePosition = PF_WritePos,
     .WriteDir = MSG_WriteDir,
     .WriteAngle = MSG_WriteAngle,
 
@@ -980,9 +986,11 @@ void SV_InitGameProgs(void)
         Com_Error(ERR_DROP, "Game library returned NULL exports");
     }
 
-    if (ge->apiversion != GAME_API_VERSION) {
+    Com_DPrintf("Game API version: %d\n", ge->apiversion);
+
+    if (ge->apiversion != GAME_API_VERSION_OLD && ge->apiversion != GAME_API_VERSION_NEW) {
         Com_Error(ERR_DROP, "Game library is version %d, expected %d",
-                  ge->apiversion, GAME_API_VERSION);
+                  ge->apiversion, GAME_API_VERSION_OLD);
     }
 
     // get extended api if present

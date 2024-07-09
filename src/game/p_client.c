@@ -938,7 +938,7 @@ void respawn(edict_t *self)
 
         // hold in place briefly
         self->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
-        self->client->ps.pmove.pm_time = 14;
+        self->client->ps.pmove.pm_time = 112 >> PM_TIME_SHIFT;
 
         self->client->respawn_framenum = level.framenum;
 
@@ -1018,7 +1018,7 @@ void spectator_respawn(edict_t *ent)
 
         // hold in place briefly
         ent->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
-        ent->client->ps.pmove.pm_time = 14;
+        ent->client->ps.pmove.pm_time = 112 >> PM_TIME_SHIFT;
     }
 
     ent->client->respawn_framenum = level.framenum;
@@ -1236,7 +1236,7 @@ void ClientBeginDeathmatch(edict_t *ent)
 
         // hold in place briefly
         ent->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
-        ent->client->ps.pmove.pm_time = 200 >> 3;
+        ent->client->ps.pmove.pm_time = 200 >> PM_TIME_SHIFT;
     }
 
     gi.bprintf(PRINT_HIGH, "%s entered the game\n", ent->client->pers.netname);
@@ -1284,7 +1284,7 @@ void ClientBegin(edict_t *ent)
 
         // hold in place briefly
         ent->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
-        ent->client->ps.pmove.pm_time = 200 >> 3;
+        ent->client->ps.pmove.pm_time = 200 >> PM_TIME_SHIFT;
     }
 
     if (level.intermission_framenum) {

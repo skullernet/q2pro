@@ -1860,7 +1860,7 @@ static void emit_base_frame(mvd_t *mvd)
     // send base player states
     for (i = 0; i < mvd->maxclients; i++) {
         player = &mvd->players[i];
-        MSG_PackPlayer(&ps, &player->ps);
+        MSG_PackPlayerNew(&ps, &player->ps);
         MSG_WriteDeltaPlayerstate_Packet(NULL, &ps, i, player_flags(mvd, player));
     }
     MSG_WriteByte(CLIENTNUM_NONE);
@@ -1879,17 +1879,21 @@ static void emit_base_frame(mvd_t *mvd)
 
 static void emit_gamestate(mvd_t *mvd)
 {
-    int         i, extra;
+    int         i;
     char        *s;
     size_t      len;
 
-    // pack MVD stream flags into extra bits
-    extra = mvd->flags << SVCMD_BITS;
-
     // send the serverdata
-    MSG_WriteByte(mvd_serverdata | extra);
-    MSG_WriteLong(PROTOCOL_VERSION_MVD);
-    MSG_WriteLong(mvd->version);
+    if (mvd->version >= PROTOCOL_VERSION_MVD_EXTENDED_LIMITS_2) {
+        MSG_WriteByte(mvd_serverdata);
+        MSG_WriteLong(PROTOCOL_VERSION_MVD);
+        MSG_WriteLong(mvd->version);
+        MSG_WriteShort(mvd->flags);
+    } else {
+        MSG_WriteByte(mvd_serverdata | (mvd->flags << SVCMD_BITS));
+        MSG_WriteLong(PROTOCOL_VERSION_MVD);
+        MSG_WriteLong(mvd->version);
+    }
     MSG_WriteLong(mvd->servercount);
     MSG_WriteString(mvd->gamedir);
     MSG_WriteShort(mvd->clientNum);

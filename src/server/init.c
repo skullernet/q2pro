@@ -425,6 +425,9 @@ void SV_InitGame(unsigned mvd_spawn)
 
     svs.csr = cs_remap_old;
 
+    // set up default pmove parameters
+    PmoveInit(&svs.pmp);
+
     // init game
 #if USE_MVD_CLIENT
     if (mvd_spawn) {
@@ -440,6 +443,9 @@ void SV_InitGame(unsigned mvd_spawn)
         SV_CheckForEnhancedSavegames();
         SV_MvdPostInit();
     }
+
+    if (svs.csr.extended && IS_NEW_GAME_API)
+        PmoveEnableExt(&svs.pmp);
 
     // send heartbeat very soon
     svs.last_heartbeat = -(HEARTBEAT_SECONDS - 5) * 1000;

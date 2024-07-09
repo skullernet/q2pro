@@ -171,7 +171,7 @@ typedef struct {
     usercmd_t    cmd;
     usercmd_t    cmds[CMD_BACKUP];    // each mesage will send several old cmds
     unsigned     cmdNumber;
-    short        predicted_origins[CMD_BACKUP][3];    // for debug comparing against server
+    int          predicted_origins[CMD_BACKUP][3];    // for debug comparing against server
     client_history_t    history[CMD_BACKUP];
     unsigned    initialSeq;
 
@@ -478,6 +478,7 @@ typedef struct {
         bool        seeking;
         bool        eof;
         msgEsFlags_t    esFlags;        // for snapshots/recording
+        msgPsFlags_t    psFlags;
     } demo;
 
 #if USE_CLIENT_GTV
@@ -686,6 +687,9 @@ void CL_SendCmd(void);
 
 #define CL_ES_EXTENDED_MASK \
     (MSG_ES_LONGSOLID | MSG_ES_UMASK | MSG_ES_BEAMORIGIN | MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS)
+
+#define CL_ES_EXTENDED_MASK_2 (CL_ES_EXTENDED_MASK | MSG_ES_EXTENSIONS_2)
+#define CL_PS_EXTENDED_MASK_2 (MSG_PS_EXTENSIONS | MSG_PS_EXTENSIONS_2)
 
 typedef struct {
     int type;

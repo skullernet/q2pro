@@ -346,7 +346,7 @@ bool SV_WriteFrameToClient_Enhanced(client_t *client, unsigned maxsize)
     MSG_WriteData(frame->areabits, frame->areabytes);
 
     // ignore some parts of playerstate if not recording demo
-    psFlags = 0;
+    psFlags = client->psFlags;
     if (!client->settings[CLS_RECORDING]) {
         if (client->settings[CLS_NOGUN]) {
             psFlags |= MSG_PS_IGNORE_GUNFRAMES;
@@ -378,9 +378,6 @@ bool SV_WriteFrameToClient_Enhanced(client_t *client, unsigned maxsize)
         suppressed = client->frameflags;
     } else {
         suppressed = client->suppress_count;
-    }
-    if (client->csr->extended) {
-        psFlags |= MSG_PS_EXTENSIONS;
     }
 
     // delta encode the playerstate
@@ -549,7 +546,6 @@ void SV_BuildClientFrame(client_t *client)
     edict_t     *clent;
     client_frame_t  *frame;
     entity_packed_t *state;
-    player_state_t  *ps;
     const mleaf_t   *leaf;
     int         clientarea, clientcluster;
     byte        clientphs[VIS_MAX_BYTES];
@@ -577,8 +573,7 @@ void SV_BuildClientFrame(client_t *client)
     client->frames_sent++;
 
     // find the client's PVS
-    ps = &clent->client->ps;
-    VectorMA(ps->viewoffset, 0.125f, ps->pmove.origin, org);
+    SV_GetClient_ViewOrg(client, org);
 
     leaf = CM_PointLeaf(client->cm, org);
     clientarea = leaf->area;
@@ -592,11 +587,14 @@ void SV_BuildClientFrame(client_t *client)
     }
 
     // grab the current player_state_t
-    MSG_PackPlayer(&frame->ps, ps);
+    if (IS_NEW_GAME_API)
+        MSG_PackPlayerNew(&frame->ps, clent->client);
+    else
+        MSG_PackPlayerOld(&frame->ps, clent->client);
 
     // grab the current clientNum
     if (g_features->integer & GMF_CLIENTNUM) {
-        frame->clientNum = clent->client->clientNum;
+        frame->clientNum = SV_GetClient_ClientNum(client);
         if (!VALIDATE_CLIENTNUM(client->csr, frame->clientNum)) {
             Com_WPrintf("%s: bad clientNum %d for client %d\n",
                         __func__, frame->clientNum, client->number);

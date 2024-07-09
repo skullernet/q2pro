@@ -252,6 +252,14 @@ typedef struct precache_s {
     void                (*func)(void);
 } precache_t;
 
+// new game API can be used w/o protocol extensions,
+// so this needs to be dynamic
+#if USE_NEW_GAME_API
+#define PM_TIME_SHIFT   (game.csr.extended ? 0 : 3)
+#else
+#define PM_TIME_SHIFT   3
+#endif
+
 //
 // this structure is left intact through an entire game
 // it should be initialized at dll load time, and read/written to

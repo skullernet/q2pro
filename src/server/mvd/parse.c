@@ -488,7 +488,7 @@ static void MVD_ParseSound(mvd_t *mvd, int extrabits)
         MSG_WriteByte(offset);
 
     MSG_WriteShort(sendchan);
-    MSG_WritePos(origin);
+    MSG_WritePos(origin, mvd->esFlags & MSG_ES_EXTENSIONS_2);
 
     leaf1 = NULL;
     if (!(extrabits & 1)) {
@@ -894,12 +894,18 @@ static void MVD_ParseServerData(mvd_t *mvd, int extrabits)
                      "Current version is %d.\n", mvd->version, PROTOCOL_VERSION_MVD_CURRENT);
     }
 
+    // parse MVD stream flags
+    if (mvd->version >= PROTOCOL_VERSION_MVD_EXTENDED_LIMITS_2) {
+        mvd->flags = MSG_ReadWord();
+    } else {
+        mvd->flags = extrabits;
+    }
+
     mvd->servercount = MSG_ReadLong();
     if (MSG_ReadString(mvd->gamedir, sizeof(mvd->gamedir)) >= sizeof(mvd->gamedir)) {
         MVD_Destroyf(mvd, "Oversize gamedir string");
     }
     mvd->clientNum = MSG_ReadShort();
-    mvd->flags = extrabits;
     mvd->esFlags = MSG_ES_UMASK | MSG_ES_BEAMORIGIN;
     mvd->psFlags = 0;
     mvd->csr = &cs_remap_old;
@@ -908,6 +914,13 @@ static void MVD_ParseServerData(mvd_t *mvd, int extrabits)
         mvd->esFlags |= MSG_ES_LONGSOLID | MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS;
         mvd->psFlags |= MSG_PS_EXTENSIONS;
         mvd->csr = &cs_remap_new;
+    }
+    if (mvd->version >= PROTOCOL_VERSION_MVD_EXTENDED_LIMITS_2 && mvd->flags & MVF_EXTLIMITS_2) {
+        mvd->esFlags |= MSG_ES_EXTENSIONS_2;
+        mvd->psFlags |= MSG_PS_EXTENSIONS_2;
+        if (!(mvd->flags & MVF_EXTLIMITS)) {
+            MVD_Destroyf(mvd, "MVF_EXTLIMITS_2 without MVF_EXTLIMITS");
+        }
     }
 
 #if 0

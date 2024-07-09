@@ -44,6 +44,11 @@ option('game-build-options',
   value: [],
   description: 'Custom game build options for LTO, etc')
 
+option('game-new-api',
+  type: 'boolean',
+  value: false,
+  description: 'Build game using new API for big maps support')
+
 option('homedir',
   type: 'string',
   value: '~/.q2pro',

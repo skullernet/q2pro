@@ -24,7 +24,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // game.h -- game dll information visible to server
 //
 
-#define GAME_API_VERSION    3
+#define GAME_API_VERSION_OLD    3       // game uses gclient_old_t
+#define GAME_API_VERSION_NEW    3300    // game uses gclient_new_t
+
+#if USE_NEW_GAME_API
+#define GAME_API_VERSION    GAME_API_VERSION_NEW
+#else
+#define GAME_API_VERSION    GAME_API_VERSION_OLD
+#endif
 
 // edict->svflags
 
@@ -78,9 +85,24 @@ typedef struct gclient_s gclient_t;
 
 #ifndef GAME_INCLUDE
 
-struct gclient_s {
-    player_state_t  ps;     // communicated by server to clients
-    int             ping;
+typedef struct gclient_old_s gclient_old_t;
+typedef struct gclient_new_s gclient_new_t;
+
+struct gclient_old_s {
+    player_state_old_t  ps;     // communicated by server to clients
+    int                 ping;
+
+    // set to (client POV entity number) - 1 by game,
+    // only valid if g_features has GMF_CLIENTNUM bit
+    int             clientNum;
+
+    // the game dll can add anything it wants after
+    // this point in the structure
+};
+
+struct gclient_new_s {
+    player_state_new_t  ps;     // communicated by server to clients
+    int                 ping;
 
     // set to (client POV entity number) - 1 by game,
     // only valid if g_features has GMF_CLIENTNUM bit
@@ -92,7 +114,7 @@ struct gclient_s {
 
 struct edict_s {
     entity_state_t  s;
-    struct gclient_s    *client;
+    void        *client;
     qboolean    inuse;
     int         linkcount;
 
@@ -170,7 +192,11 @@ typedef struct {
     void (*linkentity)(edict_t *ent);
     void (*unlinkentity)(edict_t *ent);     // call before removing an interactive edict
     int (*BoxEdicts)(const vec3_t mins, const vec3_t maxs, edict_t **list, int maxcount, int areatype);
+#ifdef GAME_INCLUDE
     void (*Pmove)(pmove_t *pmove);          // player movement code common with client prediction
+#else
+    void (*Pmove)(void *pmove);
+#endif
 
     // network messaging
     void (*multicast)(const vec3_t origin, multicast_t to);

@@ -34,6 +34,8 @@ typedef struct {
     bool        strafehack;
     bool        flyhack;
     bool        waterhack;
+    byte        time_shift;
+    byte        coord_bits;
     float       speedmult;
     float       watermult;
     float       maxspeed;
@@ -42,7 +44,9 @@ typedef struct {
     float       flyfriction;
 } pmoveParams_t;
 
-void Pmove(pmove_t *pmove, const pmoveParams_t *params);
+void PmoveOld(pmove_old_t *pmove, const pmoveParams_t *params);
+void PmoveNew(pmove_new_t *pmove, const pmoveParams_t *params);
 
 void PmoveInit(pmoveParams_t *pmp);
 void PmoveEnableQW(pmoveParams_t *pmp);
+void PmoveEnableExt(pmoveParams_t *pmp);

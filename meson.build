@@ -24,7 +24,9 @@ common_src = [
   'src/common/msg.c',
   'src/common/net/chan.c',
   'src/common/net/net.c',
-  'src/common/pmove.c',
+  'src/common/pmove/common.c',
+  'src/common/pmove/new.c',
+  'src/common/pmove/old.c',
   'src/common/prompt.c',
   'src/common/sizebuf.c',
   'src/common/utils.c',
@@ -201,9 +203,14 @@ else
   common_args += '-D_GNU_SOURCE'
 endif
 
-engine_args = []
+engine_args = ['-DUSE_NEW_GAME_API=1']
 if win32
   engine_args += '-D_WIN32_WINNT=0x0601'
+endif
+
+game_args = []
+if get_option('game-new-api')
+  game_args += '-DUSE_NEW_GAME_API=1'
 endif
 
 common_link_args = []
@@ -446,6 +453,7 @@ shared_library('game' + cpu, game_src,
   include_directories:   'inc',
   gnu_symbol_visibility: 'hidden',
   link_args:             dll_link_args,
+  c_args:                game_args,
   install:               system_wide,
   install_dir:           libdir / get_option('base-game'),
   override_options:      get_option('game-build-options'),

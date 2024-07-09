@@ -235,7 +235,7 @@ void CL_PredictMovement(void)
     // run frames
     while (++ack <= current) {
         pm.cmd = cl.cmds[ack & CMD_MASK];
-        Pmove(&pm, &cl.pmp);
+        PmoveNew(&pm, &cl.pmp);
 
         // save for debug checking
         VectorCopy(pm.s.origin, cl.predicted_origins[ack & CMD_MASK]);
@@ -247,7 +247,7 @@ void CL_PredictMovement(void)
         pm.cmd.forwardmove = cl.localmove[0];
         pm.cmd.sidemove = cl.localmove[1];
         pm.cmd.upmove = cl.localmove[2];
-        Pmove(&pm, &cl.pmp);
+        PmoveNew(&pm, &cl.pmp);
         frame = current;
 
         // save for debug checking

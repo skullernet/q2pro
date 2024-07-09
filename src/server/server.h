@@ -92,6 +92,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
                      GMF_IPV6_ADDRESS_AWARE | GMF_ALLOW_INDEX_OVERFLOW | \
                      GMF_PROTOCOL_EXTENSIONS)
 
+// flag indicating if game uses gclient_new_t or gclient_old_t.
+// doesn't enable protocol extensions by itself.
+#define IS_NEW_GAME_API    (ge->apiversion == GAME_API_VERSION_NEW)
+
 // ugly hack for SV_Shutdown
 #define MVD_SPAWN_DISABLED  0
 #define MVD_SPAWN_ENABLED   BIT(30)
@@ -172,10 +176,6 @@ typedef struct {
 
 #define MAX_TOTAL_ENT_LEAFS        128
 
-#define CLIENT_COMPATIBLE(csr, c) \
-    (!(csr)->extended || ((c)->protocol == PROTOCOL_VERSION_Q2PRO && \
-                          (c)->version >= PROTOCOL_VERSION_Q2PRO_EXTENDED_LIMITS))
-
 #define ENT_EXTENSION(csr, ent)  ((csr)->extended ? &(ent)->x : NULL)
 
 typedef enum {
@@ -229,7 +229,7 @@ typedef struct {
             uint8_t     volume;
             uint8_t     attenuation;
             uint8_t     timeofs;
-            int16_t     pos[3];     // saved in case entity is freed
+            int32_t     pos[3];     // saved in case entity is freed
         };
     };
 } message_packet_t;
@@ -332,6 +332,7 @@ typedef struct client_s {
 
     pmoveParams_t   pmp;        // spectator speed, etc
     msgEsFlags_t    esFlags;    // entity protocol flags
+    msgPsFlags_t    psFlags;
 
     // packetized messages
     list_t              msg_free_list;
@@ -478,6 +479,7 @@ typedef struct {
 #endif
 
     cs_remap_t      csr;
+    pmoveParams_t   pmp;
 
     unsigned        last_heartbeat;
     unsigned        last_timescale_check;
@@ -507,8 +509,6 @@ extern list_t       sv_clientlist;  // linked list of non-free clients
 
 extern server_static_t      svs;        // persistant server info
 extern server_t             sv;         // local server
-
-extern pmoveParams_t    sv_pmp;
 
 extern cvar_t       *sv_hostname;
 extern cvar_t       *sv_maxclients;
@@ -772,7 +772,7 @@ extern const game_export_ex_t   *gex;
 void SV_InitGameProgs(void);
 void SV_ShutdownGameProgs(void);
 
-void PF_Pmove(pmove_t *pm);
+void PF_Pmove(void *pm);
 
 //
 // sv_save.c
@@ -790,6 +790,45 @@ void SV_RegisterSavegames(void);
 #define SV_CheckForEnhancedSavegames()  (void)0
 #define SV_RegisterSavegames()          (void)0
 #endif
+
+//
+// ugly gclient_(old|new)_t accessors
+//
+
+static inline void SV_GetClient_ViewOrg(const client_t *client, vec3_t org)
+{
+    if (IS_NEW_GAME_API) {
+        const gclient_new_t *cl = client->edict->client;
+        VectorMA(cl->ps.viewoffset, 0.125f, cl->ps.pmove.origin, org);
+    } else {
+        const gclient_old_t *cl = client->edict->client;
+        VectorMA(cl->ps.viewoffset, 0.125f, cl->ps.pmove.origin, org);
+    }
+}
+
+static inline int SV_GetClient_ClientNum(const client_t *client)
+{
+    if (IS_NEW_GAME_API)
+        return ((const gclient_new_t *)client->edict->client)->clientNum;
+    else
+        return ((const gclient_old_t *)client->edict->client)->clientNum;
+}
+
+static inline int SV_GetClient_Stat(const client_t *client, int stat)
+{
+    if (IS_NEW_GAME_API)
+        return ((const gclient_new_t *)client->edict->client)->ps.stats[stat];
+    else
+        return ((const gclient_old_t *)client->edict->client)->ps.stats[stat];
+}
+
+static inline void SV_SetClient_Ping(const client_t *client, int ping)
+{
+    if (IS_NEW_GAME_API)
+        ((gclient_new_t *)client->edict->client)->ping = ping;
+    else
+        ((gclient_old_t *)client->edict->client)->ping = ping;
+}
 
 //============================================================
 

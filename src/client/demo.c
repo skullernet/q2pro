@@ -174,12 +174,12 @@ static void emit_delta_frame(const server_frame_t *from, const server_frame_t *t
 
     // delta encode the playerstate
     MSG_WriteByte(svc_playerinfo);
-    MSG_PackPlayer(&newpack, &to->ps);
+    MSG_PackPlayerNew(&newpack, &to->ps);
     if (from) {
-        MSG_PackPlayer(&oldpack, &from->ps);
-        MSG_WriteDeltaPlayerstate_Default(&oldpack, &newpack, cl.psFlags);
+        MSG_PackPlayerNew(&oldpack, &from->ps);
+        MSG_WriteDeltaPlayerstate_Default(&oldpack, &newpack, cls.demo.psFlags);
     } else {
-        MSG_WriteDeltaPlayerstate_Default(NULL, &newpack, cl.psFlags);
+        MSG_WriteDeltaPlayerstate_Default(NULL, &newpack, cls.demo.psFlags);
     }
 
     // delta encode the entities
@@ -1178,7 +1178,7 @@ bool CL_GetDemoInfo(const char *path, demoInfo_t *info)
             goto fail;
         }
         c = MSG_ReadLong();
-        if (c == PROTOCOL_VERSION_EXTENDED) {
+        if (c == PROTOCOL_VERSION_EXTENDED || c == PROTOCOL_VERSION_EXTENDED_OLD) {
             csr = &cs_remap_new;
         } else if (c < PROTOCOL_VERSION_OLD || c > PROTOCOL_VERSION_DEFAULT) {
             goto fail;
