@@ -627,6 +627,10 @@ void Con_Print(const char *txt)
 
         txt++;
     }
+
+    // update time for transparent overlay
+    if (!con.skipNotify)
+        con.times[con.current & CON_TIMES_MASK] = cls.realtime;
 }
 
 /*
