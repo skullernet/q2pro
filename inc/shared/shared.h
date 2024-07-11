@@ -1439,7 +1439,7 @@ typedef struct {
     int         gunindex;
     int         gunframe;
 
-    float       blend[4];       // rgba full screen effect
+    vec4_t      blend;          // rgba full screen effect
 
     float       fov;            // horizontal field of view
 
