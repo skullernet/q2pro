@@ -450,20 +450,26 @@ void MSG_WriteDir(const vec3_t dir)
     MSG_WriteByte(best);
 }
 
+#define PACK_COORDS(out, in)        \
+    (out[0] = COORD2SHORT(in[0]),   \
+     out[1] = COORD2SHORT(in[1]),   \
+     out[2] = COORD2SHORT(in[2]))
+
+#define PACK_ANGLES(out, in)        \
+    (out[0] = ANGLE2SHORT(in[0]),   \
+     out[1] = ANGLE2SHORT(in[1]),   \
+     out[2] = ANGLE2SHORT(in[2]))
+
 void MSG_PackEntity(entity_packed_t *out, const entity_state_t *in, const entity_state_extension_t *ext)
 {
     // allow 0 to accomodate empty baselines
     Q_assert(in->number >= 0 && in->number < MAX_EDICTS);
     out->number = in->number;
-    out->origin[0] = COORD2SHORT(in->origin[0]);
-    out->origin[1] = COORD2SHORT(in->origin[1]);
-    out->origin[2] = COORD2SHORT(in->origin[2]);
-    out->angles[0] = ANGLE2SHORT(in->angles[0]);
-    out->angles[1] = ANGLE2SHORT(in->angles[1]);
-    out->angles[2] = ANGLE2SHORT(in->angles[2]);
-    out->old_origin[0] = COORD2SHORT(in->old_origin[0]);
-    out->old_origin[1] = COORD2SHORT(in->old_origin[1]);
-    out->old_origin[2] = COORD2SHORT(in->old_origin[2]);
+
+    PACK_COORDS(out->origin, in->origin);
+    PACK_COORDS(out->old_origin, in->old_origin);
+    PACK_ANGLES(out->angles, in->angles);
+
     out->modelindex = in->modelindex;
     out->modelindex2 = in->modelindex2;
     out->modelindex3 = in->modelindex3;
@@ -475,6 +481,7 @@ void MSG_PackEntity(entity_packed_t *out, const entity_state_t *in, const entity
     out->frame = in->frame;
     out->sound = in->sound;
     out->event = in->event;
+
     if (ext) {
         out->morefx = ext->morefx;
         out->alpha = Q_clip_uint8(ext->alpha * 255.0f);
@@ -782,24 +789,36 @@ void MSG_WriteDeltaEntity(const entity_packed_t *from,
 }
 
 #define OFFSET2CHAR(x)  Q_clip_int8((x) * 4)
+#define BLEND2BYTE(x)   Q_clip_uint8((x) * 255)
+
+#define PACK_OFFSET(out, in)        \
+    (out[0] = OFFSET2CHAR(in[0]),   \
+     out[1] = OFFSET2CHAR(in[1]),   \
+     out[2] = OFFSET2CHAR(in[2]))
+
+#define PACK_BLEND(out, in)        \
+    (out[0] = BLEND2BYTE(in[0]),   \
+     out[1] = BLEND2BYTE(in[1]),   \
+     out[2] = BLEND2BYTE(in[2]),   \
+     out[3] = BLEND2BYTE(in[3]))
 
 void MSG_PackPlayer(player_packed_t *out, const player_state_t *in)
 {
-    int i;
-
     out->pmove = in->pmove;
-    for (i = 0; i < 3; i++) out->viewangles[i] = ANGLE2SHORT(in->viewangles[i]);
-    for (i = 0; i < 3; i++) out->viewoffset[i] = OFFSET2CHAR(in->viewoffset[i]);
-    for (i = 0; i < 3; i++) out->kick_angles[i] = OFFSET2CHAR(in->kick_angles[i]);
-    for (i = 0; i < 3; i++) out->gunoffset[i] = OFFSET2CHAR(in->gunoffset[i]);
-    for (i = 0; i < 3; i++) out->gunangles[i] = OFFSET2CHAR(in->gunangles[i]);
+
+    PACK_ANGLES(out->viewangles, in->viewangles);
+    PACK_OFFSET(out->viewoffset, in->viewoffset);
+    PACK_OFFSET(out->kick_angles, in->kick_angles);
+    PACK_OFFSET(out->gunoffset, in->gunoffset);
+    PACK_OFFSET(out->gunangles, in->gunangles);
+
     out->gunindex = in->gunindex;
     out->gunframe = in->gunframe;
-    for (i = 0; i < 4; i++)
-        out->blend[i] = Q_clip_uint8(in->blend[i] * 255);
-    out->fov = (int)in->fov;
+    PACK_BLEND(out->blend, in->blend);
+    out->fov = Q_clip_uint8(in->fov);
     out->rdflags = in->rdflags;
-    for (i = 0; i < MAX_STATS; i++)
+
+    for (int i = 0; i < MAX_STATS; i++)
         out->stats[i] = in->stats[i];
 }
 
