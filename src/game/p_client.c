@@ -1227,7 +1227,7 @@ void ClientBeginDeathmatch(edict_t *ent)
 
     if (level.intermission_framenum) {
         MoveClientToIntermission(ent);
-    } else {
+    } else if (!ent->client->pers.spectator) {
         // send effect
         gi.WriteByte(svc_muzzleflash);
         gi.WriteShort(ent - g_edicts);
