@@ -98,6 +98,9 @@ static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_
     }
 
     while (1) {
+#if USE_DEBUG
+        uint32_t readcount = msg_read.readcount;
+#endif
         newnum = MSG_ParseEntityBits(&bits, cl.esFlags);
         if (newnum < 0 || newnum >= cl.csr.max_edicts) {
             Com_Error(ERR_DROP, "%s: bad number: %d", __func__, newnum);
@@ -109,7 +112,7 @@ static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_
 
         while (oldnum < newnum) {
             // one or more entities from the old packet are unchanged
-            SHOWNET(3, "   unchanged: %i\n", oldnum);
+            SHOWNET(3, "   unchanged:%i\n", oldnum);
             CL_ParseDeltaEntity(frame, oldnum, oldstate, 0);
 
             oldindex++;
@@ -125,7 +128,7 @@ static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_
 
         if (bits & U_REMOVE) {
             // the entity present in oldframe is not in the current frame
-            SHOWNET(2, "   remove: %i\n", newnum);
+            SHOWNET(2, "%3u:remove:%i\n", readcount, newnum);
             if (oldnum != newnum) {
                 Com_DPrintf("U_REMOVE: oldnum != newnum\n");
             }
@@ -147,7 +150,7 @@ static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_
 
         if (oldnum == newnum) {
             // delta from previous state
-            SHOWNET(2, "   delta: %i ", newnum);
+            SHOWNET(2, "%3u:delta:%i ", readcount, newnum);
             CL_ParseDeltaEntity(frame, newnum, oldstate, bits);
             if (!bits) {
                 SHOWNET(2, "\n");
@@ -167,20 +170,19 @@ static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_
 
         if (oldnum > newnum) {
             // delta from baseline
-            SHOWNET(2, "   baseline: %i ", newnum);
+            SHOWNET(2, "%3u:baseline:%i ", readcount, newnum);
             CL_ParseDeltaEntity(frame, newnum, &cl.baselines[newnum], bits);
             if (!bits) {
                 SHOWNET(2, "\n");
             }
             continue;
         }
-
     }
 
     // any remaining entities in the old frame are copied over
     while (oldnum != MAX_EDICTS) {
         // one or more entities from the old packet are unchanged
-        SHOWNET(3, "   unchanged: %i\n", oldnum);
+        SHOWNET(3, "   unchanged:%i\n", oldnum);
         CL_ParseDeltaEntity(frame, oldnum, oldstate, 0);
 
         oldindex++;
@@ -308,13 +310,13 @@ static void CL_ParseFrame(int extrabits)
         frame.areabytes = 0;
     }
 
+    SHOWNET(2, "%3u:playerinfo\n", msg_read.readcount);
+
     if (cls.serverProtocol <= PROTOCOL_VERSION_DEFAULT) {
         if (MSG_ReadByte() != svc_playerinfo) {
             Com_Error(ERR_DROP, "%s: not playerinfo", __func__);
         }
     }
-
-    SHOWNET(2, "%3u:playerinfo\n", msg_read.readcount - 1);
 
     // parse playerstate
     bits = MSG_ReadWord();
@@ -356,14 +358,14 @@ static void CL_ParseFrame(int extrabits)
         frame.clientNum = cl.clientNum;
     }
 
+    SHOWNET(2, "%3u:packetentities\n", msg_read.readcount);
+
     // parse packetentities
     if (cls.serverProtocol <= PROTOCOL_VERSION_DEFAULT) {
         if (MSG_ReadByte() != svc_packetentities) {
             Com_Error(ERR_DROP, "%s: not packetentities", __func__);
         }
     }
-
-    SHOWNET(2, "%3u:packetentities\n", msg_read.readcount - 1);
 
     CL_ParsePacketEntities(oldframe, &frame);
 
@@ -375,7 +377,7 @@ static void CL_ParseFrame(int extrabits)
         int seq = cls.netchan.incoming_acknowledged & CMD_MASK;
         int rtt = cls.demo.playback ? 0 : cls.realtime - cl.history[seq].sent;
         Com_LPrintf(PRINT_DEVELOPER, "%3u:frame:%d  delta:%d  rtt:%d\n",
-                    msg_read.readcount - 1, frame.number, frame.delta, rtt);
+                    msg_read.readcount, frame.number, frame.delta, rtt);
     }
 #endif
 
@@ -463,7 +465,7 @@ static void CL_ParseBaseline(int index, uint64_t bits)
 
 #if USE_DEBUG
     if (cl_shownet->integer > 2) {
-        Com_LPrintf(PRINT_DEVELOPER, "   baseline: %i ", index);
+        Com_LPrintf(PRINT_DEVELOPER, "   baseline:%i ", index);
         MSG_ShowDeltaEntityBits(bits);
         Com_LPrintf(PRINT_DEVELOPER, "\n");
     }
