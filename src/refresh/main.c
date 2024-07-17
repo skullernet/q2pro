@@ -427,8 +427,8 @@ static void GL_OccludeFlares(void)
 
     if (!glr.num_flares)
         return;
-    if (!gl_static.queries)
-        return;
+
+    Q_assert(gl_static.queries);
 
     GL_LoadMatrix(glr.viewmatrix);
     GL_StateBits(GLS_DEPTHMASK_FALSE);
@@ -494,7 +494,8 @@ static void GL_DrawFlare(const entity_t *e)
     if (!q->pending)
         glr.num_flares++;
 
-    if (!q->visible)
+    GL_AdvanceValue(&q->frac, q->visible, 8);
+    if (!q->frac)
         return;
 
     GL_LoadMatrix(glr.viewmatrix);
@@ -504,9 +505,9 @@ static void GL_DrawFlare(const entity_t *e)
     GL_Color(e->rgba.u8[0] / 255.0f,
              e->rgba.u8[1] / 255.0f,
              e->rgba.u8[2] / 255.0f,
-             e->alpha * 0.5f);
+             e->alpha * 0.5f * q->frac);
 
-    make_flare_quad(e, 25.0f, points);
+    make_flare_quad(e, 25.0f * q->frac, points);
 
     GL_TexCoordPointer(2, 0, quad_tc);
     GL_VertexPointer(3, 0, &points[0][0]);
@@ -671,6 +672,9 @@ void R_RenderFrame(const refdef_t *fd)
     GL_Flush2D();
 
     Q_assert(gl_static.world.cache || (fd->rdflags & RDF_NOWORLDMODEL));
+
+    glr.frametime = (com_eventTime - glr.timestamp) * 0.001f;
+    glr.timestamp = com_eventTime;
 
     glr.drawframe++;
     glr.rand_seed = fd->time * 20;
@@ -1070,6 +1074,7 @@ static void GL_ClearQueries(void)
     for (int i = 0; i < map_size; i++) {
         glquery_t *q = HashMap_GetValue(glquery_t, gl_static.queries, i);
         q->pending = q->visible = false;
+        q->frac = 0;
     }
 }
 

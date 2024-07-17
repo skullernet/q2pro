@@ -79,6 +79,7 @@ typedef struct {
 
 typedef struct {
     GLuint query;
+    float frac;
     bool pending;
     bool visible;
 } glquery_t;
@@ -121,6 +122,8 @@ typedef struct {
     unsigned        drawframe;
     unsigned        dlightframe;
     unsigned        rand_seed;
+    unsigned        timestamp;
+    float           frametime;
     int             viewcluster1;
     int             viewcluster2;
     cplane_t        frustumPlanes[4];
@@ -254,6 +257,18 @@ void GL_RotateForEntity(void);
 void GL_ClearErrors(void);
 bool GL_ShowErrors(const char *func);
 
+static inline void GL_AdvanceValue(float *restrict val, float target, float speed)
+{
+    if (*val < target) {
+        *val += speed * glr.frametime;
+        if (*val > target)
+            *val = target;
+    } else if (*val > target) {
+        *val -= speed * glr.frametime;
+        if (*val < target)
+            *val = target;
+    }
+}
 
 /*
  * gl_model.c
