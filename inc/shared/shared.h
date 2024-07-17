@@ -737,9 +737,11 @@ typedef struct cvar_s {
     struct cvar_s *next;
 
 // ------ new stuff ------
-#if USE_CLIENT || USE_SERVER
+#if USE_NEW_GAME_API
     int         integer;
     char        *default_string;
+#endif
+#if USE_CLIENT || USE_SERVER
     xchanged_t      changed;
     xgenerator_t    generator;
     struct cvar_s   *hashNext;
