@@ -203,14 +203,9 @@ else
   common_args += '-D_GNU_SOURCE'
 endif
 
-engine_args = ['-DUSE_NEW_GAME_API=1']
+engine_args = []
 if win32
   engine_args += '-D_WIN32_WINNT=0x0601'
-endif
-
-game_args = []
-if get_option('game-new-api')
-  game_args += '-DUSE_NEW_GAME_API=1'
 endif
 
 common_link_args = []
@@ -453,7 +448,6 @@ shared_library('game' + cpu, game_src,
   include_directories:   'inc',
   gnu_symbol_visibility: 'hidden',
   link_args:             dll_link_args,
-  c_args:                game_args,
   install:               system_wide,
   install_dir:           libdir / get_option('base-game'),
   override_options:      get_option('game-build-options'),
@@ -483,7 +477,15 @@ config.set10('USE_MD5',           get_option('md5'))
 config.set10('USE_PACKETDUP',     get_option('packetdup-hack'))
 config.set10('USE_TGA',           get_option('tga'))
 config.set10('USE_' + host_machine.endian().to_upper() + '_ENDIAN', true)
+
+# protocol extensions are always on
 config.set10('USE_PROTOCOL_EXTENSIONS', true)
+
+# new game API flag is *always on* for engine,
+# and can be enabled here for game as well
+if get_option('game-new-api')
+  config.set10('USE_NEW_GAME_API', true)
+endif
 
 configure_file(output: 'config.h', configuration: config)
 
@@ -499,6 +501,7 @@ summary({
   'client-ui'          : config.get('USE_UI', 0) != 0,
   'debug'              : config.get('USE_DEBUG', 0) != 0,
   'game-abi-hack'      : config.get('USE_GAME_ABI_HACK', 0) != 0,
+  'game-new-api'       : config.get('USE_NEW_GAME_API', 0) != 0,
   'icmp-errors'        : config.get('USE_ICMP', 0) != 0,
   'libcurl'            : config.get('USE_CURL', 0) != 0,
   'libjpeg'            : config.get('USE_JPG', 0) != 0,

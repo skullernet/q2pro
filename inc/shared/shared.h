@@ -26,6 +26,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "config.h"
 #endif
 
+#ifndef USE_PROTOCOL_EXTENSIONS
+#define USE_PROTOCOL_EXTENSIONS (USE_CLIENT || USE_SERVER)
+#endif
+
+#ifndef USE_NEW_GAME_API
+#define USE_NEW_GAME_API (USE_CLIENT || USE_SERVER)
+#endif
+
 #include <math.h>
 #include <ctype.h>
 #include <stdio.h>
