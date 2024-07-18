@@ -1720,7 +1720,9 @@ void MVD_LinkEdict(mvd_t *mvd, edict_t *ent)
         return;
 
     index = ent->s.modelindex - 1;
-    if (index >= MODELINDEX_PLAYER && bsp->nummodels >= MODELINDEX_PLAYER)
+    if (index == MODELINDEX_PLAYER - 1)
+        index = 0;
+    else if (index >= MODELINDEX_PLAYER)
         index--;
     if (index > 0 && index < bsp->nummodels) {
         mod = &bsp->models[index];
