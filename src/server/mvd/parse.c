@@ -650,6 +650,9 @@ static void MVD_ParsePacketEntities(mvd_t *mvd)
     edict_t     *ent;
 
     while (1) {
+#if USE_DEBUG
+        uint32_t readcount = msg_read.readcount;
+#endif
         if (msg_read.readcount > msg_read.cursize) {
             MVD_Destroyf(mvd, "%s: read past end of message", __func__);
         }
@@ -667,10 +670,10 @@ static void MVD_ParsePacketEntities(mvd_t *mvd)
 
 #if USE_DEBUG
         if (mvd_shownet->integer > 2) {
-            Com_Printf("   %s: %d ", ent->inuse ?
-                       "delta" : "baseline", number);
+            Com_LPrintf(PRINT_DEVELOPER, "%3u:%s:%d ", readcount,
+                       ent->inuse ? "delta" : "baseline", number);
             MSG_ShowDeltaEntityBits(bits);
-            Com_Printf("\n");
+            Com_LPrintf(PRINT_DEVELOPER, "\n");
         }
 #endif
 
@@ -686,7 +689,7 @@ static void MVD_ParsePacketEntities(mvd_t *mvd)
 
         // shuffle current origin to old if removed
         if (bits & U_REMOVE) {
-            SHOWNET(2, "   remove: %d\n", number);
+            SHOWNET(2, "%3u:remove:%d\n", readcount, number);
             if (!(ent->s.renderfx & RF_BEAM)) {
                 VectorCopy(ent->s.origin, ent->s.old_origin);
             }
@@ -713,6 +716,9 @@ static void MVD_ParsePacketPlayers(mvd_t *mvd)
     mvd_player_t    *player;
 
     while (1) {
+#if USE_DEBUG
+        uint32_t readcount = msg_read.readcount;
+#endif
         if (msg_read.readcount > msg_read.cursize) {
             MVD_Destroyf(mvd, "%s: read past end of message", __func__);
         }
@@ -732,17 +738,17 @@ static void MVD_ParsePacketPlayers(mvd_t *mvd)
 
 #if USE_DEBUG
         if (mvd_shownet->integer > 2) {
-            Com_Printf("   %s: %d ", player->inuse ?
-                       "delta" : "baseline", number);
+            Com_LPrintf(PRINT_DEVELOPER, "%3u:%s:%d ", readcount,
+                       player->inuse ? "delta" : "baseline", number);
             MSG_ShowDeltaPlayerstateBits_Packet(bits);
-            Com_Printf("\n");
+            Com_LPrintf(PRINT_DEVELOPER, "\n");
         }
 #endif
 
         MSG_ParseDeltaPlayerstate_Packet(&player->ps, &player->ps, bits, mvd->psFlags);
 
         if (bits & PPS_REMOVE) {
-            SHOWNET(2, "   remove: %d\n", number);
+            SHOWNET(2, "%3u:remove:%d\n", readcount, number);
             player->inuse = false;
             continue;
         }
