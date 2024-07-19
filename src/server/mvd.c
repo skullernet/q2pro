@@ -604,8 +604,6 @@ static void build_gamestate(void)
 
         SV_CheckEntityNumber(ent, i);
         MSG_PackEntity(&mvd.entities[i], &ent->s, ENT_EXTENSION(&svs.csr, ent));
-        if (svs.csr.extended)
-            mvd.entities[i].solid = sv.entities[i].solid32;
     }
 }
 
@@ -820,8 +818,6 @@ static void emit_frame(void)
 
         // quantize
         MSG_PackEntity(&newes, &ent->s, ENT_EXTENSION(&svs.csr, ent));
-        if (svs.csr.extended)
-            newes.solid = sv.entities[i].solid32;
 
         MSG_WriteDeltaEntity(oldes, &newes, flags);
 

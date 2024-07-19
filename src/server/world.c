@@ -292,6 +292,8 @@ void PF_LinkEdict(edict_t *ent)
         if ((ent->svflags & SVF_DEADMONSTER) || VectorCompare(ent->mins, ent->maxs)) {
             ent->s.solid = 0;
             sent->solid32 = 0;
+        } else if (svs.csr.extended) {
+            sent->solid32 = ent->s.solid = SV_PackSolid32(ent);
         } else {
             ent->s.solid = MSG_PackSolid16(ent->mins, ent->maxs);
             sent->solid32 = SV_PackSolid32(ent);
