@@ -632,7 +632,9 @@ static void MVD_PlayerToEntityStates(mvd_t *mvd)
 
         Com_PlayerToEntityState(&player->ps, &edict->s);
 
-        MVD_LinkEdict(mvd, edict);
+        if (!mvd->demoseeking) {
+            MVD_LinkEdict(mvd, edict);
+        }
     }
 }
 
