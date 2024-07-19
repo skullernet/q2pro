@@ -162,7 +162,7 @@ void    MSG_ParseDeltaEntity(entity_state_t *to, entity_state_extension_t *ext, 
 void    MSG_ParseDeltaPlayerstate_Default(const player_state_t *from, player_state_t *to, int flags, msgPsFlags_t psflags);
 void    MSG_ParseDeltaPlayerstate_Enhanced(const player_state_t *from, player_state_t *to, int flags, int extraflags, msgPsFlags_t psflags);
 #endif
-void    MSG_ParseDeltaPlayerstate_Packet(const player_state_t *from, player_state_t *to, int flags, msgPsFlags_t psflags);
+void    MSG_ParseDeltaPlayerstate_Packet(player_state_t *to, int flags, msgPsFlags_t psflags);
 
 #if USE_DEBUG
 #if USE_CLIENT

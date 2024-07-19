@@ -747,7 +747,7 @@ static void MVD_ParsePacketPlayers(mvd_t *mvd)
         }
 #endif
 
-        MSG_ParseDeltaPlayerstate_Packet(&player->ps, &player->ps, bits, mvd->psFlags);
+        MSG_ParseDeltaPlayerstate_Packet(&player->ps, bits, mvd->psFlags);
 
         if (bits & PPS_REMOVE) {
             SHOWNET(2, "%3u:remove:%d\n", readcount, number);

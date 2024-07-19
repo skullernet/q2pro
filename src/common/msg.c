@@ -2464,19 +2464,11 @@ void MSG_ParseDeltaPlayerstate_Enhanced(const player_state_t    *from,
 MSG_ParseDeltaPlayerstate_Packet
 ===================
 */
-void MSG_ParseDeltaPlayerstate_Packet(const player_state_t  *from,
-                                      player_state_t        *to,
+void MSG_ParseDeltaPlayerstate_Packet(player_state_t        *to,
                                       int                   flags,
                                       msgPsFlags_t          psflags)
 {
     Q_assert(to);
-
-    // clear to old value before delta parsing
-    if (!from) {
-        memset(to, 0, sizeof(*to));
-    } else if (to != from) {
-        memcpy(to, from, sizeof(*to));
-    }
 
     //
     // parse the pmove_state_t
