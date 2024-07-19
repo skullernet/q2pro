@@ -705,8 +705,8 @@ as well as local recorder.
 */
 static void emit_frame(void)
 {
-    player_packed_t *oldps, newps;
-    entity_packed_t *oldes, newes;
+    player_packed_t *oldps, newps = { 0 };
+    entity_packed_t *oldes, newes = { 0 };
     edict_t *ent;
     int flags, portalbytes;
     byte portalbits[MAX_MAP_PORTAL_BYTES];
