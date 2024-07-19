@@ -622,7 +622,7 @@ static void MVD_PlayerToEntityStates(mvd_t *mvd)
         mvd->numplayers++;
         if (player->ps.pmove.pm_type != PM_NORMAL) {
             continue;   // can be out of sync, in this case
-            // server should provide valid data
+                        // server should provide valid data
         }
 
         edict = &mvd->edicts[i];

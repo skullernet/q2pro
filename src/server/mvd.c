@@ -698,33 +698,6 @@ static void emit_gamestate(void)
     MSG_WriteShort(0);
 }
 
-static void copy_entity_state(entity_packed_t *dst, const entity_packed_t *src, int flags)
-{
-    if (!(flags & MSG_ES_FIRSTPERSON)) {
-        VectorCopy(src->origin, dst->origin);
-        VectorCopy(src->angles, dst->angles);
-        VectorCopy(src->old_origin, dst->old_origin);
-    }
-    dst->modelindex = src->modelindex;
-    dst->modelindex2 = src->modelindex2;
-    dst->modelindex3 = src->modelindex3;
-    dst->modelindex4 = src->modelindex4;
-    dst->frame = src->frame;
-    dst->skinnum = src->skinnum;
-    dst->effects = src->effects;
-    dst->renderfx = src->renderfx;
-    dst->solid = src->solid;
-    dst->sound = src->sound;
-    dst->event = 0;
-    if (svs.csr.extended) {
-        dst->morefx = src->morefx;
-        dst->alpha = src->alpha;
-        dst->scale = src->scale;
-        dst->loop_volume = src->loop_volume;
-        dst->loop_attenuation = src->loop_attenuation;
-    }
-}
-
 /*
 Builds a new delta compressed MVD frame by capturing all entity and player
 states and calculating portalbits. The same frame is used for all MVD clients,
@@ -802,6 +775,7 @@ static void emit_frame(void)
 
         // calculate flags
         flags = mvd.esFlags;
+        oldps = NULL; // shut up compiler
         if (i <= sv_maxclients->integer) {
             oldps = &mvd.players[i - 1];
             if (PPS_INUSE(oldps) && oldps->pmove.pm_type == PM_NORMAL) {
@@ -822,8 +796,11 @@ static void emit_frame(void)
         MSG_WriteDeltaEntity(oldes, &newes, flags);
 
         // shuffle current state to previous
-        copy_entity_state(oldes, &newes, flags);
-        oldes->number = i;
+        *oldes = newes;
+
+        // fixup origin for next delta
+        if (flags & MSG_ES_FIRSTPERSON)
+            VectorCopy(oldps->pmove.origin, oldes->origin);
     }
 
     MSG_WriteShort(0);      // end of packetentities
