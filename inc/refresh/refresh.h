@@ -93,6 +93,7 @@ typedef struct {
     vec4_t      damage_blend;       // rgba 0-1 damage blend
     float       time;               // time is uesed to auto animate
     int         rdflags;            // RDF_UNDERWATER, etc
+    bool        extended;
 
     byte        *areabits;          // if not NULL, only areas with set bits will be drawn
 
