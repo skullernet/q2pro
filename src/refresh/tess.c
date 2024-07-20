@@ -278,7 +278,7 @@ void GL_DrawBeams(void)
         }
         color.u8[3] *= ent->alpha;
 
-        width = ent->frame * 1.2f;
+        width = abs((int16_t)ent->frame) * 1.2f;
 
         if (ent->flags & RF_GLOW) {
             GL_DrawLightningBeam(start, end, color, width);
@@ -395,7 +395,7 @@ static int GL_CopyVerts(const mface_t *surf)
 static const image_t *GL_TextureAnimation(const mtexinfo_t *tex)
 {
     if (q_unlikely(tex->next)) {
-        unsigned c = (unsigned)glr.ent->frame % tex->numframes;
+        unsigned c = glr.ent->frame % tex->numframes;
 
         while (c) {
             tex = tex->next;

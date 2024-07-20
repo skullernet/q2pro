@@ -18,8 +18,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "gl.h"
 
-static int      oldframenum;
-static int      newframenum;
+static unsigned oldframenum;
+static unsigned newframenum;
 static float    frontlerp;
 static float    backlerp;
 static vec3_t   origin;
@@ -760,14 +760,14 @@ void GL_DrawAliasModel(const model_t *model)
     int i;
 
     newframenum = ent->frame;
-    if (newframenum < 0 || newframenum >= model->numframes) {
-        Com_DPrintf("%s: no such frame %d\n", __func__, newframenum);
+    if (newframenum >= model->numframes) {
+        Com_DPrintf("%s: no such frame %u\n", __func__, newframenum);
         newframenum = 0;
     }
 
     oldframenum = ent->oldframe;
-    if (oldframenum < 0 || oldframenum >= model->numframes) {
-        Com_DPrintf("%s: no such oldframe %d\n", __func__, oldframenum);
+    if (oldframenum >= model->numframes) {
+        Com_DPrintf("%s: no such oldframe %u\n", __func__, oldframenum);
         oldframenum = 0;
     }
 

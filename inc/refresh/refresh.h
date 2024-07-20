@@ -42,13 +42,13 @@ typedef struct entity_s {
     ** most recent data
     */
     vec3_t              origin;     // also used as RF_BEAM's "from"
-    int                 frame;          // also used as RF_BEAM's diameter
+    unsigned            frame;      // also used as RF_BEAM's diameter
 
     /*
     ** previous data for lerping
     */
     vec3_t              oldorigin;  // also used as RF_BEAM's "to"
-    int                 oldframe;
+    unsigned            oldframe;
 
     /*
     ** misc
