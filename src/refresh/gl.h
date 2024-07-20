@@ -236,6 +236,9 @@ extern cvar_t *gl_vertexlight;
 extern cvar_t *gl_lightgrid;
 extern cvar_t *gl_showerrors;
 
+#define GL_rand()   Q_rand_state(&glr.rand_seed)
+#define GL_frand()  ((int32_t)GL_rand() * 0x1p-32f + 0.5f)
+
 typedef enum {
     CULL_OUT,
     CULL_IN,

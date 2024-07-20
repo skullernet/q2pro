@@ -358,6 +358,17 @@ void Q_srand(uint32_t seed);
 uint32_t Q_rand(void);
 uint32_t Q_rand_uniform(uint32_t n);
 
+static inline uint32_t Q_rand_state(uint32_t *seed)
+{
+    uint32_t x = *seed;
+
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+
+    return *seed = x;
+}
+
 static inline int Q_clip(int a, int b, int c)
 {
     if (a < b)

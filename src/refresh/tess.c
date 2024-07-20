@@ -211,22 +211,6 @@ static void GL_DrawBeamSegment(const vec3_t start, const vec3_t end, color_t col
 #define MAX_LIGHTNING_SEGMENTS      7
 #define MIN_SEGMENT_LENGTH          10
 
-static uint32_t GL_rand(void)
-{
-    uint32_t x = glr.rand_seed;
-
-    x ^= x << 13;
-    x ^= x >> 17;
-    x ^= x << 5;
-
-    return glr.rand_seed = x;
-}
-
-static float GL_frand(void)
-{
-    return (int32_t)GL_rand() * 0x1p-32f + 0.5f;
-}
-
 static void GL_DrawLightningBeam(const vec3_t start, const vec3_t end, color_t color, float width)
 {
     vec3_t d1, segments[MAX_LIGHTNING_SEGMENTS - 1];
