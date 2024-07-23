@@ -35,6 +35,8 @@ qhandle_t   cl_sfx_watrexp;
 qhandle_t   cl_sfx_lightning;
 qhandle_t   cl_sfx_disrexp;
 
+qhandle_t   cl_sfx_hit_marker;
+
 qhandle_t   cl_mod_explode;
 qhandle_t   cl_mod_smoke;
 qhandle_t   cl_mod_flash;
@@ -55,6 +57,7 @@ qhandle_t   cl_mod_muzzles[MFLASH_TOTAL];
 qhandle_t   cl_img_flare;
 
 static cvar_t   *cl_muzzleflashes;
+static cvar_t   *cl_hit_markers;
 
 #define MAX_FOOTSTEP_SFX    9
 
@@ -263,6 +266,8 @@ void CL_RegisterTEntSounds(void)
 
     cl_sfx_lightning = S_RegisterSound("weapons/tesla.wav");
     cl_sfx_disrexp = S_RegisterSound("weapons/disrupthit.wav");
+
+    cl_sfx_hit_marker = S_RegisterSound("weapons/marker.wav");
 }
 
 /*
@@ -1596,6 +1601,15 @@ void CL_ParseTEnt(void)
         CL_PowerSplash();
         break;
 
+    case TE_DAMAGE_DEALT:
+        if (te.count > 0 && cl_hit_markers->integer > 0) {
+            cl.hit_marker_time = cls.realtime;
+            cl.hit_marker_count = te.count;
+            if (cl_hit_markers->integer > 1)
+                S_StartSound(NULL, listener_entnum, 257, cl_sfx_hit_marker, 1, ATTN_NONE, 0);
+        }
+        break;
+
     default:
         Com_Error(ERR_DROP, "%s: bad type", __func__);
     }
@@ -1631,6 +1645,7 @@ void CL_ClearTEnts(void)
 void CL_InitTEnts(void)
 {
     cl_muzzleflashes = Cvar_Get("cl_muzzleflashes", "1", 0);
+    cl_hit_markers = Cvar_Get("cl_hit_markers", "2", 0);
     cl_railtrail_type = Cvar_Get("cl_railtrail_type", "0", 0);
     cl_railtrail_time = Cvar_Get("cl_railtrail_time", "1.0", 0);
     cl_railtrail_time->changed = cl_timeout_changed;

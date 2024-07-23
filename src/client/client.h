@@ -311,6 +311,9 @@ typedef struct {
             vec3_t      offset;
         } muzzle;
     } weapon;
+
+    unsigned hit_marker_time;
+    int hit_marker_count;
 } client_state_t;
 
 extern client_state_t   cl;

@@ -1232,6 +1232,8 @@ typedef enum {
     TE_EXPLOSION2_NL,
 //[Paril-KEX]
 
+    TE_DAMAGE_DEALT = 128,
+
     TE_NUM_ENTITIES
 } temp_event_t;
 

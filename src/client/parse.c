@@ -864,6 +864,10 @@ static void CL_ParseTEntPacket(void)
         te.count = MSG_ReadByte();
         break;
 
+    case TE_DAMAGE_DEALT:
+        te.count = MSG_ReadShort();
+        break;
+
     default:
         Com_Error(ERR_DROP, "%s: bad type", __func__);
     }

@@ -269,7 +269,13 @@ cl_gun_z::
     Specifies custom gun model offset. Default value is 0.
 
 cl_muzzleflashes::
-    Specifies if muzzleflash effects are enabled. Default value is 1.
+    Specifies if re-release muzzleflash effects are enabled. Default value is 1.
+
+cl_hit_markers::
+    Specifies if re-release hit marker effects are enabled. Default value is 2.
+      - 0 — hit marker effects disabled
+      - 1 — draw hit marker
+      - 2 — draw hit marker and play hit sound
 
 Sound Subsystem
 ~~~~~~~~~~~~~~~
@@ -532,6 +538,10 @@ ch_y::
     These variables specify the crosshair image offset, counted in pixels from
     the default position in center of the game screen. Default values are 0
     (draw in center).
+
+scr_hit_marker_time::
+    Hit marker visibility time in milliseconds. Hit marker is only visible if
+    crosshair is visible. Default value is 500.
 
 Video Modes
 ~~~~~~~~~~~

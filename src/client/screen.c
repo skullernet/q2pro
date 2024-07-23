@@ -36,6 +36,9 @@ static struct {
     int         crosshair_width, crosshair_height;
     color_t     crosshair_color;
 
+    qhandle_t   hit_marker_pic;
+    int         hit_marker_width, hit_marker_height;
+
     qhandle_t   pause_pic;
     int         pause_width, pause_height;
 
@@ -95,6 +98,8 @@ static cvar_t   *ch_alpha;
 static cvar_t   *ch_scale;
 static cvar_t   *ch_x;
 static cvar_t   *ch_y;
+
+static cvar_t   *scr_hit_marker_time;
 
 vrect_t     scr_vrect;      // position of render window on screen
 
@@ -1268,6 +1273,9 @@ void SCR_RegisterMedia(void)
     scr.net_pic = R_RegisterPic("net");
     scr.font_pic = R_RegisterFont(scr_font->string);
 
+    scr.hit_marker_pic = R_RegisterPic("marker");
+    R_GetPicSize(&scr.hit_marker_width, &scr.hit_marker_height, scr.hit_marker_pic);
+
     scr_crosshair_changed(scr_crosshair);
 }
 
@@ -1349,6 +1357,8 @@ void SCR_Init(void)
     scr_showstats = Cvar_Get("scr_showstats", "0", 0);
     scr_showpmove = Cvar_Get("scr_showpmove", "0", 0);
 #endif
+
+    scr_hit_marker_time = Cvar_Get("scr_hit_marker_time", "500", 0);
 
     Cmd_Register(scr_cmds);
 
@@ -2052,6 +2062,30 @@ static void SCR_DrawLoading(void)
     R_SetScale(1.0f);
 }
 
+static void SCR_DrawHitMarker(void)
+{
+    if (!cl.hit_marker_count)
+        return;
+    if (scr_hit_marker_time->integer <= 0 ||
+        cls.realtime - cl.hit_marker_time > scr_hit_marker_time->integer) {
+        cl.hit_marker_count = 0;
+        return;
+    }
+
+    float frac = (float)(cls.realtime - cl.hit_marker_time) / scr_hit_marker_time->integer;
+    float alpha = 1.0f - (frac * frac);
+
+    int w = scr.hit_marker_width * ch_scale->value;
+    int h = scr.hit_marker_height * ch_scale->value;
+
+    int x = (scr.hud_width - w) / 2;
+    int y = (scr.hud_height - h) / 2;
+
+    R_SetColor(MakeColor(255, 0, 0, alpha * 255));
+
+    R_DrawStretchPic(x + ch_x->integer, y + ch_y->integer, w, h, scr.hit_marker_pic);
+}
+
 static void SCR_DrawCrosshair(void)
 {
     int x, y;
@@ -2071,6 +2105,8 @@ static void SCR_DrawCrosshair(void)
                      scr.crosshair_width,
                      scr.crosshair_height,
                      scr.crosshair_pic);
+
+    SCR_DrawHitMarker();
 }
 
 // The status bar is a small layout program that is based on the stats array
