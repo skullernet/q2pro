@@ -86,6 +86,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define R_OK    4
 #endif
 
+#ifdef __has_builtin
+#define q_has_builtin(x)    __has_builtin(x)
+#else
+#define q_has_builtin(x)    0
+#endif
+
 #ifdef __GNUC__
 
 #if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4)

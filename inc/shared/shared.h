@@ -620,15 +620,23 @@ char    *vtos(const vec3_t v);
 
 static inline uint16_t ShortSwap(uint16_t s)
 {
+#if q_has_builtin(__builtin_bswap16)
+    return __builtin_bswap16(s);
+#else
     s = (s >> 8) | (s << 8);
     return s;
+#endif
 }
 
 static inline uint32_t LongSwap(uint32_t l)
 {
+#if q_has_builtin(__builtin_bswap32)
+    return __builtin_bswap32(l);
+#else
     l = ((l >> 8) & 0x00ff00ff) | ((l << 8) & 0xff00ff00);
     l = (l >> 16) | (l << 16);
     return l;
+#endif
 }
 
 static inline float FloatSwap(float f)
