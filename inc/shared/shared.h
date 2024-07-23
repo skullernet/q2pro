@@ -660,28 +660,29 @@ static inline int32_t SignExtend(uint32_t v, int bits)
 }
 
 #if USE_LITTLE_ENDIAN
-#define BigShort    ShortSwap
-#define BigLong     LongSwap
-#define BigFloat    FloatSwap
-#define LittleShort(x)    ((uint16_t)(x))
-#define LittleLong(x)     ((uint32_t)(x))
-#define LittleFloat(x)    ((float)(x))
-#define MakeRawLong(b1,b2,b3,b4) (((unsigned)(b4)<<24)|((b3)<<16)|((b2)<<8)|(b1))
+#define BigShort(x)     ShortSwap(x)
+#define BigLong(x)      LongSwap(x)
+#define BigFloat(x)     FloatSwap(x)
+#define LittleShort(x)  ((uint16_t)(x))
+#define LittleLong(x)   ((uint32_t)(x))
+#define LittleFloat(x)  ((float)(x))
+#define MakeRawLong(b1,b2,b3,b4) MakeLittleLong(b1,b2,b3,b4)
 #define MakeRawShort(b1,b2) (((b2)<<8)|(b1))
 #elif USE_BIG_ENDIAN
 #define BigShort(x)     ((uint16_t)(x))
 #define BigLong(x)      ((uint32_t)(x))
 #define BigFloat(x)     ((float)(x))
-#define LittleShort ShortSwap
-#define LittleLong  LongSwap
-#define LittleFloat FloatSwap
-#define MakeRawLong(b1,b2,b3,b4) (((unsigned)(b1)<<24)|((b2)<<16)|((b3)<<8)|(b4))
+#define LittleShort(x)  ShortSwap(x)
+#define LittleLong(x)   LongSwap(x)
+#define LittleFloat(x)  FloatSwap(x)
+#define MakeRawLong(b1,b2,b3,b4) MakeBigLong(b1,b2,b3,b4)
 #define MakeRawShort(b1,b2) (((b1)<<8)|(b2))
 #else
 #error Unknown byte order
 #endif
 
-#define MakeLittleLong(b1,b2,b3,b4) (((unsigned)(b4)<<24)|((b3)<<16)|((b2)<<8)|(b1))
+#define MakeLittleLong(b1,b2,b3,b4) (((uint32_t)(b4)<<24)|((uint32_t)(b3)<<16)|((uint32_t)(b2)<<8)|(uint32_t)(b1))
+#define MakeBigLong(b1,b2,b3,b4) (((uint32_t)(b1)<<24)|((uint32_t)(b2)<<16)|((uint32_t)(b3)<<8)|(uint32_t)(b4))
 
 #define LittleVector(a,b) \
     ((b)[0]=LittleFloat((a)[0]),\
