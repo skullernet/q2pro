@@ -1270,7 +1270,7 @@ void SCR_RegisterMedia(void)
     scr.loading_pic = R_RegisterPic("loading");
     scr.net_pic = R_RegisterPic("net");
     scr.font_pic = R_RegisterFont(scr_font->string);
-    scr.hit_marker_pic = R_RegisterPic("marker");
+    scr.hit_marker_pic = R_RegisterImage("marker", IT_PIC, IF_PERMANENT | IF_OPTIONAL);
 
     scr_crosshair_changed(scr_crosshair);
 }
@@ -2065,7 +2065,7 @@ static void SCR_DrawHitMarker(void)
 {
     if (!cl.hit_marker_count)
         return;
-    if (scr_hit_marker_time->integer <= 0 ||
+    if (!scr.hit_marker_pic || scr_hit_marker_time->integer <= 0 ||
         cls.realtime - cl.hit_marker_time > scr_hit_marker_time->integer) {
         cl.hit_marker_count = 0;
         return;

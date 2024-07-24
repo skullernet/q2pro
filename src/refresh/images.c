@@ -1687,7 +1687,7 @@ static void print_error(const char *name, imageflags_t flags, int err)
     case Q_ERR(ENOENT):
         if (flags == -1) {
             return;
-        } else if (flags & IF_PERMANENT) {
+        } else if ((flags & (IF_PERMANENT | IF_OPTIONAL)) == IF_PERMANENT) {
             // ugly hack for console code
             if (strcmp(name, "pics/conchars.pcx"))
                 level = PRINT_WARNING;
