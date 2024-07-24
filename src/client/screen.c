@@ -40,10 +40,8 @@ static struct {
     int         hit_marker_width, hit_marker_height;
 
     qhandle_t   pause_pic;
-    int         pause_width, pause_height;
 
     qhandle_t   loading_pic;
-    int         loading_width, loading_height;
     bool        draw_loading;
 
     qhandle_t   sb_pics[2][STAT_PICS];
@@ -1163,34 +1161,40 @@ static void SCR_TimeRefresh_f(void)
 
 //============================================================================
 
-static void scr_crosshair_changed(cvar_t *self)
+static void ch_scale_changed(cvar_t *self)
 {
-    char buffer[16];
     int w, h;
     float scale;
 
-    if (scr_crosshair->integer > 0) {
-        Q_snprintf(buffer, sizeof(buffer), "ch%i", scr_crosshair->integer);
-        scr.crosshair_pic = R_RegisterPic(buffer);
-        R_GetPicSize(&w, &h, scr.crosshair_pic);
+    scale = Cvar_ClampValue(self, 0.1f, 9.0f);
 
-        // prescale
-        scale = Cvar_ClampValue(ch_scale, 0.1f, 9.0f);
-        scr.crosshair_width = w * scale;
-        scr.crosshair_height = h * scale;
-        if (scr.crosshair_width < 1)
-            scr.crosshair_width = 1;
-        if (scr.crosshair_height < 1)
-            scr.crosshair_height = 1;
+    // prescale
+    R_GetPicSize(&w, &h, scr.crosshair_pic);
+    scr.crosshair_width = Q_rint(w * scale);
+    scr.crosshair_height = Q_rint(h * scale);
 
-        if (ch_health->integer) {
-            SCR_SetCrosshairColor();
-        } else {
-            scr.crosshair_color.u8[0] = Cvar_ClampValue(ch_red, 0, 1) * 255;
-            scr.crosshair_color.u8[1] = Cvar_ClampValue(ch_green, 0, 1) * 255;
-            scr.crosshair_color.u8[2] = Cvar_ClampValue(ch_blue, 0, 1) * 255;
-        }
-        scr.crosshair_color.u8[3] = Cvar_ClampValue(ch_alpha, 0, 1) * 255;
+    R_GetPicSize(&w, &h, scr.hit_marker_pic);
+    scr.hit_marker_width = Q_rint(w * scale);
+    scr.hit_marker_height = Q_rint(h * scale);
+}
+
+static void ch_color_changed(cvar_t *self)
+{
+    if (ch_health->integer) {
+        SCR_SetCrosshairColor();
+    } else {
+        scr.crosshair_color.u8[0] = Cvar_ClampValue(ch_red, 0, 1) * 255;
+        scr.crosshair_color.u8[1] = Cvar_ClampValue(ch_green, 0, 1) * 255;
+        scr.crosshair_color.u8[2] = Cvar_ClampValue(ch_blue, 0, 1) * 255;
+    }
+    scr.crosshair_color.u8[3] = Cvar_ClampValue(ch_alpha, 0, 1) * 255;
+}
+
+static void scr_crosshair_changed(cvar_t *self)
+{
+    if (self->integer > 0) {
+        scr.crosshair_pic = R_RegisterPic(va("ch%i", self->integer));
+        ch_scale_changed(ch_scale);
     } else {
         scr.crosshair_pic = 0;
     }
@@ -1261,20 +1265,12 @@ void SCR_RegisterMedia(void)
 
     scr.inven_pic = R_RegisterPic("inventory");
     scr.field_pic = R_RegisterPic("field_3");
-
     scr.backtile_pic = R_RegisterImage("backtile", IT_PIC, IF_PERMANENT | IF_REPEAT);
-
     scr.pause_pic = R_RegisterPic("pause");
-    R_GetPicSize(&scr.pause_width, &scr.pause_height, scr.pause_pic);
-
     scr.loading_pic = R_RegisterPic("loading");
-    R_GetPicSize(&scr.loading_width, &scr.loading_height, scr.loading_pic);
-
     scr.net_pic = R_RegisterPic("net");
     scr.font_pic = R_RegisterFont(scr_font->string);
-
     scr.hit_marker_pic = R_RegisterPic("marker");
-    R_GetPicSize(&scr.hit_marker_width, &scr.hit_marker_height, scr.hit_marker_pic);
 
     scr_crosshair_changed(scr_crosshair);
 }
@@ -1330,18 +1326,18 @@ void SCR_Init(void)
     scr_chathud_y = Cvar_Get("scr_chathud_y", "-64", 0);
 
     ch_health = Cvar_Get("ch_health", "0", 0);
-    ch_health->changed = scr_crosshair_changed;
+    ch_health->changed = ch_color_changed;
     ch_red = Cvar_Get("ch_red", "1", 0);
-    ch_red->changed = scr_crosshair_changed;
+    ch_red->changed = ch_color_changed;
     ch_green = Cvar_Get("ch_green", "1", 0);
-    ch_green->changed = scr_crosshair_changed;
+    ch_green->changed = ch_color_changed;
     ch_blue = Cvar_Get("ch_blue", "1", 0);
-    ch_blue->changed = scr_crosshair_changed;
+    ch_blue->changed = ch_color_changed;
     ch_alpha = Cvar_Get("ch_alpha", "1", 0);
-    ch_alpha->changed = scr_crosshair_changed;
+    ch_alpha->changed = ch_color_changed;
 
     ch_scale = Cvar_Get("ch_scale", "1", 0);
-    ch_scale->changed = scr_crosshair_changed;
+    ch_scale->changed = ch_scale_changed;
     ch_x = Cvar_Get("ch_x", "0", 0);
     ch_y = Cvar_Get("ch_y", "0", 0);
 
@@ -1363,6 +1359,7 @@ void SCR_Init(void)
     Cmd_Register(scr_cmds);
 
     scr_scale_changed(scr_scale);
+    ch_color_changed(NULL);
 
     scr.initialized = true;
 }
@@ -2028,7 +2025,7 @@ static void SCR_ExecuteLayoutString(const char *s)
 
 static void SCR_DrawPause(void)
 {
-    int x, y;
+    int x, y, w, h;
 
     if (!sv_paused->integer)
         return;
@@ -2037,15 +2034,16 @@ static void SCR_DrawPause(void)
     if (scr_showpause->integer != 1)
         return;
 
-    x = (scr.hud_width - scr.pause_width) / 2;
-    y = (scr.hud_height - scr.pause_height) / 2;
+    R_GetPicSize(&w, &h, scr.pause_pic);
+    x = (scr.hud_width - w) / 2;
+    y = (scr.hud_height - h) / 2;
 
     R_DrawPic(x, y, scr.pause_pic);
 }
 
 static void SCR_DrawLoading(void)
 {
-    int x, y;
+    int x, y, w, h;
 
     if (!scr.draw_loading)
         return;
@@ -2054,8 +2052,9 @@ static void SCR_DrawLoading(void)
 
     R_SetScale(scr.hud_scale);
 
-    x = (r_config.width * scr.hud_scale - scr.loading_width) / 2;
-    y = (r_config.height * scr.hud_scale - scr.loading_height) / 2;
+    R_GetPicSize(&w, &h, scr.loading_pic);
+    x = (r_config.width * scr.hud_scale - w) / 2;
+    y = (r_config.height * scr.hud_scale - h) / 2;
 
     R_DrawPic(x, y, scr.loading_pic);
 
@@ -2075,15 +2074,16 @@ static void SCR_DrawHitMarker(void)
     float frac = (float)(cls.realtime - cl.hit_marker_time) / scr_hit_marker_time->integer;
     float alpha = 1.0f - (frac * frac);
 
-    int w = scr.hit_marker_width * ch_scale->value;
-    int h = scr.hit_marker_height * ch_scale->value;
-
-    int x = (scr.hud_width - w) / 2;
-    int y = (scr.hud_height - h) / 2;
+    int x = (scr.hud_width - scr.hit_marker_width) / 2;
+    int y = (scr.hud_height - scr.hit_marker_height) / 2;
 
     R_SetColor(MakeColor(255, 0, 0, alpha * 255));
 
-    R_DrawStretchPic(x + ch_x->integer, y + ch_y->integer, w, h, scr.hit_marker_pic);
+    R_DrawStretchPic(x + ch_x->integer,
+                     y + ch_y->integer,
+                     scr.hit_marker_width,
+                     scr.hit_marker_height,
+                     scr.hit_marker_pic);
 }
 
 static void SCR_DrawCrosshair(void)
