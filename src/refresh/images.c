@@ -370,6 +370,13 @@ enum {
     TGA_RLE = 8
 };
 
+enum {
+    TGA_RIGHTTOLEFT     = BIT(4),
+    TGA_TOPTOBOTTOM     = BIT(5),
+    TGA_INTERLEAVE_2    = BIT(6),
+    TGA_INTERLEAVE_4    = BIT(7),
+};
+
 static uint32_t tga_unpack_pixel(const byte *in, int bpp)
 {
     int r, g, b;
@@ -482,14 +489,14 @@ static int tga_decode_rle(sizebuf_t *s, uint32_t **row_pointers,
 
 IMG_LOAD(TGA)
 {
-    byte *pixels;
+    byte *pixels, *start;
     uint32_t *row_pointers[MAX_TEXTURE_SIZE];
     uint32_t colormap[256];
     sizebuf_t s;
     unsigned id_length, colormap_type, image_type, colormap_start,
              colormap_length, colormap_size, w, h, pixel_size, attributes;
     bool rle;
-    int i, ret;
+    int i, j, ret, stride, interleave;
 
     if (rawlen < TARGA_HEADER_SIZE)
         return Q_ERR_FILE_TOO_SMALL;
@@ -538,8 +545,18 @@ IMG_LOAD(TGA)
         return Q_ERR_INVALID_FORMAT;
     }
 
-    if (attributes & 0xC0) {
-        Com_SetLastError("interleaved targa images are not supported");
+    switch (attributes & (TGA_INTERLEAVE_2 | TGA_INTERLEAVE_4)) {
+    case 0:
+        interleave = 1;
+        break;
+    case TGA_INTERLEAVE_2:
+        interleave = 2;
+        break;
+    case TGA_INTERLEAVE_4:
+        interleave = 4;
+        break;
+    default:
+        Com_SetLastError("unsupported interleaving flag");
         return Q_ERR_INVALID_FORMAT;
     }
 
@@ -595,34 +612,43 @@ IMG_LOAD(TGA)
         }
     }
 
-    pixels = IMG_AllocPixels(w * h * 4);
-    if (attributes & 32) {
-        for (i = 0; i < h; i++) {
-            row_pointers[i] = (uint32_t *)(pixels + i * w * 4);
-        }
-    } else {
-        for (i = 0; i < h; i++) {
-            row_pointers[i] = (uint32_t *)(pixels + (h - i - 1) * w * 4);
-        }
+    stride = w * 4;
+    start = pixels = IMG_AllocPixels(h * stride);
+
+    if (!(attributes & TGA_TOPTOBOTTOM)) {
+        start += (h - 1) * stride;
+        stride = -stride;
+    }
+
+    for (i = j = 0; i < h; i++) {
+        row_pointers[i] = (uint32_t *)(start + j * stride);
+        j += interleave;
+        if (j >= h)
+            j = (j + 1) & (interleave - 1);
     }
 
     if (rle)
         ret = tga_decode_rle(&s, row_pointers, w, h, (pixel_size + 1) / 8,
-                             (image_type == TGA_Colormap) ? colormap : NULL);
+                             image_type == TGA_Colormap ? colormap : NULL);
     else
         ret = tga_decode_raw(&s, row_pointers, w, h, (pixel_size + 1) / 8,
-                             (image_type == TGA_Colormap) ? colormap : NULL);
+                             image_type == TGA_Colormap ? colormap : NULL);
     if (ret < 0) {
         IMG_FreePixels(pixels);
         return ret;
     }
+
+    if (attributes & TGA_RIGHTTOLEFT)
+        for (i = 0; i < h; i++)
+            for (j = 0; j < w / 2; j++)
+                SWAP(uint32_t, row_pointers[i][j], row_pointers[i][w - j - 1]);
 
     *pic = pixels;
 
     image->upload_width = image->width = w;
     image->upload_height = image->height = h;
 
-    if (colormap_type) {
+    if (image_type == TGA_Colormap) {
         image->flags |= IF_PALETTED;
         pixel_size = colormap_size;
     }
