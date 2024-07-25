@@ -57,5 +57,6 @@ static inline uint32_t SZ_Remaining(const sizebuf_t *buf)
 void *SZ_ReadData(sizebuf_t *buf, size_t len);
 int SZ_ReadByte(sizebuf_t *sb);
 int SZ_ReadShort(sizebuf_t *sb);
+int SZ_ReadWord(sizebuf_t *sb);
 int SZ_ReadLong(sizebuf_t *sb);
 float SZ_ReadFloat(sizebuf_t *sb);

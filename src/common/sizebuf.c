@@ -154,6 +154,12 @@ int SZ_ReadShort(sizebuf_t *sb)
     return buf ? (int16_t)RL16(buf) : -1;
 }
 
+int SZ_ReadWord(sizebuf_t *sb)
+{
+    byte *buf = SZ_ReadData(sb, 2);
+    return buf ? (uint16_t)RL16(buf) : -1;
+}
+
 int SZ_ReadLong(sizebuf_t *sb)
 {
     byte *buf = SZ_ReadData(sb, 4);
