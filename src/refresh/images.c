@@ -432,57 +432,62 @@ static int tga_decode_rle(sizebuf_t *s, uint32_t **row_pointers,
     uint32_t *out_row;
     uint32_t color;
     const byte *in;
-    int j, packet_header, packet_size;
+    int packet_header, packet_size;
 
-    for (row = 0; row < rows; row++) {
-        out_row = row_pointers[row];
+    col = row = 0;
+    out_row = row_pointers[row];
 
-        for (col = 0; col < cols;) {
-            packet_header = SZ_ReadByte(s);
-            packet_size = 1 + (packet_header & 0x7f);
+    while (1) {
+        packet_header = SZ_ReadByte(s);
+        packet_size = 1 + (packet_header & 0x7f);
 
-            if (packet_header & 0x80) {
-                in = SZ_ReadData(s, bpp);
-                if (!in)
-                    return Q_ERR_UNEXPECTED_EOF;
+        if (packet_header & 0x80) {
+            in = SZ_ReadData(s, bpp);
+            if (!in)
+                return Q_ERR_UNEXPECTED_EOF;
 
+            if (palette)
+                color = palette[*in];
+            else
+                color = tga_unpack_pixel(in, bpp);
+            do {
+                *out_row++ = color;
+                packet_size--;
+
+                if (++col == cols) {
+                    col = 0;
+                    if (++row == rows)
+                        goto done;
+                    out_row = row_pointers[row];
+                }
+            } while (packet_size);
+        } else {
+            in = SZ_ReadData(s, bpp * packet_size);
+            if (!in)
+                return Q_ERR_UNEXPECTED_EOF;
+
+            do {
                 if (palette)
                     color = palette[*in];
                 else
                     color = tga_unpack_pixel(in, bpp);
-                for (j = 0; j < packet_size; j++) {
-                    *out_row++ = color;
+                *out_row++ = color;
+                in += bpp;
+                packet_size--;
 
-                    if (++col == cols) {
-                        col = 0;
-                        if (++row == rows)
-                            return Q_ERR_SUCCESS;
-                        out_row = row_pointers[row];
-                    }
+                if (++col == cols) {
+                    col = 0;
+                    if (++row == rows)
+                        goto done;
+                    out_row = row_pointers[row];
                 }
-            } else {
-                in = SZ_ReadData(s, bpp * packet_size);
-                if (!in)
-                    return Q_ERR_UNEXPECTED_EOF;
-
-                for (j = 0; j < packet_size; j++) {
-                    if (palette)
-                        color = palette[*in];
-                    else
-                        color = tga_unpack_pixel(in, bpp);
-                    *out_row++ = color;
-                    in += bpp;
-
-                    if (++col == cols) {
-                        col = 0;
-                        if (++row == rows)
-                            return Q_ERR_SUCCESS;
-                        out_row = row_pointers[row];
-                    }
-                }
-            }
+            } while (packet_size);
         }
     }
+
+done:
+    if (packet_size)
+        return Q_ERR_OVERRUN;
 
     return Q_ERR_SUCCESS;
 }
