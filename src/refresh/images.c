@@ -412,12 +412,12 @@ static int tga_decode_raw(sizebuf_t *s, uint32_t **row_pointers,
 
     for (row = 0; row < rows; row++) {
         out_row = row_pointers[row];
-        for (col = 0; col < cols; col++) {
-            if (palette)
+        if (palette) {
+            for (col = 0; col < cols; col++, in++)
                 *out_row++ = palette[*in];
-            else
+        } else {
+            for (col = 0; col < cols; col++, in += bpp)
                 *out_row++ = tga_unpack_pixel(in, bpp);
-            in += bpp;
         }
     }
 
