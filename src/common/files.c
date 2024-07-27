@@ -2097,43 +2097,43 @@ static pack_t *load_pak_file(const char *packfile)
     }
 
     if (!fread(&header, sizeof(header), 1, fp)) {
-        Com_SetLastError("reading header failed");
+        Com_SetLastError("Reading header failed");
         goto fail1;
     }
 
     if (LittleLong(header.ident) != IDPAKHEADER) {
-        Com_SetLastError("bad header ident");
+        Com_SetLastError("Bad header ident");
         goto fail1;
     }
 
     header.dirlen = LittleLong(header.dirlen);
     if (header.dirlen % sizeof(dpackfile_t)) {
-        Com_SetLastError("bad directory length");
+        Com_SetLastError("Bad directory length");
         goto fail1;
     }
 
     num_files = header.dirlen / sizeof(dpackfile_t);
     if (num_files < 1) {
-        Com_SetLastError("no files");
+        Com_SetLastError("No files");
         goto fail1;
     }
     if (num_files > MAX_FILES_IN_PACK) {
-        Com_SetLastError("too many files");
+        Com_SetLastError("Too many files");
         goto fail1;
     }
 
     header.dirofs = LittleLong(header.dirofs);
     if (header.dirofs > INT32_MAX) {
-        Com_SetLastError("bad directory offset");
+        Com_SetLastError("Bad directory offset");
         goto fail1;
     }
     if (os_fseek(fp, header.dirofs, SEEK_SET)) {
-        Com_SetLastError("seeking to directory failed");
+        Com_SetLastError("Seeking to directory failed");
         goto fail1;
     }
     info = FS_AllocTempMem(header.dirlen);
     if (!fread(info, header.dirlen, 1, fp)) {
-        Com_SetLastError("reading directory failed");
+        Com_SetLastError("Reading directory failed");
         goto fail2;
     }
 
@@ -2142,7 +2142,7 @@ static pack_t *load_pak_file(const char *packfile)
         dfile->filepos = LittleLong(dfile->filepos);
         dfile->filelen = LittleLong(dfile->filelen);
         if (dfile->filelen > INT32_MAX || dfile->filepos > INT32_MAX - dfile->filelen) {
-            Com_SetLastError("file length or position too big");
+            Com_SetLastError("File length or position too big");
             goto fail2;
         }
         names_len += Q_strnlen(dfile->name, sizeof(dfile->name)) + 1;
@@ -2306,13 +2306,13 @@ static bool get_file_info(const pack_t *pack, packfile_t *file, char *name, size
     *len = 0;
 
     if (!fread(header, sizeof(header), 1, pack->fp)) {
-        Com_SetLastError("reading central directory failed");
+        Com_SetLastError("Reading central directory failed");
         return false;
     }
 
     // check the magic
     if (RL32(&header[0]) != ZIP_CENTRALHEADERMAGIC) {
-        Com_SetLastError("bad central directory magic");
+        Com_SetLastError("Bad central directory magic");
         return false;
     }
 
@@ -2334,7 +2334,7 @@ static bool get_file_info(const pack_t *pack, packfile_t *file, char *name, size
     file->filelen = file_len;
     file->filepos = file_pos;
     if (!fread(name, name_size, 1, pack->fp)) {
-        Com_SetLastError("reading central directory failed");
+        Com_SetLastError("Reading central directory failed");
         return false;
     }
     name[name_size] = 0;
@@ -2342,11 +2342,11 @@ static bool get_file_info(const pack_t *pack, packfile_t *file, char *name, size
 
     if (file_pos == UINT32_MAX || file_len == UINT32_MAX || comp_len == UINT32_MAX) {
         if (!zip64) {
-            Com_SetLastError("file length or position too big");
+            Com_SetLastError("File length or position too big");
             return false;
         }
         if (!parse_extra_data(pack, file, xtra_size)) {
-            Com_SetLastError("parsing zip64 extra data failed");
+            Com_SetLastError("Parsing zip64 extra data failed");
             return false;
         }
         xtra_size = 0;
@@ -2357,7 +2357,7 @@ static bool get_file_info(const pack_t *pack, packfile_t *file, char *name, size
 
 skip:
     if (os_fseek(pack->fp, name_size + xtra_size + comm_size, SEEK_CUR)) {
-        Com_SetLastError("seeking to central directory failed");
+        Com_SetLastError("Seeking to central directory failed");
         return false;
     }
 
@@ -2385,7 +2385,7 @@ static pack_t *load_zip_file(const char *packfile)
 
     header_pos = search_central_header(fp);
     if (!header_pos) {
-        Com_SetLastError("no central header found");
+        Com_SetLastError("No central header found");
         goto fail2;
     }
 
@@ -2398,11 +2398,11 @@ static pack_t *load_zip_file(const char *packfile)
     }
 
     if (os_fseek(fp, header_pos, SEEK_SET)) {
-        Com_SetLastError("seeking to central header failed");
+        Com_SetLastError("Seeking to central header failed");
         goto fail2;
     }
     if (!fread(header, header_size, 1, fp)) {
-        Com_SetLastError("reading central header failed");
+        Com_SetLastError("Reading central header failed");
         goto fail2;
     }
 
@@ -2423,21 +2423,21 @@ static pack_t *load_zip_file(const char *packfile)
     }
 
     if (num_files_cd != num_files || num_disk_cd != 0 || num_disk != 0) {
-        Com_SetLastError("unsupported multi-part archive");
+        Com_SetLastError("Unsupported multi-part archive");
         goto fail2;
     }
     if (num_files_cd < 1) {
-        Com_SetLastError("no files");
+        Com_SetLastError("No files");
         goto fail2;
     }
     if (num_files_cd > ZIP_MAXFILES) {
-        Com_SetLastError("too many files");
+        Com_SetLastError("Too many files");
         goto fail2;
     }
 
     central_end = central_ofs + central_size;
     if (central_end > header_pos || central_end < central_ofs) {
-        Com_SetLastError("bad central directory offset");
+        Com_SetLastError("Bad central directory offset");
         goto fail2;
     }
 
@@ -2448,7 +2448,7 @@ static pack_t *load_zip_file(const char *packfile)
     }
 
     if (os_fseek(fp, central_ofs + extra_bytes, SEEK_SET)) {
-        Com_SetLastError("seeking to central directory failed");
+        Com_SetLastError("Seeking to central directory failed");
         goto fail2;
     }
 
@@ -2465,7 +2465,7 @@ static pack_t *load_zip_file(const char *packfile)
         if (len) {
             // fix absolute position
             if (file->filepos > INT64_MAX - extra_bytes) {
-                Com_SetLastError("bad file position");
+                Com_SetLastError("Bad file position");
                 goto fail1;
             }
             file->filepos += extra_bytes;
@@ -2482,7 +2482,7 @@ static pack_t *load_zip_file(const char *packfile)
     names_len = name - pack->names;
 
     if (!num_files) {
-        Com_SetLastError("no valid files");
+        Com_SetLastError("No valid files");
         goto fail1;
     }
 

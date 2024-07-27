@@ -233,25 +233,25 @@ static int load_pcx(const byte *rawdata, size_t rawlen, byte **pixels_p,
     }
 
     if (pcx->encoding != 1 || pcx->bits_per_pixel != 8) {
-        Com_SetLastError("invalid encoding or bits per pixel");
+        Com_SetLastError("Invalid encoding or bits per pixel");
         return Q_ERR_INVALID_FORMAT;
     }
 
     w = (LittleShort(pcx->xmax) - LittleShort(pcx->xmin)) + 1;
     h = (LittleShort(pcx->ymax) - LittleShort(pcx->ymin)) + 1;
     if (check_image_size(w, h)) {
-        Com_SetLastError("invalid image dimensions");
+        Com_SetLastError("Invalid image dimensions");
         return Q_ERR_INVALID_FORMAT;
     }
 
     if (pcx->color_planes != 1) {
-        Com_SetLastError("invalid number of color planes");
+        Com_SetLastError("Invalid number of color planes");
         return Q_ERR_INVALID_FORMAT;
     }
 
     scan = LittleShort(pcx->bytes_per_line);
     if (scan < w) {
-        Com_SetLastError("invalid number of bytes per line");
+        Com_SetLastError("Invalid number of bytes per line");
         return Q_ERR_INVALID_FORMAT;
     }
 
@@ -332,13 +332,13 @@ IMG_LOAD(WAL)
     w = LittleLong(mt->width);
     h = LittleLong(mt->height);
     if (check_image_size(w, h))  {
-        Com_SetLastError("invalid image dimensions");
+        Com_SetLastError("Invalid image dimensions");
         return Q_ERR_INVALID_FORMAT;
     }
 
     offset = LittleLong(mt->offsets[0]);
     if ((uint64_t)offset + w * h > rawlen) {
-        Com_SetLastError("data out of bounds");
+        Com_SetLastError("Data out of bounds");
         return Q_ERR_INVALID_FORMAT;
     }
 
@@ -529,12 +529,12 @@ IMG_LOAD(TGA)
     case TGA_Mono:
         break;
     default:
-        Com_SetLastError("unsupported targa image type");
+        Com_SetLastError("Unsupported targa image type");
         return Q_ERR_INVALID_FORMAT;
     }
 
     if (check_image_size(w, h)) {
-        Com_SetLastError("invalid image dimensions");
+        Com_SetLastError("Invalid image dimensions");
         return Q_ERR_INVALID_FORMAT;
     }
 
@@ -546,7 +546,7 @@ IMG_LOAD(TGA)
     case 32:
         break;
     default:
-        Com_SetLastError("unsupported number of bits per pixel");
+        Com_SetLastError("Unsupported number of bits per pixel");
         return Q_ERR_INVALID_FORMAT;
     }
 
@@ -561,17 +561,17 @@ IMG_LOAD(TGA)
         interleave = 4;
         break;
     default:
-        Com_SetLastError("unsupported interleaving flag");
+        Com_SetLastError("Unsupported interleaving flag");
         return Q_ERR_INVALID_FORMAT;
     }
 
     if (image_type == TGA_Colormap) {
         if (!colormap_type) {
-            Com_SetLastError("colormapped image but no colormap present");
+            Com_SetLastError("Colormapped image but no colormap present");
             return Q_ERR_INVALID_FORMAT;
         }
         if (pixel_size != 8) {
-            Com_SetLastError("only 8-bit colormaps are supported");
+            Com_SetLastError("Only 8-bit colormaps are supported");
             return Q_ERR_INVALID_FORMAT;
         }
     }
@@ -592,12 +592,12 @@ IMG_LOAD(TGA)
         case 32:
             break;
         default:
-            Com_SetLastError("unsupported number of bits per colormap pixel");
+            Com_SetLastError("Unsupported number of bits per colormap pixel");
             return Q_ERR_INVALID_FORMAT;
         }
 
         if (colormap_start + colormap_length > 256) {
-            Com_SetLastError("too many colormap entries");
+            Com_SetLastError("Too many colormap entries");
             return Q_ERR_INVALID_FORMAT;
         }
 
@@ -764,7 +764,7 @@ static int my_jpeg_start_decompress(j_decompress_ptr cinfo, const byte *rawdata,
     jpeg_read_header(cinfo, TRUE);
 
     if (cinfo->out_color_space != JCS_RGB && cinfo->out_color_space != JCS_GRAYSCALE) {
-        Com_SetLastError("invalid image color space");
+        Com_SetLastError("Invalid image color space");
         return Q_ERR_INVALID_FORMAT;
     }
 
@@ -773,12 +773,12 @@ static int my_jpeg_start_decompress(j_decompress_ptr cinfo, const byte *rawdata,
     jpeg_start_decompress(cinfo);
 
     if (cinfo->output_components != 4) {
-        Com_SetLastError("invalid number of color components");
+        Com_SetLastError("Invalid number of color components");
         return Q_ERR_INVALID_FORMAT;
     }
 
     if (check_image_size(cinfo->output_width, cinfo->output_height)) {
-        Com_SetLastError("invalid image dimensions");
+        Com_SetLastError("Invalid image dimensions");
         return Q_ERR_INVALID_FORMAT;
     }
 
@@ -963,7 +963,7 @@ static int my_png_read_header(png_structp png_ptr, png_infop info_ptr,
     }
 
     if (check_image_size(w, h)) {
-        Com_SetLastError("invalid image dimensions");
+        Com_SetLastError("Invalid image dimensions");
         return Q_ERR_INVALID_FORMAT;
     }
 
