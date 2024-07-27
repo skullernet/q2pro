@@ -54,6 +54,9 @@ static cvar_t *map_visibility_patch;
 #define DEBUG(msg) \
     Com_SetLastError(va("%s: %s", __func__, msg))
 
+#define ENSURE(cond, msg) \
+    do { if (!(cond)) { DEBUG(msg); return Q_ERR_INVALID_FORMAT; } } while (0)
+
 #define BSP_Short()     (in += 2, RL16(in - 2))
 #define BSP_Long()      (in += 4, RL32(in - 4))
 #define BSP_Float()     LongToFloat(BSP_Long())
@@ -71,22 +74,13 @@ LOAD(Visibility)
         return Q_ERR_SUCCESS;
     }
 
-    if (count < 4) {
-        DEBUG("too small header");
-        return Q_ERR_INVALID_FORMAT;
-    }
+    ENSURE(count >= 4, "Too small header");
 
     numclusters = BSP_Long();
-    if (numclusters > MAX_MAP_CLUSTERS) {
-        DEBUG("too many clusters");
-        return Q_ERR_INVALID_FORMAT;
-    }
+    ENSURE(numclusters <= MAX_MAP_CLUSTERS, "Too many clusters");
 
     hdrsize = 4 + numclusters * 8;
-    if (count < hdrsize) {
-        DEBUG("too small header");
-        return Q_ERR_INVALID_FORMAT;
-    }
+    ENSURE(count >= hdrsize, "Too small header");
 
     bsp->numvisibility = count;
     bsp->vis = ALLOC(count);
@@ -97,10 +91,7 @@ LOAD(Visibility)
     for (i = 0; i < numclusters; i++) {
         for (j = 0; j < 2; j++) {
             bitofs = BSP_Long();
-            if (bitofs < hdrsize || bitofs >= count) {
-                DEBUG("bad bitofs");
-                return Q_ERR_INVALID_FORMAT;
-            }
+            ENSURE(bitofs >= hdrsize && bitofs < count, "Bad bitofs");
             bsp->vis->bitofs[i][j] = bitofs;
         }
     }
@@ -145,10 +136,7 @@ LOAD(Texinfo)
 #if USE_REF
         next = (int32_t)BSP_Long();
         if (next > 0) {
-            if (next >= count) {
-                DEBUG("bad anim chain");
-                return Q_ERR_INVALID_FORMAT;
-            }
+            ENSURE(next < count, "Bad anim chain");
             out->next = bsp->texinfo + next;
         } else {
             out->next = NULL;
@@ -165,7 +153,7 @@ LOAD(Texinfo)
         out->numframes = 1;
         for (step = out->next; step && step != out; step = step->next) {
             if (out->numframes == count) {
-                DEBUG("infinite anim chain");
+                DEBUG("Infinite anim chain");
                 return Q_ERR_INFINITE_LOOP;
             }
             out->numframes++;
@@ -209,19 +197,13 @@ LOAD(BrushSides)
     out = bsp->brushsides;
     for (i = 0; i < count; i++, out++) {
         planenum = BSP_ExtLong();
-        if (planenum >= bsp->numplanes) {
-            DEBUG("bad planenum");
-            return Q_ERR_INVALID_FORMAT;
-        }
+        ENSURE(planenum < bsp->numplanes, "Bad planenum");
         out->plane = bsp->planes + planenum;
         texinfo = BSP_ExtLong();
         if (texinfo == BSP_ExtNull) {
             out->texinfo = &nulltexinfo;
         } else {
-            if (texinfo >= bsp->numtexinfo) {
-                DEBUG("bad texinfo");
-                return Q_ERR_INVALID_FORMAT;
-            }
+            ENSURE(texinfo < bsp->numtexinfo, "Bad texinfo");
             out->texinfo = bsp->texinfo + texinfo;
         }
     }
@@ -242,10 +224,7 @@ LOAD(Brushes)
     for (i = 0; i < count; i++, out++) {
         firstside = BSP_Long();
         numsides = BSP_Long();
-        if ((uint64_t)firstside + numsides > bsp->numbrushsides) {
-            DEBUG("bad brushsides");
-            return Q_ERR_INVALID_FORMAT;
-        }
+        ENSURE((uint64_t)firstside + numsides <= bsp->numbrushsides, "Bad brushsides");
         out->firstbrushside = bsp->brushsides + firstside;
         out->numsides = numsides;
         out->contents = BSP_Long();
@@ -267,10 +246,7 @@ LOAD(LeafBrushes)
     out = bsp->leafbrushes;
     for (i = 0; i < count; i++, out++) {
         brushnum = BSP_ExtLong();
-        if (brushnum >= bsp->numbrushes) {
-            DEBUG("bad brushnum");
-            return Q_ERR_INVALID_FORMAT;
-        }
+        ENSURE(brushnum < bsp->numbrushes, "Bad brushnum");
         *out = bsp->brushes + brushnum;
     }
 
@@ -321,10 +297,7 @@ LOAD(Edges)
     for (i = 0; i < count; i++, out++) {
         for (j = 0; j < 2; j++) {
             vertnum = BSP_ExtLong();
-            if (vertnum >= bsp->numvertices) {
-                DEBUG("bad vertnum");
-                return Q_ERR_INVALID_FORMAT;
-            }
+            ENSURE(vertnum < bsp->numvertices, "Bad vertnum");
             out->v[j] = vertnum;
         }
     }
@@ -349,10 +322,7 @@ LOAD(SurfEdges)
         if (vert)
             index = -index;
 
-        if (index >= bsp->numedges) {
-            DEBUG("bad edgenum");
-            return Q_ERR_INVALID_FORMAT;
-        }
+        ENSURE(index < bsp->numedges, "Bad edgenum");
 
         out->edge = index;
         out->vert = vert;
@@ -375,10 +345,7 @@ LOAD(Faces)
     out = bsp->faces;
     for (i = 0; i < count; i++, out++) {
         planenum = BSP_ExtLong();
-        if (planenum >= bsp->numplanes) {
-            DEBUG("bad planenum");
-            return Q_ERR_INVALID_FORMAT;
-        }
+        ENSURE(planenum < bsp->numplanes, "Bad planenum");
         out->plane = bsp->planes + planenum;
 
         side = BSP_ExtLong();
@@ -386,26 +353,13 @@ LOAD(Faces)
 
         firstedge = BSP_Long();
         numedges = BSP_ExtLong();
-        if (numedges < 3) {
-            DEBUG("too few surfedges");
-            return Q_ERR_INVALID_FORMAT;
-        }
-        if (numedges > 4096) {
-            DEBUG("too many surfedges");
-            return Q_ERR_INVALID_FORMAT;
-        }
-        if ((uint64_t)firstedge + numedges > bsp->numsurfedges) {
-            DEBUG("bad surfedges");
-            return Q_ERR_INVALID_FORMAT;
-        }
+        ENSURE(numedges >= 3 && numedges <= 4096 &&
+               (uint64_t)firstedge + numedges <= bsp->numsurfedges, "Bad surfedges");
         out->firstsurfedge = bsp->surfedges + firstedge;
         out->numsurfedges = numedges;
 
         texinfo = BSP_ExtLong();
-        if (texinfo >= bsp->numtexinfo) {
-            DEBUG("bad texinfo");
-            return Q_ERR_INVALID_FORMAT;
-        }
+        ENSURE(texinfo < bsp->numtexinfo, "Bad texinfo");
         out->texinfo = bsp->texinfo + texinfo;
 
         for (j = 0; j < MAX_LIGHTMAPS && in[j] != 255; j++) {
@@ -420,10 +374,7 @@ LOAD(Faces)
         if (lightofs == (uint32_t)-1 || bsp->numlightmapbytes == 0) {
             out->lightmap = NULL;
         } else {
-            if (lightofs >= bsp->numlightmapbytes) {
-                DEBUG("bad lightofs");
-                return Q_ERR_INVALID_FORMAT;
-            }
+            ENSURE(lightofs < bsp->numlightmapbytes, "Bad lightofs");
             out->lightmap = bsp->lightmap + lightofs;
         }
     }
@@ -443,10 +394,7 @@ LOAD(LeafFaces)
     out = bsp->leaffaces;
     for (i = 0; i < count; i++, out++) {
         facenum = BSP_ExtLong();
-        if (facenum >= bsp->numfaces) {
-            DEBUG("bad facenum");
-            return Q_ERR_INVALID_FORMAT;
-        }
+        ENSURE(facenum < bsp->numfaces, "Bad facenum");
         *out = bsp->faces + facenum;
     }
 
@@ -465,10 +413,7 @@ LOAD(Leafs)
     uint32_t    firstleafface, numleaffaces;
 #endif
 
-    if (!count) {
-        DEBUG("map with no leafs");
-        return Q_ERR_INVALID_FORMAT;
-    }
+    ENSURE(count > 0, "Map with no leafs");
 
     bsp->numleafs = count;
     bsp->leafs = ALLOC(sizeof(*out) * count);
@@ -486,18 +431,12 @@ LOAD(Leafs)
             out->cluster = 0;
         } else {
             // validate cluster
-            if (cluster >= bsp->vis->numclusters) {
-                DEBUG("bad cluster");
-                return Q_ERR_INVALID_FORMAT;
-            }
+            ENSURE(cluster < bsp->vis->numclusters, "Bad cluster");
             out->cluster = cluster;
         }
 
         area = BSP_ExtLong();
-        if (area >= bsp->numareas) {
-            DEBUG("bad area");
-            return Q_ERR_INVALID_FORMAT;
-        }
+        ENSURE(area < bsp->numareas, "Bad area");
         out->area = area;
 
 #if USE_REF
@@ -508,10 +447,7 @@ LOAD(Leafs)
 
         firstleafface = BSP_ExtLong();
         numleaffaces = BSP_ExtLong();
-        if ((uint64_t)firstleafface + numleaffaces > bsp->numleaffaces) {
-            DEBUG("bad leaffaces");
-            return Q_ERR_INVALID_FORMAT;
-        }
+        ENSURE((uint64_t)firstleafface + numleaffaces <= bsp->numleaffaces, "Bad leaffaces");
         out->firstleafface = bsp->leaffaces + firstleafface;
         out->numleaffaces = numleaffaces;
 
@@ -523,18 +459,12 @@ LOAD(Leafs)
 
         firstleafbrush = BSP_ExtLong();
         numleafbrushes = BSP_ExtLong();
-        if ((uint64_t)firstleafbrush + numleafbrushes > bsp->numleafbrushes) {
-            DEBUG("bad leafbrushes");
-            return Q_ERR_INVALID_FORMAT;
-        }
+        ENSURE((uint64_t)firstleafbrush + numleafbrushes <= bsp->numleafbrushes, "Bad leafbrushes");
         out->firstleafbrush = bsp->leafbrushes + firstleafbrush;
         out->numleafbrushes = numleafbrushes;
     }
 
-    if (bsp->leafs[0].contents != CONTENTS_SOLID) {
-        DEBUG("map leaf 0 is not CONTENTS_SOLID");
-        return Q_ERR_INVALID_FORMAT;
-    }
+    ENSURE(bsp->leafs[0].contents == CONTENTS_SOLID, "Map leaf 0 is not CONTENTS_SOLID");
 
     return Q_ERR_SUCCESS;
 }
@@ -548,10 +478,7 @@ LOAD(Nodes)
     uint32_t    firstface, numfaces;
 #endif
 
-    if (!count) {
-        DEBUG("map with no nodes");
-        return Q_ERR_INVALID_FORMAT;
-    }
+    ENSURE(count > 0, "Map with no nodes");
 
     bsp->numnodes = count;
     bsp->nodes = ALLOC(sizeof(*out) * count);
@@ -559,26 +486,17 @@ LOAD(Nodes)
     out = bsp->nodes;
     for (i = 0; i < count; i++, out++) {
         planenum = BSP_Long();
-        if (planenum >= bsp->numplanes) {
-            DEBUG("bad planenum");
-            return Q_ERR_INVALID_FORMAT;
-        }
+        ENSURE(planenum < bsp->numplanes, "Bad planenum");
         out->plane = bsp->planes + planenum;
 
         for (j = 0; j < 2; j++) {
             child = BSP_Long();
             if (child & BIT(31)) {
                 child = ~child;
-                if (child >= bsp->numleafs) {
-                    DEBUG("bad leafnum");
-                    return Q_ERR_INVALID_FORMAT;
-                }
+                ENSURE(child < bsp->numleafs, "Bad leafnum");
                 out->children[j] = (mnode_t *)(bsp->leafs + child);
             } else {
-                if (child >= count) {
-                    DEBUG("bad nodenum");
-                    return Q_ERR_INVALID_FORMAT;
-                }
+                ENSURE(child < count, "Bad nodenum");
                 out->children[j] = bsp->nodes + child;
             }
         }
@@ -591,10 +509,7 @@ LOAD(Nodes)
 
         firstface = BSP_ExtLong();
         numfaces = BSP_ExtLong();
-        if ((uint64_t)firstface + numfaces > bsp->numfaces) {
-            DEBUG("bad faces");
-            return Q_ERR_INVALID_FORMAT;
-        }
+        ENSURE((uint64_t)firstface + numfaces <= bsp->numfaces, "Bad faces");
         out->firstface = bsp->faces + firstface;
         out->numfaces = numfaces;
 
@@ -617,14 +532,8 @@ LOAD(SubModels)
     uint32_t    firstface, numfaces;
 #endif
 
-    if (!count) {
-        DEBUG("map with no models");
-        return Q_ERR_INVALID_FORMAT;
-    }
-    if (count > MAX_MODELS - 2) {
-        DEBUG("too many models");
-        return Q_ERR_INVALID_FORMAT;
-    }
+    ENSURE(count > 0, "Map with no models");
+    ENSURE(count <= MAX_MODELS - 2, "Too many models");
 
     bsp->nummodels = count;
     bsp->models = ALLOC(sizeof(*out) * count);
@@ -643,16 +552,10 @@ LOAD(SubModels)
         if (headnode & BIT(31)) {
             // be careful, some models have no nodes, just a leaf
             headnode = ~headnode;
-            if (headnode >= bsp->numleafs) {
-                DEBUG("bad headleaf");
-                return Q_ERR_INVALID_FORMAT;
-            }
+            ENSURE(headnode < bsp->numleafs, "Bad headleaf");
             out->headnode = (mnode_t *)(bsp->leafs + headnode);
         } else {
-            if (headnode >= bsp->numnodes) {
-                DEBUG("bad headnode");
-                return Q_ERR_INVALID_FORMAT;
-            }
+            ENSURE(headnode < bsp->numnodes, "Bad headnode");
             out->headnode = bsp->nodes + headnode;
         }
 #if USE_REF
@@ -662,10 +565,7 @@ LOAD(SubModels)
         }
         firstface = BSP_Long();
         numfaces = BSP_Long();
-        if ((uint64_t)firstface + numfaces > bsp->numfaces) {
-            DEBUG("bad faces");
-            return Q_ERR_INVALID_FORMAT;
-        }
+        ENSURE((uint64_t)firstface + numfaces <= bsp->numfaces, "Bad faces");
         out->firstface = bsp->faces + firstface;
         out->numfaces = numfaces;
 
@@ -702,10 +602,7 @@ LOAD(Areas)
     int         i;
     uint32_t    numareaportals, firstareaportal;
 
-    if (count > MAX_MAP_AREAS) {
-        DEBUG("too many areas");
-        return Q_ERR_INVALID_FORMAT;
-    }
+    ENSURE(count <= MAX_MAP_AREAS, "Too many areas");
 
     bsp->numareas = count;
     bsp->areas = ALLOC(sizeof(*out) * count);
@@ -714,10 +611,7 @@ LOAD(Areas)
     for (i = 0; i < count; i++, out++) {
         numareaportals = BSP_Long();
         firstareaportal = BSP_Long();
-        if ((uint64_t)firstareaportal + numareaportals > bsp->numareaportals) {
-            DEBUG("bad areaportals");
-            return Q_ERR_INVALID_FORMAT;
-        }
+        ENSURE((uint64_t)firstareaportal + numareaportals <= bsp->numareaportals, "Bad areaportals");
         out->numareaportals = numareaportals;
         out->firstareaportal = bsp->areaportals + firstareaportal;
         out->floodvalid = 0;
@@ -911,7 +805,7 @@ static int BSP_SetParent(mnode_t *node, unsigned key)
         // a face may never belong to more than one node
         for (i = 0, face = node->firstface; i < node->numfaces; i++, face++) {
             if (face->drawframe) {
-                DEBUG("duplicate face");
+                DEBUG("Duplicate face");
                 return Q_ERR_INFINITE_LOOP;
             }
             face->drawframe = key;
@@ -920,7 +814,7 @@ static int BSP_SetParent(mnode_t *node, unsigned key)
 
         child = node->children[0];
         if (child->parent) {
-            DEBUG("cycle encountered");
+            DEBUG("Cycle encountered");
             return Q_ERR_INFINITE_LOOP;
         }
         child->parent = node;
@@ -930,7 +824,7 @@ static int BSP_SetParent(mnode_t *node, unsigned key)
 
         child = node->children[1];
         if (child->parent) {
-            DEBUG("cycle encountered");
+            DEBUG("Cycle encountered");
             return Q_ERR_INFINITE_LOOP;
         }
         child->parent = node;
@@ -951,7 +845,7 @@ static int BSP_ValidateTree(bsp_t *bsp)
 
     for (i = 0, mod = bsp->models; i < bsp->nummodels; i++, mod++) {
         if (i == 0 && mod->headnode != bsp->nodes) {
-            DEBUG("map model 0 headnode is not the first node");
+            DEBUG("Map model 0 headnode is not the first node");
             return Q_ERR_INVALID_FORMAT;
         }
 
@@ -964,7 +858,7 @@ static int BSP_ValidateTree(bsp_t *bsp)
         // a face may never belong to more than one model
         for (j = 0, face = mod->firstface; j < mod->numfaces; j++, face++) {
             if (face->drawframe && face->drawframe != ~i) {
-                DEBUG("duplicate face");
+                DEBUG("Duplicate face");
                 return Q_ERR_INFINITE_LOOP;
             }
             face->drawframe = ~i;
@@ -984,14 +878,8 @@ static int BSP_ValidateAreaPortals(bsp_t *bsp)
 
     bsp->numportals = 0;
     for (i = 0, p = bsp->areaportals; i < bsp->numareaportals; i++, p++) {
-        if (p->portalnum >= bsp->numareaportals) {
-            DEBUG("bad portalnum");
-            return Q_ERR_INVALID_FORMAT;
-        }
-        if (p->otherarea >= bsp->numareas) {
-            DEBUG("bad otherarea");
-            return Q_ERR_INVALID_FORMAT;
-        }
+        ENSURE(p->portalnum < bsp->numareaportals, "Bad portalnum");
+        ENSURE(p->otherarea < bsp->numareas, "Bad otherarea");
         bsp->numportals = max(bsp->numportals, p->portalnum + 1);
     }
 
