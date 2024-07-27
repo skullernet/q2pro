@@ -270,6 +270,21 @@ void CL_RegisterTEntSounds(void)
     cl_sfx_hit_marker = S_RegisterSound("weapons/marker.wav");
 }
 
+static const char *const muzzlenames[MFLASH_TOTAL] = {
+    [MFLASH_MACHN]     = "v_machn",
+    [MFLASH_SHOTG2]    = "v_shotg2",
+    [MFLASH_SHOTG]     = "v_shotg",
+    [MFLASH_ROCKET]    = "v_rocket",
+    [MFLASH_RAIL]      = "v_rail",
+    [MFLASH_LAUNCH]    = "v_launch",
+    [MFLASH_ETF_RIFLE] = "v_etf_rifle",
+    [MFLASH_DIST]      = "v_dist",
+    [MFLASH_BOOMER]    = "v_boomer",
+    [MFLASH_BLAST]     = "v_blast",
+    [MFLASH_BFG]       = "v_bfg",
+    [MFLASH_BEAMER]    = "v_beamer",
+};
+
 /*
 =================
 CL_RegisterTEntModels
@@ -295,18 +310,8 @@ void CL_RegisterTEntModels(void)
     cl_mod_heatbeam = R_RegisterModel("models/proj/beam/tris.md2");
     cl_mod_explo4_big = R_RegisterModel("models/objects/r_explode2/tris.md2");
 
-    cl_mod_muzzles[MFLASH_MACHN] = R_RegisterModel("models/weapons/v_machn/flash/tris.md2");
-    cl_mod_muzzles[MFLASH_SHOTG2] = R_RegisterModel("models/weapons/v_shotg2/flash/tris.md2");
-    cl_mod_muzzles[MFLASH_SHOTG] = R_RegisterModel("models/weapons/v_shotg/flash/tris.md2");
-    cl_mod_muzzles[MFLASH_ROCKET] = R_RegisterModel("models/weapons/v_rocket/flash/tris.md2");
-    cl_mod_muzzles[MFLASH_RAIL] = R_RegisterModel("models/weapons/v_rail/flash/tris.md2");
-    cl_mod_muzzles[MFLASH_LAUNCH] = R_RegisterModel("models/weapons/v_launch/flash/tris.md2");
-    cl_mod_muzzles[MFLASH_ETF_RIFLE] = R_RegisterModel("models/weapons/v_etf_rifle/flash/tris.md2");
-    cl_mod_muzzles[MFLASH_DIST] = R_RegisterModel("models/weapons/v_dist/flash/tris.md2");
-    cl_mod_muzzles[MFLASH_BOOMER] = R_RegisterModel("models/weapons/v_boomer/flash/tris.md2");
-    cl_mod_muzzles[MFLASH_BLAST] = R_RegisterModel("models/weapons/v_blast/flash/tris.md2");
-    cl_mod_muzzles[MFLASH_BFG] = R_RegisterModel("models/weapons/v_bfg/flash/tris.md2");
-    cl_mod_muzzles[MFLASH_BEAMER] = R_RegisterModel("models/weapons/v_beamer/flash/tris.md2");
+    for (int i = 0; i < MFLASH_TOTAL; i++)
+        cl_mod_muzzles[i] = R_RegisterModel(va("models/weapons/%s/flash/tris.md2", muzzlenames[i]));
 
     cl_img_flare = R_RegisterSprite("misc/flare.tga");
 
