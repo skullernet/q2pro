@@ -902,16 +902,18 @@ int BSP_LoadMaterials(bsp_t *bsp)
 
 #if USE_REF
 
+#define DECOUPLED_LM_BYTES  40
+
 static void BSP_ParseDecoupledLM(bsp_t *bsp, const byte *in, size_t filelen)
 {
     mface_t *out;
 
-    if (filelen % 40) {
+    if (filelen % DECOUPLED_LM_BYTES) {
         Com_WPrintf("DECOUPLED_LM lump has odd size\n");
         return;
     }
 
-    if (bsp->numfaces > filelen / 40) {
+    if (bsp->numfaces > filelen / DECOUPLED_LM_BYTES) {
         Com_WPrintf("DECOUPLED_LM lump too short\n");
         return;
     }
@@ -924,6 +926,8 @@ static void BSP_ParseDecoupledLM(bsp_t *bsp, const byte *in, size_t filelen)
         uint32_t offset = BSP_Long();
         if (offset < bsp->numlightmapbytes)
             out->lightmap = bsp->lightmap + offset;
+        else
+            out->lightmap = NULL;
 
         for (int j = 0; j < 2; j++) {
             out->lm_axis[j][0] = BSP_Float();
