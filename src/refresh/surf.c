@@ -972,7 +972,7 @@ void GL_FreeWorld(void)
     BSP_Free(gl_static.world.cache);
 
     if (gl_static.world.vertices) {
-        Hunk_Free(&gl_static.world.hunk);
+        Z_Free(gl_static.world.vertices);
     } else if (qglDeleteBuffers) {
         qglDeleteBuffers(1, &gl_static.world.bufnum);
     }
@@ -1042,15 +1042,12 @@ void GL_LoadWorld(const char *name)
         size += surf->numsurfedges * VERTEX_SIZE * sizeof(vec_t);
     }
 
-    // try VBO first, then allocate on hunk
+    // try VBO first, then allocate on heap
     if (create_surface_vbo(size)) {
         Com_DPrintf("%s: %zu bytes of vertex data as VBO\n", __func__, size);
     } else {
-        Hunk_Begin(&gl_static.world.hunk, size);
-        gl_static.world.vertices = Hunk_Alloc(&gl_static.world.hunk, size);
-        Hunk_End(&gl_static.world.hunk);
-
-        Com_DPrintf("%s: %zu bytes of vertex data on hunk\n", __func__, size);
+        gl_static.world.vertices = Z_TagMalloc(size, TAG_RENDERER);
+        Com_DPrintf("%s: %zu bytes of vertex data on heap\n", __func__, size);
     }
 
     gl_static.nolm_mask = SURF_NOLM_MASK_DEFAULT;
