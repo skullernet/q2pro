@@ -415,7 +415,7 @@ static void LM_BeginBuilding(void)
         return;
 
     // use larger lightmaps for DECOUPLED_LM maps
-    bits = 8 + bsp->lm_decoupled * 2;
+    bits = min(8 + bsp->lm_decoupled * 2, gl_config.max_texture_size_log2);
 
     lm.block_size = 1 << bits;
     lm.block_shift = bits + 2;
@@ -426,7 +426,7 @@ static void LM_BeginBuilding(void)
     for (int i = 0; i < lm.maxmaps; i++)
         lm.lightmaps[i].buffer = lm.buffer + (i << size_shift);
 
-    Com_DDPrintf("%s: %d lightmaps, %d block size\n", __func__, lm.maxmaps, lm.block_size);
+    Com_DPrintf("%s: %d lightmaps max, %d block size\n", __func__, lm.maxmaps, lm.block_size);
 
     LM_InitBlock();
 }
