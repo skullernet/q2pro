@@ -317,6 +317,22 @@ static inline uint32_t Q_npot32(uint32_t k)
     return k + 1;
 }
 
+static inline int Q_log2(uint32_t k)
+{
+#if q_has_builtin(__builtin_clz)
+    return 31 - __builtin_clz(k | 1);
+#elif (defined _MSC_VER)
+    unsigned long index;
+    _BitScanReverse(&index, k | 1);
+    return index;
+#else
+    for (int i = 31; i > 0; i--)
+        if (k & BIT(i))
+            return i;
+    return 0;
+#endif
+}
+
 static inline float LerpAngle(float a2, float a1, float frac)
 {
     if (a1 - a2 > 180)

@@ -162,6 +162,8 @@ typedef struct {
     int     colorbits;
     int     depthbits;
     int     stencilbits;
+    int     max_texture_size_log2;
+    int     max_texture_size;
 } glConfig_t;
 
 extern glStatic_t gl_static;
