@@ -59,14 +59,14 @@ static inline void GL_StretchPic_(
 
     if (flags & IF_TRANSPARENT) {
         if ((flags & IF_PALETTED) && draw.scale == 1) {
-            tess.flags |= 1;
+            tess.flags |= GLS_ALPHATEST_ENABLE;
         } else {
-            tess.flags |= 2;
+            tess.flags |= GLS_BLEND_BLEND;
         }
     }
 
     if ((color & U32_ALPHA) != U32_ALPHA) {
-        tess.flags |= 2;
+        tess.flags |= GLS_BLEND_BLEND;
     }
 
     tess.numverts += 4;
@@ -161,7 +161,7 @@ static void GL_DrawVignette(int distance, color_t outer, color_t inner)
     dst_indices[22] = tess.numverts + 4;
     dst_indices[23] = tess.numverts + 7;
 
-    tess.flags |= 2;
+    tess.flags |= GLS_BLEND_BLEND;
 
     tess.numverts += 8;
     tess.numindices += 24;

@@ -36,11 +36,9 @@ void GL_Flush2D(void)
         return;
     }
 
-    bits = GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE | GLS_CULL_DISABLE;
-    if (tess.flags & 2) {
-        bits |= GLS_BLEND_BLEND;
-    } else if (tess.flags & 1) {
-        bits |= GLS_ALPHATEST_ENABLE;
+    bits = GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE | GLS_CULL_DISABLE | tess.flags;
+    if (bits & GLS_BLEND_BLEND) {
+        bits &= ~GLS_ALPHATEST_ENABLE;
     }
 
     Scrap_Upload();
