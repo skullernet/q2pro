@@ -1016,19 +1016,16 @@ static void GL_SetupConfig(void)
 
 static void GL_InitTables(void)
 {
-    vec_t lat, lng;
-    const vec_t *v;
-    int i;
+    for (int i = 0; i < NUMVERTEXNORMALS; i++) {
+        const vec_t *v = bytedirs[i];
+        float lat = acosf(v[2]);
+        float lng = atan2f(v[1], v[0]);
 
-    for (i = 0; i < NUMVERTEXNORMALS; i++) {
-        v = bytedirs[i];
-        lat = acosf(v[2]);
-        lng = atan2f(v[1], v[0]);
         gl_static.latlngtab[i][0] = (int)(lat * (255 / (2 * M_PIf))) & 255;
         gl_static.latlngtab[i][1] = (int)(lng * (255 / (2 * M_PIf))) & 255;
     }
 
-    for (i = 0; i < 256; i++) {
+    for (int i = 0; i < 256; i++) {
         gl_static.sintab[i] = sinf(i * (2 * M_PIf / 255));
     }
 }

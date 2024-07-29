@@ -457,20 +457,15 @@ static void GL_DrawFace(const mface_t *surf)
 
 void GL_ClearSolidFaces(void)
 {
-    int i;
-
-    for (i = 0; i < FACE_HASH_SIZE; i++) {
+    for (int i = 0; i < FACE_HASH_SIZE; i++) {
         faces_next[i] = &faces_head[i];
     }
 }
 
 void GL_DrawSolidFaces(void)
 {
-    mface_t *face;
-    int i;
-
-    for (i = 0; i < FACE_HASH_SIZE; i++) {
-        for (face = faces_head[i]; face; face = face->next) {
+    for (int i = 0; i < FACE_HASH_SIZE; i++) {
+        for (const mface_t *face = faces_head[i]; face; face = face->next) {
             GL_DrawFace(face);
         }
         faces_head[i] = NULL;
@@ -479,8 +474,6 @@ void GL_DrawSolidFaces(void)
 
 void GL_DrawAlphaFaces(void)
 {
-    mface_t *face;
-
     if (!faces_alpha) {
         return;
     }
@@ -489,7 +482,7 @@ void GL_DrawAlphaFaces(void)
 
     GL_BindArrays();
 
-    for (face = faces_alpha; face; face = face->next) {
+    for (const mface_t *face = faces_alpha; face; face = face->next) {
         if (glr.ent != face->entity) {
             glr.ent = face->entity;
             GL_Flush3D();
