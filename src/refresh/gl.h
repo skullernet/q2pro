@@ -250,7 +250,7 @@ glCullResult_t GL_CullBox(const vec3_t bounds[2]);
 glCullResult_t GL_CullSphere(const vec3_t origin, float radius);
 glCullResult_t GL_CullLocalBox(const vec3_t origin, const vec3_t bounds[2]);
 
-bool GL_AllocBlock(int width, int height, int *inuse,
+bool GL_AllocBlock(int width, int height, uint16_t *inuse,
                    int w, int h, int *s, int *t);
 
 void GL_MultMatrix(GLfloat *restrict out, const GLfloat *restrict a, const GLfloat *restrict b);
@@ -439,7 +439,7 @@ typedef struct {
     int         comp, block_size, block_shift;
     float       add, modulate, scale;
     int         nummaps, maxmaps;
-    int         inuse[LM_MAX_BLOCK_WIDTH];
+    uint16_t    inuse[LM_MAX_BLOCK_WIDTH];
     GLuint      texnums[LM_MAX_LIGHTMAPS];
     lightmap_t  lightmaps[LM_MAX_LIGHTMAPS];
     byte        buffer[0x4000000];

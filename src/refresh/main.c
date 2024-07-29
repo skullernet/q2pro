@@ -221,7 +221,7 @@ glCullResult_t GL_CullLocalBox(const vec3_t origin, const vec3_t bounds[2])
 }
 
 // shared between lightmap and scrap allocators
-bool GL_AllocBlock(int width, int height, int *inuse,
+bool GL_AllocBlock(int width, int height, uint16_t *inuse,
                    int w, int h, int *s, int *t)
 {
     int i, j, k, x, y, max_inuse, min_inuse;
