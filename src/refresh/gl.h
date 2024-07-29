@@ -425,12 +425,12 @@ qhandle_t R_RegisterModel(const char *name);
 #define LIGHT_STYLE(i) \
     &glr.fd.lightstyles[gl_static.lightstylemap[(i)]]
 
-#define LM_MAX_LIGHTMAPS    32
-#define LM_BLOCK_WIDTH      (1 << 10)
+#define LM_MAX_LIGHTMAPS    128
+#define LM_MAX_BLOCK_WIDTH  (1 << 10)
 
 typedef struct lightmap_s {
-    int         mins[2];
-    int         maxs[2];
+    uint16_t    mins[2];
+    uint16_t    maxs[2];
     byte        *buffer;
 } lightmap_t;
 
@@ -439,7 +439,7 @@ typedef struct {
     int         comp, block_size, block_shift;
     float       add, modulate, scale;
     int         nummaps, maxmaps;
-    int         inuse[LM_BLOCK_WIDTH];
+    int         inuse[LM_MAX_BLOCK_WIDTH];
     GLuint      texnums[LM_MAX_LIGHTMAPS];
     lightmap_t  lightmaps[LM_MAX_LIGHTMAPS];
     byte        buffer[0x4000000];
