@@ -1626,7 +1626,7 @@ static image_t *lookup_image(const char *name,
     return NULL;
 }
 
-static int try_image_format_(imageformat_t fmt, image_t *image, byte **pic)
+static int try_image_format(imageformat_t fmt, image_t *image, byte **pic)
 {
     byte    *data;
     int     ret;
@@ -1645,15 +1645,14 @@ static int try_image_format_(imageformat_t fmt, image_t *image, byte **pic)
     return ret < 0 ? ret : fmt;
 }
 
-static int try_image_format(imageformat_t fmt, image_t *image, byte **pic)
+#if USE_PNG || USE_JPG || USE_TGA
+
+static int try_replace_ext(imageformat_t fmt, image_t *image, byte **pic)
 {
     // replace the extension
     memcpy(image->name + image->baselen + 1, img_loaders[fmt].ext, 4);
-    return try_image_format_(fmt, image, pic);
+    return try_image_format(fmt, image, pic);
 }
-
-
-#if USE_PNG || USE_JPG || USE_TGA
 
 // tries to load the image with a different extension
 static int try_other_formats(imageformat_t orig, image_t *image, byte **pic)
@@ -1668,7 +1667,7 @@ static int try_other_formats(imageformat_t orig, image_t *image, byte **pic)
             continue;   // don't retry twice
         }
 
-        ret = try_image_format(fmt, image, pic);
+        ret = try_replace_ext(fmt, image, pic);
         if (ret != Q_ERR(ENOENT)) {
             return ret; // found something
         }
@@ -1680,7 +1679,7 @@ static int try_other_formats(imageformat_t orig, image_t *image, byte **pic)
         return Q_ERR(ENOENT); // don't retry twice
     }
 
-    return try_image_format(fmt, image, pic);
+    return try_replace_ext(fmt, image, pic);
 }
 
 static void get_image_dimensions(imageformat_t fmt, image_t *image)
@@ -1813,7 +1812,7 @@ static void print_error(const char *name, imageflags_t flags, int err)
     Com_LPrintf(level, "Couldn't load %s: %s\n", name, msg);
 }
 
-static int load_image_data(image_t *image, imageformat_t fmt, bool check_dimensions, byte **pic)
+static int load_image_data(image_t *image, imageformat_t fmt, bool need_dimensions, byte **pic)
 {
     int ret;
 
@@ -1830,7 +1829,7 @@ static int load_image_data(image_t *image, imageformat_t fmt, bool check_dimensi
         ret = try_other_formats(IM_MAX, image, pic);
     } else {
         // first try with original extension
-        ret = try_image_format_(fmt, image, pic);
+        ret = try_image_format(fmt, image, pic);
         if (ret == Q_ERR(ENOENT)) {
             // retry with remaining extensions
             ret = try_other_formats(fmt, image, pic);
@@ -1839,14 +1838,14 @@ static int load_image_data(image_t *image, imageformat_t fmt, bool check_dimensi
 
     // if we are replacing 8-bit texture with a higher resolution 32-bit
     // texture, we need to recover original image dimensions
-    if (check_dimensions && fmt <= IM_WAL && ret > IM_WAL) {
+    if (need_dimensions && fmt <= IM_WAL && ret > IM_WAL) {
         get_image_dimensions(fmt, image);
     }
 #else
     if (fmt == IM_MAX) {
         ret = Q_ERR_INVALID_PATH;
     } else {
-        ret = try_image_format_(fmt, image, pic);
+        ret = try_image_format(fmt, image, pic);
     }
 #endif
 
