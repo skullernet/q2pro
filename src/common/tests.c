@@ -598,7 +598,7 @@ static void Com_TestImages_f(void)
             R_EndRegistration();
             R_BeginRegistration(NULL);
         }
-        if (!R_RegisterTempPic(va("/%s", (char *)list[i]))) {
+        if (!R_RegisterImage(va("/%s", (char *)list[i]), IT_PIC, IF_DIRECT)) {
             errors++;
             continue;
         }

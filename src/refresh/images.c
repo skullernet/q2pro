@@ -1962,7 +1962,15 @@ static image_t *find_or_load_image(const char *name, size_t len,
     // load the pic from disk
     pic = NULL;
 
-    ret = load_image_data(image, fmt, true, &pic);
+    if (flags & IF_DIRECT) {
+        // direct load requested (for testing code)
+        if (fmt == IM_MAX)
+            ret = Q_ERR_INVALID_PATH;
+        else
+            ret = try_image_format(fmt, image, &pic);
+    } else {
+        ret = load_image_data(image, fmt, true, &pic);
+    }
 
     if (ret < 0) {
         print_error(image->name, flags, ret);
