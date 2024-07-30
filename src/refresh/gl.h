@@ -284,8 +284,8 @@ typedef struct {
 } maliastc_t;
 
 typedef struct {
-    short   pos[3];
-    byte    norm[2]; // lat, lng
+    int16_t     pos[3];
+    uint8_t     norm[2]; // lat, lng
 } maliasvert_t;
 
 typedef struct {
