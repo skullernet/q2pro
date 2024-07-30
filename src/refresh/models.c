@@ -706,7 +706,7 @@ fail:
 
 static void MOD_PrintError(const char *path, int err)
 {
-    Com_EPrintf("Couldn't load %s: %s\n", path,
+    Com_EPrintf("Couldn't load %s: %s\n", Com_MakePrintable(path),
                 err == Q_ERR_INVALID_FORMAT ?
                 Com_GetLastError() : Q_ErrorString(err));
 }
@@ -720,7 +720,7 @@ static bool MD5_ParseExpect(const char **buffer, const char *expect)
     char *token = COM_Parse(buffer);
 
     if (strcmp(token, expect)) {
-        Com_SetLastError(va("Expected %s, got %s", expect, token));
+        Com_SetLastError(va("Expected %s, got %s", expect, Com_MakePrintable(token)));
         return false;
     }
 
@@ -734,7 +734,7 @@ static bool MD5_ParseFloat(const char **buffer, float *output)
 
     *output = strtof(token, &endptr);
     if (endptr == token || *endptr) {
-        Com_SetLastError(va("Expected float, got %s", token));
+        Com_SetLastError(va("Expected float, got %s", Com_MakePrintable(token)));
         return false;
     }
 
@@ -748,7 +748,7 @@ static bool MD5_ParseUint(const char **buffer, uint32_t *output)
 
     *output = strtoul(token, &endptr, 10);
     if (endptr == token || *endptr) {
-        Com_SetLastError(va("Expected int, got %s", token));
+        Com_SetLastError(va("Expected int, got %s", Com_MakePrintable(token)));
         return false;
     }
 
@@ -1121,7 +1121,7 @@ static void MOD_LoadMD5Scale(md5_model_t *model, const char *path, joint_info_t 
         }
 
         if (joint_id == -1)
-            Com_WPrintf("No such joint %s in %s\n", tok, path);
+            Com_WPrintf("No such joint %s in %s\n", Com_MakePrintable(tok), path);
 
         MD5_EXPECT(":");
         MD5_EXPECT("{");
