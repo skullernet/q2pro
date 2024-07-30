@@ -136,19 +136,19 @@ typedef struct {
 
 typedef enum {
     IF_NONE         = 0,
-    IF_PERMANENT    = BIT(0),
-    IF_TRANSPARENT  = BIT(1),
-    IF_PALETTED     = BIT(2),
-    IF_UPSCALED     = BIT(3),
-    IF_SCRAP        = BIT(4),
-    IF_TURBULENT    = BIT(5),
-    IF_REPEAT       = BIT(6),
-    IF_NEAREST      = BIT(7),
-    IF_OPAQUE       = BIT(8),
+    IF_PERMANENT    = BIT(0),   // not freed by R_EndRegistration()
+    IF_TRANSPARENT  = BIT(1),   // known to be transparent
+    IF_PALETTED     = BIT(2),   // loaded from 8-bit paletted format
+    IF_UPSCALED     = BIT(3),   // upscaled
+    IF_SCRAP        = BIT(4),   // put in scrap texture
+    IF_TURBULENT    = BIT(5),   // turbulent surface (don't desaturate, etc)
+    IF_REPEAT       = BIT(6),   // tiling image
+    IF_NEAREST      = BIT(7),   // don't bilerp
+    IF_OPAQUE       = BIT(8),   // known to be opaque
 
     // not stored in image
-    IF_OPTIONAL     = BIT(16),
-    IF_DIRECT       = BIT(17),
+    IF_OPTIONAL     = BIT(16),  // don't warn if not found
+    IF_DIRECT       = BIT(17),  // don't override extension
 } imageflags_t;
 
 typedef enum {
