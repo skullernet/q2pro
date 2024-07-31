@@ -472,32 +472,32 @@ bool OGG_Load(sizebuf_t *sz)
 
     const AVInputFormat *fmt = av_find_input_format("ogg");
     if (!fmt) {
-        Com_DPrintf("Ogg input format not found\n");
+        Com_SetLastError("Ogg input format not found");
         return false;
     }
 
     const AVCodec *dec = avcodec_find_decoder(AV_CODEC_ID_VORBIS);
     if (!dec) {
-        Com_DPrintf("Vorbis decoder not found\n");
+        Com_SetLastError("Vorbis decoder not found");
         return false;
     }
 
     fmt_ctx = avformat_alloc_context();
     if (!fmt_ctx) {
-        Com_DPrintf("Failed to allocate format context\n");
+        Com_SetLastError("Failed to allocate format context");
         return false;
     }
 
     avio_ctx_buffer = av_malloc(avio_ctx_buffer_size);
     if (!avio_ctx_buffer) {
-        Com_DPrintf("Failed to allocate avio buffer\n");
+        Com_SetLastError("Failed to allocate avio buffer");
         goto fail;
     }
 
     avio_ctx = avio_alloc_context(avio_ctx_buffer, avio_ctx_buffer_size,
                                   0, sz, sz_read_packet, NULL, sz_seek);
     if (!avio_ctx) {
-        Com_DPrintf("Failed to allocate avio context\n");
+        Com_SetLastError("Failed to allocate avio context");
         goto fail;
     }
 
@@ -505,51 +505,51 @@ bool OGG_Load(sizebuf_t *sz)
 
     ret = avformat_open_input(&fmt_ctx, NULL, fmt, NULL);
     if (ret < 0) {
-        Com_DPrintf("Couldn't open %s: %s\n", s_info.name, av_err2str(ret));
+        Com_SetLastError(av_err2str(ret));
         goto fail;
     }
 
     if (fmt_ctx->nb_streams != 1) {
-        Com_DPrintf("Multiple streams in %s\n", s_info.name);
+        Com_SetLastError("Multiple Ogg streams are not supported");
         goto fail;
     }
 
     st = fmt_ctx->streams[0];
     if (st->codecpar->codec_id != AV_CODEC_ID_VORBIS) {
-        Com_DPrintf("First stream is not Vorbis in %s\n", s_info.name);
+        Com_SetLastError("First stream is not Vorbis");
         goto fail;
     }
 
     if (st->codecpar->ch_layout.nb_channels < 1 || st->codecpar->ch_layout.nb_channels > 2) {
-        Com_DPrintf("%s has bad number of channels\n", s_info.name);
+        Com_SetLastError("Unsupported number of channels");
         goto fail;
     }
 
     if (st->codecpar->sample_rate < 8000 || st->codecpar->sample_rate > 48000) {
-        Com_DPrintf("%s has bad rate\n", s_info.name);
+        Com_SetLastError("Unsupported sample rate");
         goto fail;
     }
 
     if (st->duration < 1 || st->duration > MAX_SFX_SAMPLES) {
-        Com_DPrintf("%s has bad number of samples\n", s_info.name);
+        Com_SetLastError("Unsupported duration");
         goto fail;
     }
 
     dec_ctx = avcodec_alloc_context3(dec);
     if (!dec_ctx) {
-        Com_DPrintf("Failed to allocate codec context\n");
+        Com_SetLastError("Failed to allocate codec context");
         goto fail;
     }
 
     ret = avcodec_parameters_to_context(dec_ctx, st->codecpar);
     if (ret < 0) {
-        Com_DPrintf("Failed to copy codec parameters to decoder context\n");
+        Com_SetLastError("Failed to copy codec parameters to decoder context");
         goto fail;
     }
 
     ret = avcodec_open2(dec_ctx, dec, NULL);
     if (ret < 0) {
-        Com_DPrintf("Failed to open codec\n");
+        Com_SetLastError("Failed to open codec");
         goto fail;
     }
 
@@ -560,7 +560,7 @@ bool OGG_Load(sizebuf_t *sz)
     out = av_frame_alloc();
     swr_ctx = swr_alloc();
     if (!pkt || !frame || !out || !swr_ctx) {
-        Com_DPrintf("Failed to allocate memory\n");
+        Com_SetLastError("Failed to allocate memory");
         goto fail;
     }
 
@@ -570,7 +570,7 @@ bool OGG_Load(sizebuf_t *sz)
 
     ret = av_channel_layout_copy(&out->ch_layout, &dec_ctx->ch_layout);
     if (ret < 0) {
-        Com_DPrintf("Failed to copy channel layout\n");
+        Com_SetLastError("Failed to copy channel layout");
         goto fail;
     }
     out->format = AV_SAMPLE_FMT_S16;
@@ -579,7 +579,7 @@ bool OGG_Load(sizebuf_t *sz)
 
     ret = av_frame_get_buffer(out, 0);
     if (ret < 0) {
-        Com_DPrintf("Failed to allocate audio buffer\n");
+        Com_SetLastError("Failed to allocate audio buffer");
         goto fail;
     }
 
@@ -637,7 +637,7 @@ bool OGG_Load(sizebuf_t *sz)
     }
 
     if (ret < 0) {
-        Com_DPrintf("Error decoding %s: %s\n", s_info.name, av_err2str(ret));
+        Com_SetLastError(av_err2str(ret));
         Z_Freep(&s_info.data);
         goto fail;
     }

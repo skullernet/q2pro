@@ -71,13 +71,13 @@ static bool GetWavinfo(sizebuf_t *sz)
 
 // find "RIFF" chunk
     if (tag != TAG_RIFF) {
-        Com_DPrintf("%s has missing/invalid RIFF chunk\n", s_info.name);
+        Com_SetLastError("Missing RIFF chunk");
         return false;
     }
 
     sz->readcount += 4;
     if (SZ_ReadLong(sz) != TAG_WAVE) {
-        Com_DPrintf("%s has missing/invalid WAVE chunk\n", s_info.name);
+        Com_SetLastError("Missing WAVE chunk");
         return false;
     }
 
@@ -86,25 +86,25 @@ static bool GetWavinfo(sizebuf_t *sz)
 
 // find "fmt " chunk
     if (!FindChunk(sz, TAG_fmt)) {
-        Com_DPrintf("%s has missing/invalid fmt chunk\n", s_info.name);
+        Com_SetLastError("Missing fmt chunk");
         return false;
     }
 
     s_info.format = SZ_ReadShort(sz);
     if (s_info.format != FORMAT_PCM) {
-        Com_DPrintf("%s has unsupported format\n", s_info.name);
+        Com_SetLastError("Unsupported PCM format");
         return false;
     }
 
     s_info.channels = SZ_ReadShort(sz);
     if (s_info.channels < 1 || s_info.channels > 2) {
-        Com_DPrintf("%s has bad number of channels\n", s_info.name);
+        Com_SetLastError("Unsupported number of channels");
         return false;
     }
 
     s_info.rate = SZ_ReadLong(sz);
     if (s_info.rate < 8000 || s_info.rate > 48000) {
-        Com_DPrintf("%s has bad rate\n", s_info.name);
+        Com_SetLastError("Unsupported sample rate");
         return false;
     }
 
@@ -112,16 +112,12 @@ static bool GetWavinfo(sizebuf_t *sz)
     width = SZ_ReadShort(sz);
     switch (width) {
     case 8:
-        s_info.width = 1;
-        break;
     case 16:
-        s_info.width = 2;
-        break;
     case 24:
-        s_info.width = 3;
+        s_info.width = width / 8;
         break;
     default:
-        Com_DPrintf("%s has bad width\n", s_info.name);
+        Com_SetLastError("Unsupported number of bits per sample");
         return false;
     }
 
@@ -129,17 +125,22 @@ static bool GetWavinfo(sizebuf_t *sz)
     sz->readcount = next_chunk;
     chunk_len = FindChunk(sz, TAG_data);
     if (!chunk_len) {
-        Com_DPrintf("%s has missing/invalid data chunk\n", s_info.name);
+        Com_SetLastError("Missing data chunk");
         return false;
     }
 
 // calculate length in samples
     s_info.samples = chunk_len / (s_info.width * s_info.channels);
-    if (s_info.samples < 1 || s_info.samples > MAX_SFX_SAMPLES) {
-        Com_DPrintf("%s has bad number of samples\n", s_info.name);
+    if (s_info.samples < 1) {
+        Com_SetLastError("No samples");
+        return false;
+    }
+    if (s_info.samples > MAX_SFX_SAMPLES) {
+        Com_SetLastError("Too many samples");
         return false;
     }
 
+// any errors are non-fatal from this point
     s_info.data = sz->data + sz->readcount;
     s_info.loopstart = -1;
 
@@ -238,6 +239,8 @@ sfxcache_t *S_LoadSound(sfx_t *s)
 
     len = FS_LoadFile(name, (void **)&data);
     if (!data) {
+        if (len != Q_ERR(ENOENT))
+            Com_EPrintf("Couldn't load %s: %s\n", Com_MakePrintable(name), Q_ErrorString(len));
         s->error = len;
         return NULL;
     }
@@ -263,6 +266,8 @@ sfxcache_t *S_LoadSound(sfx_t *s)
 #endif
 
 fail:
+    if (!sc)
+        Com_EPrintf("Couldn't load %s: %s\n", Com_MakePrintable(name), Com_GetLastError());
     FS_FreeFile(data);
     return sc;
 }

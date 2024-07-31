@@ -166,11 +166,14 @@ static sfxcache_t *AL_UploadSfx(sfx_t *s)
 
     qalGetError();
     qalGenBuffers(1, &buffer);
-    if (qalGetError())
+    if (qalGetError()) {
+        Com_SetLastError("Failed to generate buffer");
         goto fail;
+    }
 
     qalBufferData(buffer, format, s_info.data, size, s_info.rate);
     if (qalGetError()) {
+        Com_SetLastError("Failed to upload samples");
         qalDeleteBuffers(1, &buffer);
         goto fail;
     }
