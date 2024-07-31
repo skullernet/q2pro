@@ -103,7 +103,7 @@ static bool GetWavinfo(sizebuf_t *sz)
     }
 
     s_info.rate = SZ_ReadLong(sz);
-    if (s_info.rate < 8000 || s_info.rate > 48000) {
+    if (s_info.rate < 6000 || s_info.rate > 48000) {
         Com_SetLastError("Unsupported sample rate");
         return false;
     }

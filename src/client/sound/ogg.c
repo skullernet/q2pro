@@ -525,7 +525,7 @@ bool OGG_Load(sizebuf_t *sz)
         goto fail;
     }
 
-    if (st->codecpar->sample_rate < 8000 || st->codecpar->sample_rate > 48000) {
+    if (st->codecpar->sample_rate < 6000 || st->codecpar->sample_rate > 48000) {
         Com_SetLastError("Unsupported sample rate");
         goto fail;
     }
