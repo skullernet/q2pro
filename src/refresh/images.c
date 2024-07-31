@@ -180,44 +180,38 @@ PCX LOADING
 =================================================================
 */
 
-static int uncompress_pcx(const byte *raw, const byte *end,
-                          int w, int h, int scan, byte *pixels)
+#define PCX_PALETTE_SIZE    768
+
+static int uncompress_pcx(sizebuf_t *s, int scan, byte *pix)
 {
-    int dataByte, runLength;
+    for (int x = 0; x < scan;) {
+        int dataByte, runLength;
 
-    for (int y = 0; y < h; y++, pixels += w) {
-        for (int x = 0; x < scan;) {
-            if (raw >= end)
+        if ((dataByte = SZ_ReadByte(s)) == -1)
+            return Q_ERR_UNEXPECTED_EOF;
+
+        if ((dataByte & 0xC0) == 0xC0) {
+            runLength = dataByte & 0x3F;
+            if (x + runLength > scan)
                 return Q_ERR_OVERRUN;
-            dataByte = *raw++;
-
-            if ((dataByte & 0xC0) == 0xC0) {
-                runLength = dataByte & 0x3F;
-                if (x + runLength > scan)
-                    return Q_ERR_OVERRUN;
-                if (raw >= end)
-                    return Q_ERR_OVERRUN;
-                dataByte = *raw++;
-            } else {
-                runLength = 1;
-            }
-
-            while (runLength--) {
-                if (x < w)
-                    pixels[x] = dataByte;
-                x++;
-            }
+            if ((dataByte = SZ_ReadByte(s)) == -1)
+                return Q_ERR_UNEXPECTED_EOF;
+        } else {
+            runLength = 1;
         }
+
+        while (runLength--)
+            pix[x++] = dataByte;
     }
 
     return Q_ERR_SUCCESS;
 }
 
-static int load_pcx(const byte *rawdata, size_t rawlen, byte **pixels_p,
-                    byte *palette, int *width, int *height)
+static int load_pcx(const byte *rawdata, size_t rawlen,
+                    image_t *image, byte *palette, byte **pic)
 {
     const dpcx_t    *pcx;
-    int             w, h, scan;
+    int             w, h, bytes_per_line;
 
     //
     // parse the PCX file
@@ -233,7 +227,7 @@ static int load_pcx(const byte *rawdata, size_t rawlen, byte **pixels_p,
     }
 
     if (pcx->encoding != 1 || pcx->bits_per_pixel != 8) {
-        Com_SetLastError("Invalid encoding or bits per pixel");
+        Com_SetLastError("Unsupported encoding or bits per pixel");
         return Q_ERR_INVALID_FORMAT;
     }
 
@@ -244,13 +238,13 @@ static int load_pcx(const byte *rawdata, size_t rawlen, byte **pixels_p,
         return Q_ERR_INVALID_FORMAT;
     }
 
-    if (pcx->color_planes != 1) {
-        Com_SetLastError("Invalid number of color planes");
+    if (pcx->color_planes != 1 && (palette || pcx->color_planes != 3)) {
+        Com_SetLastError("Unsupported number of color planes");
         return Q_ERR_INVALID_FORMAT;
     }
 
-    scan = LittleShort(pcx->bytes_per_line);
-    if (scan < w) {
+    bytes_per_line = LittleShort(pcx->bytes_per_line);
+    if (bytes_per_line < w) {
         Com_SetLastError("Invalid number of bytes per line");
         return Q_ERR_INVALID_FORMAT;
     }
@@ -259,56 +253,81 @@ static int load_pcx(const byte *rawdata, size_t rawlen, byte **pixels_p,
     // get palette
     //
     if (palette) {
-        if (rawlen < 768) {
+        if (rawlen < PCX_PALETTE_SIZE) {
             return Q_ERR_FILE_TOO_SMALL;
         }
-        memcpy(palette, rawdata + rawlen - 768, 768);
+        memcpy(palette, rawdata + rawlen - PCX_PALETTE_SIZE, PCX_PALETTE_SIZE);
     }
 
     //
     // get pixels
     //
-    if (pixels_p) {
-        byte *pixels = IMG_AllocPixels(w * h);
-        int ret = uncompress_pcx(pcx->data, rawdata + rawlen, w, h, scan, pixels);
+    if (image) {
+        int bytes_per_scanline = bytes_per_line * pcx->color_planes;
+        bool is_pal = pcx->color_planes == 1;
+        byte *scanline, *pixels, *out;
+        sizebuf_t s;
+        int ret = 0;
+
+        SZ_InitRead(&s, rawdata, rawlen);
+        s.readcount = q_offsetof(dpcx_t, data);
+
+        out = pixels = IMG_AllocPixels(w * h * (is_pal ? 1 : 4));
+        scanline = IMG_AllocPixels(bytes_per_scanline);
+
+        for (int y = 0; y < h; y++) {
+            ret = uncompress_pcx(&s, bytes_per_scanline, scanline);
+            if (ret < 0)
+                break;
+            if (is_pal) {
+                memcpy(out, scanline, w);
+                out += w;
+            } else {
+                for (int x = 0; x < w; x++, out += 4) {
+                    out[0] = scanline[x];
+                    out[1] = scanline[x + bytes_per_line];
+                    out[2] = scanline[x + bytes_per_line * 2];
+                    out[3] = 255;
+                }
+            }
+        }
+
+        IMG_FreePixels(scanline);
+
         if (ret < 0) {
             IMG_FreePixels(pixels);
             return ret;
         }
-        *pixels_p = pixels;
-    }
 
-    if (width)
-        *width = w;
-    if (height)
-        *height = h;
+        if (is_pal) {
+            if (SZ_Remaining(&s) < PCX_PALETTE_SIZE)
+                Com_WPrintf("PCX file %s possibly corrupted\n", image->name);
+
+            if (image->type == IT_SKIN)
+                IMG_FloodFill(pixels, w, h);
+
+            *pic = IMG_AllocPixels(w * h * 4);
+
+            image->flags |= IMG_Unpack8((uint32_t *)*pic, pixels, w, h);
+
+            IMG_FreePixels(pixels);
+        } else {
+            Com_WPrintf("%s is a 24-bit PCX file. This is not portable.\n", image->name);
+            *pic = pixels;
+            image->flags |= IF_OPAQUE;
+        }
+
+        image->upload_width = image->width = w;
+        image->upload_height = image->height = h;
+    }
 
     return Q_ERR_SUCCESS;
 }
 
 IMG_LOAD(PCX)
 {
-    byte    *pixels;
-    int     w, h, ret;
-
-    ret = load_pcx(rawdata, rawlen, &pixels, NULL, &w, &h);
-    if (ret < 0)
-        return ret;
-
-    if (image->type == IT_SKIN)
-        IMG_FloodFill(pixels, w, h);
-
-    *pic = IMG_AllocPixels(w * h * 4);
-
-    image->upload_width = image->width = w;
-    image->upload_height = image->height = h;
-    image->flags |= IMG_Unpack8((uint32_t *)*pic, pixels, w, h);
-
-    IMG_FreePixels(pixels);
-
-    return Q_ERR_SUCCESS;
+    return load_pcx(rawdata, rawlen, image, NULL, pic);
 }
-
 
 /*
 =================================================================
@@ -2163,7 +2182,7 @@ R_GetPalette
 */
 void IMG_GetPalette(void)
 {
-    byte        pal[768], *src, *data;
+    byte        pal[PCX_PALETTE_SIZE], *src, *data;
     int         i, ret;
 
     // get the palette
@@ -2172,7 +2191,7 @@ void IMG_GetPalette(void)
         goto fail;
     }
 
-    ret = load_pcx(data, ret, NULL, pal, NULL, NULL);
+    ret = load_pcx(data, ret, NULL, pal, NULL);
 
     FS_FreeFile(data);
 
