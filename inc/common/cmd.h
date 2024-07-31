@@ -79,6 +79,9 @@ void Cbuf_Execute(cmdbuf_t *buf);
 void Cbuf_Frame(cmdbuf_t *buf);
 // Called once per frame. Decrements waitCount, resets aliasCount.
 
+void Cbuf_Clear(cmdbuf_t *buf);
+// Clears entire buffer text.
+
 //===========================================================================
 
 /*

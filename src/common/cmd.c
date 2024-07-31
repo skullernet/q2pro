@@ -204,6 +204,16 @@ void Cbuf_Frame(cmdbuf_t *buf)
 }
 
 /*
+============
+Cbuf_Clear
+============
+*/
+void Cbuf_Clear(cmdbuf_t *buf)
+{
+    buf->cursize = buf->waitCount = buf->aliasCount = 0;
+}
+
+/*
 ==============================================================================
 
                         SCRIPT COMMANDS

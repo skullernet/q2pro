@@ -1262,6 +1262,9 @@ void CL_CleanupDemos(void)
                            cls.demo.time_frames, sec, fps);
             }
         }
+
+        // clear whatever stufftext remains
+        Cbuf_Clear(&cl_cmdbuf);
     }
 
     CL_FreeDemoSnapshots();
