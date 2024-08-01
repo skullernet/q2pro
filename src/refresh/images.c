@@ -1496,13 +1496,15 @@ static cvar_t   *r_texture_overrides;
 static cvar_t   *r_glowmaps;
 
 static const cmd_option_t o_imagelist[] = {
+    { "8", "pal", "list paletted images" },
     { "f", "fonts", "list fonts" },
     { "h", "help", "display this help message" },
     { "m", "skins", "list skins" },
     { "p", "pics", "list pics" },
-    { "P", "placeholder", "list placeholder images" },
+    { "r", "rgb", "list rgb images" },
     { "s", "sprites", "list sprites" },
     { "w", "walls", "list walls" },
+    { "x", "missing", "list missing images" },
     { "y", "skies", "list skies" },
     { NULL }
 };
@@ -1522,7 +1524,8 @@ static void IMG_List_f(void)
     static const char types[8] = "PFMSWY??";
     image_t     *image;
     const char  *wildcard = NULL;
-    bool        placeholder = false;
+    bool        missing = false;
+    int         paletted = 0;
     int         i, c, mask = 0, count;
     size_t      texels;
 
@@ -1534,7 +1537,9 @@ static void IMG_List_f(void)
         case 's': mask |= 1 << IT_SPRITE;   break;
         case 'w': mask |= 1 << IT_WALL;     break;
         case 'y': mask |= 1 << IT_SKY;      break;
-        case 'P': placeholder = true;       break;
+        case '8': paletted = 1;             break;
+        case 'r': paletted = -1;            break;
+        case 'x': missing = true;           break;
         case 'h':
             Cmd_PrintUsage(o_imagelist, "[wildcard]");
             Com_Printf("List registered images.\n");
@@ -1572,7 +1577,11 @@ static void IMG_List_f(void)
             continue;
         if (wildcard && !Com_WildCmp(wildcard, image->name))
             continue;
-        if ((image->width && image->height) == placeholder)
+        if ((image->width && image->height) == missing)
+            continue;
+        if (paletted == 1 && !(image->flags & IF_PALETTED))
+            continue;
+        if (paletted == -1 && (image->flags & IF_PALETTED))
             continue;
 
         Com_Printf("%c%c%c%c %4i %4i %s: %s\n",
