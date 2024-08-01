@@ -263,6 +263,14 @@ static void SV_Map(bool restart)
     if (!SV_ParseMapCmd(&cmd))
         return;
 
+#if USE_CLIENT
+    // hack for demomap
+    if (cmd.state == ss_demo) {
+        Cbuf_InsertText(&cmd_buffer, va("demo \"%s\" compat\n", cmd.server));
+        return;
+    }
+#endif
+
     // save pending CM to be freed later if ERR_DROP is thrown
     Com_AbortFunc(abort_func, &cmd.cm);
 
@@ -290,21 +298,15 @@ SV_DemoMap_f
 Puts the server in demo mode on a specific map/cinematic
 ==================
 */
-#if USE_CLIENT
 static void SV_DemoMap_f(void)
 {
-    char *s = Cmd_Argv(1);
+    if (Cmd_Argc() != 2) {
+        Com_Printf("Usage: %s <mapname>\n", Cmd_Argv(0));
+        return;
+    }
 
-    if (!COM_CompareExtension(s, ".dm2"))
-        Cbuf_InsertText(&cmd_buffer, va("demo \"%s\"\n", s));
-    else if (!COM_CompareExtension(s, ".cin"))
-        Cbuf_InsertText(&cmd_buffer, va("map \"%s\" force\n", s));
-    else if (*s)
-        Com_Printf("\"%s\" only supports .dm2 and .cin files\n", Cmd_Argv(0));
-    else
-        Com_Printf("Usage: %s <demo>\n", Cmd_Argv(0));
+    SV_Map(false);
 }
-#endif
 
 /*
 ==================
@@ -421,6 +423,15 @@ static void SV_Map_c(genctx_t *ctx, int argnum)
                 *COM_FileExtension(ctx->matches[i]) = 0;
         }
     }
+}
+
+static void SV_DemoMap_c(genctx_t *ctx, int argnum)
+{
+#if USE_CLIENT
+    if (argnum == 1) {
+        FS_File_g("demos", ".dm2", FS_SEARCH_RECURSIVE, ctx);
+    }
+#endif
 }
 
 static void SV_DumpEnts_f(void)
@@ -1741,9 +1752,7 @@ static const cmdreg_t c_server[] = {
     { "stuffcvar", SV_StuffCvar_f, SV_SetPlayer_c },
     { "printall", SV_PrintAll_f },
     { "map", SV_Map_f, SV_Map_c },
-#if USE_CLIENT
-    { "demomap", SV_DemoMap_f },
-#endif
+    { "demomap", SV_DemoMap_f, SV_DemoMap_c },
     { "gamemap", SV_GameMap_f, SV_Map_c },
     { "dumpents", SV_DumpEnts_f },
     { "setmaster", SV_SetMaster_f },

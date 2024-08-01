@@ -1244,6 +1244,16 @@ NOTE: By default, during demo playback, Q2PRO overrides FOV value stored in
 demo file with value of local ‘fov’ variable, unless stored FOV value is less
 than 90. This behavior can be changed with ‘uf’ variable (see above).
 
+NOTE: Recommened way to play demos in Q2PRO is the ‘demo’ command, but
+‘demomap’ is still supported for compatibility. Playing demos using ‘demomap’
+enables some compatibility options, such as hiding player gun in wide angle
+view.
+
+WARNING: Unlike ‘demo’ command, ‘demomap’ allows executing stufftext commands
+from demos. Demos may change client settings, trick the client into connecting
+to random servers, and have other security implications. Only play demos from
+trusted sources using ‘demomap’!
+
 seek [+-]<timespec|percent>[%]::
     Seeks the given amount of time during demo playback.  Prepend with ‘+’ to
     seek forward relative to current position, prepend with ‘-’ to seek
@@ -1604,7 +1614,9 @@ it used to be you know where to look. The following list may be incomplete.
 - ‘clientport’ variable has been renamed to ‘net_clientport’, and
   ‘ip_clientport’ alias is no longer supported.
 
-- ‘demomap’ command has been removed in favor of ‘demo’ and ‘mvdplay’.
+- ‘demomap’ command is emulated: if filename with ‘.dm2’ extension is specified,
+  client side demo playback is started. Otherwise ‘demomap’ command is equivalent
+  to ‘gamemap’ (attract loop mode is not supported).
 
 - Q2PRO works only with virtual paths constrained to the quake file system.
   All paths are normalized before use so that it is impossible to go past virtual

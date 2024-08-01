@@ -253,6 +253,19 @@ static bool check_server(mapcmd_t *cmd, const char *server, bool nextserver)
             ret = SCR_CheckForCinematic(expanded);
         }
         cmd->state = ss_cinematic;
+    } else if (!COM_CompareExtension(s, ".dm2")) {
+        if (!sv_cinematics->integer && nextserver)
+            return false;   // skip it
+        if (Q_concat(expanded, sizeof(expanded), "demos/", s) < sizeof(expanded)) {
+#if USE_CLIENT
+            ret = cmd->loadgame ? Q_ERR(ENOSYS) : FS_LoadFile(expanded, NULL);
+            if (ret == Q_ERR(EFBIG))
+                ret = Q_ERR_SUCCESS;
+#else
+            ret = Q_ERR(ENOSYS);
+#endif
+        }
+        cmd->state = ss_demo;
     } else {
         CM_LoadOverrides(&cmd->cm, cmd->server, sizeof(cmd->server));
         if (Q_concat(expanded, sizeof(expanded), "maps/", s, ".bsp") < sizeof(expanded)) {
