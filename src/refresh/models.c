@@ -233,7 +233,6 @@ static const char *MOD_ValidateMD2(const dmd2header_t *header, size_t length)
     ENSURE(header->num_frames <= MD2_MAX_FRAMES, "Too many frames");
     ENSURE(header->num_skins <= MD2_MAX_SKINS, "Too many skins");
 
-    Q_assert(header->num_xyz);
     ENSURE(header->framesize >= sizeof(dmd2frame_t) + (header->num_xyz - 1) * sizeof(dmd2trivertx_t), "Too small frame size");
     ENSURE(header->framesize <= MD2_MAX_FRAMESIZE, "Too big frame size");
 

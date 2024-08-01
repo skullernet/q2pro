@@ -585,10 +585,8 @@ bool OGG_Load(sizebuf_t *sz)
 
     int64_t nb_samples = st->duration;
 
-    if (out->sample_rate != dec_ctx->sample_rate) {
+    if (out->sample_rate != dec_ctx->sample_rate)
         nb_samples = av_rescale_rnd(st->duration + 2, out->sample_rate, dec_ctx->sample_rate, AV_ROUND_UP) + 2;
-        Q_assert(nb_samples <= INT_MAX >> out->ch_layout.nb_channels);
-    }
 
     int bufsize = nb_samples << out->ch_layout.nb_channels;
     int offset = 0;
