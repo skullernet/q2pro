@@ -334,7 +334,7 @@ static void SCR_DrawDemo(void)
     }
 
     if (cls.demo.playback) {
-        if (cls.demo.file_size) {
+        if (cls.demo.file_size && !cls.demo.compat) {
             draw_progress_bar(
                 cls.demo.file_progress,
                 sv_paused->integer &&

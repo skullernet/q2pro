@@ -1073,8 +1073,15 @@ static void CL_AddViewWeapon(void)
         return;
     }
 
-    if (info_hand->integer == 2 && cl_gun->integer == 1) {
-        return;
+    if (cl_gun->integer == 1) {
+        // don't draw gun if in wide angle view
+        if (cls.demo.playback && cls.demo.compat && cl.frame.ps.fov > 90) {
+            return;
+        }
+        // don't draw gun if center handed
+        if (info_hand->integer == 2) {
+            return;
+        }
     }
 
     // find states to interpolate between
@@ -1265,7 +1272,7 @@ first:
 
 static inline float lerp_client_fov(float ofov, float nfov, float lerp)
 {
-    if (cls.demo.playback) {
+    if (cls.demo.playback && !cls.demo.compat) {
         int fov = info_fov->integer;
 
         if (fov < 1)

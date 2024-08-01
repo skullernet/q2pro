@@ -2522,7 +2522,7 @@ static void exec_server_string(cmdbuf_t *buf, const char *text)
     }
 
     // forbid nearly every command from demos
-    if (cls.demo.playback) {
+    if (cls.demo.playback && !cls.demo.compat) {
         if (strcmp(s, "play")) {
             return;
         }

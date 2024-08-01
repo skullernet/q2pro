@@ -749,6 +749,7 @@ static void CL_PlayDemo_f(void)
     CL_Disconnect(ERR_RECONNECT);
 
     cls.demo.playback = f;
+    cls.demo.compat = !strcmp(Cmd_Argv(2), "compat");
     cls.state = ca_connected;
     Q_strlcpy(cls.servername, COM_SkipPath(name), sizeof(cls.servername));
     cls.serverAddress.type = NA_LOOPBACK;
@@ -1264,7 +1265,8 @@ void CL_CleanupDemos(void)
         }
 
         // clear whatever stufftext remains
-        Cbuf_Clear(&cl_cmdbuf);
+        if (!cls.demo.compat)
+            Cbuf_Clear(&cl_cmdbuf);
     }
 
     CL_FreeDemoSnapshots();
