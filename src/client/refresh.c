@@ -29,7 +29,7 @@ cvar_t      *vid_modelist;
 cvar_t      *vid_fullscreen;
 cvar_t      *_vid_fullscreen;
 
-vid_driver_t    vid;
+const vid_driver_t  *vid;
 
 #define MODE_GEOMETRY   1
 #define MODE_FULLSCREEN 2
@@ -269,22 +269,22 @@ void CL_RunRefresh(void)
         return;
     }
 
-    vid.pump_events();
+    vid->pump_events();
 
     if (mode_changed) {
         if (mode_changed & MODE_FULLSCREEN) {
-            vid.set_mode();
+            vid->set_mode();
             if (vid_fullscreen->integer) {
                 Cvar_Set("_vid_fullscreen", vid_fullscreen->string);
             }
         } else {
             if (vid_fullscreen->integer) {
                 if (mode_changed & MODE_MODELIST) {
-                    vid.set_mode();
+                    vid->set_mode();
                 }
             } else {
                 if (mode_changed & MODE_GEOMETRY) {
-                    vid.set_mode();
+                    vid->set_mode();
                 }
             }
         }
@@ -356,7 +356,7 @@ void CL_InitRefresh(void)
     bool ok = false;
     for (i = 0; vid_drivers[i]; i++) {
         if (!strcmp(vid_drivers[i]->name, vid_driver->string)) {
-            vid = *vid_drivers[i];
+            vid = vid_drivers[i];
             ok = R_Init(true);
             break;
         }
@@ -379,7 +379,7 @@ void CL_InitRefresh(void)
         for (i = 0; vid_drivers[i]; i++) {
             if (i == tried || !vid_drivers[i]->probe || !vid_drivers[i]->probe())
                 continue;
-            vid = *vid_drivers[i];
+            vid = vid_drivers[i];
             if ((ok = R_Init(true)))
                 break;
         }
@@ -389,11 +389,11 @@ void CL_InitRefresh(void)
     if (!ok)
         Com_Error(ERR_FATAL, "Couldn't initialize refresh: %s", Com_GetLastError());
 
-    modelist = vid.get_mode_list();
+    modelist = vid->get_mode_list();
     vid_modelist = Cvar_Get("vid_modelist", modelist, 0);
     Z_Free(modelist);
 
-    vid.set_mode();
+    vid->set_mode();
 
     cls.ref_initialized = true;
 
@@ -436,7 +436,7 @@ void CL_ShutdownRefresh(void)
 
     R_Shutdown(true);
 
-    memset(&vid, 0, sizeof(vid));
+    vid = NULL;
 
     cls.ref_initialized = false;
 

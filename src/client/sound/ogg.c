@@ -271,8 +271,8 @@ void OGG_Stop(void)
 {
     ogg_stop();
 
-    if (s_started)
-        s_api.drop_raw_samples();
+    if (s_api)
+        s_api->drop_raw_samples();
 }
 
 static int read_packet(AVPacket *pkt)
@@ -339,7 +339,7 @@ static int convert_samples(AVFrame *in)
         return 0;
 
     // get available free space
-    out->nb_samples = s_api.need_raw_samples();
+    out->nb_samples = s_api->need_raw_samples();
     Q_assert((unsigned)out->nb_samples <= MAX_RAW_SAMPLES);
 
     ret = swr_convert_frame(ogg.swr_ctx, out, in);
@@ -350,10 +350,10 @@ static int convert_samples(AVFrame *in)
 
     Com_DDDPrintf("%d raw samples\n", out->nb_samples);
 
-    if (!s_api.raw_samples(out->nb_samples, out->sample_rate, 2,
-                           out->ch_layout.nb_channels,
-                           out->data[0], ogg_volume->value))
-        s_api.drop_raw_samples();
+    if (!s_api->raw_samples(out->nb_samples, out->sample_rate, 2,
+                            out->ch_layout.nb_channels,
+                            out->data[0], ogg_volume->value))
+        s_api->drop_raw_samples();
 
     return 1;
 }
@@ -385,7 +385,7 @@ void OGG_Update(void)
     if (!s_started || !s_active || !ogg.dec_ctx)
         return;
 
-    while (s_api.need_raw_samples() > 0) {
+    while (s_api->need_raw_samples() > 0) {
         int ret = convert_samples(NULL);
 
         // if swr buffer is empty, decode more input

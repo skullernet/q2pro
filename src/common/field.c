@@ -130,8 +130,8 @@ bool IF_KeyEvent(inputField_t *field, int key)
     }
 
     if (key == 'c' && Key_IsDown(K_CTRL)) {
-        if (vid.set_clipboard_data)
-            vid.set_clipboard_data(field->text);
+        if (vid && vid->set_clipboard_data)
+            vid->set_clipboard_data(field->text);
         return true;
     }
 

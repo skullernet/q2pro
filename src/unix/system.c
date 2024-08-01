@@ -208,8 +208,8 @@ void Sys_Error(const char *error, ...)
     tty_shutdown_input();
 
 #if USE_REF
-    if (vid.fatal_shutdown)
-        vid.fatal_shutdown();
+    if (vid && vid->fatal_shutdown)
+        vid->fatal_shutdown();
 #endif
 
     va_start(argptr, error);

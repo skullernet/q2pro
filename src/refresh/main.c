@@ -793,7 +793,7 @@ void R_EndFrame(void)
 
     GL_ShowErrors(__func__);
 
-    vid.swap_buffers();
+    vid->swap_buffers();
 }
 
 // ==============================================================================
@@ -889,8 +889,8 @@ static void gl_novis_changed(cvar_t *self)
 
 static void gl_swapinterval_changed(cvar_t *self)
 {
-    if (vid.swap_interval)
-        vid.swap_interval(self->integer);
+    if (vid && vid->swap_interval)
+        vid->swap_interval(self->integer);
 }
 
 static void GL_Register(void)
@@ -1096,11 +1096,11 @@ bool R_Init(bool total)
     }
 
     Com_Printf("------- R_Init -------\n");
-    Com_Printf("Using video driver: %s\n", vid.name);
+    Com_Printf("Using video driver: %s\n", vid->name);
 
     // initialize OS-specific parts of OpenGL
     // create the window and set up the context
-    if (!vid.init()) {
+    if (!vid->init()) {
         return false;
     }
 
@@ -1133,7 +1133,7 @@ fail:
     memset(&gl_static, 0, sizeof(gl_static));
     memset(&gl_config, 0, sizeof(gl_config));
     QGL_Shutdown();
-    vid.shutdown();
+    vid->shutdown();
     return false;
 }
 
@@ -1162,7 +1162,7 @@ void R_Shutdown(bool total)
     QGL_Shutdown();
 
     // shut down OS specific OpenGL stuff like contexts, etc.
-    vid.shutdown();
+    vid->shutdown();
 
     GL_Unregister();
 

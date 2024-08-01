@@ -108,8 +108,8 @@ IN_Activate
 */
 void IN_Activate(void)
 {
-    if (vid.grab_mouse) {
-        vid.grab_mouse(IN_GetCurrentGrab());
+    if (vid && vid->grab_mouse) {
+        vid->grab_mouse(IN_GetCurrentGrab());
     }
 }
 
@@ -143,8 +143,8 @@ IN_WarpMouse
 */
 void IN_WarpMouse(int x, int y)
 {
-    if (vid.warp_mouse) {
-        vid.warp_mouse(x, y);
+    if (vid && vid->warp_mouse) {
+        vid->warp_mouse(x, y);
     }
 }
 
@@ -159,8 +159,8 @@ void IN_Shutdown(void)
         in_grab->changed = NULL;
     }
 
-    if (vid.shutdown_mouse) {
-        vid.shutdown_mouse();
+    if (vid && vid->shutdown_mouse) {
+        vid->shutdown_mouse();
     }
 
     memset(&input, 0, sizeof(input));
@@ -190,7 +190,7 @@ void IN_Init(void)
         return;
     }
 
-    if (!vid.init_mouse()) {
+    if (!vid || !vid->init_mouse || !vid->init_mouse()) {
         Cvar_Set("in_enable", "0");
         return;
     }
@@ -449,13 +449,13 @@ static void CL_MouseMove(void)
     float mx, my;
     float speed;
 
-    if (!vid.get_mouse_motion) {
+    if (!vid || !vid->get_mouse_motion) {
         return;
     }
     if (cls.key_dest & (KEY_MENU | KEY_CONSOLE)) {
         return;
     }
-    if (!vid.get_mouse_motion(&dx, &dy)) {
+    if (!vid->get_mouse_motion(&dx, &dy)) {
         return;
     }
 

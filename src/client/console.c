@@ -570,8 +570,8 @@ void CL_LoadState(load_state_t state)
 {
     con.loadstate = state;
     SCR_UpdateScreen();
-    if (vid.pump_events)
-        vid.pump_events();
+    if (vid)
+        vid->pump_events();
 }
 
 /*
@@ -1223,12 +1223,14 @@ void Key_Console(int key)
     }
 
     if (key == 'v' && Key_IsDown(K_CTRL)) {
-        Con_Paste(vid.get_clipboard_data);
+        if (vid)
+            Con_Paste(vid->get_clipboard_data);
         goto scroll;
     }
 
     if ((key == K_INS && Key_IsDown(K_SHIFT)) || key == K_MOUSE3) {
-        Con_Paste(vid.get_selection_data);
+        if (vid)
+            Con_Paste(vid->get_selection_data);
         goto scroll;
     }
 

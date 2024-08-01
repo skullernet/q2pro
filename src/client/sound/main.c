@@ -30,7 +30,7 @@ int         s_numchannels;
 
 sndstarted_t    s_started;
 bool            s_active;
-sndapi_t        s_api;
+const sndapi_t  *s_api;
 
 vec3_t      listener_origin;
 vec3_t      listener_forward;
@@ -77,7 +77,7 @@ static void S_SoundInfo_f(void)
         return;
     }
 
-    s_api.sound_info();
+    s_api->sound_info();
 }
 
 static void S_SoundList_f(void)
@@ -159,14 +159,14 @@ void S_Init(void)
 #if USE_OPENAL
     if (s_started == SS_NOT && s_enable->integer >= SS_OAL && snd_openal.init()) {
         s_started = SS_OAL;
-        s_api = snd_openal;
+        s_api = &snd_openal;
     }
 #endif
 
 #if USE_SNDDMA
     if (s_started == SS_NOT && s_enable->integer >= SS_DMA && snd_dma.init()) {
         s_started = SS_DMA;
-        s_api = snd_dma;
+        s_api = &snd_dma;
     }
 #endif
 
@@ -206,8 +206,8 @@ fail:
 
 static void S_FreeSound(sfx_t *sfx)
 {
-    if (s_api.delete_sfx)
-        s_api.delete_sfx(sfx);
+    if (s_api->delete_sfx)
+        s_api->delete_sfx(sfx);
     Z_Free(sfx->cache);
     Z_Free(sfx->truename);
     memset(sfx, 0, sizeof(*sfx));
@@ -237,8 +237,8 @@ void S_Shutdown(void)
     S_FreeAllSounds();
     OGG_Stop();
 
-    s_api.shutdown();
-    memset(&s_api, 0, sizeof(s_api));
+    s_api->shutdown();
+    s_api = NULL;
 
     s_started = SS_NOT;
     s_active = false;
@@ -269,9 +269,9 @@ void S_Activate(void)
     s_active = active;
 
     if (!active)
-        s_api.drop_raw_samples();
+        s_api->drop_raw_samples();
 
-    s_api.activate();
+    s_api->activate();
 }
 
 // =======================================================================
@@ -503,8 +503,8 @@ void S_EndRegistration(void)
             continue;
         }
         // make sure it is paged in
-        if (s_api.page_in_sfx)
-            s_api.page_in_sfx(sfx);
+        if (s_api->page_in_sfx)
+            s_api->page_in_sfx(sfx);
     }
 
     // load everything in
@@ -562,8 +562,8 @@ channel_t *S_PickChannel(int entnum, int entchannel)
         return NULL;
 
     ch = &s_channels[first_to_die];
-    if (s_api.stop_channel)
-        s_api.stop_channel(ch);
+    if (s_api->stop_channel)
+        s_api->stop_channel(ch);
     memset(ch, 0, sizeof(*ch));
 
     return ch;
@@ -647,7 +647,7 @@ void S_IssuePlaysound(playsound_t *ps)
     ch->pos = 0;
     ch->end = s_paintedtime + sc->length;
 
-    s_api.play_channel(ch);
+    s_api->play_channel(ch);
 
     // free the playsound
     S_FreePlaysound(ps);
@@ -707,7 +707,7 @@ void S_StartSound(const vec3_t origin, int entnum, int entchannel, qhandle_t hSf
     ps->attenuation = attenuation;
     ps->volume = vol;
     ps->sfx = sfx;
-    ps->begin = s_api.get_begin_ofs(timeofs);
+    ps->begin = s_api->get_begin_ofs(timeofs);
 
     // sort into the pending sound list
     LIST_FOR_EACH(playsound_t, sort, &s_pendingplays, entry)
@@ -776,7 +776,7 @@ void S_StopAllSounds(void)
     for (i = 0; i < MAX_PLAYSOUNDS; i++)
         List_Append(&s_freeplays, &s_playsounds[i].entry);
 
-    s_api.stop_all_sounds();
+    s_api->stop_all_sounds();
 
     // clear all the channels
     memset(s_channels, 0, sizeof(s_channels));
@@ -784,14 +784,14 @@ void S_StopAllSounds(void)
 
 void S_RawSamples(int samples, int rate, int width, int channels, const byte *data)
 {
-    if (s_started)
-        s_api.raw_samples(samples, rate, width, channels, data, 1.0f);
+    if (s_api)
+        s_api->raw_samples(samples, rate, width, channels, data, 1.0f);
 }
 
 int S_GetSampleRate(void)
 {
-    if (s_started && s_api.get_sample_rate)
-        return s_api.get_sample_rate();
+    if (s_api && s_api->get_sample_rate)
+        return s_api->get_sample_rate();
     return 0;
 }
 
@@ -874,5 +874,5 @@ void S_Update(void)
 
     OGG_Update();
 
-    s_api.update();
+    s_api->update();
 }
