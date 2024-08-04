@@ -250,9 +250,9 @@ static void abort_func(void *arg)
 
 static void SV_Map(bool restart)
 {
-    mapcmd_t    cmd;
-
-    memset(&cmd, 0, sizeof(cmd));
+    mapcmd_t cmd = {
+        .endofunit = restart,   // wipe savegames
+    };
 
     // save the mapcmd
     if (Cmd_ArgvBuffer(1, cmd.buffer, sizeof(cmd.buffer)) >= sizeof(cmd.buffer)) {
@@ -273,9 +273,6 @@ static void SV_Map(bool restart)
 
     // save pending CM to be freed later if ERR_DROP is thrown
     Com_AbortFunc(abort_func, &cmd.cm);
-
-    // wipe savegames
-    cmd.endofunit |= restart;
 
     SV_AutoSaveBegin(&cmd);
 
