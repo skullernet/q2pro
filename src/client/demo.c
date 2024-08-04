@@ -762,7 +762,7 @@ static void CL_PlayDemo_f(void)
     CL_ParseServerMessage();
 
     // read and parse messages util `precache' command
-    while (cls.state == ca_connected) {
+    for (int i = 0; cls.state == ca_connected && i < 1000; i++) {
         Cbuf_Execute(&cl_cmdbuf);
         parse_next_message(0);
     }
