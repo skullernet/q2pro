@@ -1,19 +1,31 @@
 Q2PRO
 =====
 
-Q2PRO is an enhanced, multiplayer oriented Quake 2 client and server.
+Q2PRO is an enhanced Quake 2 client and server for Windows and Linux. Supported
+features include:
 
-Features include:
-
-* rewritten OpenGL renderer optimized for stable FPS
-* enhanced client console with persistent history
-* ZIP packfiles (.pkz), JPEG and PNG textures, MD3 models
-* fast HTTP downloads
+* unified OpenGL renderer with support for GL 1.1–1.4, 3.0+, GL ES 3.0+
+* enhanced console command completion
+* persistent and searchable console command history
+* rendering / physics / packet rate separation
+* ZIP packfiles (.pkz)
+* JPEG/PNG textures
+* MD3 and MD5 (re-release) models
+* Ogg Vorbis music and Ogg Theora cinematics
+* fast and secure HTTP downloads
 * multichannel sound using OpenAL
-* recording from demos, forward and backward seeking
-* server side multiview demos and GTV capabilities
+* stereo WAV files support
+* forward and backward seeking in demos
+* recording from demos
+* server side multiview demos
+* live game broadcasting capabilities
+* network protocol extensions for larger maps
+* won't crash if game data is corrupted
 
 For building Q2PRO, consult the INSTALL.md file.
+
+Q2PRO doesn't have releases. It is always recommended to use the git master
+version.
 
 Nightly Windows builds are available at https://skuller.net/q2pro/
 

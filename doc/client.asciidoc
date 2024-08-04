@@ -1601,13 +1601,12 @@ it used to be you know where to look. The following list may be incomplete.
   separate modulation factors for world lightmaps and entities please use
   ‘gl_modulate_world’ and ‘gl_modulate_entities’ variables.
 
-- Default value of R1GL-specific ‘gl_dlight_falloff’ variable has been changed
-  from 0 to 1.
+- R1GL-specific ‘gl_dlight_falloff’ variable is supported, but its default has
+  been changed from 0 to 1.
 
 - ‘gl_particle_*’ series of variables are gone, as well as
-  ‘gl_ext_pointparameters’ and R1GL-specific ‘gl_ext_point_sprite’. For
-  controlling size of particles, which are always drawn as textured triangles,
-  Q2PRO supports its own ‘gl_partscale’ variable.
+  ‘gl_ext_pointparameters’. For controlling size of particles, which are always
+  drawn as textured triangles, Q2PRO supports its own ‘gl_partscale’ variable.
 
 - ‘ip’ variable has been renamed to ‘net_ip’.
 
@@ -1634,5 +1633,5 @@ it used to be you know where to look. The following list may be incomplete.
 - Single player savegame format has been rewritten from scratch for better
   robustness and portability. Only the ‘baseq2’ game library included in Q2PRO
   distribution has been converted to use the new improved savegame format. Q2PRO
-  will refuse to load and save games in old format for security reasons.
-
+  will refuse to load and save games in old format for security reasons, unless
+  ‘sys_allow_unsafe_savegames’ is set to 1 from the command line (not recommended).
