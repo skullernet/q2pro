@@ -373,7 +373,7 @@ int HTTP_FetchFile(const char *url, void **data)
     Com_EPrintf("[HTTP] Failed to fetch '%s': %s\n",
                 url, ret == CURLE_HTTP_RETURNED_ERROR ?
                 http_strerror(response) : curl_easy_strerror(ret));
-    free(tmp.buffer);
+    HTTP_FreeFile(tmp.buffer);
     return -1;
 }
 

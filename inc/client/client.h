@@ -81,6 +81,7 @@ void CL_SetSky(void);
 
 #if USE_CURL
 int HTTP_FetchFile(const char *url, void **data);
+#define HTTP_FreeFile(data) free(data)
 #endif
 
 bool CL_ForwardToServer(void);
