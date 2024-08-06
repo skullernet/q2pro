@@ -349,9 +349,8 @@ LOAD(LeafFaces)
     mface_t     **out;
 
     bsp->numleaffaces = count;
-    bsp->leaffaces = ALLOC(sizeof(*out) * count);
+    bsp->leaffaces = out = ALLOC(sizeof(*out) * count);
 
-    out = bsp->leaffaces;
     for (int i = 0; i < count; i++, out++) {
         uint32_t facenum = BSP_ExtLong();
         ENSURE(facenum < bsp->numfaces, "Bad facenum");
