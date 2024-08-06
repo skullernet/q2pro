@@ -992,7 +992,7 @@ static void init_pmove_and_es_flags(client_t *newcl)
     }
     newcl->pmp.strafehack = sv_strafejump_hack->integer >= force;
 
-    // r1q2 extensions
+    // R1Q2 extensions
     if (newcl->protocol == PROTOCOL_VERSION_R1Q2) {
         newcl->esFlags |= MSG_ES_BEAMORIGIN;
         if (newcl->version >= PROTOCOL_VERSION_R1Q2_LONG_SOLID) {
@@ -1000,7 +1000,7 @@ static void init_pmove_and_es_flags(client_t *newcl)
         }
     }
 
-    // q2pro extensions
+    // Q2PRO extensions
     force = 2;
     if (newcl->protocol == PROTOCOL_VERSION_Q2PRO) {
         if (sv_qwmod->integer) {

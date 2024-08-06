@@ -584,7 +584,7 @@ int HTTP_QueueDownload(const char *path, dltype_t type)
 
         //this is a nasty hack to let the server know what we're doing so admins don't
         //get confused by a ton of people stuck in CNCT state. it's assumed the server
-        //is running r1q2 if we're even able to do http downloading so hopefully this
+        //is running R1Q2 if we're even able to do http downloading so hopefully this
         //won't spew an error msg.
         if (!download_default_repo)
             CL_ClientCommand("download http\n");

@@ -841,7 +841,7 @@ COLLISION DETECTION
 #define SURF_FLOWING            BIT(6)      // scroll towards angle
 #define SURF_NODRAW             BIT(7)      // don't bother referencing the texture
 
-#define SURF_ALPHATEST          BIT(25)     // used by kmquake2
+#define SURF_ALPHATEST          BIT(25)     // used by KMQuake2
 
 //KEX
 #define SURF_N64_UV             BIT(28)

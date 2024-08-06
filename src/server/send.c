@@ -662,7 +662,7 @@ static void repack_unreliables(client_t *client, unsigned maxsize)
         if (msg->cursize == SOUND_PACKET || msg->data[0] != svc_temp_entity) {
             continue;
         }
-        // ignore some low-priority effects, these checks come from r1q2
+        // ignore some low-priority effects, these checks come from R1Q2
         if (msg->data[1] == TE_BLOOD || msg->data[1] == TE_SPLASH ||
             msg->data[1] == TE_GUNSHOT || msg->data[1] == TE_BULLET_SPARKS ||
             msg->data[1] == TE_SHOTGUN) {
