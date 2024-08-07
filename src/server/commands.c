@@ -409,17 +409,33 @@ static void SV_Map_f(void)
 
 static void SV_Map_c(genctx_t *ctx, int argnum)
 {
-    unsigned flags = FS_SEARCH_RECURSIVE | FS_SEARCH_STRIPEXT;
-    if (argnum == 1) {
-        FS_File_g("maps", ".bsp", flags, ctx);
-        const char *s = Cvar_VariableString("map_override_path");
-        if (*s) {
-            int pos = ctx->count;
-            FS_File_g(s, ".bsp.override", flags, ctx);
-            for (int i = pos; i < ctx->count; i++)
-                *COM_FileExtension(ctx->matches[i]) = 0;
-        }
+    const char *path;
+    void **list;
+    int count;
+
+    if (argnum != 1)
+        return;
+
+    // complete regular maps
+    FS_File_g("maps", ".bsp", FS_SEARCH_RECURSIVE | FS_SEARCH_STRIPEXT, ctx);
+
+    // complete overrides
+    path = Cvar_VariableString("map_override_path");
+    if (!*path)
+        return;
+
+    list = FS_ListFiles(path, ".bsp.override", FS_SEARCH_RECURSIVE, &count);
+    if (!list)
+        return;
+
+    ctx->ignoredups = true;
+    for (int i = 0; i < count; i++) {
+        const char *s = list[i];
+        const int len = strlen(s) - strlen(".bsp.override");
+        Prompt_AddMatch(ctx, va("%.*s", len, s));
     }
+
+    FS_FreeList(list);
 }
 
 static void SV_DemoMap_c(genctx_t *ctx, int argnum)
