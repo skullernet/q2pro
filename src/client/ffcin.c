@@ -73,6 +73,7 @@ static const avformat_t formats[] = {
     { ".cin", "idcin", AV_CODEC_ID_IDCIN },
 };
 
+static char extensions[MAX_QPATH];
 static int  supported;
 
 /*
@@ -90,6 +91,9 @@ void SCR_InitCinematics(void)
             !avcodec_find_decoder(f->codec_id))
             continue;
         supported |= BIT(i);
+        if (*extensions)
+            Q_strlcat(extensions, ";", sizeof(extensions));
+        Q_strlcat(extensions, f->ext, sizeof(extensions));
     }
 
     Com_DPrintf("Supported cinematic formats: %#x\n", supported);
@@ -722,4 +726,22 @@ int SCR_CheckForCinematic(const char *name)
         ret = Q_ERR_SUCCESS;
 
     return ret;
+}
+
+/*
+==================
+SCR_Cinematic_g
+==================
+*/
+void SCR_Cinematic_g(genctx_t *ctx)
+{
+    const unsigned flags = FS_SEARCH_RECURSIVE | FS_SEARCH_STRIPEXT | FS_TYPE_REAL;
+    int count;
+    void **list;
+
+    ctx->ignoredups = true;
+    list = FS_ListFiles("video", extensions, flags, &count);
+    for (int i = 0; i < count; i++)
+        Prompt_AddMatch(ctx, va("%s.cin", (char *)list[i]));
+    FS_FreeList(list);
 }

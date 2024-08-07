@@ -476,3 +476,13 @@ int SCR_CheckForCinematic(const char *name)
 
     return ret;
 }
+
+/*
+==================
+SCR_Cinematic_g
+==================
+*/
+void SCR_Cinematic_g(genctx_t *ctx)
+{
+    FS_File_g("video", ".cin", FS_SEARCH_RECURSIVE | FS_TYPE_REAL, ctx);
+}

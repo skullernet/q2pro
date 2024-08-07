@@ -427,6 +427,7 @@ static void SV_DemoMap_c(genctx_t *ctx, int argnum)
 #if USE_CLIENT
     if (argnum == 1) {
         FS_File_g("demos", ".dm2", FS_SEARCH_RECURSIVE, ctx);
+        SCR_Cinematic_g(ctx);
     }
 #endif
 }
