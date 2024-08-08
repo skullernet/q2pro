@@ -405,8 +405,6 @@ static void make_flare_quad(const entity_t *e, float scale, vec3_t points[4])
 {
     vec3_t up, down, left, right;
 
-    scale *= e->scale;
-
     VectorScale(glr.viewaxis[1], scale, left);
     VectorScale(glr.viewaxis[1], -scale, right);
     VectorScale(glr.viewaxis[2], -scale, down);
@@ -507,7 +505,7 @@ static void GL_DrawFlare(const entity_t *e)
              e->rgba.u8[2] / 255.0f,
              e->alpha * 0.5f * q->frac);
 
-    make_flare_quad(e, 25.0f * q->frac, points);
+    make_flare_quad(e, e->scale * 25.0f * q->frac, points);
 
     GL_TexCoordPointer(2, 0, quad_tc);
     GL_VertexPointer(3, 0, &points[0][0]);
