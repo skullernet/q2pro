@@ -215,6 +215,7 @@ extern cvar_t *gl_shaders;
 #if USE_MD5
 extern cvar_t *gl_md5_load;
 extern cvar_t *gl_md5_use;
+extern cvar_t *gl_md5_distance;
 #endif
 extern cvar_t *gl_damageblend_frac;
 

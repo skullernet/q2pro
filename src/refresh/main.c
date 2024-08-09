@@ -54,6 +54,7 @@ cvar_t *gl_shaders;
 #if USE_MD5
 cvar_t *gl_md5_load;
 cvar_t *gl_md5_use;
+cvar_t *gl_md5_distance;
 #endif
 cvar_t *gl_damageblend_frac;
 cvar_t *gl_waterwarp;
@@ -919,6 +920,7 @@ static void GL_Register(void)
 #if USE_MD5
     gl_md5_load = Cvar_Get("gl_md5_load", "1", CVAR_FILES);
     gl_md5_use = Cvar_Get("gl_md5_use", "1", 0);
+    gl_md5_distance = Cvar_Get("gl_md5_distance", "2048", 0);
 #endif
     gl_damageblend_frac = Cvar_Get("gl_damageblend_frac", "0.2", 0);
     gl_waterwarp = Cvar_Get("gl_waterwarp", "0", 0);
