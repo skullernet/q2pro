@@ -875,7 +875,7 @@ static void upload_world_surfaces(void)
         if (surf->drawflags & (SURF_SKY | SURF_NODRAW))
             continue;
 
-        Q_assert(surf->numsurfedges <= TESS_MAX_VERTICES);
+        Q_assert(surf->numsurfedges >= 3 && surf->numsurfedges <= TESS_MAX_VERTICES);
 
         if (gl_static.world.vertices) {
             vbo = gl_static.world.vertices + currvert * VERTEX_SIZE;
