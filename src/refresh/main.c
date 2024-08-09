@@ -276,7 +276,7 @@ void GL_MultMatrix(GLfloat *restrict p, const GLfloat *restrict a, const GLfloat
 
 void GL_SetEntityAxis(void)
 {
-    entity_t *e = glr.ent;
+    const entity_t *e = glr.ent;
 
     glr.entrotated = false;
     glr.entscale = 1;
@@ -419,7 +419,7 @@ static void make_flare_quad(const entity_t *e, float scale, vec3_t points[4])
 static void GL_OccludeFlares(void)
 {
     vec3_t points[4];
-    entity_t *e;
+    const entity_t *e;
     glquery_t *q;
     int i;
 
@@ -543,7 +543,7 @@ static void GL_DrawEntities(int musthave, int canthave)
 
         // inline BSP model
         if (ent->model & BIT(31)) {
-            bsp_t *bsp = gl_static.world.cache;
+            const bsp_t *bsp = gl_static.world.cache;
             int index = ~ent->model;
 
             if (glr.fd.rdflags & RDF_NOWORLDMODEL) {

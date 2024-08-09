@@ -234,13 +234,13 @@ R_AddSkySurface
 */
 void R_AddSkySurface(const mface_t *fa)
 {
-    int         i;
-    vec3_t      verts[MAX_CLIP_VERTS];
-    vec3_t      temp;
-    msurfedge_t *surfedge;
-    mvertex_t   *vert;
-    medge_t     *edge;
-    bsp_t       *bsp = gl_static.world.cache;
+    int                 i;
+    vec3_t              verts[MAX_CLIP_VERTS];
+    vec3_t              temp;
+    const msurfedge_t   *surfedge;
+    const mvertex_t     *vert;
+    const medge_t       *edge;
+    const bsp_t         *bsp = gl_static.world.cache;
 
     if (fa->numsurfedges > MAX_CLIP_VERTS) {
         Com_DPrintf("%s: too many verts\n", __func__);

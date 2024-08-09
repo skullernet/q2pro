@@ -20,15 +20,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 void GL_SampleLightPoint(vec3_t color)
 {
-    mface_t         *surf = glr.lightpoint.surf;
-    int             s, t, i;
-    byte            *lightmap;
-    byte            *b1, *b2, *b3, *b4;
-    float           fracu, fracv;
-    float           w1, w2, w3, w4;
-    vec3_t          temp;
-    int             smax, tmax, size;
-    lightstyle_t    *style;
+    const mface_t       *surf = glr.lightpoint.surf;
+    const byte          *lightmap;
+    const byte          *b1, *b2, *b3, *b4;
+    const lightstyle_t  *style;
+    float               fracu, fracv;
+    float               w1, w2, w3, w4;
+    vec3_t              temp;
+    int                 s, t, smax, tmax, size;
 
     s = glr.lightpoint.s;
     t = glr.lightpoint.t;
@@ -50,7 +49,7 @@ void GL_SampleLightPoint(vec3_t color)
 
     // add all the lightmaps with bilinear filtering
     lightmap = surf->lightmap;
-    for (i = 0; i < surf->numstyles; i++) {
+    for (int i = 0; i < surf->numstyles; i++) {
         b1 = &lightmap[3 * ((t + 0) * smax + (s + 0))];
         b2 = &lightmap[3 * ((t + 0) * smax + (s + 1))];
         b3 = &lightmap[3 * ((t + 1) * smax + (s + 1))];
@@ -98,7 +97,7 @@ static bool GL_LightGridPoint(const lightgrid_t *grid, const vec3_t start, vec3_
         VectorClear(samples[i]);
 
         for (j = 0; j < grid->numstyles && s->style != 255; j++, s++) {
-            lightstyle_t *style = LIGHT_STYLE(s->style);
+            const lightstyle_t *style = LIGHT_STYLE(s->style);
             VectorMA(samples[i], style->white, s->rgb, samples[i]);
         }
 
@@ -152,7 +151,7 @@ static bool GL_LightGridPoint(const lightgrid_t *grid, const vec3_t start, vec3_
 
 static bool GL_LightPoint_(const vec3_t start, vec3_t color)
 {
-    const bsp_t     *bsp;
+    const bsp_t     *bsp = gl_static.world.cache;
     int             i, index;
     lightpoint_t    pt;
     vec3_t          end, mins, maxs;
@@ -160,7 +159,6 @@ static bool GL_LightPoint_(const vec3_t start, vec3_t color)
     const mmodel_t  *model;
     const vec_t     *angles;
 
-    bsp = gl_static.world.cache;
     if (!bsp || !bsp->lightmap)
         return false;
 

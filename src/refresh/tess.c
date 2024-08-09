@@ -74,7 +74,7 @@ void GL_Flush2D(void)
 
 void GL_DrawParticles(void)
 {
-    particle_t *p;
+    const particle_t *p;
     int total, count;
     vec3_t transformed;
     vec_t scale, scale2, dist;
@@ -242,10 +242,10 @@ static void GL_DrawLightningBeam(const vec3_t start, const vec3_t end, color_t c
 
 void GL_DrawBeams(void)
 {
-    vec_t *start, *end;
+    const vec_t *start, *end;
     color_t color;
     float width;
-    entity_t *ent;
+    const entity_t *ent;
     int i;
 
     if (!glr.num_beams) {

@@ -1023,8 +1023,7 @@ void GL_InitImages(void)
     gl_bilerp_chars->changed = gl_bilerp_chars_changed;
     gl_bilerp_pics = Cvar_Get("gl_bilerp_pics", "1", 0);
     gl_bilerp_pics->changed = gl_bilerp_pics_changed;
-    gl_texturemode = Cvar_Get("gl_texturemode",
-                              "GL_LINEAR_MIPMAP_LINEAR", CVAR_ARCHIVE);
+    gl_texturemode = Cvar_Get("gl_texturemode", "GL_LINEAR_MIPMAP_LINEAR", CVAR_ARCHIVE);
     gl_texturemode->changed = gl_texturemode_changed;
     gl_texturemode->generator = gl_texturemode_g;
     gl_texturebits = Cvar_Get("gl_texturebits", "0", CVAR_FILES);

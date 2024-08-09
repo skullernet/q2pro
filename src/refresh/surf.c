@@ -400,7 +400,7 @@ static bool no_lightmaps(void)
 
 static void LM_BeginBuilding(void)
 {
-    bsp_t *bsp = gl_static.world.cache;
+    const bsp_t *bsp = gl_static.world.cache;
     int size_shift, bits;
 
     // start up with fullbright styles
@@ -496,7 +496,7 @@ static void LM_BuildSurface(mface_t *surf)
 
 static void LM_RebuildSurfaces(void)
 {
-    bsp_t *bsp = gl_static.world.cache;
+    const bsp_t *bsp = gl_static.world.cache;
     mface_t *surf;
     lightmap_t *m;
     int i;
@@ -554,11 +554,11 @@ static uint32_t color_for_surface(const mface_t *surf)
 
 static void build_surface_poly(mface_t *surf, vec_t *vbo)
 {
-    bsp_t *bsp = gl_static.world.cache;
-    msurfedge_t *src_surfedge;
-    mvertex_t *src_vert;
-    medge_t *src_edge;
-    mtexinfo_t *texinfo = surf->texinfo;
+    const bsp_t *bsp = gl_static.world.cache;
+    const msurfedge_t *src_surfedge;
+    const mvertex_t *src_vert;
+    const medge_t *src_edge;
+    const mtexinfo_t *texinfo = surf->texinfo;
     vec2_t scale, tc, mins, maxs;
     int i, bmins[2], bmaxs[2];
     uint32_t color;
@@ -725,8 +725,8 @@ static void sample_surface_verts(mface_t *surf, vec_t *vbo)
 // validates and processes surface lightmap
 static void build_surface_light(mface_t *surf, vec_t *vbo)
 {
+    const bsp_t *bsp = gl_static.world.cache;
     int smax, tmax, size, ofs;
-    bsp_t *bsp = gl_static.world.cache;
 
     if (gl_fullbright->integer)
         return;
@@ -854,7 +854,7 @@ static void upload_surface_vbo(int lastvert)
 
 static void upload_world_surfaces(void)
 {
-    bsp_t *bsp = gl_static.world.cache;
+    const bsp_t *bsp = gl_static.world.cache;
     vec_t *vbo;
     mface_t *surf;
     int i, currvert, lastvert;
