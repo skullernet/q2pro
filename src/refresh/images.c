@@ -516,11 +516,12 @@ IMG_LOAD(TGA)
     byte *pixels, *start;
     uint32_t *row_pointers[MAX_TEXTURE_SIZE];
     uint32_t colormap[256];
+    const uint32_t *pal;
     sizebuf_t s;
     unsigned id_length, colormap_type, image_type, colormap_start,
              colormap_length, colormap_size, w, h, pixel_size, attributes;
     bool rle;
-    int i, j, ret, stride, interleave;
+    int i, j, ret, bpp, stride, interleave;
 
     if (rawlen < TARGA_HEADER_SIZE)
         return Q_ERR_FILE_TOO_SMALL;
@@ -651,12 +652,13 @@ IMG_LOAD(TGA)
             j = (j + 1) & (interleave - 1);
     }
 
+    bpp = (pixel_size + 1) / 8;
+    pal = image_type == TGA_Colormap ? colormap : NULL;
+
     if (rle)
-        ret = tga_decode_rle(&s, row_pointers, w, h, (pixel_size + 1) / 8,
-                             image_type == TGA_Colormap ? colormap : NULL);
+        ret = tga_decode_rle(&s, row_pointers, w, h, bpp, pal);
     else
-        ret = tga_decode_raw(&s, row_pointers, w, h, (pixel_size + 1) / 8,
-                             image_type == TGA_Colormap ? colormap : NULL);
+        ret = tga_decode_raw(&s, row_pointers, w, h, bpp, pal);
     if (ret < 0) {
         IMG_FreePixels(pixels);
         return ret;
