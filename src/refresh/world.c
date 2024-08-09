@@ -415,10 +415,6 @@ finish:
 
 #define BACKFACE_EPSILON    0.01f
 
-#define BSP_CullFace(face, dot) \
-    (((dot) < -BACKFACE_EPSILON && !((face)->drawflags & DSURF_PLANEBACK)) || \
-     ((dot) >  BACKFACE_EPSILON &&  ((face)->drawflags & DSURF_PLANEBACK)))
-
 void GL_DrawBspModel(mmodel_t *model)
 {
     mface_t *face, *last;
@@ -472,14 +468,14 @@ void GL_DrawBspModel(mmodel_t *model)
     // draw visible faces
     last = model->firstface + model->numfaces;
     for (face = model->firstface; face < last; face++) {
-        dot = PlaneDiffFast(transformed, face->plane);
-        if (BSP_CullFace(face, dot)) {
-            c.facesCulled++;
+        // sky faces don't have their polygon built
+        if (face->drawflags & (SURF_SKY | SURF_NODRAW)) {
             continue;
         }
 
-        // sky faces don't have their polygon built
-        if (face->drawflags & (SURF_SKY | SURF_NODRAW)) {
+        dot = PlaneDiffFast(transformed, face->plane);
+        if ((face->drawflags & DSURF_PLANEBACK) ? (dot > BACKFACE_EPSILON) : (dot < -BACKFACE_EPSILON)) {
+            c.facesCulled++;
             continue;
         }
 
