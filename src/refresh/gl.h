@@ -262,6 +262,9 @@ void GL_RotateForEntity(void);
 void GL_ClearErrors(void);
 bool GL_ShowErrors(const char *func);
 
+void GL_InitQueries(void);
+void GL_DeleteQueries(void);
+
 static inline void GL_AdvanceValue(float *restrict val, float target, float speed)
 {
     if (*val < target) {

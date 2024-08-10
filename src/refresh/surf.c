@@ -1014,6 +1014,10 @@ void GL_LoadWorld(const char *name)
     // free previous model, if any
     GL_FreeWorld();
 
+    // delete occlusion queries
+    GL_DeleteQueries();
+    GL_InitQueries();
+
     gl_static.world.cache = bsp;
 
     // calculate world size for far clip plane and sky box
