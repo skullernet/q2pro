@@ -267,7 +267,9 @@ void GL_DeleteQueries(void);
 
 static inline void GL_AdvanceValue(float *restrict val, float target, float speed)
 {
-    if (*val < target) {
+    if (speed <= 0) {
+        *val = target;
+    } else if (*val < target) {
         *val += speed * glr.frametime;
         if (*val > target)
             *val = target;

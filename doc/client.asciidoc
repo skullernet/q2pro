@@ -681,6 +681,10 @@ gl_waterwarp::
     Enable screen warping effect when underwater. Only effective when using
     GLSL backend. Default value is 0 (disabled).
 
+gl_flarespeed::
+    Specifies flare fading effect speed. Default value is 8. Set this to 0
+    to disable fading.
+
 gl_fontshadow::
     Specifies font shadow width, in pixels, ranging from 0 to 2. Default value
     is 0 (no shadow).
