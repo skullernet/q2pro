@@ -422,36 +422,51 @@ static void GL_OccludeFlares(void)
     vec3_t points[4];
     const entity_t *e;
     glquery_t *q;
-    int i;
+    int i, j;
+    bool set = false;
 
     if (!glr.num_flares)
         return;
 
     Q_assert(gl_static.queries);
 
-    GL_LoadMatrix(glr.viewmatrix);
-    GL_StateBits(GLS_DEPTHMASK_FALSE);
-    GL_ArrayBits(GLA_VERTEX);
-    qglColorMask(0, 0, 0, 0);
-    GL_BindTexture(0, TEXNUM_WHITE);
-    GL_VertexPointer(3, 0, &points[0][0]);
-
     for (i = 0, e = glr.fd.entities; i < glr.fd.num_entities; i++, e++) {
         if (!(e->flags & RF_FLARE))
             continue;
 
         q = HashMap_Lookup(glquery_t, gl_static.queries, &e->skinnum);
-        if (q && q->pending)
-            continue;
+
+        for (j = 0; j < 4; j++)
+            if (PlaneDiff(e->origin, &glr.frustumPlanes[j]) < -2.5f)
+                break;
+        if (j != 4) {
+            if (q)
+                q->pending = q->visible = false;
+            continue;   // not visible
+        }
+
+        c.occlusionQueries++;
 
         if (!q) {
             glquery_t new = { 0 };
             uint32_t map_size = HashMap_Size(gl_static.queries);
-            if (map_size >= MAX_EDICTS)
-                continue;
+            Q_assert(map_size < MAX_EDICTS);
             qglGenQueries(1, &new.query);
             Q_assert(!HashMap_Insert(gl_static.queries, &e->skinnum, &new));
             q = HashMap_GetValue(glquery_t, gl_static.queries, map_size);
+        }
+
+        if (q->pending)
+            continue;
+
+        if (!set) {
+            GL_LoadMatrix(glr.viewmatrix);
+            GL_StateBits(GLS_DEPTHMASK_FALSE);
+            GL_ArrayBits(GLA_VERTEX);
+            qglColorMask(0, 0, 0, 0);
+            GL_BindTexture(0, TEXNUM_WHITE);
+            GL_VertexPointer(3, 0, &points[0][0]);
+            set = true;
         }
 
         make_flare_quad(e, 2.5f, points);
@@ -463,7 +478,8 @@ static void GL_OccludeFlares(void)
         q->pending = true;
     }
 
-    qglColorMask(1, 1, 1, 1);
+    if (set)
+        qglColorMask(1, 1, 1, 1);
 }
 
 static void GL_DrawFlare(const entity_t *e)
@@ -475,11 +491,11 @@ static void GL_DrawFlare(const entity_t *e)
     if (!gl_static.queries)
         return;
 
+    glr.num_flares++;
+
     q = HashMap_Lookup(glquery_t, gl_static.queries, &e->skinnum);
-    if (!q) {
-        glr.num_flares++;
+    if (!q)
         return;
-    }
 
     if (q->pending) {
         qglGetQueryObjectuiv(q->query, GL_QUERY_RESULT_AVAILABLE, &result);
@@ -489,9 +505,6 @@ static void GL_DrawFlare(const entity_t *e)
             q->pending = false;
         }
     }
-
-    if (!q->pending)
-        glr.num_flares++;
 
     GL_AdvanceValue(&q->frac, q->visible, 8);
     if (!q->frac)
