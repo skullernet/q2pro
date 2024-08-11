@@ -211,6 +211,7 @@ extern cvar_t *gl_dlight_falloff;
 extern cvar_t *gl_modulate_entities;
 extern cvar_t *gl_doublelight_entities;
 extern cvar_t *gl_glowmap_intensity;
+extern cvar_t *gl_flarespeed;
 extern cvar_t *gl_fontshadow;
 extern cvar_t *gl_shaders;
 #if USE_MD5
@@ -695,6 +696,7 @@ extern tesselator_t tess;
 void GL_Flush2D(void);
 void GL_DrawParticles(void);
 void GL_DrawBeams(void);
+void GL_DrawFlares(void);
 
 void GL_BindArrays(void);
 void GL_Flush3D(void);

@@ -290,6 +290,118 @@ void GL_DrawBeams(void)
     tess.numverts = tess.numindices = 0;
 }
 
+static void GL_FlushFlares(void)
+{
+    GL_BindTexture(0, tess.texnum[0]);
+    GL_StateBits(GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE | GLS_BLEND_ADD);
+    GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
+
+    qglDrawElements(GL_TRIANGLES, tess.numindices, QGL_INDEX_ENUM, tess.indices);
+
+    if (gl_showtris->integer & BIT(2))
+        GL_DrawOutlines(tess.numindices, tess.indices);
+
+    tess.numverts = tess.numindices = 0;
+}
+
+void GL_DrawFlares(void)
+{
+    vec3_t up, down, left, right;
+    color_t color;
+    vec_t *dst_vert;
+    uint32_t *dst_color;
+    QGL_INDEX_TYPE *dst_indices;
+    GLuint result, texnum;
+    const entity_t *ent;
+    glquery_t *q;
+    float scale;
+    int i;
+
+    if (!glr.num_flares)
+        return;
+    if (!gl_static.queries)
+        return;
+
+    GL_LoadMatrix(glr.viewmatrix);
+
+    GL_VertexPointer(3, 5, tess.vertices);
+    GL_TexCoordPointer(2, 5, tess.vertices + 3);
+    GL_ColorBytePointer(4, 0, tess.colors);
+
+    for (i = 0, ent = glr.fd.entities; i < glr.fd.num_entities; i++, ent++) {
+        if (!(ent->flags & RF_FLARE))
+            continue;
+
+        q = HashMap_Lookup(glquery_t, gl_static.queries, &ent->skinnum);
+        if (!q)
+            continue;
+
+        if (q->pending) {
+            qglGetQueryObjectuiv(q->query, GL_QUERY_RESULT_AVAILABLE, &result);
+            if (result) {
+                qglGetQueryObjectuiv(q->query, GL_QUERY_RESULT, &result);
+                q->visible = result;
+                q->pending = false;
+            }
+        }
+
+        GL_AdvanceValue(&q->frac, q->visible, gl_flarespeed->value);
+        if (!q->frac)
+            continue;
+
+        texnum = IMG_ForHandle(ent->skin)->texnum;
+
+        if (q_unlikely(tess.numverts + 4 > TESS_MAX_VERTICES ||
+                       tess.numindices + 6 > TESS_MAX_INDICES) ||
+            (tess.numindices && tess.texnum[0] != texnum))
+            GL_FlushFlares();
+
+        tess.texnum[0] = texnum;
+
+        scale = 25.0f * (ent->scale * q->frac);
+
+        VectorScale(glr.viewaxis[1],  scale, left);
+        VectorScale(glr.viewaxis[1], -scale, right);
+        VectorScale(glr.viewaxis[2], -scale, down);
+        VectorScale(glr.viewaxis[2],  scale, up);
+
+        dst_vert = tess.vertices + tess.numverts * 5;
+
+        VectorAdd3(ent->origin, down, left,  dst_vert);
+        VectorAdd3(ent->origin, up,   left,  dst_vert +  5);
+        VectorAdd3(ent->origin, up,   right, dst_vert + 10);
+        VectorAdd3(ent->origin, down, right, dst_vert + 15);
+
+        dst_vert[ 3] = 0; dst_vert[ 4] = 1;
+        dst_vert[ 8] = 0; dst_vert[ 9] = 0;
+        dst_vert[13] = 1; dst_vert[14] = 0;
+        dst_vert[18] = 1; dst_vert[19] = 1;
+
+        color.u32 = ent->rgba.u32;
+        color.u8[3] = 128 * (ent->alpha * q->frac);
+
+        dst_color = (uint32_t *)tess.colors + tess.numverts;
+        dst_color[0] = color.u32;
+        dst_color[1] = color.u32;
+        dst_color[2] = color.u32;
+        dst_color[3] = color.u32;
+
+        dst_indices = tess.indices + tess.numindices;
+        dst_indices[0] = tess.numverts + 0;
+        dst_indices[1] = tess.numverts + 2;
+        dst_indices[2] = tess.numverts + 3;
+        dst_indices[3] = tess.numverts + 0;
+        dst_indices[4] = tess.numverts + 1;
+        dst_indices[5] = tess.numverts + 2;
+
+        tess.numverts += 4;
+        tess.numindices += 6;
+    }
+
+    if (tess.numindices)
+        GL_FlushFlares();
+}
+
 void GL_BindArrays(void)
 {
     if (gl_static.world.vertices) {

@@ -428,8 +428,8 @@ static void GL_OccludeFlares(void)
 
     if (!glr.num_flares)
         return;
-
-    Q_assert(gl_static.queries);
+    if (!gl_static.queries)
+        return;
 
     for (i = 0, e = glr.fd.entities; i < glr.fd.num_entities; i++, e++) {
         if (!(e->flags & RF_FLARE))
@@ -483,50 +483,6 @@ static void GL_OccludeFlares(void)
         qglColorMask(1, 1, 1, 1);
 }
 
-static void GL_DrawFlare(const entity_t *e)
-{
-    vec3_t points[4];
-    GLuint result;
-    glquery_t *q;
-
-    if (!gl_static.queries)
-        return;
-
-    glr.num_flares++;
-
-    q = HashMap_Lookup(glquery_t, gl_static.queries, &e->skinnum);
-    if (!q)
-        return;
-
-    if (q->pending) {
-        qglGetQueryObjectuiv(q->query, GL_QUERY_RESULT_AVAILABLE, &result);
-        if (result) {
-            qglGetQueryObjectuiv(q->query, GL_QUERY_RESULT, &result);
-            q->visible = result;
-            q->pending = false;
-        }
-    }
-
-    GL_AdvanceValue(&q->frac, q->visible, gl_flarespeed->value);
-    if (!q->frac)
-        return;
-
-    GL_LoadMatrix(glr.viewmatrix);
-    GL_BindTexture(0, IMG_ForHandle(e->skin)->texnum);
-    GL_StateBits(GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE | GLS_BLEND_ADD);
-    GL_ArrayBits(GLA_VERTEX | GLA_TC);
-    GL_Color(e->rgba.u8[0] / 255.0f,
-             e->rgba.u8[1] / 255.0f,
-             e->rgba.u8[2] / 255.0f,
-             e->alpha * 0.5f * q->frac);
-
-    make_flare_quad(e, e->scale * 25.0f * q->frac, points);
-
-    GL_TexCoordPointer(2, 0, quad_tc);
-    GL_VertexPointer(3, 0, &points[0][0]);
-    qglDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-}
-
 static void GL_DrawEntities(int musthave, int canthave)
 {
     entity_t *ent, *last;
@@ -543,11 +499,14 @@ static void GL_DrawEntities(int musthave, int canthave)
             glr.num_beams++;
             continue;
         }
-        if ((ent->flags & musthave) != musthave || (ent->flags & canthave)) {
+
+        if (ent->flags & RF_FLARE) {
+            // flares are drawn elsewhere in single batch
+            glr.num_flares++;
             continue;
         }
-        if (ent->flags & RF_FLARE) {
-            GL_DrawFlare(ent);
+
+        if ((ent->flags & musthave) != musthave || (ent->flags & canthave)) {
             continue;
         }
 
@@ -739,6 +698,8 @@ void R_RenderFrame(const refdef_t *fd)
     GL_DrawEntities(RF_TRANSLUCENT, RF_WEAPONMODEL);
 
     GL_OccludeFlares();
+
+    GL_DrawFlares();
 
     if (!(glr.fd.rdflags & RDF_NOWORLDMODEL)) {
         GL_DrawAlphaFaces();
