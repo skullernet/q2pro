@@ -611,6 +611,13 @@ static inline void GL_DepthRange(GLfloat n, GLfloat f)
 #define GL_ColorFloatPointer    gl_backend->color_float_pointer
 #define GL_Color                gl_backend->color
 
+enum {
+    SHOWTRIS_WORLD  = BIT(0),
+    SHOWTRIS_MESH   = BIT(1),
+    SHOWTRIS_PIC    = BIT(2),
+    SHOWTRIS_FX     = BIT(3),
+};
+
 void GL_ForceTexture(GLuint tmu, GLuint texnum);
 void GL_BindTexture(GLuint tmu, GLuint texnum);
 void GL_CommonStateBits(GLbitfield bits);

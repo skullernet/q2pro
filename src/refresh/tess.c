@@ -55,7 +55,7 @@ void GL_Flush2D(void)
 
     qglDrawElements(GL_TRIANGLES, tess.numindices, QGL_INDEX_ENUM, tess.indices);
 
-    if (gl_showtris->integer & BIT(2)) {
+    if (gl_showtris->integer & SHOWTRIS_PIC) {
         GL_DrawOutlines(tess.numindices, tess.indices);
     }
 
@@ -145,7 +145,7 @@ void GL_DrawParticles(void)
 
         qglDrawArrays(GL_TRIANGLES, 0, numverts);
 
-        if (gl_showtris->integer & BIT(2)) {
+        if (gl_showtris->integer & SHOWTRIS_FX) {
             GL_DrawOutlines(numverts, NULL);
         }
     } while (total);
@@ -159,7 +159,7 @@ static void GL_FlushBeamSegments(void)
 
     qglDrawElements(GL_TRIANGLES, tess.numindices, QGL_INDEX_ENUM, tess.indices);
 
-    if (gl_showtris->integer & BIT(2))
+    if (gl_showtris->integer & SHOWTRIS_FX)
         GL_DrawOutlines(tess.numindices, tess.indices);
 
     tess.numverts = tess.numindices = 0;
@@ -300,7 +300,7 @@ static void GL_FlushFlares(void)
 
     qglDrawElements(GL_TRIANGLES, tess.numindices, QGL_INDEX_ENUM, tess.indices);
 
-    if (gl_showtris->integer & BIT(2))
+    if (gl_showtris->integer & SHOWTRIS_FX)
         GL_DrawOutlines(tess.numindices, tess.indices);
 
     tess.numverts = tess.numindices = 0;
@@ -470,7 +470,7 @@ void GL_Flush3D(void)
 
     qglDrawElements(GL_TRIANGLES, tess.numindices, QGL_INDEX_ENUM, tess.indices);
 
-    if (gl_showtris->integer & BIT(0)) {
+    if (gl_showtris->integer & SHOWTRIS_WORLD) {
         GL_DrawOutlines(tess.numindices, tess.indices);
     }
 
