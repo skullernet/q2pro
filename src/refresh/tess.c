@@ -151,6 +151,20 @@ void GL_DrawParticles(void)
     } while (total);
 }
 
+static void GL_FlushBeamSegments(void)
+{
+    GL_BindTexture(0, TEXNUM_BEAM);
+    GL_StateBits(GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE);
+    GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
+
+    qglDrawElements(GL_TRIANGLES, tess.numindices, QGL_INDEX_ENUM, tess.indices);
+
+    if (gl_showtris->integer & BIT(2))
+        GL_DrawOutlines(tess.numindices, tess.indices);
+
+    tess.numverts = tess.numindices = 0;
+}
+
 static void GL_DrawBeamSegment(const vec3_t start, const vec3_t end, color_t color, float width)
 {
     vec3_t d1, d2, d3;
@@ -170,11 +184,8 @@ static void GL_DrawBeamSegment(const vec3_t start, const vec3_t end, color_t col
         return;
 
     if (q_unlikely(tess.numverts + 4 > TESS_MAX_VERTICES ||
-                   tess.numindices + 6 > TESS_MAX_INDICES)) {
-        qglDrawElements(GL_TRIANGLES, tess.numindices,
-                        QGL_INDEX_ENUM, tess.indices);
-        tess.numverts = tess.numindices = 0;
-    }
+                   tess.numindices + 6 > TESS_MAX_INDICES))
+        GL_FlushBeamSegments();
 
     dst_vert = tess.vertices + tess.numverts * 5;
     VectorAdd(start, d3, dst_vert);
@@ -248,46 +259,37 @@ void GL_DrawBeams(void)
     const entity_t *ent;
     int i;
 
-    if (!glr.num_beams) {
+    if (!glr.num_beams)
         return;
-    }
 
     GL_LoadMatrix(glr.viewmatrix);
-    GL_BindTexture(0, TEXNUM_BEAM);
-    GL_StateBits(GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE);
-    GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
 
     GL_VertexPointer(3, 5, tess.vertices);
     GL_TexCoordPointer(2, 5, tess.vertices + 3);
     GL_ColorBytePointer(4, 0, tess.colors);
 
     for (i = 0, ent = glr.fd.entities; i < glr.fd.num_entities; i++, ent++) {
-        if (!(ent->flags & RF_BEAM)) {
+        if (!(ent->flags & RF_BEAM))
             continue;
-        }
 
         start = ent->origin;
         end = ent->oldorigin;
 
-        if (ent->skinnum == -1) {
+        if (ent->skinnum == -1)
             color.u32 = ent->rgba.u32;
-        } else {
+        else
             color.u32 = d_8to24table[ent->skinnum & 0xff];
-        }
         color.u8[3] *= ent->alpha;
 
         width = abs((int16_t)ent->frame) * 1.2f;
 
-        if (ent->flags & RF_GLOW) {
+        if (ent->flags & RF_GLOW)
             GL_DrawLightningBeam(start, end, color, width);
-        } else {
+        else
             GL_DrawBeamSegment(start, end, color, width);
-        }
     }
 
-    qglDrawElements(GL_TRIANGLES, tess.numindices,
-                    QGL_INDEX_ENUM, tess.indices);
-    tess.numverts = tess.numindices = 0;
+    GL_FlushBeamSegments();
 }
 
 static void GL_FlushFlares(void)
