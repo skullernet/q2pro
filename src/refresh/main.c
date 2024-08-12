@@ -90,8 +90,6 @@ cvar_t *gl_showerrors;
 
 // ==============================================================================
 
-static const vec_t quad_tc[8] = { 0, 1, 0, 0, 1, 1, 1, 0 };
-
 static void GL_SetupFrustum(void)
 {
     vec_t angle, sf, cf;
@@ -339,9 +337,8 @@ static void GL_DrawSpriteModel(const model_t *model)
     const mspriteframe_t *frame = &model->spriteframes[e->frame % model->numframes];
     const image_t *image = frame->image;
     const float alpha = (e->flags & RF_TRANSLUCENT) ? e->alpha : 1;
-    int bits = GLS_DEPTHMASK_FALSE;
+    glStateBits_t bits = GLS_DEPTHMASK_FALSE;
     vec3_t up, down, left, right;
-    vec3_t points[4];
 
     if (alpha == 1) {
         if (image->flags & IF_TRANSPARENT) {
@@ -366,13 +363,18 @@ static void GL_DrawSpriteModel(const model_t *model)
     VectorScale(glr.viewaxis[2], -frame->origin_y, down);
     VectorScale(glr.viewaxis[2], frame->height - frame->origin_y, up);
 
-    VectorAdd3(e->origin, down, left, points[0]);
-    VectorAdd3(e->origin, up, left, points[1]);
-    VectorAdd3(e->origin, down, right, points[2]);
-    VectorAdd3(e->origin, up, right, points[3]);
+    VectorAdd3(e->origin, down, left,  tess.vertices);
+    VectorAdd3(e->origin, up,   left,  tess.vertices +  5);
+    VectorAdd3(e->origin, down, right, tess.vertices + 10);
+    VectorAdd3(e->origin, up,   right, tess.vertices + 15);
 
-    GL_TexCoordPointer(2, 0, quad_tc);
-    GL_VertexPointer(3, 0, &points[0][0]);
+    tess.vertices[ 3] = 0; tess.vertices[ 4] = 1;
+    tess.vertices[ 8] = 0; tess.vertices[ 9] = 0;
+    tess.vertices[13] = 1; tess.vertices[14] = 1;
+    tess.vertices[18] = 1; tess.vertices[19] = 0;
+
+    GL_VertexPointer(3, 5, tess.vertices);
+    GL_TexCoordPointer(2, 5, tess.vertices + 3);
     qglDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
@@ -384,43 +386,41 @@ static void GL_DrawNullModel(void)
         U32_BLUE, U32_BLUE
     };
     const entity_t *e = glr.ent;
-    vec3_t points[6];
 
-    VectorCopy(e->origin, points[0]);
-    VectorCopy(e->origin, points[2]);
-    VectorCopy(e->origin, points[4]);
+    VectorCopy(e->origin, tess.vertices +  0);
+    VectorCopy(e->origin, tess.vertices +  6);
+    VectorCopy(e->origin, tess.vertices + 12);
 
-    VectorMA(e->origin, 16, glr.entaxis[0], points[1]);
-    VectorMA(e->origin, 16, glr.entaxis[1], points[3]);
-    VectorMA(e->origin, 16, glr.entaxis[2], points[5]);
+    VectorMA(e->origin, 16, glr.entaxis[0], tess.vertices +  3);
+    VectorMA(e->origin, 16, glr.entaxis[1], tess.vertices +  9);
+    VectorMA(e->origin, 16, glr.entaxis[2], tess.vertices + 15);
 
     GL_LoadMatrix(glr.viewmatrix);
     GL_BindTexture(0, TEXNUM_WHITE);
     GL_StateBits(GLS_DEFAULT);
     GL_ArrayBits(GLA_VERTEX | GLA_COLOR);
     GL_ColorBytePointer(4, 0, (GLubyte *)colors);
-    GL_VertexPointer(3, 0, &points[0][0]);
+    GL_VertexPointer(3, 0, tess.vertices);
     qglDrawArrays(GL_LINES, 0, 6);
 }
 
-static void make_flare_quad(const entity_t *e, float scale, vec3_t points[4])
+static void make_flare_quad(const entity_t *e, float scale)
 {
     vec3_t up, down, left, right;
 
-    VectorScale(glr.viewaxis[1], scale, left);
+    VectorScale(glr.viewaxis[1],  scale, left);
     VectorScale(glr.viewaxis[1], -scale, right);
     VectorScale(glr.viewaxis[2], -scale, down);
-    VectorScale(glr.viewaxis[2], scale, up);
+    VectorScale(glr.viewaxis[2],  scale, up);
 
-    VectorAdd3(e->origin, down, left, points[0]);
-    VectorAdd3(e->origin, up, left, points[1]);
-    VectorAdd3(e->origin, down, right, points[2]);
-    VectorAdd3(e->origin, up, right, points[3]);
+    VectorAdd3(e->origin, down, left,  tess.vertices + 0);
+    VectorAdd3(e->origin, up,   left,  tess.vertices + 3);
+    VectorAdd3(e->origin, down, right, tess.vertices + 6);
+    VectorAdd3(e->origin, up,   right, tess.vertices + 9);
 }
 
 static void GL_OccludeFlares(void)
 {
-    vec3_t points[4];
     const entity_t *e;
     glquery_t *q;
     int i, j;
@@ -466,11 +466,11 @@ static void GL_OccludeFlares(void)
             GL_ArrayBits(GLA_VERTEX);
             qglColorMask(0, 0, 0, 0);
             GL_BindTexture(0, TEXNUM_WHITE);
-            GL_VertexPointer(3, 0, &points[0][0]);
+            GL_VertexPointer(3, 0, tess.vertices);
             set = true;
         }
 
-        make_flare_quad(e, 2.5f, points);
+        make_flare_quad(e, 2.5f);
 
         qglBeginQuery(gl_static.samples_passed, q->query);
         qglDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -622,20 +622,26 @@ bool GL_ShowErrors(const char *func)
 
 static void GL_WaterWarp(void)
 {
+    float x0, x1, y0, y1;
+
     GL_ForceTexture(0, gl_static.warp_texture);
     GL_StateBits(GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE |
                  GLS_CULL_DISABLE | GLS_TEXTURE_REPLACE | GLS_WARP_ENABLE);
     GL_ArrayBits(GLA_VERTEX | GLA_TC);
 
-    vec_t points[8] = {
-        glr.fd.x,                glr.fd.y,
-        glr.fd.x,                glr.fd.y + glr.fd.height,
-        glr.fd.x + glr.fd.width, glr.fd.y,
-        glr.fd.x + glr.fd.width, glr.fd.y + glr.fd.height,
-    };
+    x0 = glr.fd.x;
+    x1 = glr.fd.x + glr.fd.width;
 
-    GL_TexCoordPointer(2, 0, quad_tc);
-    GL_VertexPointer(2, 0, points);
+    y0 = glr.fd.y;
+    y1 = glr.fd.y + glr.fd.height;
+
+    Vector4Set(tess.vertices,      x0, y0, 0, 1);
+    Vector4Set(tess.vertices +  4, x0, y1, 0, 0);
+    Vector4Set(tess.vertices +  8, x1, y0, 1, 1);
+    Vector4Set(tess.vertices + 12, x1, y1, 1, 0);
+
+    GL_VertexPointer(2, 4, tess.vertices);
+    GL_TexCoordPointer(2, 4, tess.vertices + 2);
     qglDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 

@@ -328,7 +328,6 @@ R_DrawSkyBox
 */
 void R_DrawSkyBox(void)
 {
-    vec5_t verts[4];
     int i;
 
     // check for no sky at all
@@ -337,8 +336,8 @@ void R_DrawSkyBox(void)
 
     GL_StateBits(GLS_TEXTURE_REPLACE);
     GL_ArrayBits(GLA_VERTEX | GLA_TC);
-    GL_VertexPointer(3, 5, &verts[0][0]);
-    GL_TexCoordPointer(2, 5, &verts[0][3]);
+    GL_VertexPointer(3, 5, tess.vertices);
+    GL_TexCoordPointer(2, 5, tess.vertices + 3);
 
     for (i = 0; i < 6; i++) {
         if (skymins[0][i] >= skymaxs[0][i] ||
@@ -347,10 +346,10 @@ void R_DrawSkyBox(void)
 
         GL_BindTexture(0, sky_images[i]);
 
-        MakeSkyVec(skymaxs[0][i], skymins[1][i], i, verts[0]);
-        MakeSkyVec(skymins[0][i], skymins[1][i], i, verts[1]);
-        MakeSkyVec(skymaxs[0][i], skymaxs[1][i], i, verts[2]);
-        MakeSkyVec(skymins[0][i], skymaxs[1][i], i, verts[3]);
+        MakeSkyVec(skymaxs[0][i], skymins[1][i], i, tess.vertices);
+        MakeSkyVec(skymins[0][i], skymins[1][i], i, tess.vertices +  5);
+        MakeSkyVec(skymaxs[0][i], skymaxs[1][i], i, tess.vertices + 10);
+        MakeSkyVec(skymins[0][i], skymaxs[1][i], i, tess.vertices + 15);
         qglDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
 }
