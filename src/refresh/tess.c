@@ -224,15 +224,22 @@ static void GL_DrawLightningBeam(const vec3_t start, const vec3_t end, color_t c
 {
     vec3_t d1, segments[MAX_LIGHTNING_SEGMENTS - 1];
     vec_t length;
-    int i, num_segments = MIN_LIGHTNING_SEGMENTS + GL_rand() % (MAX_LIGHTNING_SEGMENTS - MIN_LIGHTNING_SEGMENTS);
+    int i, num_segments, max_segments;
 
     VectorSubtract(end, start, d1);
     length = VectorNormalize(d1);
 
-    num_segments = min(num_segments, (int)(length / MIN_SEGMENT_LENGTH));
-    if (num_segments <= 1) {
+    max_segments = length / MIN_SEGMENT_LENGTH;
+    if (max_segments <= 1) {
         GL_DrawBeamSegment(start, end, color, width);
         return;
+    }
+
+    if (max_segments <= MIN_LIGHTNING_SEGMENTS) {
+        num_segments = max_segments;
+    } else {
+        max_segments = min(max_segments, MAX_LIGHTNING_SEGMENTS);
+        num_segments = MIN_LIGHTNING_SEGMENTS + GL_rand() % (max_segments - MIN_LIGHTNING_SEGMENTS + 1);
     }
 
     for (i = 0; i < num_segments - 1; i++) {
