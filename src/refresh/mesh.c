@@ -679,8 +679,8 @@ static void tess_shell_skel(const md5_mesh_t *mesh, const md5_joint_t *skeleton)
 
 static void lerp_alias_skeleton(const md5_model_t *model)
 {
-    int frame_a = oldframenum % model->num_frames;
-    int frame_b = newframenum % model->num_frames;
+    unsigned frame_a = oldframenum % model->num_frames;
+    unsigned frame_b = newframenum % model->num_frames;
     const md5_joint_t *skel_a = &model->skeleton_frames[frame_a * model->num_joints];
     const md5_joint_t *skel_b = &model->skeleton_frames[frame_b * model->num_joints];
 
