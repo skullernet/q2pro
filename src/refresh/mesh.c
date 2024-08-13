@@ -515,7 +515,7 @@ static void draw_shadow(const QGL_INDEX_TYPE *indices, int num_indices)
     }
 }
 
-static image_t *skin_for_mesh(image_t **skins, int num_skins)
+static const image_t *skin_for_mesh(image_t **skins, int num_skins)
 {
     const entity_t *ent = glr.ent;
 
@@ -547,7 +547,7 @@ static void draw_alias_mesh(const QGL_INDEX_TYPE *indices, int num_indices,
                             image_t **skins, int num_skins)
 {
     glStateBits_t state = GLS_INTENSITY_ENABLE;
-    image_t *skin = skin_for_mesh(skins, num_skins);
+    const image_t *skin = skin_for_mesh(skins, num_skins);
 
     // fall back to entity matrix
     GL_LoadMatrix(glr.entmatrix);
