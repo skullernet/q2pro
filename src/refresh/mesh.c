@@ -532,7 +532,7 @@ static const image_t *skin_for_mesh(image_t **skins, int num_skins)
         return R_NOTEXTURE;
 
     if (ent->skinnum < 0 || ent->skinnum >= num_skins) {
-        Com_DPrintf("%s: no such skin: %d\n", "GL_DrawAliasModel", ent->skinnum);
+        Com_DPrintf("GL_DrawAliasModel: no such skin: %d\n", ent->skinnum);
         return skins[0];
     }
 
@@ -767,13 +767,13 @@ void GL_DrawAliasModel(const model_t *model)
     } else {
         newframenum = ent->frame;
         if (newframenum >= model->numframes) {
-            Com_DPrintf("%s: no such frame %u\n", __func__, newframenum);
+            Com_DPrintf("%s: no such frame: %u\n", __func__, newframenum);
             newframenum = 0;
         }
 
         oldframenum = ent->oldframe;
         if (oldframenum >= model->numframes) {
-            Com_DPrintf("%s: no such oldframe %u\n", __func__, oldframenum);
+            Com_DPrintf("%s: no such oldframe: %u\n", __func__, oldframenum);
             oldframenum = 0;
         }
     }
