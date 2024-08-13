@@ -307,6 +307,9 @@ void GL_DrawBeams(void)
 
 static void GL_FlushFlares(void)
 {
+    if (!tess.numindices)
+        return;
+
     GL_BindTexture(0, tess.texnum[0]);
     GL_StateBits(GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE | GLS_BLEND_ADD);
     GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
@@ -321,6 +324,7 @@ static void GL_FlushFlares(void)
     GL_UnlockArrays();
 
     tess.numverts = tess.numindices = 0;
+    tess.texnum[0] = 0;
 }
 
 void GL_DrawFlares(void)
@@ -417,8 +421,7 @@ void GL_DrawFlares(void)
         tess.numindices += 6;
     }
 
-    if (tess.numindices)
-        GL_FlushFlares();
+    GL_FlushFlares();
 }
 
 void GL_BindArrays(void)
