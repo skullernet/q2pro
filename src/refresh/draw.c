@@ -450,7 +450,7 @@ void Draw_Stats(void)
     R_SetScale(1.0f / get_auto_scale());
     R_DrawFill8(8, 8, 25*8, 22*10+2, 4);
 
-    Draw_Stringf(x, y, "Nodes visible  : %i", c.nodesVisible); y += 10;
+    Draw_Stringf(x, y, "Nodes visible  : %i", glr.nodes_visible); y += 10;
     Draw_Stringf(x, y, "Nodes culled   : %i", c.nodesCulled); y += 10;
     Draw_Stringf(x, y, "Nodes drawn    : %i", c.nodesDrawn); y += 10;
     Draw_Stringf(x, y, "Leaves drawn   : %i", c.leavesDrawn); y += 10;

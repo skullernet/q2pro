@@ -124,6 +124,7 @@ typedef struct {
     float           frametime;
     int             viewcluster1;
     int             viewcluster2;
+    int             nodes_visible;
     cplane_t        frustumPlanes[4];
     entity_t        *ent;
     bool            entrotated;
@@ -173,7 +174,6 @@ extern entity_t gl_world;
 extern unsigned r_registration_sequence;
 
 typedef struct {
-    int nodesVisible;
     int nodesDrawn;
     int leavesDrawn;
     int facesMarked;
