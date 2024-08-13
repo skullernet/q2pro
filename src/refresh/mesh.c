@@ -601,9 +601,8 @@ static void draw_alias_mesh(const QGL_INDEX_TYPE *indices, int num_indices,
 
     draw_celshading(indices, num_indices);
 
-    if (gl_showtris->integer & SHOWTRIS_MESH) {
+    if (gl_showtris->integer & SHOWTRIS_MESH)
         GL_DrawOutlines(num_indices, indices);
-    }
 
     // FIXME: unlock arrays before changing matrix?
     draw_shadow(indices, num_indices);

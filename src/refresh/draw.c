@@ -31,9 +31,8 @@ static inline void GL_StretchPic_(
 
     if (tess.numverts + 4 > TESS_MAX_VERTICES ||
         tess.numindices + 6 > TESS_MAX_INDICES ||
-        (tess.numverts && tess.texnum[0] != texnum)) {
+        (tess.numverts && tess.texnum[0] != texnum))
         GL_Flush2D();
-    }
 
     tess.texnum[0] = texnum;
 
@@ -58,16 +57,14 @@ static inline void GL_StretchPic_(
     dst_indices[5] = tess.numverts + 2;
 
     if (flags & IF_TRANSPARENT) {
-        if ((flags & IF_PALETTED) && draw.scale == 1) {
+        if ((flags & IF_PALETTED) && draw.scale == 1)
             tess.flags |= GLS_ALPHATEST_ENABLE;
-        } else {
+        else
             tess.flags |= GLS_BLEND_BLEND;
-        }
     }
 
-    if ((color & U32_ALPHA) != U32_ALPHA) {
+    if ((color & U32_ALPHA) != U32_ALPHA)
         tess.flags |= GLS_BLEND_BLEND;
-    }
 
     tess.numverts += 4;
     tess.numindices += 6;
@@ -84,9 +81,8 @@ static void GL_DrawVignette(int distance, color_t outer, color_t inner)
 
     if (tess.numverts + 8 > TESS_MAX_VERTICES ||
         tess.numindices + 24 > TESS_MAX_INDICES ||
-        (tess.numverts && tess.texnum[0] != TEXNUM_WHITE)) {
+        (tess.numverts && tess.texnum[0] != TEXNUM_WHITE))
         GL_Flush2D();
-    }
 
     tess.texnum[0] = TEXNUM_WHITE;
 
@@ -296,9 +292,8 @@ float R_ClampScale(cvar_t *var)
 
 void R_SetScale(float scale)
 {
-    if (draw.scale == scale) {
+    if (draw.scale == scale)
         return;
-    }
 
     GL_Flush2D();
 
@@ -380,16 +375,14 @@ static inline void draw_char(int x, int y, int flags, int c, const image_t *imag
 {
     float s, t;
 
-    if ((c & 127) == 32) {
+    if ((c & 127) == 32)
         return;
-    }
 
-    if (flags & UI_ALTCOLOR) {
+    if (flags & UI_ALTCOLOR)
         c |= 0x80;
-    }
-    if (flags & UI_XORCOLOR) {
+
+    if (flags & UI_XORCOLOR)
         c ^= 0x80;
-    }
 
     s = (c & 15) * 0.0625f;
     t = (c >> 4) * 0.0625f;

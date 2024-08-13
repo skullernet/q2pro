@@ -305,9 +305,8 @@ void GL_LightPoint(const vec3_t origin, vec3_t color)
     }
 
     // get lighting from world
-    if (!GL_LightPoint_(origin, color)) {
+    if (!GL_LightPoint_(origin, color))
         VectorSet(color, 1, 1, 1);
-    }
 
     // add dynamic lights
     GL_AddLights(origin, color);
@@ -329,35 +328,29 @@ void R_LightPoint(const vec3_t origin, vec3_t color)
 
 static void GL_MarkLeaves(void)
 {
+    const bsp_t *bsp = gl_static.world.cache;
     byte vis1[VIS_MAX_BYTES];
     byte vis2[VIS_MAX_BYTES];
     const mleaf_t *leaf;
-    mnode_t *node;
-    size_t *src1, *src2;
-    int i, cluster1, cluster2, longs;
+    int i, cluster1, cluster2;
     vec3_t tmp;
-    const bsp_t *bsp = gl_static.world.cache;
 
-    if (gl_lockpvs->integer) {
+    if (gl_lockpvs->integer)
         return;
-    }
 
     leaf = BSP_PointLeaf(bsp->nodes, glr.fd.vieworg);
     cluster1 = cluster2 = leaf->cluster;
     VectorCopy(glr.fd.vieworg, tmp);
-    if (!leaf->contents) {
+    if (!leaf->contents)
         tmp[2] -= 16;
-    } else {
+    else
         tmp[2] += 16;
-    }
     leaf = BSP_PointLeaf(bsp->nodes, tmp);
-    if (!(leaf->contents & CONTENTS_SOLID)) {
+    if (!(leaf->contents & CONTENTS_SOLID))
         cluster2 = leaf->cluster;
-    }
 
-    if (cluster1 == glr.viewcluster1 && cluster2 == glr.viewcluster2) {
+    if (cluster1 == glr.viewcluster1 && cluster2 == glr.viewcluster2)
         return;
-    }
 
     glr.visframe++;
     glr.viewcluster1 = cluster1;
@@ -365,12 +358,12 @@ static void GL_MarkLeaves(void)
 
     if (!bsp->vis || gl_novis->integer || cluster1 == -1) {
         // mark everything visible
-        for (i = 0; i < bsp->numnodes; i++) {
+        for (i = 0; i < bsp->numnodes; i++)
             bsp->nodes[i].visframe = glr.visframe;
-        }
-        for (i = 0; i < bsp->numleafs; i++) {
+
+        for (i = 0; i < bsp->numleafs; i++)
             bsp->leafs[i].visframe = glr.visframe;
-        }
+
         glr.nodes_visible = bsp->numnodes;
         return;
     }
@@ -378,25 +371,22 @@ static void GL_MarkLeaves(void)
     BSP_ClusterVis(bsp, vis1, cluster1, DVIS_PVS);
     if (cluster1 != cluster2) {
         BSP_ClusterVis(bsp, vis2, cluster2, DVIS_PVS);
-        longs = VIS_FAST_LONGS(bsp);
-        src1 = (size_t *)vis1;
-        src2 = (size_t *)vis2;
-        while (longs--) {
+        int longs = VIS_FAST_LONGS(bsp);
+        size_t *src1 = (size_t *)vis1;
+        size_t *src2 = (size_t *)vis2;
+        while (longs--)
             *src1++ |= *src2++;
-        }
     }
 
     glr.nodes_visible = 0;
     for (i = 0, leaf = bsp->leafs; i < bsp->numleafs; i++, leaf++) {
         cluster1 = leaf->cluster;
-        if (cluster1 == -1) {
+        if (cluster1 == -1)
             continue;
-        }
-        if (!Q_IsBitSet(vis1, cluster1)) {
+        if (!Q_IsBitSet(vis1, cluster1))
             continue;
-        }
         // mark parent nodes visible
-        for (node = (mnode_t *)leaf; node && node->visframe != glr.visframe; node = node->parent) {
+        for (mnode_t *node = (mnode_t *)leaf; node && node->visframe != glr.visframe; node = node->parent) {
             node->visframe = glr.visframe;
             glr.nodes_visible++;
         }
@@ -459,9 +449,8 @@ void GL_DrawBspModel(mmodel_t *model)
     // draw visible faces
     for (i = 0, face = model->firstface; i < model->numfaces; i++, face++) {
         // sky faces don't have their polygon built
-        if (face->drawflags & (SURF_SKY | SURF_NODRAW)) {
+        if (face->drawflags & (SURF_SKY | SURF_NODRAW))
             continue;
-        }
 
         dot = PlaneDiffFast(transformed, face->plane);
         if ((face->drawflags & DSURF_PLANEBACK) ? (dot > BACKFACE_EPSILON) : (dot < -BACKFACE_EPSILON)) {
@@ -469,9 +458,8 @@ void GL_DrawBspModel(mmodel_t *model)
             continue;
         }
 
-        if (gl_dynamic->integer) {
+        if (gl_dynamic->integer)
             GL_PushLights(face);
-        }
 
         if (face->drawflags & SURF_TRANS_MASK) {
             if (model->drawframe != glr.drawframe)
@@ -482,9 +470,8 @@ void GL_DrawBspModel(mmodel_t *model)
         GL_AddSolidFace(face);
     }
 
-    if (gl_dynamic->integer) {
+    if (gl_dynamic->integer)
         GL_UploadLightmaps();
-    }
 
     GL_DrawSolidFaces();
 
@@ -503,36 +490,31 @@ static inline bool GL_ClipNode(const mnode_t *node, int *clipflags)
     int flags = *clipflags;
     int i, bits, mask;
 
-    if (flags == NODE_UNCLIPPED) {
+    if (flags == NODE_UNCLIPPED)
         return true;
-    }
+
     for (i = 0, mask = 1; i < 4; i++, mask <<= 1) {
-        if (flags & mask) {
+        if (flags & mask)
             continue;
-        }
         bits = BoxOnPlaneSide(node->mins, node->maxs,
                               &glr.frustumPlanes[i]);
-        if (bits == BOX_BEHIND) {
+        if (bits == BOX_BEHIND)
             return false;
-        }
-        if (bits == BOX_INFRONT) {
+        if (bits == BOX_INFRONT)
             flags |= mask;
-        }
     }
 
     *clipflags = flags;
-
     return true;
 }
 
 static inline void GL_DrawLeaf(const mleaf_t *leaf)
 {
-    if (leaf->contents == CONTENTS_SOLID) {
+    if (leaf->contents == CONTENTS_SOLID)
         return; // solid leaf
-    }
-    if (glr.fd.areabits && !Q_IsBitSet(glr.fd.areabits, leaf->area)) {
+
+    if (glr.fd.areabits && !Q_IsBitSet(glr.fd.areabits, leaf->area))
         return; // door blocks sight
-    }
 
     for (int i = 0; i < leaf->numleaffaces; i++)
         leaf->firstleafface[i]->drawframe = glr.drawframe;
@@ -546,29 +528,24 @@ static inline void GL_DrawNode(const mnode_t *node)
     int i;
 
     for (i = 0, face = node->firstface; i < node->numfaces; i++, face++) {
-        if (face->drawframe != glr.drawframe) {
+        if (face->drawframe != glr.drawframe)
             continue;
-        }
 
         if (face->drawflags & SURF_SKY) {
             R_AddSkySurface(face);
             continue;
         }
 
-        if (face->drawflags & SURF_NODRAW) {
+        if (face->drawflags & SURF_NODRAW)
             continue;
-        }
 
-        if (gl_dynamic->integer) {
+        if (gl_dynamic->integer)
             GL_PushLights(face);
-        }
 
-        if (face->drawflags & SURF_TRANS_MASK) {
+        if (face->drawflags & SURF_TRANS_MASK)
             GL_AddAlphaFace(face, &gl_world);
-            continue;
-        }
-
-        GL_AddSolidFace(face);
+        else
+            GL_AddSolidFace(face);
     }
 
     c.nodesDrawn++;
@@ -623,9 +600,8 @@ void GL_DrawWorld(void)
     GL_WorldNode_r(gl_static.world.cache->nodes,
                    gl_cull_nodes->integer ? NODE_CLIPPED : NODE_UNCLIPPED);
 
-    if (gl_dynamic->integer) {
+    if (gl_dynamic->integer)
         GL_UploadLightmaps();
-    }
 
     GL_DrawSolidFaces();
 

@@ -50,12 +50,10 @@ adjust_color_f(vec_t *out, const vec_t *in, float add, float modulate, float sca
 
     // determine the brightest of the three color components
     max = g;
-    if (r > max) {
+    if (r > max)
         max = r;
-    }
-    if (b > max) {
+    if (b > max)
         max = b;
-    }
 
     // rescale all the color components if the intensity of the greatest
     // channel exceeds 1.0
@@ -238,11 +236,10 @@ static void update_dynamic_lightmap(mface_t *surf)
     add_light_styles(surf);
 
     // add all the dynamic lights
-    if (surf->dlightframe == glr.dlightframe) {
+    if (surf->dlightframe == glr.dlightframe)
         add_dynamic_lights(surf);
-    } else {
+    else
         surf->dlightframe = 0;
-    }
 
     // put into texture format
     put_blocklights(surf);
@@ -269,9 +266,8 @@ void GL_PushLights(mface_t *surf)
     lightstyle_t *style;
     int i;
 
-    if (!surf->light_m) {
+    if (!surf->light_m)
         return;
-    }
 
     // dynamic this frame or dynamic previously
     if (surf->dlightframe) {
@@ -351,9 +347,8 @@ static void LM_InitBlock(void)
 
 static void LM_UploadBlock(void)
 {
-    if (!lm.dirty) {
+    if (!lm.dirty)
         return;
-    }
 
     Q_assert(lm.nummaps < lm.maxmaps);
 
@@ -381,15 +376,13 @@ static void build_style_map(int dynamic)
         return;
     }
 
-    for (i = 0; i < MAX_LIGHTSTYLES; i++) {
+    for (i = 0; i < MAX_LIGHTSTYLES; i++)
         gl_static.lightstylemap[i] = i;
-    }
 
     if (dynamic != 1) {
         // make dynamic styles fullbright
-        for (i = 1; i < 32; i++) {
+        for (i = 1; i < 32; i++)
             gl_static.lightstylemap[i] = 0;
-        }
     }
 }
 
@@ -503,15 +496,12 @@ static void LM_RebuildSurfaces(void)
 
     build_style_map(gl_dynamic->integer);
 
-    if (!lm.nummaps) {
+    if (!lm.nummaps)
         return;
-    }
 
-    for (i = 0, surf = bsp->faces; i < bsp->numfaces; i++, surf++) {
-        if (surf->light_m) {
+    for (i = 0, surf = bsp->faces; i < bsp->numfaces; i++, surf++)
+        if (surf->light_m)
             build_primary_lightmap(surf);
-        }
-    }
 
     // upload all lightmaps
     for (i = 0, m = lm.lightmaps; i < lm.nummaps; i++, m++) {
@@ -523,7 +513,6 @@ static void LM_RebuildSurfaces(void)
         c.texUploads++;
     }
 }
-
 
 /*
 =============================================================================
@@ -572,36 +561,32 @@ static void build_surface_poly(mface_t *surf, vec_t *vbo)
     // convert surface flags to state bits
     surf->statebits = GLS_DEFAULT;
     if (gl_static.use_shaders) {
-        if (!(surf->drawflags & SURF_TRANS_MASK)) {
+        // no inverse intensity
+        if (!(surf->drawflags & SURF_TRANS_MASK))
             surf->statebits |= GLS_TEXTURE_REPLACE;
-        }
+
         // always use intensity on lightmapped surfaces
         if ((surf->lightmap && bsp->lm_decoupled) ||
             !(surf->drawflags & SURF_COLOR_MASK) ||
-            (!(surf->drawflags & SURF_TRANS_MASK) && strstr(texinfo->name, "lava"))) {
+            (!(surf->drawflags & SURF_TRANS_MASK) && strstr(texinfo->name, "lava")))
             surf->statebits |= GLS_INTENSITY_ENABLE;
-        }
     } else {
-        if (!(surf->drawflags & SURF_COLOR_MASK)) {
+        if (!(surf->drawflags & SURF_COLOR_MASK))
             surf->statebits |= GLS_TEXTURE_REPLACE;
-        }
     }
 
-    if (surf->drawflags & SURF_WARP) {
+    if (surf->drawflags & SURF_WARP)
         surf->statebits |= GLS_WARP_ENABLE;
-    }
 
-    if (surf->drawflags & SURF_TRANS_MASK) {
+    if (surf->drawflags & SURF_TRANS_MASK)
         surf->statebits |= GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE;
-    } else if (surf->drawflags & SURF_ALPHATEST) {
+    else if (surf->drawflags & SURF_ALPHATEST)
         surf->statebits |= GLS_ALPHATEST_ENABLE;
-    }
 
     if (surf->drawflags & SURF_FLOWING) {
         surf->statebits |= GLS_SCROLL_ENABLE;
-        if (surf->drawflags & SURF_WARP) {
+        if (surf->drawflags & SURF_WARP)
             surf->statebits |= GLS_SCROLL_SLOW;
-        }
     }
 
     // normalize texture coordinates
@@ -612,15 +597,15 @@ static void build_surface_poly(mface_t *surf, vec_t *vbo)
         scale[0] *= 0.5f;
         scale[1] *= 0.5f;
     }
-    if (surf->drawflags & SURF_N64_SCROLL_X) {
+
+    if (surf->drawflags & SURF_N64_SCROLL_X)
         surf->statebits |= GLS_SCROLL_ENABLE | GLS_SCROLL_X;
-    }
-    if (surf->drawflags & SURF_N64_SCROLL_Y) {
+
+    if (surf->drawflags & SURF_N64_SCROLL_Y)
         surf->statebits |= GLS_SCROLL_ENABLE | GLS_SCROLL_Y;
-    }
-    if (surf->drawflags & SURF_N64_SCROLL_FLIP) {
+
+    if (surf->drawflags & SURF_N64_SCROLL_FLIP)
         surf->statebits |= GLS_SCROLL_FLIP;
-    }
 
     mins[0] = mins[1] = 99999;
     maxs[0] = maxs[1] = -99999;
@@ -814,14 +799,12 @@ static bool create_surface_vbo(size_t size)
 {
     GLuint buf = 0;
 
-    if (!qglGenBuffers) {
+    if (!qglGenBuffers)
         return false;
-    }
 
 #if USE_GLES
-    if (size > 65536 * VERTEX_SIZE * sizeof(vec_t)) {
+    if (size > 65536 * VERTEX_SIZE * sizeof(vec_t))
         return false;
-    }
 #endif
 
     GL_ClearErrors();
@@ -965,17 +948,15 @@ void GL_RebuildLighting(void)
 
 void GL_FreeWorld(void)
 {
-    if (!gl_static.world.cache) {
+    if (!gl_static.world.cache)
         return;
-    }
 
     BSP_Free(gl_static.world.cache);
 
-    if (gl_static.world.vertices) {
+    if (gl_static.world.vertices)
         Z_Free(gl_static.world.vertices);
-    } else if (qglDeleteBuffers) {
+    else if (qglDeleteBuffers)
         qglDeleteBuffers(1, &gl_static.world.bufnum);
-    }
 
     memset(&gl_static.world, 0, sizeof(gl_static.world));
 }
@@ -990,22 +971,21 @@ void GL_LoadWorld(const char *name)
     int i, n64surfs, ret;
 
     ret = BSP_Load(name, &bsp);
-    if (!bsp) {
+    if (!bsp)
         Com_Error(ERR_DROP, "%s: couldn't load %s: %s",
                   __func__, name, BSP_ErrorString(ret));
-    }
 
     // check if the required world model was already loaded
     if (gl_static.world.cache == bsp) {
-        for (i = 0; i < bsp->numtexinfo; i++) {
+        for (i = 0; i < bsp->numtexinfo; i++)
             bsp->texinfo[i].image->registration_sequence = r_registration_sequence;
-        }
-        for (i = 0; i < bsp->numnodes; i++) {
+
+        for (i = 0; i < bsp->numnodes; i++)
             bsp->nodes[i].visframe = 0;
-        }
-        for (i = 0; i < bsp->numleafs; i++) {
+
+        for (i = 0; i < bsp->numleafs; i++)
             bsp->leafs[i].visframe = 0;
-        }
+
         Com_DPrintf("%s: reused old world model\n", __func__);
         bsp->refcount--;
         return;
@@ -1059,9 +1039,8 @@ void GL_LoadWorld(const char *name)
     // only supported in DECOUPLED_LM maps because vanilla maps have broken
     // lightofs for liquids/alphas. legacy renderer doesn't support lightmapped
     // liquids too.
-    if ((bsp->lm_decoupled || n64surfs > 100) && gl_static.use_shaders) {
+    if ((bsp->lm_decoupled || n64surfs > 100) && gl_static.use_shaders)
         gl_static.nolm_mask = SURF_NOLM_MASK_REMASTER;
-    }
 
     glr.fd.lightstyles = &(lightstyle_t){ 1 };
 
