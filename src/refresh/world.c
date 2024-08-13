@@ -170,8 +170,7 @@ static bool GL_LightPoint_(const vec3_t start, vec3_t color)
     BSP_LightPoint(&glr.lightpoint, start, end, bsp->nodes, gl_static.nolm_mask);
 
     // trace to other BSP models
-    for (i = 0; i < glr.fd.num_entities; i++) {
-        ent = &glr.fd.entities[i];
+    for (i = 0, ent = glr.fd.entities; i < glr.fd.num_entities; i++, ent++) {
         index = ent->model;
         if (!(index & BIT(31)))
             break;  // BSP models are at the start of entity array
@@ -223,9 +222,9 @@ static bool GL_LightPoint_(const vec3_t start, vec3_t color)
 
 static void GL_MarkLights_r(const mnode_t *node, const dlight_t *light, uint64_t lightbit)
 {
-    vec_t dot;
-    int count;
     mface_t *face;
+    vec_t dot;
+    int i;
 
     while (node->plane) {
         dot = PlaneDiffFast(light->transformed, node->plane);
@@ -238,19 +237,14 @@ static void GL_MarkLights_r(const mnode_t *node, const dlight_t *light, uint64_t
             continue;
         }
 
-        face = node->firstface;
-        count = node->numfaces;
-        while (count--) {
-            if (!(face->drawflags & gl_static.nolm_mask)) {
-                if (face->dlightframe != glr.dlightframe) {
-                    face->dlightframe = glr.dlightframe;
-                    face->dlightbits = 0;
-                }
-
-                face->dlightbits |= lightbit;
+        for (i = 0, face = node->firstface; i < node->numfaces; i++, face++) {
+            if (face->drawflags & gl_static.nolm_mask)
+                continue;
+            if (face->dlightframe != glr.dlightframe) {
+                face->dlightframe = glr.dlightframe;
+                face->dlightbits = 0;
             }
-
-            face++;
+            face->dlightbits |= lightbit;
         }
 
         GL_MarkLights_r(node->children[0], light, lightbit);
@@ -413,12 +407,13 @@ static void GL_MarkLeaves(void)
 
 void GL_DrawBspModel(mmodel_t *model)
 {
-    mface_t *face, *last;
+    mface_t *face;
     vec3_t bounds[2];
     vec_t dot;
     vec3_t transformed, temp;
     entity_t *ent = glr.ent;
     glCullResult_t cull;
+    int i;
 
     if (!model->numfaces)
         return;
@@ -462,8 +457,7 @@ void GL_DrawBspModel(mmodel_t *model)
     GL_ClearSolidFaces();
 
     // draw visible faces
-    last = model->firstface + model->numfaces;
-    for (face = model->firstface; face < last; face++) {
+    for (i = 0, face = model->firstface; i < model->numfaces; i++, face++) {
         // sky faces don't have their polygon built
         if (face->drawflags & (SURF_SKY | SURF_NODRAW)) {
             continue;
@@ -533,8 +527,6 @@ static inline bool GL_ClipNode(const mnode_t *node, int *clipflags)
 
 static inline void GL_DrawLeaf(const mleaf_t *leaf)
 {
-    mface_t **face, **last;
-
     if (leaf->contents == CONTENTS_SOLID) {
         return; // solid leaf
     }
@@ -542,19 +534,18 @@ static inline void GL_DrawLeaf(const mleaf_t *leaf)
         return; // door blocks sight
     }
 
-    last = leaf->firstleafface + leaf->numleaffaces;
-    for (face = leaf->firstleafface; face < last; face++) {
-        (*face)->drawframe = glr.drawframe;
-    }
+    for (int i = 0; i < leaf->numleaffaces; i++)
+        leaf->firstleafface[i]->drawframe = glr.drawframe;
 
     c.leavesDrawn++;
 }
 
 static inline void GL_DrawNode(const mnode_t *node)
 {
-    mface_t *face, *last = node->firstface + node->numfaces;
+    mface_t *face;
+    int i;
 
-    for (face = node->firstface; face < last; face++) {
+    for (i = 0, face = node->firstface; i < node->numfaces; i++, face++) {
         if (face->drawframe != glr.drawframe) {
             continue;
         }

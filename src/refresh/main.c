@@ -491,15 +491,15 @@ static void GL_OccludeFlares(void)
 
 static void GL_DrawEntities(int musthave, int canthave)
 {
-    entity_t *ent, *last;
+    entity_t *ent;
     model_t *model;
+    int i;
 
     if (!gl_drawentities->integer) {
         return;
     }
 
-    last = glr.fd.entities + glr.fd.num_entities;
-    for (ent = glr.fd.entities; ent != last; ent++) {
+    for (i = 0, ent = glr.fd.entities; i < glr.fd.num_entities; i++, ent++) {
         if (ent->flags & RF_BEAM) {
             // beams are drawn elsewhere in single batch
             glr.num_beams++;
