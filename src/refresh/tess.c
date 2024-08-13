@@ -82,7 +82,7 @@ void GL_DrawParticles(void)
     int numverts;
     vec_t *dst_vert;
     uint32_t *dst_color;
-    int bits;
+    glStateBits_t bits;
 
     if (!glr.fd.num_particles)
         return;
