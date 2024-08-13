@@ -157,7 +157,7 @@ static void GL_DrawVignette(int distance, color_t outer, color_t inner)
     dst_indices[22] = tess.numverts + 4;
     dst_indices[23] = tess.numverts + 7;
 
-    tess.flags |= GLS_BLEND_BLEND;
+    tess.flags |= GLS_BLEND_BLEND | GLS_SHADE_SMOOTH;
 
     tess.numverts += 8;
     tess.numindices += 24;
