@@ -476,13 +476,9 @@ void GL_Flush3D(void)
     GL_StateBits(state);
     GL_ArrayBits(array);
 
-    GL_BindTexture(0, tess.texnum[0]);
-    if (q_likely(tess.texnum[1])) {
-        GL_BindTexture(1, tess.texnum[1]);
-    }
-    if (tess.texnum[2]) {
-        GL_BindTexture(2, tess.texnum[2]);
-    }
+    for (int i = 0; i < MAX_TMUS; i++)
+        if (tess.texnum[i])
+            GL_BindTexture(i, tess.texnum[i]);
 
     if (gl_static.world.vertices) {
         GL_LockArrays(tess.numverts);
