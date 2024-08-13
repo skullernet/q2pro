@@ -153,6 +153,9 @@ void GL_DrawParticles(void)
 
 static void GL_FlushBeamSegments(void)
 {
+    if (!tess.numindices)
+        return;
+
     GL_BindTexture(0, TEXNUM_BEAM);
     GL_StateBits(GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE);
     GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
