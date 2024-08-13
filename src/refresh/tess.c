@@ -428,20 +428,20 @@ void GL_BindArrays(void)
 {
     if (gl_static.world.vertices) {
         GL_VertexPointer(3, VERTEX_SIZE, tess.vertices);
+        GL_ColorBytePointer(4, VERTEX_SIZE, (GLubyte *)(tess.vertices + 3));
         GL_TexCoordPointer(2, VERTEX_SIZE, tess.vertices + 4);
         if (lm.nummaps) {
             GL_LightCoordPointer(2, VERTEX_SIZE, tess.vertices + 6);
         }
-        GL_ColorBytePointer(4, VERTEX_SIZE, (GLubyte *)(tess.vertices + 3));
     } else {
         qglBindBuffer(GL_ARRAY_BUFFER, gl_static.world.bufnum);
 
         GL_VertexPointer(3, VERTEX_SIZE, VBO_OFS(0));
+        GL_ColorBytePointer(4, VERTEX_SIZE, VBO_OFS(3));
         GL_TexCoordPointer(2, VERTEX_SIZE, VBO_OFS(4));
         if (lm.nummaps) {
             GL_LightCoordPointer(2, VERTEX_SIZE, VBO_OFS(6));
         }
-        GL_ColorBytePointer(4, VERTEX_SIZE, VBO_OFS(3));
 
         qglBindBuffer(GL_ARRAY_BUFFER, 0);
     }
