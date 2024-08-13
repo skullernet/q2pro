@@ -695,9 +695,7 @@ void R_RenderFrame(const refdef_t *fd)
 
     GL_Setup3D(waterwarp);
 
-    if (gl_cull_nodes->integer) {
-        GL_SetupFrustum();
-    }
+    GL_SetupFrustum();
 
     if (!(glr.fd.rdflags & RDF_NOWORLDMODEL) && gl_drawworld->integer) {
         GL_DrawWorld();
