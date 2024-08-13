@@ -508,16 +508,15 @@ void GL_Flush3D(void)
 
 static int GL_CopyVerts(const mface_t *surf)
 {
-    void *src, *dst;
     int firstvert;
 
     if (tess.numverts + surf->numsurfedges > TESS_MAX_VERTICES) {
         GL_Flush3D();
     }
 
-    src = gl_static.world.vertices + surf->firstvert * VERTEX_SIZE;
-    dst = tess.vertices + tess.numverts * VERTEX_SIZE;
-    memcpy(dst, src, surf->numsurfedges * VERTEX_SIZE * sizeof(vec_t));
+    memcpy(tess.vertices + tess.numverts * VERTEX_SIZE,
+           gl_static.world.vertices + surf->firstvert * VERTEX_SIZE,
+           surf->numsurfedges * VERTEX_SIZE * sizeof(GLfloat));
 
     firstvert = tess.numverts;
     tess.numverts += surf->numsurfedges;
