@@ -283,7 +283,7 @@ void GL_DrawOutlines(GLsizei count, const QGL_INDEX_TYPE *indices)
         qglPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
         if (indices)
-            qglDrawElements(GL_TRIANGLES, count, QGL_INDEX_ENUM, indices);
+            GL_DrawTriangles(count, indices);
         else
             qglDrawArrays(GL_TRIANGLES, 0, count);
 

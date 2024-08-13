@@ -421,7 +421,7 @@ static void draw_celshading(const QGL_INDEX_TYPE *indices, int num_indices)
     qglPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     qglCullFace(GL_FRONT);
     GL_Color(0, 0, 0, color[3] * celscale);
-    qglDrawElements(GL_TRIANGLES, num_indices, QGL_INDEX_ENUM, indices);
+    GL_DrawTriangles(num_indices, indices);
     qglCullFace(GL_BACK);
     qglPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     qglLineWidth(1);
@@ -503,7 +503,7 @@ static void draw_shadow(const QGL_INDEX_TYPE *indices, int num_indices)
     qglEnable(GL_POLYGON_OFFSET_FILL);
     qglPolygonOffset(-1.0f, -2.0f);
     GL_Color(0, 0, 0, color[3] * 0.5f);
-    qglDrawElements(GL_TRIANGLES, num_indices, QGL_INDEX_ENUM, indices);
+    GL_DrawTriangles(num_indices, indices);
     qglDisable(GL_POLYGON_OFFSET_FILL);
 
     // once we have drawn something to stencil buffer, continue to clear it for
@@ -561,7 +561,7 @@ static void draw_alias_mesh(const QGL_INDEX_TYPE *indices, int num_indices,
         GL_VertexPointer(3, dotshading ? VERTEX_SIZE : 4, tess.vertices);
         GL_LockArrays(num_verts);
         qglColorMask(0, 0, 0, 0);
-        qglDrawElements(GL_TRIANGLES, num_indices, QGL_INDEX_ENUM, indices);
+        GL_DrawTriangles(num_indices, indices);
         qglColorMask(1, 1, 1, 1);
         GL_UnlockArrays();
     }
@@ -596,7 +596,7 @@ static void draw_alias_mesh(const QGL_INDEX_TYPE *indices, int num_indices,
 
     GL_LockArrays(num_verts);
 
-    qglDrawElements(GL_TRIANGLES, num_indices, QGL_INDEX_ENUM, indices);
+    GL_DrawTriangles(num_indices, indices);
     c.trisDrawn += num_indices / 3;
 
     draw_celshading(indices, num_indices);

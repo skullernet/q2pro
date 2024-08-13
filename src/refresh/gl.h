@@ -621,6 +621,9 @@ static inline void GL_DepthRange(GLfloat n, GLfloat f)
 
 #define GL_Color(r, g, b, a) gl_backend->color(r, g, b, a)
 
+#define GL_DrawTriangles(num_indices, indices) \
+    qglDrawElements(GL_TRIANGLES, num_indices, QGL_INDEX_ENUM, indices)
+
 enum {
     SHOWTRIS_WORLD  = BIT(0),
     SHOWTRIS_MESH   = BIT(1),
