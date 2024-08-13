@@ -338,6 +338,10 @@ static void GL_MarkLeaves(void)
     vec3_t tmp;
     const bsp_t *bsp = gl_static.world.cache;
 
+    if (gl_lockpvs->integer) {
+        return;
+    }
+
     leaf = BSP_PointLeaf(bsp->nodes, glr.fd.vieworg);
     cluster1 = cluster2 = leaf->cluster;
     VectorCopy(glr.fd.vieworg, tmp);
@@ -352,10 +356,6 @@ static void GL_MarkLeaves(void)
     }
 
     if (cluster1 == glr.viewcluster1 && cluster2 == glr.viewcluster2) {
-        return;
-    }
-
-    if (gl_lockpvs->integer) {
         return;
     }
 
