@@ -350,7 +350,9 @@ void R_DrawSkyBox(void)
         MakeSkyVec(skymins[0][i], skymins[1][i], i, tess.vertices +  5);
         MakeSkyVec(skymaxs[0][i], skymaxs[1][i], i, tess.vertices + 10);
         MakeSkyVec(skymins[0][i], skymaxs[1][i], i, tess.vertices + 15);
+        GL_LockArrays(4);
         qglDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        GL_UnlockArrays();
     }
 }
 

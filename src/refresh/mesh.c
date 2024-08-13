@@ -559,9 +559,11 @@ static void draw_alias_mesh(const QGL_INDEX_TYPE *indices, int num_indices,
         GL_ArrayBits(GLA_VERTEX);
         GL_BindTexture(0, TEXNUM_WHITE);
         GL_VertexPointer(3, dotshading ? VERTEX_SIZE : 4, tess.vertices);
+        GL_LockArrays(num_verts);
         qglColorMask(0, 0, 0, 0);
         qglDrawElements(GL_TRIANGLES, num_indices, QGL_INDEX_ENUM, indices);
         qglColorMask(1, 1, 1, 1);
+        GL_UnlockArrays();
     }
 
     if (dotshading)

@@ -375,7 +375,9 @@ static void GL_DrawSpriteModel(const model_t *model)
 
     GL_VertexPointer(3, 5, tess.vertices);
     GL_TexCoordPointer(2, 5, tess.vertices + 3);
+    GL_LockArrays(4);
     qglDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    GL_UnlockArrays();
 }
 
 static void GL_DrawNullModel(void)
@@ -401,7 +403,9 @@ static void GL_DrawNullModel(void)
     GL_ArrayBits(GLA_VERTEX | GLA_COLOR);
     GL_ColorBytePointer(4, 0, (GLubyte *)colors);
     GL_VertexPointer(3, 0, tess.vertices);
+    GL_LockArrays(6);
     qglDrawArrays(GL_LINES, 0, 6);
+    GL_UnlockArrays();
 }
 
 static void make_flare_quad(const entity_t *e, float scale)
@@ -472,9 +476,11 @@ static void GL_OccludeFlares(void)
 
         make_flare_quad(e, 2.5f);
 
+        GL_LockArrays(4);
         qglBeginQuery(gl_static.samples_passed, q->query);
         qglDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         qglEndQuery(gl_static.samples_passed);
+        GL_UnlockArrays();
 
         q->pending = true;
     }
@@ -642,7 +648,9 @@ static void GL_WaterWarp(void)
 
     GL_VertexPointer(2, 4, tess.vertices);
     GL_TexCoordPointer(2, 4, tess.vertices + 2);
+    GL_LockArrays(4);
     qglDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    GL_UnlockArrays();
 }
 
 void R_RenderFrame(const refdef_t *fd)

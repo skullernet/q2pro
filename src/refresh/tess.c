@@ -143,11 +143,14 @@ void GL_DrawParticles(void)
             p++;
         } while (--count);
 
+        GL_LockArrays(numverts);
         qglDrawArrays(GL_TRIANGLES, 0, numverts);
 
         if (gl_showtris->integer & SHOWTRIS_FX) {
             GL_DrawOutlines(numverts, NULL);
         }
+
+        GL_UnlockArrays();
     } while (total);
 }
 
@@ -160,10 +163,14 @@ static void GL_FlushBeamSegments(void)
     GL_StateBits(GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE);
     GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
 
+    GL_LockArrays(tess.numverts);
+
     qglDrawElements(GL_TRIANGLES, tess.numindices, QGL_INDEX_ENUM, tess.indices);
 
     if (gl_showtris->integer & SHOWTRIS_FX)
         GL_DrawOutlines(tess.numindices, tess.indices);
+
+    GL_UnlockArrays();
 
     tess.numverts = tess.numindices = 0;
 }
@@ -308,10 +315,14 @@ static void GL_FlushFlares(void)
     GL_StateBits(GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE | GLS_BLEND_ADD);
     GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
 
+    GL_LockArrays(tess.numverts);
+
     qglDrawElements(GL_TRIANGLES, tess.numindices, QGL_INDEX_ENUM, tess.indices);
 
     if (gl_showtris->integer & SHOWTRIS_FX)
         GL_DrawOutlines(tess.numindices, tess.indices);
+
+    GL_UnlockArrays();
 
     tess.numverts = tess.numindices = 0;
 }
