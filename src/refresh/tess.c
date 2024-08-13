@@ -181,17 +181,13 @@ static void GL_DrawBeamSegment(const vec3_t start, const vec3_t end, color_t col
     vec_t *dst_vert;
     uint32_t *dst_color;
     QGL_INDEX_TYPE *dst_indices;
-    vec_t length;
 
     VectorSubtract(end, start, d1);
     VectorSubtract(glr.fd.vieworg, start, d2);
     CrossProduct(d1, d2, d3);
-    VectorNormalize(d3);
-    VectorScale(d3, width, d3);
-
-    length = VectorLength(d1);
-    if (length < 0.1f)
+    if (VectorNormalize(d3) < 0.1f)
         return;
+    VectorScale(d3, width, d3);
 
     if (q_unlikely(tess.numverts + 4 > TESS_MAX_VERTICES ||
                    tess.numindices + 6 > TESS_MAX_INDICES))
@@ -205,8 +201,8 @@ static void GL_DrawBeamSegment(const vec3_t start, const vec3_t end, color_t col
 
     dst_vert[3] = 0; dst_vert[4] = 0;
     dst_vert[8] = 1; dst_vert[9] = 0;
-    dst_vert[13] = 1; dst_vert[14] = length;
-    dst_vert[18] = 0; dst_vert[19] = length;
+    dst_vert[13] = 1; dst_vert[14] = 1;
+    dst_vert[18] = 0; dst_vert[19] = 1;
 
     dst_color = (uint32_t *)tess.colors + tess.numverts;
     dst_color[0] = color.u32;
