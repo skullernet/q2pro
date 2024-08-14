@@ -219,12 +219,12 @@ static void GL_DrawBeamSegment(const vec3_t start, const vec3_t end, color_t col
 
 #define MIN_LIGHTNING_SEGMENTS      3
 #define MAX_LIGHTNING_SEGMENTS      7
-#define MIN_SEGMENT_LENGTH          10
+#define MIN_SEGMENT_LENGTH          16
 
 static void GL_DrawLightningBeam(const vec3_t start, const vec3_t end, color_t color, float width)
 {
     vec3_t d1, segments[MAX_LIGHTNING_SEGMENTS - 1];
-    vec_t length;
+    vec_t length, segment_length;
     int i, num_segments, max_segments;
 
     VectorSubtract(end, start, d1);
@@ -243,12 +243,13 @@ static void GL_DrawLightningBeam(const vec3_t start, const vec3_t end, color_t c
         num_segments = MIN_LIGHTNING_SEGMENTS + GL_rand() % (max_segments - MIN_LIGHTNING_SEGMENTS + 1);
     }
 
+    segment_length = length / num_segments;
     for (i = 0; i < num_segments - 1; i++) {
         int dir = GL_rand() % q_countof(bytedirs);
-        float dist = GL_frand() * 20;
-        float frac = (float)(i + 1) / num_segments;
-        VectorMA(start, frac * length, d1, segments[i]);
-        VectorMA(segments[i], dist, bytedirs[dir], segments[i]);
+        float offs = GL_frand() * (segment_length * 0.5f);
+        float dist = (i + 1) * segment_length;
+        VectorMA(start, dist, d1, segments[i]);
+        VectorMA(segments[i], offs, bytedirs[dir], segments[i]);
     }
 
     for (i = 0; i < num_segments; i++) {
