@@ -300,6 +300,7 @@ static byte gammatable[256];
 static byte intensitytable[256];
 static byte gammaintensitytable[256];
 static float colorscale;
+static bool lightscale;
 
 /*
 ================
@@ -355,6 +356,8 @@ static void GL_LightScaleTexture(byte *in, int inwidth, int inheight, imagetype_
     byte    *p;
 
     if (r_config.flags & QVF_GAMMARAMP)
+        return;
+    if (!lightscale)
         return;
 
     p = in;
@@ -1047,6 +1050,7 @@ void GL_InitImages(void)
 
     // FIXME: the name 'saturation' is misleading in this context
     colorscale = Cvar_ClampValue(gl_saturation, 0, 1);
+    lightscale = !(gl_gamma->value == 1.0f && (gl_static.use_shaders || gl_intensity->value == 1.0f));
 
     gl_texturemode_changed(gl_texturemode);
     gl_texturebits_changed(gl_texturebits);
