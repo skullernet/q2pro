@@ -71,10 +71,28 @@ static const glmode_t filterModes[] = {
 
 static const int numFilterModes = q_countof(filterModes);
 
+static void update_image_params(unsigned mask)
+{
+    int             i;
+    const image_t   *image;
+
+    for (i = 0, image = r_images; i < r_numImages; i++, image++) {
+        if (!(mask & BIT(image->type)))
+            continue;
+
+        GL_ForceTexture(0, image->texnum);
+        GL_SetFilterAndRepeat(image->type, image->flags);
+
+        if (image->glow_texnum) {
+            GL_ForceTexture(0, image->glow_texnum);
+            GL_SetFilterAndRepeat(image->type, image->flags);
+        }
+    }
+}
+
 static void gl_texturemode_changed(cvar_t *self)
 {
-    int     i;
-    image_t *image;
+    int i;
 
     for (i = 0; i < numFilterModes; i++) {
         if (!Q_stricmp(filterModes[i].name, self->string))
@@ -92,12 +110,7 @@ static void gl_texturemode_changed(cvar_t *self)
     }
 
     // change all the existing mipmap texture objects
-    for (i = 0, image = r_images; i < r_numImages; i++, image++) {
-        if (image->type == IT_WALL || image->type == IT_SKIN || image->type == IT_SKY) {
-            GL_ForceTexture(0, image->texnum);
-            GL_SetFilterAndRepeat(image->type, image->flags);
-        }
-    }
+    update_image_params(BIT(IT_WALL) | BIT(IT_SKIN) | BIT(IT_SKY));
 }
 
 static void gl_texturemode_g(genctx_t *ctx)
@@ -111,8 +124,6 @@ static void gl_texturemode_g(genctx_t *ctx)
 
 static void gl_anisotropy_changed(cvar_t *self)
 {
-    int     i;
-    image_t *image;
     GLfloat value = 1;
 
     if (!(gl_config.caps & QGL_CAP_TEXTURE_ANISOTROPY))
@@ -122,41 +133,19 @@ static void gl_anisotropy_changed(cvar_t *self)
     gl_filter_anisotropy = Cvar_ClampValue(self, 1, value);
 
     // change all the existing mipmap texture objects
-    for (i = 0, image = r_images; i < r_numImages; i++, image++) {
-        if (image->type == IT_WALL || image->type == IT_SKIN) {
-            GL_ForceTexture(0, image->texnum);
-            GL_SetFilterAndRepeat(image->type, image->flags);
-        }
-    }
+    update_image_params(BIT(IT_WALL) | BIT(IT_SKIN));
 }
 
 static void gl_bilerp_chars_changed(cvar_t *self)
 {
-    int     i;
-    image_t *image;
-
     // change all the existing charset texture objects
-    for (i = 0, image = r_images; i < r_numImages; i++, image++) {
-        if (image->type == IT_FONT) {
-            GL_ForceTexture(0, image->texnum);
-            GL_SetFilterAndRepeat(image->type, image->flags);
-        }
-    }
+    update_image_params(BIT(IT_FONT));
 }
 
 static void gl_bilerp_pics_changed(cvar_t *self)
 {
-    int     i;
-    image_t *image;
-
     // change all the existing pic texture objects
-    for (i = 0, image = r_images; i < r_numImages; i++, image++) {
-        if (image->type == IT_PIC) {
-            GL_ForceTexture(0, image->texnum);
-            GL_SetFilterAndRepeat(image->type, image->flags);
-        }
-    }
-
+    update_image_params(BIT(IT_PIC));
     GL_InitRawTexture();
 }
 
