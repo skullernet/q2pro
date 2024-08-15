@@ -305,6 +305,18 @@ static const glsection_t sections[] = {
         }
     },
 
+    // GL 4.5
+    // GL_ARB_robustness
+    {
+        .extension = "GL_ARB_robustness",
+        .ver_gl = QGL_VER(4, 5),
+        .ver_es = QGL_VER(3, 2),
+        .functions = (const glfunction_t []) {
+            QGL_FN(ReadnPixels),
+            { NULL }
+        }
+    },
+
     // GL 4.6
     // GL_EXT_texture_filter_anisotropic
     {

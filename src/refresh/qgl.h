@@ -166,6 +166,9 @@ QGLAPI void (APIENTRYP qglDepthRangef)(GLfloat n, GLfloat f);
 // GL 4.3
 QGLAPI void (APIENTRYP qglDebugMessageCallback)(GLDEBUGPROC callback, const void *userParam);
 
+// GL 4.5
+QGLAPI void (APIENTRYP qglReadnPixels)(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLsizei bufSize, void *data);
+
 // GL_ARB_fragment_program
 QGLAPI void (APIENTRYP qglBindProgramARB)(GLenum target, GLuint program);
 QGLAPI void (APIENTRYP qglDeleteProgramsARB)(GLsizei n, const GLuint *programs);

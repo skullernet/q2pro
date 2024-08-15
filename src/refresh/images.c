@@ -1302,7 +1302,12 @@ static void make_screenshot(const char *name, const char *ext,
         .async = async,
     };
 
-    IMG_ReadPixels(&s);
+    ret = IMG_ReadPixels(&s);
+    if (ret < 0) {
+        s.status = ret;
+        screenshot_done_cb(&s);
+        return;
+    }
 
     if (async) {
         asyncwork_t work = {

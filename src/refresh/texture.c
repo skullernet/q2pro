@@ -731,21 +731,45 @@ void IMG_Unload(image_t *image)
 }
 
 // for screenshots
-void IMG_ReadPixels(screenshot_t *s)
+int IMG_ReadPixels(screenshot_t *s)
 {
     int format = gl_config.ver_es ? GL_RGBA : GL_RGB;
-    int align = 4;
+    int align = 4, bpp = format == GL_RGBA ? 4 : 3;
+
+    if (r_config.width < 1 || r_config.height < 1)
+        return Q_ERR(EINVAL);
 
     qglGetIntegerv(GL_PACK_ALIGNMENT, &align);
 
-    s->bpp = format == GL_RGBA ? 4 : 3;
-    s->rowbytes = Q_ALIGN(r_config.width * s->bpp, align);
-    s->pixels = Z_Malloc(s->rowbytes * r_config.height);
+    if (r_config.width > (INT_MAX - align + 1) / bpp)
+        return Q_ERR(EOVERFLOW);
+
+    int rowbytes = Q_ALIGN(r_config.width * bpp, align);
+
+    if (r_config.height > INT_MAX / rowbytes)
+        return Q_ERR(EOVERFLOW);
+
+    int buf_size = rowbytes * r_config.height;
+
+    s->bpp = bpp;
+    s->rowbytes = rowbytes;
+    s->pixels = Z_Malloc(buf_size);
     s->width = r_config.width;
     s->height = r_config.height;
 
-    qglReadPixels(0, 0, r_config.width, r_config.height,
-                  format, GL_UNSIGNED_BYTE, s->pixels);
+    GL_ClearErrors();
+
+    if (qglReadnPixels)
+        qglReadnPixels(0, 0, r_config.width, r_config.height,
+                       format, GL_UNSIGNED_BYTE, buf_size, s->pixels);
+    else
+        qglReadPixels(0, 0, r_config.width, r_config.height,
+                      format, GL_UNSIGNED_BYTE, s->pixels);
+
+    if (GL_ShowErrors("Failed to read pixels"))
+        return Q_ERR_FAILURE;
+
+    return Q_ERR_SUCCESS;
 }
 
 static void GL_BuildIntensityTable(void)

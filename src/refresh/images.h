@@ -105,4 +105,4 @@ struct screenshot_s {
     bool async;
 };
 
-void IMG_ReadPixels(screenshot_t *s);
+int IMG_ReadPixels(screenshot_t *s);
