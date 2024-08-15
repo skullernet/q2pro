@@ -260,17 +260,8 @@ static bool scrap_dirty;
 static void Scrap_Init(void)
 {
     // make scrap texture initially transparent
+    memset(scrap_inuse, 0, sizeof(scrap_inuse));
     memset(scrap_data, 0, sizeof(scrap_data));
-}
-
-static void Scrap_Shutdown(void)
-{
-    int i;
-
-    for (i = 0; i < SCRAP_BLOCK_WIDTH; i++) {
-        scrap_inuse[i] = 0;
-    }
-
     scrap_dirty = false;
 }
 
@@ -1117,8 +1108,8 @@ void GL_ShutdownImages(void)
     r_charset = 0;
 #endif
 
+    scrap_dirty = false;
+
     IMG_FreeAll();
     IMG_Shutdown();
-
-    Scrap_Shutdown();
 }
