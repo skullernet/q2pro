@@ -257,6 +257,8 @@ static const glsection_t sections[] = {
     {
         .ver_gl = QGL_VER(3, 0),
         .ver_es = QGL_VER(3, 0),
+        // NPOT textures are technically GL 2.0, but only enable them on 3.0 to
+        // ensure full hardware support, including mipmaps.
         .caps = QGL_CAP_TEXTURE_MAX_LEVEL | QGL_CAP_TEXTURE_NON_POWER_OF_TWO,
         .functions = (const glfunction_t []) {
             QGL_FN(GetStringi),
@@ -586,7 +588,7 @@ bool QGL_Init(void)
     }
 
     if (gl_config.ver_es) {
-        // don't ever attempt to use shaders with GL ES < 3.0
+        // don't ever attempt to use shaders with GL ES < 3.0, or GLSL ES < 3.0
         if (gl_config.ver_es < QGL_VER(3, 0) || gl_config.ver_sl < QGL_VER(3, 0))
             gl_config.caps &= ~QGL_CAP_SHADER;
 
@@ -597,7 +599,7 @@ bool QGL_Init(void)
             return false;
         }
     } else {
-        // don't ever attempt to use shaders with GL < 3.0
+        // don't ever attempt to use shaders with GL < 3.0, or GLSL < 1.30
         if (gl_config.ver_gl < QGL_VER(3, 0) || gl_config.ver_sl < QGL_VER(1, 30))
             gl_config.caps &= ~QGL_CAP_SHADER;
 
