@@ -757,20 +757,18 @@ void IMG_ReadPixels(screenshot_t *s)
 static void GL_BuildIntensityTable(void)
 {
     int i, j;
-    float f;
+    float f = Cvar_ClampValue(gl_intensity, 1, 5);
 
-    f = Cvar_ClampValue(gl_intensity, 1, 5);
-    if (gl_static.use_shaders)
-        f = 1;
-    for (i = 0; i < 256; i++) {
-        j = i * f;
-        if (j > 255) {
-            j = 255;
-        }
-        intensitytable[i] = j;
+    if (gl_static.use_shaders || f == 1.0f) {
+        for (i = 0; i < 256; i++)
+            intensitytable[i] = i;
+        j = 255;
+    } else {
+        for (i = 0; i < 256; i++)
+            intensitytable[i] = min(i * f, 255);
+        j = 255.0f / f;
     }
 
-    j = 255.0f / f;
     gl_static.inverse_intensity_33 = MakeColor(j, j, j, 85);
     gl_static.inverse_intensity_66 = MakeColor(j, j, j, 170);
     gl_static.inverse_intensity_100 = MakeColor(j, j, j, 255);
@@ -789,10 +787,7 @@ static void GL_BuildGammaTables(void)
     } else {
         for (i = 0; i < 256; i++) {
             inf = 255 * pow((i + 0.5) / 255.5, g) + 0.5;
-            if (inf > 255) {
-                inf = 255;
-            }
-            gammatable[i] = inf;
+            gammatable[i] = min(inf, 255);
             gammaintensitytable[i] = intensitytable[gammatable[i]];
         }
     }
