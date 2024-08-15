@@ -127,6 +127,15 @@ static const glsection_t sections[] = {
         }
     },
 
+    // GL 1.1, ES 3.0
+    // EXT_unpack_subimage
+    {
+        .extension = "GL_EXT_unpack_subimage",
+        .ver_gl = QGL_VER(1, 1),
+        .ver_es = QGL_VER(3, 0),
+        .caps = QGL_CAP_UNPACK_SUBIMAGE,
+    },
+
     // ES 1.1
     {
         .ver_es = QGL_VER(1, 1),

@@ -148,6 +148,7 @@ typedef enum {
     QGL_CAP_TEXTURE_LOD_BIAS            = BIT(5),
     QGL_CAP_TEXTURE_NON_POWER_OF_TWO    = BIT(6),
     QGL_CAP_TEXTURE_ANISOTROPY          = BIT(7),
+    QGL_CAP_UNPACK_SUBIMAGE             = BIT(8),
 } glcap_t;
 
 #define QGL_VER(major, minor)   ((major) * 100 + (minor))
