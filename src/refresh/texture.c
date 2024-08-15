@@ -94,10 +94,9 @@ static void gl_texturemode_changed(cvar_t *self)
 {
     int i;
 
-    for (i = 0; i < numFilterModes; i++) {
+    for (i = 0; i < numFilterModes; i++)
         if (!Q_stricmp(filterModes[i].name, self->string))
             break;
-    }
 
     if (i == numFilterModes) {
         Com_WPrintf("Bad texture mode: %s\n", self->string);
@@ -180,7 +179,7 @@ IMAGE PROCESSING
 static void IMG_ResampleTexture(const byte *in, int inwidth, int inheight,
                                 byte *out, int outwidth, int outheight)
 {
-    int i, j;
+    int         i, j;
     const byte  *inrow1, *inrow2;
     unsigned    frac, fracstep;
     unsigned    p1[MAX_TEXTURE_SIZE], p2[MAX_TEXTURE_SIZE];
@@ -270,9 +269,8 @@ void Scrap_Upload(void)
     byte *data;
     int maxlevel;
 
-    if (!scrap_dirty) {
+    if (!scrap_dirty)
         return;
-    }
 
     GL_ForceTexture(0, TEXNUM_SCRAP);
 
@@ -402,16 +400,12 @@ static void GL_ColorInvertTexture(byte *in, int inwidth, int inheight, imagetype
 
 static bool GL_TextureHasAlpha(const byte *data, int width, int height)
 {
-    int         i, c;
-    const byte  *scan;
+    int     i, c;
 
     c = width * height;
-    scan = data + 3;
-    for (i = 0; i < c; i++, scan += 4) {
-        if (*scan != 255) {
+    for (i = 0, data += 3; i < c; i++, data += 4)
+        if (*data != 255)
             return true;
-        }
-    }
 
     return false;
 }
@@ -505,9 +499,8 @@ static void GL_Upload32(byte *data, int width, int height, int baselevel, imaget
         upload_alpha = GL_TextureHasAlpha(scaled, scaled_width, scaled_height);
     }
 
-    if (upload_alpha) {
+    if (upload_alpha)
         comp = gl_tex_alpha_format;
-    }
 
     qglTexImage2D(GL_TEXTURE_2D, baselevel, comp, scaled_width,
                   scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaled);
@@ -535,9 +528,8 @@ static void GL_Upload32(byte *data, int width, int height, int baselevel, imaget
         }
     }
 
-    if (scaled != data) {
+    if (scaled != data)
         FS_FreeTempMem(scaled);
-    }
 }
 
 static int GL_UpscaleLevel(int width, int height, imagetype_t type, imageflags_t flags)
@@ -715,9 +707,8 @@ void IMG_Load(image_t *image, byte *pic)
 
         GL_SetFilterAndRepeat(image->type, image->flags);
 
-        if (upload_alpha) {
+        if (upload_alpha)
             image->flags |= IF_TRANSPARENT;
-        }
         image->upload_width = upload_width << maxlevel;     // after power of 2 and scales
         image->upload_height = upload_height << maxlevel;
         image->sl = 0;
@@ -1036,17 +1027,15 @@ void GL_InitImages(void)
 
     IMG_GetPalette();
 
-    if (gl_upscale_pcx->integer) {
+    if (gl_upscale_pcx->integer)
         HQ2x_Init();
-    }
 
     GL_BuildIntensityTable();
 
-    if (r_config.flags & QVF_GAMMARAMP) {
+    if (r_config.flags & QVF_GAMMARAMP)
         gl_gamma_changed(gl_gamma);
-    } else {
+    else
         GL_BuildGammaTables();
-    }
 
     // FIXME: the name 'saturation' is misleading in this context
     colorscale = Cvar_ClampValue(gl_saturation, 0, 1);

@@ -562,16 +562,14 @@ static inline void GL_ArrayBits(GLbitfield bits)
 
 static inline void GL_LockArrays(GLsizei count)
 {
-    if (qglLockArraysEXT) {
+    if (qglLockArraysEXT)
         qglLockArraysEXT(0, count);
-    }
 }
 
 static inline void GL_UnlockArrays(void)
 {
-    if (qglUnlockArraysEXT) {
+    if (qglUnlockArraysEXT)
         qglUnlockArraysEXT();
-    }
 }
 
 static inline void GL_ForceMatrix(const GLfloat *matrix)

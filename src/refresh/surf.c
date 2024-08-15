@@ -101,8 +101,9 @@ static float blocklights[MAX_BLOCKLIGHTS * 3];
 
 static void put_blocklights(const mface_t *surf)
 {
-    float *bl, add, modulate, scale = lm.scale;
+    float add, modulate, scale = lm.scale;
     int i, j, smax, tmax, stride = 1 << lm.block_shift;
+    const float *bl;
     byte *out;
 
     if (gl_static.use_shaders) {
@@ -133,13 +134,13 @@ static void put_blocklights(const mface_t *surf)
 
 static void add_dynamic_lights(const mface_t *surf)
 {
-    dlight_t    *light;
-    vec3_t      point;
-    vec2_t      local;
-    vec_t       s_scale, t_scale, sd, td;
-    vec_t       dist, rad, minlight, scale, frac;
-    float       *bl;
-    int         i, smax, tmax, s, t;
+    const dlight_t  *light;
+    vec3_t          point;
+    vec2_t          local;
+    vec_t           s_scale, t_scale, sd, td;
+    vec_t           dist, rad, minlight, scale, frac;
+    float           *bl;
+    int             i, smax, tmax, s, t;
 
     smax = surf->lm_width;
     tmax = surf->lm_height;
@@ -190,8 +191,8 @@ static void add_dynamic_lights(const mface_t *surf)
 
 static void add_light_styles(mface_t *surf)
 {
-    lightstyle_t *style;
-    byte *src;
+    const lightstyle_t *style;
+    const byte *src;
     float *bl;
     int i, j, size = surf->lm_width * surf->lm_height;
 
@@ -263,7 +264,7 @@ static void update_dynamic_lightmap(mface_t *surf)
 // updates lightmaps in RAM
 void GL_PushLights(mface_t *surf)
 {
-    lightstyle_t *style;
+    const lightstyle_t *style;
     int i;
 
     if (!surf->light_m)
@@ -903,7 +904,7 @@ static void upload_world_surfaces(void)
 
 static void set_world_size(void)
 {
-    mnode_t *node = gl_static.world.cache->nodes;
+    const mnode_t *node = gl_static.world.cache->nodes;
     vec_t size, temp;
     int i;
 

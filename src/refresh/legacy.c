@@ -23,25 +23,22 @@ static void legacy_state_bits(GLbitfield bits)
 {
     GLbitfield diff = bits ^ gls.state_bits;
 
-    if (diff & GLS_COMMON_MASK) {
+    if (diff & GLS_COMMON_MASK)
         GL_CommonStateBits(bits);
-    }
 
     if (diff & GLS_ALPHATEST_ENABLE) {
-        if (bits & GLS_ALPHATEST_ENABLE) {
+        if (bits & GLS_ALPHATEST_ENABLE)
             qglEnable(GL_ALPHA_TEST);
-        } else {
+        else
             qglDisable(GL_ALPHA_TEST);
-        }
     }
 
     if (diff & GLS_TEXTURE_REPLACE) {
         GL_ActiveTexture(0);
-        if (bits & GLS_TEXTURE_REPLACE) {
+        if (bits & GLS_TEXTURE_REPLACE)
             qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-        } else {
+        else
             qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-        }
     }
 
     if (diff & GLS_SCROLL_MASK) {
@@ -58,11 +55,10 @@ static void legacy_state_bits(GLbitfield bits)
 
     if (diff & GLS_LIGHTMAP_ENABLE) {
         GL_ActiveTexture(1);
-        if (bits & GLS_LIGHTMAP_ENABLE) {
+        if (bits & GLS_LIGHTMAP_ENABLE)
             qglEnable(GL_TEXTURE_2D);
-        } else {
+        else
             qglDisable(GL_TEXTURE_2D);
-        }
     }
 
     if ((diff & GLS_WARP_ENABLE) && gl_static.programs[0]) {
@@ -78,11 +74,10 @@ static void legacy_state_bits(GLbitfield bits)
     }
 
     if (diff & GLS_SHADE_SMOOTH) {
-        if (bits & GLS_SHADE_SMOOTH) {
+        if (bits & GLS_SHADE_SMOOTH)
             qglShadeModel(GL_SMOOTH);
-        } else {
+        else
             qglShadeModel(GL_FLAT);
-        }
     }
 }
 
@@ -91,37 +86,33 @@ static void legacy_array_bits(GLbitfield bits)
     GLbitfield diff = bits ^ gls.array_bits;
 
     if (diff & GLA_VERTEX) {
-        if (bits & GLA_VERTEX) {
+        if (bits & GLA_VERTEX)
             qglEnableClientState(GL_VERTEX_ARRAY);
-        } else {
+        else
             qglDisableClientState(GL_VERTEX_ARRAY);
-        }
     }
 
     if (diff & GLA_TC) {
         GL_ClientActiveTexture(0);
-        if (bits & GLA_TC) {
+        if (bits & GLA_TC)
             qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        } else {
+        else
             qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
-        }
     }
 
     if (diff & GLA_LMTC) {
         GL_ClientActiveTexture(1);
-        if (bits & GLA_LMTC) {
+        if (bits & GLA_LMTC)
             qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        } else {
+        else
             qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
-        }
     }
 
     if (diff & GLA_COLOR) {
-        if (bits & GLA_COLOR) {
+        if (bits & GLA_COLOR)
             qglEnableClientState(GL_COLOR_ARRAY);
-        } else {
+        else
             qglDisableClientState(GL_COLOR_ARRAY);
-        }
     }
 }
 
@@ -213,9 +204,8 @@ static void legacy_init(void)
 {
     GLuint prog = 0;
 
-    if (!qglGenProgramsARB) {
+    if (!qglGenProgramsARB)
         return;
-    }
 
     GL_ClearErrors();
 

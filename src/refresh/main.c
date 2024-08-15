@@ -131,19 +131,16 @@ glCullResult_t GL_CullBox(const vec3_t bounds[2])
     int i, bits;
     glCullResult_t cull;
 
-    if (!gl_cull_models->integer) {
+    if (!gl_cull_models->integer)
         return CULL_IN;
-    }
 
     cull = CULL_IN;
     for (i = 0; i < 4; i++) {
         bits = BoxOnPlaneSide(bounds[0], bounds[1], &glr.frustumPlanes[i]);
-        if (bits == BOX_BEHIND) {
+        if (bits == BOX_BEHIND)
             return CULL_OUT;
-        }
-        if (bits != BOX_INFRONT) {
+        if (bits != BOX_INFRONT)
             cull = CULL_CLIP;
-        }
     }
 
     return cull;
@@ -152,24 +149,21 @@ glCullResult_t GL_CullBox(const vec3_t bounds[2])
 glCullResult_t GL_CullSphere(const vec3_t origin, float radius)
 {
     float dist;
-    cplane_t *p;
-    int i;
+    const cplane_t *p;
     glCullResult_t cull;
+    int i;
 
-    if (!gl_cull_models->integer) {
+    if (!gl_cull_models->integer)
         return CULL_IN;
-    }
 
     radius *= glr.entscale;
     cull = CULL_IN;
     for (i = 0, p = glr.frustumPlanes; i < 4; i++, p++) {
         dist = PlaneDiff(origin, p);
-        if (dist < -radius) {
+        if (dist < -radius)
             return CULL_OUT;
-        }
-        if (dist <= radius) {
+        if (dist <= radius)
             cull = CULL_CLIP;
-        }
     }
 
     return cull;
@@ -178,15 +172,14 @@ glCullResult_t GL_CullSphere(const vec3_t origin, float radius)
 glCullResult_t GL_CullLocalBox(const vec3_t origin, const vec3_t bounds[2])
 {
     vec3_t points[8];
-    cplane_t *p;
+    const cplane_t *p;
     int i, j;
     vec_t dot;
     bool infront;
     glCullResult_t cull;
 
-    if (!gl_cull_models->integer) {
+    if (!gl_cull_models->integer)
         return CULL_IN;
-    }
 
     for (i = 0; i < 8; i++) {
         VectorCopy(origin, points[i]);
@@ -202,19 +195,16 @@ glCullResult_t GL_CullLocalBox(const vec3_t origin, const vec3_t bounds[2])
             dot = DotProduct(points[j], p->normal);
             if (dot >= p->dist) {
                 infront = true;
-                if (cull == CULL_CLIP) {
+                if (cull == CULL_CLIP)
                     break;
-                }
             } else {
                 cull = CULL_CLIP;
-                if (infront) {
+                if (infront)
                     break;
-                }
             }
         }
-        if (!infront) {
+        if (!infront)
             return CULL_OUT;
-        }
     }
 
     return cull;
@@ -232,12 +222,10 @@ bool GL_AllocBlock(int width, int height, uint16_t *inuse,
         max_inuse = 0;
         for (j = 0; j < w; j++) {
             k = inuse[i + j];
-            if (k >= min_inuse) {
+            if (k >= min_inuse)
                 break;
-            }
-            if (max_inuse < k) {
+            if (max_inuse < k)
                 max_inuse = k;
-            }
         }
         if (j == w) {
             x = i;
@@ -245,13 +233,11 @@ bool GL_AllocBlock(int width, int height, uint16_t *inuse,
         }
     }
 
-    if (y + h > height) {
+    if (y + h > height)
         return false;
-    }
 
-    for (i = 0; i < w; i++) {
+    for (i = 0; i < w; i++)
         inuse[x + i] = y + h;
-    }
 
     *s = x;
     *t = y;
@@ -301,23 +287,23 @@ void GL_SetEntityAxis(void)
 
 void GL_RotationMatrix(GLfloat *matrix)
 {
-    matrix[0] = glr.entaxis[0][0];
-    matrix[4] = glr.entaxis[1][0];
-    matrix[8] = glr.entaxis[2][0];
+    matrix[ 0] = glr.entaxis[0][0];
+    matrix[ 4] = glr.entaxis[1][0];
+    matrix[ 8] = glr.entaxis[2][0];
     matrix[12] = glr.ent->origin[0];
 
-    matrix[1] = glr.entaxis[0][1];
-    matrix[5] = glr.entaxis[1][1];
-    matrix[9] = glr.entaxis[2][1];
+    matrix[ 1] = glr.entaxis[0][1];
+    matrix[ 5] = glr.entaxis[1][1];
+    matrix[ 9] = glr.entaxis[2][1];
     matrix[13] = glr.ent->origin[1];
 
-    matrix[2] = glr.entaxis[0][2];
-    matrix[6] = glr.entaxis[1][2];
+    matrix[ 2] = glr.entaxis[0][2];
+    matrix[ 6] = glr.entaxis[1][2];
     matrix[10] = glr.entaxis[2][2];
     matrix[14] = glr.ent->origin[2];
 
-    matrix[3] = 0;
-    matrix[7] = 0;
+    matrix[ 3] = 0;
+    matrix[ 7] = 0;
     matrix[11] = 0;
     matrix[15] = 1;
 }
@@ -336,17 +322,16 @@ static void GL_DrawSpriteModel(const model_t *model)
     const entity_t *e = glr.ent;
     const mspriteframe_t *frame = &model->spriteframes[e->frame % model->numframes];
     const image_t *image = frame->image;
-    const float alpha = (e->flags & RF_TRANSLUCENT) ? e->alpha : 1;
+    const float alpha = (e->flags & RF_TRANSLUCENT) ? e->alpha : 1.0f;
     glStateBits_t bits = GLS_DEPTHMASK_FALSE;
     vec3_t up, down, left, right;
 
-    if (alpha == 1) {
+    if (alpha == 1.0f) {
         if (image->flags & IF_TRANSPARENT) {
-            if (image->flags & IF_PALETTED) {
+            if (image->flags & IF_PALETTED)
                 bits |= GLS_ALPHATEST_ENABLE;
-            } else {
+            else
                 bits |= GLS_BLEND_BLEND;
-            }
         }
     } else {
         bits |= GLS_BLEND_BLEND;
@@ -495,9 +480,8 @@ static void GL_DrawEntities(int musthave, int canthave)
     model_t *model;
     int i;
 
-    if (!gl_drawentities->integer) {
+    if (!gl_drawentities->integer)
         return;
-    }
 
     for (i = 0, ent = glr.fd.entities; i < glr.fd.num_entities; i++, ent++) {
         if (ent->flags & RF_BEAM) {
@@ -512,9 +496,8 @@ static void GL_DrawEntities(int musthave, int canthave)
             continue;
         }
 
-        if ((ent->flags & musthave) != musthave || (ent->flags & canthave)) {
+        if ((ent->flags & musthave) != musthave || (ent->flags & canthave))
             continue;
-        }
 
         glr.ent = ent;
 
@@ -526,15 +509,13 @@ static void GL_DrawEntities(int musthave, int canthave)
             const bsp_t *bsp = gl_static.world.cache;
             int index = ~ent->model;
 
-            if (glr.fd.rdflags & RDF_NOWORLDMODEL) {
+            if (glr.fd.rdflags & RDF_NOWORLDMODEL)
                 Com_Error(ERR_DROP, "%s: inline model without world",
                           __func__);
-            }
 
-            if (index < 1 || index >= bsp->nummodels) {
+            if (index < 1 || index >= bsp->nummodels)
                 Com_Error(ERR_DROP, "%s: inline model %d out of range",
                           __func__, index);
-            }
 
             GL_DrawBspModel(&bsp->models[index]);
             continue;
@@ -559,9 +540,8 @@ static void GL_DrawEntities(int musthave, int canthave)
             Q_assert(!"bad model type");
         }
 
-        if (gl_showorigins->integer) {
+        if (gl_showorigins->integer)
             GL_DrawNullModel();
-        }
     }
 }
 
@@ -571,11 +551,10 @@ static void GL_DrawTearing(void)
 
     // alternate colors to make tearing obvious
     i++;
-    if (i & 1) {
+    if (i & 1)
         qglClearColor(1, 1, 1, 1);
-    } else {
+    else
         qglClearColor(1, 0, 0, 0);
-    }
 
     qglClear(GL_COLOR_BUFFER_BIT);
     qglClearColor(0, 0, 0, 1);
@@ -583,10 +562,8 @@ static void GL_DrawTearing(void)
 
 static const char *GL_ErrorString(GLenum err)
 {
-    const char *str;
-
     switch (err) {
-#define E(x) case GL_##x: str = "GL_"#x; break;
+#define E(x) case GL_##x: return "GL_"#x;
         E(NO_ERROR)
         E(INVALID_ENUM)
         E(INVALID_VALUE)
@@ -594,11 +571,10 @@ static const char *GL_ErrorString(GLenum err)
         E(STACK_OVERFLOW)
         E(STACK_UNDERFLOW)
         E(OUT_OF_MEMORY)
-    default: str = "UNKNOWN ERROR";
 #undef E
     }
 
-    return str;
+    return "UNKNOWN ERROR";
 }
 
 void GL_ClearErrors(void)
@@ -613,14 +589,12 @@ bool GL_ShowErrors(const char *func)
 {
     GLenum err = qglGetError();
 
-    if (err == GL_NO_ERROR) {
+    if (err == GL_NO_ERROR)
         return false;
-    }
 
     do {
-        if (gl_showerrors->integer) {
+        if (gl_showerrors->integer)
             Com_EPrintf("%s: %s\n", func, GL_ErrorString(err));
-        }
     } while ((err = qglGetError()) != GL_NO_ERROR);
 
     return true;
@@ -669,9 +643,8 @@ void R_RenderFrame(const refdef_t *fd)
     glr.num_beams = 0;
     glr.num_flares = 0;
 
-    if (gl_dynamic->integer != 1 || gl_vertexlight->integer) {
+    if (gl_dynamic->integer != 1 || gl_vertexlight->integer)
         glr.fd.num_dlights = 0;
-    }
 
     if (lm.dirty) {
         GL_RebuildLighting();
@@ -689,17 +662,15 @@ void R_RenderFrame(const refdef_t *fd)
         waterwarp = glr.framebuffer_ok;
     }
 
-    if (waterwarp) {
+    if (waterwarp)
         qglBindFramebuffer(GL_FRAMEBUFFER, gl_static.warp_framebuffer);
-    }
 
     GL_Setup3D(waterwarp);
 
     GL_SetupFrustum();
 
-    if (!(glr.fd.rdflags & RDF_NOWORLDMODEL) && gl_drawworld->integer) {
+    if (!(glr.fd.rdflags & RDF_NOWORLDMODEL) && gl_drawworld->integer)
         GL_DrawWorld();
-    }
 
     GL_DrawEntities(0, RF_TRANSLUCENT);
 
@@ -713,31 +684,26 @@ void R_RenderFrame(const refdef_t *fd)
 
     GL_DrawFlares();
 
-    if (!(glr.fd.rdflags & RDF_NOWORLDMODEL)) {
+    if (!(glr.fd.rdflags & RDF_NOWORLDMODEL))
         GL_DrawAlphaFaces();
-    }
 
     GL_DrawEntities(RF_TRANSLUCENT | RF_WEAPONMODEL, 0);
 
-    if (waterwarp) {
+    if (waterwarp)
         qglBindFramebuffer(GL_FRAMEBUFFER, 0);
-    }
 
     // go back into 2D mode
     GL_Setup2D();
 
-    if (waterwarp) {
+    if (waterwarp)
         GL_WaterWarp();
-    }
 
-    if (gl_polyblend->integer) {
+    if (gl_polyblend->integer)
         GL_Blend();
-    }
 
 #if USE_DEBUG
-    if (gl_lightmap->integer > 1) {
+    if (gl_lightmap->integer > 1)
         Draw_Lightmaps();
-    }
 #endif
 
     GL_ShowErrors(__func__);
@@ -747,15 +713,13 @@ void R_BeginFrame(void)
 {
     memset(&c, 0, sizeof(c));
 
-    if (gl_finish->integer) {
+    if (gl_finish->integer)
         qglFinish();
-    }
 
     GL_Setup2D();
 
-    if (gl_clear->integer) {
+    if (gl_clear->integer)
         qglClear(GL_COLOR_BUFFER_BIT);
-    }
 
     GL_ShowErrors(__func__);
 }
@@ -767,15 +731,13 @@ void R_EndFrame(void)
         GL_Flush2D();
         Draw_Stats();
     }
-    if (gl_showscrap->integer) {
+    if (gl_showscrap->integer)
         Draw_Scrap();
-    }
 #endif
     GL_Flush2D();
 
-    if (gl_showtearing->integer) {
+    if (gl_showtearing->integer)
         GL_DrawTearing();
-    }
 
     GL_ShowErrors(__func__);
 
@@ -1013,9 +975,8 @@ static void GL_InitTables(void)
         gl_static.latlngtab[i][1] = (int)(lng * (255 / (2 * M_PIf))) & 255;
     }
 
-    for (int i = 0; i < 256; i++) {
+    for (int i = 0; i < 256; i++)
         gl_static.sintab[i] = sinf(i * (2 * M_PIf / 255));
-    }
 }
 
 static void GL_PostInit(void)
@@ -1080,14 +1041,12 @@ bool R_Init(bool total)
 
     // initialize OS-specific parts of OpenGL
     // create the window and set up the context
-    if (!vid->init()) {
+    if (!vid->init())
         return false;
-    }
 
     // initialize our QGL dynamic bindings
-    if (!QGL_Init()) {
+    if (!QGL_Init())
         goto fail;
-    }
 
     // get various limits from OpenGL
     GL_SetupConfig();
@@ -1129,9 +1088,8 @@ void R_Shutdown(bool total)
     GL_ShutdownImages();
     MOD_Shutdown();
 
-    if (!total) {
+    if (!total)
         return;
-    }
 
     GL_ShutdownState();
 

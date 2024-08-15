@@ -290,35 +290,31 @@ static void shader_array_bits(GLbitfield bits)
     GLbitfield diff = bits ^ gls.array_bits;
 
     if (diff & GLA_VERTEX) {
-        if (bits & GLA_VERTEX) {
+        if (bits & GLA_VERTEX)
             qglEnableVertexAttribArray(VERT_ATTR_POS);
-        } else {
+        else
             qglDisableVertexAttribArray(VERT_ATTR_POS);
-        }
     }
 
     if (diff & GLA_TC) {
-        if (bits & GLA_TC) {
+        if (bits & GLA_TC)
             qglEnableVertexAttribArray(VERT_ATTR_TC);
-        } else {
+        else
             qglDisableVertexAttribArray(VERT_ATTR_TC);
-        }
     }
 
     if (diff & GLA_LMTC) {
-        if (bits & GLA_LMTC) {
+        if (bits & GLA_LMTC)
             qglEnableVertexAttribArray(VERT_ATTR_LMTC);
-        } else {
+        else
             qglDisableVertexAttribArray(VERT_ATTR_LMTC);
-        }
     }
 
     if (diff & GLA_COLOR) {
-        if (bits & GLA_COLOR) {
+        if (bits & GLA_COLOR)
             qglEnableVertexAttribArray(VERT_ATTR_COLOR);
-        } else {
+        else
             qglDisableVertexAttribArray(VERT_ATTR_COLOR);
-        }
     }
 }
 

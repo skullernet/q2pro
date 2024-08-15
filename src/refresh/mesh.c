@@ -71,17 +71,16 @@ static inline vec_t shadedot(const vec3_t normal)
     vec_t d = DotProduct(normal, shadedir);
 
     // matches the anormtab.h precalculations
-    if (d < 0) {
+    if (d < 0)
         d *= 0.3f;
-    }
 
     return d + 1;
 }
 
 static inline vec_t *get_static_normal(vec3_t normal, const maliasvert_t *vert)
 {
-    unsigned int lat = vert->norm[0];
-    unsigned int lng = vert->norm[1];
+    unsigned lat = vert->norm[0];
+    unsigned lng = vert->norm[1];
 
     normal[0] = TAB_SIN(lat) * TAB_COS(lng);
     normal[1] = TAB_SIN(lat) * TAB_SIN(lng);
@@ -342,25 +341,20 @@ static void setup_color(void)
 
     if (flags & RF_SHELL_MASK) {
         VectorClear(color);
-        if (flags & RF_SHELL_LITE_GREEN) {
+        if (flags & RF_SHELL_LITE_GREEN)
             VectorSet(color, 0.56f, 0.93f, 0.56f);
-        }
-        if (flags & RF_SHELL_HALF_DAM) {
+        if (flags & RF_SHELL_HALF_DAM)
             VectorSet(color, 0.56f, 0.59f, 0.45f);
-        }
         if (flags & RF_SHELL_DOUBLE) {
             color[0] = 0.9f;
             color[1] = 0.7f;
         }
-        if (flags & RF_SHELL_RED) {
+        if (flags & RF_SHELL_RED)
             color[0] = 1;
-        }
-        if (flags & RF_SHELL_GREEN) {
+        if (flags & RF_SHELL_GREEN)
             color[1] = 1;
-        }
-        if (flags & RF_SHELL_BLUE) {
+        if (flags & RF_SHELL_BLUE)
             color[2] = 1;
-        }
     } else if (flags & RF_FULLBRIGHT) {
         VectorSet(color, 1, 1, 1);
     } else if ((flags & RF_IR_VISIBLE) && (glr.fd.rdflags & RDF_IRGOGGLES)) {
@@ -391,11 +385,10 @@ static void setup_color(void)
         color[2] = Q_clipf(color[2], 0, 1);
     }
 
-    if (flags & RF_TRANSLUCENT) {
+    if (flags & RF_TRANSLUCENT)
         color[3] = glr.ent->alpha;
-    } else {
+    else
         color[3] = 1;
-    }
 }
 
 static void setup_celshading(void)
@@ -429,23 +422,23 @@ static void draw_celshading(const QGL_INDEX_TYPE *indices, int num_indices)
 
 static void proj_matrix(GLfloat *matrix, const cplane_t *plane, const vec3_t dir)
 {
-    matrix[0] = plane->normal[1] * dir[1] + plane->normal[2] * dir[2];
-    matrix[4] = -plane->normal[1] * dir[0];
-    matrix[8] = -plane->normal[2] * dir[0];
-    matrix[12] = plane->dist * dir[0];
+    matrix[ 0] =  plane->normal[1] * dir[1] + plane->normal[2] * dir[2];
+    matrix[ 4] = -plane->normal[1] * dir[0];
+    matrix[ 8] = -plane->normal[2] * dir[0];
+    matrix[12] =  plane->dist * dir[0];
 
-    matrix[1] = -plane->normal[0] * dir[1];
-    matrix[5] = plane->normal[0] * dir[0] + plane->normal[2] * dir[2];
-    matrix[9] = -plane->normal[2] * dir[1];
-    matrix[13] = plane->dist * dir[1];
+    matrix[ 1] = -plane->normal[0] * dir[1];
+    matrix[ 5] =  plane->normal[0] * dir[0] + plane->normal[2] * dir[2];
+    matrix[ 9] = -plane->normal[2] * dir[1];
+    matrix[13] =  plane->dist * dir[1];
 
-    matrix[2] = -plane->normal[0] * dir[2];
-    matrix[6] = -plane->normal[1] * dir[2];
-    matrix[10] = plane->normal[0] * dir[0] + plane->normal[1] * dir[1];
-    matrix[14] = plane->dist * dir[2];
+    matrix[ 2] = -plane->normal[0] * dir[2];
+    matrix[ 6] = -plane->normal[1] * dir[2];
+    matrix[10] =  plane->normal[0] * dir[0] + plane->normal[1] * dir[1];
+    matrix[14] =  plane->dist * dir[2];
 
-    matrix[3] = 0;
-    matrix[7] = 0;
+    matrix[ 3] = 0;
+    matrix[ 7] = 0;
     matrix[11] = 0;
     matrix[15] = DotProduct(plane->normal, dir);
 }

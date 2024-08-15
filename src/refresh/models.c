@@ -41,16 +41,13 @@ static model_t *MOD_Alloc(void)
     model_t *model;
     int i;
 
-    for (i = 0, model = r_models; i < r_numModels; i++, model++) {
-        if (!model->type) {
+    for (i = 0, model = r_models; i < r_numModels; i++, model++)
+        if (!model->type)
             break;
-        }
-    }
 
     if (i == r_numModels) {
-        if (r_numModels == MAX_RMODELS) {
+        if (r_numModels == MAX_RMODELS)
             return NULL;
-        }
         r_numModels++;
     }
 
@@ -63,12 +60,10 @@ static model_t *MOD_Find(const char *name)
     int i;
 
     for (i = 0, model = r_models; i < r_numModels; i++, model++) {
-        if (!model->type) {
+        if (!model->type)
             continue;
-        }
-        if (!FS_pathcmp(model->name, name)) {
+        if (!FS_pathcmp(model->name, name))
             return model;
-        }
     }
 
     return NULL;
@@ -85,9 +80,9 @@ static void MOD_List_f(void)
     bytes = count = 0;
 
     for (i = 0, model = r_models; i < r_numModels; i++, model++) {
-        if (!model->type) {
+        if (!model->type)
             continue;
-        }
+
         size_t model_size = model->hunk.mapped;
         int flag = ' ';
 #if USE_MD5
@@ -111,9 +106,9 @@ void MOD_FreeUnused(void)
     int i;
 
     for (i = 0, model = r_models; i < r_numModels; i++, model++) {
-        if (!model->type) {
+        if (!model->type)
             continue;
-        }
+
         if (model->registration_sequence == r_registration_sequence) {
             // make sure it is paged in
             Com_PageInMemory(model->hunk.base, model->hunk.cursize);
@@ -138,9 +133,8 @@ void MOD_FreeAll(void)
     int i;
 
     for (i = 0, model = r_models; i < r_numModels; i++, model++) {
-        if (!model->type) {
+        if (!model->type)
             continue;
-        }
 
         Hunk_Free(&model->hunk);
 #if USE_MD5
@@ -273,9 +267,8 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
     vec3_t          mins, maxs;
     const char      *err;
 
-    if (length < sizeof(header)) {
+    if (length < sizeof(header))
         return Q_ERR_FILE_TOO_SMALL;
-    }
 
     // byte swap the header
     LittleBlock(&header, rawdata, sizeof(header));
@@ -308,9 +301,8 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
             uint16_t idx_st = LittleShort(src_tri->index_st[j]);
 
             // some broken models have 0xFFFF indices
-            if (idx_xyz >= header.num_xyz || idx_st >= header.num_st) {
+            if (idx_xyz >= header.num_xyz || idx_st >= header.num_st)
                 break;
-            }
 
             vertIndices[numindices + j] = idx_xyz;
             tcIndices[numindices + j] = idx_st;
@@ -327,17 +319,15 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
         return Q_ERR_INVALID_FORMAT;
     }
 
-    for (i = 0; i < numindices; i++) {
+    for (i = 0; i < numindices; i++)
         remap[i] = 0xFFFF;
-    }
 
     // remap all triangle indices
     numverts = 0;
     src_tc = (dmd2stvert_t *)((byte *)rawdata + header.ofs_st);
     for (i = 0; i < numindices; i++) {
-        if (remap[i] != 0xFFFF) {
+        if (remap[i] != 0xFFFF)
             continue; // already remapped
-        }
 
         for (j = i + 1; j < numindices; j++) {
             if (vertIndices[i] == vertIndices[j] &&
@@ -379,14 +369,12 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
     OOM_CHECK(mesh->skinnames = MOD_Malloc(header.num_skins * sizeof(mesh->skinnames[0])));
 #endif
 
-    if (mesh->numtris != header.num_tris) {
+    if (mesh->numtris != header.num_tris)
         Com_DPrintf("%s has %d bad triangles\n", model->name, header.num_tris - mesh->numtris);
-    }
 
     // store final triangle indices
-    for (i = 0; i < numindices; i++) {
+    for (i = 0; i < numindices; i++)
         mesh->indices[i] = finalIndices[i];
-    }
 
     // load all skins
     src_skin = (char *)rawdata + header.ofs_skins;
@@ -411,9 +399,8 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
     scale_s = 1.0f / header.skinwidth;
     scale_t = 1.0f / header.skinheight;
     for (i = 0; i < numindices; i++) {
-        if (remap[i] != i) {
+        if (remap[i] != i)
             continue;
-        }
         dst_tc[finalIndices[i]].st[0] =
             (int16_t)LittleShort(src_tc[tcIndices[i]].s) * scale_s;
         dst_tc[finalIndices[i]].st[1] =
@@ -430,9 +417,9 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
         // load frame vertices
         ClearBounds(mins, maxs);
         for (i = 0; i < numindices; i++) {
-            if (remap[i] != i) {
+            if (remap[i] != i)
                 continue;
-            }
+
             src_vert = &src_frame->verts[vertIndices[i]];
             dst_vert = &mesh->verts[j * numverts + finalIndices[i]];
 
@@ -1194,10 +1181,9 @@ static bool MOD_LoadMD5Anim(model_t *model, const char *path)
     mdl->num_frames = num_frames;
 
     // warn on mismatched frame counts (not fatal)
-    if (mdl->num_frames != model->numframes) {
+    if (mdl->num_frames != model->numframes)
         Com_WPrintf("%s doesn't match frame count for %s (%i vs %i)\n",
                     path, model->name, mdl->num_frames, model->numframes);
-    }
 
     MD5_EXPECT("numJoints");
     MD5_UINT(num_joints);
@@ -1367,22 +1353,18 @@ static void MOD_Reference(model_t *model)
     case MOD_ALIAS:
         for (i = 0; i < model->nummeshes; i++) {
             maliasmesh_t *mesh = &model->meshes[i];
-            for (j = 0; j < mesh->numskins; j++) {
+            for (j = 0; j < mesh->numskins; j++)
                 mesh->skins[j]->registration_sequence = r_registration_sequence;
-            }
         }
 #if USE_MD5
-        if (model->skeleton) {
-            for (j = 0; j < model->skeleton->num_skins; j++) {
+        if (model->skeleton)
+            for (j = 0; j < model->skeleton->num_skins; j++)
                 model->skeleton->skins[j]->registration_sequence = r_registration_sequence;
-            }
-        }
 #endif
         break;
     case MOD_SPRITE:
-        for (i = 0; i < model->numframes; i++) {
+        for (i = 0; i < model->numframes; i++)
             model->spriteframes[i].image->registration_sequence = r_registration_sequence;
-        }
         break;
     case MOD_EMPTY:
         break;
@@ -1440,9 +1422,8 @@ qhandle_t R_RegisterModel(const char *name)
     ret = FS_LoadFile(normalized, (void **)&rawdata);
     if (!rawdata) {
         // don't spam about missing models
-        if (ret == Q_ERR(ENOENT)) {
+        if (ret == Q_ERR(ENOENT))
             return 0;
-        }
         goto fail1;
     }
 
@@ -1509,15 +1490,13 @@ model_t *MOD_ForHandle(qhandle_t h)
 {
     model_t *model;
 
-    if (!h) {
+    if (!h)
         return NULL;
-    }
 
     Q_assert(h > 0 && h <= r_numModels);
     model = &r_models[h - 1];
-    if (!model->type) {
+    if (!model->type)
         return NULL;
-    }
 
     return model;
 }

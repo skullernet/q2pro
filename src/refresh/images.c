@@ -216,15 +216,13 @@ static int load_pcx(const byte *rawdata, size_t rawlen,
     //
     // parse the PCX file
     //
-    if (rawlen < sizeof(dpcx_t)) {
+    if (rawlen < sizeof(dpcx_t))
         return Q_ERR_FILE_TOO_SMALL;
-    }
 
     pcx = (const dpcx_t *)rawdata;
 
-    if (pcx->manufacturer != 10 || pcx->version != 5) {
+    if (pcx->manufacturer != 10 || pcx->version != 5)
         return Q_ERR_UNKNOWN_FORMAT;
-    }
 
     if (pcx->encoding != 1 || pcx->bits_per_pixel != 8) {
         Com_SetLastError("Unsupported encoding or bits per pixel");
@@ -253,9 +251,8 @@ static int load_pcx(const byte *rawdata, size_t rawlen,
     // get palette
     //
     if (palette) {
-        if (rawlen < PCX_PALETTE_SIZE) {
+        if (rawlen < PCX_PALETTE_SIZE)
             return Q_ERR_FILE_TOO_SMALL;
-        }
         memcpy(palette, rawdata + rawlen - PCX_PALETTE_SIZE, PCX_PALETTE_SIZE);
     }
 
@@ -342,9 +339,8 @@ IMG_LOAD(WAL)
     const miptex_t  *mt;
     unsigned        w, h, offset;
 
-    if (rawlen < sizeof(miptex_t)) {
+    if (rawlen < sizeof(miptex_t))
         return Q_ERR_FILE_TOO_SMALL;
-    }
 
     mt = (const miptex_t *)rawdata;
 
@@ -696,14 +692,12 @@ static int IMG_SaveTGA(const screenshot_t *s)
     WL16(&header[14], s->height);
     header[16] = 24;    // pixel size
 
-    if (!fwrite(&header, sizeof(header), 1, s->fp)) {
+    if (!fwrite(&header, sizeof(header), 1, s->fp))
         return Q_ERR_FAILURE;
-    }
 
     byte *row = malloc(s->width * 3);
-    if (!row) {
+    if (!row)
         return Q_ERR(ENOMEM);
-    }
 
     int ret = Q_ERR_SUCCESS;
     for (int i = 0; i < s->height; i++) {
@@ -776,9 +770,8 @@ static int my_jpeg_start_decompress(j_decompress_ptr cinfo, const byte *rawdata,
 {
     my_error_ptr jerr = (my_error_ptr)cinfo->err;
 
-    if (setjmp(jerr->setjmp_buffer)) {
+    if (setjmp(jerr->setjmp_buffer))
         return Q_ERR_LIBRARY_ERROR;
-    }
 
     jpeg_create_decompress(cinfo);
     jpeg_mem_src(cinfo, rawdata, rawlen);
@@ -803,7 +796,7 @@ static int my_jpeg_start_decompress(j_decompress_ptr cinfo, const byte *rawdata,
         return Q_ERR_INVALID_FORMAT;
     }
 
-    return 0;
+    return Q_ERR_SUCCESS;
 }
 
 static int my_jpeg_finish_decompress(j_decompress_ptr cinfo, JSAMPARRAY row_pointers)
@@ -817,7 +810,7 @@ static int my_jpeg_finish_decompress(j_decompress_ptr cinfo, JSAMPARRAY row_poin
         jpeg_read_scanlines(cinfo, &row_pointers[cinfo->output_scanline], cinfo->output_height - cinfo->output_scanline);
 
     jpeg_finish_decompress(cinfo);
-    return 0;
+    return Q_ERR_SUCCESS;
 }
 
 IMG_LOAD(JPG)
@@ -863,9 +856,8 @@ static int my_jpeg_compress(j_compress_ptr cinfo, JSAMPARRAY row_pointers, const
 {
     my_error_ptr jerr = (my_error_ptr)cinfo->err;
 
-    if (setjmp(jerr->setjmp_buffer)) {
+    if (setjmp(jerr->setjmp_buffer))
         return Q_ERR_LIBRARY_ERROR;
-    }
 
     jpeg_create_compress(cinfo);
     jpeg_stdio_dest(cinfo, s->fp);
@@ -882,7 +874,7 @@ static int my_jpeg_compress(j_compress_ptr cinfo, JSAMPARRAY row_pointers, const
     jpeg_write_scanlines(cinfo, row_pointers, s->height);
     jpeg_finish_compress(cinfo);
 
-    return 0;
+    return Q_ERR_SUCCESS;
 }
 
 static int IMG_SaveJPG(const screenshot_t *s)
@@ -898,12 +890,11 @@ static int IMG_SaveJPG(const screenshot_t *s)
     jerr.filename = s->async ? NULL : s->filename;
 
     row_pointers = malloc(sizeof(JSAMPROW) * s->height);
-    if (!row_pointers) {
+    if (!row_pointers)
         return Q_ERR(ENOMEM);
-    }
-    for (i = 0; i < s->height; i++) {
+
+    for (i = 0; i < s->height; i++)
         row_pointers[i] = (JSAMPROW)(s->pixels + (s->height - i - 1) * s->rowbytes);
-    }
 
     ret = my_jpeg_compress(&cinfo, row_pointers, s);
     free(row_pointers);
@@ -971,17 +962,15 @@ static int my_png_read_header(png_structp png_ptr, png_infop info_ptr,
     png_uint_32 w, h, has_tRNS;
     int bitdepth, colortype;
 
-    if (setjmp(err->setjmp_buffer)) {
+    if (setjmp(err->setjmp_buffer))
         return Q_ERR_LIBRARY_ERROR;
-    }
 
     png_set_read_fn(png_ptr, io_ptr, my_png_read_fn);
 
     png_read_info(png_ptr, info_ptr);
 
-    if (!png_get_IHDR(png_ptr, info_ptr, &w, &h, &bitdepth, &colortype, NULL, NULL, NULL)) {
+    if (!png_get_IHDR(png_ptr, info_ptr, &w, &h, &bitdepth, &colortype, NULL, NULL, NULL))
         return Q_ERR_FAILURE;
-    }
 
     if (check_image_size(w, h)) {
         Com_SetLastError("Invalid image dimensions");
@@ -993,25 +982,22 @@ static int my_png_read_header(png_structp png_ptr, png_infop info_ptr,
         png_set_palette_to_rgb(png_ptr);
         break;
     case PNG_COLOR_TYPE_GRAY:
-        if (bitdepth < 8) {
+        if (bitdepth < 8)
             png_set_expand_gray_1_2_4_to_8(png_ptr);
-        }
         // fall through
     case PNG_COLOR_TYPE_GRAY_ALPHA:
         png_set_gray_to_rgb(png_ptr);
         break;
     }
 
-    if (bitdepth < 8) {
+    if (bitdepth < 8)
         png_set_packing(png_ptr);
-    } else if (bitdepth == 16) {
+    else if (bitdepth == 16)
         png_set_strip_16(png_ptr);
-    }
 
     has_tRNS = png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS);
-    if (has_tRNS) {
+    if (has_tRNS)
         png_set_tRNS_to_alpha(png_ptr);
-    }
 
     png_set_filler(png_ptr, 0xff, PNG_FILLER_AFTER);
 
@@ -1028,20 +1014,19 @@ static int my_png_read_header(png_structp png_ptr, png_infop info_ptr,
     if (!has_tRNS && !(colortype & PNG_COLOR_MASK_ALPHA))
         image->flags |= IF_OPAQUE;
 
-    return 0;
+    return Q_ERR_SUCCESS;
 }
 
 static int my_png_read_image(png_structp png_ptr, png_infop info_ptr, png_bytepp row_pointers)
 {
     my_png_error *err = png_get_error_ptr(png_ptr);
 
-    if (setjmp(err->setjmp_buffer)) {
+    if (setjmp(err->setjmp_buffer))
         return Q_ERR_LIBRARY_ERROR;
-    }
 
     png_read_image(png_ptr, row_pointers);
     png_read_end(png_ptr, info_ptr);
-    return 0;
+    return Q_ERR_SUCCESS;
 }
 
 IMG_LOAD(PNG)
@@ -1086,9 +1071,8 @@ IMG_LOAD(PNG)
     rowbytes = image->width * 4;
     pixels = IMG_AllocPixels(h * rowbytes);
 
-    for (row = 0; row < h; row++) {
+    for (row = 0; row < h; row++)
         row_pointers[row] = (png_bytep)(pixels + row * rowbytes);
-    }
 
     ret = my_png_read_image(png_ptr, info_ptr, row_pointers);
     if (ret < 0) {
@@ -1107,9 +1091,8 @@ static int my_png_write_image(png_structp png_ptr, png_infop info_ptr,
 {
     my_png_error *err = png_get_error_ptr(png_ptr);
 
-    if (setjmp(err->setjmp_buffer)) {
+    if (setjmp(err->setjmp_buffer))
         return Q_ERR_LIBRARY_ERROR;
-    }
 
     png_init_io(png_ptr, s->fp);
     png_set_IHDR(png_ptr, info_ptr, s->width, s->height, 8, PNG_COLOR_TYPE_RGB,
@@ -1117,7 +1100,7 @@ static int my_png_write_image(png_structp png_ptr, png_infop info_ptr,
     png_set_compression_level(png_ptr, Q_clip(s->param, 0, 9));
     png_set_rows(png_ptr, info_ptr, row_pointers);
     png_write_png(png_ptr, info_ptr, s->bpp == 4 ? PNG_TRANSFORM_STRIP_FILLER_AFTER : 0, NULL);
-    return 0;
+    return Q_ERR_SUCCESS;
 }
 
 static int IMG_SavePNG(const screenshot_t *s)
@@ -1148,9 +1131,9 @@ static int IMG_SavePNG(const screenshot_t *s)
         ret = Q_ERR(ENOMEM);
         goto fail;
     }
-    for (i = 0; i < s->height; i++) {
+
+    for (i = 0; i < s->height; i++)
         row_pointers[i] = (png_bytep)(s->pixels + (s->height - i - 1) * s->rowbytes);
-    }
 
     ret = my_png_write_image(png_ptr, info_ptr, row_pointers, s);
     free(row_pointers);
@@ -1217,31 +1200,31 @@ static int create_screenshot(char *buffer, size_t size, FILE **f,
 
     if (name && *name) {
         // save to user supplied name
-        if (FS_NormalizePathBuffer(temp, name, sizeof(temp)) >= sizeof(temp)) {
+        if (FS_NormalizePathBuffer(temp, name, sizeof(temp)) >= sizeof(temp))
             return Q_ERR(ENAMETOOLONG);
-        }
+
         FS_CleanupPath(temp);
-        if (Q_snprintf(buffer, size, "%s/screenshots/%s%s", fs_gamedir, temp, ext) >= size) {
+
+        if (Q_snprintf(buffer, size, "%s/screenshots/%s%s", fs_gamedir, temp, ext) >= size)
             return Q_ERR(ENAMETOOLONG);
-        }
-        if ((ret = FS_CreatePath(buffer)) < 0) {
+
+        if ((ret = FS_CreatePath(buffer)) < 0)
             return ret;
-        }
-        if (!(*f = fopen(buffer, "wb"))) {
+
+        if (!(*f = fopen(buffer, "wb")))
             return Q_ERRNO;
-        }
-        return 0;
+
+        return Q_ERR_SUCCESS;
     }
 
     width = parse_template(r_screenshot_template, temp, sizeof(temp));
 
     // create the directory
-    if (Q_snprintf(buffer, size, "%s/screenshots/%s", fs_gamedir, temp) >= size) {
+    if (Q_snprintf(buffer, size, "%s/screenshots/%s", fs_gamedir, temp) >= size)
         return Q_ERR(ENAMETOOLONG);
-    }
-    if ((ret = FS_CreatePath(buffer)) < 0) {
+
+    if ((ret = FS_CreatePath(buffer)) < 0)
         return ret;
-    }
 
     count = 1;
     for (i = 0; i < width; i++)
@@ -1249,16 +1232,15 @@ static int create_screenshot(char *buffer, size_t size, FILE **f,
 
     // find a file name to save it to
     for (i = 0; i < count; i++) {
-        if (Q_snprintf(buffer, size, "%s/screenshots/%s%0*d%s", fs_gamedir, temp, width, i, ext) >= size) {
+        if (Q_snprintf(buffer, size, "%s/screenshots/%s%0*d%s", fs_gamedir, temp, width, i, ext) >= size)
             return Q_ERR(ENAMETOOLONG);
-        }
-        if ((*f = Q_fopen(buffer, "wxb"))) {
-            return 0;
-        }
+
+        if ((*f = Q_fopen(buffer, "wxb")))
+            return Q_ERR_SUCCESS;
+
         ret = Q_ERRNO;
-        if (ret != Q_ERR(EEXIST)) {
+        if (ret != Q_ERR(EEXIST))
             return ret;
-        }
     }
 
     return Q_ERR_OUT_OF_SLOTS;
@@ -1357,11 +1339,11 @@ static void IMG_ScreenShot_f(void)
         return;
     }
 
-    if (Cmd_Argc() > 1) {
+    if (Cmd_Argc() > 1)
         s = Cmd_Argv(1);
-    } else {
+    else
         s = r_screenshot_format->string;
-    }
+#endif
 
 #if USE_JPG
     if (*s == 'j') {
@@ -1380,7 +1362,6 @@ static void IMG_ScreenShot_f(void)
         return;
     }
 #endif
-#endif // USE_JPG || USE_PNG
 
 #if USE_TGA
     make_screenshot(NULL, ".tga", IMG_SaveTGA, false, 0);
@@ -1420,11 +1401,10 @@ static void IMG_ScreenShotJPG_f(void)
         return;
     }
 
-    if (Cmd_Argc() > 2) {
+    if (Cmd_Argc() > 2)
         quality = Q_atoi(Cmd_Argv(2));
-    } else {
+    else
         quality = r_screenshot_quality->integer;
-    }
 
     make_screenshot(Cmd_Argv(1), ".jpg", IMG_SaveJPG,
                     r_screenshot_async->integer > 1, quality);
@@ -1441,11 +1421,10 @@ static void IMG_ScreenShotPNG_f(void)
         return;
     }
 
-    if (Cmd_Argc() > 2) {
+    if (Cmd_Argc() > 2)
         compression = Q_atoi(Cmd_Argv(2));
-    } else {
+    else
         compression = r_screenshot_compression->integer;
-    }
 
     make_screenshot(Cmd_Argv(1), ".png", IMG_SavePNG,
                     r_screenshot_async->integer > 0, compression);
@@ -1524,21 +1503,21 @@ IMG_List_f
 static void IMG_List_f(void)
 {
     static const char types[8] = "PFMSWY??";
-    image_t     *image;
-    const char  *wildcard = NULL;
-    bool        missing = false;
-    int         paletted = 0;
-    int         i, c, mask = 0, count;
-    size_t      texels;
+    const image_t   *image;
+    const char      *wildcard = NULL;
+    bool            missing = false;
+    int             paletted = 0;
+    int             i, c, mask = 0, count;
+    size_t          texels;
 
     while ((c = Cmd_ParseOptions(o_imagelist)) != -1) {
         switch (c) {
-        case 'p': mask |= 1 << IT_PIC;      break;
-        case 'f': mask |= 1 << IT_FONT;     break;
-        case 'm': mask |= 1 << IT_SKIN;     break;
-        case 's': mask |= 1 << IT_SPRITE;   break;
-        case 'w': mask |= 1 << IT_WALL;     break;
-        case 'y': mask |= 1 << IT_SKY;      break;
+        case 'p': mask |= BIT(IT_PIC);      break;
+        case 'f': mask |= BIT(IT_FONT);     break;
+        case 'm': mask |= BIT(IT_SKIN);     break;
+        case 's': mask |= BIT(IT_SPRITE);   break;
+        case 'w': mask |= BIT(IT_WALL);     break;
+        case 'y': mask |= BIT(IT_SKY);      break;
         case '8': paletted = 1;             break;
         case 'r': paletted = -1;            break;
         case 'x': missing = true;           break;
@@ -1575,7 +1554,7 @@ static void IMG_List_f(void)
     for (i = 1, image = r_images + 1; i < r_numImages; i++, image++) {
         if (!image->name[0])
             continue;
-        if (mask && !(mask & (1 << image->type)))
+        if (mask && !(mask & BIT(image->type)))
             continue;
         if (wildcard && !Com_WildCmp(wildcard, image->name))
             continue;
@@ -1642,15 +1621,12 @@ static image_t *lookup_image(const char *name,
 
     // look for it
     LIST_FOR_EACH(image_t, image, &r_imageHash[hash], entry) {
-        if (image->type != type) {
+        if (image->type != type)
             continue;
-        }
-        if (image->baselen != baselen) {
+        if (image->baselen != baselen)
             continue;
-        }
-        if (!FS_pathcmpn(image->name, name, baselen)) {
+        if (!FS_pathcmpn(image->name, name, baselen))
             return image;
-        }
     }
 
     return NULL;
@@ -1658,14 +1634,13 @@ static image_t *lookup_image(const char *name,
 
 static int try_image_format(imageformat_t fmt, image_t *image, byte **pic)
 {
-    byte    *data;
+    void    *data;
     int     ret;
 
     // load the file
-    ret = FS_LoadFile(image->name, (void **)&data);
-    if (!data) {
+    ret = FS_LoadFile(image->name, &data);
+    if (!data)
         return ret;
-    }
 
     // decompress the image
     ret = img_loaders[fmt].load(data, ret, image, pic);
@@ -1693,21 +1668,18 @@ static int try_other_formats(imageformat_t orig, image_t *image, byte **pic)
     // search through all the 32-bit formats
     for (i = 0; i < img_total; i++) {
         fmt = img_search[i];
-        if (fmt == orig) {
+        if (fmt == orig)
             continue;   // don't retry twice
-        }
 
         ret = try_replace_ext(fmt, image, pic);
-        if (ret != Q_ERR(ENOENT)) {
+        if (ret != Q_ERR(ENOENT))
             return ret; // found something
-        }
     }
 
     // fall back to 8-bit formats
     fmt = (image->type == IT_WALL) ? IM_WAL : IM_PCX;
-    if (fmt == orig) {
+    if (fmt == orig)
         return Q_ERR(ENOENT); // don't retry twice
-    }
 
     return try_replace_ext(fmt, image, pic);
 }
@@ -1722,9 +1694,8 @@ static void get_image_dimensions(imageformat_t fmt, image_t *image)
     memcpy(buffer + image->baselen + 1, img_loaders[fmt].ext, 4);
 
     FS_OpenFile(buffer, &f, FS_MODE_READ | FS_FLAG_LOADFILE);
-    if (!f) {
+    if (!f)
         return;
-    }
 
     w = h = 0;
     if (fmt == IM_WAL) {
@@ -1743,9 +1714,8 @@ static void get_image_dimensions(imageformat_t fmt, image_t *image)
 
     FS_CloseFile(f);
 
-    if (check_image_size(w, h)) {
+    if (check_image_size(w, h))
         return;
-    }
 
     image->width = w;
     image->height = h;
@@ -1868,15 +1838,13 @@ static int load_image_data(image_t *image, imageformat_t fmt, bool need_dimensio
 
     // if we are replacing 8-bit texture with a higher resolution 32-bit
     // texture, we need to recover original image dimensions
-    if (need_dimensions && fmt <= IM_WAL && ret > IM_WAL) {
+    if (need_dimensions && fmt <= IM_WAL && ret > IM_WAL)
         get_image_dimensions(fmt, image);
-    }
 #else
-    if (fmt == IM_MAX) {
+    if (fmt == IM_MAX)
         ret = Q_ERR_INVALID_PATH;
-    } else {
+    else
         ret = try_image_format(fmt, image, pic);
-    }
 #endif
 
     return ret;
@@ -1983,11 +1951,9 @@ static image_t *find_or_load_image(const char *name, size_t len,
     image->registration_sequence = r_registration_sequence;
 
     // find out original extension
-    for (fmt = 0; fmt < IM_MAX; fmt++) {
-        if (!Q_stricmp(image->name + image->baselen + 1, img_loaders[fmt].ext)) {
+    for (fmt = 0; fmt < IM_MAX; fmt++)
+        if (!Q_stricmp(image->name + image->baselen + 1, img_loaders[fmt].ext))
             break;
-        }
-    }
 
     // load the pic from disk
     pic = NULL;
@@ -2041,9 +2007,9 @@ image_t *IMG_Find(const char *name, imagetype_t type, imageflags_t flags)
 
     Q_assert(name);
 
-    if ((image = find_or_load_image(name, strlen(name), type, flags))) {
+    if ((image = find_or_load_image(name, strlen(name), type, flags)))
         return image;
-    }
+
     return R_NOTEXTURE;
 }
 
@@ -2072,14 +2038,12 @@ qhandle_t R_RegisterImage(const char *name, imagetype_t type, imageflags_t flags
     Q_assert(name);
 
     // empty names are legal, silently ignore them
-    if (!*name) {
+    if (!*name)
         return 0;
-    }
 
     // no images = not initialized
-    if (!r_numImages) {
+    if (!r_numImages)
         return 0;
-    }
 
     if (type == IT_SKIN || type == IT_SPRITE) {
         len = FS_NormalizePathBuffer(fullname, name, sizeof(fullname));
@@ -2098,9 +2062,9 @@ qhandle_t R_RegisterImage(const char *name, imagetype_t type, imageflags_t flags
         return 0;
     }
 
-    if ((image = find_or_load_image(fullname, len, type, flags))) {
+    if ((image = find_or_load_image(fullname, len, type, flags)))
         return image - r_images;
-    }
+
     return 0;
 }
 
@@ -2111,14 +2075,13 @@ R_GetPicSize
 */
 bool R_GetPicSize(int *w, int *h, qhandle_t pic)
 {
-    image_t *image = IMG_ForHandle(pic);
+    const image_t *image = IMG_ForHandle(pic);
 
-    if (w) {
+    if (w)
         *w = image->width;
-    }
-    if (h) {
+    if (h)
         *h = image->height;
-    }
+
     return image->flags & IF_TRANSPARENT;
 }
 
@@ -2153,9 +2116,8 @@ void IMG_FreeUnused(void)
         count++;
     }
 
-    if (count) {
+    if (count)
         Com_DPrintf("%s: %i images freed\n", __func__, count);
-    }
 }
 
 void IMG_FreeAll(void)
@@ -2173,13 +2135,11 @@ void IMG_FreeAll(void)
         count++;
     }
 
-    if (count) {
+    if (count)
         Com_DPrintf("%s: %i images freed\n", __func__, count);
-    }
 
-    for (i = 0; i < RIMAGES_HASH; i++) {
+    for (i = 0; i < RIMAGES_HASH; i++)
         List_Init(&r_imageHash[i]);
-    }
 
     // &r_images[0] == R_NOTEXTURE
     r_numImages = 1;
@@ -2198,21 +2158,18 @@ void IMG_GetPalette(void)
 
     // get the palette
     ret = FS_LoadFile(R_COLORMAP_PCX, (void **)&data);
-    if (!data) {
+    if (!data)
         goto fail;
-    }
 
     ret = load_pcx(data, ret, NULL, pal, NULL);
 
     FS_FreeFile(data);
 
-    if (ret < 0) {
+    if (ret < 0)
         goto fail;
-    }
 
-    for (i = 0, src = pal; i < 255; i++, src += 3) {
+    for (i = 0, src = pal; i < 255; i++, src += 3)
         d_8to24table[i] = MakeColor(src[0], src[1], src[2], 255);
-    }
 
     // 255 is transparent
     d_8to24table[i] = MakeColor(src[0], src[1], src[2], 0);
@@ -2272,9 +2229,8 @@ void IMG_Init(void)
 
     Cmd_Register(img_cmd);
 
-    for (i = 0; i < RIMAGES_HASH; i++) {
+    for (i = 0; i < RIMAGES_HASH; i++)
         List_Init(&r_imageHash[i]);
-    }
 
     // &r_images[0] == R_NOTEXTURE
     r_numImages = 1;
