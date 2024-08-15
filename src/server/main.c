@@ -2250,7 +2250,7 @@ void SV_Init(void)
     sv_packetdup_hack = Cvar_Get("sv_packetdup_hack", "0", 0);
 #endif
 
-    sv_allow_map = Cvar_Get("sv_allow_map", "0", 0);
+    sv_allow_map = Cvar_Get("sv_allow_map", COM_DEDICATED ? "0" : "1", 0);
     sv_cinematics = Cvar_Get("sv_cinematics", "1", 0);
 
 #if USE_SERVER

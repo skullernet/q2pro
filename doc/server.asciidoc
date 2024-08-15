@@ -244,7 +244,8 @@ WARNING: Be sure to read ‘recycle’ command description below before enabling
 sv_allow_map::
     Controls the ‘map’ command behavior. ‘map’ is often mistakingly used by
     server operators to change maps instead of the more lightweight ‘gamemap’.
-    Thus, this variable exists to prevent misuse of ‘map’. Default value is 0.
+    Thus, this variable exists to prevent misuse of ‘map’. Default value is 0
+    for dedicated servers, 1 otherwise.
        - 0 — disallow ‘map’ and print a warning unless there are pending
        latched cvars
        - 1 — handle ‘map’ command normally

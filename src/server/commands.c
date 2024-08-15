@@ -365,7 +365,7 @@ static int should_really_restart(void)
     if (sv_allow_map->integer == 1)
         return 1;   // `map' warning disabled
 
-    if (sv_allow_map->integer != 0)
+    if (sv_allow_map->integer >= 2)
         return 0;   // turn `map' into `gamemap'
 
     Com_Printf(
