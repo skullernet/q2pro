@@ -976,10 +976,14 @@ void GL_LoadWorld(const char *name)
     mface_t *surf;
     int i, n64surfs, ret;
 
-    ret = BSP_Load(name, &bsp);
+    if (!name || !*name)
+        return;
+
+    Q_concat(buffer, sizeof(buffer), "maps/", name, ".bsp");
+    ret = BSP_Load(buffer, &bsp);
     if (!bsp)
         Com_Error(ERR_DROP, "%s: couldn't load %s: %s",
-                  __func__, name, BSP_ErrorString(ret));
+                  __func__, buffer, BSP_ErrorString(ret));
 
     // check if the required world model was already loaded
     if (gl_static.world.cache == bsp) {

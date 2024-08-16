@@ -1145,18 +1145,13 @@ R_BeginRegistration
 */
 void R_BeginRegistration(const char *name)
 {
-    char fullname[MAX_QPATH];
-
     gl_static.registering = true;
     r_registration_sequence++;
 
     memset(&glr, 0, sizeof(glr));
     glr.viewcluster1 = glr.viewcluster2 = -2;
 
-    if (name) {
-        Q_concat(fullname, sizeof(fullname), "maps/", name, ".bsp");
-        GL_LoadWorld(fullname);
-    }
+    GL_LoadWorld(name);
 }
 
 /*
