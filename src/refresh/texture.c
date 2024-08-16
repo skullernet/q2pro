@@ -721,11 +721,14 @@ void IMG_Load(image_t *image, byte *pic)
 void IMG_Unload(image_t *image)
 {
     if (image->texnum && !(image->flags & IF_SCRAP)) {
-        if (gls.texnums[0] == image->texnum)
-            gls.texnums[0] = 0;
-        if (gls.texnums[2] == image->glow_texnum)
-            gls.texnums[2] = 0;
-        qglDeleteTextures(2, (GLuint[2]){ image->texnum, image->glow_texnum });
+        GLuint tex[2] = { image->texnum, image->glow_texnum };
+
+        // invalidate bindings
+        for (int i = 0; i < MAX_TMUS; i++)
+            if (gls.texnums[i] == tex[0] || gls.texnums[i] == tex[1])
+                gls.texnums[i] = 0;
+
+        qglDeleteTextures(tex[1] ? 2 : 1, tex);
         image->texnum = image->glow_texnum = 0;
     }
 }
