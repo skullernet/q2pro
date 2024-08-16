@@ -356,11 +356,20 @@ void GL_DrawFlares(void)
             continue;
 
         if (q->pending) {
-            qglGetQueryObjectuiv(q->query, GL_QUERY_RESULT_AVAILABLE, &result);
-            if (result) {
-                qglGetQueryObjectuiv(q->query, GL_QUERY_RESULT, &result);
-                q->visible = result;
-                q->pending = false;
+            if (gl_config.caps & QGL_CAP_QUERY_RESULT_NO_WAIT) {
+                result = -1;
+                qglGetQueryObjectuiv(q->query, GL_QUERY_RESULT_NO_WAIT, &result);
+                if (result != -1) {
+                    q->visible = result;
+                    q->pending = false;
+                }
+            } else {
+                qglGetQueryObjectuiv(q->query, GL_QUERY_RESULT_AVAILABLE, &result);
+                if (result) {
+                    qglGetQueryObjectuiv(q->query, GL_QUERY_RESULT, &result);
+                    q->visible = result;
+                    q->pending = false;
+                }
             }
         }
 

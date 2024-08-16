@@ -317,6 +317,7 @@ static const glsection_t sections[] = {
     // GL 4.4
     {
         .ver_gl = QGL_VER(4, 4),
+        .caps = QGL_CAP_QUERY_RESULT_NO_WAIT,
         .functions = (const glfunction_t []) {
             QGL_FN(BindTextures),
             { NULL }
