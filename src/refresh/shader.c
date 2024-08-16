@@ -24,11 +24,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define GLSL(x)     SZ_Write(buf, CONST_STR_LEN(#x "\n"));
 #define GLSF(x)     SZ_Write(buf, CONST_STR_LEN(x))
 
+// must match glArrayBits_t order!!!
 enum {
     VERT_ATTR_POS,
     VERT_ATTR_TC,
     VERT_ATTR_LMTC,
-    VERT_ATTR_COLOR
+    VERT_ATTR_COLOR,
+
+    VERT_ATTR_COUNT
 };
 
 static void upload_u_block(void);
@@ -297,32 +300,13 @@ static void shader_array_bits(GLbitfield bits)
 {
     GLbitfield diff = bits ^ gls.array_bits;
 
-    if (diff & GLA_VERTEX) {
-        if (bits & GLA_VERTEX)
-            qglEnableVertexAttribArray(VERT_ATTR_POS);
+    for (int i = 0; i < VERT_ATTR_COUNT; i++) {
+        if (!(diff & BIT(i)))
+            continue;
+        if (bits & BIT(i))
+            qglEnableVertexAttribArray(i);
         else
-            qglDisableVertexAttribArray(VERT_ATTR_POS);
-    }
-
-    if (diff & GLA_TC) {
-        if (bits & GLA_TC)
-            qglEnableVertexAttribArray(VERT_ATTR_TC);
-        else
-            qglDisableVertexAttribArray(VERT_ATTR_TC);
-    }
-
-    if (diff & GLA_LMTC) {
-        if (bits & GLA_LMTC)
-            qglEnableVertexAttribArray(VERT_ATTR_LMTC);
-        else
-            qglDisableVertexAttribArray(VERT_ATTR_LMTC);
-    }
-
-    if (diff & GLA_COLOR) {
-        if (bits & GLA_COLOR)
-            qglEnableVertexAttribArray(VERT_ATTR_COLOR);
-        else
-            qglDisableVertexAttribArray(VERT_ATTR_COLOR);
+            qglDisableVertexAttribArray(i);
     }
 }
 
@@ -418,10 +402,8 @@ static void shader_clear_state(void)
     qglActiveTexture(GL_TEXTURE0);
     qglBindTexture(GL_TEXTURE_2D, 0);
 
-    qglDisableVertexAttribArray(VERT_ATTR_POS);
-    qglDisableVertexAttribArray(VERT_ATTR_TC);
-    qglDisableVertexAttribArray(VERT_ATTR_LMTC);
-    qglDisableVertexAttribArray(VERT_ATTR_COLOR);
+    for (int i = 0; i < VERT_ATTR_COUNT; i++)
+        qglDisableVertexAttribArray(i);
 
     if (gl_static.programs[0])
         qglUseProgram(gl_static.programs[0]);
