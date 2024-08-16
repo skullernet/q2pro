@@ -751,7 +751,7 @@ static void build_surface_light(mface_t *surf, vec_t *vbo)
 // normalizes and stores lightmap texture coordinates in vertices
 static void normalize_surface_lmtc(const mface_t *surf, vec_t *vbo)
 {
-    float s, t;
+    float s, t, scale = 1.0f / lm.block_size;
     int i;
 
     s = surf->light_s + 0.5f;
@@ -760,8 +760,8 @@ static void normalize_surface_lmtc(const mface_t *surf, vec_t *vbo)
     for (i = 0; i < surf->numsurfedges; i++) {
         vbo[6] += s;
         vbo[7] += t;
-        vbo[6] *= 1.0f / lm.block_size;
-        vbo[7] *= 1.0f / lm.block_size;
+        vbo[6] *= scale;
+        vbo[7] *= scale;
 
         vbo += VERTEX_SIZE;
     }
