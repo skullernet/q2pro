@@ -47,9 +47,12 @@ void GL_BindTexture(GLuint tmu, GLuint texnum)
     if (gls.texnums[tmu] == texnum)
         return;
 
-    GL_ActiveTexture(tmu);
-
-    qglBindTexture(GL_TEXTURE_2D, texnum);
+    if (qglBindTextureUnit) {
+        qglBindTextureUnit(tmu, texnum);
+    } else {
+        GL_ActiveTexture(tmu);
+        qglBindTexture(GL_TEXTURE_2D, texnum);
+    }
     gls.texnums[tmu] = texnum;
 
     c.texSwitches++;

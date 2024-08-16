@@ -455,10 +455,10 @@ void GL_Flush3D(void)
 
         if (q_unlikely(gl_lightmap->integer))
             state &= ~GLS_INTENSITY_ENABLE;
-    }
 
-    if (tess.texnum[2])
-        state |= GLS_GLOWMAP_ENABLE;
+        if (tess.texnum[2])
+            state |= GLS_GLOWMAP_ENABLE;
+    }
 
     if (!(state & GLS_TEXTURE_REPLACE))
         array |= GLA_COLOR;
@@ -466,9 +466,20 @@ void GL_Flush3D(void)
     GL_StateBits(state);
     GL_ArrayBits(array);
 
-    for (int i = 0; i < MAX_TMUS; i++)
-        if (tess.texnum[i])
+    if (qglBindTextures) {
+        int count = 0;
+        for (int i = 0; i < MAX_TMUS && tess.texnum[i]; i++) {
+            if (gls.texnums[i] != tess.texnum[i]) {
+                gls.texnums[i] = tess.texnum[i];
+                count = i + 1;
+            }
+        }
+        if (count)
+            qglBindTextures(0, count, tess.texnum);
+    } else {
+        for (int i = 0; i < MAX_TMUS && tess.texnum[i]; i++)
             GL_BindTexture(i, tess.texnum[i]);
+    }
 
     if (gl_static.world.vertices)
         GL_LockArrays(tess.numverts);

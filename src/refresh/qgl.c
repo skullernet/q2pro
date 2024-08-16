@@ -314,6 +314,24 @@ static const glsection_t sections[] = {
         }
     },
 
+    // GL 4.4
+    {
+        .ver_gl = QGL_VER(4, 4),
+        .functions = (const glfunction_t []) {
+            QGL_FN(BindTextures),
+            { NULL }
+        }
+    },
+
+    // GL 4.5
+    {
+        .ver_gl = QGL_VER(4, 5),
+        .functions = (const glfunction_t []) {
+            QGL_FN(BindTextureUnit),
+            { NULL }
+        }
+    },
+
     // GL 4.5
     // GL_ARB_robustness
     {

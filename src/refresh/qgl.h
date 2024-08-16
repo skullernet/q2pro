@@ -166,7 +166,11 @@ QGLAPI void (APIENTRYP qglDepthRangef)(GLfloat n, GLfloat f);
 // GL 4.3
 QGLAPI void (APIENTRYP qglDebugMessageCallback)(GLDEBUGPROC callback, const void *userParam);
 
+// GL 4.4
+QGLAPI void (APIENTRYP qglBindTextures)(GLuint first, GLsizei count, const GLuint *textures);
+
 // GL 4.5
+QGLAPI void (APIENTRYP qglBindTextureUnit)(GLuint unit, GLuint texture);
 QGLAPI void (APIENTRYP qglReadnPixels)(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLsizei bufSize, void *data);
 
 // GL_ARB_fragment_program
