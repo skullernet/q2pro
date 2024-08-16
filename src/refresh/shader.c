@@ -17,11 +17,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "gl.h"
+#include "common/sizebuf.h"
 
 #define MAX_SHADER_CHARS    4096
 
-#define GLSL(x)     Q_strlcat(buf, #x "\n", MAX_SHADER_CHARS);
-#define GLSF(x)     Q_strlcat(buf, x, MAX_SHADER_CHARS)
+#define GLSL(x)     SZ_Write(buf, CONST_STR_LEN(#x "\n"));
+#define GLSF(x)     SZ_Write(buf, CONST_STR_LEN(x))
 
 enum {
     VERT_ATTR_POS,
@@ -32,9 +33,8 @@ enum {
 
 static void upload_u_block(void);
 
-static void write_header(char *buf)
+static void write_header(sizebuf_t *buf)
 {
-    *buf = 0;
     if (gl_config.ver_es) {
         GLSF("#version 300 es\n");
     } else if (gl_config.ver_sl >= QGL_VER(1, 40)) {
@@ -45,7 +45,7 @@ static void write_header(char *buf)
     }
 }
 
-static void write_block(char *buf)
+static void write_block(sizebuf_t *buf)
 {
     GLSF("layout(std140) uniform u_block {\n");
     GLSL(
@@ -64,7 +64,7 @@ static void write_block(char *buf)
     GLSF("};\n");
 }
 
-static void write_vertex_shader(char *buf, GLbitfield bits)
+static void write_vertex_shader(sizebuf_t *buf, GLbitfield bits)
 {
     write_header(buf);
     write_block(buf);
@@ -92,7 +92,7 @@ static void write_vertex_shader(char *buf, GLbitfield bits)
     GLSF("}\n");
 }
 
-static void write_fragment_shader(char *buf, GLbitfield bits)
+static void write_fragment_shader(sizebuf_t *buf, GLbitfield bits)
 {
     write_header(buf);
 
@@ -158,21 +158,25 @@ static void write_fragment_shader(char *buf, GLbitfield bits)
     GLSF("}\n");
 }
 
-static GLuint create_shader(GLenum type, const char *src)
+static GLuint create_shader(GLenum type, const sizebuf_t *buf)
 {
+    const GLchar *data = (const GLchar *)buf->data;
+    GLint size = buf->cursize;
+
     GLuint shader = qglCreateShader(type);
     if (!shader) {
         Com_EPrintf("Couldn't create shader\n");
         return 0;
     }
 
-    qglShaderSource(shader, 1, &src, NULL);
+    qglShaderSource(shader, 1, &data, &size);
     qglCompileShader(shader);
-    GLint status;
+    GLint status = 0;
     qglGetShaderiv(shader, GL_COMPILE_STATUS, &status);
     if (!status) {
-        char buffer[MAX_STRING_CHARS] = { 0 };
+        char buffer[MAX_STRING_CHARS];
 
+        buffer[0] = 0;
         qglGetShaderInfoLog(shader, sizeof(buffer), NULL, buffer);
         qglDeleteShader(shader);
 
@@ -189,6 +193,7 @@ static GLuint create_shader(GLenum type, const char *src)
 static GLuint create_and_use_program(GLbitfield bits)
 {
     char buffer[MAX_SHADER_CHARS];
+    sizebuf_t sb;
 
     GLuint program = qglCreateProgram();
     if (!program) {
@@ -196,13 +201,15 @@ static GLuint create_and_use_program(GLbitfield bits)
         return 0;
     }
 
-    write_vertex_shader(buffer, bits);
-    GLuint shader_v = create_shader(GL_VERTEX_SHADER, buffer);
+    SZ_Init(&sb, buffer, sizeof(buffer), "GLSL");
+    write_vertex_shader(&sb, bits);
+    GLuint shader_v = create_shader(GL_VERTEX_SHADER, &sb);
     if (!shader_v)
         return program;
 
-    write_fragment_shader(buffer, bits);
-    GLuint shader_f = create_shader(GL_FRAGMENT_SHADER, buffer);
+    SZ_Clear(&sb);
+    write_fragment_shader(&sb, bits);
+    GLuint shader_f = create_shader(GL_FRAGMENT_SHADER, &sb);
     if (!shader_f) {
         qglDeleteShader(shader_v);
         return program;
@@ -226,8 +233,9 @@ static GLuint create_and_use_program(GLbitfield bits)
     GLint status = 0;
     qglGetProgramiv(program, GL_LINK_STATUS, &status);
     if (!status) {
-        char buffer[MAX_STRING_CHARS] = { 0 };
+        char buffer[MAX_STRING_CHARS];
 
+        buffer[0] = 0;
         qglGetProgramInfoLog(program, sizeof(buffer), NULL, buffer);
 
         if (buffer[0])
