@@ -471,7 +471,6 @@ typedef struct {
     uint16_t    inuse[LM_MAX_BLOCK_WIDTH];
     GLuint      texnums[LM_MAX_LIGHTMAPS];
     lightmap_t  lightmaps[LM_MAX_LIGHTMAPS];
-    byte        buffer[0x4000000];
 } lightmap_builder_t;
 
 extern lightmap_builder_t lm;

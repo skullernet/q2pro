@@ -24,6 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/mdfour.h"
 
 lightmap_builder_t lm;
+static byte lm_buffer[0x4000000];
 
 /*
 =============================================================================
@@ -423,10 +424,10 @@ static void LM_BeginBuilding(void)
 
     size_shift = bits * 2 + 2;
     lm.block_bytes = 1 << size_shift;
-    lm.maxmaps = min(sizeof(lm.buffer) >> size_shift, LM_MAX_LIGHTMAPS);
+    lm.maxmaps = min(sizeof(lm_buffer) >> size_shift, LM_MAX_LIGHTMAPS);
 
     for (int i = 0; i < lm.maxmaps; i++)
-        lm.lightmaps[i].buffer = lm.buffer + (i << size_shift);
+        lm.lightmaps[i].buffer = lm_buffer + (i << size_shift);
 
     Com_DPrintf("%s: %d lightmaps max, %d block size\n", __func__, lm.maxmaps, lm.block_size);
 
