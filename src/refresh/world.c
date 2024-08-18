@@ -442,7 +442,7 @@ void GL_DrawBspModel(mmodel_t *model)
 
     GL_RotateForEntity();
 
-    GL_BindArrays(VAO_3D);
+    GL_BindArrays(VA_3D);
 
     GL_ClearSolidFaces();
 
@@ -593,7 +593,7 @@ void GL_DrawWorld(void)
 
     GL_LoadMatrix(glr.viewmatrix);
 
-    GL_BindArrays(VAO_3D);
+    GL_BindArrays(VA_3D);
 
     GL_ClearSolidFaces();
 

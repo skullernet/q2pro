@@ -974,8 +974,8 @@ void GL_FreeWorld(void)
         qglDeleteBuffers(1, &gl_static.world.bufnum);
 
     // invalidate binding
-    if (gls.currentvao == VAO_3D)
-        gls.currentvao = VAO_NONE;
+    if (gls.currentva == VA_3D)
+        gls.currentva = VA_NONE;
 
     memset(&gl_static.world, 0, sizeof(gl_static.world));
 }

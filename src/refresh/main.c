@@ -340,7 +340,7 @@ static void GL_DrawSpriteModel(const model_t *model)
 
     GL_LoadMatrix(glr.viewmatrix);
     GL_BindTexture(0, image->texnum);
-    GL_BindArrays(VAO_SPRITE);
+    GL_BindArrays(VA_SPRITE);
     GL_StateBits(bits);
     GL_ArrayBits(GLA_VERTEX | GLA_TC);
     GL_Color(1, 1, 1, alpha);
@@ -388,7 +388,7 @@ static void GL_DrawNullModel(void)
 
     GL_LoadMatrix(glr.viewmatrix);
     GL_BindTexture(0, TEXNUM_WHITE);
-    GL_BindArrays(VAO_NULLMODEL);
+    GL_BindArrays(VA_NULLMODEL);
     GL_StateBits(GLS_DEFAULT);
     GL_ArrayBits(GLA_VERTEX | GLA_COLOR);
 
@@ -456,7 +456,7 @@ static void GL_OccludeFlares(void)
         if (!set) {
             GL_LoadMatrix(glr.viewmatrix);
             GL_BindTexture(0, TEXNUM_WHITE);
-            GL_BindArrays(VAO_OCCLUDE);
+            GL_BindArrays(VA_OCCLUDE);
             GL_StateBits(GLS_DEPTHMASK_FALSE);
             GL_ArrayBits(GLA_VERTEX);
             qglColorMask(0, 0, 0, 0);
@@ -612,7 +612,7 @@ static void GL_WaterWarp(void)
     float x0, x1, y0, y1;
 
     GL_ForceTexture(0, gl_static.warp_texture);
-    GL_BindArrays(VAO_WATERWARP);
+    GL_BindArrays(VA_WATERWARP);
     GL_StateBits(GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE |
                  GLS_CULL_DISABLE | GLS_TEXTURE_REPLACE | GLS_WARP_ENABLE);
     GL_ArrayBits(GLA_VERTEX | GLA_TC);

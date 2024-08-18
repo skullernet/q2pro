@@ -24,16 +24,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define GLSL(x)     SZ_Write(buf, CONST_STR_LEN(#x "\n"));
 #define GLSF(x)     SZ_Write(buf, CONST_STR_LEN(x))
 
-// must match glArrayBits_t order!!!
-enum {
-    VERT_ATTR_POS,
-    VERT_ATTR_TC,
-    VERT_ATTR_LMTC,
-    VERT_ATTR_COLOR,
-
-    VERT_ATTR_COUNT
-};
-
 static void upload_u_block(void);
 
 static void write_header(sizebuf_t *buf)
@@ -310,29 +300,22 @@ static void shader_array_bits(GLbitfield bits)
     }
 }
 
-static void shader_vertex_pointer(GLint size, GLsizei stride, const GLfloat *pointer)
+static void shader_array_pointers(const glVaDesc_t *desc, const GLfloat *ptr)
 {
-    qglVertexAttribPointer(VERT_ATTR_POS, size, GL_FLOAT, GL_FALSE, stride, pointer);
+    uintptr_t base = (uintptr_t)ptr;
+
+    for (int i = 0; i < VERT_ATTR_COUNT; i++) {
+        const glVaDesc_t *d = &desc[i];
+        if (d->size) {
+            const GLenum type = d->type ? GL_UNSIGNED_BYTE : GL_FLOAT;
+            qglVertexAttribPointer(i, d->size, type, d->type, d->stride, (void *)(base + d->offset));
+        }
+    }
 }
 
-static void shader_tex_coord_pointer(GLint size, GLsizei stride, const GLfloat *pointer)
+static void shader_tex_coord_pointer(const GLfloat *ptr)
 {
-    qglVertexAttribPointer(VERT_ATTR_TC, size, GL_FLOAT, GL_FALSE, stride, pointer);
-}
-
-static void shader_light_coord_pointer(GLint size, GLsizei stride, const GLfloat *pointer)
-{
-    qglVertexAttribPointer(VERT_ATTR_LMTC, size, GL_FLOAT, GL_FALSE, stride, pointer);
-}
-
-static void shader_color_byte_pointer(GLint size, GLsizei stride, const GLubyte *pointer)
-{
-    qglVertexAttribPointer(VERT_ATTR_COLOR, size, GL_UNSIGNED_BYTE, GL_TRUE, stride, pointer);
-}
-
-static void shader_color_float_pointer(GLint size, GLsizei stride, const GLfloat *pointer)
-{
-    qglVertexAttribPointer(VERT_ATTR_COLOR, size, GL_FLOAT, GL_FALSE, stride, pointer);
+    qglVertexAttribPointer(VERT_ATTR_TC, 2, GL_FLOAT, GL_FALSE, 0, ptr);
 }
 
 static void shader_color(GLfloat r, GLfloat g, GLfloat b, GLfloat a)
@@ -451,10 +434,8 @@ const glbackend_t backend_shader = {
     .state_bits = shader_state_bits,
     .array_bits = shader_array_bits,
 
-    .vertex_pointer = shader_vertex_pointer,
+    .array_pointers = shader_array_pointers,
     .tex_coord_pointer = shader_tex_coord_pointer,
-    .light_coord_pointer = shader_light_coord_pointer,
-    .color_byte_pointer = shader_color_byte_pointer,
-    .color_float_pointer = shader_color_float_pointer,
+
     .color = shader_color,
 };

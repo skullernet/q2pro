@@ -583,7 +583,7 @@ static void draw_alias_mesh(const QGL_INDEX_TYPE *indices, int num_indices,
         GL_Color(color[0], color[1], color[2], color[3]);
     }
 
-    GL_TexCoordPointer(2, 0, tcoords->st);
+    gl_backend->tex_coord_pointer(tcoords->st);
 
     GL_LockArrays(num_verts);
 
@@ -807,7 +807,7 @@ void GL_DrawAliasModel(const model_t *model)
 
     GL_RotateForEntity();
 
-    GL_BindArrays(dotshading ? VAO_MESH_SHADE : VAO_MESH_FLAT);
+    GL_BindArrays(dotshading ? VA_MESH_SHADE : VA_MESH_FLAT);
 
     if (ent->flags & RF_WEAPONMODEL)
         setup_weaponmodel();
