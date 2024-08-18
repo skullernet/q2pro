@@ -42,12 +42,9 @@ void GL_Flush2D(void)
     Scrap_Upload();
 
     GL_BindTexture(0, tess.texnum[0]);
+    GL_BindArrays(VAO_2D);
     GL_StateBits(bits);
     GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
-
-    GL_VertexPointer(2, 5, tess.vertices);
-    GL_TexCoordPointer(2, 5, tess.vertices + 2);
-    GL_ColorBytePointer(4, 5, (GLubyte *)(tess.vertices + 4));
 
     GL_LockArrays(tess.numverts);
 
@@ -84,10 +81,7 @@ void GL_DrawParticles(void)
         return;
 
     GL_LoadMatrix(glr.viewmatrix);
-
-    GL_VertexPointer(3, 6, tess.vertices);
-    GL_TexCoordPointer(2, 6, tess.vertices + 3);
-    GL_ColorBytePointer(4, 6, (GLubyte *)(tess.vertices + 5));
+    GL_BindArrays(VAO_EFFECT);
 
     bits = (gl_partstyle->integer ? GLS_BLEND_ADD : GLS_BLEND_BLEND) | GLS_DEPTHMASK_FALSE;
 
@@ -266,10 +260,7 @@ void GL_DrawBeams(void)
         return;
 
     GL_LoadMatrix(glr.viewmatrix);
-
-    GL_VertexPointer(3, 6, tess.vertices);
-    GL_TexCoordPointer(2, 6, tess.vertices + 3);
-    GL_ColorBytePointer(4, 6, (GLubyte *)(tess.vertices + 5));
+    GL_BindArrays(VAO_EFFECT);
 
     for (i = 0, ent = glr.fd.entities; i < glr.fd.num_entities; i++, ent++) {
         if (!(ent->flags & RF_BEAM))
@@ -335,10 +326,7 @@ void GL_DrawFlares(void)
         return;
 
     GL_LoadMatrix(glr.viewmatrix);
-
-    GL_VertexPointer(3, 6, tess.vertices);
-    GL_TexCoordPointer(2, 6, tess.vertices + 3);
-    GL_ColorBytePointer(4, 6, (GLubyte *)(tess.vertices + 5));
+    GL_BindArrays(VAO_EFFECT);
 
     for (i = 0, ent = glr.fd.entities; i < glr.fd.num_entities; i++, ent++) {
         if (!(ent->flags & RF_FLARE))
@@ -421,25 +409,70 @@ void GL_DrawFlares(void)
     GL_FlushFlares();
 }
 
-void GL_BindArrays(void)
+// Fake VAOs. This is the only place where vertex arrays are bound.
+void GL_BindArrays(glVertexArray_t vao)
 {
-    if (gl_static.world.vertices) {
+    if (gls.currentvao == vao)
+        return;
+
+    switch (vao) {
+    case VAO_SPRITE:
+        GL_VertexPointer(3, 5, tess.vertices);
+        GL_TexCoordPointer(2, 5, tess.vertices + 3);
+        break;
+    case VAO_EFFECT:
+        GL_VertexPointer(3, 6, tess.vertices);
+        GL_TexCoordPointer(2, 6, tess.vertices + 3);
+        GL_ColorBytePointer(4, 6, (GLubyte *)(tess.vertices + 5));
+        break;
+    case VAO_NULLMODEL:
+        GL_VertexPointer(3, 4, tess.vertices);
+        GL_ColorBytePointer(4, 4, (GLubyte *)(tess.vertices + 3));
+        break;
+    case VAO_OCCLUDE:
+        GL_VertexPointer(3, 0, tess.vertices);
+        break;
+    case VAO_WATERWARP:
+        GL_VertexPointer(2, 4, tess.vertices);
+        GL_TexCoordPointer(2, 4, tess.vertices + 2);
+        break;
+    case VAO_MESH_SHADE:
         GL_VertexPointer(3, VERTEX_SIZE, tess.vertices);
-        GL_ColorBytePointer(4, VERTEX_SIZE, (GLubyte *)(tess.vertices + 3));
-        GL_TexCoordPointer(2, VERTEX_SIZE, tess.vertices + 4);
-        if (lm.nummaps)
-            GL_LightCoordPointer(2, VERTEX_SIZE, tess.vertices + 6);
-    } else {
-        qglBindBuffer(GL_ARRAY_BUFFER, gl_static.world.bufnum);
+        GL_ColorFloatPointer(4, VERTEX_SIZE, tess.vertices + 4);
+        break;
+    case VAO_MESH_FLAT:
+        GL_VertexPointer(3, 4, tess.vertices);
+        break;
+    case VAO_2D:
+        GL_VertexPointer(2, 5, tess.vertices);
+        GL_TexCoordPointer(2, 5, tess.vertices + 2);
+        GL_ColorBytePointer(4, 5, (GLubyte *)(tess.vertices + 4));
+        break;
+    case VAO_3D:
+        if (gl_static.world.vertices) {
+            GL_VertexPointer(3, VERTEX_SIZE, tess.vertices);
+            GL_TexCoordPointer(2, VERTEX_SIZE, tess.vertices + 4);
+            if (lm.nummaps)
+                GL_LightCoordPointer(2, VERTEX_SIZE, tess.vertices + 6);
+            GL_ColorBytePointer(4, VERTEX_SIZE, (GLubyte *)(tess.vertices + 3));
+        } else {
+            qglBindBuffer(GL_ARRAY_BUFFER, gl_static.world.bufnum);
 
-        GL_VertexPointer(3, VERTEX_SIZE, VBO_OFS(0));
-        GL_ColorBytePointer(4, VERTEX_SIZE, VBO_OFS(3));
-        GL_TexCoordPointer(2, VERTEX_SIZE, VBO_OFS(4));
-        if (lm.nummaps)
-            GL_LightCoordPointer(2, VERTEX_SIZE, VBO_OFS(6));
+            GL_VertexPointer(3, VERTEX_SIZE, VBO_OFS(0));
+            GL_TexCoordPointer(2, VERTEX_SIZE, VBO_OFS(4));
+            if (lm.nummaps)
+                GL_LightCoordPointer(2, VERTEX_SIZE, VBO_OFS(6));
+            GL_ColorBytePointer(4, VERTEX_SIZE, VBO_OFS(3));
 
-        qglBindBuffer(GL_ARRAY_BUFFER, 0);
+            qglBindBuffer(GL_ARRAY_BUFFER, 0);
+        }
+        break;
+    default:
+        Q_assert(!"bad array");
     }
+
+    gls.currentvao = vao;
+    c.vertexArrayBinds++;
 }
 
 void GL_Flush3D(void)
@@ -597,7 +630,7 @@ void GL_DrawAlphaFaces(void)
 
     glr.ent = NULL;
 
-    GL_BindArrays();
+    GL_BindArrays(VAO_3D);
 
     for (const mface_t *face = faces_alpha; face; face = face->next) {
         if (glr.ent != face->entity) {

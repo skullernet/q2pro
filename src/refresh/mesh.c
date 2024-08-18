@@ -551,12 +551,13 @@ static void draw_alias_mesh(const QGL_INDEX_TYPE *indices, int num_indices,
         GL_StateBits(GLS_DEFAULT);
         GL_ArrayBits(GLA_VERTEX);
         GL_BindTexture(0, TEXNUM_WHITE);
-        GL_VertexPointer(3, dotshading ? VERTEX_SIZE : 4, tess.vertices);
-        GL_LockArrays(num_verts);
         qglColorMask(0, 0, 0, 0);
+
+        GL_LockArrays(num_verts);
         GL_DrawTriangles(num_indices, indices);
-        qglColorMask(1, 1, 1, 1);
         GL_UnlockArrays();
+
+        qglColorMask(1, 1, 1, 1);
     }
 
     if (dotshading)
@@ -577,11 +578,8 @@ static void draw_alias_mesh(const QGL_INDEX_TYPE *indices, int num_indices,
 
     if (dotshading) {
         GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
-        GL_VertexPointer(3, VERTEX_SIZE, tess.vertices);
-        GL_ColorFloatPointer(4, VERTEX_SIZE, tess.vertices + 4);
     } else {
         GL_ArrayBits(GLA_VERTEX | GLA_TC);
-        GL_VertexPointer(3, 4, tess.vertices);
         GL_Color(color[0], color[1], color[2], color[3]);
     }
 
@@ -808,6 +806,8 @@ void GL_DrawAliasModel(const model_t *model)
     }
 
     GL_RotateForEntity();
+
+    GL_BindArrays(dotshading ? VAO_MESH_SHADE : VAO_MESH_FLAT);
 
     if (ent->flags & RF_WEAPONMODEL)
         setup_weaponmodel();

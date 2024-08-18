@@ -333,10 +333,9 @@ void R_DrawSkyBox(void)
     if (!skyfaces)
         return; // nothing visible
 
+    GL_BindArrays(VAO_SPRITE);
     GL_StateBits(GLS_TEXTURE_REPLACE);
     GL_ArrayBits(GLA_VERTEX | GLA_TC);
-    GL_VertexPointer(3, 5, tess.vertices);
-    GL_TexCoordPointer(2, 5, tess.vertices + 3);
 
     for (i = 0; i < 6; i++) {
         if (skymins[0][i] >= skymaxs[0][i] ||

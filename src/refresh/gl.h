@@ -85,6 +85,22 @@ typedef struct {
     bool visible;
 } glquery_t;
 
+typedef enum {
+    VAO_NONE,
+
+    VAO_SPRITE,
+    VAO_EFFECT,
+    VAO_NULLMODEL,
+    VAO_OCCLUDE,
+    VAO_WATERWARP,
+    VAO_MESH_SHADE,
+    VAO_MESH_FLAT,
+    VAO_2D,
+    VAO_3D,
+
+    VAO_TOTAL
+} glVertexArray_t;
+
 typedef struct {
     bool            registering;
     bool            use_shaders;
@@ -194,6 +210,7 @@ typedef struct {
     int rotatedBoxesCulled;
     int batchesDrawn2D;
     int uniformUploads;
+    int vertexArrayBinds;
     int occlusionQueries;
 } statCounters_t;
 
@@ -511,6 +528,7 @@ typedef struct {
     GLuint          texnums[MAX_TMUS];
     GLbitfield      state_bits;
     GLbitfield      array_bits;
+    glVertexArray_t currentvao;
     const GLfloat   *currentmatrix;
     struct {
         GLfloat     view[16];
@@ -720,7 +738,7 @@ void GL_DrawParticles(void);
 void GL_DrawBeams(void);
 void GL_DrawFlares(void);
 
-void GL_BindArrays(void);
+void GL_BindArrays(glVertexArray_t vao);
 void GL_Flush3D(void);
 
 void GL_AddAlphaFace(mface_t *face, entity_t *ent);

@@ -339,6 +339,7 @@ static void GL_DrawSpriteModel(const model_t *model)
 
     GL_LoadMatrix(glr.viewmatrix);
     GL_BindTexture(0, image->texnum);
+    GL_BindArrays(VAO_SPRITE);
     GL_StateBits(bits);
     GL_ArrayBits(GLA_VERTEX | GLA_TC);
     GL_Color(1, 1, 1, alpha);
@@ -358,8 +359,6 @@ static void GL_DrawSpriteModel(const model_t *model)
     tess.vertices[13] = 1; tess.vertices[14] = 1;
     tess.vertices[18] = 1; tess.vertices[19] = 0;
 
-    GL_VertexPointer(3, 5, tess.vertices);
-    GL_TexCoordPointer(2, 5, tess.vertices + 3);
     GL_LockArrays(4);
     qglDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     GL_UnlockArrays();
@@ -388,10 +387,10 @@ static void GL_DrawNullModel(void)
 
     GL_LoadMatrix(glr.viewmatrix);
     GL_BindTexture(0, TEXNUM_WHITE);
+    GL_BindArrays(VAO_NULLMODEL);
     GL_StateBits(GLS_DEFAULT);
     GL_ArrayBits(GLA_VERTEX | GLA_COLOR);
-    GL_VertexPointer(3, 4, tess.vertices);
-    GL_ColorBytePointer(4, 4, (GLubyte *)(tess.vertices + 3));
+
     GL_LockArrays(6);
     qglDrawArrays(GL_LINES, 0, 6);
     GL_UnlockArrays();
@@ -455,11 +454,11 @@ static void GL_OccludeFlares(void)
 
         if (!set) {
             GL_LoadMatrix(glr.viewmatrix);
+            GL_BindTexture(0, TEXNUM_WHITE);
+            GL_BindArrays(VAO_OCCLUDE);
             GL_StateBits(GLS_DEPTHMASK_FALSE);
             GL_ArrayBits(GLA_VERTEX);
             qglColorMask(0, 0, 0, 0);
-            GL_BindTexture(0, TEXNUM_WHITE);
-            GL_VertexPointer(3, 0, tess.vertices);
             set = true;
         }
 
@@ -609,6 +608,7 @@ static void GL_WaterWarp(void)
     float x0, x1, y0, y1;
 
     GL_ForceTexture(0, gl_static.warp_texture);
+    GL_BindArrays(VAO_WATERWARP);
     GL_StateBits(GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE |
                  GLS_CULL_DISABLE | GLS_TEXTURE_REPLACE | GLS_WARP_ENABLE);
     GL_ArrayBits(GLA_VERTEX | GLA_TC);
@@ -624,8 +624,6 @@ static void GL_WaterWarp(void)
     Vector4Set(tess.vertices +  8, x1, y0, 1, 1);
     Vector4Set(tess.vertices + 12, x1, y1, 1, 0);
 
-    GL_VertexPointer(2, 4, tess.vertices);
-    GL_TexCoordPointer(2, 4, tess.vertices + 2);
     GL_LockArrays(4);
     qglDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     GL_UnlockArrays();
