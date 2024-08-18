@@ -438,19 +438,19 @@ static void GL_OccludeFlares(void)
             continue;   // not visible
         }
 
-        c.occlusionQueries++;
-
-        if (!q) {
+        if (q) {
+            if (q->pending)
+                continue;
+            if (com_eventTime - q->timestamp <= 33)
+                continue;
+        } else {
             glquery_t new = { 0 };
             uint32_t map_size = HashMap_Size(gl_static.queries);
             Q_assert(map_size < MAX_EDICTS);
             qglGenQueries(1, &new.query);
             Q_assert(!HashMap_Insert(gl_static.queries, &e->skinnum, &new));
             q = HashMap_GetValue(glquery_t, gl_static.queries, map_size);
-        }
-
-        if (q->pending)
-            continue;
+         }
 
         if (!set) {
             GL_LoadMatrix(glr.viewmatrix);
@@ -470,7 +470,10 @@ static void GL_OccludeFlares(void)
         qglEndQuery(gl_static.samples_passed);
         GL_UnlockArrays();
 
+        q->timestamp = com_eventTime;
         q->pending = true;
+
+        c.occlusionQueries++;
     }
 
     if (set)
