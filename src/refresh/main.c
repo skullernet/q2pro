@@ -367,27 +367,31 @@ static void GL_DrawSpriteModel(const model_t *model)
 
 static void GL_DrawNullModel(void)
 {
-    static const uint32_t colors[6] = {
-        U32_RED, U32_RED,
-        U32_GREEN, U32_GREEN,
-        U32_BLUE, U32_BLUE
-    };
     const entity_t *e = glr.ent;
 
     VectorCopy(e->origin, tess.vertices +  0);
-    VectorCopy(e->origin, tess.vertices +  6);
-    VectorCopy(e->origin, tess.vertices + 12);
+    VectorCopy(e->origin, tess.vertices +  8);
+    VectorCopy(e->origin, tess.vertices + 16);
 
-    VectorMA(e->origin, 16, glr.entaxis[0], tess.vertices +  3);
-    VectorMA(e->origin, 16, glr.entaxis[1], tess.vertices +  9);
-    VectorMA(e->origin, 16, glr.entaxis[2], tess.vertices + 15);
+    VectorMA(e->origin, 16, glr.entaxis[0], tess.vertices +  4);
+    VectorMA(e->origin, 16, glr.entaxis[1], tess.vertices + 12);
+    VectorMA(e->origin, 16, glr.entaxis[2], tess.vertices + 20);
+
+    WN32(tess.vertices +  3, U32_RED);
+    WN32(tess.vertices +  7, U32_RED);
+
+    WN32(tess.vertices + 11, U32_GREEN);
+    WN32(tess.vertices + 15, U32_GREEN);
+
+    WN32(tess.vertices + 19, U32_BLUE);
+    WN32(tess.vertices + 23, U32_BLUE);
 
     GL_LoadMatrix(glr.viewmatrix);
     GL_BindTexture(0, TEXNUM_WHITE);
     GL_StateBits(GLS_DEFAULT);
     GL_ArrayBits(GLA_VERTEX | GLA_COLOR);
-    GL_ColorBytePointer(4, 0, (GLubyte *)colors);
-    GL_VertexPointer(3, 0, tess.vertices);
+    GL_VertexPointer(3, 4, tess.vertices);
+    GL_ColorBytePointer(4, 4, (GLubyte *)(tess.vertices + 3));
     GL_LockArrays(6);
     qglDrawArrays(GL_LINES, 0, 6);
     GL_UnlockArrays();

@@ -25,6 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/cvar.h"
 #include "common/files.h"
 #include "common/hash_map.h"
+#include "common/intreadwrite.h"
 #include "common/math.h"
 #include "client/video.h"
 #include "client/client.h"
@@ -706,7 +707,6 @@ extern cvar_t *gl_intensity;
 typedef struct {
     GLfloat         vertices[VERTEX_SIZE * TESS_MAX_VERTICES];
     QGL_INDEX_TYPE  indices[TESS_MAX_INDICES];
-    GLubyte         colors[4 * TESS_MAX_VERTICES];
     GLuint          texnum[MAX_TMUS];
     int             numverts;
     int             numindices;

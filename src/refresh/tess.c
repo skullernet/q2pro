@@ -45,9 +45,9 @@ void GL_Flush2D(void)
     GL_StateBits(bits);
     GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
 
-    GL_VertexPointer(2, 4, tess.vertices);
-    GL_TexCoordPointer(2, 4, tess.vertices + 2);
-    GL_ColorBytePointer(4, 0, tess.colors);
+    GL_VertexPointer(2, 5, tess.vertices);
+    GL_TexCoordPointer(2, 5, tess.vertices + 2);
+    GL_ColorBytePointer(4, 5, (GLubyte *)(tess.vertices + 4));
 
     GL_LockArrays(tess.numverts);
 
@@ -78,7 +78,6 @@ void GL_DrawParticles(void)
     color_t color;
     int numverts;
     vec_t *dst_vert;
-    uint32_t *dst_color;
     glStateBits_t bits;
 
     if (!glr.fd.num_particles)
@@ -86,9 +85,9 @@ void GL_DrawParticles(void)
 
     GL_LoadMatrix(glr.viewmatrix);
 
-    GL_VertexPointer(3, 5, tess.vertices);
-    GL_TexCoordPointer(2, 5, tess.vertices + 3);
-    GL_ColorBytePointer(4, 0, tess.colors);
+    GL_VertexPointer(3, 6, tess.vertices);
+    GL_TexCoordPointer(2, 6, tess.vertices + 3);
+    GL_ColorBytePointer(4, 6, (GLubyte *)(tess.vertices + 5));
 
     bits = (gl_partstyle->integer ? GLS_BLEND_ADD : GLS_BLEND_BLEND) | GLS_DEPTHMASK_FALSE;
 
@@ -103,7 +102,6 @@ void GL_DrawParticles(void)
         total -= count;
 
         dst_vert = tess.vertices;
-        dst_color = (uint32_t *)tess.colors;
         numverts = count * 3;
         do {
             VectorSubtract(p->origin, glr.fd.vieworg, transformed);
@@ -116,14 +114,12 @@ void GL_DrawParticles(void)
 
             VectorMA(p->origin, scale2, glr.viewaxis[1], dst_vert);
             VectorMA(dst_vert, -scale2, glr.viewaxis[2], dst_vert);
-            VectorMA(dst_vert,  scale,  glr.viewaxis[2], dst_vert +  5);
-            VectorMA(dst_vert, -scale,  glr.viewaxis[1], dst_vert + 10);
+            VectorMA(dst_vert,  scale,  glr.viewaxis[2], dst_vert +  6);
+            VectorMA(dst_vert, -scale,  glr.viewaxis[1], dst_vert + 12);
 
             dst_vert[ 3] = 0;               dst_vert[ 4] = 0;
-            dst_vert[ 8] = 0;               dst_vert[ 9] = PARTICLE_SIZE;
-            dst_vert[13] = PARTICLE_SIZE;   dst_vert[14] = 0;
-
-            dst_vert += 15;
+            dst_vert[ 9] = 0;               dst_vert[10] = PARTICLE_SIZE;
+            dst_vert[15] = PARTICLE_SIZE;   dst_vert[16] = 0;
 
             if (p->color == -1)
                 color.u32 = p->rgba.u32;
@@ -131,11 +127,11 @@ void GL_DrawParticles(void)
                 color.u32 = d_8to24table[p->color & 0xff];
             color.u8[3] *= p->alpha;
 
-            dst_color[0] = color.u32;
-            dst_color[1] = color.u32;
-            dst_color[2] = color.u32;
-            dst_color += 3;
+            WN32(dst_vert +  5, color.u32);
+            WN32(dst_vert + 11, color.u32);
+            WN32(dst_vert + 17, color.u32);
 
+            dst_vert += 18;
             p++;
         } while (--count);
 
@@ -174,7 +170,6 @@ static void GL_DrawBeamSegment(const vec3_t start, const vec3_t end, color_t col
 {
     vec3_t d1, d2, d3;
     vec_t *dst_vert;
-    uint32_t *dst_color;
     QGL_INDEX_TYPE *dst_indices;
 
     VectorSubtract(end, start, d1);
@@ -188,22 +183,21 @@ static void GL_DrawBeamSegment(const vec3_t start, const vec3_t end, color_t col
                    tess.numindices + 6 > TESS_MAX_INDICES))
         GL_FlushBeamSegments();
 
-    dst_vert = tess.vertices + tess.numverts * 5;
+    dst_vert = tess.vertices + tess.numverts * 6;
     VectorAdd(start, d3, dst_vert);
-    VectorSubtract(start, d3, dst_vert + 5);
-    VectorSubtract(end, d3, dst_vert + 10);
-    VectorAdd(end, d3, dst_vert + 15);
+    VectorSubtract(start, d3, dst_vert + 6);
+    VectorSubtract(end, d3, dst_vert + 12);
+    VectorAdd(end, d3, dst_vert + 18);
 
     dst_vert[ 3] = 0; dst_vert[ 4] = 0;
-    dst_vert[ 8] = 1; dst_vert[ 9] = 0;
-    dst_vert[13] = 1; dst_vert[14] = 1;
-    dst_vert[18] = 0; dst_vert[19] = 1;
+    dst_vert[ 9] = 1; dst_vert[10] = 0;
+    dst_vert[15] = 1; dst_vert[16] = 1;
+    dst_vert[21] = 0; dst_vert[22] = 1;
 
-    dst_color = (uint32_t *)tess.colors + tess.numverts;
-    dst_color[0] = color.u32;
-    dst_color[1] = color.u32;
-    dst_color[2] = color.u32;
-    dst_color[3] = color.u32;
+    WN32(dst_vert +  5, color.u32);
+    WN32(dst_vert + 11, color.u32);
+    WN32(dst_vert + 17, color.u32);
+    WN32(dst_vert + 23, color.u32);
 
     dst_indices = tess.indices + tess.numindices;
     dst_indices[0] = tess.numverts + 0;
@@ -273,9 +267,9 @@ void GL_DrawBeams(void)
 
     GL_LoadMatrix(glr.viewmatrix);
 
-    GL_VertexPointer(3, 5, tess.vertices);
-    GL_TexCoordPointer(2, 5, tess.vertices + 3);
-    GL_ColorBytePointer(4, 0, tess.colors);
+    GL_VertexPointer(3, 6, tess.vertices);
+    GL_TexCoordPointer(2, 6, tess.vertices + 3);
+    GL_ColorBytePointer(4, 6, (GLubyte *)(tess.vertices + 5));
 
     for (i = 0, ent = glr.fd.entities; i < glr.fd.num_entities; i++, ent++) {
         if (!(ent->flags & RF_BEAM))
@@ -328,7 +322,6 @@ void GL_DrawFlares(void)
     vec3_t up, down, left, right;
     color_t color;
     vec_t *dst_vert;
-    uint32_t *dst_color;
     QGL_INDEX_TYPE *dst_indices;
     GLuint result, texnum;
     const entity_t *ent;
@@ -343,9 +336,9 @@ void GL_DrawFlares(void)
 
     GL_LoadMatrix(glr.viewmatrix);
 
-    GL_VertexPointer(3, 5, tess.vertices);
-    GL_TexCoordPointer(2, 5, tess.vertices + 3);
-    GL_ColorBytePointer(4, 0, tess.colors);
+    GL_VertexPointer(3, 6, tess.vertices);
+    GL_TexCoordPointer(2, 6, tess.vertices + 3);
+    GL_ColorBytePointer(4, 6, (GLubyte *)(tess.vertices + 5));
 
     for (i = 0, ent = glr.fd.entities; i < glr.fd.num_entities; i++, ent++) {
         if (!(ent->flags & RF_FLARE))
@@ -393,26 +386,25 @@ void GL_DrawFlares(void)
         VectorScale(glr.viewaxis[2], -scale, down);
         VectorScale(glr.viewaxis[2],  scale, up);
 
-        dst_vert = tess.vertices + tess.numverts * 5;
+        dst_vert = tess.vertices + tess.numverts * 6;
 
         VectorAdd3(ent->origin, down, left,  dst_vert);
-        VectorAdd3(ent->origin, up,   left,  dst_vert +  5);
-        VectorAdd3(ent->origin, up,   right, dst_vert + 10);
-        VectorAdd3(ent->origin, down, right, dst_vert + 15);
+        VectorAdd3(ent->origin, up,   left,  dst_vert +  6);
+        VectorAdd3(ent->origin, up,   right, dst_vert + 12);
+        VectorAdd3(ent->origin, down, right, dst_vert + 18);
 
         dst_vert[ 3] = 0; dst_vert[ 4] = 1;
-        dst_vert[ 8] = 0; dst_vert[ 9] = 0;
-        dst_vert[13] = 1; dst_vert[14] = 0;
-        dst_vert[18] = 1; dst_vert[19] = 1;
+        dst_vert[ 9] = 0; dst_vert[10] = 0;
+        dst_vert[15] = 1; dst_vert[16] = 0;
+        dst_vert[21] = 1; dst_vert[22] = 1;
 
         color.u32 = ent->rgba.u32;
         color.u8[3] = 128 * (ent->alpha * q->frac);
 
-        dst_color = (uint32_t *)tess.colors + tess.numverts;
-        dst_color[0] = color.u32;
-        dst_color[1] = color.u32;
-        dst_color[2] = color.u32;
-        dst_color[3] = color.u32;
+        WN32(dst_vert +  5, color.u32);
+        WN32(dst_vert + 11, color.u32);
+        WN32(dst_vert + 17, color.u32);
+        WN32(dst_vert + 23, color.u32);
 
         dst_indices = tess.indices + tess.numindices;
         dst_indices[0] = tess.numverts + 0;

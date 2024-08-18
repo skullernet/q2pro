@@ -48,6 +48,12 @@ struct unaligned64 { uint64_t u; } __attribute__((packed, may_alias));
 #define WN32(p, v)  (*(uint32_t *)(p) = (v))
 #define WN64(p, v)  (*(uint64_t *)(p) = (v))
 
+#else
+
+#define WN16(p, v) memcpy(p, &(uint16_t){ v }, sizeof(uint16_t))
+#define WN32(p, v) memcpy(p, &(uint32_t){ v }, sizeof(uint32_t))
+#define WN64(p, v) memcpy(p, &(uint64_t){ v }, sizeof(uint64_t))
+
 #endif
 
 #if USE_LITTLE_ENDIAN

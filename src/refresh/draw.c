@@ -26,7 +26,6 @@ static inline void GL_StretchPic_(
     uint32_t color, int texnum, int flags)
 {
     vec_t *dst_vert;
-    uint32_t *dst_color;
     QGL_INDEX_TYPE *dst_indices;
 
     if (tess.numverts + 4 > TESS_MAX_VERTICES ||
@@ -36,17 +35,16 @@ static inline void GL_StretchPic_(
 
     tess.texnum[0] = texnum;
 
-    dst_vert = tess.vertices + tess.numverts * 4;
+    dst_vert = tess.vertices + tess.numverts * 5;
     Vector4Set(dst_vert,      x,     y,     s1, t1);
-    Vector4Set(dst_vert +  4, x + w, y,     s2, t1);
-    Vector4Set(dst_vert +  8, x + w, y + h, s2, t2);
-    Vector4Set(dst_vert + 12, x,     y + h, s1, t2);
+    Vector4Set(dst_vert +  5, x + w, y,     s2, t1);
+    Vector4Set(dst_vert + 10, x + w, y + h, s2, t2);
+    Vector4Set(dst_vert + 15, x,     y + h, s1, t2);
 
-    dst_color = (uint32_t *)tess.colors + tess.numverts;
-    dst_color[0] = color;
-    dst_color[1] = color;
-    dst_color[2] = color;
-    dst_color[3] = color;
+    WN32(dst_vert +  4, color);
+    WN32(dst_vert +  9, color);
+    WN32(dst_vert + 14, color);
+    WN32(dst_vert + 19, color);
 
     dst_indices = tess.indices + tess.numindices;
     dst_indices[0] = tess.numverts + 0;
@@ -76,7 +74,6 @@ static inline void GL_StretchPic_(
 static void GL_DrawVignette(int distance, color_t outer, color_t inner)
 {
     vec_t *dst_vert;
-    uint32_t *dst_color;
     QGL_INDEX_TYPE *dst_indices;
 
     if (tess.numverts + 8 > TESS_MAX_VERTICES ||
@@ -90,17 +87,16 @@ static void GL_DrawVignette(int distance, color_t outer, color_t inner)
     int w = glr.fd.width, h = glr.fd.height;
 
     // outer vertices
-    dst_vert = tess.vertices + tess.numverts * 4;
+    dst_vert = tess.vertices + tess.numverts * 5;
     Vector4Set(dst_vert,      x,     y,     0, 0);
-    Vector4Set(dst_vert +  4, x + w, y,     0, 0);
-    Vector4Set(dst_vert +  8, x + w, y + h, 0, 0);
-    Vector4Set(dst_vert + 12, x,     y + h, 0, 0);
+    Vector4Set(dst_vert +  5, x + w, y,     0, 0);
+    Vector4Set(dst_vert + 10, x + w, y + h, 0, 0);
+    Vector4Set(dst_vert + 15, x,     y + h, 0, 0);
 
-    dst_color = (uint32_t *)tess.colors + tess.numverts;
-    dst_color[0] = outer.u32;
-    dst_color[1] = outer.u32;
-    dst_color[2] = outer.u32;
-    dst_color[3] = outer.u32;
+    WN32(dst_vert +  4, outer.u32);
+    WN32(dst_vert +  9, outer.u32);
+    WN32(dst_vert + 14, outer.u32);
+    WN32(dst_vert + 19, outer.u32);
 
     // inner vertices
     x += distance;
@@ -108,17 +104,16 @@ static void GL_DrawVignette(int distance, color_t outer, color_t inner)
     w -= distance * 2;
     h -= distance * 2;
 
-    dst_vert += 16;
+    dst_vert += 20;
     Vector4Set(dst_vert,      x,     y,     0, 0);
-    Vector4Set(dst_vert +  4, x + w, y,     0, 0);
-    Vector4Set(dst_vert +  8, x + w, y + h, 0, 0);
-    Vector4Set(dst_vert + 12, x,     y + h, 0, 0);
+    Vector4Set(dst_vert +  5, x + w, y,     0, 0);
+    Vector4Set(dst_vert + 10, x + w, y + h, 0, 0);
+    Vector4Set(dst_vert + 15, x,     y + h, 0, 0);
 
-    dst_color += 4;
-    dst_color[0] = inner.u32;
-    dst_color[1] = inner.u32;
-    dst_color[2] = inner.u32;
-    dst_color[3] = inner.u32;
+    WN32(dst_vert +  4, inner.u32);
+    WN32(dst_vert +  9, inner.u32);
+    WN32(dst_vert + 14, inner.u32);
+    WN32(dst_vert + 19, inner.u32);
 
     /*
     0             1
