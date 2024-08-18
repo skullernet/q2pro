@@ -740,6 +740,12 @@ gl_coloredlightmaps::
     lightmaps to grayscale format, any value in between reduces colorfulness.
     Default value is 1 (keep original colors).
 
+gl_lightmap_bits::
+    Specifies size of lightmap textures, in base 2 logarithm units. Default
+    value is 0 (auto, typically 8 for regular maps and 10 for re-release maps).
+    Allowed range is 7-10. Older hardware may need this adjusted for optimal
+    dynamic lighting speed.
+
 gl_modulate::
     Specifies a primary modulation factor that each pixel of world lightmaps is
     multiplied by. This cvar affects entity lighting as well.  Default value is
