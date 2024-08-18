@@ -467,7 +467,7 @@ typedef struct {
     bool        dirty;
     int         comp, block_size, block_shift;
     float       add, modulate, scale;
-    int         nummaps, maxmaps;
+    int         nummaps, maxmaps, block_bytes;
     uint16_t    inuse[LM_MAX_BLOCK_WIDTH];
     GLuint      texnums[LM_MAX_LIGHTMAPS];
     lightmap_t  lightmaps[LM_MAX_LIGHTMAPS];

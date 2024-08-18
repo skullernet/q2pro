@@ -344,6 +344,7 @@ LIGHTMAPS BUILDING
 static void LM_InitBlock(void)
 {
     memset(lm.inuse, 0, sizeof(lm.inuse));
+    memset(lm.lightmaps[lm.nummaps].buffer, 0, lm.block_bytes);
 }
 
 static void LM_UploadBlock(void)
@@ -421,6 +422,7 @@ static void LM_BeginBuilding(void)
     lm.block_shift = bits + 2;
 
     size_shift = bits * 2 + 2;
+    lm.block_bytes = 1 << size_shift;
     lm.maxmaps = min(sizeof(lm.buffer) >> size_shift, LM_MAX_LIGHTMAPS);
 
     for (int i = 0; i < lm.maxmaps; i++)
@@ -439,7 +441,6 @@ static void LM_EndBuilding(void)
 
     // upload the last lightmap
     LM_UploadBlock();
-    LM_InitBlock();
 
     // now build the real lightstyle map
     build_style_map(gl_dynamic->integer);
