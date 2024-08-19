@@ -93,8 +93,6 @@ QGLAPI void (APIENTRYP qglVertexPointer)(GLint size, GLenum type, GLsizei stride
 // GL 1.1, not ES
 QGLAPI void (APIENTRYP qglClearDepth)(GLdouble depth);
 QGLAPI void (APIENTRYP qglDepthRange)(GLdouble near, GLdouble far);
-
-// GL 1.1, not ES, compat
 QGLAPI void (APIENTRYP qglPolygonMode)(GLenum face, GLenum mode);
 
 // GL 1.3
