@@ -113,13 +113,13 @@ typedef struct {
     struct {
         bsp_t       *cache;
         vec_t       *vertices;
-        GLuint      bufnum;
+        GLuint      buffer;
         vec_t       size;
     } world;
     GLuint          warp_texture;
     GLuint          warp_renderbuffer;
     GLuint          warp_framebuffer;
-    GLuint          u_bufnum;
+    GLuint          uniform_buffer;
     GLuint          array_object;
     GLuint          index_buffer;
     GLuint          vertex_buffer;

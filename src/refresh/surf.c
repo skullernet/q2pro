@@ -829,7 +829,7 @@ static bool create_surface_vbo(size_t size)
     }
 
     gl_static.world.vertices = NULL;
-    gl_static.world.bufnum = buf;
+    gl_static.world.buffer = buf;
     return true;
 }
 
@@ -868,7 +868,7 @@ static void upload_world_surfaces(void)
     LM_BeginBuilding();
 
     if (!gl_static.world.vertices)
-        GL_BindBuffer(GL_ARRAY_BUFFER, gl_static.world.bufnum);
+        GL_BindBuffer(GL_ARRAY_BUFFER, gl_static.world.buffer);
 
     currvert = 0;
     lastvert = 0;
@@ -969,12 +969,12 @@ void GL_FreeWorld(void)
     if (gl_static.world.vertices)
         Z_Free(gl_static.world.vertices);
     else if (qglDeleteBuffers)
-        qglDeleteBuffers(1, &gl_static.world.bufnum);
+        qglDeleteBuffers(1, &gl_static.world.buffer);
 
     // invalidate bindings
     if (gls.currentva == VA_3D)
         gls.currentva = VA_NONE;
-    if (gls.currentbuffer[0] == gl_static.world.bufnum)
+    if (gls.currentbuffer[0] == gl_static.world.buffer)
         gls.currentbuffer[0] = 0;
 
     memset(&gl_static.world, 0, sizeof(gl_static.world));

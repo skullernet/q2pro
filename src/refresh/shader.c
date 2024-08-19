@@ -396,9 +396,9 @@ static void shader_clear_state(void)
 
 static void shader_init(void)
 {
-    qglGenBuffers(1, &gl_static.u_bufnum);
-    qglBindBuffer(GL_UNIFORM_BUFFER, gl_static.u_bufnum);
-    qglBindBufferBase(GL_UNIFORM_BUFFER, 0, gl_static.u_bufnum);
+    qglGenBuffers(1, &gl_static.uniform_buffer);
+    qglBindBuffer(GL_UNIFORM_BUFFER, gl_static.uniform_buffer);
+    qglBindBufferBase(GL_UNIFORM_BUFFER, 0, gl_static.uniform_buffer);
     qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_block), NULL, GL_DYNAMIC_DRAW);
 }
 
@@ -412,10 +412,9 @@ static void shader_shutdown(void)
         }
     }
 
-    qglBindBuffer(GL_UNIFORM_BUFFER, 0);
-    if (gl_static.u_bufnum) {
-        qglDeleteBuffers(1, &gl_static.u_bufnum);
-        gl_static.u_bufnum = 0;
+    if (gl_static.uniform_buffer) {
+        qglDeleteBuffers(1, &gl_static.uniform_buffer);
+        gl_static.uniform_buffer = 0;
     }
 }
 

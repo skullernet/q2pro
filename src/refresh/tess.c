@@ -440,7 +440,7 @@ void GL_BindArrays(glVertexArray_t va)
         return;
 
     if (va == VA_3D && !gl_static.world.vertices) {
-        buffer = gl_static.world.bufnum;
+        buffer = gl_static.world.buffer;
         ptr = NULL;
     } else if (!(gl_config.caps & QGL_CAP_CLIENT_VA)) {
         buffer = gl_static.vertex_buffer;
