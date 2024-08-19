@@ -819,11 +819,11 @@ static bool create_surface_vbo(size_t size)
     GL_ClearErrors();
 
     qglGenBuffers(1, &buf);
-    qglBindBuffer(GL_ARRAY_BUFFER, buf);
+    GL_BindBuffer(GL_ARRAY_BUFFER, buf);
     qglBufferData(GL_ARRAY_BUFFER, size, NULL, GL_STATIC_DRAW);
 
     if (GL_ShowErrors("Failed to create world model VBO")) {
-        qglBindBuffer(GL_ARRAY_BUFFER, 0);
+        GL_BindBuffer(GL_ARRAY_BUFFER, 0);
         qglDeleteBuffers(1, &buf);
         return false;
     }
@@ -868,7 +868,7 @@ static void upload_world_surfaces(void)
     LM_BeginBuilding();
 
     if (!gl_static.world.vertices)
-        qglBindBuffer(GL_ARRAY_BUFFER, gl_static.world.bufnum);
+        GL_BindBuffer(GL_ARRAY_BUFFER, gl_static.world.bufnum);
 
     currvert = 0;
     lastvert = 0;
@@ -907,10 +907,8 @@ static void upload_world_surfaces(void)
     }
 
     // upload the last VBO chunk
-    if (!gl_static.world.vertices) {
+    if (!gl_static.world.vertices)
         upload_surface_vbo(lastvert);
-        qglBindBuffer(GL_ARRAY_BUFFER, 0);
-    }
 
     // end building lightmaps
     LM_EndBuilding();
@@ -973,9 +971,11 @@ void GL_FreeWorld(void)
     else if (qglDeleteBuffers)
         qglDeleteBuffers(1, &gl_static.world.bufnum);
 
-    // invalidate binding
+    // invalidate bindings
     if (gls.currentva == VA_3D)
         gls.currentva = VA_NONE;
+    if (gls.currentbuffer[0] == gl_static.world.bufnum)
+        gls.currentbuffer[0] = 0;
 
     memset(&gl_static.world, 0, sizeof(gl_static.world));
 }

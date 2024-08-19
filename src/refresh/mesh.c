@@ -28,6 +28,7 @@ static vec3_t   newscale;
 static vec3_t   translate;
 static vec_t    shellscale;
 static vec4_t   color;
+static GLuint   buffer;
 
 static vec3_t   shadedir;
 static bool     dotshading;
@@ -583,6 +584,7 @@ static void draw_alias_mesh(const QGL_INDEX_TYPE *indices, int num_indices,
         GL_Color(color[0], color[1], color[2], color[3]);
     }
 
+    GL_BindBuffer(GL_ARRAY_BUFFER, buffer);
     gl_backend->tex_coord_pointer(tcoords->st);
 
     GL_LockArrays(num_verts);
@@ -593,7 +595,7 @@ static void draw_alias_mesh(const QGL_INDEX_TYPE *indices, int num_indices,
     draw_celshading(indices, num_indices);
 
     if (gl_showtris->integer & SHOWTRIS_MESH)
-        GL_DrawOutlines(num_indices, indices);
+        GL_DrawOutlines(num_indices, indices, true);
 
     // FIXME: unlock arrays before changing matrix?
     draw_shadow(indices, num_indices);
@@ -808,6 +810,9 @@ void GL_DrawAliasModel(const model_t *model)
     GL_RotateForEntity();
 
     GL_BindArrays(dotshading ? VA_MESH_SHADE : VA_MESH_FLAT);
+
+    buffer = model->buffer;
+    GL_BindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->buffer);
 
     if (ent->flags & RF_WEAPONMODEL)
         setup_weaponmodel();

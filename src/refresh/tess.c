@@ -28,6 +28,8 @@ static mface_t  *faces_head[FACE_HASH_SIZE];
 static mface_t  **faces_next[FACE_HASH_SIZE];
 static mface_t  *faces_alpha;
 
+static void GL_DrawIndexed(showtris_t showtris);
+
 void GL_Flush2D(void)
 {
     glStateBits_t bits;
@@ -45,15 +47,7 @@ void GL_Flush2D(void)
     GL_BindArrays(VA_2D);
     GL_StateBits(bits);
     GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
-
-    GL_LockArrays(tess.numverts);
-
-    GL_DrawTriangles(tess.numindices, tess.indices);
-
-    if (gl_showtris->integer & SHOWTRIS_PIC)
-        GL_DrawOutlines(tess.numindices, tess.indices);
-
-    GL_UnlockArrays();
+    GL_DrawIndexed(SHOWTRIS_PIC);
 
     c.batchesDrawn2D++;
 
@@ -133,7 +127,7 @@ void GL_DrawParticles(void)
         qglDrawArrays(GL_TRIANGLES, 0, numverts);
 
         if (gl_showtris->integer & SHOWTRIS_FX)
-            GL_DrawOutlines(numverts, NULL);
+            GL_DrawOutlines(numverts, NULL, false);
 
         GL_UnlockArrays();
     } while (total);
@@ -147,15 +141,7 @@ static void GL_FlushBeamSegments(void)
     GL_BindTexture(0, TEXNUM_BEAM);
     GL_StateBits(GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE);
     GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
-
-    GL_LockArrays(tess.numverts);
-
-    GL_DrawTriangles(tess.numindices, tess.indices);
-
-    if (gl_showtris->integer & SHOWTRIS_FX)
-        GL_DrawOutlines(tess.numindices, tess.indices);
-
-    GL_UnlockArrays();
+    GL_DrawIndexed(SHOWTRIS_FX);
 
     tess.numverts = tess.numindices = 0;
 }
@@ -294,15 +280,7 @@ static void GL_FlushFlares(void)
     GL_BindTexture(0, tess.texnum[0]);
     GL_StateBits(GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE | GLS_BLEND_ADD);
     GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
-
-    GL_LockArrays(tess.numverts);
-
-    GL_DrawTriangles(tess.numindices, tess.indices);
-
-    if (gl_showtris->integer & SHOWTRIS_FX)
-        GL_DrawOutlines(tess.numindices, tess.indices);
-
-    GL_UnlockArrays();
+    GL_DrawIndexed(SHOWTRIS_FX);
 
     tess.numverts = tess.numindices = 0;
     tess.texnum[0] = 0;
@@ -456,22 +434,92 @@ static const glVaDesc_t arraydescs[VA_TOTAL][VERT_ATTR_COUNT] = {
 void GL_BindArrays(glVertexArray_t va)
 {
     const GLfloat *ptr = tess.vertices;
+    GLuint buffer = 0;
 
     if (gls.currentva == va)
         return;
 
     if (va == VA_3D && !gl_static.world.vertices) {
-        qglBindBuffer(GL_ARRAY_BUFFER, gl_static.world.bufnum);
+        buffer = gl_static.world.bufnum;
+        ptr = NULL;
+    } else if (!(gl_config.caps & QGL_CAP_CLIENT_VA)) {
+        buffer = gl_static.vertex_buffer;
         ptr = NULL;
     }
 
+    GL_BindBuffer(GL_ARRAY_BUFFER, buffer);
     gl_backend->array_pointers(arraydescs[va], ptr);
-
-    if (!ptr)
-        qglBindBuffer(GL_ARRAY_BUFFER, 0);
 
     gls.currentva = va;
     c.vertexArrayBinds++;
+}
+
+void GL_LockArrays(GLsizei count)
+{
+    if (gls.currentva == VA_3D && !gl_static.world.vertices)
+        return;
+    if (gl_config.caps & QGL_CAP_CLIENT_VA) {
+        if (qglLockArraysEXT)
+            qglLockArraysEXT(0, count);
+    } else {
+        const glVaDesc_t *desc = &arraydescs[gls.currentva][VERT_ATTR_POS];
+        GL_BindBuffer(GL_ARRAY_BUFFER, gl_static.vertex_buffer);
+        qglBufferData(GL_ARRAY_BUFFER, count * desc->stride, tess.vertices, GL_STREAM_DRAW);
+    }
+}
+
+void GL_UnlockArrays(void)
+{
+    if (gls.currentva == VA_3D && !gl_static.world.vertices)
+        return;
+    if (!(gl_config.caps & QGL_CAP_CLIENT_VA))
+        return;
+    if (qglUnlockArraysEXT)
+        qglUnlockArraysEXT();
+}
+
+static void GL_DrawIndexed(showtris_t showtris)
+{
+    const QGL_INDEX_TYPE *indices = tess.indices;
+
+    GL_LockArrays(tess.numverts);
+
+    if (!(gl_config.caps & QGL_CAP_CLIENT_VA)) {
+        GL_BindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_static.index_buffer);
+        qglBufferData(GL_ELEMENT_ARRAY_BUFFER, tess.numindices * sizeof(indices[0]), indices, GL_STREAM_DRAW);
+        indices = NULL;
+    }
+
+    GL_DrawTriangles(tess.numindices, indices);
+
+    if (gl_showtris->integer & showtris)
+        GL_DrawOutlines(tess.numindices, indices, true);
+
+    GL_UnlockArrays();
+}
+
+void GL_InitArrays(void)
+{
+    if (gl_config.caps & QGL_CAP_CLIENT_VA)
+        return;
+
+    qglGenVertexArrays(1, &gl_static.array_object);
+    qglBindVertexArray(gl_static.array_object);
+
+    qglGenBuffers(1, &gl_static.index_buffer);
+    GL_BindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_static.index_buffer);
+
+    qglGenBuffers(1, &gl_static.vertex_buffer);
+}
+
+void GL_ShutdownArrays(void)
+{
+    if (gl_config.caps & QGL_CAP_CLIENT_VA)
+        return;
+
+    qglDeleteVertexArrays(1, &gl_static.array_object);
+    qglDeleteBuffers(1, &gl_static.index_buffer);
+    qglDeleteBuffers(1, &gl_static.vertex_buffer);
 }
 
 void GL_Flush3D(void)
@@ -514,16 +562,7 @@ void GL_Flush3D(void)
             GL_BindTexture(i, tess.texnum[i]);
     }
 
-    if (gl_static.world.vertices)
-        GL_LockArrays(tess.numverts);
-
-    GL_DrawTriangles(tess.numindices, tess.indices);
-
-    if (gl_showtris->integer & SHOWTRIS_WORLD)
-        GL_DrawOutlines(tess.numindices, tess.indices);
-
-    if (gl_static.world.vertices)
-        GL_UnlockArrays();
+    GL_DrawIndexed(SHOWTRIS_WORLD);
 
     c.batchesDrawn++;
 

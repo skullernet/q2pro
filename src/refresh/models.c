@@ -100,6 +100,24 @@ static void MOD_List_f(void)
     Com_Printf("Total resident: %zu\n", bytes);
 }
 
+static void MOD_Free(model_t *model)
+{
+    Hunk_Free(&model->hunk);
+#if USE_MD5
+    Hunk_Free(&model->skeleton_hunk);
+#endif
+
+    if (model->buffer) {
+        // invalidate bindings
+        for (int i = 0; i < 2; i++)
+            if (gls.currentbuffer[i] == model->buffer)
+                gls.currentbuffer[i] = 0;
+        qglDeleteBuffers(1, &model->buffer);
+    }
+
+    memset(model, 0, sizeof(*model));
+}
+
 void MOD_FreeUnused(void)
 {
     model_t *model;
@@ -118,11 +136,7 @@ void MOD_FreeUnused(void)
 #endif
         } else {
             // don't need this model
-            Hunk_Free(&model->hunk);
-#if USE_MD5
-            Hunk_Free(&model->skeleton_hunk);
-#endif
-            memset(model, 0, sizeof(*model));
+            MOD_Free(model);
         }
     }
 }
@@ -132,16 +146,9 @@ void MOD_FreeAll(void)
     model_t *model;
     int i;
 
-    for (i = 0, model = r_models; i < r_numModels; i++, model++) {
-        if (!model->type)
-            continue;
-
-        Hunk_Free(&model->hunk);
-#if USE_MD5
-        Hunk_Free(&model->skeleton_hunk);
-#endif
-        memset(model, 0, sizeof(*model));
-    }
+    for (i = 0, model = r_models; i < r_numModels; i++, model++)
+        if (model->type)
+            MOD_Free(model);
 
     r_numModels = 0;
 }
@@ -1375,6 +1382,70 @@ static void MOD_Reference(model_t *model)
     model->registration_sequence = r_registration_sequence;
 }
 
+static void MOD_UploadBuffer(model_t *model)
+{
+    size_t verts_size = 0;
+    size_t index_size = 0;
+    int i;
+
+    for (i = 0; i < model->nummeshes; i++) {
+        const maliasmesh_t *mesh = &model->meshes[i];
+        verts_size += sizeof(mesh->tcoords[0]) * mesh->numverts;
+        index_size += sizeof(mesh->indices[0]) * mesh->numindices;
+    }
+
+#if USE_MD5
+    const md5_model_t *skel = model->skeleton;
+    if (skel) {
+        for (i = 0; i < skel->num_meshes; i++) {
+            const md5_mesh_t *mesh = &skel->meshes[i];
+            verts_size += sizeof(mesh->tcoords[0]) * mesh->num_verts;
+            index_size += sizeof(mesh->indices[0]) * mesh->num_indices;
+        }
+    }
+#endif
+
+    GL_ClearErrors();
+
+    qglGenBuffers(1, &model->buffer);
+    GL_BindBuffer(GL_ARRAY_BUFFER, model->buffer);
+    qglBufferData(GL_ARRAY_BUFFER, verts_size + index_size, NULL, GL_STATIC_DRAW);
+    Com_DDPrintf("%s: %zu bytes buffer\n", model->name, verts_size + index_size);
+
+    size_t verts_offset = 0;
+    size_t index_offset = verts_size;
+
+    for (i = 0; i < model->nummeshes; i++) {
+        maliasmesh_t *mesh = &model->meshes[i];
+        verts_size = sizeof(mesh->tcoords[0]) * mesh->numverts;
+        index_size = sizeof(mesh->indices[0]) * mesh->numindices;
+        qglBufferSubData(GL_ARRAY_BUFFER, verts_offset, verts_size, mesh->tcoords);
+        qglBufferSubData(GL_ARRAY_BUFFER, index_offset, index_size, mesh->indices);
+        mesh->tcoords = (maliastc_t *)verts_offset;
+        mesh->indices = (QGL_INDEX_TYPE *)index_offset;
+        verts_offset += verts_size;
+        index_offset += index_size;
+    }
+
+#if USE_MD5
+    if (skel) {
+        for (i = 0; i < skel->num_meshes; i++) {
+            md5_mesh_t *mesh = &skel->meshes[i];
+            verts_size = sizeof(mesh->tcoords[0]) * mesh->num_verts;
+            index_size = sizeof(mesh->indices[0]) * mesh->num_indices;
+            qglBufferSubData(GL_ARRAY_BUFFER, verts_offset, verts_size, mesh->tcoords);
+            qglBufferSubData(GL_ARRAY_BUFFER, index_offset, index_size, mesh->indices);
+            mesh->tcoords = (maliastc_t *)verts_offset;
+            mesh->indices = (QGL_INDEX_TYPE *)index_offset;
+            verts_offset += verts_size;
+            index_offset += index_size;
+        }
+    }
+#endif
+
+    GL_ShowErrors(__func__);
+}
+
 qhandle_t R_RegisterModel(const char *name)
 {
     char normalized[MAX_QPATH];
@@ -1474,6 +1545,9 @@ qhandle_t R_RegisterModel(const char *name)
     if (model->type == MOD_ALIAS && gl_md5_load->integer)
         MOD_LoadMD5(model);
 #endif
+
+    if (model->type == MOD_ALIAS && !(gl_config.caps & QGL_CAP_CLIENT_VA))
+        MOD_UploadBuffer(model);
 
 done:
     index = (model - r_models) + 1;

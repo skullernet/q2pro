@@ -268,7 +268,7 @@ void GL_Setup3D(bool waterwarp)
     qglClear(GL_DEPTH_BUFFER_BIT | gl_static.stencil_buffer_bit);
 }
 
-void GL_DrawOutlines(GLsizei count, const QGL_INDEX_TYPE *indices)
+void GL_DrawOutlines(GLsizei count, const QGL_INDEX_TYPE *indices, bool indexed)
 {
     GL_BindTexture(0, TEXNUM_WHITE);
     GL_StateBits(GLS_DEPTHMASK_FALSE | GLS_TEXTURE_REPLACE);
@@ -278,7 +278,7 @@ void GL_DrawOutlines(GLsizei count, const QGL_INDEX_TYPE *indices)
     if (qglPolygonMode) {
         qglPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-        if (indices)
+        if (indexed)
             GL_DrawTriangles(count, indices);
         else
             qglDrawArrays(GL_TRIANGLES, 0, count);
@@ -287,7 +287,7 @@ void GL_DrawOutlines(GLsizei count, const QGL_INDEX_TYPE *indices)
     } else {
         GLsizei i;
 
-        if (indices) {
+        if (indexed) {
             for (i = 0; i < count / 3; i++)
                 qglDrawElements(GL_LINE_LOOP, 3, QGL_INDEX_ENUM, &indices[i * 3]);
         } else {

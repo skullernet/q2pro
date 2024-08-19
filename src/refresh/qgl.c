@@ -86,7 +86,7 @@ static const glsection_t sections[] = {
         .ver_es = QGL_VER(1, 0),
         .excl_gl = QGL_VER(3, 1),
         .excl_es = QGL_VER(2, 0),
-        .caps = QGL_CAP_LEGACY,
+        .caps = QGL_CAP_LEGACY | QGL_CAP_CLIENT_VA,
         .functions = (const glfunction_t []) {
             QGL_FN(AlphaFunc),
             QGL_FN(Color4f),
@@ -136,7 +136,7 @@ static const glsection_t sections[] = {
     // ES 1.1
     {
         .ver_es = QGL_VER(1, 1),
-        .caps = QGL_CAP_TEXTURE_CLAMP_TO_EDGE,
+        .caps = QGL_CAP_TEXTURE_CLAMP_TO_EDGE | QGL_CAP_CLIENT_VA,
     },
 
     // GL 1.2
@@ -254,6 +254,7 @@ static const glsection_t sections[] = {
             QGL_FN(GenFramebuffers),
             QGL_FN(GenRenderbuffers),
             QGL_FN(GenerateMipmap),
+            QGL_FN(GetFramebufferAttachmentParameteriv),
             QGL_FN(RenderbufferStorage),
             { NULL }
         }
@@ -267,6 +268,9 @@ static const glsection_t sections[] = {
         // ensure full hardware support, including mipmaps.
         .caps = QGL_CAP_TEXTURE_MAX_LEVEL | QGL_CAP_TEXTURE_NON_POWER_OF_TWO,
         .functions = (const glfunction_t []) {
+            QGL_FN(BindVertexArray),
+            QGL_FN(DeleteVertexArrays),
+            QGL_FN(GenVertexArrays),
             QGL_FN(GetStringi),
             { NULL }
         }
@@ -637,25 +641,18 @@ bool QGL_Init(void)
         // don't ever attempt to use shaders with GL ES < 3.0, or GLSL ES < 3.0
         if (gl_config.ver_es < QGL_VER(3, 0) || gl_config.ver_sl < QGL_VER(3, 0))
             gl_config.caps &= ~QGL_CAP_SHADER;
-
-        // GL ES 3.0+ deprecates, but still supports client vertex arrays, thus
-        // pure QGL_CAP_SHADER mode will work.
-        if (!(gl_config.caps & (QGL_CAP_LEGACY | QGL_CAP_SHADER))) {
-            Com_EPrintf("Unsupported OpenGL ES version\n");
-            return false;
-        }
     } else {
         // don't ever attempt to use shaders with GL < 3.0, or GLSL < 1.30
         if (gl_config.ver_gl < QGL_VER(3, 0) || gl_config.ver_sl < QGL_VER(1, 30))
             gl_config.caps &= ~QGL_CAP_SHADER;
-
-        // MUST have QGL_CAP_LEGACY bit, because Q2PRO still uses client vertex
-        // arrays removed by GL 3.1+.
-        if (!(gl_config.caps & QGL_CAP_LEGACY)) {
-            Com_EPrintf("Unsupported OpenGL version/profile\n");
-            return false;
-        }
     }
 
+    // reject unsupported configurations, such as GL ES 2.0
+    if (!(gl_config.caps & (QGL_CAP_LEGACY | QGL_CAP_SHADER))) {
+        Com_EPrintf("Unsupported OpenGL version\n");
+        return false;
+    }
+
+    Com_DPrintf("Detected OpenGL capabilities: %#x\n", gl_config.caps);
     return true;
 }

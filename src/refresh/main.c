@@ -955,19 +955,33 @@ static void GL_SetupConfig(void)
     gl_config.max_texture_size_log2 = Q_log2(min(integer, MAX_TEXTURE_SIZE));
     gl_config.max_texture_size = 1U << gl_config.max_texture_size_log2;
 
-    gl_config.colorbits = 0;
-    qglGetIntegerv(GL_RED_BITS, &integer);
-    gl_config.colorbits += integer;
-    qglGetIntegerv(GL_GREEN_BITS, &integer);
-    gl_config.colorbits += integer;
-    qglGetIntegerv(GL_BLUE_BITS, &integer);
-    gl_config.colorbits += integer;
+    if (gl_config.caps & QGL_CAP_CLIENT_VA) {
+        qglGetIntegerv(GL_RED_BITS, &integer);
+        gl_config.colorbits = integer;
+        qglGetIntegerv(GL_GREEN_BITS, &integer);
+        gl_config.colorbits += integer;
+        qglGetIntegerv(GL_BLUE_BITS, &integer);
+        gl_config.colorbits += integer;
 
-    qglGetIntegerv(GL_DEPTH_BITS, &integer);
-    gl_config.depthbits = integer;
+        qglGetIntegerv(GL_DEPTH_BITS, &integer);
+        gl_config.depthbits = integer;
 
-    qglGetIntegerv(GL_STENCIL_BITS, &integer);
-    gl_config.stencilbits = integer;
+        qglGetIntegerv(GL_STENCIL_BITS, &integer);
+        gl_config.stencilbits = integer;
+    } else if (qglGetFramebufferAttachmentParameteriv) {
+        qglGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_BACK, GL_FRAMEBUFFER_ATTACHMENT_RED_SIZE, &integer);
+        gl_config.colorbits = integer;
+        qglGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_BACK, GL_FRAMEBUFFER_ATTACHMENT_GREEN_SIZE, &integer);
+        gl_config.colorbits += integer;
+        qglGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_BACK, GL_FRAMEBUFFER_ATTACHMENT_BLUE_SIZE, &integer);
+        gl_config.colorbits += integer;
+
+        qglGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_DEPTH, GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE, &integer);
+        gl_config.depthbits = integer;
+
+        qglGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_STENCIL, GL_FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE, &integer);
+        gl_config.stencilbits = integer;
+    }
 
     if (qglDebugMessageCallback && qglIsEnabled(GL_DEBUG_OUTPUT)) {
         Com_Printf("Enabling GL debug output.\n");
@@ -1066,6 +1080,8 @@ bool R_Init(bool total)
     // register our variables
     GL_Register();
 
+    GL_InitArrays();
+
     GL_InitState();
 
     GL_InitTables();
@@ -1104,6 +1120,8 @@ void R_Shutdown(bool total)
         return;
 
     GL_ShutdownState();
+
+    GL_ShutdownArrays();
 
     // shutdown our QGL subsystem
     QGL_Shutdown();
