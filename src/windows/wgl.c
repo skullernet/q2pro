@@ -33,11 +33,12 @@ static struct {
 static cvar_t   *gl_allow_software;
 
 enum {
-    QWGL_ARB_create_context     = BIT(0),
-    QWGL_ARB_multisample        = BIT(1),
-    QWGL_ARB_pixel_format       = BIT(2),
-    QWGL_EXT_swap_control       = BIT(3),
-    QWGL_EXT_swap_control_tear  = BIT(4),
+    QWGL_ARB_create_context             = BIT(0),
+    QWGL_ARB_multisample                = BIT(1),
+    QWGL_ARB_pixel_format               = BIT(2),
+    QWGL_EXT_create_context_es_profile  = BIT(3),
+    QWGL_EXT_swap_control               = BIT(4),
+    QWGL_EXT_swap_control_tear          = BIT(5),
 };
 
 static unsigned wgl_parse_extension_string(const char *s)
@@ -46,6 +47,7 @@ static unsigned wgl_parse_extension_string(const char *s)
         "WGL_ARB_create_context",
         "WGL_ARB_multisample",
         "WGL_ARB_pixel_format",
+        "WGL_EXT_create_context_es_profile",
         "WGL_EXT_swap_control",
         "WGL_EXT_swap_control_tear",
         NULL
@@ -152,11 +154,26 @@ static int wgl_setup_gl(r_opengl_config_t cfg)
     }
 
     // startup the OpenGL subsystem by creating a context and making it current
-    if (wgl.CreateContextAttribsARB && cfg.debug) {
-        int attr[] = {
-            WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_DEBUG_BIT_ARB,
-            0
-        };
+    if (wgl.CreateContextAttribsARB && (cfg.debug || cfg.profile)) {
+        int attr[9];
+        int i = 0;
+
+        if (cfg.profile) {
+            attr[i++] = WGL_CONTEXT_MAJOR_VERSION_ARB;
+            attr[i++] = cfg.major_ver;
+            attr[i++] = WGL_CONTEXT_MINOR_VERSION_ARB;
+            attr[i++] = cfg.minor_ver;
+        }
+        if (cfg.profile == QGL_PROFILE_ES) {
+            attr[i++] = WGL_CONTEXT_PROFILE_MASK_ARB;
+            attr[i++] = WGL_CONTEXT_ES_PROFILE_BIT_EXT;
+        }
+        if (cfg.debug) {
+            attr[i++] = WGL_CONTEXT_FLAGS_ARB;
+            attr[i++] = WGL_CONTEXT_DEBUG_BIT_ARB;
+        }
+        attr[i] = 0;
+
         if (!(wgl.context = wgl.CreateContextAttribsARB(win.dc, NULL, attr))) {
             print_error("wglCreateContextAttribsARB");
             goto soft;
@@ -282,7 +299,7 @@ static bool wgl_init(void)
     cfg = R_GetGLConfig();
 
     // check for extensions by creating a fake window
-    if (cfg.multisamples || cfg.debug)
+    if (cfg.multisamples || cfg.debug || cfg.profile)
         fake_extensions = get_fake_window_extensions();
 
     if (cfg.multisamples) {
@@ -297,9 +314,15 @@ static bool wgl_init(void)
         }
     }
 
-    if (cfg.debug && !wgl.CreateContextAttribsARB) {
+    if ((cfg.debug || cfg.profile) && !wgl.CreateContextAttribsARB) {
         Com_WPrintf("WGL_ARB_create_context not found\n");
         cfg.debug = false;
+        cfg.profile = QGL_PROFILE_NONE;
+    }
+
+    if (cfg.profile == QGL_PROFILE_ES && !(fake_extensions & QWGL_EXT_create_context_es_profile)) {
+        Com_WPrintf("WGL_EXT_create_context_es_profile not found\n");
+        cfg.profile = QGL_PROFILE_NONE;
     }
 
     // create window, choose PFD, setup OpenGL context

@@ -78,10 +78,11 @@ static struct {
 } x11;
 
 enum {
-    QGLX_ARB_create_context     = BIT(0),
-    QGLX_ARB_multisample        = BIT(1),
-    QGLX_EXT_swap_control       = BIT(2),
-    QGLX_EXT_swap_control_tear  = BIT(3),
+    QGLX_ARB_create_context             = BIT(0),
+    QGLX_ARB_multisample                = BIT(1),
+    QGLX_EXT_create_context_es_profile  = BIT(2),
+    QGLX_EXT_swap_control               = BIT(3),
+    QGLX_EXT_swap_control_tear          = BIT(4),
 };
 
 static unsigned glx_parse_extension_string(const char *s)
@@ -89,6 +90,7 @@ static unsigned glx_parse_extension_string(const char *s)
     static const char *const extnames[] = {
         "GLX_ARB_create_context",
         "GLX_ARB_multisample",
+        "GLX_EXT_create_context_es_profile",
         "GLX_EXT_swap_control",
         "GLX_EXT_swap_control_tear",
         NULL
@@ -379,20 +381,39 @@ static bool init(void)
         XFree(list);
     }
 
-    if (cfg.debug) {
+    if (cfg.profile == QGL_PROFILE_ES && !(x11.extensions & QGLX_EXT_create_context_es_profile)) {
+        Com_WPrintf("GLX_EXT_create_context_es_profile not found\n");
+        cfg.profile = QGL_PROFILE_NONE;
+    }
+
+    if (cfg.debug || cfg.profile) {
         PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB = NULL;
 
         if (x11.extensions & QGLX_ARB_create_context)
             glXCreateContextAttribsARB = get_proc_addr("glXCreateContextAttribsARB");
 
         if (glXCreateContextAttribsARB) {
-            int ctx_attr[] = {
-                GLX_CONTEXT_FLAGS_ARB, GLX_CONTEXT_DEBUG_BIT_ARB,
-                None
-            };
+            int ctx_attr[9];
+            int i = 0;
+
+            if (cfg.profile) {
+                ctx_attr[i++] = GLX_CONTEXT_MAJOR_VERSION_ARB;
+                ctx_attr[i++] = cfg.major_ver;
+                ctx_attr[i++] = GLX_CONTEXT_MINOR_VERSION_ARB;
+                ctx_attr[i++] = cfg.minor_ver;
+            }
+            if (cfg.profile == QGL_PROFILE_ES) {
+                ctx_attr[i++] = GLX_CONTEXT_PROFILE_MASK_ARB;
+                ctx_attr[i++] = GLX_CONTEXT_ES_PROFILE_BIT_EXT;
+            }
+            if (cfg.debug) {
+                ctx_attr[i++] = GLX_CONTEXT_FLAGS_ARB;
+                ctx_attr[i++] = GLX_CONTEXT_DEBUG_BIT_ARB;
+            }
+            ctx_attr[i] = None;
 
             if (!(x11.ctx = glXCreateContextAttribsARB(x11.dpy, fbc, NULL, True, ctx_attr)))
-                Com_EPrintf("Failed to create debug GL context\n");
+                Com_EPrintf("Failed to create GL context with attributes\n");
         } else {
             Com_WPrintf("GLX_ARB_create_context not found\n");
         }

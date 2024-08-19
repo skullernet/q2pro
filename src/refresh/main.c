@@ -1173,6 +1173,29 @@ r_opengl_config_t R_GetGLConfig(void)
     if (cfg.multisamples < 2)
         cfg.multisamples = 0;
 
+    const char *s = Cvar_Get("gl_profile", "", CVAR_REFRESH)->string;
+
+    if (!Q_stricmpn(s, "gl", 2))
+        cfg.profile = QGL_PROFILE_CORE;
+    else if (!Q_stricmpn(s, "es", 2))
+        cfg.profile = QGL_PROFILE_ES;
+
+    if (cfg.profile) {
+        int major = 0, minor = 0;
+
+        sscanf(s + 2, "%d.%d", &major, &minor);
+        if (major >= 1 && minor >= 0) {
+            cfg.major_ver = major;
+            cfg.minor_ver = minor;
+        } else if (cfg.profile == QGL_PROFILE_CORE) {
+            cfg.major_ver = 3;
+            cfg.minor_ver = 2;
+        } else if (cfg.profile == QGL_PROFILE_ES) {
+            cfg.major_ver = 3;
+            cfg.minor_ver = 0;
+        }
+    }
+
     return cfg;
 }
 

@@ -830,6 +830,22 @@ gl_texturebits::
     (should be typically 0, 8, 16 or 32). Default value is 0 (choose the best
     internal format automatically).
 
+gl_debug::
+    Create debug OpenGL context, if supported by OpenGL implementation.
+    This option may hurt performance and is intended for developers only.
+    Default value is 0.
+
+gl_profile::
+    Specifies custom profile and version of OpenGL context to create. Default
+    value is empty string, which means to create highest version compatibility
+    profile context. Can be set to "gl" to create OpenGL core profile context,
+    or "es" to create OpenGL ES context. May be followed by desired minimum
+    OpenGL version number. For example, "gl4.6" or "es3.0". Not all OpenGL
+    implementations support this.
+
+NOTE: Using OpenGL compatibility profile is recommended. Some features may not
+work in more restricted profiles, or performance may be suboptimal.
+
 gl_screenshot_format::
     Specifies image format ‘screenshot’ command uses. Possible values are
     "png", "jpg" and "tga". Default value is "jpg".
