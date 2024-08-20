@@ -548,6 +548,10 @@ void GL_Flush3D(void)
     GL_ArrayBits(array);
 
     if (qglBindTextures) {
+#if USE_DEBUG
+        if (q_unlikely(gl_nobind->integer))
+            tess.texnum[0] = TEXNUM_DEFAULT;
+#endif
         int count = 0;
         for (int i = 0; i < MAX_TMUS && tess.texnum[i]; i++) {
             if (gls.texnums[i] != tess.texnum[i]) {
