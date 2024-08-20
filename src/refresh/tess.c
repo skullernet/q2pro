@@ -622,11 +622,6 @@ static void GL_DrawFace(const mface_t *surf)
         tess.numindices + numindices > TESS_MAX_INDICES)
         GL_Flush3D();
 
-    tess.texnum[0] = texnum[0];
-    tess.texnum[1] = texnum[1];
-    tess.texnum[2] = texnum[2];
-    tess.flags = surf->statebits;
-
     if (q_unlikely(gl_static.world.vertices))
         j = GL_CopyVerts(surf);
     else
@@ -640,6 +635,11 @@ static void GL_DrawFace(const mface_t *surf)
         dst_indices += 3;
     }
     tess.numindices += numindices;
+
+    tess.texnum[0] = texnum[0];
+    tess.texnum[1] = texnum[1];
+    tess.texnum[2] = texnum[2];
+    tess.flags = surf->statebits;
 
     c.trisDrawn += numtris;
     c.facesTris += numtris;
