@@ -1119,6 +1119,9 @@ void GL_ShutdownImages(void)
     qglDeleteTextures(NUM_TEXNUMS, gl_static.texnums);
     qglDeleteTextures(LM_MAX_LIGHTMAPS, lm.texnums);
 
+    memset(gl_static.texnums, 0, sizeof(gl_static.texnums));
+    memset(lm.texnums, 0, sizeof(lm.texnums));
+
     GL_DeleteWarpTexture();
 
 #if USE_DEBUG

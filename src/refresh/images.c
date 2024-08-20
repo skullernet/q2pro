@@ -2244,5 +2244,6 @@ void IMG_Init(void)
 void IMG_Shutdown(void)
 {
     Cmd_Deregister(img_cmd);
+    memset(r_images, 0, sizeof(r_images[0]));   // clear R_NOTEXTURE
     r_numImages = 0;
 }
