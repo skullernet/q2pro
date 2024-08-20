@@ -963,6 +963,8 @@ static void GL_InitRawTexture(void)
 
 bool GL_InitWarpTexture(void)
 {
+    GL_ClearErrors();
+
     GL_ForceTexture(0, gl_static.warp_texture);
     qglTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, glr.fd.width, glr.fd.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -974,13 +976,15 @@ bool GL_InitWarpTexture(void)
     qglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl_static.warp_texture, 0);
 
     qglBindRenderbuffer(GL_RENDERBUFFER, gl_static.warp_renderbuffer);
-    qglRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_STENCIL, glr.fd.width, glr.fd.height);
+    qglRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, glr.fd.width, glr.fd.height);
     qglBindRenderbuffer(GL_RENDERBUFFER, 0);
 
     qglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, gl_static.warp_renderbuffer);
 
     GLenum status = qglCheckFramebufferStatus(GL_FRAMEBUFFER);
     qglBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    GL_ShowErrors(__func__);
 
     if (status != GL_FRAMEBUFFER_COMPLETE) {
         if (gl_showerrors->integer)
