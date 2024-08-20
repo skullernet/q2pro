@@ -77,6 +77,8 @@ static void update_image_params(unsigned mask)
     const image_t   *image;
 
     for (i = 0, image = r_images; i < r_numImages; i++, image++) {
+        if (!image->name[0])
+            continue;
         if (!(mask & BIT(image->type)))
             continue;
 
@@ -145,7 +147,8 @@ static void gl_bilerp_pics_changed(cvar_t *self)
 {
     // change all the existing pic texture objects
     update_image_params(BIT(IT_PIC));
-    GL_InitRawTexture();
+    if (r_numImages)
+        GL_InitRawTexture();
 }
 
 static void gl_texturebits_changed(cvar_t *self)
@@ -856,6 +859,7 @@ static void GL_InitDefaultTexture(void)
 
     // fill in notexture image
     ntx = R_NOTEXTURE;
+    strcpy(ntx->name, "NOTEXTURE");
     ntx->width = ntx->upload_width = 8;
     ntx->height = ntx->upload_height = 8;
     ntx->type = IT_WALL;
@@ -1050,6 +1054,10 @@ void GL_InitImages(void)
     else
         gl_intensity->flags |= CVAR_FILES;
 
+    gl_texturemode_changed(gl_texturemode);
+    gl_texturebits_changed(gl_texturebits);
+    gl_anisotropy_changed(gl_anisotropy);
+
     IMG_Init();
 
     IMG_GetPalette();
@@ -1067,12 +1075,6 @@ void GL_InitImages(void)
     // FIXME: the name 'saturation' is misleading in this context
     colorscale = Cvar_ClampValue(gl_saturation, 0, 1);
     lightscale = !(gl_gamma->value == 1.0f && (gl_static.use_shaders || gl_intensity->value == 1.0f));
-
-    gl_texturemode_changed(gl_texturemode);
-    gl_texturebits_changed(gl_texturebits);
-    gl_anisotropy_changed(gl_anisotropy);
-    gl_bilerp_chars_changed(gl_bilerp_chars);
-    gl_bilerp_pics_changed(gl_bilerp_pics);
 
     qglGenTextures(NUM_TEXNUMS, gl_static.texnums);
     qglGenTextures(LM_MAX_LIGHTMAPS, lm.texnums);
