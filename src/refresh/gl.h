@@ -258,6 +258,7 @@ extern cvar_t *gl_drawsky;
 extern cvar_t *gl_showtris;
 #if USE_DEBUG
 extern cvar_t *gl_nobind;
+extern cvar_t *gl_novbo;
 extern cvar_t *gl_test;
 #endif
 extern cvar_t *gl_cull_nodes;

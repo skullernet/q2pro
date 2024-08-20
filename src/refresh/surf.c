@@ -816,6 +816,11 @@ static bool create_surface_vbo(size_t size)
         return false;
 #endif
 
+#if USE_DEBUG
+    if (gl_novbo->integer)
+        return false;
+#endif
+
     GL_ClearErrors();
 
     qglGenBuffers(1, &buf);
