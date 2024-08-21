@@ -167,6 +167,7 @@ QGLAPI void (APIENTRYP qglDepthRangef)(GLfloat n, GLfloat f);
 
 // GL 4.3
 QGLAPI void (APIENTRYP qglDebugMessageCallback)(GLDEBUGPROC callback, const void *userParam);
+QGLAPI void (APIENTRYP qglDebugMessageControl)(GLenum source, GLenum type, GLenum severity, GLsizei count, const GLuint *ids, GLboolean enabled);
 
 // GL 4.4
 QGLAPI void (APIENTRYP qglBindTextures)(GLuint first, GLsizei count, const GLuint *textures);

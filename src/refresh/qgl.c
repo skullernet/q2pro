@@ -311,6 +311,7 @@ static const glsection_t sections[] = {
         .ver_es = QGL_VER(3, 2),
         .functions = (const glfunction_t []) {
             QGL_FN(DebugMessageCallback),
+            QGL_FN(DebugMessageControl),
             { NULL }
         }
     },

@@ -992,6 +992,8 @@ static void GL_SetupConfig(void)
     if (qglDebugMessageCallback && qglIsEnabled(GL_DEBUG_OUTPUT)) {
         Com_Printf("Enabling GL debug output.\n");
         qglEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+        if (Cvar_VariableInteger("gl_debug") < 2)
+            qglDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_FALSE);
         qglDebugMessageCallback(myDebugProc, NULL);
     }
 }
