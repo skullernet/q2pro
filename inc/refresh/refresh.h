@@ -110,11 +110,11 @@ typedef struct {
 } refdef_t;
 
 typedef struct {
-    int     colorbits;
-    int     depthbits;
-    int     stencilbits;
-    int     multisamples;
-    bool    debug;
+    uint8_t     colorbits;
+    uint8_t     depthbits;
+    uint8_t     stencilbits;
+    uint8_t     multisamples;
+    bool        debug;
 } r_opengl_config_t;
 
 typedef enum {
@@ -221,4 +221,4 @@ void    R_BeginFrame(void);
 void    R_EndFrame(void);
 void    R_ModeChanged(int width, int height, int flags);
 
-void R_GetGLConfig(r_opengl_config_t *cfg);
+r_opengl_config_t R_GetGLConfig(void);

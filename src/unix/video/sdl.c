@@ -59,8 +59,7 @@ OPENGL STUFF
 
 static void set_gl_attributes(void)
 {
-    r_opengl_config_t cfg;
-    R_GetGLConfig(&cfg);
+    r_opengl_config_t cfg = R_GetGLConfig();
 
     int colorbits = cfg.colorbits > 16 ? 8 : 5;
     SDL_GL_SetAttribute(SDL_GL_RED_SIZE, colorbits);

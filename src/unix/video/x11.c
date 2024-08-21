@@ -183,7 +183,7 @@ static int error_handler(Display *dpy, XErrorEvent *event)
     return 0;
 }
 
-static bool choose_fb_config(const r_opengl_config_t *cfg, GLXFBConfig *fbc)
+static bool choose_fb_config(r_opengl_config_t cfg, GLXFBConfig *fbc)
 {
     int glx_attr[] = {
         GLX_X_RENDERABLE, True,
@@ -192,14 +192,14 @@ static bool choose_fb_config(const r_opengl_config_t *cfg, GLXFBConfig *fbc)
         GLX_GREEN_SIZE, 5,
         GLX_BLUE_SIZE, 5,
         GLX_DOUBLEBUFFER, True,
-        GLX_DEPTH_SIZE, cfg->depthbits,
-        GLX_STENCIL_SIZE, cfg->stencilbits,
+        GLX_DEPTH_SIZE, cfg.depthbits,
+        GLX_STENCIL_SIZE, cfg.stencilbits,
         GLX_SAMPLE_BUFFERS, 1,
-        GLX_SAMPLES, cfg->multisamples,
+        GLX_SAMPLES, cfg.multisamples,
         None
     };
 
-    if (!cfg->multisamples)
+    if (!cfg.multisamples)
         glx_attr[16] = None;
 
     int num_configs;
@@ -292,8 +292,7 @@ static bool init(void)
 
     x11.extensions = glx_parse_extension_string(glXQueryExtensionsString(x11.dpy, x11.screen));
 
-    r_opengl_config_t cfg;
-    R_GetGLConfig(&cfg);
+    r_opengl_config_t cfg = R_GetGLConfig();
 
     if (cfg.multisamples && !(x11.extensions & QGLX_ARB_multisample)) {
         Com_WPrintf("GLX_ARB_multisample not found for %d multisamples\n", cfg.multisamples);
@@ -301,10 +300,10 @@ static bool init(void)
     }
 
     GLXFBConfig fbc;
-    if (!choose_fb_config(&cfg, &fbc)) {
+    if (!choose_fb_config(cfg, &fbc)) {
         Com_Printf("Falling back to failsafe config\n");
         r_opengl_config_t failsafe = { .depthbits = 24 };
-        if (!choose_fb_config(&failsafe, &fbc))
+        if (!choose_fb_config(failsafe, &fbc))
             goto fail;
     }
 

@@ -719,7 +719,7 @@ static void egl_error(const char *what)
     Com_EPrintf("%s failed with error %#x\n", what, eglGetError());
 }
 
-static bool choose_config(const r_opengl_config_t *cfg, EGLConfig *config)
+static bool choose_config(r_opengl_config_t cfg, EGLConfig *config)
 {
     EGLint cfg_attr[] = {
         EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
@@ -727,10 +727,10 @@ static bool choose_config(const r_opengl_config_t *cfg, EGLConfig *config)
         EGL_RED_SIZE, 5,
         EGL_GREEN_SIZE, 5,
         EGL_BLUE_SIZE, 5,
-        EGL_DEPTH_SIZE, cfg->depthbits,
-        EGL_STENCIL_SIZE, cfg->stencilbits,
-        EGL_SAMPLE_BUFFERS, (bool)cfg->multisamples,
-        EGL_SAMPLES, cfg->multisamples,
+        EGL_DEPTH_SIZE, cfg.depthbits,
+        EGL_STENCIL_SIZE, cfg.stencilbits,
+        EGL_SAMPLE_BUFFERS, (bool)cfg.multisamples,
+        EGL_SAMPLES, cfg.multisamples,
         EGL_NONE
     };
 
@@ -781,14 +781,13 @@ static bool init(void)
 
     CHECK_EGL(eglBindAPI(EGL_OPENGL_API), "eglBindAPI");
 
-    r_opengl_config_t cfg;
-    R_GetGLConfig(&cfg);
+    r_opengl_config_t cfg = R_GetGLConfig();
 
     EGLConfig config;
-    if (!choose_config(&cfg, &config)) {
+    if (!choose_config(cfg, &config)) {
         Com_Printf("Falling back to failsafe config\n");
         r_opengl_config_t failsafe = { .depthbits = 24 };
-        if (!choose_config(&failsafe, &config))
+        if (!choose_config(failsafe, &config))
             goto fail;
     }
 

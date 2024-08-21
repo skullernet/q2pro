@@ -77,7 +77,7 @@ static void print_error(const char *what)
 #define FAIL_SOFT   -1
 #define FAIL_HARD   -2
 
-static int wgl_setup_gl(const r_opengl_config_t *cfg)
+static int wgl_setup_gl(r_opengl_config_t cfg)
 {
     PIXELFORMATDESCRIPTOR pfd;
     int pixelformat;
@@ -86,17 +86,17 @@ static int wgl_setup_gl(const r_opengl_config_t *cfg)
     Win_Init();
 
     // choose pixel format
-    if (wgl.ChoosePixelFormatARB && cfg->multisamples) {
+    if (wgl.ChoosePixelFormatARB && cfg.multisamples) {
         int attr[] = {
             WGL_DRAW_TO_WINDOW_ARB, TRUE,
             WGL_SUPPORT_OPENGL_ARB, TRUE,
             WGL_DOUBLE_BUFFER_ARB, TRUE,
             WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
-            WGL_COLOR_BITS_ARB, cfg->colorbits,
-            WGL_DEPTH_BITS_ARB, cfg->depthbits,
-            WGL_STENCIL_BITS_ARB, cfg->stencilbits,
+            WGL_COLOR_BITS_ARB, cfg.colorbits,
+            WGL_DEPTH_BITS_ARB, cfg.depthbits,
+            WGL_STENCIL_BITS_ARB, cfg.stencilbits,
             WGL_SAMPLE_BUFFERS_ARB, 1,
-            WGL_SAMPLES_ARB, cfg->multisamples,
+            WGL_SAMPLES_ARB, cfg.multisamples,
             0
         };
         UINT num_formats;
@@ -106,7 +106,7 @@ static int wgl_setup_gl(const r_opengl_config_t *cfg)
             goto soft;
         }
         if (num_formats == 0) {
-            Com_EPrintf("No suitable OpenGL pixelformat found for %d multisamples\n", cfg->multisamples);
+            Com_EPrintf("No suitable OpenGL pixelformat found for %d multisamples\n", cfg.multisamples);
             goto soft;
         }
     } else {
@@ -115,9 +115,9 @@ static int wgl_setup_gl(const r_opengl_config_t *cfg)
             .nVersion = 1,
             .dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
             .iPixelType = PFD_TYPE_RGBA,
-            .cColorBits = cfg->colorbits,
-            .cDepthBits = cfg->depthbits,
-            .cStencilBits = cfg->stencilbits,
+            .cColorBits = cfg.colorbits,
+            .cDepthBits = cfg.depthbits,
+            .cStencilBits = cfg.stencilbits,
             .iLayerType = PFD_MAIN_PLANE,
         };
 
@@ -152,7 +152,7 @@ static int wgl_setup_gl(const r_opengl_config_t *cfg)
     }
 
     // startup the OpenGL subsystem by creating a context and making it current
-    if (wgl.CreateContextAttribsARB && cfg->debug) {
+    if (wgl.CreateContextAttribsARB && cfg.debug) {
         int attr[] = {
             WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_DEBUG_BIT_ARB,
             0
@@ -279,7 +279,7 @@ static bool wgl_init(void)
         return false;
     }
 
-    R_GetGLConfig(&cfg);
+    cfg = R_GetGLConfig();
 
     // check for extensions by creating a fake window
     if (cfg.multisamples || cfg.debug)
@@ -303,7 +303,7 @@ static bool wgl_init(void)
     }
 
     // create window, choose PFD, setup OpenGL context
-    ret = wgl_setup_gl(&cfg);
+    ret = wgl_setup_gl(cfg);
 
     // attempt to recover
     if (ret == FAIL_SOFT) {
@@ -312,7 +312,7 @@ static bool wgl_init(void)
             .colorbits = 24,
             .depthbits = 24,
         };
-        ret = wgl_setup_gl(&failsafe);
+        ret = wgl_setup_gl(failsafe);
     }
 
     if (ret) {
