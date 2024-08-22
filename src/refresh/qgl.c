@@ -134,7 +134,7 @@ static const glsection_t sections[] = {
     },
 
     // GL 1.1, ES 3.0
-    // GL_OES_element_index_uint
+    // OES_element_index_uint
     {
         .extension = "GL_OES_element_index_uint",
         .ver_gl = QGL_VER(1, 1),
@@ -155,7 +155,7 @@ static const glsection_t sections[] = {
     },
 
     // GL 1.3
-    // GL_ARB_multitexture
+    // ARB_multitexture
     {
         .extension = "GL_ARB_multitexture",
         .ver_gl = QGL_VER(1, 3),
@@ -167,7 +167,7 @@ static const glsection_t sections[] = {
     },
 
     // GL 1.3, compat
-    // GL_ARB_multitexture
+    // ARB_multitexture
     {
         .extension = "GL_ARB_multitexture",
         .ver_gl = QGL_VER(1, 3),
@@ -188,7 +188,7 @@ static const glsection_t sections[] = {
     },
 
     // GL 1.5
-    // GL_ARB_vertex_buffer_object
+    // ARB_vertex_buffer_object
     {
         .extension = "GL_ARB_vertex_buffer_object",
         .ver_gl = QGL_VER(1, 5),
@@ -204,7 +204,7 @@ static const glsection_t sections[] = {
     },
 
     // GL 1.5, ES 3.0
-    // GL_ARB_occlusion_query
+    // ARB_occlusion_query
     {
         .extension = "GL_ARB_occlusion_query",
         .ver_gl = QGL_VER(1, 5),
@@ -286,7 +286,7 @@ static const glsection_t sections[] = {
     },
 
     // GL 3.1
-    // GL_ARB_uniform_buffer_object
+    // ARB_uniform_buffer_object
     {
         .extension = "GL_ARB_uniform_buffer_object",
         .ver_gl = QGL_VER(3, 1),
@@ -313,7 +313,7 @@ static const glsection_t sections[] = {
     },
 
     // GL 4.3
-    // GL_KHR_debug
+    // KHR_debug
     {
         .extension = "GL_KHR_debug",
         .ver_gl = QGL_VER(4, 3),
@@ -343,7 +343,7 @@ static const glsection_t sections[] = {
     },
 
     // GL 4.5
-    // GL_ARB_direct_state_access
+    // ARB_direct_state_access
     {
         .ver_gl = QGL_VER(4, 5),
         .extension = "GL_ARB_direct_state_access",
@@ -354,7 +354,7 @@ static const glsection_t sections[] = {
     },
 
     // GL 4.5
-    // GL_ARB_robustness
+    // ARB_robustness
     {
         .extension = "GL_ARB_robustness",
         .ver_gl = QGL_VER(4, 5),
@@ -366,14 +366,14 @@ static const glsection_t sections[] = {
     },
 
     // GL 4.6
-    // GL_EXT_texture_filter_anisotropic
+    // EXT_texture_filter_anisotropic
     {
         .extension = "GL_EXT_texture_filter_anisotropic",
         .ver_gl = QGL_VER(4, 6),
         .caps = QGL_CAP_TEXTURE_ANISOTROPY
     },
 
-    // GL_ARB_fragment_program
+    // ARB_fragment_program
     {
         .extension = "GL_ARB_fragment_program",
         .functions = (const glfunction_t []) {
@@ -386,7 +386,7 @@ static const glsection_t sections[] = {
         }
     },
 
-    // GL_EXT_compiled_vertex_array
+    // EXT_compiled_vertex_array
     {
         .extension = "GL_EXT_compiled_vertex_array",
         .functions = (const glfunction_t []) {
