@@ -313,7 +313,10 @@ void GL_UploadLightmaps(void)
         w = m->maxs[0] - x;
         h = m->maxs[1] - y;
 
-        if (!set) {
+        if (!(gl_config.caps & QGL_CAP_UNPACK_SUBIMAGE)) {
+            x = 0;
+            w = lm.block_size;
+        } else if (!set) {
             qglPixelStorei(GL_UNPACK_ROW_LENGTH, lm.block_size);
             set = true;
         }

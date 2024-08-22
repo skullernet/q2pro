@@ -812,10 +812,6 @@ static size_t GL_ViewCluster_m(char *buffer, size_t size)
 
 static void gl_lightmap_changed(cvar_t *self)
 {
-    if (gl_dynamic->integer && !(gl_config.caps & QGL_CAP_UNPACK_SUBIMAGE)) {
-        Com_WPrintf("OpenGL doesn't support dynamic lights, forcing them off.\n");
-        Cvar_Set("gl_dynamic", "0");
-    }
     lm.scale = Cvar_ClampValue(gl_coloredlightmaps, 0, 1);
     lm.comp = !(gl_config.caps & QGL_CAP_TEXTURE_BITS) ? GL_RGBA : lm.scale ? GL_RGB : GL_LUMINANCE;
     lm.add = 255 * Cvar_ClampValue(gl_brightness, -1, 1);
