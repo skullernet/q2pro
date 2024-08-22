@@ -479,7 +479,9 @@ config.set10('USE_PACKETDUP',     get_option('packetdup-hack'))
 config.set10('USE_TGA',           get_option('tga'))
 config.set10('USE_' + host_machine.endian().to_upper() + '_ENDIAN', true)
 
-if get_option('opengl-es1')
+if host_machine.system() == 'darwin'
+  config.set_quoted('DEFGLPROFILE', 'gl3.2')
+elif get_option('opengl-es1')
   config.set_quoted('DEFGLPROFILE', 'es1')
 else
   config.set_quoted('DEFGLPROFILE', '')
