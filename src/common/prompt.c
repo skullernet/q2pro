@@ -126,6 +126,8 @@ void Prompt_AddMatch(genctx_t *ctx, const char *s)
 {
     int r;
 
+    if (!*s)
+        return;
     if (ctx->count >= ctx->size)
         return;
 
