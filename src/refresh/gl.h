@@ -175,8 +175,9 @@ typedef enum {
     QGL_CAP_TEXTURE_NON_POWER_OF_TWO    = BIT(6),
     QGL_CAP_TEXTURE_ANISOTROPY          = BIT(7),
     QGL_CAP_UNPACK_SUBIMAGE             = BIT(8),
-    QGL_CAP_QUERY_RESULT_NO_WAIT        = BIT(9),
-    QGL_CAP_CLIENT_VA                   = BIT(10),
+    QGL_CAP_ELEMENT_INDEX_UINT          = BIT(9),
+    QGL_CAP_QUERY_RESULT_NO_WAIT        = BIT(10),
+    QGL_CAP_CLIENT_VA                   = BIT(11),
 } glcap_t;
 
 #define QGL_VER(major, minor)   ((major) * 100 + (minor))

@@ -133,6 +133,15 @@ static const glsection_t sections[] = {
         .caps = QGL_CAP_UNPACK_SUBIMAGE,
     },
 
+    // GL 1.1, ES 3.0
+    // GL_OES_element_index_uint
+    {
+        .extension = "GL_OES_element_index_uint",
+        .ver_gl = QGL_VER(1, 1),
+        .ver_es = QGL_VER(3, 0),
+        .caps = QGL_CAP_ELEMENT_INDEX_UINT,
+    },
+
     // ES 1.1
     {
         .ver_es = QGL_VER(1, 1),
@@ -653,6 +662,14 @@ bool QGL_Init(void)
         Com_EPrintf("Unsupported OpenGL version\n");
         return false;
     }
+
+#if !USE_GLES
+    // reject if GL_UNSIGNED_INT indices are not supported
+    if (!(gl_config.caps & QGL_CAP_ELEMENT_INDEX_UINT)) {
+        Com_EPrintf("UINT indices are not supported, recompile with USE_GLES.\n");
+        return false;
+    }
+#endif
 
     Com_DPrintf("Detected OpenGL capabilities: %#x\n", gl_config.caps);
     return true;
