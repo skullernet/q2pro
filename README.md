@@ -4,7 +4,7 @@ Q2PRO
 Q2PRO is an enhanced Quake 2 client and server for Windows and Linux. Supported
 features include:
 
-* unified OpenGL renderer with support for GL 1.1–1.4, 3.0+, GL ES 3.0+
+* unified OpenGL renderer with support for wide range of OpenGL versions
 * enhanced console command completion
 * persistent and searchable console command history
 * rendering / physics / packet rate separation
