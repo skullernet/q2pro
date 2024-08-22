@@ -1169,7 +1169,7 @@ r_opengl_config_t R_GetGLConfig(void)
     if (cfg.multisamples < 2)
         cfg.multisamples = 0;
 
-    const char *s = Cvar_Get("gl_profile", "", CVAR_REFRESH)->string;
+    const char *s = Cvar_Get("gl_profile", DEFGLPROFILE, CVAR_REFRESH)->string;
 
     if (!Q_stricmpn(s, "gl", 2))
         cfg.profile = QGL_PROFILE_CORE;

@@ -471,12 +471,19 @@ config.set_quoted('VID_MODELIST', get_option('vid-modelist'))
 config.set10('USE_AUTOREPLY',     get_option('auto-reply'))
 config.set10('USE_DEBUG',         get_option('debug'))
 config.set10('USE_FPS',           get_option('variable-fps'))
+config.set10('USE_GLES',          get_option('opengl-es1'))
 config.set10('USE_ICMP',          get_option('icmp-errors').require(win32 or cc.has_header('linux/errqueue.h')).allowed())
 config.set10('USE_MD3',           get_option('md3'))
 config.set10('USE_MD5',           get_option('md5'))
 config.set10('USE_PACKETDUP',     get_option('packetdup-hack'))
 config.set10('USE_TGA',           get_option('tga'))
 config.set10('USE_' + host_machine.endian().to_upper() + '_ENDIAN', true)
+
+if get_option('opengl-es1')
+  config.set_quoted('DEFGLPROFILE', 'es1')
+else
+  config.set_quoted('DEFGLPROFILE', '')
+endif
 
 # protocol extensions are always on
 config.set10('USE_PROTOCOL_EXTENSIONS', true)
