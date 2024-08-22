@@ -268,7 +268,7 @@ void GL_Setup3D(bool waterwarp)
     qglClear(GL_DEPTH_BUFFER_BIT | gl_static.stencil_buffer_bit);
 }
 
-void GL_DrawOutlines(GLsizei count, const QGL_INDEX_TYPE *indices, bool indexed)
+void GL_DrawOutlines(GLsizei count, const glIndex_t *indices, bool indexed)
 {
     GL_BindTexture(0, TEXNUM_WHITE);
     GL_StateBits(GLS_DEPTHMASK_FALSE | GLS_TEXTURE_REPLACE);
@@ -289,7 +289,7 @@ void GL_DrawOutlines(GLsizei count, const QGL_INDEX_TYPE *indices, bool indexed)
 
         if (indexed) {
             for (i = 0; i < count / 3; i++)
-                qglDrawElements(GL_LINE_LOOP, 3, QGL_INDEX_ENUM, &indices[i * 3]);
+                qglDrawElements(GL_LINE_LOOP, 3, QGL_INDEX_TYPE, &indices[i * 3]);
         } else {
             for (i = 0; i < count / 3; i++)
                 qglDrawArrays(GL_LINE_LOOP, i * 3, 3);

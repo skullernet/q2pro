@@ -26,7 +26,7 @@ static inline void GL_StretchPic_(
     uint32_t color, int texnum, int flags)
 {
     vec_t *dst_vert;
-    QGL_INDEX_TYPE *dst_indices;
+    glIndex_t *dst_indices;
 
     if (tess.numverts + 4 > TESS_MAX_VERTICES ||
         tess.numindices + 6 > TESS_MAX_INDICES ||
@@ -74,7 +74,7 @@ static inline void GL_StretchPic_(
 static void GL_DrawVignette(int distance, color_t outer, color_t inner)
 {
     vec_t *dst_vert;
-    QGL_INDEX_TYPE *dst_indices;
+    glIndex_t *dst_indices;
 
     if (tess.numverts + 8 > TESS_MAX_VERTICES ||
         tess.numindices + 24 > TESS_MAX_INDICES ||

@@ -150,7 +150,7 @@ static void GL_DrawBeamSegment(const vec3_t start, const vec3_t end, color_t col
 {
     vec3_t d1, d2, d3;
     vec_t *dst_vert;
-    QGL_INDEX_TYPE *dst_indices;
+    glIndex_t *dst_indices;
 
     VectorSubtract(end, start, d1);
     VectorSubtract(glr.fd.vieworg, start, d2);
@@ -291,7 +291,7 @@ void GL_DrawFlares(void)
     vec3_t up, down, left, right;
     color_t color;
     vec_t *dst_vert;
-    QGL_INDEX_TYPE *dst_indices;
+    glIndex_t *dst_indices;
     GLuint result, texnum;
     const entity_t *ent;
     glquery_t *q;
@@ -480,7 +480,7 @@ void GL_UnlockArrays(void)
 
 static void GL_DrawIndexed(showtris_t showtris)
 {
-    const QGL_INDEX_TYPE *indices = tess.indices;
+    const glIndex_t *indices = tess.indices;
 
     GL_LockArrays(tess.numverts);
 
@@ -606,7 +606,7 @@ static void GL_DrawFace(const mface_t *surf)
     int numtris = surf->numsurfedges - 2;
     int numindices = numtris * 3;
     GLuint texnum[MAX_TMUS];
-    QGL_INDEX_TYPE *dst_indices;
+    glIndex_t *dst_indices;
     int i, j;
 
     if (q_unlikely(gl_lightmap->integer && surf->texnum[1])) {

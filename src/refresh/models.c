@@ -506,7 +506,7 @@ static int MOD_LoadMD3Mesh(model_t *model, maliasmesh_t *mesh,
     uint32_t        *src_idx;
     maliasvert_t    *dst_vert;
     maliastc_t      *dst_tc;
-    QGL_INDEX_TYPE  *dst_idx;
+    glIndex_t       *dst_idx;
     uint32_t        index;
     int             i, j, k, ret;
     const char      *err;
@@ -1422,7 +1422,7 @@ static void MOD_UploadBuffer(model_t *model)
         qglBufferSubData(GL_ARRAY_BUFFER, verts_offset, verts_size, mesh->tcoords);
         qglBufferSubData(GL_ARRAY_BUFFER, index_offset, index_size, mesh->indices);
         mesh->tcoords = (maliastc_t *)verts_offset;
-        mesh->indices = (QGL_INDEX_TYPE *)index_offset;
+        mesh->indices = (glIndex_t *)index_offset;
         verts_offset += verts_size;
         index_offset += index_size;
     }
@@ -1436,7 +1436,7 @@ static void MOD_UploadBuffer(model_t *model)
             qglBufferSubData(GL_ARRAY_BUFFER, verts_offset, verts_size, mesh->tcoords);
             qglBufferSubData(GL_ARRAY_BUFFER, index_offset, index_size, mesh->indices);
             mesh->tcoords = (maliastc_t *)verts_offset;
-            mesh->indices = (QGL_INDEX_TYPE *)index_offset;
+            mesh->indices = (glIndex_t *)index_offset;
             verts_offset += verts_size;
             index_offset += index_size;
         }
