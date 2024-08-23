@@ -564,24 +564,33 @@ bool QGL_Init(void)
         }
     }
 
-    bool compatible = false;
+    int non_compat_ver = 0;
     if (gl_config.ver_gl >= QGL_VER(3, 2)) {
         // Profile is correctly set by Mesa, but can be 0 for compatibility
         // context on NVidia. Thus only check for core bit.
         GLint profile = 0;
         qglGetIntegerv(GL_CONTEXT_PROFILE_MASK, &profile);
-        compatible = !(profile & GL_CONTEXT_CORE_PROFILE_BIT);
+        if (profile & GL_CONTEXT_CORE_PROFILE_BIT)
+            non_compat_ver = gl_config.ver_gl;
     } else if (gl_config.ver_gl == QGL_VER(3, 1)) {
-        compatible = extension_present("GL_ARB_compatibility");
+        if (!extension_present("GL_ARB_compatibility"))
+            non_compat_ver = gl_config.ver_gl;
+    } else if (gl_config.ver_gl == QGL_VER(3, 0)) {
+        // 3.0 deprecates functionality removed by 3.1. If forward compatible
+        // bit is set, it also removes this functionality.
+        GLint flags = 0;
+        qglGetIntegerv(GL_CONTEXT_FLAGS, &flags);
+        if (flags & GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT)
+            non_compat_ver = QGL_VER(3, 1);
     }
 
     if (gl_config.ver_es) {
         Com_DPrintf("Detected OpenGL ES %d.%d\n",
                     QGL_UNPACK_VER(gl_config.ver_es));
-    } else if (gl_config.ver_gl >= QGL_VER(3, 2)) {
+    } else if (gl_config.ver_gl >= QGL_VER(3, 2) || non_compat_ver) {
         Com_DPrintf("Detected OpenGL %d.%d (%s profile)\n",
                     QGL_UNPACK_VER(gl_config.ver_gl),
-                    compatible ? "compatibility" : "core");
+                    non_compat_ver ? "core" : "compatibility");
     } else {
         Com_DPrintf("Detected OpenGL %d.%d\n",
                     QGL_UNPACK_VER(gl_config.ver_gl));
@@ -592,7 +601,7 @@ bool QGL_Init(void)
         const glfunction_t *func;
         bool core;
 
-        if (sec->excl_gl && gl_config.ver_gl >= sec->excl_gl && !compatible)
+        if (sec->excl_gl && non_compat_ver >= sec->excl_gl)
             continue;
         if (sec->excl_es && gl_config.ver_es >= sec->excl_es)
             continue;
@@ -680,6 +689,16 @@ bool QGL_Init(void)
         return false;
     }
 #endif
+
+    // disable qglLineWidth in forward compatible core profile contexts
+    if (non_compat_ver >= QGL_VER(3, 1)) {
+        GLint flags = 0;
+        qglGetIntegerv(GL_CONTEXT_FLAGS, &flags);
+        if (flags & GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT) {
+            Com_DPrintf("Detected forward compatible context\n");
+            qglLineWidth = NULL;
+        }
+    }
 
     Com_DPrintf("Detected OpenGL capabilities: %#x\n", gl_config.caps);
     return true;
