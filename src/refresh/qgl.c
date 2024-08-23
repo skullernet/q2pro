@@ -30,6 +30,7 @@ typedef struct {
     uint16_t excl_gl;
     uint16_t excl_es;
     uint32_t caps;
+    char suffix[4];
     const char *extension;
     const glfunction_t *functions;
 } glsection_t;
@@ -158,6 +159,7 @@ static const glsection_t sections[] = {
     // ARB_multitexture
     {
         .extension = "GL_ARB_multitexture",
+        .suffix = "ARB",
         .ver_gl = QGL_VER(1, 3),
         .ver_es = QGL_VER(1, 0),
         .functions = (const glfunction_t []) {
@@ -170,6 +172,7 @@ static const glsection_t sections[] = {
     // ARB_multitexture
     {
         .extension = "GL_ARB_multitexture",
+        .suffix = "ARB",
         .ver_gl = QGL_VER(1, 3),
         .ver_es = QGL_VER(1, 0),
         .excl_gl = QGL_VER(3, 1),
@@ -191,6 +194,7 @@ static const glsection_t sections[] = {
     // ARB_vertex_buffer_object
     {
         .extension = "GL_ARB_vertex_buffer_object",
+        .suffix = "ARB",
         .ver_gl = QGL_VER(1, 5),
         .ver_es = QGL_VER(1, 1),
         .functions = (const glfunction_t []) {
@@ -207,6 +211,7 @@ static const glsection_t sections[] = {
     // ARB_occlusion_query
     {
         .extension = "GL_ARB_occlusion_query",
+        .suffix = "ARB",
         .ver_gl = QGL_VER(1, 5),
         .ver_es = QGL_VER(3, 0),
         .functions = (const glfunction_t []) {
@@ -316,6 +321,7 @@ static const glsection_t sections[] = {
     // KHR_debug
     {
         .extension = "GL_KHR_debug",
+        .suffix = "?KHR",
         .ver_gl = QGL_VER(4, 3),
         .ver_es = QGL_VER(3, 2),
         .functions = (const glfunction_t []) {
@@ -357,6 +363,7 @@ static const glsection_t sections[] = {
     // ARB_robustness
     {
         .extension = "GL_ARB_robustness",
+        .suffix = "ARB",
         .ver_gl = QGL_VER(4, 5),
         .ver_es = QGL_VER(3, 2),
         .functions = (const glfunction_t []) {
@@ -603,21 +610,24 @@ bool QGL_Init(void)
         }
 
         if (sec->functions) {
+            const char *suffix = sec->suffix;
+
+            // GL_KHR_debug weirdness
+            if (*suffix == '?') {
+                if (gl_config.ver_es)
+                    suffix++;
+                else
+                    suffix = "";
+            }
+
             for (func = sec->functions; func->name; func++) {
                 const char *name = func->name;
+
+                // add suffix if this is an extension
+                if (!core && *suffix)
+                    name = va("%s%.3s", name, suffix);
+
                 void *addr = vid->get_proc_addr(name);
-
-                // try with XYZ suffix if this is a GL_XYZ_extension
-                if (!addr && !core)  {
-                    char suf[4];
-                    memcpy(suf, sec->extension + 3, 3);
-                    suf[3] = 0;
-                    if (!strstr(name, suf)) {
-                        name = va("%s%s", name, suf);
-                        addr = vid->get_proc_addr(name);
-                    }
-                }
-
                 if (!addr) {
                     Com_EPrintf("Couldn't get entry point: %s\n", name);
                     break;
