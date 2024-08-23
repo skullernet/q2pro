@@ -971,11 +971,13 @@ static void GL_SetupConfig(void)
         qglGetIntegerv(GL_STENCIL_BITS, &integer);
         gl_config.stencilbits = integer;
     } else if (qglGetFramebufferAttachmentParameteriv) {
-        qglGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_BACK, GL_FRAMEBUFFER_ATTACHMENT_RED_SIZE, &integer);
+        GLenum backbuf = gl_config.ver_es ? GL_BACK : GL_BACK_LEFT;
+
+        qglGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, backbuf, GL_FRAMEBUFFER_ATTACHMENT_RED_SIZE, &integer);
         gl_config.colorbits = integer;
-        qglGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_BACK, GL_FRAMEBUFFER_ATTACHMENT_GREEN_SIZE, &integer);
+        qglGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, backbuf, GL_FRAMEBUFFER_ATTACHMENT_GREEN_SIZE, &integer);
         gl_config.colorbits += integer;
-        qglGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_BACK, GL_FRAMEBUFFER_ATTACHMENT_BLUE_SIZE, &integer);
+        qglGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, backbuf, GL_FRAMEBUFFER_ATTACHMENT_BLUE_SIZE, &integer);
         gl_config.colorbits += integer;
 
         qglGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_DEPTH, GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE, &integer);
@@ -992,6 +994,8 @@ static void GL_SetupConfig(void)
             qglDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_FALSE);
         qglDebugMessageCallback(myDebugProc, NULL);
     }
+
+    GL_ShowErrors(__func__);
 }
 
 static void GL_InitTables(void)
