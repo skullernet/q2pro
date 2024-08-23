@@ -314,6 +314,12 @@ void GL_ClearState(void)
     qglCullFace(GL_BACK);
     qglEnable(GL_CULL_FACE);
 
+    // unbind buffers
+    if (qglBindBuffer) {
+        qglBindBuffer(GL_ARRAY_BUFFER, 0);
+        qglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    }
+
     gl_backend->clear_state();
 
     qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | gl_static.stencil_buffer_bit);

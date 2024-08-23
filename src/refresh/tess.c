@@ -507,8 +507,6 @@ void GL_InitArrays(void)
     qglBindVertexArray(gl_static.array_object);
 
     qglGenBuffers(1, &gl_static.index_buffer);
-    GL_BindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_static.index_buffer);
-
     qglGenBuffers(1, &gl_static.vertex_buffer);
 }
 
