@@ -703,6 +703,11 @@ gl_partshape::
       - 1 — square
       - 2 — fuller, less faded circle
 
+gl_beamstyle::
+    Specifies drawing style of laser beams. Default value is 0.
+      - 0 — textured billboard-type beam (Q2PRO style, very fast to draw)
+      - 1 — flat color polygonal beam (original Quake 2 style)
+
 gl_celshading::
     Enables drawing black contour lines around 3D models (aka ‘celshading’).
     Value of this variable specifies thickness of the lines drawn. Default

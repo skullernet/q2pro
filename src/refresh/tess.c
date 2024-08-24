@@ -138,15 +138,78 @@ static void GL_FlushBeamSegments(void)
     if (!tess.numindices)
         return;
 
-    GL_BindTexture(0, TEXNUM_BEAM);
+    glArrayBits_t array = GLA_VERTEX | GLA_COLOR;
+    GLuint texnum = TEXNUM_BEAM;
+
+    if (gl_beamstyle->integer)
+        texnum = TEXNUM_WHITE;
+    else
+        array |= GLA_TC;
+
+    GL_BindTexture(0, texnum);
     GL_StateBits(GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE);
-    GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
+    GL_ArrayBits(array);
     GL_DrawIndexed(SHOWTRIS_FX);
 
     tess.numverts = tess.numindices = 0;
 }
 
-static void GL_DrawBeamSegment(const vec3_t start, const vec3_t end, color_t color, float width)
+#define BEAM_POINTS   12
+
+static void GL_DrawPolyBeam(const vec3_t *segments, int num_segments, color_t color, float width)
+{
+    int i, j, k, firstvert;
+    vec3_t points[BEAM_POINTS];
+    vec3_t dir, right, up;
+    vec_t *dst_vert;
+    glIndex_t *dst_indices;
+
+    VectorSubtract(segments[num_segments], segments[0], dir);
+    if (VectorNormalize(dir) < 0.1f)
+        return;
+
+    MakeNormalVectors(dir, right, up);
+    VectorScale(right, width, right);
+
+    if (q_unlikely(tess.numverts + BEAM_POINTS * (num_segments + 1) > TESS_MAX_VERTICES ||
+                   tess.numindices + BEAM_POINTS * 6 * num_segments > TESS_MAX_INDICES))
+        GL_FlushBeamSegments();
+
+    dst_vert = tess.vertices + tess.numverts * 4;
+
+    for (i = 0; i < BEAM_POINTS; i++) {
+        RotatePointAroundVector(points[i], dir, right, (360.0f / BEAM_POINTS) * i);
+        VectorAdd(points[i], segments[0], dst_vert);
+        WN32(dst_vert + 3, color.u32);
+        dst_vert += 4;
+    }
+
+    dst_indices = tess.indices + tess.numindices;
+    firstvert = tess.numverts;
+
+    for (i = 1; i <= num_segments; i++) {
+        for (j = 0; j < BEAM_POINTS; j++) {
+            VectorAdd(points[j], segments[i], dst_vert);
+            WN32(dst_vert + 3, color.u32);
+            dst_vert += 4;
+
+            k = (j + 1) % BEAM_POINTS;
+            dst_indices[0] = firstvert + j;
+            dst_indices[1] = firstvert + j + BEAM_POINTS;
+            dst_indices[2] = firstvert + k + BEAM_POINTS;
+            dst_indices[3] = firstvert + j;
+            dst_indices[4] = firstvert + k + BEAM_POINTS;
+            dst_indices[5] = firstvert + k;
+            dst_indices += 6;
+        }
+        firstvert += BEAM_POINTS;
+    }
+
+    tess.numverts += BEAM_POINTS * (num_segments + 1);
+    tess.numindices += BEAM_POINTS * 6 * num_segments;
+}
+
+static void GL_DrawSimpleBeam(const vec3_t start, const vec3_t end, color_t color, float width)
 {
     vec3_t d1, d2, d3;
     vec_t *dst_vert;
@@ -197,48 +260,54 @@ static void GL_DrawBeamSegment(const vec3_t start, const vec3_t end, color_t col
 
 static void GL_DrawLightningBeam(const vec3_t start, const vec3_t end, color_t color, float width)
 {
-    vec3_t d1, segments[MAX_LIGHTNING_SEGMENTS - 1];
+    vec3_t dir, segments[MAX_LIGHTNING_SEGMENTS + 1];
+    vec3_t right, up;
     vec_t length, segment_length;
     int i, num_segments, max_segments;
 
-    VectorSubtract(end, start, d1);
-    length = VectorNormalize(d1);
+    VectorSubtract(end, start, dir);
+    length = VectorNormalize(dir);
 
-    max_segments = length / MIN_SEGMENT_LENGTH;
-    if (max_segments <= 1) {
-        GL_DrawBeamSegment(start, end, color, width);
-        return;
-    }
+    max_segments = Q_clip(length / MIN_SEGMENT_LENGTH, 1, MAX_LIGHTNING_SEGMENTS);
 
-    if (max_segments <= MIN_LIGHTNING_SEGMENTS) {
+    if (max_segments <= MIN_LIGHTNING_SEGMENTS)
         num_segments = max_segments;
-    } else {
-        max_segments = min(max_segments, MAX_LIGHTNING_SEGMENTS);
+    else
         num_segments = MIN_LIGHTNING_SEGMENTS + GL_rand() % (max_segments - MIN_LIGHTNING_SEGMENTS + 1);
-    }
+
+    if (num_segments > 1)
+        MakeNormalVectors(dir, right, up);
 
     segment_length = length / num_segments;
-    for (i = 0; i < num_segments - 1; i++) {
-        int dir = GL_rand() % q_countof(bytedirs);
-        float offs = GL_frand() * (segment_length * 0.5f);
-        float dist = (i + 1) * segment_length;
-        VectorMA(start, dist, d1, segments[i]);
-        VectorMA(segments[i], offs, bytedirs[dir], segments[i]);
+    for (i = 1; i < num_segments; i++) {
+        vec3_t point;
+        float offs;
+
+        VectorMA(start, i * segment_length, dir, point);
+
+        offs = GL_crand() * (segment_length * 0.35f);
+        VectorMA(point, offs, right, point);
+
+        offs = GL_crand() * (segment_length * 0.35f);
+        VectorMA(point, offs, up, segments[i]);
     }
 
-    for (i = 0; i < num_segments; i++) {
-        const float *seg_start = (i == 0) ? start : segments[i - 1];
-        const float *seg_end = (i == num_segments - 1) ? end : segments[i];
+    VectorCopy(start, segments[0]);
+    VectorCopy(end, segments[i]);
 
-        GL_DrawBeamSegment(seg_start, seg_end, color, width);
+    if (gl_beamstyle->integer) {
+        GL_DrawPolyBeam(segments, num_segments, color, width);
+    } else {
+        for (i = 0; i < num_segments; i++)
+            GL_DrawSimpleBeam(segments[i], segments[i + 1], color, width);
     }
 }
 
 void GL_DrawBeams(void)
 {
-    const vec_t *start, *end;
+    vec3_t segs[2];
     color_t color;
-    float width;
+    float width, scale;
     const entity_t *ent;
     int i;
 
@@ -246,14 +315,21 @@ void GL_DrawBeams(void)
         return;
 
     GL_LoadMatrix(glr.viewmatrix);
-    GL_BindArrays(VA_EFFECT);
+
+    if (gl_beamstyle->integer) {
+        GL_BindArrays(VA_NULLMODEL);
+        scale = 0.5f;
+    } else {
+        GL_BindArrays(VA_EFFECT);
+        scale = 1.2f;
+    }
 
     for (i = 0, ent = glr.fd.entities; i < glr.fd.num_entities; i++, ent++) {
         if (!(ent->flags & RF_BEAM))
             continue;
 
-        start = ent->origin;
-        end = ent->oldorigin;
+        VectorCopy(ent->origin, segs[0]);
+        VectorCopy(ent->oldorigin, segs[1]);
 
         if (ent->skinnum == -1)
             color.u32 = ent->rgba.u32;
@@ -261,12 +337,14 @@ void GL_DrawBeams(void)
             color.u32 = d_8to24table[ent->skinnum & 0xff];
         color.u8[3] *= ent->alpha;
 
-        width = abs((int16_t)ent->frame) * 1.2f;
+        width = abs((int16_t)ent->frame) * scale;
 
         if (ent->flags & RF_GLOW)
-            GL_DrawLightningBeam(start, end, color, width);
+            GL_DrawLightningBeam(segs[0], segs[1], color, width);
+        else if (gl_beamstyle->integer)
+            GL_DrawPolyBeam(segs, 1, color, width);
         else
-            GL_DrawBeamSegment(start, end, color, width);
+            GL_DrawSimpleBeam(segs[0], segs[1], color, width);
     }
 
     GL_FlushBeamSegments();
