@@ -398,7 +398,7 @@ static void GL_DrawNullModel(void)
     GL_UnlockArrays();
 }
 
-static void make_flare_quad(const entity_t *e, float scale)
+static void make_flare_quad(const vec3_t origin, float scale)
 {
     vec3_t up, down, left, right;
 
@@ -407,10 +407,10 @@ static void make_flare_quad(const entity_t *e, float scale)
     VectorScale(glr.viewaxis[2], -scale, down);
     VectorScale(glr.viewaxis[2],  scale, up);
 
-    VectorAdd3(e->origin, down, left,  tess.vertices + 0);
-    VectorAdd3(e->origin, up,   left,  tess.vertices + 3);
-    VectorAdd3(e->origin, down, right, tess.vertices + 6);
-    VectorAdd3(e->origin, up,   right, tess.vertices + 9);
+    VectorAdd3(origin, down, left,  tess.vertices + 0);
+    VectorAdd3(origin, up,   left,  tess.vertices + 3);
+    VectorAdd3(origin, down, right, tess.vertices + 6);
+    VectorAdd3(origin, up,   right, tess.vertices + 9);
 }
 
 static void GL_OccludeFlares(void)
@@ -465,10 +465,14 @@ static void GL_OccludeFlares(void)
             set = true;
         }
 
-        if (bsp && BSP_PointLeaf(bsp->nodes, e->origin)->contents == CONTENTS_SOLID)
-            make_flare_quad(e, 2.5f * e->scale);
-        else
-            make_flare_quad(e, 2.5f);
+        if (bsp && BSP_PointLeaf(bsp->nodes, e->origin)->contents == CONTENTS_SOLID) {
+            vec3_t dir, org;
+            VectorSubtract(glr.fd.vieworg, e->origin, dir);
+            VectorNormalize(dir);
+            VectorMA(e->origin, 5.0f, dir, org);
+            make_flare_quad(org, 2.5f);
+        } else
+            make_flare_quad(e->origin, 2.5f);
 
         GL_LockArrays(4);
         qglBeginQuery(gl_static.samples_passed, q->query);
