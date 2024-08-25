@@ -585,7 +585,7 @@ static void draw_alias_mesh(const glIndex_t *indices, int num_indices,
     }
 
     GL_BindBuffer(GL_ARRAY_BUFFER, buffer);
-    gl_backend->tex_coord_pointer(tcoords->st);
+    gl_backend->tex_coord_pointer((const GLfloat *)tcoords);
 
     GL_LockArrays(num_verts);
 
