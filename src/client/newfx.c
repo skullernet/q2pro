@@ -58,13 +58,10 @@ void CL_DebugTrail(const vec3_t start, const vec3_t end)
     float       len;
     cparticle_t *p;
     float       dec;
-    vec3_t      right, up;
 
     VectorCopy(start, move);
     VectorSubtract(end, start, vec);
     len = VectorNormalize(vec);
-
-    MakeNormalVectors(vec, right, up);
 
     dec = 3;
     VectorScale(vec, dec, vec);
