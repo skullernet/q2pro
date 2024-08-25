@@ -3265,8 +3265,6 @@ unsigned CL_Frame(unsigned msec)
     if (cls.state == ca_active && !sv_paused->integer)
         CL_SetClientTime();
 
-    cl.rand_seed = cl.time / 16;
-
 #if USE_AUTOREPLY
     // check for version reply
     CL_CheckForReply();

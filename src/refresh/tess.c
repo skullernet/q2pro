@@ -273,7 +273,7 @@ static void GL_DrawLightningBeam(const vec3_t start, const vec3_t end, color_t c
     if (max_segments <= MIN_LIGHTNING_SEGMENTS)
         num_segments = max_segments;
     else
-        num_segments = MIN_LIGHTNING_SEGMENTS + GL_rand() % (max_segments - MIN_LIGHTNING_SEGMENTS + 1);
+        num_segments = MIN_LIGHTNING_SEGMENTS + Com_SlowRand() % (max_segments - MIN_LIGHTNING_SEGMENTS + 1);
 
     if (num_segments > 1)
         MakeNormalVectors(dir, right, up);
@@ -285,10 +285,10 @@ static void GL_DrawLightningBeam(const vec3_t start, const vec3_t end, color_t c
 
         VectorMA(start, i * segment_length, dir, point);
 
-        offs = GL_crand() * (segment_length * 0.35f);
+        offs = Com_SlowCrand() * (segment_length * 0.35f);
         VectorMA(point, offs, right, point);
 
-        offs = GL_crand() * (segment_length * 0.35f);
+        offs = Com_SlowCrand() * (segment_length * 0.35f);
         VectorMA(point, offs, up, segments[i]);
     }
 

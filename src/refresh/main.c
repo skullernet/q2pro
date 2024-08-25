@@ -653,7 +653,6 @@ void R_RenderFrame(const refdef_t *fd)
     glr.timestamp = com_eventTime;
 
     glr.drawframe++;
-    glr.rand_seed = fd->time * 20;
 
     glr.fd = *fd;
     glr.num_beams = 0;

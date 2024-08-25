@@ -622,3 +622,44 @@ char *Com_MakePrintable(const char *s)
     Com_EscapeString(buffer, s, sizeof(buffer));
     return buffer;
 }
+
+#if USE_CLIENT
+
+/*
+===============
+Com_SlowRand
+
+`Slow' PRNG that begins consecutive frames with the same seed. Reseeded each 16
+ms. Used for random effects that shouldn't cause too much tearing without vsync.
+===============
+*/
+uint32_t Com_SlowRand(void)
+{
+    static uint32_t com_rand_ts;
+    static uint32_t com_rand_base;
+    static uint32_t com_rand_seed;
+    static uint32_t com_rand_frame;
+
+    // see if it's time to reseed
+    if (com_rand_ts != com_eventTime / 16 && !sv_paused->integer) {
+        com_rand_ts = com_eventTime / 16;
+        com_rand_base = Q_rand();
+    }
+
+    // reset if started new frame
+    if (com_rand_frame != com_framenum) {
+        com_rand_frame = com_framenum;
+        com_rand_seed = com_rand_base;
+    }
+
+    // xorshift RNG
+    uint32_t x = com_rand_seed;
+
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+
+    return com_rand_seed = x;
+}
+
+#endif

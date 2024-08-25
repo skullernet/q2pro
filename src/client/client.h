@@ -236,8 +236,6 @@ typedef struct {
     float       keylerpfrac;
 #endif
 
-    uint32_t    rand_seed;
-
     refdef_t    refdef;
     float       fov_x;      // interpolated
     float       fov_y;      // derived from fov_x assuming 4/3 aspect ratio
@@ -614,8 +612,6 @@ static inline void CL_AdvanceValue(float *restrict val, float target, float spee
 //
 // main.c
 //
-
-#define CL_rand()   Q_rand_state(&cl.rand_seed)
 
 void CL_Init(void);
 void CL_Quit_f(void);

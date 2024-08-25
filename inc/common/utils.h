@@ -78,6 +78,12 @@ size_t Com_EscapeString(char *dst, const char *src, size_t size);
 
 char *Com_MakePrintable(const char *s);
 
+#if USE_CLIENT
+uint32_t Com_SlowRand(void);
+#define Com_SlowFrand()  ((int32_t)Com_SlowRand() * 0x1p-32f + 0.5f)
+#define Com_SlowCrand()  ((int32_t)Com_SlowRand() * 0x1p-31f)
+#endif
+
 // Bitmap chunks (for sparse bitmaps)
 #define BC_BITS         (sizeof(size_t) * CHAR_BIT)
 #define BC_COUNT(n)     (((n) + BC_BITS - 1) / BC_BITS)
