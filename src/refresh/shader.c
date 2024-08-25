@@ -255,11 +255,11 @@ static GLuint create_and_use_program(GLbitfield bits)
 
     qglUseProgram(program);
 
-    qglUniform1i(qglGetUniformLocation(program, "u_texture"), 0);
+    qglUniform1i(qglGetUniformLocation(program, "u_texture"), TMU_TEXTURE);
     if (bits & GLS_LIGHTMAP_ENABLE)
-        qglUniform1i(qglGetUniformLocation(program, "u_lightmap"), 1);
+        qglUniform1i(qglGetUniformLocation(program, "u_lightmap"), TMU_LIGHTMAP);
     if (bits & GLS_GLOWMAP_ENABLE)
-        qglUniform1i(qglGetUniformLocation(program, "u_glowmap"), 2);
+        qglUniform1i(qglGetUniformLocation(program, "u_glowmap"), TMU_GLOWMAP);
 
     return program;
 }

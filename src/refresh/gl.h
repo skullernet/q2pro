@@ -47,8 +47,6 @@ typedef GLushort glIndex_t;
 typedef GLuint glIndex_t;
 #endif
 
-#define MAX_TMUS        3
-
 #define TAB_SIN(x) gl_static.sintab[(x) & 255]
 #define TAB_COS(x) gl_static.sintab[((x) + 64) & 255]
 
@@ -541,6 +539,13 @@ typedef enum {
     GLA_LMTC        = BIT(VERT_ATTR_LMTC),
     GLA_COLOR       = BIT(VERT_ATTR_COLOR),
 } glArrayBits_t;
+
+typedef enum {
+    TMU_TEXTURE,
+    TMU_LIGHTMAP,
+    TMU_GLOWMAP,
+    MAX_TMUS
+} glTmu_t;
 
 typedef struct {
     GLuint          client_tmu;

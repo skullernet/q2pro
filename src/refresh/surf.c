@@ -322,7 +322,7 @@ void GL_UploadLightmaps(void)
         }
 
         // upload lightmap subimage
-        GL_ForceTexture(1, lm.texnums[i]);
+        GL_ForceTexture(TMU_LIGHTMAP, lm.texnums[i]);
         qglTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h,
                          GL_RGBA, GL_UNSIGNED_BYTE, LM_PIXELS(m, x, y));
         clear_dirty_region(m);
@@ -361,7 +361,7 @@ static void LM_UploadBlock(void)
     lightmap_t *m = &lm.lightmaps[lm.nummaps];
     clear_dirty_region(m);
 
-    GL_ForceTexture(1, lm.texnums[lm.nummaps]);
+    GL_ForceTexture(TMU_LIGHTMAP, lm.texnums[lm.nummaps]);
     qglTexImage2D(GL_TEXTURE_2D, 0, lm.comp,
                   lm.block_size, lm.block_size, 0,
                   GL_RGBA, GL_UNSIGNED_BYTE, m->buffer);
@@ -493,7 +493,6 @@ static void LM_BuildSurface(mface_t *surf)
     surf->light_s = s;
     surf->light_t = t;
     surf->light_m = &lm.lightmaps[lm.nummaps];
-    surf->texnum[1] = lm.texnums[lm.nummaps];
 
     // build the primary lightmap
     build_primary_lightmap(surf);
@@ -517,7 +516,7 @@ static void LM_RebuildSurfaces(void)
 
     // upload all lightmaps
     for (i = 0, m = lm.lightmaps; i < lm.nummaps; i++, m++) {
-        GL_ForceTexture(1, lm.texnums[i]);
+        GL_ForceTexture(TMU_LIGHTMAP, lm.texnums[i]);
         qglTexImage2D(GL_TEXTURE_2D, 0, lm.comp,
                       lm.block_size, lm.block_size, 0,
                       GL_RGBA, GL_UNSIGNED_BYTE, m->buffer);
@@ -560,15 +559,9 @@ static void build_surface_poly(mface_t *surf, vec_t *vbo)
     const mvertex_t *src_vert;
     const medge_t *src_edge;
     const mtexinfo_t *texinfo = surf->texinfo;
+    const uint32_t color = color_for_surface(surf);
     vec2_t scale, tc, mins, maxs;
     int i, bmins[2], bmaxs[2];
-    uint32_t color;
-
-    surf->texnum[0] = texinfo->image->texnum;
-    surf->texnum[1] = 0;
-    surf->texnum[2] = texinfo->image->glow_texnum;
-
-    color = color_for_surface(surf);
 
     // convert surface flags to state bits
     surf->statebits = GLS_DEFAULT;
@@ -794,7 +787,11 @@ static void duplicate_surface_lmtc(const mface_t *surf, vec_t *vbo)
 
 static void calc_surface_hash(mface_t *surf)
 {
-    uint32_t args[] = { surf->texnum[0], surf->texnum[1], surf->texnum[2], surf->statebits };
+    uint32_t args[] = {
+        surf->texinfo->image - r_images,
+        surf->light_m ? surf->light_m - lm.lightmaps : 0,
+        surf->statebits
+    };
     struct mdfour md;
     uint8_t out[16];
 

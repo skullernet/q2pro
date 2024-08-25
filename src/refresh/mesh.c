@@ -407,7 +407,7 @@ static void draw_celshading(const glIndex_t *indices, int num_indices)
     if (celscale < 0.01f)
         return;
 
-    GL_BindTexture(0, TEXNUM_BLACK);
+    GL_BindTexture(TMU_TEXTURE, TEXNUM_BLACK);
     GL_StateBits(GLS_BLEND_BLEND);
     GL_ArrayBits(GLA_VERTEX);
 
@@ -491,7 +491,7 @@ static void draw_shadow(const glIndex_t *indices, int num_indices)
     }
 
     GL_StateBits(GLS_BLEND_BLEND);
-    GL_BindTexture(0, TEXNUM_WHITE);
+    GL_BindTexture(TMU_TEXTURE, TEXNUM_WHITE);
     GL_ArrayBits(GLA_VERTEX);
 
     qglEnable(GL_POLYGON_OFFSET_FILL);
@@ -551,7 +551,7 @@ static void draw_alias_mesh(const glIndex_t *indices, int num_indices,
     if ((glr.ent->flags & (RF_TRANSLUCENT | RF_WEAPONMODEL | RF_FULLBRIGHT)) == (RF_TRANSLUCENT | RF_WEAPONMODEL)) {
         GL_StateBits(GLS_DEFAULT);
         GL_ArrayBits(GLA_VERTEX);
-        GL_BindTexture(0, TEXNUM_WHITE);
+        GL_BindTexture(TMU_TEXTURE, TEXNUM_WHITE);
         qglColorMask(0, 0, 0, 0);
 
         GL_LockArrays(num_verts);
@@ -572,10 +572,10 @@ static void draw_alias_mesh(const glIndex_t *indices, int num_indices,
 
     GL_StateBits(state);
 
-    GL_BindTexture(0, skin->texnum);
+    GL_BindTexture(TMU_TEXTURE, skin->texnum);
 
     if (skin->glow_texnum)
-        GL_BindTexture(2, skin->glow_texnum);
+        GL_BindTexture(TMU_GLOWMAP, skin->glow_texnum);
 
     if (dotshading) {
         GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);

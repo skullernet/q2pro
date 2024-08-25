@@ -82,11 +82,11 @@ static void update_image_params(unsigned mask)
         if (!(mask & BIT(image->type)))
             continue;
 
-        GL_ForceTexture(0, image->texnum);
+        GL_ForceTexture(TMU_TEXTURE, image->texnum);
         GL_SetFilterAndRepeat(image->type, image->flags);
 
         if (image->glow_texnum) {
-            GL_ForceTexture(0, image->glow_texnum);
+            GL_ForceTexture(TMU_TEXTURE, image->glow_texnum);
             GL_SetFilterAndRepeat(image->type, image->flags);
         }
     }
@@ -275,7 +275,7 @@ void Scrap_Upload(void)
     if (!scrap_dirty)
         return;
 
-    GL_ForceTexture(0, TEXNUM_SCRAP);
+    GL_ForceTexture(TMU_TEXTURE, TEXNUM_SCRAP);
 
     // make a copy so that effects like gamma scaling don't accumulate
     data = FS_AllocTempMem(sizeof(scrap_data));
@@ -698,7 +698,7 @@ void IMG_Load(image_t *image, byte *pic)
         scrap_dirty = true;
     } else {
         qglGenTextures(1, &image->texnum);
-        GL_ForceTexture(0, image->texnum);
+        GL_ForceTexture(TMU_TEXTURE, image->texnum);
 
         maxlevel = GL_UpscaleLevel(width, height, image->type, image->flags);
         if (maxlevel) {
@@ -853,7 +853,7 @@ static void GL_InitDefaultTexture(void)
         }
     }
 
-    GL_ForceTexture(0, TEXNUM_DEFAULT);
+    GL_ForceTexture(TMU_TEXTURE, TEXNUM_DEFAULT);
     GL_Upload32(pixels, 8, 8, 0, IT_WALL, IF_TURBULENT);
     GL_SetFilterAndRepeat(IT_WALL, IF_TURBULENT);
 
@@ -910,7 +910,7 @@ static void GL_InitParticleTexture(void)
         }
     }
 
-    GL_ForceTexture(0, TEXNUM_PARTICLE);
+    GL_ForceTexture(TMU_TEXTURE, TEXNUM_PARTICLE);
     GL_Upload32(pixels, 16, 16, 0, IT_SPRITE, flags);
     GL_SetFilterAndRepeat(IT_SPRITE, flags);
 }
@@ -920,12 +920,12 @@ static void GL_InitWhiteImage(void)
     uint32_t pixel;
 
     pixel = U32_WHITE;
-    GL_ForceTexture(0, TEXNUM_WHITE);
+    GL_ForceTexture(TMU_TEXTURE, TEXNUM_WHITE);
     GL_Upload32((byte *)&pixel, 1, 1, 0, IT_SPRITE, IF_REPEAT | IF_NEAREST);
     GL_SetFilterAndRepeat(IT_SPRITE, IF_REPEAT | IF_NEAREST);
 
     pixel = U32_BLACK;
-    GL_ForceTexture(0, TEXNUM_BLACK);
+    GL_ForceTexture(TMU_TEXTURE, TEXNUM_BLACK);
     GL_Upload32((byte *)&pixel, 1, 1, 0, IT_SPRITE, IF_REPEAT | IF_NEAREST);
     GL_SetFilterAndRepeat(IT_SPRITE, IF_REPEAT | IF_NEAREST);
 }
@@ -950,14 +950,14 @@ static void GL_InitBeamTexture(void)
         }
     }
 
-    GL_ForceTexture(0, TEXNUM_BEAM);
+    GL_ForceTexture(TMU_TEXTURE, TEXNUM_BEAM);
     GL_Upload32(pixels, 16, 16, 0, IT_SPRITE, IF_NONE);
     GL_SetFilterAndRepeat(IT_SPRITE, IF_NONE);
 }
 
 static void GL_InitRawTexture(void)
 {
-    GL_ForceTexture(0, TEXNUM_RAW);
+    GL_ForceTexture(TMU_TEXTURE, TEXNUM_RAW);
     GL_SetFilterAndRepeat(IT_PIC, IF_NONE);
 }
 
@@ -965,7 +965,7 @@ bool GL_InitWarpTexture(void)
 {
     GL_ClearErrors();
 
-    GL_ForceTexture(0, gl_static.warp_texture);
+    GL_ForceTexture(TMU_TEXTURE, gl_static.warp_texture);
     qglTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, glr.fd.width, glr.fd.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);

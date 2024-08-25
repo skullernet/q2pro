@@ -34,7 +34,7 @@ static void legacy_state_bits(GLbitfield bits)
     }
 
     if (diff & GLS_TEXTURE_REPLACE) {
-        GL_ActiveTexture(0);
+        GL_ActiveTexture(TMU_TEXTURE);
         if (bits & GLS_TEXTURE_REPLACE)
             qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
         else
@@ -42,7 +42,7 @@ static void legacy_state_bits(GLbitfield bits)
     }
 
     if (diff & GLS_SCROLL_MASK) {
-        GL_ActiveTexture(0);
+        GL_ActiveTexture(TMU_TEXTURE);
         qglMatrixMode(GL_TEXTURE);
         qglLoadIdentity();
 
@@ -54,7 +54,7 @@ static void legacy_state_bits(GLbitfield bits)
     }
 
     if (diff & GLS_LIGHTMAP_ENABLE) {
-        GL_ActiveTexture(1);
+        GL_ActiveTexture(TMU_LIGHTMAP);
         if (bits & GLS_LIGHTMAP_ENABLE)
             qglEnable(GL_TEXTURE_2D);
         else
@@ -93,7 +93,7 @@ static void legacy_array_bits(GLbitfield bits)
     }
 
     if (diff & GLA_TC) {
-        GL_ClientActiveTexture(0);
+        GL_ClientActiveTexture(TMU_TEXTURE);
         if (bits & GLA_TC)
             qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
         else
@@ -101,7 +101,7 @@ static void legacy_array_bits(GLbitfield bits)
     }
 
     if (diff & GLA_LMTC) {
-        GL_ClientActiveTexture(1);
+        GL_ClientActiveTexture(TMU_LIGHTMAP);
         if (bits & GLA_LMTC)
             qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
         else
@@ -124,13 +124,13 @@ static void legacy_array_pointers(const glVaDesc_t *desc, const GLfloat *ptr)
     desc++;
 
     if (desc->size) {
-        GL_ClientActiveTexture(0);
+        GL_ClientActiveTexture(TMU_TEXTURE);
         qglTexCoordPointer(desc->size, GL_FLOAT, desc->stride, (void *)(base + desc->offset));
     }
     desc++;
 
     if (desc->size && lm.nummaps) {
-        GL_ClientActiveTexture(1);
+        GL_ClientActiveTexture(TMU_LIGHTMAP);
         qglTexCoordPointer(desc->size, GL_FLOAT, desc->stride, (void *)(base + desc->offset));
     }
     desc++;
@@ -143,7 +143,7 @@ static void legacy_array_pointers(const glVaDesc_t *desc, const GLfloat *ptr)
 
 static void legacy_tex_coord_pointer(const GLfloat *ptr)
 {
-    GL_ClientActiveTexture(0);
+    GL_ClientActiveTexture(TMU_TEXTURE);
     qglTexCoordPointer(2, GL_FLOAT, 0, ptr);
 }
 

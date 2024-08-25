@@ -270,7 +270,7 @@ void GL_Setup3D(bool waterwarp)
 
 void GL_DrawOutlines(GLsizei count, const glIndex_t *indices, bool indexed)
 {
-    GL_BindTexture(0, TEXNUM_WHITE);
+    GL_BindTexture(TMU_TEXTURE, TEXNUM_WHITE);
     GL_StateBits(GLS_DEPTHMASK_FALSE | GLS_TEXTURE_REPLACE);
     GL_ArrayBits(GLA_VERTEX);
     GL_DepthRange(0, 0);

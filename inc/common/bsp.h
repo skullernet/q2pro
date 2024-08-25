@@ -98,7 +98,6 @@ typedef struct mface_s {
     uint16_t        lm_width;
     uint16_t        lm_height;
 
-    int             texnum[3]; // FIXME MAX_TMUS
     int             drawflags; // DSURF_PLANEBACK, etc
     int             statebits;
     int             firstvert;

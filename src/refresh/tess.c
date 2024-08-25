@@ -43,7 +43,7 @@ void GL_Flush2D(void)
 
     Scrap_Upload();
 
-    GL_BindTexture(0, tess.texnum[0]);
+    GL_BindTexture(TMU_TEXTURE, tess.texnum[TMU_TEXTURE]);
     GL_BindArrays(VA_2D);
     GL_StateBits(bits);
     GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
@@ -53,7 +53,7 @@ void GL_Flush2D(void)
 
     tess.numindices = 0;
     tess.numverts = 0;
-    tess.texnum[0] = 0;
+    tess.texnum[TMU_TEXTURE] = 0;
     tess.flags = 0;
 }
 
@@ -82,7 +82,7 @@ void GL_DrawParticles(void)
     p = glr.fd.particles;
     total = glr.fd.num_particles;
     do {
-        GL_BindTexture(0, TEXNUM_PARTICLE);
+        GL_BindTexture(TMU_TEXTURE, TEXNUM_PARTICLE);
         GL_StateBits(bits);
         GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
 
@@ -146,7 +146,7 @@ static void GL_FlushBeamSegments(void)
     else
         array |= GLA_TC;
 
-    GL_BindTexture(0, texnum);
+    GL_BindTexture(TMU_TEXTURE, texnum);
     GL_StateBits(GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE);
     GL_ArrayBits(array);
     GL_DrawIndexed(SHOWTRIS_FX);
@@ -355,13 +355,13 @@ static void GL_FlushFlares(void)
     if (!tess.numindices)
         return;
 
-    GL_BindTexture(0, tess.texnum[0]);
+    GL_BindTexture(TMU_TEXTURE, tess.texnum[TMU_TEXTURE]);
     GL_StateBits(GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE | GLS_BLEND_ADD);
     GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
     GL_DrawIndexed(SHOWTRIS_FX);
 
     tess.numverts = tess.numindices = 0;
-    tess.texnum[0] = 0;
+    tess.texnum[TMU_TEXTURE] = 0;
 }
 
 void GL_DrawFlares(void)
@@ -418,10 +418,10 @@ void GL_DrawFlares(void)
 
         if (q_unlikely(tess.numverts + 4 > TESS_MAX_VERTICES ||
                        tess.numindices + 6 > TESS_MAX_INDICES) ||
-            (tess.numindices && tess.texnum[0] != texnum))
+            (tess.numindices && tess.texnum[TMU_TEXTURE] != texnum))
             GL_FlushFlares();
 
-        tess.texnum[0] = texnum;
+        tess.texnum[TMU_TEXTURE] = texnum;
 
         scale = 25.0f * (ent->scale * q->frac);
 
@@ -607,14 +607,14 @@ void GL_Flush3D(void)
     if (!tess.numindices)
         return;
 
-    if (q_likely(tess.texnum[1])) {
+    if (q_likely(tess.texnum[TMU_LIGHTMAP])) {
         state |= GLS_LIGHTMAP_ENABLE;
         array |= GLA_LMTC;
 
         if (q_unlikely(gl_lightmap->integer))
             state &= ~GLS_INTENSITY_ENABLE;
 
-        if (tess.texnum[2])
+        if (tess.texnum[TMU_GLOWMAP])
             state |= GLS_GLOWMAP_ENABLE;
     }
 
@@ -627,7 +627,7 @@ void GL_Flush3D(void)
     if (qglBindTextures) {
 #if USE_DEBUG
         if (q_unlikely(gl_nobind->integer))
-            tess.texnum[0] = TEXNUM_DEFAULT;
+            tess.texnum[TMU_TEXTURE] = TEXNUM_DEFAULT;
 #endif
         int count = 0;
         for (int i = 0; i < MAX_TMUS && tess.texnum[i]; i++) {
@@ -647,7 +647,7 @@ void GL_Flush3D(void)
 
     c.batchesDrawn++;
 
-    tess.texnum[0] = tess.texnum[1] = tess.texnum[2] = 0;
+    memset(tess.texnum, 0, sizeof(tess.texnum));
     tess.numindices = 0;
     tess.numverts = 0;
     tess.flags = 0;
@@ -682,25 +682,25 @@ static const image_t *GL_TextureAnimation(const mtexinfo_t *tex)
 
 static void GL_DrawFace(const mface_t *surf)
 {
+    const image_t *image = GL_TextureAnimation(surf->texinfo);
     int numtris = surf->numsurfedges - 2;
     int numindices = numtris * 3;
-    GLuint texnum[MAX_TMUS];
+    GLuint texnum[MAX_TMUS] = { 0 };
     glIndex_t *dst_indices;
     int i, j;
 
-    if (q_unlikely(gl_lightmap->integer && surf->texnum[1])) {
-        texnum[0] = TEXNUM_WHITE;
-        texnum[2] = 0;
-    } else {
-        const image_t *tex = GL_TextureAnimation(surf->texinfo);
-        texnum[0] = tex->texnum;
-        texnum[2] = surf->texnum[1] ? tex->glow_texnum : 0;
-    }
-    texnum[1] = surf->texnum[1];
+    texnum[TMU_TEXTURE] = image->texnum;
+    if (q_likely(surf->light_m)) {
+        texnum[TMU_LIGHTMAP] = lm.texnums[surf->light_m - lm.lightmaps];
+        texnum[TMU_GLOWMAP ] = image->glow_texnum;
 
-    if (tess.texnum[0] != texnum[0] ||
-        tess.texnum[1] != texnum[1] ||
-        tess.texnum[2] != texnum[2] ||
+        if (q_unlikely(gl_lightmap->integer)) {
+            texnum[TMU_TEXTURE] = TEXNUM_WHITE;
+            texnum[TMU_GLOWMAP] = 0;
+        }
+    }
+
+    if (memcmp(tess.texnum, texnum, sizeof(texnum)) ||
         tess.flags != surf->statebits ||
         tess.numindices + numindices > TESS_MAX_INDICES)
         GL_Flush3D();
@@ -719,9 +719,7 @@ static void GL_DrawFace(const mface_t *surf)
     }
     tess.numindices += numindices;
 
-    tess.texnum[0] = texnum[0];
-    tess.texnum[1] = texnum[1];
-    tess.texnum[2] = texnum[2];
+    memcpy(tess.texnum, texnum, sizeof(texnum));
     tess.flags = surf->statebits;
 
     c.facesTris += numtris;

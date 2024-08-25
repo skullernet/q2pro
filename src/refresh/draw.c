@@ -30,10 +30,10 @@ static inline void GL_StretchPic_(
 
     if (tess.numverts + 4 > TESS_MAX_VERTICES ||
         tess.numindices + 6 > TESS_MAX_INDICES ||
-        (tess.numverts && tess.texnum[0] != texnum))
+        (tess.numverts && tess.texnum[TMU_TEXTURE] != texnum))
         GL_Flush2D();
 
-    tess.texnum[0] = texnum;
+    tess.texnum[TMU_TEXTURE] = texnum;
 
     dst_vert = tess.vertices + tess.numverts * 5;
     Vector4Set(dst_vert,      x,     y,     s1, t1);
@@ -78,10 +78,10 @@ static void GL_DrawVignette(int distance, color_t outer, color_t inner)
 
     if (tess.numverts + 8 > TESS_MAX_VERTICES ||
         tess.numindices + 24 > TESS_MAX_INDICES ||
-        (tess.numverts && tess.texnum[0] != TEXNUM_WHITE))
+        (tess.numverts && tess.texnum[TMU_TEXTURE] != TEXNUM_WHITE))
         GL_Flush2D();
 
-    tess.texnum[0] = TEXNUM_WHITE;
+    tess.texnum[TMU_TEXTURE] = TEXNUM_WHITE;
 
     int x = 0, y = 0;
     int w = glr.fd.width, h = glr.fd.height;
@@ -340,7 +340,7 @@ void R_DrawStretchRaw(int x, int y, int w, int h)
 
 void R_UpdateRawPic(int pic_w, int pic_h, const uint32_t *pic)
 {
-    GL_ForceTexture(0, TEXNUM_RAW);
+    GL_ForceTexture(TMU_TEXTURE, TEXNUM_RAW);
     qglTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, pic_w, pic_h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pic);
 }
 

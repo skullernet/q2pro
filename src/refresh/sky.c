@@ -342,7 +342,7 @@ void R_DrawSkyBox(void)
             skymins[1][i] >= skymaxs[1][i])
             continue;
 
-        GL_BindTexture(0, sky_images[i]);
+        GL_BindTexture(TMU_TEXTURE, sky_images[i]);
 
         MakeSkyVec(skymaxs[0][i], skymins[1][i], i, tess.vertices);
         MakeSkyVec(skymins[0][i], skymins[1][i], i, tess.vertices +  5);
