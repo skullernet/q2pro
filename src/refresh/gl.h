@@ -54,56 +54,12 @@ typedef GLuint glIndex_t;
 #define NUM_TEXNUMS     7
 
 typedef struct {
-    uint8_t size;
-    bool type;
-    uint8_t stride;
-    uint8_t offset;
-} glVaDesc_t;
-
-typedef struct {
-    const char *name;
-
-    void (*init)(void);
-    void (*shutdown)(void);
-    void (*clear_state)(void);
-    void (*setup_2d)(void);
-    void (*setup_3d)(void);
-
-    void (*load_proj_matrix)(const GLfloat *matrix);
-    void (*load_view_matrix)(const GLfloat *matrix);
-
-    void (*state_bits)(GLbitfield bits);
-    void (*array_bits)(GLbitfield bits);
-
-    void (*array_pointers)(const glVaDesc_t *desc, const GLfloat *ptr);
-    void (*tex_coord_pointer)(const GLfloat *ptr);
-
-    void (*color)(GLfloat r, GLfloat g, GLfloat b, GLfloat a);
-} glbackend_t;
-
-typedef struct {
     GLuint query;
     float frac;
     unsigned timestamp;
     bool pending;
     bool visible;
 } glquery_t;
-
-typedef enum {
-    VA_NONE,
-
-    VA_SPRITE,
-    VA_EFFECT,
-    VA_NULLMODEL,
-    VA_OCCLUDE,
-    VA_WATERWARP,
-    VA_MESH_SHADE,
-    VA_MESH_FLAT,
-    VA_2D,
-    VA_3D,
-
-    VA_TOTAL
-} glVertexArray_t;
 
 typedef struct {
     bool            registering;
@@ -541,6 +497,22 @@ typedef enum {
 } glArrayBits_t;
 
 typedef enum {
+    VA_NONE,
+
+    VA_SPRITE,
+    VA_EFFECT,
+    VA_NULLMODEL,
+    VA_OCCLUDE,
+    VA_WATERWARP,
+    VA_MESH_SHADE,
+    VA_MESH_FLAT,
+    VA_2D,
+    VA_3D,
+
+    VA_TOTAL
+} glVertexArray_t;
+
+typedef enum {
     TMU_TEXTURE,
     TMU_LIGHTMAP,
     TMU_GLOWMAP,
@@ -548,34 +520,64 @@ typedef enum {
 } glTmu_t;
 
 typedef struct {
-    GLuint          client_tmu;
-    GLuint          server_tmu;
-    GLuint          texnums[MAX_TMUS];
-    GLbitfield      state_bits;
-    GLbitfield      array_bits;
-    GLuint          currentbuffer[2];
-    glVertexArray_t currentva;
-    const GLfloat   *currentmatrix;
-    struct {
-        GLfloat     view[16];
-        GLfloat     proj[16];
-        GLfloat     time;
-        GLfloat     modulate;
-        GLfloat     add;
-        GLfloat     intensity;
-        GLfloat     intensity2;
-        GLfloat     pad;
-        GLfloat     w_amp[2];
-        GLfloat     w_phase[2];
-        GLfloat     scroll[2];
-    } u_block;
+    GLfloat     view[16];
+    GLfloat     proj[16];
+    GLfloat     time;
+    GLfloat     modulate;
+    GLfloat     add;
+    GLfloat     intensity;
+    GLfloat     intensity2;
+    GLfloat     pad;
+    GLfloat     w_amp[2];
+    GLfloat     w_phase[2];
+    GLfloat     scroll[2];
+} glUniformBlock_t;
+
+typedef struct {
+    glTmu_t             client_tmu;
+    glTmu_t             server_tmu;
+    GLuint              texnums[MAX_TMUS];
+    glStateBits_t       state_bits;
+    glArrayBits_t       array_bits;
+    GLuint              currentbuffer[2];
+    glVertexArray_t     currentva;
+    const GLfloat      *currentmatrix;
+    glUniformBlock_t    u_block;
 } glState_t;
 
 extern glState_t gls;
 
+typedef struct {
+    uint8_t size;
+    bool type;
+    uint8_t stride;
+    uint8_t offset;
+} glVaDesc_t;
+
+typedef struct {
+    const char *name;
+
+    void (*init)(void);
+    void (*shutdown)(void);
+    void (*clear_state)(void);
+    void (*setup_2d)(void);
+    void (*setup_3d)(void);
+
+    void (*load_proj_matrix)(const GLfloat *matrix);
+    void (*load_view_matrix)(const GLfloat *matrix);
+
+    void (*state_bits)(glStateBits_t bits);
+    void (*array_bits)(glArrayBits_t bits);
+
+    void (*array_pointers)(const glVaDesc_t *desc, const GLfloat *ptr);
+    void (*tex_coord_pointer)(const GLfloat *ptr);
+
+    void (*color)(GLfloat r, GLfloat g, GLfloat b, GLfloat a);
+} glbackend_t;
+
 extern const glbackend_t *gl_backend;
 
-static inline void GL_ActiveTexture(GLuint tmu)
+static inline void GL_ActiveTexture(glTmu_t tmu)
 {
     if (gls.server_tmu != tmu) {
         qglActiveTexture(GL_TEXTURE0 + tmu);
@@ -583,7 +585,7 @@ static inline void GL_ActiveTexture(GLuint tmu)
     }
 }
 
-static inline void GL_ClientActiveTexture(GLuint tmu)
+static inline void GL_ClientActiveTexture(glTmu_t tmu)
 {
     if (gls.client_tmu != tmu) {
         qglClientActiveTexture(GL_TEXTURE0 + tmu);
@@ -591,7 +593,7 @@ static inline void GL_ClientActiveTexture(GLuint tmu)
     }
 }
 
-static inline void GL_StateBits(GLbitfield bits)
+static inline void GL_StateBits(glStateBits_t bits)
 {
     if (gls.state_bits != bits) {
         gl_backend->state_bits(bits);
@@ -599,7 +601,7 @@ static inline void GL_StateBits(GLbitfield bits)
     }
 }
 
-static inline void GL_ArrayBits(GLbitfield bits)
+static inline void GL_ArrayBits(glArrayBits_t bits)
 {
     if (gls.array_bits != bits) {
         gl_backend->array_bits(bits);
@@ -658,10 +660,10 @@ typedef enum {
     SHOWTRIS_FX     = BIT(3),
 } showtris_t;
 
-void GL_ForceTexture(GLuint tmu, GLuint texnum);
-void GL_BindTexture(GLuint tmu, GLuint texnum);
-void GL_CommonStateBits(GLbitfield bits);
-void GL_ScrollSpeed(vec2_t scroll, GLbitfield bits);
+void GL_ForceTexture(glTmu_t tmu, GLuint texnum);
+void GL_BindTexture(glTmu_t tmu, GLuint texnum);
+void GL_CommonStateBits(glStateBits_t bits);
+void GL_ScrollSpeed(vec2_t scroll, glStateBits_t bits);
 void GL_DrawOutlines(GLsizei count, const glIndex_t *indices, bool indexed);
 void GL_Ortho(GLfloat xmin, GLfloat xmax, GLfloat ymin, GLfloat ymax, GLfloat znear, GLfloat zfar);
 void GL_Frustum(GLfloat fov_x, GLfloat fov_y, GLfloat reflect_x);
@@ -670,9 +672,6 @@ void GL_Setup3D(bool waterwarp);
 void GL_ClearState(void);
 void GL_InitState(void);
 void GL_ShutdownState(void);
-
-extern const glbackend_t backend_legacy;
-extern const glbackend_t backend_shader;
 
 /*
  * gl_draw.c
@@ -734,7 +733,7 @@ typedef struct {
     GLuint          texnum[MAX_TMUS];
     int             numverts;
     int             numindices;
-    int             flags;
+    glStateBits_t   flags;
 } tesselator_t;
 
 extern tesselator_t tess;

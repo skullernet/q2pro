@@ -19,9 +19,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "gl.h"
 #include "arbfp.h"
 
-static void legacy_state_bits(GLbitfield bits)
+static void legacy_state_bits(glStateBits_t bits)
 {
-    GLbitfield diff = bits ^ gls.state_bits;
+    glStateBits_t diff = bits ^ gls.state_bits;
 
     if (diff & GLS_COMMON_MASK)
         GL_CommonStateBits(bits);
@@ -81,9 +81,9 @@ static void legacy_state_bits(GLbitfield bits)
     }
 }
 
-static void legacy_array_bits(GLbitfield bits)
+static void legacy_array_bits(glArrayBits_t bits)
 {
-    GLbitfield diff = bits ^ gls.array_bits;
+    glArrayBits_t diff = bits ^ gls.array_bits;
 
     if (diff & GLA_VERTEX) {
         if (bits & GLA_VERTEX)

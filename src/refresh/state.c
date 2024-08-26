@@ -23,7 +23,7 @@ glState_t gls;
 const glbackend_t *gl_backend;
 
 // for uploading
-void GL_ForceTexture(GLuint tmu, GLuint texnum)
+void GL_ForceTexture(glTmu_t tmu, GLuint texnum)
 {
     GL_ActiveTexture(tmu);
 
@@ -37,10 +37,10 @@ void GL_ForceTexture(GLuint tmu, GLuint texnum)
 }
 
 // for drawing
-void GL_BindTexture(GLuint tmu, GLuint texnum)
+void GL_BindTexture(glTmu_t tmu, GLuint texnum)
 {
 #if USE_DEBUG
-    if (gl_nobind->integer && !tmu)
+    if (gl_nobind->integer && tmu == TMU_TEXTURE)
         texnum = TEXNUM_DEFAULT;
 #endif
 
@@ -58,9 +58,9 @@ void GL_BindTexture(GLuint tmu, GLuint texnum)
     c.texSwitches++;
 }
 
-void GL_CommonStateBits(GLbitfield bits)
+void GL_CommonStateBits(glStateBits_t bits)
 {
-    GLbitfield diff = bits ^ gls.state_bits;
+    glStateBits_t diff = bits ^ gls.state_bits;
 
     if (diff & GLS_BLEND_MASK) {
         if (bits & GLS_BLEND_MASK) {
@@ -98,7 +98,7 @@ void GL_CommonStateBits(GLbitfield bits)
     }
 }
 
-void GL_ScrollSpeed(vec2_t scroll, GLbitfield bits)
+void GL_ScrollSpeed(vec2_t scroll, glStateBits_t bits)
 {
     float speed = 1.6f;
 
@@ -327,6 +327,9 @@ void GL_ClearState(void)
     memset(&gls, 0, sizeof(gls));
     GL_ShowErrors(__func__);
 }
+
+extern const glbackend_t backend_legacy;
+extern const glbackend_t backend_shader;
 
 void GL_InitState(void)
 {
