@@ -625,7 +625,7 @@ static void build_surface_poly(mface_t *surf, vec_t *vbo)
         VectorCopy(src_vert->point, vbo);
 
         // vertex color
-        memcpy(vbo + 3, &color, sizeof(color));
+        WN32(vbo + 3, color);
 
         // texture0 coordinates
         tc[0] = DotProductDouble(vbo, texinfo->axis[0]) + texinfo->offset[0];
