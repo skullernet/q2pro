@@ -626,6 +626,8 @@ static inline void GL_LoadMatrix(const GLfloat *matrix)
 static inline void GL_BindBuffer(GLenum target, GLuint buffer)
 {
     const int i = target == GL_ELEMENT_ARRAY_BUFFER;
+    Q_assert(i || target == GL_ARRAY_BUFFER);
+
     if (gls.currentbuffer[i] != buffer) {
         qglBindBuffer(target, buffer);
         gls.currentbuffer[i] = buffer;
