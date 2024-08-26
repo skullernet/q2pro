@@ -345,10 +345,8 @@ static const mnode_t    *leaf_topnode;
 
 static void CM_BoxLeafs_r(const mnode_t *node)
 {
-    int     s;
-
     while (node->plane) {
-        s = BoxOnPlaneSideFast(leaf_mins, leaf_maxs, node->plane);
+        box_plane_t s = BoxOnPlaneSideFast(leaf_mins, leaf_maxs, node->plane);
         if (s == BOX_INFRONT) {
             node = node->children[0];
         } else if (s == BOX_BEHIND) {

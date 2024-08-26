@@ -488,12 +488,12 @@ void GL_DrawBspModel(mmodel_t *model)
 static inline bool GL_ClipNode(const mnode_t *node, int *clipflags)
 {
     int flags = *clipflags;
-    int i, bits, mask;
+    box_plane_t bits;
 
     if (flags == NODE_UNCLIPPED)
         return true;
 
-    for (i = 0, mask = 1; i < 4; i++, mask <<= 1) {
+    for (int i = 0, mask = 1; i < 4; i++, mask <<= 1) {
         if (flags & mask)
             continue;
         bits = BoxOnPlaneSide(node->mins, node->maxs,

@@ -319,7 +319,7 @@ BoxOnPlaneSide
 Returns 1, 2, or 1 + 2
 ==================
 */
-int BoxOnPlaneSide(const vec3_t emins, const vec3_t emaxs, const cplane_t *p)
+box_plane_t BoxOnPlaneSide(const vec3_t emins, const vec3_t emaxs, const cplane_t *p)
 {
     const vec_t *bounds[2] = { emins, emaxs };
     int     i = p->signbits & 1;
@@ -331,9 +331,9 @@ int BoxOnPlaneSide(const vec3_t emins, const vec3_t emaxs, const cplane_t *p)
     p->normal[1] * bounds[j][1] + \
     p->normal[2] * bounds[k][2]
 
-    vec_t   dist1 = P(i ^ 1, j ^ 1, k ^ 1);
-    vec_t   dist2 = P(i, j, k);
-    int     sides = 0;
+    vec_t       dist1 = P(i ^ 1, j ^ 1, k ^ 1);
+    vec_t       dist2 = P(i, j, k);
+    box_plane_t sides = 0;
 
 #undef P
 

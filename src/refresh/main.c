@@ -131,14 +131,14 @@ static void GL_SetupFrustum(void)
 
 glCullResult_t GL_CullBox(const vec3_t bounds[2])
 {
-    int i, bits;
+    box_plane_t bits;
     glCullResult_t cull;
 
     if (!gl_cull_models->integer)
         return CULL_IN;
 
     cull = CULL_IN;
-    for (i = 0; i < 4; i++) {
+    for (int i = 0; i < 4; i++) {
         bits = BoxOnPlaneSide(bounds[0], bounds[1], &glr.frustumPlanes[i]);
         if (bits == BOX_BEHIND)
             return CULL_OUT;

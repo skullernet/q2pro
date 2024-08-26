@@ -32,13 +32,15 @@ int DirToByte(const vec3_t dir);
 void SetPlaneType(cplane_t *plane);
 void SetPlaneSignbits(cplane_t *plane);
 
-#define BOX_INFRONT     1
-#define BOX_BEHIND      2
-#define BOX_INTERSECTS  3
+typedef enum {
+    BOX_INFRONT     = 1,
+    BOX_BEHIND      = 2,
+    BOX_INTERSECTS  = 3
+} box_plane_t;
 
-int BoxOnPlaneSide(const vec3_t emins, const vec3_t emaxs, const cplane_t *p);
+box_plane_t BoxOnPlaneSide(const vec3_t emins, const vec3_t emaxs, const cplane_t *p);
 
-static inline int BoxOnPlaneSideFast(const vec3_t emins, const vec3_t emaxs, const cplane_t *p)
+static inline box_plane_t BoxOnPlaneSideFast(const vec3_t emins, const vec3_t emaxs, const cplane_t *p)
 {
     // fast axial cases
     if (p->type < 3) {
