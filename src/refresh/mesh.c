@@ -206,7 +206,9 @@ static void tess_lerped_shade(const maliasmesh_t *mesh)
     vec3_t normal;
 
     while (count--) {
-        vec_t d = shadedot(get_lerped_normal(normal, src_oldvert, src_newvert));
+        vec_t oldd = shadedot(get_static_normal(normal, src_oldvert));
+        vec_t newd = shadedot(get_static_normal(normal, src_newvert));
+        vec_t d = oldd * backlerp + newd * frontlerp;
 
         dst_vert[0] =
             src_oldvert->pos[0] * oldscale[0] +
