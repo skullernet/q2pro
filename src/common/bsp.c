@@ -307,7 +307,7 @@ LOAD(Faces)
     bsp->numfaces = count;
     bsp->faces = out = ALLOC(sizeof(*out) * count);
 
-    for (int i = 0; i < count; i++, out++) {
+    for (int i = 0, j; i < count; i++, out++) {
         uint32_t planenum = BSP_ExtLong();
         ENSURE(planenum < bsp->numplanes, "Bad planenum");
         out->plane = bsp->planes + planenum;
@@ -325,13 +325,12 @@ LOAD(Faces)
         ENSURE(texinfo < bsp->numtexinfo, "Bad texinfo");
         out->texinfo = bsp->texinfo + texinfo;
 
-        int j;
-        for (j = 0; j < MAX_LIGHTMAPS && in[j] != 255; j++) {
+        for (j = 0; j < MAX_LIGHTMAPS && in[j] != 255; j++)
             out->styles[j] = in[j];
-        }
-        for (out->numstyles = j; j < MAX_LIGHTMAPS; j++) {
+
+        for (out->numstyles = j; j < MAX_LIGHTMAPS; j++)
             out->styles[j] = 255;
-        }
+
         in += MAX_LIGHTMAPS;
 
         uint32_t lightofs = BSP_Long();
@@ -1164,7 +1163,7 @@ static size_t BSP_ParseExtensionHeader(bsp_t *bsp, lump_t *out, const byte *buf,
     }
 
     size_t extrasize = 0;
-    xlump_t *l = (xlump_t *)(buf + pos);
+    const xlump_t *l = (const xlump_t *)(buf + pos);
     for (int i = 0; i < numlumps; i++, l++) {
         for (int j = 0; j < q_countof(bspx_lumps); j++) {
             const xlump_info_t *e = &bspx_lumps[j];
