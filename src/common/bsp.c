@@ -645,16 +645,15 @@ static void BSP_PrintStats(const bsp_t *bsp)
 {
     bool extended = bsp->extended;
 
-    for (int i = 0; i < q_countof(bsp_stats); i++) {
-        const bsp_stat_t *s = &bsp_stats[i];
-        Com_Printf("%8d : %s\n", *(int *)((byte *)bsp + s->ofs), s->name);
-    }
+    for (int i = 0; i < q_countof(bsp_stats); i++)
+        Com_Printf("%8d : %s\n", *(int *)((byte *)bsp + bsp_stats[i].ofs), bsp_stats[i].name);
+
     if (bsp->vis)
         Com_Printf("%8u : clusters\n", bsp->vis->numclusters);
 
 #if USE_REF
-    if (bsp->lightgrid.numleafs) {
-        const lightgrid_t *grid = &bsp->lightgrid;
+    const lightgrid_t *grid = &bsp->lightgrid;
+    if (grid->numleafs) {
         Com_Printf(
             "%8u : lightgrid styles\n"
             "%8u : lightgrid nodes\n"
@@ -673,7 +672,7 @@ static void BSP_PrintStats(const bsp_t *bsp)
 #if USE_REF
         if (bsp->lm_decoupled)
             Com_Printf(" DECOUPLED_LM");
-        if (bsp->lightgrid.numleafs)
+        if (grid->numleafs)
             Com_Printf(" LIGHTGRID_OCTREE");
 #endif
         Com_Printf("\n");
