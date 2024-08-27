@@ -404,10 +404,29 @@ static const glsection_t sections[] = {
     },
 };
 
-static bool parse_version(void)
+static const char *const es_prefixes[] = {
+    "OpenGL ES-CM ",
+    "OpenGL ES-CL ",
+    "OpenGL ES "
+};
+
+static int parse_version(const char *s)
+{
+    int major, minor;
+
+    if (sscanf(s, "%d.%d", &major, &minor) < 2)
+        return 0;
+
+    if (major < 1 || major > (INT_MAX - 99) / 100 || minor < 0 || minor > 99)
+        return 0;
+
+    return QGL_VER(major, minor);
+}
+
+static bool parse_gl_version(void)
 {
     const char *s;
-    int major, minor, ver;
+    int ver;
     bool gl_es = false;
 
     qglGetString = vid->get_proc_addr("glGetString");
@@ -425,37 +444,33 @@ static bool parse_version(void)
     Com_DPrintf("GL_VERSION: %s\n", s);
 
     // parse ES profile prefix
-    if (!strncmp(s, "OpenGL ES", 9)) {
-        s += 9;
-        if (s[0] == '-' && s[1] && s[2] && s[3] == ' ')
-            s += 4;
-        else if (s[0] == ' ')
-            s += 1;
-        else
-            return false;
-        gl_es = true;
+    for (int i = 0; i < q_countof(es_prefixes); i++) {
+        size_t len = strlen(es_prefixes[i]);
+        if (!strncmp(s, es_prefixes[i], len)) {
+            s += len;
+            gl_es = true;
+        }
     }
 
     // parse version
-    if (sscanf(s, "%d.%d", &major, &minor) < 2)
-        return false;
-
-    if (major < 1 || minor < 0 || minor > 99)
-        return false;
-
-    ver = QGL_VER(major, minor);
-    if (gl_es)
+    ver = parse_version(s);
+    if (gl_es) {
         gl_config.ver_es = ver;
-    else
-        gl_config.ver_gl = ver;
+        return ver;
+    }
 
-    return true;
+    // reject GL 1.0
+    if (ver >= QGL_VER(1, 1)) {
+        gl_config.ver_gl = ver;
+        return true;
+    }
+
+    return false;
 }
 
 static bool parse_glsl_version(void)
 {
     const char *s;
-    int major, minor;
 
     if (gl_config.ver_gl < QGL_VER(2, 0) && gl_config.ver_es < QGL_VER(2, 0))
         return true;
@@ -469,14 +484,8 @@ static bool parse_glsl_version(void)
     if (gl_config.ver_es && !strncmp(s, "OpenGL ES GLSL ES ", 18))
         s += 18;
 
-    if (sscanf(s, "%d.%d", &major, &minor) < 2)
-        return false;
-
-    if (major < 1 || minor < 0 || minor > 99)
-        return false;
-
-    gl_config.ver_sl = QGL_VER(major, minor);
-    return true;
+    gl_config.ver_sl = parse_version(s);
+    return gl_config.ver_sl;
 }
 
 static bool extension_blacklisted(const char *search)
@@ -545,7 +554,7 @@ void QGL_Shutdown(void)
 
 bool QGL_Init(void)
 {
-    if (!parse_version()) {
+    if (!parse_gl_version()) {
         Com_EPrintf("OpenGL returned invalid version string\n");
         return false;
     }
