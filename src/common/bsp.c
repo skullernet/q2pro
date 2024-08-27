@@ -65,6 +65,14 @@ static cvar_t *map_visibility_patch;
 #define BSP_ExtLong()   (bsp->extended ? BSP_Long()   : BSP_Short())
 #define BSP_ExtNull     (bsp->extended ? (uint32_t)-1 : (uint16_t)-1)
 
+#define BSP_VectorAdd(v, add) \
+    ((v)[0] = BSP_Float() add, (v)[1] = BSP_Float() add, (v)[2] = BSP_Float() add)
+
+#define BSP_ExtVector(v) \
+    ((v)[0] = BSP_ExtFloat(), (v)[1] = BSP_ExtFloat(), (v)[2] = BSP_ExtFloat())
+
+#define BSP_Vector(v) BSP_VectorAdd(v,)
+
 LOAD(Visibility)
 {
     if (!count)
@@ -106,9 +114,7 @@ LOAD(Texinfo)
     for (int i = 0; i < count; i++, out++) {
 #if USE_REF
         for (int j = 0; j < 2; j++) {
-            out->axis[j][0] = BSP_Float();
-            out->axis[j][1] = BSP_Float();
-            out->axis[j][2] = BSP_Float();
+            BSP_Vector(out->axis[j]);
             out->offset[j] = BSP_Float();
         }
 #else
@@ -160,9 +166,7 @@ LOAD(Planes)
     bsp->planes = out = ALLOC(sizeof(*out) * count);
 
     for (int i = 0; i < count; i++, in += 4, out++) {
-        out->normal[0] = BSP_Float();
-        out->normal[1] = BSP_Float();
-        out->normal[2] = BSP_Float();
+        BSP_Vector(out->normal);
         out->dist = BSP_Float();
         SetPlaneType(out);
         SetPlaneSignbits(out);
@@ -251,11 +255,8 @@ LOAD(Vertices)
     bsp->numvertices = count;
     bsp->vertices = out = ALLOC(sizeof(*out) * count);
 
-    for (int i = 0; i < count; i++, out++) {
-        out->point[0] = BSP_Float();
-        out->point[1] = BSP_Float();
-        out->point[2] = BSP_Float();
-    }
+    for (int i = 0; i < count; i++, out++)
+        BSP_Vector(out->point);
 
     return Q_ERR_SUCCESS;
 }
@@ -392,11 +393,8 @@ LOAD(Leafs)
         out->area = area;
 
 #if USE_REF
-        for (int j = 0; j < 3; j++)
-            out->mins[j] = BSP_ExtFloat();
-        for (int j = 0; j < 3; j++)
-            out->maxs[j] = BSP_ExtFloat();
-
+        BSP_ExtVector(out->mins);
+        BSP_ExtVector(out->maxs);
         uint32_t firstleafface = BSP_ExtLong();
         uint32_t numleaffaces = BSP_ExtLong();
         ENSURE((uint64_t)firstleafface + numleaffaces <= bsp->numleaffaces, "Bad leaffaces");
@@ -448,11 +446,8 @@ LOAD(Nodes)
         }
 
 #if USE_REF
-        for (int j = 0; j < 3; j++)
-            out->mins[j] = BSP_ExtFloat();
-        for (int j = 0; j < 3; j++)
-            out->maxs[j] = BSP_ExtFloat();
-
+        BSP_ExtVector(out->mins);
+        BSP_ExtVector(out->maxs);
         uint32_t firstface = BSP_ExtLong();
         uint32_t numfaces = BSP_ExtLong();
         ENSURE((uint64_t)firstface + numfaces <= bsp->numfaces, "Bad faces");
@@ -481,12 +476,9 @@ LOAD(SubModels)
 
     for (int i = 0; i < count; i++, out++) {
         // spread the mins / maxs by a pixel
-        for (int j = 0; j < 3; j++)
-            out->mins[j] = BSP_Float() - 1;
-        for (int j = 0; j < 3; j++)
-            out->maxs[j] = BSP_Float() + 1;
-        for (int j = 0; j < 3; j++)
-            out->origin[j] = BSP_Float();
+        BSP_VectorAdd(out->mins, -1);
+        BSP_VectorAdd(out->maxs, +1);
+        BSP_Vector(out->origin);
 
         uint32_t headnode = BSP_Long();
         if (headnode & BIT(31)) {
@@ -929,9 +921,7 @@ static void BSP_ParseDecoupledLM(bsp_t *bsp, const byte *in, size_t filelen)
             out->lightmap = NULL;
 
         for (int j = 0; j < 2; j++) {
-            out->lm_axis[j][0] = BSP_Float();
-            out->lm_axis[j][1] = BSP_Float();
-            out->lm_axis[j][2] = BSP_Float();
+            BSP_Vector(out->lm_axis[j]);
             out->lm_offset[j] = BSP_Float();
         }
     }
