@@ -48,8 +48,8 @@ static void legacy_state_bits(glStateBits_t bits)
 
         if (bits & GLS_SCROLL_ENABLE) {
             vec2_t scroll;
-            GL_ScrollSpeed(scroll, bits);
-            qglTranslatef(scroll[0] * glr.fd.time, scroll[1] * glr.fd.time, 0);
+            GL_ScrollPos(scroll, bits);
+            qglTranslatef(scroll[0], scroll[1], 0);
         }
     }
 

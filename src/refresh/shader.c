@@ -77,7 +77,7 @@ static void write_vertex_shader(sizebuf_t *buf, glStateBits_t bits)
 
     GLSF("void main() {\n");
         if (bits & GLS_SCROLL_ENABLE)
-            GLSL(v_tc = a_tc + u_time * u_scroll;)
+            GLSL(v_tc = a_tc + u_scroll;)
         else
             GLSL(v_tc = a_tc;)
 
@@ -287,7 +287,7 @@ static void shader_state_bits(glStateBits_t bits)
     }
 
     if (diff & GLS_SCROLL_MASK && bits & GLS_SCROLL_ENABLE) {
-        GL_ScrollSpeed(gls.u_block.scroll, bits);
+        GL_ScrollPos(gls.u_block.scroll, bits);
         upload_u_block();
     }
 }
