@@ -327,6 +327,8 @@ void GL_DrawBeams(void)
     for (i = 0, ent = glr.fd.entities; i < glr.fd.num_entities; i++, ent++) {
         if (!(ent->flags & RF_BEAM))
             continue;
+        if (!ent->frame)
+            continue;
 
         VectorCopy(ent->origin, segs[0]);
         VectorCopy(ent->oldorigin, segs[1]);
