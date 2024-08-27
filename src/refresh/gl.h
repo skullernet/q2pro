@@ -520,8 +520,7 @@ typedef enum {
 } glTmu_t;
 
 typedef struct {
-    GLfloat     view[16];
-    GLfloat     proj[16];
+    GLfloat     mvp[16];
     GLfloat     time;
     GLfloat     modulate;
     GLfloat     add;
@@ -542,6 +541,8 @@ typedef struct {
     GLuint              currentbuffer[2];
     glVertexArray_t     currentva;
     const GLfloat      *currentmatrix;
+    GLfloat             view_matrix[16];
+    GLfloat             proj_matrix[16];
     glUniformBlock_t    u_block;
 } glState_t;
 
@@ -563,8 +564,7 @@ typedef struct {
     void (*setup_2d)(void);
     void (*setup_3d)(void);
 
-    void (*load_proj_matrix)(const GLfloat *matrix);
-    void (*load_view_matrix)(const GLfloat *matrix);
+    void (*load_matrix)(GLenum mode, const GLfloat *matrix);
 
     void (*state_bits)(glStateBits_t bits);
     void (*array_bits)(glArrayBits_t bits);
@@ -611,14 +611,14 @@ static inline void GL_ArrayBits(glArrayBits_t bits)
 
 static inline void GL_ForceMatrix(const GLfloat *matrix)
 {
-    gl_backend->load_view_matrix(matrix);
+    gl_backend->load_matrix(GL_MODELVIEW, matrix);
     gls.currentmatrix = matrix;
 }
 
 static inline void GL_LoadMatrix(const GLfloat *matrix)
 {
     if (gls.currentmatrix != matrix) {
-        gl_backend->load_view_matrix(matrix);
+        gl_backend->load_matrix(GL_MODELVIEW, matrix);
         gls.currentmatrix = matrix;
     }
 }

@@ -22,6 +22,8 @@ glState_t gls;
 
 const glbackend_t *gl_backend;
 
+static const GLfloat identity[16] = { [0] = 1, [5] = 1, [10] = 1, [15] = 1 };
+
 // for uploading
 void GL_ForceTexture(glTmu_t tmu, GLuint texnum)
 {
@@ -148,7 +150,7 @@ void GL_Ortho(GLfloat xmin, GLfloat xmax, GLfloat ymin, GLfloat ymax, GLfloat zn
     matrix[11] = 0;
     matrix[15] = 1;
 
-    gl_backend->load_proj_matrix(matrix);
+    gl_backend->load_matrix(GL_PROJECTION, matrix);
 }
 
 void GL_Setup2D(void)
@@ -169,7 +171,7 @@ void GL_Setup2D(void)
     if (gl_backend->setup_2d)
         gl_backend->setup_2d();
 
-    gl_backend->load_view_matrix(NULL);
+    gl_backend->load_matrix(GL_MODELVIEW, identity);
 }
 
 void GL_Frustum(GLfloat fov_x, GLfloat fov_y, GLfloat reflect_x)
@@ -215,7 +217,7 @@ void GL_Frustum(GLfloat fov_x, GLfloat fov_y, GLfloat reflect_x)
     matrix[11] = -1;
     matrix[15] = 0;
 
-    gl_backend->load_proj_matrix(matrix);
+    gl_backend->load_matrix(GL_PROJECTION, matrix);
 }
 
 static void GL_RotateForViewer(void)

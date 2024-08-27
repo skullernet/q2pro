@@ -42,8 +42,7 @@ static void write_block(sizebuf_t *buf)
 {
     GLSF("layout(std140) uniform u_block {\n");
     GLSL(
-        mat4 m_view;
-        mat4 m_proj;
+        mat4 m_vp;
         float u_time;
         float u_modulate;
         float u_add;
@@ -81,7 +80,7 @@ static void write_vertex_shader(sizebuf_t *buf, glStateBits_t bits)
             GLSL(v_lmtc = a_lmtc;)
         if (!(bits & GLS_TEXTURE_REPLACE))
             GLSL(v_color = a_color;)
-        GLSL(gl_Position = m_proj * m_view * a_pos;)
+        GLSL(gl_Position = m_vp * a_pos;)
     GLSF("}\n");
 }
 
@@ -329,20 +328,20 @@ static void upload_u_block(void)
     c.uniformUploads++;
 }
 
-static void shader_load_view_matrix(const GLfloat *matrix)
+static void shader_load_matrix(GLenum mode, const GLfloat *matrix)
 {
-    static const GLfloat identity[16] = { [0] = 1, [5] = 1, [10] = 1, [15] = 1 };
+    switch (mode) {
+    case GL_MODELVIEW:
+        memcpy(gls.view_matrix, matrix, sizeof(gls.view_matrix));
+        break;
+    case GL_PROJECTION:
+        memcpy(gls.proj_matrix, matrix, sizeof(gls.proj_matrix));
+        break;
+    default:
+        Q_assert(!"bad mode");
+    }
 
-    if (!matrix)
-        matrix = identity;
-
-    memcpy(gls.u_block.view, matrix, sizeof(gls.u_block.view));
-    upload_u_block();
-}
-
-static void shader_load_proj_matrix(const GLfloat *matrix)
-{
-    memcpy(gls.u_block.proj, matrix, sizeof(gls.u_block.proj));
+    GL_MultMatrix(gls.u_block.mvp, gls.proj_matrix, gls.view_matrix);
     upload_u_block();
 }
 
@@ -434,8 +433,7 @@ const glbackend_t backend_shader = {
     .setup_2d = shader_setup_2d,
     .setup_3d = shader_setup_3d,
 
-    .load_proj_matrix = shader_load_proj_matrix,
-    .load_view_matrix = shader_load_view_matrix,
+    .load_matrix = shader_load_matrix,
 
     .state_bits = shader_state_bits,
     .array_bits = shader_array_bits,

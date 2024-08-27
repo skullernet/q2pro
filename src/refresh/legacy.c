@@ -152,19 +152,9 @@ static void legacy_color(GLfloat r, GLfloat g, GLfloat b, GLfloat a)
     qglColor4f(r, g, b, a);
 }
 
-static void legacy_load_view_matrix(const GLfloat *matrix)
+static void legacy_load_matrix(GLenum mode, const GLfloat *matrix)
 {
-    qglMatrixMode(GL_MODELVIEW);
-
-    if (matrix)
-        qglLoadMatrixf(matrix);
-    else
-        qglLoadIdentity();
-}
-
-static void legacy_load_proj_matrix(const GLfloat *matrix)
-{
-    qglMatrixMode(GL_PROJECTION);
+    qglMatrixMode(mode);
     qglLoadMatrixf(matrix);
 }
 
@@ -250,8 +240,7 @@ const glbackend_t backend_legacy = {
     .shutdown = legacy_shutdown,
     .clear_state = legacy_clear_state,
 
-    .load_proj_matrix = legacy_load_proj_matrix,
-    .load_view_matrix = legacy_load_view_matrix,
+    .load_matrix = legacy_load_matrix,
 
     .state_bits = legacy_state_bits,
     .array_bits = legacy_array_bits,
