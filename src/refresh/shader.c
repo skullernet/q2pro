@@ -60,26 +60,33 @@ static void write_vertex_shader(sizebuf_t *buf, glStateBits_t bits)
 {
     write_header(buf);
     write_block(buf);
+
     GLSL(in vec4 a_pos;)
     GLSL(in vec2 a_tc;)
     GLSL(out vec2 v_tc;)
+
     if (bits & GLS_LIGHTMAP_ENABLE) {
         GLSL(in vec2 a_lmtc;)
         GLSL(out vec2 v_lmtc;)
     }
+
     if (!(bits & GLS_TEXTURE_REPLACE)) {
         GLSL(in vec4 a_color;)
         GLSL(out vec4 v_color;)
     }
+
     GLSF("void main() {\n");
-        GLSL(vec2 tc = a_tc;)
         if (bits & GLS_SCROLL_ENABLE)
-            GLSL(tc += u_time * u_scroll;)
-        GLSL(v_tc = tc;)
+            GLSL(v_tc = a_tc + u_time * u_scroll;)
+        else
+            GLSL(v_tc = a_tc;)
+
         if (bits & GLS_LIGHTMAP_ENABLE)
             GLSL(v_lmtc = a_lmtc;)
+
         if (!(bits & GLS_TEXTURE_REPLACE))
             GLSL(v_color = a_color;)
+
         GLSL(gl_Position = m_vp * a_pos;)
     GLSF("}\n");
 }
