@@ -49,7 +49,8 @@ static cvar_t *map_visibility_patch;
     Hunk_Alloc(&bsp->hunk, size)
 
 #define LOAD(func) \
-    static int BSP_Load##func(bsp_t *bsp, const byte *in, size_t count)
+    static int BSP_Load##func(bsp_t *const bsp, const byte *in, \
+                              const size_t count, const bool extended)
 
 #define DEBUG(msg) \
     Com_SetLastError(va("%s: %s", __func__, msg))
@@ -61,9 +62,9 @@ static cvar_t *map_visibility_patch;
 #define BSP_Long()      (in += 4, RL32(in - 4))
 #define BSP_Float()     LongToFloat(BSP_Long())
 
-#define BSP_ExtFloat()  (bsp->extended ? BSP_Float()  : (int16_t)BSP_Short())
-#define BSP_ExtLong()   (bsp->extended ? BSP_Long()   : BSP_Short())
-#define BSP_ExtNull     (bsp->extended ? (uint32_t)-1 : (uint16_t)-1)
+#define BSP_ExtFloat()  (extended ? BSP_Float()  : (int16_t)BSP_Short())
+#define BSP_ExtLong()   (extended ? BSP_Long()   : BSP_Short())
+#define BSP_ExtNull     (extended ? (uint32_t)-1 : (uint16_t)-1)
 
 #define BSP_VectorAdd(v, add) \
     ((v)[0] = BSP_Float() add, (v)[1] = BSP_Float() add, (v)[2] = BSP_Float() add)
@@ -572,7 +573,7 @@ typedef struct {
 } xlump_info_t;
 
 typedef struct {
-    int (*load)(bsp_t *, const byte *, size_t);
+    int (*load)(bsp_t *const, const byte *, const size_t, const bool);
     const char *name;
     uint8_t lump;
     uint8_t disksize[2];
@@ -1320,7 +1321,7 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
 
     // load all lumps
     for (i = 0; i < q_countof(bsp_lumps); i++) {
-        ret = bsp_lumps[i].load(bsp, buf + lump_ofs[i], lump_count[i]);
+        ret = bsp_lumps[i].load(bsp, buf + lump_ofs[i], lump_count[i], extended);
         if (ret) {
             goto fail1;
         }
