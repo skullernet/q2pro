@@ -299,8 +299,8 @@ static const glsection_t sections[] = {
         .caps = QGL_CAP_SHADER,
         .functions = (const glfunction_t []) {
             QGL_FN(BindBufferBase),
-            QGL_FN(GetUniformBlockIndex),
             QGL_FN(GetActiveUniformBlockiv),
+            QGL_FN(GetUniformBlockIndex),
             QGL_FN(UniformBlockBinding),
             { NULL }
         }
