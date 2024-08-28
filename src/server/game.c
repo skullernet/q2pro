@@ -865,7 +865,7 @@ static void *PF_GetExtension(const char *name)
     if (!name)
         return NULL;
 
-    if (!strcmp(name, "FILESYSTEM_API_V1"))
+    if (!strcmp(name, FILESYSTEM_API_V1))
         return (void *)&filesystem_api_v1;
 
 #if USE_REF && USE_DEBUG

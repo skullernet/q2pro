@@ -68,6 +68,8 @@ typedef struct {
 #define FS_FLAG_LOADFILE        0x00001000  // open non-unique handle, must be closed very quickly
 #define FS_FLAG_MASK            0x0000ff00
 
+#define FILESYSTEM_API_V1 "FILESYSTEM_API_V1"
+
 typedef struct {
     int64_t     (*OpenFile)(const char *path, qhandle_t *f, unsigned mode); // returns file length
     int         (*CloseFile)(qhandle_t f);
