@@ -47,11 +47,11 @@ typedef GLushort glIndex_t;
 typedef GLuint glIndex_t;
 #endif
 
-#define TAB_SIN(x) gl_static.sintab[(x) & 255]
-#define TAB_COS(x) gl_static.sintab[((x) + 64) & 255]
+#define TAB_SIN(x)  gl_static.sintab[(x) & 255]
+#define TAB_COS(x)  gl_static.sintab[((x) + 64) & 255]
 
-#define MAX_PROGRAMS    128
-#define NUM_TEXNUMS     7
+#define MAX_PROGRAMS        128
+#define NUM_AUTO_TEXTURES   7
 
 typedef struct {
     GLuint query;
@@ -78,7 +78,7 @@ typedef struct {
     GLuint          index_buffer;
     GLuint          vertex_buffer;
     GLuint          programs[MAX_PROGRAMS];
-    GLuint          texnums[NUM_TEXNUMS];
+    GLuint          texnums[NUM_AUTO_TEXTURES];
     GLenum          samples_passed;
     GLbitfield      stencil_buffer_bit;
     float           entity_modulate;

@@ -1080,7 +1080,7 @@ void GL_InitImages(void)
     colorscale = Cvar_ClampValue(gl_saturation, 0, 1);
     lightscale = !(gl_gamma->value == 1.0f && (gl_static.use_shaders || gl_intensity->value == 1.0f));
 
-    qglGenTextures(NUM_TEXNUMS, gl_static.texnums);
+    qglGenTextures(NUM_AUTO_TEXTURES, gl_static.texnums);
     qglGenTextures(LM_MAX_LIGHTMAPS, lm.texnums);
 
     if (gl_static.use_shaders) {
@@ -1120,7 +1120,7 @@ void GL_ShutdownImages(void)
     gl_partshape->changed = NULL;
 
     // delete auto textures
-    qglDeleteTextures(NUM_TEXNUMS, gl_static.texnums);
+    qglDeleteTextures(NUM_AUTO_TEXTURES, gl_static.texnums);
     qglDeleteTextures(LM_MAX_LIGHTMAPS, lm.texnums);
 
     memset(gl_static.texnums, 0, sizeof(gl_static.texnums));
