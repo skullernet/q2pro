@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // sv_game.c -- interface to the game dll
 
 #include "server.h"
+#include "shared/debug.h"
 
 const game_export_t     *ge;
 const game_export_ex_t  *gex;
@@ -863,8 +864,17 @@ static void *PF_GetExtension(const char *name)
 {
     if (!name)
         return NULL;
+
     if (!strcmp(name, "FILESYSTEM_API_V1"))
         return (void *)&filesystem_api_v1;
+
+#if USE_REF && USE_DEBUG
+    if (!strcmp(name, DEBUG_DRAW_API_V1) && !dedicated->integer) {
+        extern const debug_draw_api_v1_t debug_draw_api_v1;
+        return (void *)&debug_draw_api_v1;
+    }
+#endif
+
     return NULL;
 }
 

@@ -704,6 +704,8 @@ void R_RenderFrame(const refdef_t *fd)
 
     GL_DrawEntities(RF_TRANSLUCENT | RF_WEAPONMODEL, 0);
 
+    GL_DrawDebugObjects();
+
     if (waterwarp)
         qglBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -1103,6 +1105,8 @@ bool R_Init(bool total)
 
     GL_InitTables();
 
+    GL_InitDebugDraw();
+
     GL_PostInit();
 
     GL_ShowErrors(__func__);
@@ -1135,6 +1139,8 @@ void R_Shutdown(bool total)
 
     if (!total)
         return;
+
+    GL_ShutdownDebugDraw();
 
     GL_ShutdownState();
 

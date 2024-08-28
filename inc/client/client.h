@@ -96,6 +96,12 @@ void Con_Print(const char *text);
 void Con_Printf(const char *fmt, ...) q_printf(1, 2);
 void Con_Close(bool force);
 
+#if USE_DEBUG
+void R_ClearDebugLines(void);
+#else
+#define R_ClearDebugLines() (void)0
+#endif
+
 void SCR_BeginLoadingPlaque(void);
 void SCR_EndLoadingPlaque(void);
 
@@ -149,6 +155,8 @@ float V_CalcFov(float fov_x, float width, float height);
 #define Con_SetColor(color)             (void)0
 #define Con_SkipNotify(skip)            (void)0
 #define Con_Print(text)                 (void)0
+
+#define R_ClearDebugLines()             (void)0
 
 #define SCR_BeginLoadingPlaque()        (void)0
 #define SCR_EndLoadingPlaque()          (void)0

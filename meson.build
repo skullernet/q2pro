@@ -417,6 +417,10 @@ if get_option('tests')
   config.set10('USE_TESTS', true)
 endif
 
+if get_option('debug')
+  refresh_src += 'src/refresh/debug.c'
+endif
+
 if get_option('game-abi-hack').require(x86 and cc.get_id() == 'gcc' and cc.has_argument('-mstackrealign')).allowed()
   config.set10('USE_GAME_ABI_HACK', true)
   engine_args += '-mstackrealign'

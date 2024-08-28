@@ -143,6 +143,14 @@ static const glsection_t sections[] = {
         .caps = QGL_CAP_ELEMENT_INDEX_UINT,
     },
 
+    // GL 1.1, ES 1.0 up to 2.0
+    {
+        .ver_gl = QGL_VER(1, 1),
+        .ver_es = QGL_VER(1, 0),
+        .excl_es = QGL_VER(2, 0),
+        .caps = QGL_CAP_LINE_SMOOTH,
+    },
+
     // ES 1.1
     {
         .ver_es = QGL_VER(1, 1),

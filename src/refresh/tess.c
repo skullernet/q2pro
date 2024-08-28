@@ -28,8 +28,6 @@ static mface_t  *faces_head[FACE_HASH_SIZE];
 static mface_t  **faces_next[FACE_HASH_SIZE];
 static mface_t  *faces_alpha;
 
-static void GL_DrawIndexed(showtris_t showtris);
-
 void GL_Flush2D(void)
 {
     glStateBits_t bits;
@@ -558,7 +556,7 @@ void GL_UnlockArrays(void)
         qglUnlockArraysEXT();
 }
 
-static void GL_DrawIndexed(showtris_t showtris)
+void GL_DrawIndexed(showtris_t showtris)
 {
     const glIndex_t *indices = tess.indices;
 

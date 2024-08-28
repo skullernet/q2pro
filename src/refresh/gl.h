@@ -131,6 +131,7 @@ typedef enum {
     QGL_CAP_ELEMENT_INDEX_UINT          = BIT(9),
     QGL_CAP_QUERY_RESULT_NO_WAIT        = BIT(10),
     QGL_CAP_CLIENT_VA                   = BIT(11),
+    QGL_CAP_LINE_SMOOTH                 = BIT(12),
 } glcap_t;
 
 #define QGL_VER(major, minor)   ((major) * 100 + (minor))
@@ -656,6 +657,7 @@ static inline void GL_DepthRange(GLfloat n, GLfloat f)
     qglDrawElements(GL_TRIANGLES, num_indices, QGL_INDEX_TYPE, indices)
 
 typedef enum {
+    SHOWTRIS_NONE   = 0,
     SHOWTRIS_WORLD  = BIT(0),
     SHOWTRIS_MESH   = BIT(1),
     SHOWTRIS_PIC    = BIT(2),
@@ -746,10 +748,11 @@ void GL_DrawBeams(void);
 void GL_DrawFlares(void);
 
 void GL_BindArrays(glVertexArray_t va);
-void GL_InitArrays(void);
-void GL_ShutdownArrays(void);
 void GL_LockArrays(GLsizei count);
 void GL_UnlockArrays(void);
+void GL_DrawIndexed(showtris_t showtris);
+void GL_InitArrays(void);
+void GL_ShutdownArrays(void);
 
 void GL_Flush3D(void);
 
@@ -790,3 +793,17 @@ void GL_DrawAliasModel(const model_t *model);
 void HQ2x_Render(uint32_t *output, const uint32_t *input, int width, int height);
 void HQ4x_Render(uint32_t *output, const uint32_t *input, int width, int height);
 void HQ2x_Init(void);
+
+/*
+ * debug.c
+ *
+ */
+#if USE_DEBUG
+void GL_InitDebugDraw(void);
+void GL_ShutdownDebugDraw(void);
+void GL_DrawDebugObjects(void);
+#else
+#define GL_InitDebugDraw()      (void)0
+#define GL_ShutdownDebugDraw()  (void)0
+#define GL_DrawDebugObjects()   (void)0
+#endif
