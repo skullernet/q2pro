@@ -552,6 +552,64 @@ static uint32_t color_for_surface(const mface_t *surf)
     return U32_WHITE;
 }
 
+static bool enable_intensity_for_surface(const mface_t *surf)
+{
+    // enable for any surface with a lightmap in DECOUPLED_LM maps
+    if (surf->lightmap && gl_static.world.cache->lm_decoupled)
+        return true;
+
+    // enable for non-transparent, non-warped surfaces
+    if (!(surf->drawflags & SURF_COLOR_MASK))
+        return true;
+
+    // enable for non-transparent lava (hack)
+    if (!(surf->drawflags & SURF_TRANS_MASK) && strstr(surf->texinfo->name, "lava"))
+        return true;
+
+    return false;
+}
+
+static glStateBits_t statebits_for_surface(const mface_t *surf)
+{
+    glStateBits_t statebits = GLS_DEFAULT;
+
+    if (gl_static.use_shaders) {
+        // no inverse intensity
+        if (!(surf->drawflags & SURF_TRANS_MASK))
+            statebits |= GLS_TEXTURE_REPLACE;
+        if (enable_intensity_for_surface(surf))
+            statebits |= GLS_INTENSITY_ENABLE;
+    } else {
+        if (!(surf->drawflags & SURF_COLOR_MASK))
+            statebits |= GLS_TEXTURE_REPLACE;
+    }
+
+    if (surf->drawflags & SURF_WARP)
+        statebits |= GLS_WARP_ENABLE;
+
+    if (surf->drawflags & SURF_TRANS_MASK)
+        statebits |= GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE;
+    else if (surf->drawflags & SURF_ALPHATEST)
+        statebits |= GLS_ALPHATEST_ENABLE;
+
+    if (surf->drawflags & SURF_FLOWING) {
+        statebits |= GLS_SCROLL_ENABLE;
+        if (surf->drawflags & SURF_WARP)
+            statebits |= GLS_SCROLL_SLOW;
+    }
+
+    if (surf->drawflags & SURF_N64_SCROLL_X)
+        statebits |= GLS_SCROLL_ENABLE | GLS_SCROLL_X;
+
+    if (surf->drawflags & SURF_N64_SCROLL_Y)
+        statebits |= GLS_SCROLL_ENABLE | GLS_SCROLL_Y;
+
+    if (surf->drawflags & SURF_N64_SCROLL_FLIP)
+        statebits |= GLS_SCROLL_FLIP;
+
+    return statebits;
+}
+
 static void build_surface_poly(mface_t *surf, vec_t *vbo)
 {
     const bsp_t *bsp = gl_static.world.cache;
@@ -564,35 +622,7 @@ static void build_surface_poly(mface_t *surf, vec_t *vbo)
     int i, bmins[2], bmaxs[2];
 
     // convert surface flags to state bits
-    surf->statebits = GLS_DEFAULT;
-    if (gl_static.use_shaders) {
-        // no inverse intensity
-        if (!(surf->drawflags & SURF_TRANS_MASK))
-            surf->statebits |= GLS_TEXTURE_REPLACE;
-
-        // always use intensity on lightmapped surfaces
-        if ((surf->lightmap && bsp->lm_decoupled) ||
-            !(surf->drawflags & SURF_COLOR_MASK) ||
-            (!(surf->drawflags & SURF_TRANS_MASK) && strstr(texinfo->name, "lava")))
-            surf->statebits |= GLS_INTENSITY_ENABLE;
-    } else {
-        if (!(surf->drawflags & SURF_COLOR_MASK))
-            surf->statebits |= GLS_TEXTURE_REPLACE;
-    }
-
-    if (surf->drawflags & SURF_WARP)
-        surf->statebits |= GLS_WARP_ENABLE;
-
-    if (surf->drawflags & SURF_TRANS_MASK)
-        surf->statebits |= GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE;
-    else if (surf->drawflags & SURF_ALPHATEST)
-        surf->statebits |= GLS_ALPHATEST_ENABLE;
-
-    if (surf->drawflags & SURF_FLOWING) {
-        surf->statebits |= GLS_SCROLL_ENABLE;
-        if (surf->drawflags & SURF_WARP)
-            surf->statebits |= GLS_SCROLL_SLOW;
-    }
+    surf->statebits = statebits_for_surface(surf);
 
     // normalize texture coordinates
     scale[0] = 1.0f / texinfo->image->width;
@@ -602,15 +632,6 @@ static void build_surface_poly(mface_t *surf, vec_t *vbo)
         scale[0] *= 0.5f;
         scale[1] *= 0.5f;
     }
-
-    if (surf->drawflags & SURF_N64_SCROLL_X)
-        surf->statebits |= GLS_SCROLL_ENABLE | GLS_SCROLL_X;
-
-    if (surf->drawflags & SURF_N64_SCROLL_Y)
-        surf->statebits |= GLS_SCROLL_ENABLE | GLS_SCROLL_Y;
-
-    if (surf->drawflags & SURF_N64_SCROLL_FLIP)
-        surf->statebits |= GLS_SCROLL_FLIP;
 
     mins[0] = mins[1] = 99999;
     maxs[0] = maxs[1] = -99999;
