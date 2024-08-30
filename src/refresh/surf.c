@@ -712,6 +712,25 @@ static void sample_surface_verts(mface_t *surf, vec_t *vbo)
     surf->statebits |= GLS_SHADE_SMOOTH;
 }
 
+// normalizes and stores lightmap texture coordinates in vertices
+static void normalize_surface_lmtc(const mface_t *surf, vec_t *vbo)
+{
+    float s, t, scale = scale = 1.0f / lm.block_size;
+    int i;
+
+    s = surf->light_s + 0.5f;
+    t = surf->light_t + 0.5f;
+
+    for (i = 0; i < surf->numsurfedges; i++) {
+        vbo[6] += s;
+        vbo[7] += t;
+        vbo[6] *= scale;
+        vbo[7] *= scale;
+
+        vbo += VERTEX_SIZE;
+    }
+}
+
 // validates and processes surface lightmap
 static void build_surface_light(mface_t *surf, vec_t *vbo)
 {
@@ -746,42 +765,11 @@ static void build_surface_light(mface_t *surf, vec_t *vbo)
         return;
     }
 
-    if (gl_vertexlight->integer)
+    if (gl_vertexlight->integer) {
         sample_surface_verts(surf, vbo);
-    else
+    } else {
         LM_BuildSurface(surf);
-}
-
-// normalizes and stores lightmap texture coordinates in vertices
-static void normalize_surface_lmtc(const mface_t *surf, vec_t *vbo)
-{
-    float s, t, scale = 1.0f / lm.block_size;
-    int i;
-
-    s = surf->light_s + 0.5f;
-    t = surf->light_t + 0.5f;
-
-    for (i = 0; i < surf->numsurfedges; i++) {
-        vbo[6] += s;
-        vbo[7] += t;
-        vbo[6] *= scale;
-        vbo[7] *= scale;
-
-        vbo += VERTEX_SIZE;
-    }
-}
-
-// duplicates normalized texture0 coordinates for non-lit surfaces in texture1
-// to make them render properly when gl_lightmap hack is used
-static void duplicate_surface_lmtc(const mface_t *surf, vec_t *vbo)
-{
-    int i;
-
-    for (i = 0; i < surf->numsurfedges; i++) {
-        vbo[6] = vbo[4];
-        vbo[7] = vbo[5];
-
-        vbo += VERTEX_SIZE;
+        normalize_surface_lmtc(surf, vbo);
     }
 }
 
@@ -900,11 +888,6 @@ static void upload_world_surfaces(void)
         surf->firstvert = currvert;
         build_surface_poly(surf, vbo);
         build_surface_light(surf, vbo);
-
-        if (surf->light_m)
-            normalize_surface_lmtc(surf, vbo);
-        else
-            duplicate_surface_lmtc(surf, vbo);
 
         calc_surface_hash(surf);
 
