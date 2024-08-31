@@ -569,11 +569,8 @@ static const image_t *skin_for_mesh(image_t **skins, int num_skins)
 {
     const entity_t *ent = glr.ent;
 
-    if (ent->flags & RF_SHELL_MASK) {
-        static image_t shell_texture;
-        shell_texture.texnum = TEXNUM_WHITE;
+    if (ent->flags & RF_SHELL_MASK)
         return &shell_texture;
-    }
 
     if (ent->skin)
         return IMG_ForHandle(ent->skin);

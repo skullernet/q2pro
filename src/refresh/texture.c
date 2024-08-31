@@ -47,6 +47,7 @@ static cvar_t *gl_invert;
 static cvar_t *gl_partshape;
 
 cvar_t *gl_intensity;
+image_t shell_texture;
 
 static int GL_UpscaleLevel(int width, int height, imagetype_t type, imageflags_t flags);
 static void GL_Upload32(byte *data, int width, int height, int baselevel, imagetype_t type, imageflags_t flags);
@@ -1082,6 +1083,7 @@ void GL_InitImages(void)
 
     qglGenTextures(NUM_AUTO_TEXTURES, gl_static.texnums);
     qglGenTextures(LM_MAX_LIGHTMAPS, lm.texnums);
+    shell_texture.texnum = TEXNUM_WHITE;
 
     if (gl_static.use_shaders) {
         qglGenTextures(1, &gl_static.warp_texture);
@@ -1125,6 +1127,7 @@ void GL_ShutdownImages(void)
 
     memset(gl_static.texnums, 0, sizeof(gl_static.texnums));
     memset(lm.texnums, 0, sizeof(lm.texnums));
+    memset(&shell_texture, 0, sizeof(shell_texture));
 
     GL_DeleteWarpTexture();
 

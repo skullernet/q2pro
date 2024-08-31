@@ -724,6 +724,7 @@ bool GL_InitWarpTexture(void);
 
 extern cvar_t *gl_intensity;
 
+extern image_t shell_texture;
 
 /*
  * gl_tess.c
