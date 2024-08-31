@@ -18,6 +18,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "gl.h"
 
+typedef enum {
+    SHADOW_NO,
+    SHADOW_YES,
+    SHADOW_ONLY
+} drawshadow_t;
+
 static unsigned oldframenum;
 static unsigned newframenum;
 static float    frontlerp;
@@ -35,7 +41,8 @@ static bool     dotshading;
 
 static float    celscale;
 
-static GLfloat  shadowmatrix[16];
+static drawshadow_t drawshadow;
+static GLfloat      shadowmatrix[16];
 
 #if USE_MD5
 static md5_joint_t  temp_skeleton[MD5_MAX_JOINTS];
@@ -52,6 +59,9 @@ static void setup_dotshading(void)
         return;
 
     if (glr.ent->flags & RF_SHELL_MASK)
+        return;
+
+    if (drawshadow == SHADOW_ONLY)
         return;
 
     dotshading = true;
@@ -285,9 +295,6 @@ static glCullResult_t cull_static_model(const model_t *model)
         }
     }
 
-    VectorCopy(newframe->scale, newscale);
-    VectorCopy(newframe->translate, translate);
-
     return cull;
 }
 
@@ -325,13 +332,24 @@ static glCullResult_t cull_lerped_model(const model_t *model)
         }
     }
 
-    VectorScale(oldframe->scale, backlerp, oldscale);
-    VectorScale(newframe->scale, frontlerp, newscale);
-
-    LerpVector2(oldframe->translate, newframe->translate,
-                backlerp, frontlerp, translate);
-
     return cull;
+}
+
+static void setup_frame_scale(const model_t *model)
+{
+    const maliasframe_t *newframe = &model->frames[newframenum];
+    const maliasframe_t *oldframe = &model->frames[oldframenum];
+
+    if (oldframenum == newframenum) {
+        VectorCopy(newframe->scale, newscale);
+        VectorCopy(newframe->translate, translate);
+    } else {
+        VectorScale(oldframe->scale, backlerp, oldscale);
+        VectorScale(newframe->scale, frontlerp, newscale);
+
+        LerpVector2(oldframe->translate, newframe->translate,
+                    backlerp, frontlerp, translate);
+    }
 }
 
 static void setup_color(void)
@@ -423,6 +441,50 @@ static void draw_celshading(const glIndex_t *indices, int num_indices)
     qglLineWidth(1);
 }
 
+static drawshadow_t cull_shadow(const model_t *model)
+{
+    const cplane_t *plane;
+    float radius, d, w;
+    vec3_t point;
+
+    if (!gl_shadows->integer)
+        return SHADOW_NO;
+
+    if (glr.ent->flags & (RF_WEAPONMODEL | RF_NOSHADOW))
+        return SHADOW_NO;
+
+    setup_color();
+
+    if (!glr.lightpoint.surf)
+        return SHADOW_NO;
+
+    // check steepness
+    plane = &glr.lightpoint.plane;
+    w = plane->normal[2];
+    if (glr.lightpoint.surf->drawflags & DSURF_PLANEBACK)
+       w = -w;
+    if (w < 0.5f)
+        return SHADOW_NO;   // too steep
+
+    if (!gl_cull_models->integer)
+        return SHADOW_YES;
+
+    // project on plane
+    d = PlaneDiffFast(origin, plane);
+    VectorMA(origin, -d, plane->normal, point);
+
+    radius = max(model->frames[newframenum].radius, model->frames[oldframenum].radius) / w;
+
+    for (int i = 0; i < 4; i++) {
+        if (PlaneDiff(point, &glr.frustumPlanes[i]) < -radius) {
+            c.spheresCulled++;
+            return SHADOW_NO;   // culled out
+        }
+    }
+
+    return SHADOW_YES;
+}
+
 static void proj_matrix(GLfloat *matrix, const cplane_t *plane, const vec3_t dir)
 {
     matrix[ 0] =  plane->normal[1] * dir[1] + plane->normal[2] * dir[2];
@@ -451,15 +513,7 @@ static void setup_shadow(void)
     GLfloat matrix[16], tmp[16];
     vec3_t dir;
 
-    shadowmatrix[15] = 0;
-
-    if (!gl_shadows->integer)
-        return;
-
-    if (glr.ent->flags & (RF_WEAPONMODEL | RF_NOSHADOW))
-        return;
-
-    if (!glr.lightpoint.surf)
+    if (!drawshadow)
         return;
 
     // position fake light source straight over the model
@@ -479,7 +533,7 @@ static void setup_shadow(void)
 
 static void draw_shadow(const glIndex_t *indices, int num_indices)
 {
-    if (shadowmatrix[15] < 0.5f)
+    if (!drawshadow)
         return;
 
     // load shadow projection matrix
@@ -542,8 +596,16 @@ static void draw_alias_mesh(const glIndex_t *indices, int num_indices,
                             const maliastc_t *tcoords, int num_verts,
                             image_t **skins, int num_skins)
 {
-    glStateBits_t state = GLS_INTENSITY_ENABLE;
-    const image_t *skin = skin_for_mesh(skins, num_skins);
+    glStateBits_t state;
+    const image_t *skin;
+
+    // if the model was culled, just draw the shadow
+    if (drawshadow == SHADOW_ONLY) {
+        GL_LockArrays(num_verts);
+        draw_shadow(indices, num_indices);
+        GL_UnlockArrays();
+        return;
+    }
 
     // fall back to entity matrix
     GL_LoadMatrix(glr.entmatrix);
@@ -563,12 +625,14 @@ static void draw_alias_mesh(const glIndex_t *indices, int num_indices,
         qglColorMask(1, 1, 1, 1);
     }
 
+    state = GLS_INTENSITY_ENABLE;
     if (dotshading)
         state |= GLS_SHADE_SMOOTH;
 
     if (glr.ent->flags & RF_TRANSLUCENT)
         state |= GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE;
 
+    skin = skin_for_mesh(skins, num_skins);
     if (skin->glow_texnum)
         state |= GLS_GLOWMAP_ENABLE;
 
@@ -781,19 +845,29 @@ void GL_DrawAliasModel(const model_t *model)
 
     VectorCopy(ent->origin, origin);
 
-    // cull the model, setup scale and translate vectors
+    // cull the shadow
+    drawshadow = cull_shadow(model);
+
+    // cull the model
     if (newframenum == oldframenum)
         cull = cull_static_model(model);
     else
         cull = cull_lerped_model(model);
-    if (cull == CULL_OUT)
-        return;
+    if (cull == CULL_OUT) {
+        if (!drawshadow)
+            return;
+        drawshadow = SHADOW_ONLY;   // still need to draw the shadow
+    }
 
     // setup parameters common for all meshes
-    setup_color();
+    if (!drawshadow)
+        setup_color();
     setup_celshading();
     setup_dotshading();
     setup_shadow();
+
+    // setup scale and translate vectors
+    setup_frame_scale(model);
 
     // select proper tessfunc
     if (ent->flags & RF_SHELL_MASK) {
