@@ -73,6 +73,9 @@ static inline void GL_StretchPic_(
 
 static void GL_DrawVignette(float frac, color_t outer, color_t inner)
 {
+    static const byte indices[24] = {
+        0, 5, 4, 0, 1, 5, 1, 6, 5, 1, 2, 6, 6, 2, 3, 6, 3, 7, 0, 7, 3, 0, 4, 7
+    };
     vec_t *dst_vert;
     glIndex_t *dst_indices;
 
@@ -125,33 +128,8 @@ static void GL_DrawVignette(float frac, color_t outer, color_t inner)
     */
 
     dst_indices = tess.indices + tess.numindices;
-    dst_indices[0] = tess.numverts + 0;
-    dst_indices[1] = tess.numverts + 5;
-    dst_indices[2] = tess.numverts + 4;
-    dst_indices[3] = tess.numverts + 0;
-    dst_indices[4] = tess.numverts + 1;
-    dst_indices[5] = tess.numverts + 5;
-
-    dst_indices[6]  = tess.numverts + 1;
-    dst_indices[7]  = tess.numverts + 6;
-    dst_indices[8]  = tess.numverts + 5;
-    dst_indices[9]  = tess.numverts + 1;
-    dst_indices[10] = tess.numverts + 2;
-    dst_indices[11] = tess.numverts + 6;
-
-    dst_indices[12] = tess.numverts + 6;
-    dst_indices[13] = tess.numverts + 2;
-    dst_indices[14] = tess.numverts + 3;
-    dst_indices[15] = tess.numverts + 6;
-    dst_indices[16] = tess.numverts + 3;
-    dst_indices[17] = tess.numverts + 7;
-
-    dst_indices[18] = tess.numverts + 0;
-    dst_indices[19] = tess.numverts + 7;
-    dst_indices[20] = tess.numverts + 3;
-    dst_indices[21] = tess.numverts + 0;
-    dst_indices[22] = tess.numverts + 4;
-    dst_indices[23] = tess.numverts + 7;
+    for (int i = 0; i < 24; i++)
+        dst_indices[i] = tess.numverts + indices[i];
 
     tess.flags |= GLS_BLEND_BLEND | GLS_SHADE_SMOOTH;
 
