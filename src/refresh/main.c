@@ -723,7 +723,8 @@ void R_RenderFrame(const refdef_t *fd)
         Draw_Lightmaps();
 #endif
 
-    GL_ShowErrors(__func__);
+    if (gl_showerrors->integer > 1)
+        GL_ShowErrors(__func__);
 }
 
 void R_BeginFrame(void)
@@ -738,7 +739,8 @@ void R_BeginFrame(void)
     if (gl_clear->integer)
         qglClear(GL_COLOR_BUFFER_BIT);
 
-    GL_ShowErrors(__func__);
+    if (gl_showerrors->integer > 1)
+        GL_ShowErrors(__func__);
 }
 
 void R_EndFrame(void)
@@ -756,7 +758,8 @@ void R_EndFrame(void)
     if (gl_showtearing->integer)
         GL_DrawTearing();
 
-    GL_ShowErrors(__func__);
+    if (gl_showerrors->integer > 1)
+        GL_ShowErrors(__func__);
 
     vid->swap_buffers();
 }
