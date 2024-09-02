@@ -526,7 +526,7 @@ static void GL_DrawDebugTexts(void)
 
         if (text->time < com_localTime) { // expired
             List_Remove(&text->entry);
-            List_Insert(&debug_lines_free, &text->entry);
+            List_Insert(&debug_texts_free, &text->entry);
             continue;
         }
 
