@@ -554,9 +554,15 @@ static void GL_DrawDebugTexts(void)
         }
         VectorCopy(text->origin, pos);
 
+        i = 0;
         s = text->text;
         while (*s) {
             byte c = *s++;
+            if (c == '\n') {
+                i++;
+                VectorMA(text->origin, i, down, pos);
+                continue;
+            }
             GL_DrawDebugChar(pos, right, down, text->bits, text->color, c);
             VectorAdd(pos, right, pos);
         }
