@@ -1007,10 +1007,10 @@ void SV_InitGameProgs(void)
     game_entry_ex_t entry_ex = Sys_GetProcAddress(game_library, "GetGameAPIEx");
     if (entry_ex) {
         gex = entry_ex(&game_import_ex);
-        if (gex->apiversion < GAME_API_VERSION_EX_MINIMUM)
-            gex = NULL;
-        else
+        if (gex && gex->apiversion >= GAME_API_VERSION_EX_MINIMUM)
             Com_DPrintf("Game supports Q2PRO extended API version %d.\n", gex->apiversion);
+        else
+            gex = NULL;
     }
 
     // initialize
