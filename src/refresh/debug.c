@@ -18,7 +18,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "gl.h"
 #include "shared/list.h"
-#include "shared/debug.h"
 #include <assert.h>
 
 #define MAX_DEBUG_LINES     TESS_MAX_VERTICES
@@ -62,7 +61,7 @@ void R_ClearDebugLines(void)
     List_Init(&debug_texts_active);
 }
 
-static void R_AddDebugLine(const vec3_t start, const vec3_t end, uint32_t color, uint32_t time, qboolean depth_test)
+void R_AddDebugLine(const vec3_t start, const vec3_t end, uint32_t color, uint32_t time, qboolean depth_test)
 {
     debug_line_t *l = LIST_FIRST(debug_line_t, &debug_lines_free, entry);
 
@@ -109,7 +108,7 @@ static void R_AddDebugLine(const vec3_t start, const vec3_t end, uint32_t color,
 #define GL_DRAWLINEV(s, e) \
     R_AddDebugLine(s, e, color, time, depth_test)
 
-static void R_AddDebugPoint(const vec3_t point, float size, uint32_t color, uint32_t time, qboolean depth_test)
+void R_AddDebugPoint(const vec3_t point, float size, uint32_t color, uint32_t time, qboolean depth_test)
 {
     size *= 0.5f;
     GL_DRAWLINE(point[0] - size, point[1], point[2], point[0] + size, point[1], point[2]);
@@ -117,7 +116,7 @@ static void R_AddDebugPoint(const vec3_t point, float size, uint32_t color, uint
     GL_DRAWLINE(point[0], point[1], point[2] - size, point[0], point[1], point[2] + size);
 }
 
-static void R_AddDebugAxis(const vec3_t origin, const vec3_t angles, float size, uint32_t time, qboolean depth_test)
+void R_AddDebugAxis(const vec3_t origin, const vec3_t angles, float size, uint32_t time, qboolean depth_test)
 {
     vec3_t axis[3], end;
     uint32_t color;
@@ -143,7 +142,7 @@ static void R_AddDebugAxis(const vec3_t origin, const vec3_t angles, float size,
     GL_DRAWLINEV(origin, end);
 }
 
-static void R_AddDebugBounds(const vec3_t mins, const vec3_t maxs, uint32_t color, uint32_t time, qboolean depth_test)
+void R_AddDebugBounds(const vec3_t mins, const vec3_t maxs, uint32_t color, uint32_t time, qboolean depth_test)
 {
     for (int i = 0; i < 4; i++) {
         // draw column
@@ -161,7 +160,7 @@ static void R_AddDebugBounds(const vec3_t mins, const vec3_t maxs, uint32_t colo
 }
 
 // https://danielsieger.com/blog/2021/03/27/generating-spheres.html
-static void R_AddDebugSphere(const vec3_t origin, float radius, uint32_t color, uint32_t time, qboolean depth_test)
+void R_AddDebugSphere(const vec3_t origin, float radius, uint32_t color, uint32_t time, qboolean depth_test)
 {
     vec3_t verts[160];
     const int n_stacks = min(4 + radius / 32, 10);
@@ -218,7 +217,7 @@ static void R_AddDebugSphere(const vec3_t origin, float radius, uint32_t color, 
     }
 }
 
-static void R_AddDebugCircle(const vec3_t origin, float radius, uint32_t color, uint32_t time, qboolean depth_test)
+void R_AddDebugCircle(const vec3_t origin, float radius, uint32_t color, uint32_t time, qboolean depth_test)
 {
     int vert_count = min(5 + radius / 8, 16);
     float rads = (2 * M_PIf) / vert_count;
@@ -240,7 +239,7 @@ static void R_AddDebugCircle(const vec3_t origin, float radius, uint32_t color, 
     }
 }
 
-static void R_AddDebugCylinder(const vec3_t origin, float half_height, float radius, uint32_t color, uint32_t time, qboolean depth_test)
+void R_AddDebugCylinder(const vec3_t origin, float half_height, float radius, uint32_t color, uint32_t time, qboolean depth_test)
 {
     int vert_count = min(5 + radius / 8, 16);
     float rads = (2 * M_PIf) / vert_count;
@@ -264,8 +263,8 @@ static void R_AddDebugCylinder(const vec3_t origin, float half_height, float rad
     }
 }
 
-static void R_DrawArrowCap(const vec3_t apex, const vec3_t dir, float size,
-                           uint32_t color, uint32_t time, qboolean depth_test)
+void R_DrawArrowCap(const vec3_t apex, const vec3_t dir, float size,
+                    uint32_t color, uint32_t time, qboolean depth_test)
 {
     vec3_t cap_end;
     VectorMA(apex, size, dir, cap_end);
@@ -282,8 +281,8 @@ static void R_DrawArrowCap(const vec3_t apex, const vec3_t dir, float size,
     R_AddDebugLine(l, cap_end, color, time, depth_test);
 }
 
-static void R_AddDebugArrow(const vec3_t start, const vec3_t end, float size, uint32_t line_color,
-                            uint32_t arrow_color, uint32_t time, qboolean depth_test)
+void R_AddDebugArrow(const vec3_t start, const vec3_t end, float size, uint32_t line_color,
+                     uint32_t arrow_color, uint32_t time, qboolean depth_test)
 {
     vec3_t dir;
     VectorSubtract(end, start, dir);
@@ -299,8 +298,8 @@ static void R_AddDebugArrow(const vec3_t start, const vec3_t end, float size, ui
     }
 }
 
-static void R_AddDebugCurveArrow(const vec3_t start, const vec3_t ctrl, const vec3_t end, float size,
-                                 uint32_t line_color, uint32_t arrow_color, uint32_t time, qboolean depth_test)
+void R_AddDebugCurveArrow(const vec3_t start, const vec3_t ctrl, const vec3_t end, float size,
+                          uint32_t line_color, uint32_t arrow_color, uint32_t time, qboolean depth_test)
 {
     int num_points = Q_clip(Distance(start, end) / 32, 3, 24);
     vec3_t last_point;
@@ -328,8 +327,8 @@ static void R_AddDebugCurveArrow(const vec3_t start, const vec3_t ctrl, const ve
     }
 }
 
-static void R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *text,
-                           float size, uint32_t color, uint32_t time, qboolean depth_test)
+void R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *text,
+                    float size, uint32_t color, uint32_t time, qboolean depth_test)
 {
     debug_text_t *t = LIST_FIRST(debug_text_t, &debug_texts_free, entry);
 
@@ -590,17 +589,3 @@ void GL_ShutdownDebugDraw(void)
 {
     Cmd_RemoveCommand("cleardebuglines");
 }
-
-const debug_draw_api_v1_t debug_draw_api_v1 = {
-    .ClearDebugLines = R_ClearDebugLines,
-    .AddDebugLine = R_AddDebugLine,
-    .AddDebugPoint = R_AddDebugPoint,
-    .AddDebugAxis = R_AddDebugAxis,
-    .AddDebugBounds = R_AddDebugBounds,
-    .AddDebugSphere = R_AddDebugSphere,
-    .AddDebugCircle = R_AddDebugCircle,
-    .AddDebugCylinder = R_AddDebugCylinder,
-    .AddDebugArrow = R_AddDebugArrow,
-    .AddDebugCurveArrow = R_AddDebugCurveArrow,
-    .AddDebugText = R_AddDebugText,
-};

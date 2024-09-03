@@ -67,23 +67,3 @@ typedef struct {
 #define FS_FLAG_DEFLATE         0x00000800  // if compressed, read raw deflate data, fail otherwise
 #define FS_FLAG_LOADFILE        0x00001000  // open non-unique handle, must be closed very quickly
 #define FS_FLAG_MASK            0x0000ff00
-
-#define FILESYSTEM_API_V1 "FILESYSTEM_API_V1"
-
-typedef struct {
-    int64_t     (*OpenFile)(const char *path, qhandle_t *f, unsigned mode); // returns file length
-    int         (*CloseFile)(qhandle_t f);
-    int         (*LoadFile)(const char *path, void **buffer, unsigned flags, unsigned tag);
-
-    int         (*ReadFile)(void *buffer, size_t len, qhandle_t f);
-    int         (*WriteFile)(const void *buffer, size_t len, qhandle_t f);
-    int         (*FlushFile)(qhandle_t f);
-    int64_t     (*TellFile)(qhandle_t f);
-    int         (*SeekFile)(qhandle_t f, int64_t offset, int whence);
-    int         (*ReadLine)(qhandle_t f, char *buffer, size_t size);
-
-    void        **(*ListFiles)(const char *path, const char *filter, unsigned flags, int *count_p);
-    void        (*FreeFileList)(void **list);
-
-    const char  *(*ErrorString)(int error);
-} filesystem_api_v1_t;
