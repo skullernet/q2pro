@@ -199,6 +199,7 @@ extern const char   com_version_string[];
 extern unsigned     com_framenum;
 extern unsigned     com_eventTime; // system time of the last event
 extern unsigned     com_localTime; // milliseconds since Q2 startup
+extern unsigned     com_localTime2; // milliseconds since Q2 startup, but doesn't run if paused
 extern bool         com_initialized;
 extern time_t       com_startTime;
 

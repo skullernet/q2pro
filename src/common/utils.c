@@ -641,8 +641,8 @@ uint32_t Com_SlowRand(void)
     static uint32_t com_rand_frame;
 
     // see if it's time to reseed
-    if (com_rand_ts != com_eventTime / 16 && !sv_paused->integer) {
-        com_rand_ts = com_eventTime / 16;
+    if (com_rand_ts != com_localTime2 / 16) {
+        com_rand_ts = com_localTime2 / 16;
         com_rand_base = Q_rand();
     }
 

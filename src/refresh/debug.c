@@ -73,7 +73,7 @@ static void R_AddDebugLine(const vec3_t start, const vec3_t end, uint32_t color,
         } else {
             debug_line_t *next;
             LIST_FOR_EACH_SAFE(debug_line_t, l, next, &debug_lines_active, entry) {
-                if (l->time <= com_localTime) {
+                if (l->time <= com_localTime2) {
                     List_Remove(&l->entry);
                     List_Insert(&debug_lines_free, &l->entry);
                 }
@@ -93,8 +93,8 @@ static void R_AddDebugLine(const vec3_t start, const vec3_t end, uint32_t color,
     VectorCopy(start, l->start);
     VectorCopy(end, l->end);
     l->color = color;
-    l->time = com_localTime + time;
-    if (l->time < com_localTime)
+    l->time = com_localTime2 + time;
+    if (l->time < com_localTime2)
         l->time = UINT32_MAX;
     l->bits = GLS_DEPTHMASK_FALSE;
     if (!depth_test)
@@ -340,7 +340,7 @@ static void R_AddDebugText(const vec3_t origin, const vec3_t angles, const char 
         } else {
             debug_text_t *next;
             LIST_FOR_EACH_SAFE(debug_text_t, t, next, &debug_texts_active, entry) {
-                if (t->time <= com_localTime) {
+                if (t->time <= com_localTime2) {
                     List_Remove(&t->entry);
                     List_Insert(&debug_texts_free, &t->entry);
                 }
@@ -362,8 +362,8 @@ static void R_AddDebugText(const vec3_t origin, const vec3_t angles, const char 
         VectorCopy(angles, t->angles);
     t->size = size;
     t->color = color;
-    t->time = com_localTime + time;
-    if (t->time < com_localTime)
+    t->time = com_localTime2 + time;
+    if (t->time < com_localTime2)
         t->time = UINT32_MAX;
     t->bits = GLS_DEPTHMASK_FALSE | GLS_BLEND_BLEND;
     if (!depth_test)
@@ -399,7 +399,7 @@ static void GL_DrawDebugLines(void)
     dst_vert = tess.vertices;
     numverts = 0;
     LIST_FOR_EACH_SAFE(debug_line_t, l, next, &debug_lines_active, entry) {
-        if (l->time < com_localTime) { // expired
+        if (l->time < com_localTime2) { // expired
             List_Remove(&l->entry);
             List_Insert(&debug_lines_free, &l->entry);
             continue;
@@ -524,7 +524,7 @@ static void GL_DrawDebugTexts(void)
         float radius;
         int i;
 
-        if (text->time < com_localTime) { // expired
+        if (text->time < com_localTime2) { // expired
             List_Remove(&text->entry);
             List_Insert(&debug_texts_free, &text->entry);
             continue;
