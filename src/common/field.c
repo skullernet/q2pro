@@ -276,12 +276,10 @@ int IF_Draw(const inputField_t *field, int x, int y, int flags, qhandle_t font)
     // draw text
     ret = R_DrawString(x, y, flags, field->visibleChars, text + offset, font);
 
-    if (flags & UI_DRAWCURSOR) {
-        // draw blinking cursor
-        if ((com_localTime >> 8) & 1) {
-            int c = Key_GetOverstrikeMode() ? 11 : '_';
-            R_DrawChar(x + cursorPos * CHAR_WIDTH, y, flags, c, font);
-        }
+    // draw blinking cursor
+    if (flags & UI_DRAWCURSOR && com_localTime & BIT(8)) {
+        R_DrawChar(x + cursorPos * CHAR_WIDTH, y, flags,
+                   Key_GetOverstrikeMode() ? 11 : '_', font);
     }
 
     return ret;
