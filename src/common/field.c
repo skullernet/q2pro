@@ -81,6 +81,40 @@ bool IF_KeyEvent(inputField_t *field, int key)
     }
     Q_assert(field->cursorPos < field->maxChars);
 
+    if (key == K_DEL && Key_IsDown(K_CTRL)) {
+        size_t pos = field->cursorPos;
+
+        // kill leading whitespace
+        while (field->text[pos] && field->text[pos] <= 32) {
+            pos++;
+        }
+
+        // kill this word
+        while (field->text[pos] > 32) {
+            pos++;
+        }
+        memmove(field->text + field->cursorPos, field->text + pos,
+                sizeof(field->text) - pos);
+        return true;
+    }
+
+    if ((key == K_BACKSPACE || key == 'w') && Key_IsDown(K_CTRL)) {
+        size_t pos = field->cursorPos;
+
+        // kill trailing whitespace
+        while (field->cursorPos > 0 && field->text[field->cursorPos - 1] <= 32) {
+            field->cursorPos--;
+        }
+
+        // kill this word
+        while (field->cursorPos > 0 && field->text[field->cursorPos - 1] > 32) {
+            field->cursorPos--;
+        }
+        memmove(field->text + field->cursorPos, field->text + pos,
+                sizeof(field->text) - pos);
+        return true;
+    }
+
     if (key == K_DEL) {
         if (field->text[field->cursorPos]) {
             memmove(field->text + field->cursorPos,
@@ -97,23 +131,6 @@ bool IF_KeyEvent(inputField_t *field, int key)
                     sizeof(field->text) - field->cursorPos);
             field->cursorPos--;
         }
-        return true;
-    }
-
-    if (key == 'w' && Key_IsDown(K_CTRL)) {
-        size_t oldpos = field->cursorPos;
-
-        // kill trailing whitespace
-        while (field->cursorPos > 0 && field->text[field->cursorPos - 1] <= 32) {
-            field->cursorPos--;
-        }
-
-        // kill this word
-        while (field->cursorPos > 0 && field->text[field->cursorPos - 1] > 32) {
-            field->cursorPos--;
-        }
-        memmove(field->text + field->cursorPos, field->text + oldpos,
-                sizeof(field->text) - oldpos);
         return true;
     }
 
@@ -135,21 +152,7 @@ bool IF_KeyEvent(inputField_t *field, int key)
         return true;
     }
 
-    if (key == K_LEFTARROW || (key == 'b' && Key_IsDown(K_CTRL))) {
-        if (field->cursorPos > 0) {
-            field->cursorPos--;
-        }
-        return true;
-    }
-
-    if (key == K_RIGHTARROW || (key == 'f' && Key_IsDown(K_CTRL))) {
-        if (field->text[field->cursorPos]) {
-            field->cursorPos++;
-        }
-        goto check;
-    }
-
-    if (key == 'b' && Key_IsDown(K_ALT)) {
+    if ((key == K_LEFTARROW && Key_IsDown(K_CTRL)) || (key == 'b' && Key_IsDown(K_ALT))) {
         while (field->cursorPos > 0 && field->text[field->cursorPos - 1] <= 32) {
             field->cursorPos--;
         }
@@ -159,11 +162,25 @@ bool IF_KeyEvent(inputField_t *field, int key)
         return true;
     }
 
-    if (key == 'f' && Key_IsDown(K_ALT)) {
+    if ((key == K_RIGHTARROW && Key_IsDown(K_CTRL)) || (key == 'f' && Key_IsDown(K_ALT))) {
         while (field->text[field->cursorPos] && field->text[field->cursorPos] <= 32) {
             field->cursorPos++;
         }
         while (field->text[field->cursorPos] > 32) {
+            field->cursorPos++;
+        }
+        goto check;
+    }
+
+    if (key == K_LEFTARROW || (key == 'b' && Key_IsDown(K_CTRL))) {
+        if (field->cursorPos > 0) {
+            field->cursorPos--;
+        }
+        return true;
+    }
+
+    if (key == K_RIGHTARROW || (key == 'f' && Key_IsDown(K_CTRL))) {
+        if (field->text[field->cursorPos]) {
             field->cursorPos++;
         }
         goto check;
