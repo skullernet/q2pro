@@ -1333,10 +1333,9 @@ static int64_t open_file_read(file_t *file, const char *normalized, size_t namel
 
 // search through the path, one element at a time
     for (search = fs_searchpaths; search; search = search->next) {
-        if (file->mode & FS_PATH_MASK) {
-            if ((file->mode & search->mode & FS_PATH_MASK) == 0) {
-                continue;
-            }
+        if ((file->mode & search->mode & FS_PATH_MASK) == 0 ||
+            (file->mode & search->mode & FS_DIR_MASK ) == 0) {
+            continue;
         }
 
         // is the element a pak file?
@@ -1637,6 +1636,17 @@ int FS_Write(const void *buf, size_t len, qhandle_t f)
     return len;
 }
 
+static unsigned default_lookup_flags(unsigned flags)
+{
+    if (!(flags & FS_PATH_MASK) || !fs_game->string[0])
+        flags |= FS_PATH_MASK;
+
+    if (!(flags & FS_DIR_MASK) || !sys_homedir->string[0])
+        flags |= FS_DIR_MASK;
+
+    return flags;
+}
+
 /*
 ============
 FS_OpenFile
@@ -1663,7 +1673,7 @@ int64_t FS_OpenFile(const char *name, qhandle_t *f, unsigned mode)
         return Q_ERR(EMFILE);
     }
 
-    file->mode = mode;
+    file->mode = default_lookup_flags(mode);
 
     if ((mode & FS_MODE_MASK) == FS_MODE_READ) {
         ret = expand_open_file_read(file, name);
@@ -1841,13 +1851,17 @@ int FS_LoadFileEx(const char *path, void **buffer, unsigned flags, memtag_t tag)
         return Q_ERR(EAGAIN); // not yet initialized
     }
 
+    if (flags & FS_MODE_MASK) {
+        return Q_ERR(EINVAL);
+    }
+
     // allocate new file handle
     file = alloc_handle(&f);
     if (!file) {
         return Q_ERR(EMFILE);
     }
 
-    file->mode = (flags & ~FS_MODE_MASK) | FS_MODE_READ | FS_FLAG_LOADFILE;
+    file->mode = default_lookup_flags(flags) | FS_MODE_READ | FS_FLAG_LOADFILE;
 
     // look for it in the filesystem or pack files
     len = expand_open_file_read(file, path);
@@ -2756,6 +2770,10 @@ void **FS_ListFiles(const char *path, const char *filter, unsigned flags, int *c
         *count_p = 0;
     }
 
+    if (!fs_searchpaths) {
+        return NULL; // not yet initialized
+    }
+
     if (!path) {
         path = "";
         pathlen = 0;
@@ -2774,11 +2792,12 @@ void **FS_ListFiles(const char *path, const char *filter, unsigned flags, int *c
         return NULL;
     }
 
+    flags = default_lookup_flags(flags);
+
     for (search = fs_searchpaths; search; search = search->next) {
-        if (flags & FS_PATH_MASK) {
-            if ((flags & search->mode & FS_PATH_MASK) == 0) {
-                continue;
-            }
+        if ((flags & search->mode & FS_PATH_MASK) == 0 ||
+            (flags & search->mode & FS_DIR_MASK ) == 0) {
+            continue;
         }
         if (search->pack) {
             if ((flags & FS_TYPE_MASK) == FS_TYPE_REAL) {
@@ -3509,7 +3528,7 @@ static void add_game_kpf(const char *dir)
         return;
 
     search = FS_Malloc(sizeof(*search));
-    search->mode = FS_PATH_BASE | FS_PATH_GAME;
+    search->mode = FS_PATH_BASE | FS_DIR_BASE;
     search->filename[0] = 0;
     search->pack = pack_get(pack);
     search->next = fs_searchpaths;
@@ -3519,14 +3538,11 @@ static void add_game_kpf(const char *dir)
 
 static void setup_base_paths(void)
 {
-    // base paths have both BASE and GAME bits set by default
-    // the GAME bit will be removed once gamedir is set,
-    // and will be put back once gamedir is reset to basegame
     add_game_kpf(sys_basedir->string);
-    add_game_dir(FS_PATH_BASE | FS_PATH_GAME, "%s/"BASEGAME, sys_basedir->string);
+    add_game_dir(FS_PATH_BASE | FS_DIR_BASE, "%s/"BASEGAME, sys_basedir->string);
 
     if (sys_homedir->string[0]) {
-        add_game_dir(FS_PATH_BASE | FS_PATH_GAME, "%s/"BASEGAME, sys_homedir->string);
+        add_game_dir(FS_PATH_BASE | FS_DIR_HOME, "%s/"BASEGAME, sys_homedir->string);
     }
 
     fs_base_searchpaths = fs_searchpaths;
@@ -3535,32 +3551,18 @@ static void setup_base_paths(void)
 // Sets the gamedir and path to a different directory.
 static void setup_game_paths(void)
 {
-    searchpath_t *path;
-
     if (fs_game->string[0]) {
         // add system path first
-        add_game_dir(FS_PATH_GAME, "%s/%s", sys_basedir->string, fs_game->string);
+        add_game_dir(FS_PATH_GAME | FS_DIR_BASE, "%s/%s", sys_basedir->string, fs_game->string);
 
         // home paths override system paths
         if (sys_homedir->string[0]) {
-            add_game_dir(FS_PATH_GAME, "%s/%s", sys_homedir->string, fs_game->string);
+            add_game_dir(FS_PATH_GAME | FS_DIR_HOME, "%s/%s", sys_homedir->string, fs_game->string);
         }
-
-        // remove the game bit from base paths
-        for (path = fs_base_searchpaths; path; path = path->next) {
-            path->mode &= ~FS_PATH_GAME;
-        }
-
-        // this var is set for compatibility with server browsers, etc
-        Cvar_FullSet("gamedir", fs_game->string, CVAR_ROM | CVAR_SERVERINFO, FROM_CODE);
-    } else {
-        // add the game bit to base paths
-        for (path = fs_base_searchpaths; path; path = path->next) {
-            path->mode |= FS_PATH_GAME;
-        }
-
-        Cvar_FullSet("gamedir", "", CVAR_ROM, FROM_CODE);
     }
+
+    // this var is set for compatibility with server browsers, etc
+    Cvar_FullSet("gamedir", fs_game->string, CVAR_ROM | CVAR_SERVERINFO, FROM_CODE);
 
     // this var is used by the game library to find it's home directory
     Cvar_FullSet("fs_gamedir", fs_gamedir, CVAR_ROM, FROM_CODE);

@@ -25,6 +25,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SAVE_CURRENT    ".current"
 #define SAVE_AUTO       "save0"
 
+// only load saves from home dir
+#define SAVE_LOOKUP_FLAGS   (FS_TYPE_REAL | FS_PATH_GAME | FS_DIR_HOME)
+
 typedef enum {
     SAVE_MANUAL,        // manual save
     SAVE_LEVEL_START,   // autosave at level start
@@ -203,7 +206,7 @@ static int remove_file(const char *dir, const char *name)
 static void **list_save_dir(const char *dir, int *count)
 {
     return FS_ListFiles(va("save/%s", dir), ".ssv;.sav;.sv2",
-        FS_TYPE_REAL | FS_PATH_GAME | FS_SEARCH_RECURSIVE, count);
+        SAVE_LOOKUP_FLAGS | FS_SEARCH_RECURSIVE, count);
 }
 
 static int wipe_save_dir(const char *dir)
@@ -241,7 +244,7 @@ static int read_binary_file(const char *name)
     qhandle_t f;
     int64_t len;
 
-    len = FS_OpenFile(name, &f, FS_MODE_READ | FS_TYPE_REAL | FS_PATH_GAME);
+    len = FS_OpenFile(name, &f, SAVE_LOOKUP_FLAGS | FS_MODE_READ);
     if (!f)
         return -1;
 
@@ -406,7 +409,7 @@ static int read_level_file(void)
     if (Q_snprintf(name, MAX_QPATH, "save/" SAVE_CURRENT "/%s.sv2", sv.name) >= MAX_QPATH)
         return -1;
 
-    len = FS_LoadFileEx(name, &data, FS_TYPE_REAL | FS_PATH_GAME, TAG_SERVER);
+    len = FS_LoadFileEx(name, &data, SAVE_LOOKUP_FLAGS, TAG_SERVER);
     if (!data)
         return -1;
 
@@ -592,7 +595,7 @@ void SV_CheckForEnhancedSavegames(void)
 static void SV_Savegame_c(genctx_t *ctx, int argnum)
 {
     if (argnum == 1) {
-        FS_File_g("save", NULL, FS_SEARCH_DIRSONLY | FS_TYPE_REAL | FS_PATH_GAME, ctx);
+        FS_File_g("save", NULL, SAVE_LOOKUP_FLAGS | FS_SEARCH_DIRSONLY, ctx);
     }
 }
 
@@ -612,8 +615,8 @@ static void SV_Loadgame_f(void)
     }
 
     // make sure the server files exist
-    if (!FS_FileExistsEx(va("save/%s/server.ssv", dir), FS_TYPE_REAL | FS_PATH_GAME) ||
-        !FS_FileExistsEx(va("save/%s/game.ssv", dir), FS_TYPE_REAL | FS_PATH_GAME)) {
+    if (!FS_FileExistsEx(va("save/%s/server.ssv", dir), SAVE_LOOKUP_FLAGS) ||
+        !FS_FileExistsEx(va("save/%s/game.ssv", dir), SAVE_LOOKUP_FLAGS)) {
         Com_Printf("No such savegame: %s\n", dir);
         return;
     }

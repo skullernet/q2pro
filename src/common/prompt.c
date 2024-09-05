@@ -545,7 +545,7 @@ void Prompt_LoadHistory(commandPrompt_t *prompt, const char *filename)
     qhandle_t f;
     unsigned i;
 
-    FS_OpenFile(filename, &f, FS_MODE_READ | FS_TYPE_REAL | FS_PATH_BASE);
+    FS_OpenFile(filename, &f, FS_MODE_READ | FS_TYPE_REAL | FS_PATH_BASE | FS_DIR_HOME);
     if (!f) {
         return;
     }
