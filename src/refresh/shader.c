@@ -212,7 +212,8 @@ static GLuint create_shader(GLenum type, const sizebuf_t *buf)
         if (buffer[0])
             Com_Printf("%s", buffer);
 
-        Com_EPrintf("Error compiling shader\n");
+        Com_EPrintf("Error compiling %s shader\n",
+                    type == GL_VERTEX_SHADER ? "vertex" : "fragment");
         return 0;
     }
 
