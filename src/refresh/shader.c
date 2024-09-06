@@ -48,10 +48,12 @@ static void write_block(sizebuf_t *buf)
         float u_add;
         float u_intensity;
         float u_intensity2;
-        float pad;
+        float pad_1;
         vec2 w_amp;
         vec2 w_phase;
         vec2 u_scroll;
+        vec3 u_vieworg;
+        float pad_2;
     )
     GLSF("};\n");
 }
@@ -62,8 +64,12 @@ static void write_vertex_shader(sizebuf_t *buf, glStateBits_t bits)
     write_block(buf);
 
     GLSL(in vec4 a_pos;)
-    GLSL(in vec2 a_tc;)
-    GLSL(out vec2 v_tc;)
+    if (bits & GLS_CLASSIC_SKY) {
+        GLSL(out vec3 v_dir;)
+    } else {
+        GLSL(in vec2 a_tc;)
+        GLSL(out vec2 v_tc;)
+    }
 
     if (bits & GLS_LIGHTMAP_ENABLE) {
         GLSL(in vec2 a_lmtc;)
@@ -76,10 +82,14 @@ static void write_vertex_shader(sizebuf_t *buf, glStateBits_t bits)
     }
 
     GLSF("void main() {\n");
-        if (bits & GLS_SCROLL_ENABLE)
+        if (bits & GLS_CLASSIC_SKY) {
+            GLSL(v_dir = a_pos.xyz - u_vieworg.xyz;)
+            GLSL(v_dir[2] *= 3.0;)
+        } else if (bits & GLS_SCROLL_ENABLE) {
             GLSL(v_tc = a_tc + u_scroll;)
-        else
+        } else {
             GLSL(v_tc = a_tc;)
+        }
 
         if (bits & GLS_LIGHTMAP_ENABLE)
             GLSL(v_lmtc = a_lmtc;)
@@ -98,11 +108,19 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
     if (gl_config.ver_es)
         GLSL(precision mediump float;)
 
-    if (bits & (GLS_WARP_ENABLE | GLS_LIGHTMAP_ENABLE | GLS_INTENSITY_ENABLE))
+    if (bits & (GLS_WARP_ENABLE | GLS_LIGHTMAP_ENABLE | GLS_INTENSITY_ENABLE | GLS_CLASSIC_SKY))
         write_block(buf);
 
-    GLSL(uniform sampler2D u_texture;)
-    GLSL(in vec2 v_tc;)
+    if (bits & GLS_CLASSIC_SKY) {
+        GLSL(
+            uniform sampler2D u_texture1;
+            uniform sampler2D u_texture2;
+            in vec3 v_dir;
+        )
+    } else {
+        GLSL(uniform sampler2D u_texture;)
+        GLSL(in vec2 v_tc;)
+    }
 
     if (bits & GLS_LIGHTMAP_ENABLE) {
         GLSL(uniform sampler2D u_lightmap;)
@@ -118,12 +136,24 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
     GLSL(out vec4 o_color;)
 
     GLSF("void main() {\n");
-        GLSL(vec2 tc = v_tc;)
+        if (bits & GLS_CLASSIC_SKY) {
+            GLSL(
+                float len = length(v_dir);
+                vec2 dir = v_dir.xy * (3.0 / len);
+                vec2 tc1 = dir + vec2(u_time * 0.0625);
+                vec2 tc2 = dir + vec2(u_time * 0.1250);
+                vec4 solid = texture(u_texture1, tc1);
+                vec4 alpha = texture(u_texture2, tc2);
+                vec4 diffuse = vec4((solid.rgb - alpha.rgb * 0.25) * 0.65, 1.0);
+            )
+        } else {
+            GLSL(vec2 tc = v_tc;)
 
-        if (bits & GLS_WARP_ENABLE)
-            GLSL(tc += w_amp * sin(tc.ts * w_phase + u_time);)
+            if (bits & GLS_WARP_ENABLE)
+                GLSL(tc += w_amp * sin(tc.ts * w_phase + u_time);)
 
-        GLSL(vec4 diffuse = texture(u_texture, tc);)
+            GLSL(vec4 diffuse = texture(u_texture, tc);)
+        }
 
         if (bits & GLS_ALPHATEST_ENABLE)
             GLSL(if (diffuse.a <= 0.666) discard;)
@@ -218,7 +248,8 @@ static GLuint create_and_use_program(glStateBits_t bits)
     qglAttachShader(program, shader_f);
 
     qglBindAttribLocation(program, VERT_ATTR_POS, "a_pos");
-    qglBindAttribLocation(program, VERT_ATTR_TC, "a_tc");
+    if (!(bits & GLS_CLASSIC_SKY))
+        qglBindAttribLocation(program, VERT_ATTR_TC, "a_tc");
     if (bits & GLS_LIGHTMAP_ENABLE)
         qglBindAttribLocation(program, VERT_ATTR_LMTC, "a_lmtc");
     if (!(bits & GLS_TEXTURE_REPLACE))
@@ -261,7 +292,12 @@ static GLuint create_and_use_program(glStateBits_t bits)
 
     qglUseProgram(program);
 
-    qglUniform1i(qglGetUniformLocation(program, "u_texture"), TMU_TEXTURE);
+    if (bits & GLS_CLASSIC_SKY) {
+        qglUniform1i(qglGetUniformLocation(program, "u_texture1"), TMU_TEXTURE);
+        qglUniform1i(qglGetUniformLocation(program, "u_texture2"), TMU_LIGHTMAP);
+    } else {
+        qglUniform1i(qglGetUniformLocation(program, "u_texture"), TMU_TEXTURE);
+    }
     if (bits & GLS_LIGHTMAP_ENABLE)
         qglUniform1i(qglGetUniformLocation(program, "u_lightmap"), TMU_LIGHTMAP);
     if (bits & GLS_GLOWMAP_ENABLE)
@@ -370,6 +406,8 @@ static void shader_setup_2d(void)
     gls.u_block.w_amp[1] = 0.0025f;
     gls.u_block.w_phase[0] = M_PIf * 10;
     gls.u_block.w_phase[1] = M_PIf * 10;
+
+    VectorClear(gls.u_block.vieworg);
 }
 
 static void shader_setup_3d(void)
@@ -384,6 +422,8 @@ static void shader_setup_3d(void)
     gls.u_block.w_amp[1] = 0.0625f;
     gls.u_block.w_phase[0] = 4;
     gls.u_block.w_phase[1] = 4;
+
+    VectorCopy(glr.fd.vieworg, gls.u_block.vieworg);
 }
 
 static void shader_disable_state(void)

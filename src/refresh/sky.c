@@ -334,15 +334,24 @@ void R_DrawSkyBox(void)
         return; // nothing visible
 
     GL_BindArrays(VA_SPRITE);
-    GL_StateBits(GLS_TEXTURE_REPLACE);
-    GL_ArrayBits(GLA_VERTEX | GLA_TC);
+
+    if (gl_static.classic_sky && gl_drawsky->integer == 1) {
+        GL_StateBits(GLS_TEXTURE_REPLACE | GLS_CLASSIC_SKY);
+        GL_ArrayBits(GLA_VERTEX);
+        GL_BindTexture(TMU_TEXTURE,  gl_static.classic_sky->texnum);
+        GL_BindTexture(TMU_LIGHTMAP, gl_static.classic_sky->texnum2);
+    } else {
+        GL_StateBits(GLS_TEXTURE_REPLACE);
+        GL_ArrayBits(GLA_VERTEX | GLA_TC);
+    }
 
     for (i = 0; i < 6; i++) {
         if (skymins[0][i] >= skymaxs[0][i] ||
             skymins[1][i] >= skymaxs[1][i])
             continue;
 
-        GL_BindTexture(TMU_TEXTURE, sky_images[i]);
+        if (!gl_static.classic_sky || gl_drawsky->integer != 1)
+            GL_BindTexture(TMU_TEXTURE, sky_images[i]);
 
         MakeSkyVec(skymaxs[0][i], skymins[1][i], i, tess.vertices);
         MakeSkyVec(skymins[0][i], skymins[1][i], i, tess.vertices +  5);
@@ -375,7 +384,7 @@ void R_SetSky(const char *name, float rotate, bool autorotate, const vec3_t axis
     char            pathname[MAX_QPATH];
     const image_t   *image;
 
-    if (!gl_drawsky->integer) {
+    if (!gl_drawsky->integer || (gl_static.classic_sky && gl_drawsky->integer == 1)) {
         R_UnsetSky();
         return;
     }

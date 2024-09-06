@@ -90,6 +90,7 @@ typedef struct {
     byte            lightstylemap[MAX_LIGHTSTYLES];
     hash_map_t      *queries;
     hash_map_t      *programs;
+    image_t         *classic_sky;
 } glStatic_t;
 
 typedef struct {
@@ -461,6 +462,7 @@ typedef enum {
     GLS_BLEND_BLEND         = BIT(3),
     GLS_BLEND_ADD           = BIT(4),
     GLS_BLEND_MODULATE      = BIT(5),
+
     GLS_ALPHATEST_ENABLE    = BIT(6),
     GLS_TEXTURE_REPLACE     = BIT(7),
     GLS_SCROLL_ENABLE       = BIT(8),
@@ -468,16 +470,19 @@ typedef enum {
     GLS_WARP_ENABLE         = BIT(10),
     GLS_INTENSITY_ENABLE    = BIT(11),
     GLS_GLOWMAP_ENABLE      = BIT(12),
-    GLS_SHADE_SMOOTH        = BIT(13),
-    GLS_SCROLL_X            = BIT(14),
-    GLS_SCROLL_Y            = BIT(15),
-    GLS_SCROLL_FLIP         = BIT(16),
-    GLS_SCROLL_SLOW         = BIT(17),
+    GLS_CLASSIC_SKY         = BIT(13),
+
+    GLS_SHADE_SMOOTH        = BIT(14),
+    GLS_SCROLL_X            = BIT(15),
+    GLS_SCROLL_Y            = BIT(16),
+    GLS_SCROLL_FLIP         = BIT(17),
+    GLS_SCROLL_SLOW         = BIT(18),
 
     GLS_BLEND_MASK  = GLS_BLEND_BLEND | GLS_BLEND_ADD | GLS_BLEND_MODULATE,
     GLS_COMMON_MASK = GLS_DEPTHMASK_FALSE | GLS_DEPTHTEST_DISABLE | GLS_CULL_DISABLE | GLS_BLEND_MASK,
     GLS_SHADER_MASK = GLS_ALPHATEST_ENABLE | GLS_TEXTURE_REPLACE | GLS_SCROLL_ENABLE |
-        GLS_LIGHTMAP_ENABLE | GLS_WARP_ENABLE | GLS_INTENSITY_ENABLE | GLS_GLOWMAP_ENABLE,
+        GLS_LIGHTMAP_ENABLE | GLS_WARP_ENABLE | GLS_INTENSITY_ENABLE | GLS_GLOWMAP_ENABLE |
+        GLS_CLASSIC_SKY,
     GLS_SCROLL_MASK = GLS_SCROLL_ENABLE | GLS_SCROLL_X | GLS_SCROLL_Y | GLS_SCROLL_FLIP | GLS_SCROLL_SLOW,
 } glStateBits_t;
 
@@ -528,10 +533,12 @@ typedef struct {
     GLfloat     add;
     GLfloat     intensity;
     GLfloat     intensity2;
-    GLfloat     pad;
+    GLfloat     pad_1;
     GLfloat     w_amp[2];
     GLfloat     w_phase[2];
     GLfloat     scroll[2];
+    GLfloat     vieworg[3];
+    GLfloat     pad_2;
 } glUniformBlock_t;
 
 typedef struct {

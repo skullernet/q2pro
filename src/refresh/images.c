@@ -1993,8 +1993,29 @@ static image_t *find_or_load_image(const char *name, size_t len,
     if (r_glowmaps->integer && (type == IT_SKIN || type == IT_WALL))
         check_for_glow_map(image);
 
-    // upload the image
-    IMG_Load(image, pic);
+    if (type == IT_SKY && flags & IF_CLASSIC_SKY) {
+        // upload the top half of the image (solid)
+        image->height /= 2;
+        image->upload_height /= 2;
+
+        IMG_Load(image, pic + (image->width * image->height * 4));
+
+        // upload the bottom half (alpha)
+        image_t temporary = {
+            .type = type,
+            .flags = flags,
+            .width = image->width,
+            .height = image->height,
+            .upload_width = image->upload_width,
+            .upload_height = image->upload_height
+        };
+
+        IMG_Load(&temporary, pic);
+        image->texnum2 = temporary.texnum;
+    } else {
+        // upload the image
+        IMG_Load(image, pic);
+    }
 
     // don't need pics in memory after GL upload
     Z_Free(pic);

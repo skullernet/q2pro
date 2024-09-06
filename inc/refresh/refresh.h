@@ -158,6 +158,7 @@ typedef enum {
     // not stored in image
     IF_OPTIONAL     = BIT(16),  // don't warn if not found
     IF_DIRECT       = BIT(17),  // don't override extension
+    IF_CLASSIC_SKY  = BIT(18),  // split in two halves
 } imageflags_t;
 
 typedef enum {

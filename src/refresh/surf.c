@@ -974,6 +974,7 @@ void GL_FreeWorld(void)
         return;
 
     BSP_Free(gl_static.world.cache);
+    gl_static.classic_sky = NULL;
 
     if (gl_static.world.vertices)
         Z_Free(gl_static.world.vertices);
@@ -1031,16 +1032,30 @@ void GL_LoadWorld(const char *name)
     GL_InitQueries();
 
     gl_static.world.cache = bsp;
+    gl_static.classic_sky = NULL;
 
     // calculate world size for far clip plane and sky box
     set_world_size(bsp->nodes);
 
     // register all texinfo
     for (i = 0, info = bsp->texinfo; i < bsp->numtexinfo; i++, info++) {
-        imageflags_t flags = (info->c.flags & SURF_WARP) ? IF_TURBULENT : IF_NONE;
-        Q_concat(buffer, sizeof(buffer), "textures/", info->name, ".wal");
-        FS_NormalizePath(buffer);
-        info->image = IMG_Find(buffer, IT_WALL, flags);
+        if (gl_static.use_shaders && info->c.flags & SURF_SKY &&
+            Q_stricmpn(info->name, CONST_STR_LEN("n64/env/sky")) == 0) {
+            if (gl_static.classic_sky) {
+                info->image = gl_static.classic_sky;
+            } else {
+                Q_concat(buffer, sizeof(buffer), "textures/", info->name, ".tga");
+                FS_NormalizePath(buffer);
+                info->image = IMG_Find(buffer, IT_SKY, IF_REPEAT | IF_CLASSIC_SKY);
+                if (info->image != R_NOTEXTURE)
+                    gl_static.classic_sky = info->image;
+            }
+        } else {
+            imageflags_t flags = (info->c.flags & SURF_WARP) ? IF_TURBULENT : IF_NONE;
+            Q_concat(buffer, sizeof(buffer), "textures/", info->name, ".wal");
+            FS_NormalizePath(buffer);
+            info->image = IMG_Find(buffer, IT_WALL, flags);
+        }
     }
 
     // calculate vertex buffer size in bytes
@@ -1071,7 +1086,7 @@ void GL_LoadWorld(const char *name)
     // only supported in DECOUPLED_LM maps because vanilla maps have broken
     // lightofs for liquids/alphas. legacy renderer doesn't support lightmapped
     // liquids too.
-    if ((bsp->lm_decoupled || n64surfs > 100) && gl_static.use_shaders)
+    if ((bsp->lm_decoupled || n64surfs > 100 || gl_static.classic_sky) && gl_static.use_shaders)
         gl_static.nolm_mask = SURF_NOLM_MASK_REMASTER;
 
     glr.fd.lightstyles = &(lightstyle_t){ 1 };
