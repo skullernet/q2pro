@@ -693,7 +693,7 @@ static void GL_DrawFace(const mface_t *surf)
     texnum[TMU_TEXTURE] = image->texnum;
     if (q_likely(surf->light_m)) {
         texnum[TMU_LIGHTMAP] = lm.texnums[surf->light_m - lm.lightmaps];
-        texnum[TMU_GLOWMAP ] = image->glow_texnum;
+        texnum[TMU_GLOWMAP ] = image->texnum2;
 
         if (q_unlikely(gl_lightmap->integer)) {
             texnum[TMU_TEXTURE] = TEXNUM_WHITE;

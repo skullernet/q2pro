@@ -630,15 +630,15 @@ static void draw_alias_mesh(const glIndex_t *indices, int num_indices,
         state |= GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE;
 
     skin = skin_for_mesh(skins, num_skins);
-    if (skin->glow_texnum)
+    if (skin->texnum2)
         state |= GLS_GLOWMAP_ENABLE;
 
     GL_StateBits(state);
 
     GL_BindTexture(TMU_TEXTURE, skin->texnum);
 
-    if (skin->glow_texnum)
-        GL_BindTexture(TMU_GLOWMAP, skin->glow_texnum);
+    if (skin->texnum2)
+        GL_BindTexture(TMU_GLOWMAP, skin->texnum2);
 
     if (dotshading) {
         GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);

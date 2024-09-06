@@ -86,8 +86,8 @@ static void update_image_params(unsigned mask)
         GL_ForceTexture(TMU_TEXTURE, image->texnum);
         GL_SetFilterAndRepeat(image->type, image->flags);
 
-        if (image->glow_texnum) {
-            GL_ForceTexture(TMU_TEXTURE, image->glow_texnum);
+        if (image->texnum2) {
+            GL_ForceTexture(TMU_TEXTURE, image->texnum2);
             GL_SetFilterAndRepeat(image->type, image->flags);
         }
     }
@@ -725,7 +725,7 @@ void IMG_Load(image_t *image, byte *pic)
 void IMG_Unload(image_t *image)
 {
     if (image->texnum && !(image->flags & IF_SCRAP)) {
-        GLuint tex[2] = { image->texnum, image->glow_texnum };
+        GLuint tex[2] = { image->texnum, image->texnum2 };
 
         // invalidate bindings
         for (int i = 0; i < MAX_TMUS; i++)
@@ -733,7 +733,7 @@ void IMG_Unload(image_t *image)
                 gls.texnums[i] = 0;
 
         qglDeleteTextures(tex[1] ? 2 : 1, tex);
-        image->texnum = image->glow_texnum = 0;
+        image->texnum = image->texnum2 = 0;
     }
 }
 
