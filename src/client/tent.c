@@ -311,7 +311,7 @@ void CL_RegisterTEntModels(void)
     for (int i = 0; i < MFLASH_TOTAL; i++)
         cl_mod_muzzles[i] = R_RegisterModel(va("models/weapons/%s/flash/tris.md2", muzzlenames[i]));
 
-    cl_img_flare = R_RegisterSprite("misc/flare.tga");
+    cl_img_flare = R_RegisterImage("misc/flare.tga", IT_SPRITE, IF_DEFAULT_FLARE);
 
     // check for remaster powerscreen model (ugly!)
     len = FS_LoadFile("models/items/armor/effect/tris.md2", &data);

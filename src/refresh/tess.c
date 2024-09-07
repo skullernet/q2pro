@@ -356,25 +356,30 @@ static void GL_FlushFlares(void)
         return;
 
     GL_BindTexture(TMU_TEXTURE, tess.texnum[TMU_TEXTURE]);
-    GL_StateBits(GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE | GLS_BLEND_ADD);
+    GL_StateBits(GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE | GLS_BLEND_ADD | tess.flags);
     GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
     GL_DrawIndexed(SHOWTRIS_FX);
 
     tess.numverts = tess.numindices = 0;
     tess.texnum[TMU_TEXTURE] = 0;
+    tess.flags = 0;
 }
 
 void GL_DrawFlares(void)
 {
+    static const byte indices[12] = { 0, 2, 3, 0, 3, 4, 0, 4, 1, 0, 1, 2 };
+    static const float tcoords[10] = { 0.5f, 0.5f, 0, 1, 0, 0, 1, 0, 1, 1 };
     vec3_t up, down, left, right;
-    color_t color;
+    color_t inner, outer;
     vec_t *dst_vert;
     glIndex_t *dst_indices;
-    GLuint result, texnum;
+    GLuint result;
     const entity_t *ent;
+    const image_t *image;
     glquery_t *q;
     float scale;
-    int i;
+    bool def;
+    int i, j;
 
     if (!glr.num_flares)
         return;
@@ -414,52 +419,77 @@ void GL_DrawFlares(void)
         if (!q->frac)
             continue;
 
-        texnum = IMG_ForHandle(ent->skin)->texnum;
+        image = IMG_ForHandle(ent->skin);
 
-        if (q_unlikely(tess.numverts + 4 > TESS_MAX_VERTICES ||
-                       tess.numindices + 6 > TESS_MAX_INDICES) ||
-            (tess.numindices && tess.texnum[TMU_TEXTURE] != texnum))
+        if (q_unlikely(tess.numverts + 5 > TESS_MAX_VERTICES ||
+                       tess.numindices + 12 > TESS_MAX_INDICES) ||
+            (tess.numindices && tess.texnum[TMU_TEXTURE] != image->texnum))
             GL_FlushFlares();
 
-        tess.texnum[TMU_TEXTURE] = texnum;
+        tess.texnum[TMU_TEXTURE] = image->texnum;
 
-        scale = 25.0f * (ent->scale * q->frac);
+        def = image->flags & IF_DEFAULT_FLARE;
+        if (def)
+            tess.flags |= GLS_DEFAULT_FLARE;
 
-        VectorScale(glr.viewaxis[1],  scale, left);
-        VectorScale(glr.viewaxis[1], -scale, right);
-        VectorScale(glr.viewaxis[2], -scale, down);
-        VectorScale(glr.viewaxis[2],  scale, up);
+        scale = (25 << def) * (ent->scale * q->frac);
+
+        if (ent->flags & RF_FLARE_LOCK_ANGLE) {
+            VectorScale(glr.viewaxis[1],  scale, left);
+            VectorScale(glr.viewaxis[1], -scale, right);
+            VectorScale(glr.viewaxis[2], -scale, down);
+            VectorScale(glr.viewaxis[2],  scale, up);
+        } else {
+            vec3_t dir, r, u;
+            VectorSubtract(ent->origin, glr.fd.vieworg, dir);
+            VectorNormalize(dir);
+            MakeNormalVectors(dir, r, u);
+            VectorScale(r, -scale, left);
+            VectorScale(r,  scale, right);
+            VectorScale(u, -scale, down);
+            VectorScale(u,  scale, up);
+        }
 
         dst_vert = tess.vertices + tess.numverts * 6;
 
-        VectorAdd3(ent->origin, down, left,  dst_vert);
-        VectorAdd3(ent->origin, up,   left,  dst_vert +  6);
-        VectorAdd3(ent->origin, up,   right, dst_vert + 12);
-        VectorAdd3(ent->origin, down, right, dst_vert + 18);
+        VectorCopy(ent->origin, dst_vert);
+        VectorAdd3(ent->origin, down, left,  dst_vert +  6);
+        VectorAdd3(ent->origin, up,   left,  dst_vert + 12);
+        VectorAdd3(ent->origin, up,   right, dst_vert + 18);
+        VectorAdd3(ent->origin, down, right, dst_vert + 24);
 
-        dst_vert[ 3] = 0; dst_vert[ 4] = 1;
-        dst_vert[ 9] = 0; dst_vert[10] = 0;
-        dst_vert[15] = 1; dst_vert[16] = 0;
-        dst_vert[21] = 1; dst_vert[22] = 1;
+        for (j = 0; j < 5; j++) {
+            dst_vert[j * 6 + 3] = tcoords[j * 2 + 0];
+            dst_vert[j * 6 + 4] = tcoords[j * 2 + 1];
+        }
 
-        color.u32 = ent->rgba.u32;
-        color.u8[3] = 128 * (ent->alpha * q->frac);
+        inner.u32 = ent->rgba.u32;
+        inner.u8[3] = (128 + def * 32) * (ent->alpha * q->frac);
+        outer.u32 = inner.u32;
 
-        WN32(dst_vert +  5, color.u32);
-        WN32(dst_vert + 11, color.u32);
-        WN32(dst_vert + 17, color.u32);
-        WN32(dst_vert + 23, color.u32);
+        if (ent->flags & (RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE)) {
+            VectorClear(outer.u8);
+            if (ent->flags & RF_SHELL_RED)
+                outer.u8[0] = 255;
+            if (ent->flags & RF_SHELL_GREEN)
+                outer.u8[1] = 255;
+            if (ent->flags & RF_SHELL_BLUE)
+                outer.u8[2] = 255;
+            tess.flags |= GLS_SHADE_SMOOTH;
+        }
+
+        WN32(dst_vert +  5, inner.u32);
+        WN32(dst_vert + 11, outer.u32);
+        WN32(dst_vert + 17, outer.u32);
+        WN32(dst_vert + 23, outer.u32);
+        WN32(dst_vert + 29, outer.u32);
 
         dst_indices = tess.indices + tess.numindices;
-        dst_indices[0] = tess.numverts + 0;
-        dst_indices[1] = tess.numverts + 2;
-        dst_indices[2] = tess.numverts + 3;
-        dst_indices[3] = tess.numverts + 0;
-        dst_indices[4] = tess.numverts + 1;
-        dst_indices[5] = tess.numverts + 2;
+        for (j = 0; j < 12; j++)
+            dst_indices[j] = tess.numverts + indices[j];
 
-        tess.numverts += 4;
-        tess.numindices += 6;
+        tess.numverts += 5;
+        tess.numindices += 12;
     }
 
     GL_FlushFlares();

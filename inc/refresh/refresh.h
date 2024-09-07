@@ -144,21 +144,22 @@ typedef struct {
 } clipRect_t;
 
 typedef enum {
-    IF_NONE         = 0,
-    IF_PERMANENT    = BIT(0),   // not freed by R_EndRegistration()
-    IF_TRANSPARENT  = BIT(1),   // known to be transparent
-    IF_PALETTED     = BIT(2),   // loaded from 8-bit paletted format
-    IF_UPSCALED     = BIT(3),   // upscaled
-    IF_SCRAP        = BIT(4),   // put in scrap texture
-    IF_TURBULENT    = BIT(5),   // turbulent surface (don't desaturate, etc)
-    IF_REPEAT       = BIT(6),   // tiling image
-    IF_NEAREST      = BIT(7),   // don't bilerp
-    IF_OPAQUE       = BIT(8),   // known to be opaque
+    IF_NONE             = 0,
+    IF_PERMANENT        = BIT(0),   // not freed by R_EndRegistration()
+    IF_TRANSPARENT      = BIT(1),   // known to be transparent
+    IF_PALETTED         = BIT(2),   // loaded from 8-bit paletted format
+    IF_UPSCALED         = BIT(3),   // upscaled
+    IF_SCRAP            = BIT(4),   // put in scrap texture
+    IF_TURBULENT        = BIT(5),   // turbulent surface (don't desaturate, etc)
+    IF_REPEAT           = BIT(6),   // tiling image
+    IF_NEAREST          = BIT(7),   // don't bilerp
+    IF_OPAQUE           = BIT(8),   // known to be opaque
+    IF_DEFAULT_FLARE    = BIT(9),   // default flare hack
 
     // not stored in image
-    IF_OPTIONAL     = BIT(16),  // don't warn if not found
-    IF_DIRECT       = BIT(17),  // don't override extension
-    IF_CLASSIC_SKY  = BIT(18),  // split in two halves
+    IF_OPTIONAL         = BIT(16),  // don't warn if not found
+    IF_DIRECT           = BIT(17),  // don't override extension
+    IF_CLASSIC_SKY      = BIT(18),  // split in two halves
 } imageflags_t;
 
 typedef enum {

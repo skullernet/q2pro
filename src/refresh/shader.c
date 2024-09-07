@@ -172,6 +172,12 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
         if (bits & GLS_INTENSITY_ENABLE)
             GLSL(diffuse.rgb *= u_intensity;)
 
+        if (bits & GLS_DEFAULT_FLARE)
+            GLSL(
+                 diffuse.rgb *= (diffuse.r + diffuse.g + diffuse.b) / 3.0;
+                 diffuse.rgb *= v_color.a;
+            )
+
         if (!(bits & GLS_TEXTURE_REPLACE))
             GLSL(diffuse *= v_color;)
 

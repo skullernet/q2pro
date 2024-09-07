@@ -398,7 +398,8 @@ static uint32_t tga_unpack_pixel(const byte *in, int bpp)
 
     switch (bpp) {
     case 1:
-        return MakeColor(255, 255, 255, in[0]);
+        r = in[0];
+        return MakeColor(r, r, r, 255);
     case 2:
         r = (in[1] & 0x7C) >> 2;
         g = ((in[1] & 0x03) << 3) | ((in[0] & 0xE0) >> 5);
