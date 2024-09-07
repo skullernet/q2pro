@@ -270,6 +270,18 @@ static GLuint create_and_use_program(glStateBits_t bits)
     return program;
 }
 
+static void shader_use_program(glStateBits_t key)
+{
+    GLuint *prog = HashMap_Lookup(GLuint, gl_static.programs, &key);
+
+    if (prog) {
+        qglUseProgram(*prog);
+    } else {
+        GLuint val = create_and_use_program(key);
+        HashMap_Insert(gl_static.programs, &key, &val);
+    }
+}
+
 static void shader_state_bits(glStateBits_t bits)
 {
     glStateBits_t diff = bits ^ gls.state_bits;
@@ -277,14 +289,8 @@ static void shader_state_bits(glStateBits_t bits)
     if (diff & GLS_COMMON_MASK)
         GL_CommonStateBits(bits);
 
-    if (diff & GLS_SHADER_MASK) {
-        GLuint i = (bits >> 6) & (MAX_PROGRAMS - 1);
-
-        if (gl_static.programs[i])
-            qglUseProgram(gl_static.programs[i]);
-        else
-            gl_static.programs[i] = create_and_use_program(bits);
-    }
+    if (diff & GLS_SHADER_MASK)
+        shader_use_program(bits & GLS_SHADER_MASK);
 
     if (diff & GLS_SCROLL_MASK && bits & GLS_SCROLL_ENABLE) {
         GL_ScrollPos(gls.u_block.scroll, bits);
@@ -398,15 +404,13 @@ static void shader_disable_state(void)
 static void shader_clear_state(void)
 {
     shader_disable_state();
-
-    if (gl_static.programs[0])
-        qglUseProgram(gl_static.programs[0]);
-    else
-        gl_static.programs[0] = create_and_use_program(GLS_DEFAULT);
+    shader_use_program(GLS_DEFAULT);
 }
 
 static void shader_init(void)
 {
+    gl_static.programs = HashMap_Create(glStateBits_t, GLuint, HashInt32, NULL);
+
     qglGenBuffers(1, &gl_static.uniform_buffer);
     qglBindBuffer(GL_UNIFORM_BUFFER, gl_static.uniform_buffer);
     qglBindBufferBase(GL_UNIFORM_BUFFER, 0, gl_static.uniform_buffer);
@@ -416,13 +420,16 @@ static void shader_init(void)
 static void shader_shutdown(void)
 {
     shader_disable_state();
-
     qglUseProgram(0);
-    for (int i = 0; i < MAX_PROGRAMS; i++) {
-        if (gl_static.programs[i]) {
-            qglDeleteProgram(gl_static.programs[i]);
-            gl_static.programs[i] = 0;
+
+    if (gl_static.programs) {
+        uint32_t map_size = HashMap_Size(gl_static.programs);
+        for (int i = 0; i < map_size; i++) {
+            GLuint *prog = HashMap_GetValue(GLuint, gl_static.programs, i);
+            qglDeleteProgram(*prog);
         }
+        HashMap_Destroy(gl_static.programs);
+        gl_static.programs = NULL;
     }
 
     if (gl_static.uniform_buffer) {

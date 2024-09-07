@@ -50,7 +50,6 @@ typedef GLuint glIndex_t;
 #define TAB_SIN(x)  gl_static.sintab[(x) & 255]
 #define TAB_COS(x)  gl_static.sintab[((x) + 64) & 255]
 
-#define MAX_PROGRAMS        128
 #define NUM_AUTO_TEXTURES   7
 
 typedef struct {
@@ -77,7 +76,7 @@ typedef struct {
     GLuint          array_object;
     GLuint          index_buffer;
     GLuint          vertex_buffer;
-    GLuint          programs[MAX_PROGRAMS];
+    GLuint          warp_program;
     GLuint          texnums[NUM_AUTO_TEXTURES];
     GLenum          samples_passed;
     GLbitfield      stencil_buffer_bit;
@@ -90,6 +89,7 @@ typedef struct {
     byte            latlngtab[NUMVERTEXNORMALS][2];
     byte            lightstylemap[MAX_LIGHTSTYLES];
     hash_map_t      *queries;
+    hash_map_t      *programs;
 } glStatic_t;
 
 typedef struct {
