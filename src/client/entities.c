@@ -939,7 +939,9 @@ static void CL_AddPacketEntities(void)
             goto skip;
 
         if (effects & EF_ROCKET) {
-            if (!(cl_disable_particles->integer & NOPART_ROCKET_TRAIL))
+            if (cl.csr.extended && effects & EF_GIB)
+                CL_DiminishingTrail(cent->lerp_origin, ent.origin, cent, DT_FIREBALL);
+            else if (!(cl_disable_particles->integer & NOPART_ROCKET_TRAIL))
                 CL_RocketTrail(cent->lerp_origin, ent.origin, cent);
             if (cl_dlight_hacks->integer & DLHACK_ROCKET_COLOR)
                 V_AddLight(ent.origin, 200, 1, 0.23f, 0);
@@ -959,10 +961,10 @@ static void CL_AddPacketEntities(void)
             else
                 V_AddLight(ent.origin, 200, 1, 1, 0);
         } else if (effects & EF_GIB) {
-            CL_DiminishingTrail(cent->lerp_origin, ent.origin, cent, effects);
+            CL_DiminishingTrail(cent->lerp_origin, ent.origin, cent, DT_GIB);
         } else if (effects & EF_GRENADE) {
             if (!(cl_disable_particles->integer & NOPART_GRENADE_TRAIL))
-                CL_DiminishingTrail(cent->lerp_origin, ent.origin, cent, effects);
+                CL_DiminishingTrail(cent->lerp_origin, ent.origin, cent, DT_SMOKE);
         } else if (effects & EF_FLIES) {
             CL_FlyEffect(cent, ent.origin);
         } else if (effects & EF_BFG) {
@@ -1000,7 +1002,7 @@ static void CL_AddPacketEntities(void)
             CL_TrackerTrail(cent->lerp_origin, ent.origin, 0);
             V_AddLight(ent.origin, 200, -1, -1, -1);
         } else if (effects & EF_GREENGIB) {
-            CL_DiminishingTrail(cent->lerp_origin, ent.origin, cent, effects);
+            CL_DiminishingTrail(cent->lerp_origin, ent.origin, cent, DT_GREENGIB);
         } else if (effects & EF_IONRIPPER) {
             CL_IonripperTrail(cent->lerp_origin, ent.origin);
             V_AddLight(ent.origin, 100, 1, 0.5f, 0.5f);
