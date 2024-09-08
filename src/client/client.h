@@ -866,8 +866,8 @@ typedef enum {
 } diminishing_trail_t;
 
 void CL_BigTeleportParticles(const vec3_t org);
-void CL_RocketTrail(const vec3_t start, const vec3_t end, centity_t *old);
-void CL_DiminishingTrail(const vec3_t start, const vec3_t end, centity_t *old, diminishing_trail_t type);
+void CL_RocketTrail(centity_t *ent, const vec3_t end);
+void CL_DiminishingTrail(centity_t *ent, const vec3_t end, diminishing_trail_t type);
 void CL_FlyEffect(centity_t *ent, const vec3_t origin);
 void CL_BfgParticles(const entity_t *ent);
 void CL_ItemRespawnParticles(const vec3_t org);
@@ -876,10 +876,10 @@ void CL_ClearEffects(void);
 void CL_BlasterParticles(const vec3_t org, const vec3_t dir);
 void CL_ExplosionParticles(const vec3_t org);
 void CL_BFGExplosionParticles(const vec3_t org);
-void CL_BlasterTrail(const vec3_t start, const vec3_t end);
+void CL_BlasterTrail(centity_t *ent, const vec3_t end);
 void CL_OldRailTrail(void);
 void CL_BubbleTrail(const vec3_t start, const vec3_t end);
-void CL_FlagTrail(const vec3_t start, const vec3_t end, int color);
+void CL_FlagTrail(centity_t *ent, const vec3_t end, int color);
 void CL_MuzzleFlash(void);
 void CL_MuzzleFlash2(void);
 void CL_TeleporterParticles(const vec3_t org);
@@ -898,15 +898,15 @@ void CL_AddLightStyles(void);
 //
 
 void CL_BlasterParticles2(const vec3_t org, const vec3_t dir, unsigned int color);
-void CL_BlasterTrail2(const vec3_t start, const vec3_t end);
+void CL_BlasterTrail2(centity_t *ent, const vec3_t end);
 void CL_DebugTrail(const vec3_t start, const vec3_t end);
 void CL_Flashlight(int ent, const vec3_t pos);
 void CL_ForceWall(const vec3_t start, const vec3_t end, int color);
 void CL_BubbleTrail2(const vec3_t start, const vec3_t end, int dist);
 void CL_Heatbeam(const vec3_t start, const vec3_t end);
 void CL_ParticleSteamEffect(const vec3_t org, const vec3_t dir, int color, int count, int magnitude);
-void CL_TrackerTrail(const vec3_t start, const vec3_t end);
-void CL_TagTrail(const vec3_t start, const vec3_t end, int color);
+void CL_TrackerTrail(centity_t *ent, const vec3_t end);
+void CL_TagTrail(centity_t *ent, const vec3_t end, int color);
 void CL_ColorFlash(const vec3_t pos, int ent, int intensity, float r, float g, float b);
 void CL_Tracker_Shell(const centity_t *cent, const vec3_t origin);
 void CL_MonsterPlasma_Shell(const vec3_t origin);
@@ -915,7 +915,7 @@ void CL_ParticleSmokeEffect(const vec3_t org, const vec3_t dir, int color, int c
 void CL_Widowbeamout(cl_sustain_t *self);
 void CL_Nukeblast(cl_sustain_t *self);
 void CL_WidowSplash(void);
-void CL_IonripperTrail(const vec3_t start, const vec3_t end);
+void CL_IonripperTrail(centity_t *ent, const vec3_t end);
 void CL_TrapParticles(centity_t *ent, const vec3_t origin);
 void CL_ParticleEffect3(const vec3_t org, const vec3_t dir, int color, int count);
 void CL_ParticleSteamEffect2(cl_sustain_t *self);

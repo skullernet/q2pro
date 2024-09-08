@@ -496,7 +496,7 @@ static void CL_AddPacketEntities(void)
     int                 autoanim;
     clientinfo_t        *ci;
     unsigned int        effects, renderfx;
-    bool                has_alpha;
+    bool                has_alpha, has_trail;
 
     // bonus items rotate at a fixed rate
     autorotate = anglemod(cl.time * 0.1f);
@@ -513,6 +513,8 @@ static void CL_AddPacketEntities(void)
         s1 = &cl.entityStates[i];
 
         cent = &cl_entities[s1->number];
+
+        has_trail = false;
 
         effects = s1->effects;
         renderfx = s1->renderfx;
@@ -939,32 +941,39 @@ static void CL_AddPacketEntities(void)
             goto skip;
 
         if (effects & EF_ROCKET) {
-            if (cl.csr.extended && effects & EF_GIB)
-                CL_DiminishingTrail(cent->lerp_origin, ent.origin, cent, DT_FIREBALL);
-            else if (!(cl_disable_particles->integer & NOPART_ROCKET_TRAIL))
-                CL_RocketTrail(cent->lerp_origin, ent.origin, cent);
+            if (cl.csr.extended && effects & EF_GIB) {
+                CL_DiminishingTrail(cent, ent.origin, DT_FIREBALL);
+                has_trail = true;
+            } else if (!(cl_disable_particles->integer & NOPART_ROCKET_TRAIL)) {
+                CL_RocketTrail(cent, ent.origin);
+                has_trail = true;
+            }
             if (cl_dlight_hacks->integer & DLHACK_ROCKET_COLOR)
                 V_AddLight(ent.origin, 200, 1, 0.23f, 0);
             else
                 V_AddLight(ent.origin, 200, 1, 1, 0);
         } else if (effects & EF_BLASTER) {
             if (effects & EF_TRACKER) {
-                CL_BlasterTrail2(cent->lerp_origin, ent.origin);
+                CL_BlasterTrail2(cent, ent.origin);
                 V_AddLight(ent.origin, 200, 0, 1, 0);
             } else {
-                CL_BlasterTrail(cent->lerp_origin, ent.origin);
+                CL_BlasterTrail(cent, ent.origin);
                 V_AddLight(ent.origin, 200, 1, 1, 0);
             }
+            has_trail = true;
         } else if (effects & EF_HYPERBLASTER) {
             if (effects & EF_TRACKER)
                 V_AddLight(ent.origin, 200, 0, 1, 0);
             else
                 V_AddLight(ent.origin, 200, 1, 1, 0);
         } else if (effects & EF_GIB) {
-            CL_DiminishingTrail(cent->lerp_origin, ent.origin, cent, DT_GIB);
+            CL_DiminishingTrail(cent, ent.origin, DT_GIB);
+            has_trail = true;
         } else if (effects & EF_GRENADE) {
-            if (!(cl_disable_particles->integer & NOPART_GRENADE_TRAIL))
-                CL_DiminishingTrail(cent->lerp_origin, ent.origin, cent, DT_SMOKE);
+            if (!(cl_disable_particles->integer & NOPART_GRENADE_TRAIL)) {
+                CL_DiminishingTrail(cent, ent.origin, DT_SMOKE);
+                has_trail = true;
+            }
         } else if (effects & EF_FLIES) {
             CL_FlyEffect(cent, ent.origin);
         } else if (effects & EF_BFG) {
@@ -982,14 +991,17 @@ static void CL_AddPacketEntities(void)
             i = (Com_SlowRand() % 100) + 100;
             V_AddLight(ent.origin, i, 1, 0.8f, 0.1f);
         } else if (effects & EF_FLAG1) {
-            CL_FlagTrail(cent->lerp_origin, ent.origin, 242);
+            CL_FlagTrail(cent, ent.origin, 242);
             V_AddLight(ent.origin, 225, 1, 0.1f, 0.1f);
+            has_trail = true;
         } else if (effects & EF_FLAG2) {
-            CL_FlagTrail(cent->lerp_origin, ent.origin, 115);
+            CL_FlagTrail(cent, ent.origin, 115);
             V_AddLight(ent.origin, 225, 0.1f, 0.1f, 1);
+            has_trail = true;
         } else if (effects & EF_TAGTRAIL) {
-            CL_TagTrail(cent->lerp_origin, ent.origin, 220);
+            CL_TagTrail(cent, ent.origin, 220);
             V_AddLight(ent.origin, 225, 1.0f, 1.0f, 0.0f);
+            has_trail = true;
         } else if (effects & EF_TRACKERTRAIL) {
             if (effects & EF_TRACKER) {
                 float intensity = 50 + (500 * (sinf(cl.time / 500.0f) + 1.0f));
@@ -999,23 +1011,29 @@ static void CL_AddPacketEntities(void)
                 V_AddLight(ent.origin, 155, -1.0f, -1.0f, -1.0f);
             }
         } else if (effects & EF_TRACKER) {
-            CL_TrackerTrail(cent->lerp_origin, ent.origin);
+            CL_TrackerTrail(cent, ent.origin);
             V_AddLight(ent.origin, 200, -1, -1, -1);
+            has_trail = true;
         } else if (effects & EF_GREENGIB) {
-            CL_DiminishingTrail(cent->lerp_origin, ent.origin, cent, DT_GREENGIB);
+            CL_DiminishingTrail(cent, ent.origin, DT_GREENGIB);
+            has_trail = true;
         } else if (effects & EF_IONRIPPER) {
-            CL_IonripperTrail(cent->lerp_origin, ent.origin);
+            CL_IonripperTrail(cent, ent.origin);
             V_AddLight(ent.origin, 100, 1, 0.5f, 0.5f);
+            has_trail = true;
         } else if (effects & EF_BLUEHYPERBLASTER) {
             V_AddLight(ent.origin, 200, 0, 0, 1);
         } else if (effects & EF_PLASMA) {
-            if (effects & EF_ANIM_ALLFAST)
-                CL_BlasterTrail(cent->lerp_origin, ent.origin);
+            if (effects & EF_ANIM_ALLFAST) {
+                CL_BlasterTrail(cent, ent.origin);
+                has_trail = true;
+            }
             V_AddLight(ent.origin, 130, 1, 0.5f, 0.5f);
         }
 
 skip:
-        VectorCopy(ent.origin, cent->lerp_origin);
+        if (!has_trail)
+            VectorCopy(ent.origin, cent->lerp_origin);
     }
 }
 

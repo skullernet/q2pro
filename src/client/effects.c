@@ -1191,29 +1191,26 @@ CL_BlasterTrail
 
 ===============
 */
-void CL_BlasterTrail(const vec3_t start, const vec3_t end)
+void CL_BlasterTrail(centity_t *ent, const vec3_t end)
 {
     vec3_t      move;
     vec3_t      vec;
-    float       len;
-    int         j;
+    int         i, j, count;
     cparticle_t *p;
-    int         dec;
+    const int   dec = 5;
 
-    VectorCopy(start, move);
-    VectorSubtract(end, start, vec);
-    len = VectorNormalize(vec);
+    VectorSubtract(end, ent->lerp_origin, vec);
+    count = VectorNormalize(vec) / dec;
+    if (!count)
+        return;
 
-    dec = 5;
-    VectorScale(vec, 5, vec);
+    VectorCopy(ent->lerp_origin, move);
+    VectorScale(vec, dec, vec);
 
-    // FIXME: this is a really silly way to have a loop
-    while (len > 0) {
-        len -= dec;
-
+    for (i = 0; i < count; i++) {
         p = CL_AllocParticle();
         if (!p)
-            return;
+            break;
         VectorClear(p->accel);
 
         p->time = cl.time;
@@ -1228,6 +1225,8 @@ void CL_BlasterTrail(const vec3_t start, const vec3_t end)
 
         VectorAdd(move, vec, move);
     }
+
+    VectorCopy(move, ent->lerp_origin);
 }
 
 /*
@@ -1236,28 +1235,26 @@ CL_FlagTrail
 
 ===============
 */
-void CL_FlagTrail(const vec3_t start, const vec3_t end, int color)
+void CL_FlagTrail(centity_t *ent, const vec3_t end, int color)
 {
     vec3_t      move;
     vec3_t      vec;
-    float       len;
-    int         j;
+    int         i, j, count;
     cparticle_t *p;
-    int         dec;
+    const int   dec = 5;
 
-    VectorCopy(start, move);
-    VectorSubtract(end, start, vec);
-    len = VectorNormalize(vec);
+    VectorSubtract(end, ent->lerp_origin, vec);
+    count = VectorNormalize(vec) / dec;
+    if (!count)
+        return;
 
-    dec = 5;
-    VectorScale(vec, 5, vec);
+    VectorCopy(ent->lerp_origin, move);
+    VectorScale(vec, dec, vec);
 
-    while (len > 0) {
-        len -= dec;
-
+    for (i = 0; i < count; i++) {
         p = CL_AllocParticle();
         if (!p)
-            return;
+            break;
         VectorClear(p->accel);
 
         p->time = cl.time;
@@ -1272,6 +1269,8 @@ void CL_FlagTrail(const vec3_t start, const vec3_t end, int color)
 
         VectorAdd(move, vec, move);
     }
+
+    VectorCopy(move, ent->lerp_origin);
 }
 
 /*
@@ -1280,29 +1279,29 @@ CL_DiminishingTrail
 
 ===============
 */
-void CL_DiminishingTrail(const vec3_t start, const vec3_t end, centity_t *old, diminishing_trail_t type)
+void CL_DiminishingTrail(centity_t *ent, const vec3_t end, diminishing_trail_t type)
 {
     static const byte colors[DT_COUNT] = { 0xe8, 0xdb, 0x04, 0xd8 };
     vec3_t      move;
     vec3_t      vec;
-    float       len;
-    int         j;
+    int         i, j, count;
     cparticle_t *p;
-    float       dec;
+    const float dec = 0.5f;
     float       orgscale;
     float       velscale;
 
-    VectorCopy(start, move);
-    VectorSubtract(end, start, vec);
-    len = VectorNormalize(vec);
+    VectorSubtract(end, ent->lerp_origin, vec);
+    count = VectorNormalize(vec) / dec;
+    if (!count)
+        return;
 
-    dec = 0.5f;
+    VectorCopy(ent->lerp_origin, move);
     VectorScale(vec, dec, vec);
 
-    if (old->trailcount > 900) {
+    if (ent->trailcount > 900) {
         orgscale = 4;
         velscale = 15;
-    } else if (old->trailcount > 800) {
+    } else if (ent->trailcount > 800) {
         orgscale = 2;
         velscale = 10;
     } else {
@@ -1310,14 +1309,12 @@ void CL_DiminishingTrail(const vec3_t start, const vec3_t end, centity_t *old, d
         velscale = 5;
     }
 
-    while (len > 0) {
-        len -= dec;
-
+    for (i = 0; i < count; i++) {
         // drop less particles as it flies
-        if ((Q_rand() & 1023) < old->trailcount) {
+        if ((Q_rand() & 1023) < ent->trailcount) {
             p = CL_AllocParticle();
             if (!p)
-                return;
+                break;
 
             VectorClear(p->accel);
             p->time = cl.time;
@@ -1336,16 +1333,18 @@ void CL_DiminishingTrail(const vec3_t start, const vec3_t end, centity_t *old, d
                 p->vel[2] -= PARTICLE_GRAVITY;
 
             if (type == DT_FIREBALL)
-                p->color = colors[type] + (1024 - old->trailcount) / 64;
+                p->color = colors[type] + (1024 - ent->trailcount) / 64;
             else
                 p->color = colors[type] + (Q_rand() & 7);
         }
 
-        old->trailcount -= 5;
-        if (old->trailcount < 100)
-            old->trailcount = 100;
+        ent->trailcount -= 5;
+        if (ent->trailcount < 100)
+            ent->trailcount = 100;
         VectorAdd(move, vec, move);
     }
+
+    VectorCopy(move, ent->lerp_origin);
 }
 
 /*
@@ -1354,33 +1353,31 @@ CL_RocketTrail
 
 ===============
 */
-void CL_RocketTrail(const vec3_t start, const vec3_t end, centity_t *old)
+void CL_RocketTrail(centity_t *ent, const vec3_t end)
 {
     vec3_t      move;
     vec3_t      vec;
-    float       len;
-    int         j;
+    int         i, j, count;
     cparticle_t *p;
-    float       dec;
+    const int   dec = 1;
 
-    // smoke
-    CL_DiminishingTrail(start, end, old, DT_SMOKE);
+    VectorSubtract(end, ent->lerp_origin, vec);
+    count = VectorNormalize(vec) / dec;
+    if (!count)
+        return;
 
-    // fire
-    VectorCopy(start, move);
-    VectorSubtract(end, start, vec);
-    len = VectorNormalize(vec);
-
-    dec = 1;
+    VectorCopy(ent->lerp_origin, move);
     VectorScale(vec, dec, vec);
 
-    while (len > 0) {
-        len -= dec;
+    // smoke
+    CL_DiminishingTrail(ent, end, DT_SMOKE);
 
+    // fire
+    for (i = 0; i < count; i++) {
         if ((Q_rand() & 7) == 0) {
             p = CL_AllocParticle();
             if (!p)
-                return;
+                break;
 
             VectorClear(p->accel);
             p->time = cl.time;
@@ -1396,6 +1393,8 @@ void CL_RocketTrail(const vec3_t start, const vec3_t end, centity_t *old)
         }
         VectorAdd(move, vec, move);
     }
+
+    VectorCopy(move, ent->lerp_origin);
 }
 
 /*

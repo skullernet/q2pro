@@ -290,34 +290,33 @@ void CL_ParticleSteamEffect2(cl_sustain_t *self)
 CL_TrackerTrail
 ===============
 */
-void CL_TrackerTrail(const vec3_t start, const vec3_t end)
+void CL_TrackerTrail(centity_t *ent, const vec3_t end)
 {
     vec3_t      move;
     vec3_t      vec;
-    vec3_t      forward, right, up, angle_dir;
-    float       len;
+    vec3_t      forward, up, angle_dir;
+    int         i, count, sign;
     cparticle_t *p;
-    int         dec;
+    const int   dec = 3;
     float       dist;
 
-    VectorCopy(start, move);
-    VectorSubtract(end, start, vec);
-    len = VectorNormalize(vec);
+    VectorSubtract(end, ent->lerp_origin, vec);
+    count = VectorNormalize(vec) / dec;
+    if (!count)
+        return;
 
     VectorCopy(vec, forward);
     vectoangles2(forward, angle_dir);
-    AngleVectors(angle_dir, forward, right, up);
+    AngleVectors(angle_dir, NULL, NULL, up);
 
-    dec = 3;
-    VectorScale(vec, 3, vec);
+    VectorCopy(ent->lerp_origin, move);
+    VectorScale(vec, dec, vec);
 
-    // FIXME: this is a really silly way to have a loop
-    while (len > 0) {
-        len -= dec;
-
+    sign = ent->trailcount;
+    for (i = 0; i < count; i++) {
         p = CL_AllocParticle();
         if (!p)
-            return;
+            break;
         VectorClear(p->accel);
 
         p->time = cl.time;
@@ -325,12 +324,18 @@ void CL_TrackerTrail(const vec3_t start, const vec3_t end)
         p->alpha = 1.0f;
         p->alphavel = -2.0f;
         p->color = 0;
-        dist = 8 * cosf(DotProduct(move, forward));
+        dist = 8 * cosf(DotProduct(move, forward) * M_PIf / 64);
+        if (sign & 1)
+            dist = -dist;
         VectorMA(move, dist, up, p->org);
         VectorSet(p->vel, 0, 0, 5);
 
         VectorAdd(move, vec, move);
+        sign ^= 1;
     }
+
+    ent->trailcount = sign;
+    VectorCopy(move, ent->lerp_origin);
 }
 
 static void RandomDir(vec3_t dir)
@@ -483,28 +488,26 @@ CL_TagTrail
 
 ===============
 */
-void CL_TagTrail(const vec3_t start, const vec3_t end, int color)
+void CL_TagTrail(centity_t *ent, const vec3_t end, int color)
 {
     vec3_t      move;
     vec3_t      vec;
-    float       len;
-    int         j;
+    int         i, j, count;
     cparticle_t *p;
-    int         dec;
+    const int   dec = 5;
 
-    VectorCopy(start, move);
-    VectorSubtract(end, start, vec);
-    len = VectorNormalize(vec);
+    VectorSubtract(end, ent->lerp_origin, vec);
+    count = VectorNormalize(vec) / dec;
+    if (!count)
+        return;
 
-    dec = 5;
-    VectorScale(vec, 5, vec);
+    VectorCopy(ent->lerp_origin, move);
+    VectorScale(vec, dec, vec);
 
-    while (len >= 0) {
-        len -= dec;
-
+    for (i = 0; i < count; i++) {
         p = CL_AllocParticle();
         if (!p)
-            return;
+            break;
         VectorClear(p->accel);
 
         p->time = cl.time;
@@ -519,6 +522,8 @@ void CL_TagTrail(const vec3_t start, const vec3_t end, int color)
 
         VectorAdd(move, vec, move);
     }
+
+    VectorCopy(move, ent->lerp_origin);
 }
 
 /*
@@ -634,29 +639,26 @@ CL_BlasterTrail2
 Green!
 ===============
 */
-void CL_BlasterTrail2(const vec3_t start, const vec3_t end)
+void CL_BlasterTrail2(centity_t *ent, const vec3_t end)
 {
     vec3_t      move;
     vec3_t      vec;
-    float       len;
-    int         j;
+    int         i, j, count;
     cparticle_t *p;
-    int         dec;
+    const int   dec = 5;
 
-    VectorCopy(start, move);
-    VectorSubtract(end, start, vec);
-    len = VectorNormalize(vec);
+    VectorSubtract(end, ent->lerp_origin, vec);
+    count = VectorNormalize(vec) / dec;
+    if (!count)
+        return;
 
-    dec = 5;
-    VectorScale(vec, 5, vec);
+    VectorCopy(ent->lerp_origin, move);
+    VectorScale(vec, dec, vec);
 
-    // FIXME: this is a really silly way to have a loop
-    while (len > 0) {
-        len -= dec;
-
+    for (i = 0; i < count; i++) {
         p = CL_AllocParticle();
         if (!p)
-            return;
+            break;
         VectorClear(p->accel);
 
         p->time = cl.time;
@@ -671,6 +673,8 @@ void CL_BlasterTrail2(const vec3_t start, const vec3_t end)
 
         VectorAdd(move, vec, move);
     }
+
+    VectorCopy(move, ent->lerp_origin);
 }
 
 /*
@@ -678,28 +682,27 @@ void CL_BlasterTrail2(const vec3_t start, const vec3_t end)
 CL_IonripperTrail
 ===============
 */
-void CL_IonripperTrail(const vec3_t start, const vec3_t end)
+void CL_IonripperTrail(centity_t *ent, const vec3_t end)
 {
-    vec3_t  move;
-    vec3_t  vec;
-    float   len;
+    vec3_t      move;
+    vec3_t      vec;
     cparticle_t *p;
-    int     dec;
-    int     left = 0;
+    const int   dec = 5;
+    int         i, count, sign;
 
-    VectorCopy(start, move);
-    VectorSubtract(end, start, vec);
-    len = VectorNormalize(vec);
+    VectorSubtract(end, ent->lerp_origin, vec);
+    count = VectorNormalize(vec) / dec;
+    if (!count)
+        return;
 
-    dec = 5;
-    VectorScale(vec, 5, vec);
+    VectorCopy(ent->lerp_origin, move);
+    VectorScale(vec, dec, vec);
 
-    while (len > 0) {
-        len -= dec;
-
+    sign = ent->trailcount;
+    for (i = 0; i < count; i++) {
         p = CL_AllocParticle();
         if (!p)
-            return;
+            break;
         VectorClear(p->accel);
 
         p->time = cl.time;
@@ -709,13 +712,16 @@ void CL_IonripperTrail(const vec3_t start, const vec3_t end)
 
         VectorCopy(move, p->org);
 
-        p->vel[0] = left ? 10 : -10;
+        p->vel[0] = (sign & 1) ? 10 : -10;
         p->vel[1] = 0;
         p->vel[2] = 0;
 
-        left ^= 1;
         VectorAdd(move, vec, move);
+        sign ^= 1;
     }
+
+    ent->trailcount = sign;
+    VectorCopy(move, ent->lerp_origin);
 }
 
 /*
