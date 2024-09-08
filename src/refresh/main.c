@@ -452,9 +452,9 @@ static void GL_OccludeFlares(void)
             uint32_t map_size = HashMap_Size(gl_static.queries);
             Q_assert(map_size < MAX_EDICTS);
             qglGenQueries(1, &new.query);
-            Q_assert(!HashMap_Insert(gl_static.queries, &e->skinnum, &new));
+            HashMap_Insert(gl_static.queries, &e->skinnum, &new);
             q = HashMap_GetValue(glquery_t, gl_static.queries, map_size);
-         }
+        }
 
         if (!set) {
             GL_LoadMatrix(glr.viewmatrix);
