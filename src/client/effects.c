@@ -20,7 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client.h"
 #include "shared/m_flash.h"
 
-static void CL_LogoutEffect(const vec3_t org, int type);
+static void CL_LogoutEffect(const vec3_t org, int color);
 
 static vec3_t avelocities[NUMVERTEXNORMALS];
 
@@ -270,17 +270,17 @@ void CL_MuzzleFlash(void)
     case MZ_LOGIN:
         VectorSet(dl->color, 0, 1, 0);
         S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/grenlf1a.wav"), 1, ATTN_NORM, 0);
-        CL_LogoutEffect(pl->current.origin, mz.weapon);
+        CL_LogoutEffect(pl->current.origin, 0xd0);  // green
         break;
     case MZ_LOGOUT:
         VectorSet(dl->color, 1, 0, 0);
         S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/grenlf1a.wav"), 1, ATTN_NORM, 0);
-        CL_LogoutEffect(pl->current.origin, mz.weapon);
+        CL_LogoutEffect(pl->current.origin, 0x40);  // red
         break;
     case MZ_RESPAWN:
         VectorSet(dl->color, 1, 1, 0);
         S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/grenlf1a.wav"), 1, ATTN_NORM, 0);
-        CL_LogoutEffect(pl->current.origin, mz.weapon);
+        CL_LogoutEffect(pl->current.origin, 0xe0);  // yellow
         break;
     case MZ_PHALANX:
         VectorSet(dl->color, 1, 0.5f, 0.5f);
@@ -1011,7 +1011,7 @@ CL_LogoutEffect
 
 ===============
 */
-static void CL_LogoutEffect(const vec3_t org, int type)
+static void CL_LogoutEffect(const vec3_t org, int color)
 {
     int         i, j;
     cparticle_t *p;
@@ -1023,12 +1023,7 @@ static void CL_LogoutEffect(const vec3_t org, int type)
 
         p->time = cl.time;
 
-        if (type == MZ_LOGIN)
-            p->color = 0xd0 + (Q_rand() & 7); // green
-        else if (type == MZ_LOGOUT)
-            p->color = 0x40 + (Q_rand() & 7); // red
-        else
-            p->color = 0xe0 + (Q_rand() & 7); // yellow
+        p->color = color + (Q_rand() & 7);
 
         p->org[0] = org[0] - 16 + frand() * 32;
         p->org[1] = org[1] - 16 + frand() * 32;
@@ -1229,7 +1224,6 @@ void CL_BlasterTrail(const vec3_t start, const vec3_t end)
         for (j = 0; j < 3; j++) {
             p->org[j] = move[j] + crand();
             p->vel[j] = crand() * 5;
-            p->accel[j] = 0;
         }
 
         VectorAdd(move, vec, move);
@@ -1274,7 +1268,6 @@ void CL_FlagTrail(const vec3_t start, const vec3_t end, int color)
         for (j = 0; j < 3; j++) {
             p->org[j] = move[j] + crand() * 16;
             p->vel[j] = crand() * 5;
-            p->accel[j] = 0;
         }
 
         VectorAdd(move, vec, move);
@@ -1423,7 +1416,6 @@ void CL_OldRailTrail(void)
     int         i;
     float       d, c, s;
     vec3_t      dir;
-    byte        clr = 0x74;
 
     VectorCopy(te.pos1, move);
     VectorSubtract(te.pos2, te.pos1, vec);
@@ -1448,7 +1440,7 @@ void CL_OldRailTrail(void)
 
         p->alpha = 1.0f;
         p->alphavel = -1.0f / (1 + frand() * 0.2f);
-        p->color = clr + (Q_rand() & 7);
+        p->color = 0x74 + (Q_rand() & 7);
         for (j = 0; j < 3; j++) {
             p->org[j] = move[j] + dir[j] * 3;
             p->vel[j] = dir[j] * 6;
@@ -1478,7 +1470,6 @@ void CL_OldRailTrail(void)
         for (j = 0; j < 3; j++) {
             p->org[j] = move[j] + crand() * 3;
             p->vel[j] = crand() * 3;
-            p->accel[j] = 0;
         }
 
         VectorAdd(move, vec, move);
@@ -1553,6 +1544,10 @@ static void CL_FlyParticles(const vec3_t origin, int count)
 
     ltime = cl.time * 0.001f;
     for (i = 0; i < count; i += 2) {
+        p = CL_AllocParticle();
+        if (!p)
+            return;
+
         angle = ltime * avelocities[i][0];
         sy = sinf(angle);
         cy = cosf(angle);
@@ -1563,10 +1558,6 @@ static void CL_FlyParticles(const vec3_t origin, int count)
         forward[0] = cp * cy;
         forward[1] = cp * sy;
         forward[2] = -sp;
-
-        p = CL_AllocParticle();
-        if (!p)
-            return;
 
         p->time = cl.time;
 
@@ -1630,6 +1621,10 @@ void CL_BfgParticles(const entity_t *ent)
 
     ltime = cl.time * 0.001f;
     for (i = 0; i < NUMVERTEXNORMALS; i++) {
+        p = CL_AllocParticle();
+        if (!p)
+            return;
+
         angle = ltime * avelocities[i][0];
         sy = sinf(angle);
         cy = cosf(angle);
@@ -1640,10 +1635,6 @@ void CL_BfgParticles(const entity_t *ent)
         forward[0] = cp * cy;
         forward[1] = cp * sy;
         forward[2] = -sp;
-
-        p = CL_AllocParticle();
-        if (!p)
-            return;
 
         p->time = cl.time;
 
@@ -1752,8 +1743,7 @@ void CL_AddParticles(void)
 {
     cparticle_t     *p, *next;
     float           alpha;
-    float           time = 0, time2;
-    int             color;
+    float           time, time2;
     cparticle_t     *active, *tail;
     particle_t      *part;
 
@@ -1773,6 +1763,7 @@ void CL_AddParticles(void)
                 continue;
             }
         } else {
+            time = 0.0f;
             alpha = p->alpha;
         }
 
@@ -1788,10 +1779,6 @@ void CL_AddParticles(void)
             tail = p;
         }
 
-        if (alpha > 1.0f)
-            alpha = 1;
-        color = p->color;
-
         time2 = time * time;
 
         part->origin[0] = p->org[0] + p->vel[0] * time + p->accel[0] * time2;
@@ -1799,8 +1786,8 @@ void CL_AddParticles(void)
         part->origin[2] = p->org[2] + p->vel[2] * time + p->accel[2] * time2;
 
         part->rgba = p->rgba;
-        part->color = color;
-        part->alpha = alpha;
+        part->color = p->color;
+        part->alpha = min(alpha, 1.0f);
 
         if (p->alphavel == INSTANT_PARTICLE) {
             p->alphavel = 0.0f;

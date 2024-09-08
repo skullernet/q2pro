@@ -999,7 +999,7 @@ static void CL_AddPacketEntities(void)
                 V_AddLight(ent.origin, 155, -1.0f, -1.0f, -1.0f);
             }
         } else if (effects & EF_TRACKER) {
-            CL_TrackerTrail(cent->lerp_origin, ent.origin, 0);
+            CL_TrackerTrail(cent->lerp_origin, ent.origin);
             V_AddLight(ent.origin, 200, -1, -1, -1);
         } else if (effects & EF_GREENGIB) {
             CL_DiminishingTrail(cent->lerp_origin, ent.origin, cent, DT_GREENGIB);

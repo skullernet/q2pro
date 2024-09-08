@@ -832,15 +832,13 @@ void CL_Trace(trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mi
 //
 // effects.c
 //
-#define PARTICLE_GRAVITY        40
-#define BLASTER_PARTICLE_COLOR  0xe0
+#define PARTICLE_GRAVITY    40
 #define INSTANT_PARTICLE    -10000.0f
 
 typedef struct cparticle_s {
     struct cparticle_s    *next;
 
-    float   time;
-
+    int     time;
     vec3_t  org;
     vec3_t  vel;
     vec3_t  accel;
@@ -855,7 +853,7 @@ typedef struct {
     vec3_t  color;
     vec3_t  origin;
     float   radius;
-    float   die;        // stop lighting after this time
+    int     die;        // stop lighting after this time
 } cdlight_t;
 
 typedef enum {
@@ -907,7 +905,7 @@ void CL_ForceWall(const vec3_t start, const vec3_t end, int color);
 void CL_BubbleTrail2(const vec3_t start, const vec3_t end, int dist);
 void CL_Heatbeam(const vec3_t start, const vec3_t end);
 void CL_ParticleSteamEffect(const vec3_t org, const vec3_t dir, int color, int count, int magnitude);
-void CL_TrackerTrail(const vec3_t start, const vec3_t end, int particleColor);
+void CL_TrackerTrail(const vec3_t start, const vec3_t end);
 void CL_TagTrail(const vec3_t start, const vec3_t end, int color);
 void CL_ColorFlash(const vec3_t pos, int ent, int intensity, float r, float g, float b);
 void CL_Tracker_Shell(const centity_t *cent, const vec3_t origin);
