@@ -611,8 +611,12 @@ static void CL_AddPacketEntities(void)
             ent.oldorigin[2] += autobob;
         }
 
-        if (effects & (EF_GIB | EF_GREENGIB) && !cl_gibs->integer)
-            goto skip;
+        if (!cl_gibs->integer) {
+            if (effects & EF_GIB && !(cl.csr.extended && effects & EF_ROCKET))
+                goto skip;
+            if (effects & EF_GREENGIB)
+                goto skip;
+        }
 
         // create a new entity
 

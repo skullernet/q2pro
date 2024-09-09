@@ -642,9 +642,15 @@ void SV_BuildClientFrame(client_t *client)
         if (!HAS_EFFECTS(ent))
             continue;
 
-        if (ent->s.effects & (EF_GIB | EF_GREENGIB) && client->settings[CLS_NOGIBS])
-            continue;
+        // ignore gibs if client says so
+        if (client->settings[CLS_NOGIBS]) {
+            if (ent->s.effects & EF_GIB && !(client->csr->extended && ent->s.effects & EF_ROCKET))
+                continue;
+            if (ent->s.effects & EF_GREENGIB)
+                continue;
+        }
 
+        // ignore flares if client says so
         if (client->csr->extended && ent->s.renderfx & RF_FLARE && client->settings[CLS_NOFLARES])
             continue;
 
