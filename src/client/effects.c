@@ -1277,11 +1277,13 @@ void CL_FlagTrail(centity_t *ent, const vec3_t end, int color)
 ===============
 CL_DiminishingTrail
 
+Now combined with CL_RocketTrail().
 ===============
 */
 void CL_DiminishingTrail(centity_t *ent, const vec3_t end, diminishing_trail_t type)
 {
-    static const byte colors[DT_COUNT] = { 0xe8, 0xdb, 0x04, 0xd8 };
+    static const byte  colors[DT_COUNT] = { 0xe8, 0xdb, 0x04, 0x04, 0xd8 };
+    static const float alphas[DT_COUNT] = { 0.4f, 0.4f, 0.2f, 0.2f, 0.4f };
     vec3_t      move;
     vec3_t      vec;
     int         i, j, count;
@@ -1320,14 +1322,14 @@ void CL_DiminishingTrail(centity_t *ent, const vec3_t end, diminishing_trail_t t
             p->time = cl.time;
 
             p->alpha = 1.0f;
-            p->alphavel = -1.0f / (1 + frand() * (type == DT_SMOKE ? 0.2f : 0.4f));
+            p->alphavel = -1.0f / (1 + frand() * alphas[type]);
 
             for (j = 0; j < 3; j++) {
                 p->org[j] = move[j] + crand() * orgscale;
                 p->vel[j] = crand() * velscale;
             }
 
-            if (type >= DT_SMOKE)
+            if (type >= DT_ROCKET)
                 p->accel[2] = 20;
             else
                 p->vel[2] -= PARTICLE_GRAVITY;
@@ -1338,43 +1340,8 @@ void CL_DiminishingTrail(centity_t *ent, const vec3_t end, diminishing_trail_t t
                 p->color = colors[type] + (Q_rand() & 7);
         }
 
-        ent->trailcount -= 5;
-        if (ent->trailcount < 100)
-            ent->trailcount = 100;
-        VectorAdd(move, vec, move);
-    }
-
-    VectorCopy(move, ent->lerp_origin);
-}
-
-/*
-===============
-CL_RocketTrail
-
-===============
-*/
-void CL_RocketTrail(centity_t *ent, const vec3_t end)
-{
-    vec3_t      move;
-    vec3_t      vec;
-    int         i, j, count;
-    cparticle_t *p;
-    const int   dec = 1;
-
-    VectorSubtract(end, ent->lerp_origin, vec);
-    count = VectorNormalize(vec) / dec;
-    if (!count)
-        return;
-
-    VectorCopy(ent->lerp_origin, move);
-    VectorScale(vec, dec, vec);
-
-    // smoke
-    CL_DiminishingTrail(ent, end, DT_SMOKE);
-
-    // fire
-    for (i = 0; i < count; i++) {
-        if ((Q_rand() & 7) == 0) {
+        // rocket fire (non-diminishing)
+        if (type == DT_ROCKET && (Q_rand() & 15) == 0) {
             p = CL_AllocParticle();
             if (!p)
                 break;
@@ -1391,6 +1358,10 @@ void CL_RocketTrail(centity_t *ent, const vec3_t end)
             }
             p->accel[2] = -PARTICLE_GRAVITY;
         }
+
+        ent->trailcount -= 5;
+        if (ent->trailcount < 100)
+            ent->trailcount = 100;
         VectorAdd(move, vec, move);
     }
 

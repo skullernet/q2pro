@@ -859,14 +859,14 @@ typedef struct {
 typedef enum {
     DT_GIB,
     DT_GREENGIB,
-    DT_SMOKE,
+    DT_ROCKET,
+    DT_GRENADE,
     DT_FIREBALL,
 
     DT_COUNT
 } diminishing_trail_t;
 
 void CL_BigTeleportParticles(const vec3_t org);
-void CL_RocketTrail(centity_t *ent, const vec3_t end);
 void CL_DiminishingTrail(centity_t *ent, const vec3_t end, diminishing_trail_t type);
 void CL_FlyEffect(centity_t *ent, const vec3_t origin);
 void CL_BfgParticles(const entity_t *ent);

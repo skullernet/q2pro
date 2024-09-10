@@ -946,7 +946,7 @@ static void CL_AddPacketEntities(void)
                 CL_DiminishingTrail(cent, ent.origin, DT_FIREBALL);
                 has_trail = true;
             } else if (!(cl_disable_particles->integer & NOPART_ROCKET_TRAIL)) {
-                CL_RocketTrail(cent, ent.origin);
+                CL_DiminishingTrail(cent, ent.origin, DT_ROCKET);
                 has_trail = true;
             }
             if (cl_dlight_hacks->integer & DLHACK_ROCKET_COLOR)
@@ -972,7 +972,7 @@ static void CL_AddPacketEntities(void)
             has_trail = true;
         } else if (effects & EF_GRENADE) {
             if (!(cl_disable_particles->integer & NOPART_GRENADE_TRAIL)) {
-                CL_DiminishingTrail(cent, ent.origin, DT_SMOKE);
+                CL_DiminishingTrail(cent, ent.origin, DT_GRENADE);
                 has_trail = true;
             }
         } else if (effects & EF_FLIES) {
