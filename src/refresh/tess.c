@@ -93,9 +93,10 @@ void GL_DrawParticles(void)
             VectorSubtract(p->origin, glr.fd.vieworg, transformed);
             dist = DotProduct(transformed, glr.viewaxis[0]);
 
-            scale = gl_partscale->value;
+            scale = 1.0f;
             if (dist > 20)
-                scale += dist * 0.01f;
+                scale += dist * 0.004f;
+            scale *= gl_partscale->value;
             scale2 = scale * PARTICLE_SCALE;
 
             VectorMA(p->origin, scale2, glr.viewaxis[1], dst_vert);
