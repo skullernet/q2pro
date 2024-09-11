@@ -709,6 +709,7 @@ static void OGG_Cmd_c(genctx_t *ctx, int argnum)
         Prompt_AddMatch(ctx, "info");
         Prompt_AddMatch(ctx, "play");
         Prompt_AddMatch(ctx, "stop");
+        Prompt_AddMatch(ctx, "next");
         return;
     }
 
@@ -726,8 +727,10 @@ static void OGG_Cmd_f(void)
         OGG_Play_f();
     else if (!strcmp(cmd, "stop"))
         OGG_Stop();
+    else if (!strcmp(cmd, "next"))
+        OGG_Play();
     else
-        Com_Printf("Usage: %s <info|play|stop>\n", Cmd_Argv(0));
+        Com_Printf("Usage: %s <info|play|stop|next>\n", Cmd_Argv(0));
 }
 
 static void ogg_enable_changed(cvar_t *self)
