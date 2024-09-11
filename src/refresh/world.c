@@ -403,6 +403,7 @@ void GL_DrawBspModel(mmodel_t *model)
     vec3_t transformed, temp;
     entity_t *ent = glr.ent;
     glCullResult_t cull;
+    glStateBits_t skymask;
     int i;
 
     if (!model->numfaces)
@@ -440,7 +441,9 @@ void GL_DrawBspModel(mmodel_t *model)
 
     GL_TransformLights(model);
 
-    GL_RotateForEntity();
+    GL_RotateForEntity(gl_static.use_bmodel_skies);
+
+    skymask = gl_static.use_bmodel_skies ? GLS_SKY_MASK : 0;
 
     GL_BindArrays(VA_3D);
 
@@ -449,7 +452,9 @@ void GL_DrawBspModel(mmodel_t *model)
     // draw visible faces
     for (i = 0, face = model->firstface; i < model->numfaces; i++, face++) {
         // sky faces don't have their polygon built
-        if (face->drawflags & (SURF_SKY | SURF_NODRAW))
+        if (face->drawflags & SURF_SKY && !(face->statebits & skymask))
+            continue;
+        if (face->drawflags & SURF_NODRAW)
             continue;
 
         dot = PlaneDiffFast(transformed, face->plane);
@@ -531,7 +536,7 @@ static inline void GL_DrawNode(const mnode_t *node)
         if (face->drawframe != glr.drawframe)
             continue;
 
-        if (face->drawflags & SURF_SKY) {
+        if (face->drawflags & SURF_SKY && !(face->statebits & GLS_SKY_MASK)) {
             R_AddSkySurface(face);
             continue;
         }

@@ -674,11 +674,14 @@ gl_downsample_skins::
     Default value is 1 (downsampling enabled).
 
 gl_drawsky::
-    Enables skybox texturing and N64 skies. N64 skies only work if
-    ‘gl_shaders’ is enabled. Default value is 1.
-      - 0 — draw solid black sky
-      - 1 — draw normal sky, or N64 sky if present
-      - 2 — draw normal sky, ignore N64 sky
+    Enables skybox texturing. 0 means to draw sky in solid black color.
+    Default value is 1 (enabled).
+
+gl_cubemaps::
+    Enables use of cubemaps for skybox drawing. Cubemaps allow multiple skybox
+    textures per map, and help to avoid sky rendering bugs. Also enables N64
+    skies (although these aren't technically cubemaps). Only effective if
+    ‘gl_shaders’ is enabled. Default value is 1 (enabled).
 
 gl_waterwarp::
     Enable screen warping effect when underwater. Only effective when using

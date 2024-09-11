@@ -43,6 +43,7 @@ static void write_block(sizebuf_t *buf)
     GLSF("layout(std140) uniform u_block {\n");
     GLSL(
         mat4 m_vp;
+        mat4 m_sky[2];
         float u_time;
         float u_modulate;
         float u_add;
@@ -52,8 +53,6 @@ static void write_block(sizebuf_t *buf)
         vec2 w_amp;
         vec2 w_phase;
         vec2 u_scroll;
-        vec3 u_vieworg;
-        float pad_2;
     )
     GLSF("};\n");
 }
@@ -64,7 +63,7 @@ static void write_vertex_shader(sizebuf_t *buf, glStateBits_t bits)
     write_block(buf);
 
     GLSL(in vec4 a_pos;)
-    if (bits & GLS_CLASSIC_SKY) {
+    if (bits & GLS_SKY_MASK) {
         GLSL(out vec3 v_dir;)
     } else {
         GLSL(in vec2 a_tc;)
@@ -83,8 +82,9 @@ static void write_vertex_shader(sizebuf_t *buf, glStateBits_t bits)
 
     GLSF("void main() {\n");
         if (bits & GLS_CLASSIC_SKY) {
-            GLSL(v_dir = a_pos.xyz - u_vieworg.xyz;)
-            GLSL(v_dir[2] *= 3.0;)
+            GLSL(v_dir = (m_sky[1] * a_pos).xyz;)
+        } else if (bits & GLS_DEFAULT_SKY) {
+            GLSL(v_dir = (m_sky[0] * a_pos).xyz;)
         } else if (bits & GLS_SCROLL_ENABLE) {
             GLSL(v_tc = a_tc + u_scroll;)
         } else {
@@ -108,19 +108,24 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
     if (gl_config.ver_es)
         GLSL(precision mediump float;)
 
-    if (bits & (GLS_WARP_ENABLE | GLS_LIGHTMAP_ENABLE | GLS_INTENSITY_ENABLE | GLS_CLASSIC_SKY))
+    if (bits & (GLS_WARP_ENABLE | GLS_LIGHTMAP_ENABLE | GLS_INTENSITY_ENABLE | GLS_SKY_MASK))
         write_block(buf);
 
     if (bits & GLS_CLASSIC_SKY) {
         GLSL(
             uniform sampler2D u_texture1;
             uniform sampler2D u_texture2;
-            in vec3 v_dir;
         )
+    } else if (bits & GLS_DEFAULT_SKY) {
+        GLSL(uniform samplerCube u_texture;)
     } else {
         GLSL(uniform sampler2D u_texture;)
-        GLSL(in vec2 v_tc;)
     }
+
+    if (bits & GLS_SKY_MASK)
+        GLSL(in vec3 v_dir;)
+    else
+        GLSL(in vec2 v_tc;)
 
     if (bits & GLS_LIGHTMAP_ENABLE) {
         GLSL(uniform sampler2D u_lightmap;)
@@ -146,6 +151,8 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
                 vec4 alpha = texture(u_texture2, tc2);
                 vec4 diffuse = vec4((solid.rgb - alpha.rgb * 0.25) * 0.65, 1.0);
             )
+        } else if (bits & GLS_DEFAULT_SKY) {
+            GLSL(vec4 diffuse = texture(u_texture, v_dir);)
         } else {
             GLSL(vec2 tc = v_tc;)
 
@@ -255,7 +262,7 @@ static GLuint create_and_use_program(glStateBits_t bits)
     qglAttachShader(program, shader_f);
 
     qglBindAttribLocation(program, VERT_ATTR_POS, "a_pos");
-    if (!(bits & GLS_CLASSIC_SKY))
+    if (!(bits & GLS_SKY_MASK))
         qglBindAttribLocation(program, VERT_ATTR_TC, "a_tc");
     if (bits & GLS_LIGHTMAP_ENABLE)
         qglBindAttribLocation(program, VERT_ATTR_LMTC, "a_lmtc");
@@ -413,8 +420,6 @@ static void shader_setup_2d(void)
     gls.u_block.w_amp[1] = 0.0025f;
     gls.u_block.w_phase[0] = M_PIf * 10;
     gls.u_block.w_phase[1] = M_PIf * 10;
-
-    VectorClear(gls.u_block.vieworg);
 }
 
 static void shader_setup_3d(void)
@@ -430,7 +435,9 @@ static void shader_setup_3d(void)
     gls.u_block.w_phase[0] = 4;
     gls.u_block.w_phase[1] = 4;
 
-    VectorCopy(glr.fd.vieworg, gls.u_block.vieworg);
+    R_RotateForSky();
+
+    memcpy(gls.u_block.msky, glr.skymatrix, sizeof(glr.skymatrix));
 }
 
 static void shader_disable_state(void)
@@ -443,6 +450,8 @@ static void shader_disable_state(void)
 
     qglActiveTexture(GL_TEXTURE0);
     qglBindTexture(GL_TEXTURE_2D, 0);
+
+    qglBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 
     for (int i = 0; i < VERT_ATTR_COUNT; i++)
         qglDisableVertexAttribArray(i);
@@ -462,6 +471,9 @@ static void shader_init(void)
     qglBindBuffer(GL_UNIFORM_BUFFER, gl_static.uniform_buffer);
     qglBindBufferBase(GL_UNIFORM_BUFFER, 0, gl_static.uniform_buffer);
     qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_block), NULL, GL_DYNAMIC_DRAW);
+
+    if (gl_config.ver_gl >= QGL_VER(3, 2))
+        qglEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 }
 
 static void shader_shutdown(void)
@@ -483,6 +495,9 @@ static void shader_shutdown(void)
         qglDeleteBuffers(1, &gl_static.uniform_buffer);
         gl_static.uniform_buffer = 0;
     }
+
+    if (gl_config.ver_gl >= QGL_VER(3, 2))
+        qglDisable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 }
 
 const glbackend_t backend_shader = {

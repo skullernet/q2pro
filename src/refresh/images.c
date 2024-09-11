@@ -1557,7 +1557,7 @@ static void IMG_List_f(void)
     Com_Printf("------------------\n");
     texels = count = 0;
 
-    for (i = 1, image = r_images + 1; i < r_numImages; i++, image++) {
+    for (i = R_NUM_AUTO_IMG, image = r_images + i; i < r_numImages; i++, image++) {
         if (!image->name[0])
             continue;
         if (mask && !(mask & BIT(image->type)))
@@ -1595,7 +1595,7 @@ static image_t *alloc_image(void)
     image_t *image, *placeholder = NULL;
 
     // find a free image_t slot
-    for (i = 1, image = r_images + 1; i < r_numImages; i++, image++) {
+    for (i = R_NUM_AUTO_IMG, image = r_images + i; i < r_numImages; i++, image++) {
         if (!image->name[0])
             return image;
         if (!image->upload_width && !image->upload_height && !placeholder)
@@ -2030,14 +2030,27 @@ fail:
 
 image_t *IMG_Find(const char *name, imagetype_t type, imageflags_t flags)
 {
+    char buffer[MAX_QPATH];
     image_t *image;
+    size_t len;
 
     Q_assert(name);
 
-    if ((image = find_or_load_image(name, strlen(name), type, flags)))
-        return image;
+    // path MUST never overflow
+    len = FS_NormalizePathBuffer(buffer, name, sizeof(buffer));
+    image = find_or_load_image(buffer, len, type, flags);
 
-    return R_NOTEXTURE;
+    // missing (or invalid) sky texture will use default sky
+    if (type == IT_SKY) {
+        if (!image)
+            return R_SKYTEXTURE;
+        if (~image->flags & flags & IF_CUBEMAP)
+            return R_SKYTEXTURE;
+    }
+
+    if (!image)
+        return R_NOTEXTURE;
+    return image;
 }
 
 /*
@@ -2125,7 +2138,7 @@ void IMG_FreeUnused(void)
     image_t *image;
     int i, count = 0;
 
-    for (i = 1, image = r_images + 1; i < r_numImages; i++, image++) {
+    for (i = R_NUM_AUTO_IMG, image = r_images + i; i < r_numImages; i++, image++) {
         if (!image->name[0])
             continue;        // free image_t slot
         if (image->registration_sequence == r_registration_sequence)
@@ -2152,7 +2165,7 @@ void IMG_FreeAll(void)
     image_t *image;
     int i, count = 0;
 
-    for (i = 1, image = r_images + 1; i < r_numImages; i++, image++) {
+    for (i = R_NUM_AUTO_IMG, image = r_images + i; i < r_numImages; i++, image++) {
         if (!image->name[0])
             continue;        // free image_t slot
         // free it
@@ -2169,7 +2182,7 @@ void IMG_FreeAll(void)
         List_Init(&r_imageHash[i]);
 
     // &r_images[0] == R_NOTEXTURE
-    r_numImages = 1;
+    r_numImages = R_NUM_AUTO_IMG;
 }
 
 /*
@@ -2260,12 +2273,12 @@ void IMG_Init(void)
         List_Init(&r_imageHash[i]);
 
     // &r_images[0] == R_NOTEXTURE
-    r_numImages = 1;
+    r_numImages = R_NUM_AUTO_IMG;
 }
 
 void IMG_Shutdown(void)
 {
     Cmd_Deregister(img_cmd);
-    memset(r_images, 0, sizeof(r_images[0]));   // clear R_NOTEXTURE
+    memset(r_images, 0, R_NUM_AUTO_IMG * sizeof(r_images[0]));   // clear R_NOTEXTURE
     r_numImages = 0;
 }

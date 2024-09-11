@@ -155,6 +155,7 @@ typedef enum {
     IF_NEAREST          = BIT(7),   // don't bilerp
     IF_OPAQUE           = BIT(8),   // known to be opaque
     IF_DEFAULT_FLARE    = BIT(9),   // default flare hack
+    IF_CUBEMAP          = BIT(10),  // cubemap (or part of it)
 
     // not stored in image
     IF_OPTIONAL         = BIT(16),  // don't warn if not found

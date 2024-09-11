@@ -573,6 +573,13 @@ static glStateBits_t statebits_for_surface(const mface_t *surf)
 {
     glStateBits_t statebits = GLS_DEFAULT;
 
+    if (surf->drawflags & SURF_SKY) {
+        if (Q_stricmpn(surf->texinfo->name, CONST_STR_LEN("n64/env/sky")) == 0)
+            return GLS_TEXTURE_REPLACE | GLS_CLASSIC_SKY;
+        else
+            return GLS_TEXTURE_REPLACE | GLS_DEFAULT_SKY;
+    }
+
     if (gl_static.use_shaders) {
         // no inverse intensity
         if (!(surf->drawflags & SURF_TRANS_MASK))
@@ -887,7 +894,9 @@ static void upload_world_surfaces(void)
     currvert = 0;
     lastvert = 0;
     for (i = 0, surf = bsp->faces; i < bsp->numfaces; i++, surf++) {
-        if (surf->drawflags & (SURF_SKY | SURF_NODRAW))
+        if (surf->drawflags & SURF_SKY && !gl_static.use_cubemaps)
+            continue;
+        if (surf->drawflags & SURF_NODRAW)
             continue;
 
         Q_assert(surf->numsurfedges >= 3 && surf->numsurfedges <= TESS_MAX_VERTICES);
@@ -974,7 +983,6 @@ void GL_FreeWorld(void)
         return;
 
     BSP_Free(gl_static.world.cache);
-    gl_static.classic_sky = NULL;
 
     if (gl_static.world.vertices)
         Z_Free(gl_static.world.vertices);
@@ -1032,28 +1040,27 @@ void GL_LoadWorld(const char *name)
     GL_InitQueries();
 
     gl_static.world.cache = bsp;
-    gl_static.classic_sky = NULL;
 
     // calculate world size for far clip plane and sky box
     set_world_size(bsp->nodes);
 
     // register all texinfo
     for (i = 0, info = bsp->texinfo; i < bsp->numtexinfo; i++, info++) {
-        if (gl_static.use_shaders && info->c.flags & SURF_SKY &&
-            Q_stricmpn(info->name, CONST_STR_LEN("n64/env/sky")) == 0) {
-            if (gl_static.classic_sky) {
-                info->image = gl_static.classic_sky;
-            } else {
+        if (info->c.flags & SURF_SKY) {
+            if (!gl_static.use_cubemaps) {
+                info->image = R_NOTEXTURE;
+            } else if (Q_stricmpn(info->name, CONST_STR_LEN("n64/env/sky")) == 0) {
                 Q_concat(buffer, sizeof(buffer), "textures/", info->name, ".tga");
-                FS_NormalizePath(buffer);
                 info->image = IMG_Find(buffer, IT_SKY, IF_REPEAT | IF_CLASSIC_SKY);
-                if (info->image != R_NOTEXTURE)
-                    gl_static.classic_sky = info->image;
+            } else if (Q_stricmpn(info->name, CONST_STR_LEN("sky/")) == 0) {
+                Q_concat(buffer, sizeof(buffer), info->name, ".tga");
+                info->image = IMG_Find(buffer, IT_SKY, IF_CUBEMAP);
+            } else {
+                info->image = R_SKYTEXTURE;
             }
         } else {
             imageflags_t flags = (info->c.flags & SURF_WARP) ? IF_TURBULENT : IF_NONE;
             Q_concat(buffer, sizeof(buffer), "textures/", info->name, ".wal");
-            FS_NormalizePath(buffer);
             info->image = IMG_Find(buffer, IT_WALL, flags);
         }
     }
@@ -1064,8 +1071,16 @@ void GL_LoadWorld(const char *name)
         // hack surface flags into drawflags for faster access
         surf->drawflags |= surf->texinfo->c.flags & ~DSURF_PLANEBACK;
 
+        // clear statebits from previous load
+        surf->statebits = GLS_DEFAULT;
+
         // don't count sky surfaces
-        if (surf->drawflags & (SURF_SKY | SURF_NODRAW))
+        if (surf->drawflags & SURF_SKY) {
+            if (!gl_static.use_cubemaps)
+                continue;
+            surf->drawflags &= ~SURF_NODRAW;
+        }
+        if (surf->drawflags & SURF_NODRAW)
             continue;
         if (surf->drawflags & SURF_N64_UV)
             n64surfs++;
@@ -1082,12 +1097,15 @@ void GL_LoadWorld(const char *name)
     }
 
     gl_static.nolm_mask = SURF_NOLM_MASK_DEFAULT;
+    gl_static.use_bmodel_skies = false;
 
     // only supported in DECOUPLED_LM maps because vanilla maps have broken
     // lightofs for liquids/alphas. legacy renderer doesn't support lightmapped
     // liquids too.
-    if ((bsp->lm_decoupled || n64surfs > 100 || gl_static.classic_sky) && gl_static.use_shaders)
+    if ((bsp->lm_decoupled || n64surfs > 100) && gl_static.use_shaders) {
         gl_static.nolm_mask = SURF_NOLM_MASK_REMASTER;
+        gl_static.use_bmodel_skies = gl_static.use_cubemaps;
+    }
 
     glr.fd.lightstyles = &(lightstyle_t){ 1 };
 

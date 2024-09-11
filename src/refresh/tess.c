@@ -638,7 +638,9 @@ void GL_Flush3D(void)
     if (!tess.numindices)
         return;
 
-    if (q_likely(tess.texnum[TMU_LIGHTMAP])) {
+    if (q_unlikely(state & GLS_SKY_MASK)) {
+        array = GLA_VERTEX;
+    } else if (q_likely(tess.texnum[TMU_LIGHTMAP])) {
         state |= GLS_LIGHTMAP_ENABLE;
         array |= GLA_LMTC;
 
@@ -655,7 +657,9 @@ void GL_Flush3D(void)
     GL_StateBits(state);
     GL_ArrayBits(array);
 
-    if (qglBindTextures) {
+    if (state & GLS_DEFAULT_SKY) {
+        GL_BindCubemap(tess.texnum[0]);
+    } else if (qglBindTextures) {
 #if USE_DEBUG
         if (q_unlikely(gl_nobind->integer))
             tess.texnum[TMU_TEXTURE] = TEXNUM_DEFAULT;
@@ -715,8 +719,9 @@ static const image_t *GL_TextureAnimation(const mtexinfo_t *tex)
 static void GL_DrawFace(const mface_t *surf)
 {
     const image_t *image = GL_TextureAnimation(surf->texinfo);
-    int numtris = surf->numsurfedges - 2;
-    int numindices = numtris * 3;
+    const int numtris = surf->numsurfedges - 2;
+    const int numindices = numtris * 3;
+    glStateBits_t state = surf->statebits;
     GLuint texnum[MAX_TMUS] = { 0 };
     glIndex_t *dst_indices;
     int i, j;
@@ -730,10 +735,17 @@ static void GL_DrawFace(const mface_t *surf)
             texnum[TMU_TEXTURE] = TEXNUM_WHITE;
             texnum[TMU_GLOWMAP] = 0;
         }
+    } else if (state & GLS_CLASSIC_SKY) {
+        if (q_likely(gl_drawsky->integer)) {
+            texnum[TMU_LIGHTMAP] = image->texnum2;
+        } else {
+            texnum[TMU_TEXTURE ] = TEXNUM_BLACK;
+            state &= ~GLS_CLASSIC_SKY;
+        }
     }
 
     if (memcmp(tess.texnum, texnum, sizeof(texnum)) ||
-        tess.flags != surf->statebits ||
+        tess.flags != state ||
         tess.numindices + numindices > TESS_MAX_INDICES)
         GL_Flush3D();
 
@@ -752,7 +764,7 @@ static void GL_DrawFace(const mface_t *surf)
     tess.numindices += numindices;
 
     memcpy(tess.texnum, texnum, sizeof(texnum));
-    tess.flags = surf->statebits;
+    tess.flags = state;
 
     c.facesTris += numtris;
     c.facesDrawn++;
@@ -787,7 +799,9 @@ void GL_DrawAlphaFaces(void)
             glr.ent = face->entity;
             GL_Flush3D();
             GL_SetEntityAxis();
-            GL_RotateForEntity();
+            GL_RotateForEntity(glr.ent == &gl_world ?
+                               gl_static.use_cubemaps :
+                               gl_static.use_bmodel_skies);
         }
         GL_DrawFace(face);
     }

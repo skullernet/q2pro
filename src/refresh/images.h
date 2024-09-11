@@ -76,7 +76,10 @@ extern int      r_numImages;
 
 extern unsigned r_registration_sequence;
 
-#define R_NOTEXTURE &r_images[0]
+#define R_NUM_AUTO_IMG  3
+#define R_NOTEXTURE     (&r_images[0])
+#define R_SHELLTEXTURE  (&r_images[1])
+#define R_SKYTEXTURE    (&r_images[2])
 
 extern uint32_t d_8to24table[256];
 

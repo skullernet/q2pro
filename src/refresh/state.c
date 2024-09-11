@@ -60,6 +60,38 @@ void GL_BindTexture(glTmu_t tmu, GLuint texnum)
     c.texSwitches++;
 }
 
+void GL_ForceCubemap(GLuint texnum)
+{
+    GL_ActiveTexture(TMU_TEXTURE);
+
+    if (gls.texnumcube == texnum)
+        return;
+
+    qglBindTexture(GL_TEXTURE_CUBE_MAP, texnum);
+    gls.texnumcube = texnum;
+
+    c.texSwitches++;
+}
+
+void GL_BindCubemap(GLuint texnum)
+{
+    if (!gl_drawsky->integer)
+        texnum = TEXNUM_CUBEMAP_BLACK;
+
+    if (gls.texnumcube == texnum)
+        return;
+
+    if (qglBindTextureUnit) {
+        qglBindTextureUnit(TMU_TEXTURE, texnum);
+    } else {
+        GL_ActiveTexture(TMU_TEXTURE);
+        qglBindTexture(GL_TEXTURE_CUBE_MAP, texnum);
+    }
+    gls.texnumcube = texnum;
+
+    c.texSwitches++;
+}
+
 void GL_CommonStateBits(glStateBits_t bits)
 {
     glStateBits_t diff = bits ^ gls.state_bits;

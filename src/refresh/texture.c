@@ -29,6 +29,7 @@ static int gl_tex_solid_format;
 static int upload_width;
 static int upload_height;
 static bool upload_alpha;
+static GLenum upload_target;
 
 static cvar_t *gl_noscrap;
 static cvar_t *gl_round_down;
@@ -45,14 +46,15 @@ static cvar_t *gl_saturation;
 static cvar_t *gl_gamma;
 static cvar_t *gl_invert;
 static cvar_t *gl_partshape;
+static cvar_t *gl_cubemaps;
 
 cvar_t *gl_intensity;
-image_t shell_texture;
 
 static int GL_UpscaleLevel(int width, int height, imagetype_t type, imageflags_t flags);
 static void GL_Upload32(byte *data, int width, int height, int baselevel, imagetype_t type, imageflags_t flags);
 static void GL_Upscale32(byte *data, int width, int height, int maxlevel, imagetype_t type, imageflags_t flags);
 static void GL_SetFilterAndRepeat(imagetype_t type, imageflags_t flags);
+static void GL_SetCubemapFilterAndRepeat(void);
 static void GL_InitRawTexture(void);
 
 typedef struct {
@@ -82,13 +84,20 @@ static void update_image_params(unsigned mask)
             continue;
         if (!(mask & BIT(image->type)))
             continue;
+        if (!image->texnum)
+            continue;
 
-        GL_ForceTexture(TMU_TEXTURE, image->texnum);
-        GL_SetFilterAndRepeat(image->type, image->flags);
-
-        if (image->texnum2) {
-            GL_ForceTexture(TMU_TEXTURE, image->texnum2);
+        if (image->flags & IF_CUBEMAP) {
+            GL_ForceCubemap(image->texnum);
+            GL_SetCubemapFilterAndRepeat();
+        } else {
+            GL_ForceTexture(TMU_TEXTURE, image->texnum);
             GL_SetFilterAndRepeat(image->type, image->flags);
+
+            if (image->texnum2) {
+                GL_ForceTexture(TMU_TEXTURE, image->texnum2);
+                GL_SetFilterAndRepeat(image->type, image->flags);
+            }
         }
     }
 }
@@ -506,8 +515,12 @@ static void GL_Upload32(byte *data, int width, int height, int baselevel, imaget
     if (upload_alpha)
         comp = gl_tex_alpha_format;
 
-    qglTexImage2D(GL_TEXTURE_2D, baselevel, comp, scaled_width,
-                  scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaled);
+    if (flags & IF_CUBEMAP)
+        qglTexImage2D(upload_target, baselevel, GL_RGBA, scaled_width,
+                      scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaled);
+    else
+        qglTexImage2D(GL_TEXTURE_2D, baselevel, comp, scaled_width,
+                      scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaled);
 
     c.texUploads++;
 
@@ -660,6 +673,141 @@ static void GL_SetFilterAndRepeat(imagetype_t type, imageflags_t flags)
     }
 }
 
+static const char gl_env_suf[6][2] = {
+    "rt", "lf", "up", "dn", "bk", "ft"
+};
+
+// format: 2 byte aspect ratio, then 6 pairs of (s, t) offsets
+static const byte gl_env_ofs[6][14] = {
+    { 4, 3, 2, 1, 0, 1, 1, 0, 1, 2, 1, 1, 3, 1 },   // horizontal cross
+    { 3, 4, 2, 1, 0, 1, 1, 0, 1, 2, 1, 1, 1, 3 },   // vertical cross
+    { 6, 1, 0, 0, 1, 0, 2, 0, 3, 0, 4, 0, 5, 0 },   // single row
+    { 1, 6, 0, 0, 0, 1, 0, 2, 0, 3, 0, 4, 0, 5 },   // single column
+    { 3, 2, 0, 0, 0, 1, 1, 0, 1, 1, 2, 0, 2, 1 },   // double row
+    { 2, 3, 0, 0, 1, 0, 0, 1, 1, 1, 0, 2, 1, 2 },   // double column
+};
+
+static void GL_SetCubemapFilterAndRepeat(void)
+{
+    qglTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, gl_filter_max);
+    qglTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, gl_filter_max);
+
+    qglTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    qglTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    qglTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+}
+
+#define PIX(x, y)   pic[(y) * n + (x)]
+
+static void GL_RotateImageCW(uint32_t *pic, int n)
+{
+    for (int i = 0; i < n / 2; i++) {
+        for (int j = i; j < n - i - 1; j++) {
+            uint32_t temp             = PIX(i, j);
+            PIX(i, j)                 = PIX(n - j - 1, i);
+            PIX(n - j - 1, i)         = PIX(n - i - 1, n - j - 1);
+            PIX(n - i - 1, n - j - 1) = PIX(j, n - i - 1);
+            PIX(j, n - i - 1)         = temp;
+        }
+    }
+}
+
+static void GL_RotateImageCCW(uint32_t *pic, int n)
+{
+    for (int i = 0; i < n / 2; i++) {
+        for (int j = i; j < n - i - 1; j++) {
+            uint32_t temp             = PIX(i, j);
+            PIX(i, j)                 = PIX(j, n - i - 1);
+            PIX(j, n - i - 1)         = PIX(n - i - 1, n - j - 1);
+            PIX(n - i - 1, n - j - 1) = PIX(n - j - 1, i);
+            PIX(n - j - 1, i)         = temp;
+        }
+    }
+}
+
+#undef PIX
+
+// upload one side of legacy skybox
+static bool GL_UploadSkyboxSide(image_t *image, byte *pic)
+{
+    int width = image->upload_width;
+    int height = image->upload_height;
+    int i;
+
+    // it should be safe to assume non-cube skyboxes don't exist,
+    // so don't bother with resampling.
+    if (width != height)
+        return false;
+
+    Q_assert(image->baselen >= 2);
+    const char *s = image->name + image->baselen - 2;
+
+    for (i = 0; i < 6; i++)
+        if (!memcmp(s, gl_env_suf[i], 2))
+            break;
+    Q_assert(i < 6);
+    upload_target = GL_TEXTURE_CUBE_MAP_POSITIVE_X + i;
+
+    if (i == 2)
+        GL_RotateImageCW((uint32_t *)pic, width);
+    else if (i == 3)
+        GL_RotateImageCCW((uint32_t *)pic, width);
+
+    GL_ForceCubemap(TEXNUM_CUBEMAP_DEFAULT);
+    GL_Upload32(pic, width, height, 0, image->type, image->flags);
+
+    image->upload_width = upload_width;
+    image->upload_height = upload_height;
+    return true;
+}
+
+static bool GL_UploadCubemap(image_t *image, byte *pic)
+{
+    int width = image->upload_width;
+    int height = image->upload_height;
+    const byte *ofs, *src;
+    byte *buffer, *dst;
+    int i, s, t, size;
+
+    if (image->flags & IF_TURBULENT)
+        return GL_UploadSkyboxSide(image, pic);
+
+    // figure out layout from aspect ratio
+    for (i = 0; i < q_countof(gl_env_ofs); i++) {
+        ofs = gl_env_ofs[i];
+        if (width * ofs[1] == height * ofs[0])
+            break;
+    }
+    if (i == q_countof(gl_env_ofs))
+        return false;
+
+    qglGenTextures(1, &image->texnum);
+    GL_ForceCubemap(image->texnum);
+    GL_SetCubemapFilterAndRepeat();
+
+    // need to make a copy here because of resampling
+    size = width / ofs[0];
+    buffer = FS_AllocTempMem(size * size * 4);
+
+    ofs += 2;
+    for (i = 0; i < 6; i++, ofs += 2) {
+        s = ofs[0] * size;
+        t = ofs[1] * size;
+        src = pic + ((t * width) + s) * 4;
+        dst = buffer;
+        for (int j = 0; j < size; j++) {
+            memcpy(dst, src, size * 4);
+            src += width * 4;
+            dst += size  * 4;
+        }
+        upload_target = GL_TEXTURE_CUBE_MAP_POSITIVE_X + i;
+        GL_Upload32(buffer, size, size, 0, image->type, image->flags);
+    }
+
+    FS_FreeTempMem(buffer);
+    return true;
+}
+
 /*
 ================
 IMG_Load
@@ -670,6 +818,13 @@ void IMG_Load(image_t *image, byte *pic)
     byte    *src, *dst;
     int     i, s, t, maxlevel;
     int     width, height;
+
+    if (image->flags & IF_CUBEMAP) {
+        if (GL_UploadCubemap(image, pic))
+            return;
+        Com_WPrintf("%s has bad aspect ratio for cubemap\n", image->name);
+        image->flags &= ~IF_CUBEMAP;
+    }
 
     width = image->upload_width;
     height = image->upload_height;
@@ -731,6 +886,9 @@ void IMG_Unload(image_t *image)
         for (int i = 0; i < MAX_TMUS; i++)
             if (gls.texnums[i] == tex[0] || gls.texnums[i] == tex[1])
                 gls.texnums[i] = 0;
+
+        if (gls.texnumcube == tex[0])
+            gls.texnumcube = 0;
 
         qglDeleteTextures(tex[1] ? 2 : 1, tex);
         image->texnum = image->texnum2 = 0;
@@ -929,6 +1087,9 @@ static void GL_InitWhiteImage(void)
     GL_ForceTexture(TMU_TEXTURE, TEXNUM_BLACK);
     GL_Upload32((byte *)&pixel, 1, 1, 0, IT_SPRITE, IF_REPEAT | IF_NEAREST);
     GL_SetFilterAndRepeat(IT_SPRITE, IF_REPEAT | IF_NEAREST);
+
+    // init shell texture (don't set name to keep it immutable)
+    R_SHELLTEXTURE->texnum = TEXNUM_WHITE;
 }
 
 static void GL_InitBeamTexture(void)
@@ -960,6 +1121,28 @@ static void GL_InitRawTexture(void)
 {
     GL_ForceTexture(TMU_TEXTURE, TEXNUM_RAW);
     GL_SetFilterAndRepeat(IT_PIC, IF_NONE);
+}
+
+static void GL_InitCubemaps(void)
+{
+    gl_static.use_cubemaps = gl_static.use_shaders && gl_cubemaps->integer;
+    if (!gl_static.use_cubemaps)
+        return;
+
+    // default cubemap for legacy skybox
+    GL_ForceCubemap(TEXNUM_CUBEMAP_DEFAULT);
+    GL_SetCubemapFilterAndRepeat();
+
+    // intentionally incomplete cubemap that will always return black
+    GL_ForceCubemap(TEXNUM_CUBEMAP_BLACK);
+    GL_SetCubemapFilterAndRepeat();
+
+    // init default sky texture
+    image_t *sky = R_SKYTEXTURE;
+    strcpy(sky->name, "SKYTEXTURE");
+    sky->type = IT_SKY;
+    sky->flags = IF_CUBEMAP;
+    sky->texnum = TEXNUM_CUBEMAP_DEFAULT;
 }
 
 bool GL_InitWarpTexture(void)
@@ -1046,6 +1229,7 @@ void GL_InitImages(void)
     gl_gamma = Cvar_Get("vid_gamma", "1", CVAR_ARCHIVE);
     gl_partshape = Cvar_Get("gl_partshape", "0", 0);
     gl_partshape->changed = gl_partshape_changed;
+    gl_cubemaps = Cvar_Get("gl_cubemaps", "1", CVAR_FILES);
 
     if (r_config.flags & QVF_GAMMARAMP) {
         gl_gamma->changed = gl_gamma_changed;
@@ -1083,7 +1267,6 @@ void GL_InitImages(void)
 
     qglGenTextures(NUM_AUTO_TEXTURES, gl_static.texnums);
     qglGenTextures(LM_MAX_LIGHTMAPS, lm.texnums);
-    shell_texture.texnum = TEXNUM_WHITE;
 
     if (gl_static.use_shaders) {
         qglGenTextures(1, &gl_static.warp_texture);
@@ -1098,6 +1281,7 @@ void GL_InitImages(void)
     GL_InitWhiteImage();
     GL_InitBeamTexture();
     GL_InitRawTexture();
+    GL_InitCubemaps();
 
 #if USE_DEBUG
     r_charset = R_RegisterFont("conchars");
@@ -1127,7 +1311,6 @@ void GL_ShutdownImages(void)
 
     memset(gl_static.texnums, 0, sizeof(gl_static.texnums));
     memset(lm.texnums, 0, sizeof(lm.texnums));
-    memset(&shell_texture, 0, sizeof(shell_texture));
 
     GL_DeleteWarpTexture();
 

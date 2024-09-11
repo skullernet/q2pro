@@ -334,24 +334,15 @@ void R_DrawSkyBox(void)
         return; // nothing visible
 
     GL_BindArrays(VA_SPRITE);
-
-    if (gl_static.classic_sky && gl_drawsky->integer == 1) {
-        GL_StateBits(GLS_TEXTURE_REPLACE | GLS_CLASSIC_SKY);
-        GL_ArrayBits(GLA_VERTEX);
-        GL_BindTexture(TMU_TEXTURE,  gl_static.classic_sky->texnum);
-        GL_BindTexture(TMU_LIGHTMAP, gl_static.classic_sky->texnum2);
-    } else {
-        GL_StateBits(GLS_TEXTURE_REPLACE);
-        GL_ArrayBits(GLA_VERTEX | GLA_TC);
-    }
+    GL_StateBits(GLS_TEXTURE_REPLACE);
+    GL_ArrayBits(GLA_VERTEX | GLA_TC);
 
     for (i = 0; i < 6; i++) {
         if (skymins[0][i] >= skymaxs[0][i] ||
             skymins[1][i] >= skymaxs[1][i])
             continue;
 
-        if (!gl_static.classic_sky || gl_drawsky->integer != 1)
-            GL_BindTexture(TMU_TEXTURE, sky_images[i]);
+        GL_BindTexture(TMU_TEXTURE, sky_images[i]);
 
         MakeSkyVec(skymaxs[0][i], skymins[1][i], i, tess.vertices);
         MakeSkyVec(skymins[0][i], skymins[1][i], i, tess.vertices +  5);
@@ -364,13 +355,82 @@ void R_DrawSkyBox(void)
     }
 }
 
+static void DefaultSkyMatrix(GLfloat *matrix)
+{
+    if (skyautorotate) {
+        SetupRotationMatrix(skymatrix, skyaxis, glr.fd.time * skyrotate);
+        TransposeAxis(skymatrix);
+    }
+
+    matrix[ 0] = skymatrix[0][0];
+    matrix[ 4] = skymatrix[0][1];
+    matrix[ 8] = skymatrix[0][2];
+    matrix[12] = -DotProduct(skymatrix[0], glr.fd.vieworg);
+
+    matrix[ 1] = skymatrix[2][0];
+    matrix[ 5] = skymatrix[2][1];
+    matrix[ 9] = skymatrix[2][2];
+    matrix[13] = -DotProduct(skymatrix[2], glr.fd.vieworg);
+
+    matrix[ 2] = skymatrix[1][0];
+    matrix[ 6] = skymatrix[1][1];
+    matrix[10] = skymatrix[1][2];
+    matrix[14] = -DotProduct(skymatrix[1], glr.fd.vieworg);
+
+    matrix[ 3] = 0;
+    matrix[ 7] = 0;
+    matrix[11] = 0;
+    matrix[15] = 1;
+}
+
+// classic skies don't rotate
+static void ClassicSkyMatrix(GLfloat *matrix)
+{
+    matrix[ 0] = 1;
+    matrix[ 4] = 0;
+    matrix[ 8] = 0;
+    matrix[12] = -glr.fd.vieworg[0];
+
+    matrix[ 1] = 0;
+    matrix[ 5] = 1;
+    matrix[ 9] = 0;
+    matrix[13] = -glr.fd.vieworg[1];
+
+    matrix[ 2] = 0;
+    matrix[ 6] = 0;
+    matrix[10] = 3;
+    matrix[14] = -glr.fd.vieworg[2] * 3;
+
+    matrix[ 3] = 0;
+    matrix[ 7] = 0;
+    matrix[11] = 0;
+    matrix[15] = 1;
+}
+
+/*
+============
+R_RotateForSky
+============
+*/
+void R_RotateForSky(void)
+{
+    if (!gl_static.use_cubemaps)
+        return;
+
+    DefaultSkyMatrix(glr.skymatrix[0]);
+    ClassicSkyMatrix(glr.skymatrix[1]);
+}
+
 static void R_UnsetSky(void)
 {
     int i;
 
     skyrotate = 0;
+    skyautorotate = false;
     for (i = 0; i < 6; i++)
         sky_images[i] = TEXNUM_BLACK;
+
+    R_SKYTEXTURE->texnum = TEXNUM_CUBEMAP_BLACK;
 }
 
 /*
@@ -383,8 +443,9 @@ void R_SetSky(const char *name, float rotate, bool autorotate, const vec3_t axis
     int             i;
     char            pathname[MAX_QPATH];
     const image_t   *image;
+    imageflags_t    flags = IF_NONE;
 
-    if (!gl_drawsky->integer || (gl_static.classic_sky && gl_drawsky->integer == 1)) {
+    if (!gl_drawsky->integer) {
         R_UnsetSky();
         return;
     }
@@ -392,18 +453,36 @@ void R_SetSky(const char *name, float rotate, bool autorotate, const vec3_t axis
     skyrotate = rotate;
     skyautorotate = autorotate;
     VectorNormalize2(axis, skyaxis);
-    if (!skyautorotate)
-        SetupRotationMatrix(skymatrix, skyaxis, skyrotate);
+    SetupRotationMatrix(skymatrix, skyaxis, skyrotate);
+    if (gl_static.use_cubemaps)
+        TransposeAxis(skymatrix);
+    if (!skyrotate)
+        skyautorotate = false;
 
+    // try to load cubemap image first
+    if (gl_static.use_cubemaps) {
+        if (Q_concat(pathname, sizeof(pathname), "sky/", name, ".tga") >= sizeof(pathname)) {
+            R_UnsetSky();
+            return;
+        }
+        image = IMG_Find(pathname, IT_SKY, IF_CUBEMAP);
+        if (image != R_SKYTEXTURE) {
+            R_SKYTEXTURE->texnum = image->texnum;
+            return;
+        }
+        R_SKYTEXTURE->texnum = TEXNUM_CUBEMAP_DEFAULT;
+        flags = IF_CUBEMAP | IF_TURBULENT;  // hack for IMG_Load()
+    }
+
+    // load legacy skybox
     for (i = 0; i < 6; i++) {
         if (Q_concat(pathname, sizeof(pathname), "env/", name,
                      com_env_suf[i], ".tga") >= sizeof(pathname)) {
             R_UnsetSky();
             return;
         }
-        FS_NormalizePath(pathname);
-        image = IMG_Find(pathname, IT_SKY, IF_NONE);
-        if (image == R_NOTEXTURE) {
+        image = IMG_Find(pathname, IT_SKY, flags);
+        if (image == R_SKYTEXTURE) {
             R_UnsetSky();
             return;
         }
