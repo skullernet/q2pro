@@ -69,6 +69,7 @@ typedef struct {
         bsp_t       *cache;
         vec_t       *vertices;
         GLuint      buffer;
+        size_t      buffer_size;
         vec_t       size;
     } world;
     GLuint          warp_texture;

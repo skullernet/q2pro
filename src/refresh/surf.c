@@ -878,6 +878,7 @@ static void check_multitexture(void)
 static void upload_world_surfaces(void)
 {
     const bsp_t *bsp = gl_static.world.cache;
+    size_t size = gl_static.world.buffer_size;
     vec_t *vbo;
     mface_t *surf;
     int i, currvert, lastvert;
@@ -900,6 +901,8 @@ static void upload_world_surfaces(void)
             continue;
 
         Q_assert(surf->numsurfedges >= 3 && surf->numsurfedges <= TESS_MAX_VERTICES);
+        Q_assert(size >= surf->numsurfedges * VERTEX_SIZE * sizeof(vbo[0]));
+        size -= surf->numsurfedges * VERTEX_SIZE * sizeof(vbo[0]);
 
         if (gl_static.world.vertices) {
             vbo = gl_static.world.vertices + currvert * VERTEX_SIZE;
@@ -1095,6 +1098,7 @@ void GL_LoadWorld(const char *name)
         gl_static.world.vertices = Z_TagMalloc(size, TAG_RENDERER);
         Com_DPrintf("%s: %zu bytes of vertex data on heap\n", __func__, size);
     }
+    gl_static.world.buffer_size = size;
 
     gl_static.nolm_mask = SURF_NOLM_MASK_DEFAULT;
     gl_static.use_bmodel_skies = false;
