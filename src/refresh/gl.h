@@ -772,7 +772,7 @@ void GL_ShutdownArrays(void);
 
 void GL_Flush3D(void);
 
-void GL_AddAlphaFace(mface_t *face, entity_t *ent);
+void GL_AddAlphaFace(mface_t *face);
 void GL_AddSolidFace(mface_t *face);
 void GL_DrawAlphaFaces(void);
 void GL_DrawSolidFaces(void);

@@ -468,7 +468,7 @@ void GL_DrawBspModel(mmodel_t *model)
 
         if (face->drawflags & SURF_TRANS_MASK) {
             if (model->drawframe != glr.drawframe)
-                GL_AddAlphaFace(face, ent);
+                GL_AddAlphaFace(face);
             continue;
         }
 
@@ -548,7 +548,7 @@ static inline void GL_DrawNode(const mnode_t *node)
             GL_PushLights(face);
 
         if (face->drawflags & SURF_TRANS_MASK)
-            GL_AddAlphaFace(face, &gl_world);
+            GL_AddAlphaFace(face);
         else
             GL_AddSolidFace(face);
     }

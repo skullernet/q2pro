@@ -819,10 +819,10 @@ void GL_AddSolidFace(mface_t *face)
     faces_next[face->hash] = &face->next;
 }
 
-void GL_AddAlphaFace(mface_t *face, entity_t *ent)
+void GL_AddAlphaFace(mface_t *face)
 {
     // draw back-to-front
-    face->entity = ent;
+    face->entity = glr.ent;
     face->next = faces_alpha;
     faces_alpha = face;
 }
