@@ -1964,7 +1964,7 @@ static image_t *find_or_load_image(const char *name, size_t len,
     // load the pic from disk
     pic = NULL;
 
-    if (flags & IF_DIRECT) {
+    if (flags & IF_KEEP_EXTENSION) {
         // direct load requested (for testing code)
         if (fmt == IM_MAX)
             ret = Q_ERR_INVALID_PATH;

@@ -599,7 +599,7 @@ static void Com_TestImages_f(void)
             R_EndRegistration();
             R_BeginRegistration(NULL);
         }
-        if (!R_RegisterImage(va("/%s", (char *)list[i]), IT_PIC, IF_DIRECT)) {
+        if (!R_RegisterImage(va("/%s", (char *)list[i]), IT_PIC, IF_KEEP_EXTENSION)) {
             errors++;
             continue;
         }
