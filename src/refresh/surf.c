@@ -1061,6 +1061,8 @@ void GL_LoadWorld(const char *name)
             } else {
                 info->image = R_SKYTEXTURE;
             }
+        } else if (info->c.flags & SURF_NODRAW) {
+            info->image = R_NOTEXTURE;
         } else {
             imageflags_t flags = (info->c.flags & SURF_WARP) ? IF_TURBULENT : IF_NONE;
             Q_concat(buffer, sizeof(buffer), "textures/", info->name, ".wal");
