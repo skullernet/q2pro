@@ -95,11 +95,9 @@ void R_AddDebugLine(const vec3_t start, const vec3_t end, uint32_t color, uint32
     l->time = com_localTime2 + time;
     if (l->time < com_localTime2)
         l->time = UINT32_MAX;
-    l->bits = GLS_DEPTHMASK_FALSE;
+    l->bits = GLS_DEPTHMASK_FALSE | GLS_BLEND_BLEND;
     if (!depth_test)
         l->bits |= GLS_DEPTHTEST_DISABLE;
-    if (gl_config.caps & QGL_CAP_LINE_SMOOTH)
-        l->bits |= GLS_BLEND_BLEND;
 }
 
 #define GL_DRAWLINE(sx, sy, sz, ex, ey, ez) \
