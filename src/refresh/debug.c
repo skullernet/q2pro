@@ -42,7 +42,7 @@ typedef struct {
     uint32_t        color;
     uint32_t        time;
     glStateBits_t   bits;
-    char            text[MAX_QPATH];
+    char            text[128];
 } debug_text_t;
 
 static debug_text_t debug_texts[MAX_DEBUG_TEXTS];
@@ -325,9 +325,13 @@ void R_AddDebugCurveArrow(const vec3_t start, const vec3_t ctrl, const vec3_t en
     }
 }
 
-void R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *text,
-                    float size, uint32_t color, uint32_t time, qboolean depth_test)
+static void R_AddDebugTextInternal(const vec3_t origin, const vec3_t angles, const char *text,
+                                   size_t len, float size, uint32_t color, uint32_t time,
+                                   qboolean depth_test)
 {
+    if (!len)
+        return;
+
     debug_text_t *t = LIST_FIRST(debug_text_t, &debug_texts_free, entry);
 
     if (LIST_EMPTY(&debug_texts_free)) {
@@ -367,7 +371,39 @@ void R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *text,
         t->bits |= GLS_DEPTHTEST_DISABLE;
     if (angles)
         t->bits |= GLS_CULL_DISABLE;
-    Q_strlcpy(t->text, text, sizeof(t->text));
+    len = min(len, sizeof(t->text) - 1);
+    memcpy(t->text, text, len);
+    t->text[len] = 0;
+}
+
+void R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *text,
+                    float size, uint32_t color, uint32_t time, qboolean depth_test)
+{
+    vec3_t down, pos, up;
+    const char *s, *p;
+
+    if (!angles) {
+        R_AddDebugTextInternal(origin, angles, text, strlen(text), size, color, time, depth_test);
+        return;
+    }
+
+    AngleVectors(angles, NULL, NULL, up);
+    VectorScale(up, -size, down);
+
+    VectorCopy(origin, pos);
+
+    // break oriented text into lines to allow for longer text
+    s = text;
+    while (*s) {
+        p = strchr(s, '\n');
+        if (!p) {
+            R_AddDebugTextInternal(pos, angles, s, strlen(s), size, color, time, depth_test);
+            break;
+        }
+        R_AddDebugTextInternal(pos, angles, s, p - s, size, color, time, depth_test);
+        VectorAdd(pos, down, pos);
+        s = p + 1;
+    }
 }
 
 static void GL_DrawDebugLines(void)
@@ -504,6 +540,25 @@ static void GL_DrawDebugChar(const vec3_t pos, const vec3_t right, const vec3_t 
     tess.flags = bits;
 }
 
+static void GL_DrawDebugTextLine(const vec3_t origin, const vec3_t right, const vec3_t down,
+                                 const debug_text_t *text, const char *s, size_t len)
+{
+    // frustum cull
+    float radius = text->size * 0.5f * len;
+    for (int i = 0; i < 4; i++)
+        if (PlaneDiff(origin, &glr.frustumPlanes[i]) < -radius)
+            return;
+
+    // draw it
+    vec3_t pos;
+    VectorMA(origin, -0.5f * len, right, pos);
+    while (*s && len--) {
+        byte c = *s++;
+        GL_DrawDebugChar(pos, right, down, text->bits, text->color, c);
+        VectorAdd(pos, right, pos);
+    }
+}
+
 static void GL_DrawDebugTexts(void)
 {
     debug_text_t *text, *next;
@@ -516,9 +571,7 @@ static void GL_DrawDebugTexts(void)
 
     LIST_FOR_EACH_SAFE(debug_text_t, text, next, &debug_texts_active, entry) {
         vec3_t right, down, pos;
-        const char *s;
-        float radius;
-        int i;
+        const char *s, *p;
 
         if (text->time < com_localTime2) { // expired
             List_Remove(&text->entry);
@@ -529,14 +582,6 @@ static void GL_DrawDebugTexts(void)
         // distance cull
         VectorSubtract(text->origin, glr.fd.vieworg, pos);
         if (text->size < DotProduct(pos, glr.viewaxis[0]) * gl_debug_distfrac->value)
-            continue;
-
-        // frustum cull
-        radius = strlen(text->text) * text->size;
-        for (i = 0; i < 4; i++)
-            if (PlaneDiff(text->origin, &glr.frustumPlanes[i]) < -radius)
-                break;
-        if (i != 4)
             continue;
 
         if (text->bits & GLS_CULL_DISABLE) { // oriented
@@ -550,17 +595,16 @@ static void GL_DrawDebugTexts(void)
         }
         VectorCopy(text->origin, pos);
 
-        i = 0;
         s = text->text;
         while (*s) {
-            byte c = *s++;
-            if (c == '\n') {
-                i++;
-                VectorMA(text->origin, i, down, pos);
-                continue;
+            p = strchr(s, '\n');
+            if (!p) {
+                GL_DrawDebugTextLine(pos, right, down, text, s, strlen(s));
+                break;
             }
-            GL_DrawDebugChar(pos, right, down, text->bits, text->color, c);
-            VectorAdd(pos, right, pos);
+            GL_DrawDebugTextLine(pos, right, down, text, s, p - s);
+            VectorAdd(pos, down, pos);
+            s = p + 1;
         }
     }
 
