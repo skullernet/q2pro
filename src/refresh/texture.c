@@ -1229,7 +1229,7 @@ void GL_InitImages(void)
     gl_gamma = Cvar_Get("vid_gamma", "1", CVAR_ARCHIVE);
     gl_partshape = Cvar_Get("gl_partshape", "0", 0);
     gl_partshape->changed = gl_partshape_changed;
-    gl_cubemaps = Cvar_Get("gl_cubemaps", "1", CVAR_FILES);
+    gl_cubemaps = Cvar_Get("gl_cubemaps", "0", CVAR_FILES);
 
     if (r_config.flags & QVF_GAMMARAMP) {
         gl_gamma->changed = gl_gamma_changed;

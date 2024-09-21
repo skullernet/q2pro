@@ -680,8 +680,8 @@ gl_drawsky::
 gl_cubemaps::
     Enables use of cubemaps for skybox drawing. Cubemaps allow multiple skybox
     textures per map, and help to avoid sky rendering bugs. Also enables N64
-    skies (although these aren't technically cubemaps). Only effective if
-    ‘gl_shaders’ is enabled. Default value is 1 (enabled).
+    skies in re-release maps. Only effective if ‘gl_shaders’ is enabled.
+    Default value is 0 (disabled).
 
 gl_waterwarp::
     Enable screen warping effect when underwater. Only effective when using
