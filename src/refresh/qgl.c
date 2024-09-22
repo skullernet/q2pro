@@ -457,6 +457,7 @@ static bool parse_gl_version(void)
         if (!strncmp(s, es_prefixes[i], len)) {
             s += len;
             gl_es = true;
+            break;
         }
     }
 
