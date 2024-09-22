@@ -743,7 +743,7 @@ static void sample_surface_verts(mface_t *surf, vec_t *vbo)
 // normalizes and stores lightmap texture coordinates in vertices
 static void normalize_surface_lmtc(const mface_t *surf, vec_t *vbo)
 {
-    float s, t, scale = scale = 1.0f / lm.block_size;
+    float s, t, scale = 1.0f / lm.block_size;
     int i;
 
     s = surf->light_s + 0.5f;
