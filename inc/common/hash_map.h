@@ -18,11 +18,16 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
+#pragma once
+
+#include "common/zone.h"
+
 typedef struct hash_map_s hash_map_t;
 
 hash_map_t *HashMap_CreateImpl(const uint32_t key_size, const uint32_t value_size,
                                uint32_t (*hasher)(const void *const),
-                               bool (*comp)(const void *const, const void *const));
+                               bool (*comp)(const void *const, const void *const),
+                               memtag_t tag);
 void     HashMap_Destroy(hash_map_t *map);
 void     HashMap_Reserve(hash_map_t *map, uint32_t capacity);
 bool     HashMap_InsertImpl(hash_map_t *map, const uint32_t key_size, const uint32_t value_size, const void *const key, const void *const value);
@@ -32,7 +37,9 @@ uint32_t HashMap_Size(const hash_map_t *map);
 void    *HashMap_GetKeyImpl(const hash_map_t *map, uint32_t index);
 void    *HashMap_GetValueImpl(const hash_map_t *map, uint32_t index);
 
-#define HashMap_Create(key_type, value_type, hasher, comp) HashMap_CreateImpl(sizeof(key_type), sizeof(value_type), hasher, comp)
+#define HashMap_TagCreate(key_type, value_type, hasher, comp, tag) \
+    HashMap_CreateImpl(sizeof(key_type), sizeof(value_type), hasher, comp, tag)
+#define HashMap_Create(key_type, value_type, hasher, comp) HashMap_TagCreate(key_type, value_type, hasher, comp, TAG_GENERAL)
 #define HashMap_Insert(map, key, value)                    HashMap_InsertImpl(map, sizeof(*key), sizeof(*value), key, value)
 #define HashMap_Erase(map, key)                            HashMap_EraseImpl(map, sizeof(*key), key)
 #define HashMap_Lookup(type, map, key)                     ((type *)HashMap_LookupImpl(map, sizeof(*key), key))

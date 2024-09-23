@@ -465,7 +465,7 @@ static void shader_clear_state(void)
 
 static void shader_init(void)
 {
-    gl_static.programs = HashMap_Create(glStateBits_t, GLuint, HashInt32, NULL);
+    gl_static.programs = HashMap_TagCreate(glStateBits_t, GLuint, HashInt32, NULL, TAG_RENDERER);
 
     qglGenBuffers(1, &gl_static.uniform_buffer);
     qglBindBuffer(GL_UNIFORM_BUFFER, gl_static.uniform_buffer);

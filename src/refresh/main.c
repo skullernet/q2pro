@@ -1051,7 +1051,7 @@ void GL_InitQueries(void)
         gl_static.samples_passed = GL_ANY_SAMPLES_PASSED;
 
     Q_assert(!gl_static.queries);
-    gl_static.queries = HashMap_Create(int, glquery_t, HashInt32, NULL);
+    gl_static.queries = HashMap_TagCreate(int, glquery_t, HashInt32, NULL, TAG_RENDERER);
 }
 
 void GL_DeleteQueries(void)

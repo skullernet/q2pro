@@ -31,6 +31,7 @@ typedef struct hash_map_s {
     uint32_t key_value_storage_size;
     uint32_t key_size;
     uint32_t value_size;
+    memtag_t tag;
     uint32_t (*hasher)(const void *const);
     bool     (*comp)(const void *const, const void *const);
     uint32_t *hash_to_index;
@@ -69,7 +70,7 @@ static void HashMap_Rehash(hash_map_t *map, const uint32_t new_size)
     if (map->hash_size >= new_size)
         return;
     map->hash_size = new_size;
-    map->hash_to_index = Z_ReallocArray(map->hash_to_index, map->hash_size, sizeof(uint32_t));
+    map->hash_to_index = Z_ReallocArray(map->hash_to_index, map->hash_size, sizeof(uint32_t), map->tag);
     memset(map->hash_to_index, 0xFF, map->hash_size * sizeof(uint32_t));
     for (uint32_t i = 0; i < map->num_entries; ++i) {
         void          *key = HashMap_GetKeyImpl(map, i);
@@ -87,9 +88,9 @@ HashMap_ExpandKeyValueStorage
 */
 static void HashMap_ExpandKeyValueStorage(hash_map_t *map, const uint32_t new_size)
 {
-    map->keys = Z_ReallocArray(map->keys, new_size, map->key_size);
-    map->values = Z_ReallocArray(map->values, new_size, map->value_size);
-    map->index_chain = Z_ReallocArray(map->index_chain, new_size, sizeof(uint32_t));
+    map->keys = Z_ReallocArray(map->keys, new_size, map->key_size, map->tag);
+    map->values = Z_ReallocArray(map->values, new_size, map->value_size, map->tag);
+    map->index_chain = Z_ReallocArray(map->index_chain, new_size, sizeof(uint32_t), map->tag);
     map->key_value_storage_size = new_size;
 }
 
@@ -100,13 +101,15 @@ HashMap_CreateImpl
 */
 hash_map_t *HashMap_CreateImpl(const uint32_t key_size, const uint32_t value_size,
                                uint32_t (*hasher)(const void *const),
-                               bool (*comp)(const void *const, const void *const))
+                               bool (*comp)(const void *const, const void *const),
+                               memtag_t tag)
 {
-    hash_map_t *map = Z_Mallocz(sizeof(*map));
+    hash_map_t *map = Z_TagMallocz(sizeof(*map), tag);
     map->key_size = key_size;
     map->value_size = value_size;
     map->hasher = hasher;
     map->comp = comp;
+    map->tag = tag;
     return map;
 }
 
