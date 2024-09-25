@@ -1,5 +1,3 @@
 [wrap-file]
-directory = khr-headers-20220530
-source_url = https://skuller.net/meson/khr-headers-20220530.zip
-source_filename = khr-headers-20220530.zip
-source_hash = c90019de9f55afae8e6a8b15ae4e23d921b98c1571af9fcfd5525df059a160f3
+directory = khr-headers
+source_filename = khr-headers.tar.xz
