@@ -5,6 +5,7 @@ ar = 'i686-w64-mingw32-ar'
 strip = 'i686-w64-mingw32-strip'
 windres = 'i686-w64-mingw32-windres'
 nasm = 'nasm'
+pkg-config = 'pkg-config'
 
 [host_machine]
 system = 'windows'
