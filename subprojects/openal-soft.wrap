@@ -1,11 +1,10 @@
 [wrap-file]
-directory = openal-soft-1.22.2
-source_url = https://openal-soft.org/openal-releases/openal-soft-1.22.2.tar.bz2
-source_filename = openal-soft-1.22.2.tar.bz2
-source_hash = ae94cc95cda76b7cc6e92e38c2531af82148e76d3d88ce996e2928a1ea7c3d20
-patch_url = https://skuller.net/meson/openal-soft_1.22.2-1_patch.zip
-patch_filename = openal-soft_1.22.2-1_patch.zip
-patch_hash = 8f0df33a04aec9fbac053476a9d68fd201bc74ed6ba62fce00138b71eb583db0
+directory = openal-soft-1.23.1
+source_url = https://github.com/kcat/openal-soft/releases/download/1.23.1/openal-soft-1.23.1.tar.bz2
+source_fallback_url = https://openal-soft.org/openal-releases/openal-soft-1.23.1.tar.bz2
+source_filename = openal-soft-1.23.1.tar.bz2
+source_hash = 796f4b89134c4e57270b7f0d755f0fa3435b90da437b745160a49bd41c845b21
+patch_directory = openal-soft
 
 [provide]
 openal = openal_dep
