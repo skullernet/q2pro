@@ -27,7 +27,5 @@ For building Q2PRO, consult the INSTALL.md file.
 Q2PRO doesn't have releases. It is always recommended to use the git master
 version.
 
-Nightly Windows builds are available at https://skuller.net/q2pro/
-
 For information on using and configuring Q2PRO, refer to client and server
 manuals available in doc/ subdirectory.
