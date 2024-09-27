@@ -404,6 +404,7 @@ int BSP_LoadMaterials(bsp_t *bsp)
 static void BSP_ParseDecoupledLM(bsp_t *bsp, const byte *in, size_t filelen)
 {
     mface_t *out;
+    bool errors;
 
     if (filelen % DECOUPLED_LM_BYTES) {
         Com_WPrintf("DECOUPLED_LM lump has odd size\n");
@@ -416,21 +417,29 @@ static void BSP_ParseDecoupledLM(bsp_t *bsp, const byte *in, size_t filelen)
     }
 
     out = bsp->faces;
+    errors = false;
     for (int i = 0; i < bsp->numfaces; i++, out++) {
         out->lm_width = BSP_Short();
         out->lm_height = BSP_Short();
 
         uint32_t offset = BSP_Long();
-        if (offset < bsp->numlightmapbytes)
-            out->lightmap = bsp->lightmap + offset;
-        else
+        if (offset == -1)
             out->lightmap = NULL;
+        else if (offset < bsp->numlightmapbytes)
+            out->lightmap = bsp->lightmap + offset;
+        else {
+            out->lightmap = NULL;
+            errors = true;
+        }
 
         for (int j = 0; j < 2; j++) {
             BSP_Vector(out->lm_axis[j]);
             out->lm_offset[j] = BSP_Float();
         }
     }
+
+    if (errors)
+        Com_WPrintf("DECOUPLED_LM lump possibly corrupted\n");
 
     bsp->lm_decoupled = true;
 }
