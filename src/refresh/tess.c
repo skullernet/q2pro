@@ -658,7 +658,7 @@ void GL_Flush3D(void)
     GL_ArrayBits(array);
 
     if (state & GLS_DEFAULT_SKY) {
-        GL_BindCubemap(tess.texnum[0]);
+        GL_BindCubemap(tess.texnum[TMU_TEXTURE]);
     } else if (qglBindTextures) {
 #if USE_DEBUG
         if (q_unlikely(gl_nobind->integer))
