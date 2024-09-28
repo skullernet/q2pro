@@ -894,6 +894,15 @@ gl_md5_distance::
     the viewer, otherwise use original model. Default value is 2048. Setting
     this to 0 disables distance LOD.
 
+gl_gpulerp::
+    Enables alias model interpolation on GPU for potential rendering
+    speedup. Default value is 1 (auto). If using OpenGL core profile, this
+    option is always enabled. If not using GLSL backend, this option is always
+    disabled.
+     - 0 — disabled
+     - 1 — auto (enabled on OpenGL 4.3 and higher)
+     - 2 — force enabled
+
 gl_glowmap_intensity::
     Intensity factor for entity glowmaps. Default value is 0.75.
 

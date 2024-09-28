@@ -1013,6 +1013,31 @@ static void GL_SetupConfig(void)
         qglDebugMessageCallback(myDebugProc, NULL);
     }
 
+    if (gl_config.caps & QGL_CAP_SHADER_STORAGE) {
+        integer = 0;
+        qglGetIntegerv(GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS, &integer);
+        if (integer < 2) {
+            Com_DPrintf("Not enough shader storage blocks available\n");
+            gl_config.caps &= ~QGL_CAP_SHADER_STORAGE;
+        } else {
+            integer = 1;
+            qglGetIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, &integer);
+            if (integer & (integer - 1))
+                integer = Q_npot32(integer);
+            Com_DPrintf("SSBO alignment: %d\n", integer);
+            gl_config.ssbo_align = integer;
+        }
+    }
+
+    if (gl_config.caps & QGL_CAP_BUFFER_TEXTURE) {
+        integer = 0;
+        qglGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &integer);
+        if (integer < MOD_MAXSIZE_GPU) {
+            Com_DPrintf("Not enough buffer texture size available\n");
+            gl_config.caps &= ~QGL_CAP_BUFFER_TEXTURE;
+        }
+    }
+
     GL_ShowErrors(__func__);
 }
 

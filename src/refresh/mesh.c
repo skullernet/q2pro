@@ -24,17 +24,18 @@ typedef enum {
     SHADOW_ONLY
 } drawshadow_t;
 
-static unsigned oldframenum;
-static unsigned newframenum;
-static float    frontlerp;
-static float    backlerp;
-static vec3_t   origin;
-static vec3_t   oldscale;
-static vec3_t   newscale;
-static vec3_t   translate;
-static vec_t    shellscale;
-static vec4_t   color;
-static GLuint   buffer;
+static unsigned         oldframenum;
+static unsigned         newframenum;
+static float            frontlerp;
+static float            backlerp;
+static vec3_t           origin;
+static vec3_t           oldscale;
+static vec3_t           newscale;
+static vec3_t           translate;
+static vec_t            shellscale;
+static vec4_t           color;
+static glStateBits_t    meshbits;
+static GLuint           buffer;
 
 static vec3_t   shadedir;
 static bool     dotshading;
@@ -422,19 +423,32 @@ static void setup_celshading(void)
         celscale = 1.0f - Distance(origin, glr.fd.vieworg) / 700.0f;
 }
 
+static void uniform_mesh_color(float r, float g, float b, float a)
+{
+    if (gls.currentva) {
+        GL_Color(r, g, b, a);
+    } else {
+        Vector4Set(gls.u_block.mesh.color, r, g, b, a);
+        gls.u_block_dirty = true;
+    }
+}
+
 static void draw_celshading(const glIndex_t *indices, int num_indices)
 {
     if (celscale < 0.01f)
         return;
 
     GL_BindTexture(TMU_TEXTURE, TEXNUM_BLACK);
-    GL_StateBits(GLS_BLEND_BLEND);
-    GL_ArrayBits(GLA_VERTEX);
+    GL_StateBits(GLS_BLEND_BLEND | (meshbits & ~GLS_MESH_SHADE));
+    if (gls.currentva)
+        GL_ArrayBits(GLA_VERTEX);
+
+    uniform_mesh_color(0, 0, 0, color[3] * celscale);
+    GL_LoadUniforms();
 
     qglLineWidth(gl_celshading->value * celscale);
     qglPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     qglCullFace(GL_FRONT);
-    GL_Color(0, 0, 0, color[3] * celscale);
     GL_DrawTriangles(num_indices, indices);
     qglCullFace(GL_BACK);
     qglPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -538,7 +552,6 @@ static void draw_shadow(const glIndex_t *indices, int num_indices)
 
     // load shadow projection matrix
     GL_LoadMatrix(shadowmatrix);
-    GL_LoadUniforms();
 
     // eliminate z-fighting by utilizing stencil buffer, if available
     if (gl_config.stencilbits) {
@@ -547,13 +560,16 @@ static void draw_shadow(const glIndex_t *indices, int num_indices)
         qglStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
     }
 
-    GL_StateBits(GLS_BLEND_BLEND);
     GL_BindTexture(TMU_TEXTURE, TEXNUM_WHITE);
-    GL_ArrayBits(GLA_VERTEX);
+    GL_StateBits(GLS_BLEND_BLEND | (meshbits & ~GLS_MESH_SHADE));
+    if (gls.currentva)
+        GL_ArrayBits(GLA_VERTEX);
+
+    uniform_mesh_color(0, 0, 0, color[3] * 0.5f);
+    GL_LoadUniforms();
 
     qglEnable(GL_POLYGON_OFFSET_FILL);
     qglPolygonOffset(-1.0f, -2.0f);
-    GL_Color(0, 0, 0, color[3] * 0.5f);
     GL_DrawTriangles(num_indices, indices);
     qglDisable(GL_POLYGON_OFFSET_FILL);
 
@@ -590,6 +606,23 @@ static const image_t *skin_for_mesh(image_t **skins, int num_skins)
     return skins[ent->skinnum];
 }
 
+static void bind_alias_arrays(const maliasmesh_t *mesh)
+{
+    uintptr_t base = (uintptr_t)mesh->verts;
+    uintptr_t old_ofs = base + oldframenum * mesh->numverts * sizeof(mesh->verts[0]);
+    uintptr_t new_ofs = base + newframenum * mesh->numverts * sizeof(mesh->verts[0]);
+
+    qglVertexAttribPointer(VERT_ATTR_MESH_TC, 2, GL_FLOAT, GL_FALSE, 0, mesh->tcoords);
+    qglVertexAttribIPointer(VERT_ATTR_MESH_NEW_POS, 4, GL_SHORT, 0, VBO_OFS(new_ofs));
+
+    if (oldframenum == newframenum) {
+        GL_ArrayBits(GLA_MESH_STATIC);
+    } else {
+        qglVertexAttribIPointer(VERT_ATTR_MESH_OLD_POS, 4, GL_SHORT, 0, VBO_OFS(old_ofs));
+        GL_ArrayBits(GLA_MESH_LERP);
+    }
+}
+
 static void draw_alias_mesh(const glIndex_t *indices, int num_indices,
                             const maliastc_t *tcoords, int num_verts,
                             image_t **skins, int num_skins)
@@ -607,13 +640,19 @@ static void draw_alias_mesh(const glIndex_t *indices, int num_indices,
 
     // fall back to entity matrix
     GL_LoadMatrix(glr.entmatrix);
+
+    uniform_mesh_color(color[0], color[1], color[2], color[3]);
     GL_LoadUniforms();
 
     // avoid drawing hidden faces for transparent gun by pre-filling depth buffer
     // muzzle flashes are excluded by checking for RF_FULLBRIGHT bit
     if ((glr.ent->flags & (RF_TRANSLUCENT | RF_WEAPONMODEL | RF_FULLBRIGHT)) == (RF_TRANSLUCENT | RF_WEAPONMODEL)) {
-        GL_StateBits(GLS_DEFAULT);
-        GL_ArrayBits(GLA_VERTEX);
+        if (gls.currentva) {
+            GL_StateBits(GLS_DEFAULT);
+            GL_ArrayBits(GLA_VERTEX);
+        } else {
+            GL_StateBits(meshbits & ~GLS_MESH_SHADE);
+        }
         GL_BindTexture(TMU_TEXTURE, TEXNUM_WHITE);
         qglColorMask(0, 0, 0, 0);
 
@@ -625,7 +664,9 @@ static void draw_alias_mesh(const glIndex_t *indices, int num_indices,
     }
 
     state = GLS_INTENSITY_ENABLE;
-    if (dotshading)
+    if (!gls.currentva)
+        state |= meshbits;
+    else if (dotshading)
         state |= GLS_SHADE_SMOOTH;
 
     if (glr.ent->flags & RF_TRANSLUCENT)
@@ -642,15 +683,13 @@ static void draw_alias_mesh(const glIndex_t *indices, int num_indices,
     if (skin->texnum2)
         GL_BindTexture(TMU_GLOWMAP, skin->texnum2);
 
-    if (dotshading) {
-        GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
-    } else {
-        GL_ArrayBits(GLA_VERTEX | GLA_TC);
-        GL_Color(color[0], color[1], color[2], color[3]);
+    if (gls.currentva) {
+        if (dotshading)
+            GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
+        else
+            GL_ArrayBits(GLA_VERTEX | GLA_TC);
+        gl_backend->tex_coord_pointer((const GLfloat *)tcoords);
     }
-
-    GL_BindBuffer(GL_ARRAY_BUFFER, buffer);
-    gl_backend->tex_coord_pointer((const GLfloat *)tcoords);
 
     GL_LockArrays(num_verts);
 
@@ -758,9 +797,41 @@ static void lerp_alias_skeleton(const md5_model_t *model)
 #pragma GCC reset_options
 #endif
 
+static void bind_skel_arrays(const md5_mesh_t *mesh, const md5_joint_t *skel)
+{
+    if (gl_config.caps & QGL_CAP_SHADER_STORAGE) {
+        qglBindBufferRange(GL_SHADER_STORAGE_BUFFER, SSBO_WEIGHTS, buffer,
+                           (uintptr_t)mesh->weights, mesh->num_weights * sizeof(mesh->weights[0]));
+        qglBindBufferRange(GL_SHADER_STORAGE_BUFFER, SSBO_JOINTNUMS, buffer,
+                           (uintptr_t)mesh->jointnums, Q_ALIGN(mesh->num_weights, sizeof(uint32_t)));
+    } else {
+        Q_assert(gl_config.caps & QGL_CAP_BUFFER_TEXTURE);
+
+        gls.u_block.mesh.weight_ofs   = (uintptr_t)mesh->weights / sizeof(mesh->weights[0]);
+        gls.u_block.mesh.jointnum_ofs = (uintptr_t)mesh->jointnums;
+
+        GL_ActiveTexture(TMU_SKEL_WEIGHTS);
+        qglBindTexture(GL_TEXTURE_BUFFER, gl_static.skeleton_tex[0]);
+        qglTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, buffer);
+
+        GL_ActiveTexture(TMU_SKEL_JOINTNUMS);
+        qglBindTexture(GL_TEXTURE_BUFFER, gl_static.skeleton_tex[1]);
+        qglTexBuffer(GL_TEXTURE_BUFFER, GL_R8UI, buffer);
+    }
+
+    uintptr_t base = (uintptr_t)mesh->vertices;
+    qglVertexAttribPointer (VERT_ATTR_MESH_TC,   2, GL_FLOAT, GL_FALSE, 0, mesh->tcoords);
+    qglVertexAttribPointer (VERT_ATTR_MESH_NORM, 3, GL_FLOAT, GL_FALSE, sizeof(mesh->vertices[0]), VBO_OFS(base));
+    qglVertexAttribIPointer(VERT_ATTR_MESH_VERT, 2, GL_UNSIGNED_SHORT,  sizeof(mesh->vertices[0]), VBO_OFS(base + sizeof(vec3_t)));
+
+    GL_ArrayBits(GLA_MESH_LERP);
+}
+
 static void draw_skeleton_mesh(const md5_model_t *model, const md5_mesh_t *mesh, const md5_joint_t *skel)
 {
-    if (glr.ent->flags & RF_SHELL_MASK)
+    if (buffer)
+        bind_skel_arrays(mesh, skel);
+    else if (glr.ent->flags & RF_SHELL_MASK)
         tess_shell_skel(mesh, skel);
     else if (dotshading)
         tess_shade_skel(mesh, skel);
@@ -772,6 +843,11 @@ static void draw_skeleton_mesh(const md5_model_t *model, const md5_mesh_t *mesh,
                     model->skins, model->num_skins);
 }
 
+typedef struct {
+    vec4_t pos;
+    vec4_t axis[3];
+} glJoint_t;
+
 static void draw_alias_skeleton(const md5_model_t *model)
 {
     const md5_joint_t *skel = temp_skeleton;
@@ -780,6 +856,27 @@ static void draw_alias_skeleton(const md5_model_t *model)
         skel = &model->skeleton_frames[newframenum % model->num_frames * model->num_joints];
     else
         lerp_alias_skeleton(model);
+
+    if (buffer) {
+        glJoint_t joints[MD5_MAX_JOINTS];
+
+        for (int i = 0; i < model->num_joints; i++) {
+            const md5_joint_t *in = &skel[i];
+            glJoint_t *out = &joints[i];
+            VectorCopy(in->pos, out->pos);
+            out->pos[3] = in->scale;
+            VectorCopy(in->axis[0], out->axis[0]);
+            VectorCopy(in->axis[1], out->axis[1]);
+            VectorCopy(in->axis[2], out->axis[2]);
+        }
+
+        GL_BindBuffer(GL_UNIFORM_BUFFER, gl_static.skeleton_buffer);
+        qglBufferData(GL_UNIFORM_BUFFER, sizeof(joints), NULL, GL_STREAM_DRAW);
+        qglBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(joints[0]) * model->num_joints, joints);
+
+        meshbits &= ~GLS_MESH_MD2;
+        meshbits |=  GLS_MESH_MD5 | GLS_MESH_LERP;
+    }
 
     for (int i = 0; i < model->num_meshes; i++)
         draw_skeleton_mesh(model, &model->meshes[i], skel);
@@ -875,26 +972,55 @@ void GL_DrawAliasModel(const model_t *model)
     // setup scale and translate vectors
     setup_frame_scale(model);
 
-    // select proper tessfunc
-    if (ent->flags & RF_SHELL_MASK) {
-        shellscale = (ent->flags & RF_WEAPONMODEL) ?
-            WEAPONSHELL_SCALE : POWERSUIT_SCALE;
-        tessfunc = newframenum == oldframenum ?
-            tess_static_shell : tess_lerped_shell;
-    } else if (dotshading) {
-        tessfunc = newframenum == oldframenum ?
-            tess_static_shade : tess_lerped_shade;
+    if (ent->flags & RF_SHELL_MASK)
+        shellscale = (ent->flags & RF_WEAPONMODEL) ? WEAPONSHELL_SCALE : POWERSUIT_SCALE;
+
+    buffer = model->buffer;
+    GL_BindBuffer(GL_ARRAY_BUFFER, model->buffer);
+    GL_BindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->buffer);
+
+    if (gl_static.use_gpu_lerp) {
+        Q_assert(buffer);
+
+        GL_BindArrays(VA_NONE);
+        tessfunc = bind_alias_arrays;
+
+        meshbits = GLS_MESH_MD2;
+        if (oldframenum != newframenum)
+            meshbits |= GLS_MESH_LERP;
+        if (glr.ent->flags & RF_SHELL_MASK)
+            meshbits |= GLS_MESH_SHELL;
+        else if (dotshading)
+            meshbits |= GLS_MESH_SHADE;
+
+        VectorCopy(oldscale, gls.u_block.mesh.oldscale);
+        VectorCopy(newscale, gls.u_block.mesh.newscale);
+        VectorCopy(translate, gls.u_block.mesh.translate);
+        VectorCopy(shadedir, gls.u_block.mesh.shadedir);
+        Vector4Copy(color, gls.u_block.mesh.color);
+        gls.u_block.mesh.shellscale = shellscale;
+        gls.u_block.mesh.backlerp = backlerp;
+        gls.u_block.mesh.frontlerp = frontlerp;
     } else {
-        tessfunc = newframenum == oldframenum ?
-            tess_static_plain : tess_lerped_plain;
+        Q_assert(!buffer);
+
+        GL_BindArrays(dotshading ? VA_MESH_SHADE : VA_MESH_FLAT);
+        meshbits = 0;
+
+        // select proper tessfunc
+        if (ent->flags & RF_SHELL_MASK) {
+            tessfunc = newframenum == oldframenum ?
+                tess_static_shell : tess_lerped_shell;
+        } else if (dotshading) {
+            tessfunc = newframenum == oldframenum ?
+                tess_static_shade : tess_lerped_shade;
+        } else {
+            tessfunc = newframenum == oldframenum ?
+                tess_static_plain : tess_lerped_plain;
+        }
     }
 
     GL_RotateForEntity(false);
-
-    GL_BindArrays(dotshading ? VA_MESH_SHADE : VA_MESH_FLAT);
-
-    buffer = model->buffer;
-    GL_BindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->buffer);
 
     if (ent->flags & RF_WEAPONMODEL)
         setup_weaponmodel();

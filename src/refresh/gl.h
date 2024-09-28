@@ -68,6 +68,7 @@ typedef struct {
     bool            use_shaders;
     bool            use_cubemaps;
     bool            use_bmodel_skies;
+    bool            use_gpu_lerp;
     struct {
         bsp_t       *cache;
         vec_t       *vertices;
@@ -79,6 +80,10 @@ typedef struct {
     GLuint          warp_renderbuffer;
     GLuint          warp_framebuffer;
     GLuint          uniform_buffer;
+#if USE_MD5
+    GLuint          skeleton_buffer;
+    GLuint          skeleton_tex[2];
+#endif
     GLuint          array_object;
     GLuint          index_buffer;
     GLuint          vertex_buffer;
@@ -91,6 +96,8 @@ typedef struct {
     uint32_t        inverse_intensity_66;
     uint32_t        inverse_intensity_100;
     int             nolm_mask;
+    int             hunk_align;
+    int             hunk_maxsize;
     float           sintab[256];
     byte            latlngtab[NUMVERTEXNORMALS][2];
     byte            lightstylemap[MAX_LIGHTSTYLES];
@@ -139,6 +146,9 @@ typedef enum {
     QGL_CAP_QUERY_RESULT_NO_WAIT        = BIT(10),
     QGL_CAP_CLIENT_VA                   = BIT(11),
     QGL_CAP_LINE_SMOOTH                 = BIT(12),
+    QGL_CAP_BUFFER_TEXTURE              = BIT(13),
+    QGL_CAP_SHADER_STORAGE              = BIT(14),
+    QGL_CAP_SKELETON_MASK               = QGL_CAP_BUFFER_TEXTURE | QGL_CAP_SHADER_STORAGE,
 } glcap_t;
 
 #define QGL_VER(major, minor)   ((major) * 100 + (minor))
@@ -154,6 +164,7 @@ typedef struct {
     int     stencilbits;
     int     max_texture_size_log2;
     int     max_texture_size;
+    int     ssbo_align;
 } glConfig_t;
 
 extern glStatic_t gl_static;
@@ -279,6 +290,14 @@ static inline void GL_AdvanceValue(float *restrict val, float target, float spee
  *
  */
 
+#define MOD_MAXSIZE_GPU     0x1000000
+
+#if (defined _WIN32) && !(defined _WIN64)
+#define MOD_MAXSIZE_CPU     0x400000
+#else
+#define MOD_MAXSIZE_CPU     0x800000
+#endif
+
 typedef struct {
     float   st[2];
 } maliastc_t;
@@ -392,10 +411,9 @@ typedef struct {
     int nummeshes;
     int numframes;
 
-    maliasmesh_t *meshes; // md2 / md3
+    maliasmesh_t *meshes; // MD2 / MD3
 #if USE_MD5
-    md5_model_t *skeleton; // md5
-    memhunk_t skeleton_hunk; // md5
+    md5_model_t *skeleton; // MD5
 #endif
     union {
         maliasframe_t *frames;
@@ -477,18 +495,26 @@ typedef enum {
     GLS_DEFAULT_SKY         = BIT(14),
     GLS_DEFAULT_FLARE       = BIT(15),
 
-    GLS_SHADE_SMOOTH        = BIT(16),
-    GLS_SCROLL_X            = BIT(17),
-    GLS_SCROLL_Y            = BIT(18),
-    GLS_SCROLL_FLIP         = BIT(19),
-    GLS_SCROLL_SLOW         = BIT(20),
+    GLS_MESH_MD2            = BIT(16),
+    GLS_MESH_MD5            = BIT(17),
+    GLS_MESH_LERP           = BIT(18),
+    GLS_MESH_SHELL          = BIT(19),
+    GLS_MESH_SHADE          = BIT(20),
+
+    GLS_SHADE_SMOOTH        = BIT(21),
+    GLS_SCROLL_X            = BIT(22),
+    GLS_SCROLL_Y            = BIT(23),
+    GLS_SCROLL_FLIP         = BIT(24),
+    GLS_SCROLL_SLOW         = BIT(25),
 
     GLS_BLEND_MASK  = GLS_BLEND_BLEND | GLS_BLEND_ADD | GLS_BLEND_MODULATE,
     GLS_COMMON_MASK = GLS_DEPTHMASK_FALSE | GLS_DEPTHTEST_DISABLE | GLS_CULL_DISABLE | GLS_BLEND_MASK,
     GLS_SKY_MASK    = GLS_CLASSIC_SKY | GLS_DEFAULT_SKY,
+    GLS_MESH_ANY    = GLS_MESH_MD2 | GLS_MESH_MD5,
+    GLS_MESH_MASK   = GLS_MESH_ANY | GLS_MESH_LERP | GLS_MESH_SHELL | GLS_MESH_SHADE,
     GLS_SHADER_MASK = GLS_ALPHATEST_ENABLE | GLS_TEXTURE_REPLACE | GLS_SCROLL_ENABLE |
         GLS_LIGHTMAP_ENABLE | GLS_WARP_ENABLE | GLS_INTENSITY_ENABLE | GLS_GLOWMAP_ENABLE |
-        GLS_SKY_MASK | GLS_DEFAULT_FLARE,
+        GLS_SKY_MASK | GLS_DEFAULT_FLARE | GLS_MESH_MASK,
     GLS_SCROLL_MASK = GLS_SCROLL_ENABLE | GLS_SCROLL_X | GLS_SCROLL_Y | GLS_SCROLL_FLIP | GLS_SCROLL_SLOW,
 } glStateBits_t;
 
@@ -497,8 +523,16 @@ typedef enum {
     VERT_ATTR_TC,
     VERT_ATTR_LMTC,
     VERT_ATTR_COLOR,
+    VERT_ATTR_COUNT,
 
-    VERT_ATTR_COUNT
+    // MD2
+    VERT_ATTR_MESH_TC = 0,
+    VERT_ATTR_MESH_NEW_POS = 1,
+    VERT_ATTR_MESH_OLD_POS = 2,
+
+    // MD5
+    VERT_ATTR_MESH_NORM = 1,
+    VERT_ATTR_MESH_VERT = 2,
 } glVertexAttr_t;
 
 typedef enum {
@@ -507,6 +541,8 @@ typedef enum {
     GLA_TC          = BIT(VERT_ATTR_TC),
     GLA_LMTC        = BIT(VERT_ATTR_LMTC),
     GLA_COLOR       = BIT(VERT_ATTR_COLOR),
+    GLA_MESH_STATIC = MASK(2),
+    GLA_MESH_LERP   = MASK(3),
 } glArrayBits_t;
 
 typedef enum {
@@ -529,7 +565,11 @@ typedef enum {
     TMU_TEXTURE,
     TMU_LIGHTMAP,
     TMU_GLOWMAP,
-    MAX_TMUS
+    MAX_TMUS,
+
+    // MD5
+    TMU_SKEL_WEIGHTS,
+    TMU_SKEL_JOINTNUMS,
 } glTmu_t;
 
 typedef enum {
@@ -540,15 +580,38 @@ typedef enum {
     GLB_COUNT
 } glBufferBinding_t;
 
+enum { UBO_UNIFORMS, UBO_SKELETON };
+enum { SSBO_WEIGHTS, SSBO_JOINTNUMS };
+
+typedef struct {
+    vec4_t      oldscale;
+    vec4_t      newscale;
+    vec4_t      translate;
+    vec4_t      shadedir;
+    vec4_t      color;
+    vec4_t      pad_0;
+    GLfloat     pad_1;
+    GLfloat     pad_2;
+    GLfloat     pad_3;
+    GLuint      weight_ofs;
+    GLuint      jointnum_ofs;
+    GLfloat     shellscale;
+    GLfloat     backlerp;
+    GLfloat     frontlerp;
+} glMeshBlock_t;
+
 typedef struct {
     GLfloat     mvp[16];
-    GLfloat     msky[2][16];
+    union {
+        GLfloat         msky[2][16];
+        glMeshBlock_t   mesh;
+    };
     GLfloat     time;
     GLfloat     modulate;
     GLfloat     add;
     GLfloat     intensity;
     GLfloat     intensity2;
-    GLfloat     pad_1;
+    GLfloat     pad_4;
     GLfloat     w_amp[2];
     GLfloat     w_phase[2];
     GLfloat     scroll[2];
@@ -571,6 +634,8 @@ typedef struct {
 } glState_t;
 
 extern glState_t gls;
+
+#define VBO_OFS(n)  ((void *)(n))
 
 typedef struct {
     uint8_t size;

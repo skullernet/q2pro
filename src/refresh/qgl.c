@@ -291,10 +291,24 @@ static const glsection_t sections[] = {
         .caps = QGL_CAP_TEXTURE_MAX_LEVEL | QGL_CAP_TEXTURE_NON_POWER_OF_TWO,
         .functions = (const glfunction_t []) {
             QGL_FN(BindBufferBase),
+            QGL_FN(BindBufferRange),
             QGL_FN(BindVertexArray),
             QGL_FN(DeleteVertexArrays),
             QGL_FN(GenVertexArrays),
             QGL_FN(GetStringi),
+            QGL_FN(VertexAttribIPointer),
+            { NULL }
+        }
+    },
+
+    // GL 3.1
+    // ES 3.2
+    {
+        .ver_gl = QGL_VER(3, 1),
+        .ver_es = QGL_VER(3, 2),
+        .caps = QGL_CAP_BUFFER_TEXTURE,
+        .functions = (const glfunction_t []) {
+            QGL_FN(TexBuffer),
             { NULL }
         }
     },
@@ -337,6 +351,14 @@ static const glsection_t sections[] = {
             QGL_FN(DebugMessageControl),
             { NULL }
         }
+    },
+
+    // GL 4.3
+    // ES 3.1
+    {
+        .ver_gl = QGL_VER(4, 3),
+        .ver_es = QGL_VER(3, 1),
+        .caps = QGL_CAP_SHADER_STORAGE,
     },
 
     // GL 4.4

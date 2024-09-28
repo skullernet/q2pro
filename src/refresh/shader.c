@@ -24,8 +24,16 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define GLSL(x)     SZ_Write(buf, CONST_STR_LEN(#x "\n"));
 #define GLSF(x)     SZ_Write(buf, CONST_STR_LEN(x))
 
-static void write_header(sizebuf_t *buf)
+static void write_header(sizebuf_t *buf, glStateBits_t bits)
 {
+#if USE_MD5
+    if (bits & GLS_MESH_MD5 && gl_config.caps & QGL_CAP_SHADER_STORAGE) {
+        if (gl_config.ver_es)
+            GLSF("#version 310 es\n");
+        else
+            GLSF("#version 430\n");
+    } else
+#endif
     if (gl_config.ver_es) {
         GLSF("#version 300 es\n");
     } else if (gl_config.ver_sl >= QGL_VER(1, 40)) {
@@ -36,18 +44,39 @@ static void write_header(sizebuf_t *buf)
     }
 }
 
-static void write_block(sizebuf_t *buf)
+static void write_block(sizebuf_t *buf, glStateBits_t bits)
 {
     GLSF("layout(std140) uniform u_block {\n");
+    GLSL(mat4 m_vp;);
+
+    if (bits & GLS_MESH_ANY) {
+        GLSL(
+            vec3 u_old_scale;
+            vec3 u_new_scale;
+            vec3 u_translate;
+            vec3 u_shadedir;
+            vec4 u_color;
+            vec4 pad_0;
+            float pad_1;
+            float pad_2;
+            float pad_3;
+            uint u_weight_ofs;
+            uint u_jointnum_ofs;
+            float u_shellscale;
+            float u_backlerp;
+            float u_frontlerp;
+        )
+    } else {
+        GLSL(mat4 m_sky[2];)
+    }
+
     GLSL(
-        mat4 m_vp;
-        mat4 m_sky[2];
         float u_time;
         float u_modulate;
         float u_add;
         float u_intensity;
         float u_intensity2;
-        float pad_1;
+        float pad_4;
         vec2 w_amp;
         vec2 w_phase;
         vec2 u_scroll;
@@ -55,10 +84,201 @@ static void write_block(sizebuf_t *buf)
     GLSF("};\n");
 }
 
+static void write_shadedot(sizebuf_t *buf)
+{
+    GLSL(
+        float shadedot(vec3 normal) {
+            float d = dot(normal, u_shadedir);
+            if (d < 0.0)
+                d *= 0.3;
+            return d + 1.0;
+        }
+    )
+}
+
+#if USE_MD5
+static void write_skel_shader(sizebuf_t *buf, glStateBits_t bits)
+{
+    GLSL(
+        struct Joint {
+            vec4 pos;
+            mat3x3 axis;
+        };
+        layout(std140) uniform Skeleton {
+            Joint u_joints[256];
+        };
+    )
+
+    if (gl_config.caps & QGL_CAP_SHADER_STORAGE) {
+        GLSL(
+            layout(std430, binding = 0) readonly buffer Weights {
+                vec4 b_weights[];
+            };
+
+            layout(std430, binding = 1) readonly buffer JointNums {
+                uint b_jointnums[];
+            };
+        )
+    } else {
+        GLSL(
+            uniform samplerBuffer u_weights;
+            uniform usamplerBuffer u_jointnums;
+        )
+    }
+
+    GLSL(
+        in vec2 a_tc;
+        in vec3 a_norm;
+        in uvec2 a_vert;
+
+        out vec2 v_tc;
+        out vec4 v_color;
+    )
+
+    if (bits & GLS_MESH_SHADE)
+        write_shadedot(buf);
+
+    GLSF("void main() {\n");
+    GLSL(
+        vec3 out_pos = vec3(0.0);
+        vec3 out_norm = vec3(0.0);
+
+        uint start = a_vert[0];
+        uint count = a_vert[1];
+    )
+
+    GLSF("for (uint i = start; i < start + count; i++) {\n");
+        if (gl_config.caps & QGL_CAP_SHADER_STORAGE) {
+            GLSL(
+                uint jointnum = b_jointnums[i / 4U];
+                jointnum >>= (i & 3U) * 8U;
+                jointnum &= 255U;
+
+                vec4 weight = b_weights[i];
+            )
+        } else {
+            GLSL(
+                uint jointnum = texelFetch(u_jointnums, int(u_jointnum_ofs + i)).r;
+                vec4 weight   = texelFetch(u_weights,   int(u_weight_ofs   + i));
+            )
+        }
+        GLSL(
+            Joint joint = u_joints[jointnum];
+
+            vec3 wv = joint.pos.xyz + (weight.xyz * joint.axis) * joint.pos.w;
+            out_pos += wv * weight.w;
+
+            out_norm += a_norm * joint.axis * weight.w;
+        )
+    GLSF("}\n");
+
+    GLSL(v_tc = a_tc;)
+
+    if (bits & GLS_MESH_SHADE)
+        GLSL(v_color = vec4(u_color.rgb * shadedot(out_norm), u_color.a);)
+    else
+        GLSL(v_color = u_color;)
+
+    if (bits & GLS_MESH_SHELL)
+        GLSL(out_pos += out_norm * u_shellscale;)
+
+    GLSL(gl_Position = m_vp * vec4(out_pos, 1.0);)
+    GLSF("}\n");
+}
+#endif
+
+static void write_getnormal(sizebuf_t *buf)
+{
+    GLSL(
+        vec3 get_normal(int norm) {
+            const float pi = 3.14159265358979323846;
+            const float scale = pi * (2.0 / 255.0);
+            float lat = float( uint(norm)       & 255U) * scale;
+            float lng = float((uint(norm) >> 8) & 255U) * scale;
+            return vec3(
+                sin(lat) * cos(lng),
+                sin(lat) * sin(lng),
+                cos(lat)
+            );
+        }
+    )
+}
+
+static void write_mesh_shader(sizebuf_t *buf, glStateBits_t bits)
+{
+    GLSL(
+        in vec2 a_tc;
+        in ivec4 a_new_pos;
+    )
+
+    if (bits & GLS_MESH_LERP)
+        GLSL(in ivec4 a_old_pos;)
+
+    GLSL(
+        out vec2 v_tc;
+        out vec4 v_color;
+    )
+
+    if (bits & (GLS_MESH_SHELL | GLS_MESH_SHADE))
+        write_getnormal(buf);
+
+    if (bits & GLS_MESH_SHADE)
+        write_shadedot(buf);
+
+    GLSF("void main() {\n");
+    GLSL(v_tc = a_tc;)
+
+    if (bits & GLS_MESH_LERP) {
+        if (bits & (GLS_MESH_SHELL | GLS_MESH_SHADE))
+            GLSL(
+                vec3 old_norm = get_normal(a_old_pos.w);
+                vec3 new_norm = get_normal(a_new_pos.w);
+            )
+
+        GLSL(vec3 pos = vec3(a_old_pos.xyz) * u_old_scale + vec3(a_new_pos.xyz) * u_new_scale + u_translate;)
+
+        if (bits & GLS_MESH_SHELL)
+            GLSL(pos += normalize((old_norm * u_backlerp + new_norm * u_frontlerp)) * u_shellscale;)
+
+        if (bits & GLS_MESH_SHADE)
+            GLSL(v_color = vec4(u_color.rgb * (shadedot(old_norm) * u_backlerp + shadedot(new_norm) * u_frontlerp), u_color.a);)
+        else
+            GLSL(v_color = u_color;)
+    } else {
+        if (bits & (GLS_MESH_SHELL | GLS_MESH_SHADE))
+            GLSL(vec3 norm = get_normal(a_new_pos.w);)
+
+        GLSL(vec3 pos = vec3(a_new_pos.xyz) * u_new_scale + u_translate;)
+
+        if (bits & GLS_MESH_SHELL)
+            GLSL(pos += norm * u_shellscale;)
+
+        if (bits & GLS_MESH_SHADE)
+            GLSL(v_color = vec4(u_color.rgb * shadedot(norm), u_color.a);)
+        else
+            GLSL(v_color = u_color;)
+    }
+
+    GLSL(gl_Position = m_vp * vec4(pos, 1.0);)
+    GLSF("}\n");
+}
+
 static void write_vertex_shader(sizebuf_t *buf, glStateBits_t bits)
 {
-    write_header(buf);
-    write_block(buf);
+    write_header(buf, bits);
+    write_block(buf, bits);
+
+#if USE_MD5
+    if (bits & GLS_MESH_MD5) {
+        write_skel_shader(buf, bits);
+        return;
+    }
+#endif
+
+    if (bits & GLS_MESH_MD2) {
+        write_mesh_shader(buf, bits);
+        return;
+    }
 
     GLSL(in vec4 a_pos;)
     if (bits & GLS_SKY_MASK) {
@@ -101,13 +321,13 @@ static void write_vertex_shader(sizebuf_t *buf, glStateBits_t bits)
 
 static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
 {
-    write_header(buf);
+    write_header(buf, bits);
 
     if (gl_config.ver_es)
         GLSL(precision mediump float;)
 
     if (bits & (GLS_WARP_ENABLE | GLS_LIGHTMAP_ENABLE | GLS_INTENSITY_ENABLE | GLS_SKY_MASK))
-        write_block(buf);
+        write_block(buf, bits);
 
     if (bits & GLS_CLASSIC_SKY) {
         GLSL(
@@ -259,13 +479,27 @@ static GLuint create_and_use_program(glStateBits_t bits)
     qglAttachShader(program, shader_v);
     qglAttachShader(program, shader_f);
 
-    qglBindAttribLocation(program, VERT_ATTR_POS, "a_pos");
-    if (!(bits & GLS_SKY_MASK))
-        qglBindAttribLocation(program, VERT_ATTR_TC, "a_tc");
-    if (bits & GLS_LIGHTMAP_ENABLE)
-        qglBindAttribLocation(program, VERT_ATTR_LMTC, "a_lmtc");
-    if (!(bits & GLS_TEXTURE_REPLACE))
-        qglBindAttribLocation(program, VERT_ATTR_COLOR, "a_color");
+#if USE_MD5
+    if (bits & GLS_MESH_MD5) {
+        qglBindAttribLocation(program, VERT_ATTR_MESH_TC, "a_tc");
+        qglBindAttribLocation(program, VERT_ATTR_MESH_NORM, "a_norm");
+        qglBindAttribLocation(program, VERT_ATTR_MESH_VERT, "a_vert");
+    } else
+#endif
+    if (bits & GLS_MESH_MD2) {
+        qglBindAttribLocation(program, VERT_ATTR_MESH_TC, "a_tc");
+        if (bits & GLS_MESH_LERP)
+            qglBindAttribLocation(program, VERT_ATTR_MESH_OLD_POS, "a_old_pos");
+        qglBindAttribLocation(program, VERT_ATTR_MESH_NEW_POS, "a_new_pos");
+    } else {
+        qglBindAttribLocation(program, VERT_ATTR_POS, "a_pos");
+        if (!(bits & GLS_SKY_MASK))
+            qglBindAttribLocation(program, VERT_ATTR_TC, "a_tc");
+        if (bits & GLS_LIGHTMAP_ENABLE)
+            qglBindAttribLocation(program, VERT_ATTR_LMTC, "a_lmtc");
+        if (!(bits & GLS_TEXTURE_REPLACE))
+            qglBindAttribLocation(program, VERT_ATTR_COLOR, "a_color");
+    }
 
     qglLinkProgram(program);
 
@@ -300,10 +534,27 @@ static GLuint create_and_use_program(glStateBits_t bits)
         return program;
     }
 
-    qglUniformBlockBinding(program, index, 0);
+    qglUniformBlockBinding(program, index, UBO_UNIFORMS);
+
+#if USE_MD5
+    if (bits & GLS_MESH_MD5) {
+        index = qglGetUniformBlockIndex(program, "Skeleton");
+        if (index == GL_INVALID_INDEX) {
+            Com_EPrintf("Skeleton block not found\n");
+            return program;
+        }
+        qglUniformBlockBinding(program, index, UBO_SKELETON);
+    }
+#endif
 
     qglUseProgram(program);
 
+#if USE_MD5
+    if (bits & GLS_MESH_MD5 && !(gl_config.caps & QGL_CAP_SHADER_STORAGE)) {
+        qglUniform1i(qglGetUniformLocation(program, "u_weights"), TMU_SKEL_WEIGHTS);
+        qglUniform1i(qglGetUniformLocation(program, "u_jointnums"), TMU_SKEL_JOINTNUMS);
+    }
+#endif
     if (bits & GLS_CLASSIC_SKY) {
         qglUniform1i(qglGetUniformLocation(program, "u_texture1"), TMU_TEXTURE);
         qglUniform1i(qglGetUniformLocation(program, "u_texture2"), TMU_LIGHTMAP);
@@ -385,6 +636,7 @@ static void shader_color(GLfloat r, GLfloat g, GLfloat b, GLfloat a)
 
 static void shader_load_uniforms(void)
 {
+    GL_BindBuffer(GL_UNIFORM_BUFFER, gl_static.uniform_buffer);
     qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_block), &gls.u_block, GL_DYNAMIC_DRAW);
     c.uniformUploads++;
 }
@@ -466,9 +718,20 @@ static void shader_init(void)
     gl_static.programs = HashMap_TagCreate(glStateBits_t, GLuint, HashInt32, NULL, TAG_RENDERER);
 
     qglGenBuffers(1, &gl_static.uniform_buffer);
-    qglBindBuffer(GL_UNIFORM_BUFFER, gl_static.uniform_buffer);
-    qglBindBufferBase(GL_UNIFORM_BUFFER, 0, gl_static.uniform_buffer);
+    GL_BindBuffer(GL_UNIFORM_BUFFER, gl_static.uniform_buffer);
+    qglBindBufferBase(GL_UNIFORM_BUFFER, UBO_UNIFORMS, gl_static.uniform_buffer);
     qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_block), NULL, GL_DYNAMIC_DRAW);
+
+#if USE_MD5
+    if (gl_config.caps & QGL_CAP_SKELETON_MASK) {
+        qglGenBuffers(1, &gl_static.skeleton_buffer);
+        GL_BindBuffer(GL_UNIFORM_BUFFER, gl_static.skeleton_buffer);
+        qglBindBufferBase(GL_UNIFORM_BUFFER, UBO_SKELETON, gl_static.skeleton_buffer);
+
+        if ((gl_config.caps & QGL_CAP_SKELETON_MASK) == QGL_CAP_BUFFER_TEXTURE)
+            qglGenTextures(2, gl_static.skeleton_tex);
+    }
+#endif
 
     if (gl_config.ver_gl >= QGL_VER(3, 2))
         qglEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
@@ -493,6 +756,17 @@ static void shader_shutdown(void)
         qglDeleteBuffers(1, &gl_static.uniform_buffer);
         gl_static.uniform_buffer = 0;
     }
+
+#if USE_MD5
+    if (gl_static.skeleton_buffer) {
+        qglDeleteBuffers(1, &gl_static.skeleton_buffer);
+        gl_static.skeleton_buffer = 0;
+    }
+    if (gl_static.skeleton_tex[0] || gl_static.skeleton_tex[1]) {
+        qglDeleteTextures(2, gl_static.skeleton_tex);
+        gl_static.skeleton_tex[0] = gl_static.skeleton_tex[1] = 0;
+    }
+#endif
 
     if (gl_config.ver_gl >= QGL_VER(3, 2))
         qglDisable(GL_TEXTURE_CUBE_MAP_SEAMLESS);

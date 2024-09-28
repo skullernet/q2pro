@@ -321,8 +321,9 @@ void GL_Setup3D(bool waterwarp)
 void GL_DrawOutlines(GLsizei count, const glIndex_t *indices, bool indexed)
 {
     GL_BindTexture(TMU_TEXTURE, TEXNUM_WHITE);
-    GL_StateBits(GLS_DEPTHMASK_FALSE | GLS_TEXTURE_REPLACE);
-    GL_ArrayBits(GLA_VERTEX);
+    GL_StateBits(GLS_DEPTHMASK_FALSE | GLS_TEXTURE_REPLACE | (gls.state_bits & GLS_MESH_MASK));
+    if (gls.currentva)
+        GL_ArrayBits(GLA_VERTEX);
     GL_DepthRange(0, 0);
 
     if (qglPolygonMode) {

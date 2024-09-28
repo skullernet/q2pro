@@ -604,7 +604,9 @@ void GL_DrawIndexed(showtris_t showtris)
 
     GL_LockArrays(tess.numverts);
 
-    if (!(gl_config.caps & QGL_CAP_CLIENT_VA)) {
+    if (gl_config.caps & QGL_CAP_CLIENT_VA) {
+        GL_BindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    } else {
         GL_BindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_static.index_buffer);
         qglBufferData(GL_ELEMENT_ARRAY_BUFFER, tess.numindices * sizeof(indices[0]), indices, GL_STREAM_DRAW);
         indices = NULL;
