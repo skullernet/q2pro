@@ -594,6 +594,10 @@ bool COM_IsUint(const char *s);
 bool COM_IsPath(const char *s);
 bool COM_IsWhite(const char *s);
 
+extern unsigned com_linenum;
+
+#define COM_SkipToken(data_p) COM_ParseToken(data_p, NULL, 0)
+size_t COM_ParseToken(const char **data_p, char *buffer, size_t size);
 char *COM_Parse(const char **data_p);
 // data is an in/out parm, returns a parsed out token
 size_t COM_Compress(char *data);

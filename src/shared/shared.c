@@ -413,8 +413,7 @@ char *vtos(const vec3_t v)
     return str[index];
 }
 
-static char     com_token[4][MAX_TOKEN_CHARS];
-static int      com_tokidx;
+unsigned com_linenum;
 
 /*
 ==============
@@ -424,22 +423,20 @@ Parse a token out of a string.
 Handles C and C++ comments.
 ==============
 */
-char *COM_Parse(const char **data_p)
+size_t COM_ParseToken(const char **data_p, char *buffer, size_t size)
 {
     int         c;
-    int         len;
+    size_t      len;
     const char  *data;
-    char        *s = com_token[com_tokidx];
-
-    com_tokidx = (com_tokidx + 1) & 3;
 
     data = *data_p;
     len = 0;
-    s[0] = 0;
+    if (size)
+        *buffer = 0;
 
     if (!data) {
         *data_p = NULL;
-        return s;
+        return len;
     }
 
 // skip whitespace
@@ -447,7 +444,10 @@ skipwhite:
     while ((c = *data) <= ' ') {
         if (c == 0) {
             *data_p = NULL;
-            return s;
+            return len;
+        }
+        if (c == '\n') {
+            com_linenum++;
         }
         data++;
     }
@@ -468,6 +468,9 @@ skipwhite:
                 data += 2;
                 break;
             }
+            if (data[0] == '\n') {
+                com_linenum++;
+            }
             data++;
         }
         goto skipwhite;
@@ -481,26 +484,42 @@ skipwhite:
             if (c == '\"' || !c) {
                 goto finish;
             }
-
-            if (len < MAX_TOKEN_CHARS - 1) {
-                s[len++] = c;
+            if (c == '\n') {
+                com_linenum++;
             }
+            if (len + 1 < size) {
+                *buffer++ = c;
+            }
+            len++;
         }
     }
 
 // parse a regular word
     do {
-        if (len < MAX_TOKEN_CHARS - 1) {
-            s[len++] = c;
+        if (len + 1 < size) {
+            *buffer++ = c;
         }
+        len++;
         data++;
         c = *data;
     } while (c > 32);
 
 finish:
-    s[len] = 0;
+    if (size)
+        *buffer = 0;
 
     *data_p = data;
+    return len;
+}
+
+char *COM_Parse(const char **data_p)
+{
+    static char     com_token[4][MAX_TOKEN_CHARS];
+    static int      com_tokidx;
+    char            *s = com_token[com_tokidx];
+
+    COM_ParseToken(data_p, s, sizeof(com_token[0]));
+    com_tokidx = (com_tokidx + 1) & 3;
     return s;
 }
 

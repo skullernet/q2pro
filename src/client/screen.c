@@ -1605,25 +1605,25 @@ static void SCR_SkipToEndif(const char **s)
             !strcmp(token, "yt") || !strcmp(token, "yb") || !strcmp(token, "yv") ||
             !strcmp(token, "pic") || !strcmp(token, "picn") || !strcmp(token, "color") ||
             strstr(token, "string")) {
-            COM_Parse(s);
+            COM_SkipToken(s);
             continue;
         }
 
         if (!strcmp(token, "client")) {
             for (i = 0; i < 6; i++)
-                COM_Parse(s);
+                COM_SkipToken(s);
             continue;
         }
 
         if (!strcmp(token, "ctf")) {
             for (i = 0; i < 5; i++)
-                COM_Parse(s);
+                COM_SkipToken(s);
             continue;
         }
 
         if (!strcmp(token, "num") || !strcmp(token, "health_bars")) {
-            COM_Parse(s);
-            COM_Parse(s);
+            COM_SkipToken(s);
+            COM_SkipToken(s);
             continue;
         }
 
@@ -1632,7 +1632,7 @@ static void SCR_SkipToEndif(const char **s)
         if (!strcmp(token, "rnum")) continue;
 
         if (!strcmp(token, "if")) {
-            COM_Parse(s);
+            COM_SkipToken(s);
             skip++;
             continue;
         }

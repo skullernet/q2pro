@@ -151,7 +151,7 @@ static void TH_DrawLayoutString(char *dst, const char *s)
 
         if (!strcmp(token, "pic")) {
             // draw a pic from a stat number
-            COM_Parse(&s);
+            COM_SkipToken(&s);
             continue;
         }
 
@@ -223,7 +223,7 @@ static void TH_DrawLayoutString(char *dst, const char *s)
 
         if (!strcmp(token, "picn")) {
             // draw a pic from a name
-            COM_Parse(&s);
+            COM_SkipToken(&s);
             continue;
         }
 
