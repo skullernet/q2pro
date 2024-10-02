@@ -703,6 +703,10 @@ static void MOD_PrintError(const char *path, int err)
 
 #if USE_MD5
 
+#define JSMN_STATIC
+#define JSMN_PARENT_LINKS
+#include "jsmn.h"
+
 #define MD5_Malloc(size)    Hunk_TryAlloc(&model->skeleton_hunk, size)
 
 static bool MD5_ParseExpect(const char **buffer, const char *expect)
@@ -1085,69 +1089,87 @@ static void MD5_BuildFrameSkeleton(const joint_info_t *joint_infos,
  */
 static void MOD_LoadMD5Scale(md5_model_t *model, const char *path, joint_info_t *joint_infos)
 {
-    void *buffer;
-    const char *s;
-    int ret;
+    const jsmntok_t *tok, *end;
+    jsmn_parser parser;
+    jsmntok_t tokens[4096];
+    char *data;
+    int len, ret;
 
-    ret = FS_LoadFile(path, &buffer);
-    if (!buffer)
+    len = FS_LoadFile(path, (void **)&data);
+    if (!data) {
+        if (len != Q_ERR(ENOENT))
+            MOD_PrintError(path, len);
+        return;
+    }
+
+    jsmn_init(&parser);
+    ret = jsmn_parse(&parser, data, len, tokens, q_countof(tokens));
+    if (ret < 0)
         goto fail;
-    s = buffer;
+    if (ret == 0)
+        goto skip;
 
-    MD5_EXPECT("{");
-    while (s) {
+    tok = &tokens[0];
+    if (tok->type != JSMN_OBJECT)
+        goto fail;
+
+    end = tokens + ret;
+    tok++;
+
+    while (tok < end) {
+        if (tok->type != JSMN_STRING)
+            goto fail;
+
         int joint_id = -1;
-        char *tok, *tok2;
+        const char *joint_name = data + tok->start;
 
-        tok = COM_Parse(&s);
-        if (!strcmp(tok, "}"))
-            break;
-
+        data[tok->end] = 0;
         for (int i = 0; i < model->num_joints; i++) {
-            if (!strcmp(tok, joint_infos[i].name)) {
+            if (!strcmp(joint_name, joint_infos[i].name)) {
                 joint_id = i;
                 break;
             }
         }
 
         if (joint_id == -1)
-            Com_WPrintf("No such joint %s in %s\n", Com_MakePrintable(tok), path);
+            Com_WPrintf("No such joint \"%s\" in %s\n", Com_MakePrintable(joint_name), path);
 
-        MD5_EXPECT(":");
-        MD5_EXPECT("{");
+        if (++tok == end || tok->type != JSMN_OBJECT)
+            goto fail;
 
-        while (s) {
-            tok = COM_Parse(&s);
-            if (!strcmp(tok, "}") || !strcmp(tok, "},"))
-                break;
-            MD5_EXPECT(":");
+        int num_keys = tok->size;
+        if (end - ++tok < num_keys * 2)
+            goto fail;
 
-            tok2 = COM_Parse(&s);
+        for (int i = 0; i < num_keys; i++) {
+            const jsmntok_t *key = tok++;
+            const jsmntok_t *val = tok++;
+            if (key->type != JSMN_STRING || val->type != JSMN_PRIMITIVE)
+                goto fail;
+
             if (joint_id == -1)
                 continue;
 
-            if (!strcmp(tok, "scale_positions")) {
-                joint_infos[joint_id].scale_pos = !strncmp(tok2, "true", 4);
-                continue;
+            data[key->end] = 0;
+            if (!strcmp(data + key->start, "scale_positions")) {
+                joint_infos[joint_id].scale_pos = data[val->start] == 't';
+            } else {
+                unsigned frame_id = Q_atoi(data + key->start);
+                if (frame_id < model->num_frames)
+                    model->skeleton_frames[frame_id * model->num_joints + joint_id].scale = Q_atof(data + val->start);
+                else
+                    Com_WPrintf("No such frame %d in %s\n", frame_id, path);
             }
-
-            unsigned frame_id = Q_atoi(tok);
-            if (frame_id >= model->num_frames) {
-                Com_WPrintf("No such frame %d in %s\n", frame_id, path);
-                continue;
-            }
-
-            model->skeleton_frames[frame_id * model->num_joints + joint_id].scale = Q_atof(tok2);
         }
     }
 
-    FS_FreeFile(buffer);
+skip:
+    FS_FreeFile(data);
     return;
 
 fail:
-    if (ret != Q_ERR(ENOENT))
-        MOD_PrintError(path, ret);
-    FS_FreeFile(buffer);
+    Com_EPrintf("Couldn't load %s: Invalid JSON data\n", path);
+    FS_FreeFile(data);
 }
 
 /**
