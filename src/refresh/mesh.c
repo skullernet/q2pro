@@ -668,13 +668,17 @@ static void draw_alias_mesh(const glIndex_t *indices, int num_indices,
 
 #if USE_MD5
 
+#if (defined __OPTIMIZE__) && (defined __GNUC__) && !(defined __clang__)
+#pragma GCC optimize("O3")
+#endif
+
 // for the given vertex, set of weights & skeleton, calculate
 // the output vertex (and optionally normal).
-static inline void calc_skel_vert(const md5_vertex_t *vert,
-                                  const md5_mesh_t *mesh,
-                                  const md5_joint_t *skeleton,
-                                  float *restrict out_position,
-                                  float *restrict out_normal)
+static q_forceinline void calc_skel_vert(const md5_vertex_t *vert,
+                                         const md5_mesh_t *mesh,
+                                         const md5_joint_t *skeleton,
+                                         float *restrict out_position,
+                                         float *restrict out_normal)
 {
     VectorClear(out_position);
 
@@ -686,13 +690,13 @@ static inline void calc_skel_vert(const md5_vertex_t *vert,
         const md5_joint_t *joint = &skeleton[mesh->jointnums[vert->start + i]];
 
         vec3_t wv;
-        Quat_RotatePoint(joint->orient, weight->pos, wv);
+        VectorRotate(weight->pos, joint->axis, wv);
 
         VectorMA(joint->pos, joint->scale, wv, wv);
         VectorMA(out_position, weight->bias, wv, out_position);
 
         if (out_normal) {
-            Quat_RotatePoint(joint->orient, vert->normal, wv);
+            VectorRotate(vert->normal, joint->axis, wv);
             VectorMA(out_normal, weight->bias, wv, out_normal);
         }
     }
@@ -738,13 +742,19 @@ static void lerp_alias_skeleton(const md5_model_t *model)
     unsigned frame_b = newframenum % model->num_frames;
     const md5_joint_t *skel_a = &model->skeleton_frames[frame_a * model->num_joints];
     const md5_joint_t *skel_b = &model->skeleton_frames[frame_b * model->num_joints];
+    md5_joint_t *out = temp_skeleton;
 
-    for (int i = 0; i < model->num_joints; i++) {
-        temp_skeleton[i].scale = skel_b[i].scale;
-        LerpVector2(skel_a[i].pos, skel_b[i].pos, backlerp, frontlerp, temp_skeleton[i].pos);
-        Quat_SLerp(skel_a[i].orient, skel_b[i].orient, backlerp, frontlerp, temp_skeleton[i].orient);
+    for (int i = 0; i < model->num_joints; i++, skel_a++, skel_b++, out++) {
+        out->scale = skel_b->scale;
+        LerpVector2(skel_a->pos, skel_b->pos, backlerp, frontlerp, out->pos);
+        Quat_SLerp(skel_a->orient, skel_b->orient, backlerp, frontlerp, out->orient);
+        Quat_ToAxis(out->orient, out->axis);
     }
 }
+
+#if (defined __OPTIMIZE__) && (defined __GNUC__) && !(defined __clang__)
+#pragma GCC reset_options
+#endif
 
 static void draw_skeleton_mesh(const md5_model_t *model, const md5_mesh_t *mesh, const md5_joint_t *skel)
 {

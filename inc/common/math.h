@@ -124,6 +124,26 @@ static inline void Quat_RotatePoint(const quat_t q, const vec3_t in, vec3_t out)
     out[Z] = output[Z];
 }
 
+static inline void Quat_ToAxis(const quat_t q, vec3_t axis[3])
+{
+    float q0 = q[W];
+    float q1 = q[X];
+    float q2 = q[Y];
+    float q3 = q[Z];
+
+    axis[0][0] = 2 * (q0 * q0 + q1 * q1) - 1;
+    axis[0][1] = 2 * (q1 * q2 - q0 * q3);
+    axis[0][2] = 2 * (q1 * q3 + q0 * q2);
+
+    axis[1][0] = 2 * (q1 * q2 + q0 * q3);
+    axis[1][1] = 2 * (q0 * q0 + q2 * q2) - 1;
+    axis[1][2] = 2 * (q2 * q3 - q0 * q1);
+
+    axis[2][0] = 2 * (q1 * q3 - q0 * q2);
+    axis[2][1] = 2 * (q2 * q3 + q0 * q1);
+    axis[2][2] = 2 * (q0 * q0 + q3 * q3) - 1;
+}
+
 #undef X
 #undef Y
 #undef Z

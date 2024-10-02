@@ -139,6 +139,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define q_unreachable()     abort()
 #endif
 
+#define q_forceinline       inline __attribute__((always_inline))
+
 #else /* __GNUC__ */
 
 #ifdef _MSC_VER
@@ -147,12 +149,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define q_malloc            __declspec(restrict)
 #define q_alignof(t)        __alignof(t)
 #define q_unreachable()     __assume(0)
+#define q_forceinline       __forceinline
 #else
 #define q_noreturn
 #define q_noinline
 #define q_malloc
 #define q_alignof(t)        1
 #define q_unreachable()     abort()
+#define q_forceinline       inline
 #endif
 
 #define q_printf(f, a)

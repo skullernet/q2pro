@@ -330,6 +330,7 @@ typedef struct {
     vec3_t pos;
     float scale;
     quat_t orient;
+    vec3_t axis[3];
 } md5_joint_t;
 
 /* Vertex */

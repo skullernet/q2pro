@@ -1040,6 +1040,7 @@ static void MD5_BuildFrameSkeleton(const joint_info_t *joint_infos,
         if (parent < 0) {
             VectorCopy(animated_position, thisJoint->pos);
             Vector4Copy(animated_quat, thisJoint->orient);
+            Quat_ToAxis(thisJoint->orient, thisJoint->axis);
             continue;
         }
 
@@ -1055,6 +1056,8 @@ static void MD5_BuildFrameSkeleton(const joint_info_t *joint_infos,
         // concat rotations
         Quat_MultiplyQuat(parentJoint->orient, animated_quat, thisJoint->orient);
         Quat_Normalize(thisJoint->orient);
+
+        Quat_ToAxis(thisJoint->orient, thisJoint->axis);
     }
 }
 
