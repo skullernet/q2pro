@@ -418,7 +418,7 @@ void Quat_ComputeW(quat_t q)
     }
 }
 
-#define QUAT_EPSILON 0.000001f
+#define DOT_THRESHOLD   0.9995f
 
 void Quat_SLerp(const quat_t qa, const quat_t qb, float backlerp, float frontlerp, quat_t out)
 {
@@ -453,7 +453,7 @@ void Quat_SLerp(const quat_t qa, const quat_t qb, float backlerp, float frontler
     // compute interpolation fraction
     float k0, k1;
 
-    if (1.0f - cosOmega <= QUAT_EPSILON) {
+    if (cosOmega > DOT_THRESHOLD) {
         // very close - just use linear interpolation
         k0 = backlerp;
         k1 = frontlerp;
