@@ -1318,6 +1318,38 @@ fail:
     return false;
 }
 
+static bool MD5_LoadSkins(model_t *model)
+{
+    md5_model_t *mdl = model->skeleton;
+    const maliasmesh_t *mesh = &model->meshes[0];
+
+    mdl->num_skins = mesh->numskins;
+    mdl->skins = Hunk_TryAlloc(&model->skeleton_hunk, sizeof(mdl->skins[0]) * mdl->num_skins);
+    if (!mdl->skins) {
+        Com_EPrintf("Out of memory for MD5 skins\n");
+        return false;
+    }
+
+    for (int i = 0; i < mesh->numskins; i++) {
+        // because skins are actually absolute and not always relative to the
+        // model being used, we have to stick to the same behavior.
+        char skin_name[MAX_QPATH], skin_path[MAX_QPATH];
+
+        COM_SplitPath(mesh->skinnames[i], skin_name, sizeof(skin_name), skin_path, sizeof(skin_path), false);
+
+        // build MD5 path
+        if (Q_strlcat(skin_path, "md5/", sizeof(skin_path)) < sizeof(skin_path) &&
+            Q_strlcat(skin_path, skin_name, sizeof(skin_path)) < sizeof(skin_path)) {
+            mdl->skins[i] = IMG_Find(skin_path, IT_SKIN, IF_NONE);
+        } else {
+            Com_WPrintf("MD5 skin path too long: %s\n", skin_path);
+            mdl->skins[i] = R_NOTEXTURE;
+        }
+    }
+
+    return true;
+}
+
 static void MOD_LoadMD5(model_t *model)
 {
     char model_name[MAX_QPATH], base_path[MAX_QPATH];
@@ -1338,27 +1370,8 @@ static void MOD_LoadMD5(model_t *model)
 
     if (!MOD_LoadMD5Anim(model, anim_path))
         goto fail;
-
-    model->skeleton->num_skins = model->meshes[0].numskins;
-    if (!(model->skeleton->skins = MD5_Malloc(sizeof(model->skeleton->skins[0]) * model->meshes[0].numskins)))
+    if (!MD5_LoadSkins(model))
         goto fail;
-
-    for (int i = 0; i < model->meshes[0].numskins; i++) {
-        // because skins are actually absolute and not always relative to the
-        // model being used, we have to stick to the same behavior.
-        char skin_name[MAX_QPATH], skin_path[MAX_QPATH];
-
-        COM_SplitPath(model->meshes[0].skinnames[i], skin_name, sizeof(skin_name), skin_path, sizeof(skin_path), false);
-
-        // build md5 path
-        if (Q_strlcat(skin_path, "md5/", sizeof(skin_path)) < sizeof(skin_path) &&
-            Q_strlcat(skin_path, skin_name, sizeof(skin_path)) < sizeof(skin_path)) {
-            model->skeleton->skins[i] = IMG_Find(skin_path, IT_SKIN, IF_NONE);
-        } else {
-            Com_WPrintf("MD5 skin path too long: %s\n", skin_path);
-            model->skeleton->skins[i] = R_NOTEXTURE;
-        }
-    }
 
     Hunk_End(&model->skeleton_hunk);
     return;
