@@ -320,34 +320,30 @@ typedef struct {
 
 // the total amount of joints the renderer will bother handling
 #define MD5_MAX_JOINTS      256
-#define MD5_MAX_JOINTNAME   32
+#define MD5_MAX_JOINTNAME   48
 #define MD5_MAX_MESHES      32
 #define MD5_MAX_WEIGHTS     8192
 #define MD5_MAX_FRAMES      1024
 
 /* Joint */
 typedef struct {
-    int parent;
-
     vec3_t pos;
-    quat_t orient;
     float scale;
+    quat_t orient;
 } md5_joint_t;
 
 /* Vertex */
 typedef struct {
     vec3_t normal;
 
-    uint32_t start; /* start weight */
-    uint32_t count; /* weight count */
+    uint16_t start; /* start weight */
+    uint16_t count; /* weight count */
 } md5_vertex_t;
 
 /* Weight */
 typedef struct {
-    int joint;
-    float bias;
-
     vec3_t pos;
+    float bias;
 } md5_weight_t;
 
 /* Mesh */
@@ -360,6 +356,7 @@ typedef struct {
     maliastc_t *tcoords;
     glIndex_t *indices;
     md5_weight_t *weights;
+    uint8_t *jointnums;
 } md5_mesh_t;
 
 /* MD5 model + animation structure */
@@ -370,7 +367,6 @@ typedef struct {
     int num_skins;
 
     md5_mesh_t *meshes;
-    md5_joint_t *base_skeleton;
     md5_joint_t *skeleton_frames; // [num_joints][num_frames]
     image_t **skins;
 } md5_model_t;
