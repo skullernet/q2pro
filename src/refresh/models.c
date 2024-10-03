@@ -1179,9 +1179,9 @@ static bool MD5_ParseAnim(model_t *model, const char *s, const char *path)
     mdl->num_frames = MD5_ParseUint(&s, 1, MD5_MAX_FRAMES);
 
     // warn on mismatched frame counts (not fatal)
-    if (mdl->num_frames != model->numframes)
-        Com_WPrintf("%s doesn't match frame count for %s (%i vs %i)\n",
-                    path, model->name, mdl->num_frames, model->numframes);
+    if (mdl->num_frames < model->numframes)
+        Com_WPrintf("%s has less frames than %s (%i < %i)\n", path,
+                    model->name, mdl->num_frames, model->numframes);
 
     MD5_ParseExpect(&s, "numJoints");
     num_joints = MD5_ParseUint(&s, 1, MD5_MAX_JOINTS);
