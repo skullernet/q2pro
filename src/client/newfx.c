@@ -990,9 +990,7 @@ void CL_HologramParticles(const vec3_t org)
         p->time = cl.time;
         p->color = 0xd0;
 
-        VectorCopy(bytedirs[i], dir);
-        RotatePoint(dir, axis);
-
+        VectorRotate(bytedirs[i], axis, dir);
         VectorMA(org, 100.0f, dir, p->org);
 
         VectorClear(p->vel);

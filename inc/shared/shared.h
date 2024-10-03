@@ -231,6 +231,11 @@ typedef struct {
         ((d)[0]=(a)[0]+(b)[0]*(c)[0], \
          (d)[1]=(a)[1]+(b)[1]*(c)[1], \
          (d)[2]=(a)[2]+(b)[2]*(c)[2])
+#define VectorRotate(in,axis,out) \
+        ((out)[0]=DotProduct(in,(axis)[0]), \
+         (out)[1]=DotProduct(in,(axis)[1]), \
+         (out)[2]=DotProduct(in,(axis)[2]))
+
 #define VectorEmpty(v) ((v)[0]==0&&(v)[1]==0&&(v)[2]==0)
 #define VectorCompare(v1,v2)    ((v1)[0]==(v2)[0]&&(v1)[1]==(v2)[1]&&(v1)[2]==(v2)[2])
 #define VectorLength(v)     (sqrtf(DotProduct((v),(v))))
@@ -295,11 +300,8 @@ static inline void TransposeAxis(vec3_t axis[3])
 static inline void RotatePoint(vec3_t point, const vec3_t axis[3])
 {
     vec3_t temp;
-
     VectorCopy(point, temp);
-    point[0] = DotProduct(temp, axis[0]);
-    point[1] = DotProduct(temp, axis[1]);
-    point[2] = DotProduct(temp, axis[2]);
+    VectorRotate(temp, axis, point);
 }
 
 static inline uint32_t Q_npot32(uint32_t k)
