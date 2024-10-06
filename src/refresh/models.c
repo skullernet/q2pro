@@ -115,7 +115,7 @@ static void MOD_Free(model_t *model)
 void MOD_FreeUnused(void)
 {
     model_t *model;
-    int i;
+    int i, count = 0;
 
     for (i = 0, model = r_models; i < r_numModels; i++, model++) {
         if (!model->type)
@@ -131,18 +131,28 @@ void MOD_FreeUnused(void)
         } else {
             // don't need this model
             MOD_Free(model);
+            count++;
         }
     }
+
+    if (count)
+        Com_DPrintf("%s: %i models freed\n", __func__, count);
 }
 
 void MOD_FreeAll(void)
 {
     model_t *model;
-    int i;
+    int i, count = 0;
 
-    for (i = 0, model = r_models; i < r_numModels; i++, model++)
-        if (model->type)
+    for (i = 0, model = r_models; i < r_numModels; i++, model++) {
+        if (model->type) {
             MOD_Free(model);
+            count++;
+        }
+    }
+
+    if (count)
+        Com_DPrintf("%s: %i models freed\n", __func__, count);
 
     r_numModels = 0;
 }
