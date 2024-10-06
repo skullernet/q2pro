@@ -918,7 +918,7 @@ int IMG_ReadPixels(screenshot_t *s)
 
     s->bpp = bpp;
     s->rowbytes = rowbytes;
-    s->pixels = Z_TagMalloc(buf_size, TAG_RENDERER);
+    s->pixels = R_Malloc(buf_size);
     s->width = r_config.width;
     s->height = r_config.height;
 
