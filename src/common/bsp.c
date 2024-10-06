@@ -45,8 +45,10 @@ static cvar_t *map_visibility_patch;
 ===============================================================================
 */
 
+#define BSP_ALIGN   64
+
 #define BSP_ALLOC(size) \
-    Hunk_Alloc(&bsp->hunk, size)
+    Hunk_Alloc(&bsp->hunk, size, BSP_ALIGN)
 
 #define BSP_ERROR(msg) \
     Com_SetLastError(va("%s: %s", __func__, msg))
@@ -544,9 +546,9 @@ static size_t BSP_ParseLightgridHeader(bsp_t *bsp, const byte *in, size_t filele
     }
 
     return
-        Q_ALIGN(sizeof(grid->nodes[0]) * grid->numnodes, 64) +
-        Q_ALIGN(sizeof(grid->leafs[0]) * grid->numleafs, 64) +
-        Q_ALIGN(sizeof(grid->samples[0]) * grid->numsamples * grid->numstyles, 64);
+        Q_ALIGN(sizeof(grid->nodes[0]) * grid->numnodes, BSP_ALIGN) +
+        Q_ALIGN(sizeof(grid->leafs[0]) * grid->numleafs, BSP_ALIGN) +
+        Q_ALIGN(sizeof(grid->samples[0]) * grid->numsamples * grid->numstyles, BSP_ALIGN);
 }
 
 static bool BSP_ValidateLightgrid_r(const lightgrid_t *grid, uint32_t nodenum)
@@ -812,7 +814,7 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
             count++;
 
         // round to cacheline
-        memsize += Q_ALIGN(count * info->memsize, 64);
+        memsize += Q_ALIGN(count * info->memsize, BSP_ALIGN);
         maxpos = max(maxpos, ofs + len);
     }
 

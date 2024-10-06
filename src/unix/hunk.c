@@ -48,15 +48,15 @@ void Hunk_Begin(memhunk_t *hunk, size_t maxsize)
     hunk->mapped = hunk->maxsize;
 }
 
-void *Hunk_TryAlloc(memhunk_t *hunk, size_t size)
+void *Hunk_TryAlloc(memhunk_t *hunk, size_t size, size_t align)
 {
     void *buf;
 
-    Q_assert(size <= SIZE_MAX - 63);
+    Q_assert(size <= SIZE_MAX - (align - 1));
     Q_assert(hunk->cursize <= hunk->maxsize);
 
     // round to cacheline
-    size = Q_ALIGN(size, 64);
+    size = Q_ALIGN(size, align);
     if (size > hunk->maxsize - hunk->cursize)
         return NULL;
 
@@ -65,12 +65,18 @@ void *Hunk_TryAlloc(memhunk_t *hunk, size_t size)
     return buf;
 }
 
-void *Hunk_Alloc(memhunk_t *hunk, size_t size)
+void *Hunk_Alloc(memhunk_t *hunk, size_t size, size_t align)
 {
-    void *buf = Hunk_TryAlloc(hunk, size);
+    void *buf = Hunk_TryAlloc(hunk, size, align);
     if (!buf)
         Com_Error(ERR_FATAL, "%s: couldn't allocate %zu bytes", __func__, size);
     return buf;
+}
+
+void Hunk_FreeToWatermark(memhunk_t *hunk, size_t size)
+{
+    Q_assert(size <= hunk->cursize);
+    hunk->cursize = size;
 }
 
 void Hunk_End(memhunk_t *hunk)

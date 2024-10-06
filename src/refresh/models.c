@@ -24,7 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #endif
 #include "format/sp2.h"
 
-#define MOD_Malloc(size)    Hunk_TryAlloc(&model->hunk, size)
+#define MOD_Malloc(size)    Hunk_TryAlloc(&model->hunk, size, 64)
 
 #define OOM_CHECK(x)    do { if (!(x)) { ret = Q_ERR(ENOMEM); goto fail; } } while (0)
 #define ENSURE(x, e)    if (!(x)) return e
@@ -714,7 +714,7 @@ static void MD5_ParseError(const char *text)
 
 static void *MD5_Malloc(model_t *model, size_t size)
 {
-    void *ptr = Hunk_TryAlloc(&model->skeleton_hunk, size);
+    void *ptr = Hunk_TryAlloc(&model->skeleton_hunk, size, 64);
     if (!ptr) {
         Com_SetLastError("Out of memory");
         longjmp(md5_jmpbuf, -1);
@@ -1302,7 +1302,7 @@ static bool MD5_LoadSkins(model_t *model)
     const maliasmesh_t *mesh = &model->meshes[0];
 
     mdl->num_skins = mesh->numskins;
-    mdl->skins = Hunk_TryAlloc(&model->skeleton_hunk, sizeof(mdl->skins[0]) * mdl->num_skins);
+    mdl->skins = Hunk_TryAlloc(&model->skeleton_hunk, sizeof(mdl->skins[0]) * mdl->num_skins, 64);
     if (!mdl->skins) {
         Com_EPrintf("Out of memory for MD5 skins\n");
         return false;
