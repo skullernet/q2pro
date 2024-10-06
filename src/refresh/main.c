@@ -345,6 +345,7 @@ static void GL_DrawSpriteModel(const model_t *model)
     }
 
     GL_LoadMatrix(glr.viewmatrix);
+    GL_LoadUniforms();
     GL_BindTexture(TMU_TEXTURE, image->texnum);
     GL_BindArrays(VA_SPRITE);
     GL_StateBits(bits);
@@ -393,6 +394,7 @@ static void GL_DrawNullModel(void)
     WN32(tess.vertices + 23, U32_BLUE);
 
     GL_LoadMatrix(glr.viewmatrix);
+    GL_LoadUniforms();
     GL_BindTexture(TMU_TEXTURE, TEXNUM_WHITE);
     GL_BindArrays(VA_NULLMODEL);
     GL_StateBits(GLS_DEFAULT);
@@ -462,6 +464,7 @@ static void GL_OccludeFlares(void)
 
         if (!set) {
             GL_LoadMatrix(glr.viewmatrix);
+            GL_LoadUniforms();
             GL_BindTexture(TMU_TEXTURE, TEXNUM_WHITE);
             GL_BindArrays(VA_OCCLUDE);
             GL_StateBits(GLS_DEPTHMASK_FALSE);
@@ -630,6 +633,7 @@ static void GL_WaterWarp(void)
     GL_StateBits(GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE |
                  GLS_CULL_DISABLE | GLS_TEXTURE_REPLACE | GLS_WARP_ENABLE);
     GL_ArrayBits(GLA_VERTEX | GLA_TC);
+    GL_LoadUniforms();
 
     x0 = glr.fd.x;
     x1 = glr.fd.x + glr.fd.width;

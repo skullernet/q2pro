@@ -73,6 +73,7 @@ void GL_DrawParticles(void)
         return;
 
     GL_LoadMatrix(glr.viewmatrix);
+    GL_LoadUniforms();
     GL_BindArrays(VA_EFFECT);
 
     bits = (gl_partstyle->integer ? GLS_BLEND_ADD : GLS_BLEND_BLEND) | GLS_DEPTHMASK_FALSE;
@@ -590,6 +591,8 @@ void GL_UnlockArrays(void)
 void GL_DrawIndexed(showtris_t showtris)
 {
     const glIndex_t *indices = tess.indices;
+
+    GL_LoadUniforms();
 
     GL_LockArrays(tess.numverts);
 

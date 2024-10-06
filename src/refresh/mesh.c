@@ -538,6 +538,7 @@ static void draw_shadow(const glIndex_t *indices, int num_indices)
 
     // load shadow projection matrix
     GL_LoadMatrix(shadowmatrix);
+    GL_LoadUniforms();
 
     // eliminate z-fighting by utilizing stencil buffer, if available
     if (gl_config.stencilbits) {
@@ -606,6 +607,7 @@ static void draw_alias_mesh(const glIndex_t *indices, int num_indices,
 
     // fall back to entity matrix
     GL_LoadMatrix(glr.entmatrix);
+    GL_LoadUniforms();
 
     // avoid drawing hidden faces for transparent gun by pre-filling depth buffer
     // muzzle flashes are excluded by checking for RF_FULLBRIGHT bit

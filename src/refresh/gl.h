@@ -556,6 +556,7 @@ typedef struct {
     GLfloat             view_matrix[16];
     GLfloat             proj_matrix[16];
     glUniformBlock_t    u_block;
+    bool                u_block_dirty;
 } glState_t;
 
 extern glState_t gls;
@@ -577,6 +578,7 @@ typedef struct {
     void (*setup_3d)(void);
 
     void (*load_matrix)(GLenum mode, const GLfloat *matrix);
+    void (*load_uniforms)(void);
 
     void (*state_bits)(glStateBits_t bits);
     void (*array_bits)(glArrayBits_t bits);
@@ -632,6 +634,14 @@ static inline void GL_LoadMatrix(const GLfloat *matrix)
     if (gls.currentmatrix != matrix) {
         gl_backend->load_matrix(GL_MODELVIEW, matrix);
         gls.currentmatrix = matrix;
+    }
+}
+
+static inline void GL_LoadUniforms(void)
+{
+    if (gls.u_block_dirty && gl_backend->load_uniforms) {
+        gl_backend->load_uniforms();
+        gls.u_block_dirty = false;
     }
 }
 

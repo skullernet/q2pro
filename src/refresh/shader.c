@@ -24,8 +24,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define GLSL(x)     SZ_Write(buf, CONST_STR_LEN(#x "\n"));
 #define GLSF(x)     SZ_Write(buf, CONST_STR_LEN(x))
 
-static void upload_u_block(void);
-
 static void write_header(sizebuf_t *buf)
 {
     if (gl_config.ver_es) {
@@ -344,7 +342,7 @@ static void shader_state_bits(glStateBits_t bits)
 
     if (diff & GLS_SCROLL_MASK && bits & GLS_SCROLL_ENABLE) {
         GL_ScrollPos(gls.u_block.scroll, bits);
-        upload_u_block();
+        gls.u_block_dirty = true;
     }
 }
 
@@ -385,7 +383,7 @@ static void shader_color(GLfloat r, GLfloat g, GLfloat b, GLfloat a)
     qglVertexAttrib4f(VERT_ATTR_COLOR, r, g, b, a);
 }
 
-static void upload_u_block(void)
+static void shader_load_uniforms(void)
 {
     qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_block), &gls.u_block, GL_DYNAMIC_DRAW);
     c.uniformUploads++;
@@ -405,7 +403,7 @@ static void shader_load_matrix(GLenum mode, const GLfloat *matrix)
     }
 
     GL_MultMatrix(gls.u_block.mvp, gls.proj_matrix, gls.view_matrix);
-    upload_u_block();
+    gls.u_block_dirty = true;
 }
 
 static void shader_setup_2d(void)
@@ -510,6 +508,7 @@ const glbackend_t backend_shader = {
     .setup_3d = shader_setup_3d,
 
     .load_matrix = shader_load_matrix,
+    .load_uniforms = shader_load_uniforms,
 
     .state_bits = shader_state_bits,
     .array_bits = shader_array_bits,
