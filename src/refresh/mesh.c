@@ -824,7 +824,6 @@ void GL_DrawAliasModel(const model_t *model)
     const entity_t *ent = glr.ent;
     glCullResult_t cull;
     void (*tessfunc)(const maliasmesh_t *);
-    int i;
 
     if (glr.fd.extended) {
         newframenum = ent->frame % model->numframes;
@@ -911,9 +910,9 @@ void GL_DrawAliasModel(const model_t *model)
         draw_alias_skeleton(model->skeleton);
     else
 #endif
-    for (i = 0; i < model->nummeshes; i++) {
+    for (int i = 0; i < model->nummeshes; i++) {
         const maliasmesh_t *mesh = &model->meshes[i];
-        (*tessfunc)(mesh);
+        tessfunc(mesh);
         draw_alias_mesh(mesh->indices, mesh->numindices,
                         mesh->tcoords, mesh->numverts,
                         mesh->skins, mesh->numskins);
