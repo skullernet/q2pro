@@ -107,13 +107,7 @@ static void MOD_Free(model_t *model)
     Hunk_Free(&model->skeleton_hunk);
 #endif
 
-    if (model->buffer) {
-        // invalidate bindings
-        for (int i = 0; i < 2; i++)
-            if (gls.currentbuffer[i] == model->buffer)
-                gls.currentbuffer[i] = 0;
-        qglDeleteBuffers(1, &model->buffer);
-    }
+    GL_DeleteBuffer(model->buffer);
 
     memset(model, 0, sizeof(*model));
 }

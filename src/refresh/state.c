@@ -92,6 +92,20 @@ void GL_BindCubemap(GLuint texnum)
     c.texSwitches++;
 }
 
+void GL_DeleteBuffer(GLuint buffer)
+{
+    if (!buffer)
+        return;
+
+    Q_assert(qglDeleteBuffers);
+    qglDeleteBuffers(1, &buffer);
+
+    // invalidate bindings
+    for (int i = 0; i < q_countof(gls.currentbuffer); i++)
+        if (gls.currentbuffer[i] == buffer)
+            gls.currentbuffer[i] = 0;
+}
+
 void GL_CommonStateBits(glStateBits_t bits)
 {
     glStateBits_t diff = bits ^ gls.state_bits;
