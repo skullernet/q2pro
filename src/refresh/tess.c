@@ -543,22 +543,24 @@ static const glVaDesc_t arraydescs[VA_TOTAL][VERT_ATTR_COUNT] = {
 
 void GL_BindArrays(glVertexArray_t va)
 {
-    const GLfloat *ptr = tess.vertices;
-    GLuint buffer = 0;
-
     if (gls.currentva == va)
         return;
 
-    if (va == VA_3D && !gl_static.world.vertices) {
-        buffer = gl_static.world.buffer;
-        ptr = NULL;
-    } else if (!(gl_config.caps & QGL_CAP_CLIENT_VA)) {
-        buffer = gl_static.vertex_buffer;
-        ptr = NULL;
-    }
+    if (va != VA_NONE) {
+        const GLfloat *ptr = tess.vertices;
+        GLuint buffer = 0;
 
-    GL_BindBuffer(GL_ARRAY_BUFFER, buffer);
-    gl_backend->array_pointers(arraydescs[va], ptr);
+        if (va == VA_3D && !gl_static.world.vertices) {
+            buffer = gl_static.world.buffer;
+            ptr = NULL;
+        } else if (!(gl_config.caps & QGL_CAP_CLIENT_VA)) {
+            buffer = gl_static.vertex_buffer;
+            ptr = NULL;
+        }
+
+        GL_BindBuffer(GL_ARRAY_BUFFER, buffer);
+        gl_backend->array_pointers(arraydescs[va], ptr);
+    }
 
     gls.currentva = va;
     c.vertexArrayBinds++;
@@ -566,6 +568,8 @@ void GL_BindArrays(glVertexArray_t va)
 
 void GL_LockArrays(GLsizei count)
 {
+    if (gls.currentva == VA_NONE)
+        return;
     if (gls.currentva == VA_3D && !gl_static.world.vertices)
         return;
     if (gl_config.caps & QGL_CAP_CLIENT_VA) {
@@ -580,6 +584,8 @@ void GL_LockArrays(GLsizei count)
 
 void GL_UnlockArrays(void)
 {
+    if (gls.currentva == VA_NONE)
+        return;
     if (gls.currentva == VA_3D && !gl_static.world.vertices)
         return;
     if (!(gl_config.caps & QGL_CAP_CLIENT_VA))
@@ -591,6 +597,8 @@ void GL_UnlockArrays(void)
 void GL_DrawIndexed(showtris_t showtris)
 {
     const glIndex_t *indices = tess.indices;
+
+    Q_assert(gls.currentva != VA_NONE);
 
     GL_LoadUniforms();
 
