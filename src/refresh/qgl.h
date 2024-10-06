@@ -138,6 +138,7 @@ QGLAPI void (APIENTRYP qglVertexAttrib4f)(GLuint index, GLfloat x, GLfloat y, GL
 QGLAPI void (APIENTRYP qglVertexAttribPointer)(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer);
 
 // GL 3.0
+QGLAPI void (APIENTRYP qglBindBufferBase)(GLenum target, GLuint index, GLuint buffer);
 QGLAPI void (APIENTRYP qglBindFramebuffer)(GLenum target, GLuint framebuffer);
 QGLAPI void (APIENTRYP qglBindRenderbuffer)(GLenum target, GLuint renderbuffer);
 QGLAPI void (APIENTRYP qglBindVertexArray)(GLuint array);
@@ -156,7 +157,6 @@ QGLAPI const GLubyte *(APIENTRYP qglGetStringi)(GLenum name, GLuint index);
 QGLAPI void (APIENTRYP qglRenderbufferStorage)(GLenum target, GLenum internalformat, GLsizei width, GLsizei height);
 
 // GL 3.1
-QGLAPI void (APIENTRYP qglBindBufferBase)(GLenum target, GLuint index, GLuint buffer);
 QGLAPI void (APIENTRYP qglGetActiveUniformBlockiv)(GLuint program, GLuint uniformBlockIndex, GLenum pname, GLint *params);
 QGLAPI GLuint (APIENTRYP qglGetUniformBlockIndex)(GLuint program, const GLchar *uniformBlockName);
 QGLAPI void (APIENTRYP qglUniformBlockBinding)(GLuint program, GLuint uniformBlockIndex, GLuint uniformBlockBinding);
