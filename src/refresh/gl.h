@@ -532,6 +532,14 @@ typedef enum {
     MAX_TMUS
 } glTmu_t;
 
+typedef enum {
+    GLB_VBO,
+    GLB_EBO,
+    GLB_UBO,
+
+    GLB_COUNT
+} glBufferBinding_t;
+
 typedef struct {
     GLfloat     mvp[16];
     GLfloat     msky[2][16];
@@ -553,7 +561,7 @@ typedef struct {
     GLuint              texnumcube;
     glStateBits_t       state_bits;
     glArrayBits_t       array_bits;
-    GLuint              currentbuffer[2];
+    GLuint              currentbuffer[GLB_COUNT];
     glVertexArray_t     currentva;
     const GLfloat      *currentmatrix;
     GLfloat             view_matrix[16];
@@ -648,11 +656,23 @@ static inline void GL_LoadUniforms(void)
     }
 }
 
+static inline glBufferBinding_t GL_BindingForTarget(GLenum target)
+{
+    switch (target) {
+    case GL_ARRAY_BUFFER:
+        return GLB_VBO;
+    case GL_ELEMENT_ARRAY_BUFFER:
+        return GLB_EBO;
+    case GL_UNIFORM_BUFFER:
+        return GLB_UBO;
+    default:
+        q_unreachable();
+    }
+}
+
 static inline void GL_BindBuffer(GLenum target, GLuint buffer)
 {
-    const int i = target == GL_ELEMENT_ARRAY_BUFFER;
-    Q_assert(i || target == GL_ARRAY_BUFFER);
-
+    glBufferBinding_t i = GL_BindingForTarget(target);
     if (gls.currentbuffer[i] != buffer) {
         qglBindBuffer(target, buffer);
         gls.currentbuffer[i] = buffer;
