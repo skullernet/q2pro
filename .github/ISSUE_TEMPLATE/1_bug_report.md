@@ -11,8 +11,7 @@ assignees: ''
 
 Make sure the bug is reproducible with latest Q2PRO version. If you compile
 Q2PRO yourself, update to the latest version from git master. If you are using
-prebuilt Windows binaries, update to the latest version available from
-https://skuller.net/q2pro/nightly/
+prebuilt Windows binaries, update to the latest nightly build.
 
 ### Important information
 
@@ -51,3 +50,8 @@ Provide a link to the log file created by launching `q2pro +set developer 1
 If Q2PRO crashes, provide a crash report (Windows) or a backtrace (Linux). On
 Linux, backtrace can be created by launching Q2PRO with `gdb q2pro --args
 [...]` and typing `bt` after the crash.
+
+### Compilation issues
+
+If reporting a building / compilation issue, provide `meson setup` command
+line and full console output.
