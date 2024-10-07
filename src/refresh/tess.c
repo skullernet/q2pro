@@ -127,7 +127,7 @@ void GL_DrawParticles(void)
         qglDrawArrays(GL_TRIANGLES, 0, numverts);
 
         if (gl_showtris->integer & SHOWTRIS_FX)
-            GL_DrawOutlines(numverts, NULL, false);
+            GL_DrawOutlines(numverts, 0, NULL);
 
         GL_UnlockArrays();
     } while (total);
@@ -612,11 +612,11 @@ void GL_DrawIndexed(showtris_t showtris)
         indices = NULL;
     }
 
-    GL_DrawTriangles(tess.numindices, indices);
+    qglDrawElements(GL_TRIANGLES, tess.numindices, QGL_INDEX_TYPE, indices);
     c.trisDrawn += tess.numindices / 3;
 
     if (gl_showtris->integer & showtris)
-        GL_DrawOutlines(tess.numindices, indices, true);
+        GL_DrawOutlines(tess.numindices, QGL_INDEX_TYPE, indices);
 
     GL_UnlockArrays();
 }

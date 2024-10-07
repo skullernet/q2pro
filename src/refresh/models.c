@@ -546,7 +546,7 @@ static int MOD_LoadMD3Mesh(model_t *model, maliasmesh_t *mesh,
     uint32_t        *src_idx;
     maliasvert_t    *dst_vert;
     maliastc_t      *dst_tc;
-    glIndex_t       *dst_idx;
+    uint16_t        *dst_idx;
     uint32_t        index;
     int             i, j, k;
     const char      *err;

@@ -321,7 +321,7 @@ typedef struct {
     int             numtris;
     int             numindices;
     int             numskins;
-    glIndex_t       *indices;
+    uint16_t        *indices;
     maliasvert_t    *verts;
     maliastc_t      *tcoords;
 #if USE_MD5
@@ -377,7 +377,7 @@ typedef struct {
 
     md5_vertex_t *vertices;
     maliastc_t *tcoords;
-    glIndex_t *indices;
+    uint16_t *indices;
     md5_weight_t *weights;
     uint8_t *jointnums;
 } md5_mesh_t;
@@ -762,9 +762,6 @@ static inline void GL_DepthRange(GLfloat n, GLfloat f)
 
 #define GL_Color(r, g, b, a) gl_backend->color(r, g, b, a)
 
-#define GL_DrawTriangles(num_indices, indices) \
-    qglDrawElements(GL_TRIANGLES, num_indices, QGL_INDEX_TYPE, indices)
-
 typedef enum {
     SHOWTRIS_NONE   = 0,
     SHOWTRIS_WORLD  = BIT(0),
@@ -780,7 +777,7 @@ void GL_BindCubemap(GLuint texnum);
 void GL_DeleteBuffer(GLuint buffer);
 void GL_CommonStateBits(glStateBits_t bits);
 void GL_ScrollPos(vec2_t scroll, glStateBits_t bits);
-void GL_DrawOutlines(GLsizei count, const glIndex_t *indices, bool indexed);
+void GL_DrawOutlines(GLsizei count, GLenum type, const void *indices);
 void GL_Ortho(GLfloat xmin, GLfloat xmax, GLfloat ymin, GLfloat ymax, GLfloat znear, GLfloat zfar);
 void GL_Frustum(GLfloat fov_x, GLfloat fov_y, GLfloat reflect_x);
 void GL_Setup2D(void);

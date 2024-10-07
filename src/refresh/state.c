@@ -318,7 +318,7 @@ void GL_Setup3D(bool waterwarp)
     qglClear(GL_DEPTH_BUFFER_BIT | gl_static.stencil_buffer_bit);
 }
 
-void GL_DrawOutlines(GLsizei count, const glIndex_t *indices, bool indexed)
+void GL_DrawOutlines(GLsizei count, GLenum type, const void *indices)
 {
     GL_BindTexture(TMU_TEXTURE, TEXNUM_WHITE);
     GL_StateBits(GLS_DEPTHMASK_FALSE | GLS_TEXTURE_REPLACE | (gls.state_bits & GLS_MESH_MASK));
@@ -329,22 +329,32 @@ void GL_DrawOutlines(GLsizei count, const glIndex_t *indices, bool indexed)
     if (qglPolygonMode) {
         qglPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-        if (indexed)
-            GL_DrawTriangles(count, indices);
+        if (type)
+            qglDrawElements(GL_TRIANGLES, count, type, indices);
         else
             qglDrawArrays(GL_TRIANGLES, 0, count);
 
         qglPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    } else {
-        GLsizei i;
+    } else if (type) {
+        uintptr_t base = (uintptr_t)indices;
+        uintptr_t size = 0;
 
-        if (indexed) {
-            for (i = 0; i < count / 3; i++)
-                qglDrawElements(GL_LINE_LOOP, 3, QGL_INDEX_TYPE, &indices[i * 3]);
-        } else {
-            for (i = 0; i < count / 3; i++)
-                qglDrawArrays(GL_LINE_LOOP, i * 3, 3);
+        switch (type) {
+        case GL_UNSIGNED_INT:
+            size = 4 * 3;
+            break;
+        case GL_UNSIGNED_SHORT:
+            size = 2 * 3;
+            break;
+        default:
+            Q_assert(!"bad type");
         }
+
+        for (int i = 0; i < count / 3; i++, base += size)
+            qglDrawElements(GL_LINE_LOOP, 3, type, VBO_OFS(base));
+    } else {
+        for (int i = 0; i < count / 3; i++)
+            qglDrawArrays(GL_LINE_LOOP, i * 3, 3);
     }
 
     GL_DepthRange(0, 1);

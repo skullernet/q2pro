@@ -433,7 +433,7 @@ static void uniform_mesh_color(float r, float g, float b, float a)
     }
 }
 
-static void draw_celshading(const glIndex_t *indices, int num_indices)
+static void draw_celshading(const uint16_t *indices, int num_indices)
 {
     if (celscale < 0.01f)
         return;
@@ -449,7 +449,7 @@ static void draw_celshading(const glIndex_t *indices, int num_indices)
     qglLineWidth(gl_celshading->value * celscale);
     qglPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     qglCullFace(GL_FRONT);
-    GL_DrawTriangles(num_indices, indices);
+    qglDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, indices);
     qglCullFace(GL_BACK);
     qglPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     qglLineWidth(1);
@@ -545,7 +545,7 @@ static void setup_shadow(void)
     GL_MultMatrix(shadowmatrix, tmp, matrix);
 }
 
-static void draw_shadow(const glIndex_t *indices, int num_indices)
+static void draw_shadow(const uint16_t *indices, int num_indices)
 {
     if (!drawshadow)
         return;
@@ -570,7 +570,7 @@ static void draw_shadow(const glIndex_t *indices, int num_indices)
 
     qglEnable(GL_POLYGON_OFFSET_FILL);
     qglPolygonOffset(-1.0f, -2.0f);
-    GL_DrawTriangles(num_indices, indices);
+    qglDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, indices);
     qglDisable(GL_POLYGON_OFFSET_FILL);
 
     // once we have drawn something to stencil buffer, continue to clear it for
@@ -623,7 +623,7 @@ static void bind_alias_arrays(const maliasmesh_t *mesh)
     }
 }
 
-static void draw_alias_mesh(const glIndex_t *indices, int num_indices,
+static void draw_alias_mesh(const uint16_t *indices, int num_indices,
                             const maliastc_t *tcoords, int num_verts,
                             image_t **skins, int num_skins)
 {
@@ -657,7 +657,7 @@ static void draw_alias_mesh(const glIndex_t *indices, int num_indices,
         qglColorMask(0, 0, 0, 0);
 
         GL_LockArrays(num_verts);
-        GL_DrawTriangles(num_indices, indices);
+        qglDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, indices);
         GL_UnlockArrays();
 
         qglColorMask(1, 1, 1, 1);
@@ -693,13 +693,13 @@ static void draw_alias_mesh(const glIndex_t *indices, int num_indices,
 
     GL_LockArrays(num_verts);
 
-    GL_DrawTriangles(num_indices, indices);
+    qglDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, indices);
     c.trisDrawn += num_indices / 3;
 
     draw_celshading(indices, num_indices);
 
     if (gl_showtris->integer & SHOWTRIS_MESH)
-        GL_DrawOutlines(num_indices, indices, true);
+        GL_DrawOutlines(num_indices, GL_UNSIGNED_SHORT, indices);
 
     // FIXME: unlock arrays before changing matrix?
     draw_shadow(indices, num_indices);
