@@ -1263,10 +1263,8 @@ static bool MD5_ParseAnim(model_t *model, const char *s, const char *path)
     MD5_ParseExpect(&s, "bounds");
     MD5_ParseExpect(&s, "{");
 
-    for (i = 0; i < mdl->num_frames * 2; i++) {
-        vec3_t dummy;
-        MD5_ParseVector(&s, dummy);
-    }
+    for (i = 0; i < mdl->num_frames * 2 * 5; i++)
+        COM_SkipToken(&s);
 
     MD5_ParseExpect(&s, "}");
 
