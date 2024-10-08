@@ -124,11 +124,14 @@ with SIMD support:
 
 Meson needs correct cross build definition file for compilation. Example
 cross-files can be found in `.ci` subdirectory (available in git
-repository, but not source tarball).
+repository, but not source tarball). Note that these cross-files are specific
+to CI scripts and shouldn't be used directly (you'll need, at least, to
+customize default `pkg-config` search path). Refer to Meson documentation for
+more info.
 
 Setup build directory:
 
-    meson setup --cross-file .ci/x86_64-w64-mingw32.txt -Dwrap_mode=forcefallback builddir
+    meson setup --cross-file x86_64-w64-mingw32.txt -Dwrap_mode=forcefallback builddir
 
 Build:
 
