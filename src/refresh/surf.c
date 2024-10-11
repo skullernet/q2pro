@@ -574,7 +574,7 @@ static glStateBits_t statebits_for_surface(const mface_t *surf)
     glStateBits_t statebits = GLS_DEFAULT;
 
     if (surf->drawflags & SURF_SKY) {
-        if (Q_stricmpn(surf->texinfo->name, CONST_STR_LEN("n64/env/sky")) == 0)
+        if (surf->texinfo->image->flags & IF_CLASSIC_SKY)
             return GLS_TEXTURE_REPLACE | GLS_CLASSIC_SKY;
         else
             return GLS_TEXTURE_REPLACE | GLS_DEFAULT_SKY;

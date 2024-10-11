@@ -156,12 +156,12 @@ typedef enum {
     IF_OPAQUE           = BIT(8),   // known to be opaque
     IF_DEFAULT_FLARE    = BIT(9),   // default flare hack
     IF_CUBEMAP          = BIT(10),  // cubemap (or part of it)
+    IF_CLASSIC_SKY      = BIT(11),  // split in two halves
 
     // these flags only affect R_RegisterImage() behavior,
     // and are not stored in image
     IF_OPTIONAL         = BIT(16),  // don't warn if not found
     IF_KEEP_EXTENSION   = BIT(17),  // don't override extension
-    IF_CLASSIC_SKY      = BIT(18),  // split in two halves
 } imageflags_t;
 
 typedef enum {
