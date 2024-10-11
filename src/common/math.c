@@ -390,14 +390,12 @@ void SetupRotationMatrix(vec3_t matrix[3], const vec3_t dir, float degrees)
 void RotatePointAroundVector(vec3_t out, const vec3_t dir, const vec3_t in, float degrees)
 {
     vec3_t matrix[3];
-    vec3_t tmp;
+    vec3_t temp;
 
     SetupRotationMatrix(matrix, dir, degrees);
 
-    VectorCopy(in, tmp);
-    out[0] = DotProduct(tmp, matrix[0]);
-    out[1] = DotProduct(tmp, matrix[1]);
-    out[2] = DotProduct(tmp, matrix[2]);
+    VectorCopy(in, temp);
+    VectorRotate(temp, matrix, out);
 }
 
 #if USE_MD5

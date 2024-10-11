@@ -275,9 +275,7 @@ static void GL_TransformLights(const mmodel_t *model)
 
     for (i = 0, light = glr.fd.dlights; i < glr.fd.num_dlights; i++, light++) {
         VectorSubtract(light->origin, glr.ent->origin, temp);
-        light->transformed[0] = DotProduct(temp, glr.entaxis[0]);
-        light->transformed[1] = DotProduct(temp, glr.entaxis[1]);
-        light->transformed[2] = DotProduct(temp, glr.entaxis[2]);
+        VectorRotate(temp, glr.entaxis, light->transformed);
         GL_MarkLights_r(model->headnode, light, BIT_ULL(i));
     }
 }
@@ -425,9 +423,7 @@ void GL_DrawBspModel(mmodel_t *model)
             }
         }
         VectorSubtract(glr.fd.vieworg, ent->origin, temp);
-        transformed[0] = DotProduct(temp, glr.entaxis[0]);
-        transformed[1] = DotProduct(temp, glr.entaxis[1]);
-        transformed[2] = DotProduct(temp, glr.entaxis[2]);
+        VectorRotate(temp, glr.entaxis, transformed);
     } else {
         VectorAdd(model->mins, ent->origin, bounds[0]);
         VectorAdd(model->maxs, ent->origin, bounds[1]);
