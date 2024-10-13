@@ -29,6 +29,8 @@ static byte     gtv_send_buffer[MAX_GTS_MSGLEN*2];
 
 static byte     gtv_message_buffer[MAX_MSGLEN];
 
+static void drop_client(const char *reason);
+
 static void build_gamestate(void)
 {
     centity_t *ent;
@@ -177,6 +179,13 @@ void CL_GTV_EmitFrame(void)
 
     MSG_WriteShort(0);      // end of packetentities
 
+    // check for overflow
+    if (msg_write.overflowed) {
+        SZ_Clear(&msg_write);
+        drop_client("frame overflowed");
+        return;
+    }
+
     SZ_Write(&cls.gtv.message, msg_write.data, msg_write.cursize);
     SZ_Clear(&msg_write);
 }
@@ -264,6 +273,14 @@ void CL_GTV_Resume(void)
 
     build_gamestate();
     emit_gamestate();
+
+    // check for overflow
+    if (msg_write.overflowed) {
+        SZ_Clear(&msg_write);
+        drop_client("gamestate overflowed");
+        return;
+    }
+
     write_message(GTS_STREAM_DATA);
     SZ_Clear(&msg_write);
 }

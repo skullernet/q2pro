@@ -626,19 +626,23 @@ static void demo_emit_snapshot(mvd_t *mvd)
         MSG_WriteString(mvd->layout);
     }
 
-    snap = MVD_Malloc(sizeof(*snap) + msg_write.cursize - 1);
-    snap->framenum = mvd->framenum;
-    snap->filepos = pos;
-    snap->msglen = msg_write.cursize;
-    memcpy(snap->data, msg_write.data, msg_write.cursize);
+    if (msg_write.overflowed) {
+        Com_WPrintf("%s: message buffer overflowed\n", __func__);
+    } else {
+        snap = MVD_Malloc(sizeof(*snap) + msg_write.cursize - 1);
+        snap->framenum = mvd->framenum;
+        snap->filepos = pos;
+        snap->msglen = msg_write.cursize;
+        memcpy(snap->data, msg_write.data, msg_write.cursize);
 
-    if (!mvd->snapshots)
-        mvd->snapshots = MVD_Malloc(sizeof(mvd->snapshots[0]) * MIN_SNAPSHOTS);
-    else
-        mvd->snapshots = Z_Realloc(mvd->snapshots, sizeof(mvd->snapshots[0]) * Q_ALIGN(mvd->numsnapshots + 1, MIN_SNAPSHOTS));
-    mvd->snapshots[mvd->numsnapshots++] = snap;
+        if (!mvd->snapshots)
+            mvd->snapshots = MVD_Malloc(sizeof(mvd->snapshots[0]) * MIN_SNAPSHOTS);
+        else
+            mvd->snapshots = Z_Realloc(mvd->snapshots, sizeof(mvd->snapshots[0]) * Q_ALIGN(mvd->numsnapshots + 1, MIN_SNAPSHOTS));
+        mvd->snapshots[mvd->numsnapshots++] = snap;
 
-    Com_DPrintf("[%d] snaplen %u\n", mvd->framenum, msg_write.cursize);
+        Com_DPrintf("[%d] snaplen %u\n", mvd->framenum, msg_write.cursize);
+    }
 
     SZ_Clear(&msg_write);
 
@@ -1975,6 +1979,12 @@ void MVD_StreamedRecord_f(void)
     mvd->demoname = MVD_CopyString(buffer);
 
     emit_gamestate(mvd);
+
+    // check for overflow
+    if (msg_write.overflowed) {
+        ret = Q_ERR(EMSGSIZE);
+        goto fail;
+    }
 
     // write magic
     magic = MVD_MAGIC;

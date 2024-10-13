@@ -46,19 +46,16 @@ const usercmd_t         nullUserCmd;
 =============
 MSG_Init
 
-Initialize default buffers, clearing allow overflow/underflow flags.
-
-This is the only place where writing buffer is initialized. Writing buffer is
-never allowed to overflow.
-
-Reading buffer is reinitialized in many other places. Reinitializing will set
-the allow underflow flag as appropriate.
+Initialize default buffers (also called from Com_Error).
+This is the only place where writing buffer is initialized.
 =============
 */
 void MSG_Init(void)
 {
     SZ_Init(&msg_read, msg_read_buffer, MAX_MSGLEN, "msg_read");
     SZ_Init(&msg_write, msg_write_buffer, MAX_MSGLEN, "msg_write");
+    msg_read.allowunderflow = true;
+    msg_write.allowoverflow = true;
 }
 
 

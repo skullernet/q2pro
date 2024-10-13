@@ -1809,6 +1809,9 @@ static void SV_RunGameFrame(void)
         time_after_game = Sys_Milliseconds();
 #endif
 
+    if (msg_write.overflowed)
+        Com_Error(ERR_DROP, "%s: message buffer overflowed", __func__);
+
     if (msg_write.cursize) {
         Com_WPrintf("Game left %u bytes "
                     "in multicast buffer, cleared.\n",

@@ -74,6 +74,12 @@ static int write_server_file(savetype_t autosave)
     }
     MSG_WriteString(NULL);
 
+    // check for overflow
+    if (msg_write.overflowed) {
+        SZ_Clear(&msg_write);
+        return -1;
+    }
+
     // write server state
     ret = FS_WriteFile("save/" SAVE_CURRENT "/server.ssv",
                        msg_write.data, msg_write.cursize);

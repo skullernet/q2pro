@@ -530,7 +530,7 @@ void Com_Error(error_type_t code, const char *fmt, ...)
     // overlap with one of the arguments!
     memcpy(com_errorMsg, msg, len + 1);
 
-    // fix up drity message buffers
+    // fix up dirty message buffers
     MSG_Init();
 
     // abort any console redirects

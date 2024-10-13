@@ -271,6 +271,9 @@ void SV_Multicast(const vec3_t origin, multicast_t to)
     if (to && !origin)
         Com_Error(ERR_DROP, "%s: NULL origin", __func__);
 
+    if (msg_write.overflowed)
+        Com_Error(ERR_DROP, "%s: message buffer overflowed", __func__);
+
     if (!msg_write.cursize) {
         Com_DPrintf("%s with empty data\n", __func__);
         return;
@@ -388,6 +391,8 @@ unless told otherwise.
 void SV_ClientAddMessage(client_t *client, int flags)
 {
     int len;
+
+    Q_assert(!msg_write.overflowed);
 
     if (!msg_write.cursize) {
         return;
@@ -755,6 +760,8 @@ static void write_datagram_old(client_t *client)
     }
 #endif
 
+    Q_assert(!msg_write.overflowed);
+
     // send the datagram
     cursize = Netchan_Transmit(&client->netchan,
                                msg_write.cursize,
@@ -818,6 +825,8 @@ static void write_datagram_new(client_t *client)
             MSG_WriteByte(svc_nop);
     }
 #endif
+
+    Q_assert(!msg_write.overflowed);
 
     // send the datagram
     cursize = Netchan_Transmit(&client->netchan,

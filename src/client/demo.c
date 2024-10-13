@@ -224,7 +224,9 @@ void CL_EmitDemoFrame(void)
     // emit and flush frame
     emit_delta_frame(oldframe, &cl.frame, lastframe, FRAME_CUR);
 
-    if (cls.demo.buffer.cursize + msg_write.cursize > cls.demo.buffer.maxsize) {
+    if (msg_write.overflowed) {
+        Com_WPrintf("%s: message buffer overflowed\n", __func__);
+    } else if (cls.demo.buffer.cursize + msg_write.cursize > cls.demo.buffer.maxsize) {
         Com_DPrintf("Demo frame overflowed (%u + %u > %u)\n",
                     cls.demo.buffer.cursize, msg_write.cursize, cls.demo.buffer.maxsize);
         cls.demo.frames_dropped++;
@@ -850,16 +852,20 @@ void CL_EmitDemoSnapshot(void)
     MSG_WriteByte(svc_layout);
     MSG_WriteString(cl.layout);
 
-    snap = Z_Malloc(sizeof(*snap) + msg_write.cursize - 1);
-    snap->framenum = cls.demo.frames_read;
-    snap->filepos = pos;
-    snap->msglen = msg_write.cursize;
-    memcpy(snap->data, msg_write.data, msg_write.cursize);
+    if (msg_write.overflowed) {
+        Com_WPrintf("%s: message buffer overflowed\n", __func__);
+    } else {
+        snap = Z_Malloc(sizeof(*snap) + msg_write.cursize - 1);
+        snap->framenum = cls.demo.frames_read;
+        snap->filepos = pos;
+        snap->msglen = msg_write.cursize;
+        memcpy(snap->data, msg_write.data, msg_write.cursize);
 
-    cls.demo.snapshots = Z_Realloc(cls.demo.snapshots, sizeof(cls.demo.snapshots[0]) * Q_ALIGN(cls.demo.numsnapshots + 1, MIN_SNAPSHOTS));
-    cls.demo.snapshots[cls.demo.numsnapshots++] = snap;
+        cls.demo.snapshots = Z_Realloc(cls.demo.snapshots, sizeof(cls.demo.snapshots[0]) * Q_ALIGN(cls.demo.numsnapshots + 1, MIN_SNAPSHOTS));
+        cls.demo.snapshots[cls.demo.numsnapshots++] = snap;
 
-    Com_DPrintf("[%d] snaplen %u\n", cls.demo.frames_read, msg_write.cursize);
+        Com_DPrintf("[%d] snaplen %u\n", cls.demo.frames_read, msg_write.cursize);
+    }
 
     SZ_Clear(&msg_write);
 

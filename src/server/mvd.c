@@ -831,6 +831,13 @@ static void resume_streams(void)
     build_gamestate();
     emit_gamestate();
 
+    // check for overflow
+    if (msg_write.overflowed) {
+        SZ_Clear(&msg_write);
+        mvd_error("gamestate overflowed");
+        return;
+    }
+
     FOR_EACH_ACTIVE_GTV(client) {
         // send gamestate
         write_message(client, GTS_STREAM_DATA);
@@ -916,9 +923,6 @@ static bool mvd_enable(void)
 
     // don't timeout
     mvd.clients_active = svs.realtime;
-
-    // check for activation
-    check_players_activity();
 
     return true;
 }
@@ -1040,7 +1044,7 @@ void SV_MvdEndFrame(void)
     emit_frame();
 
     // if reliable message and frame update don't fit, kick all clients
-    if (mvd.message.cursize + msg_write.cursize >= MAX_MSGLEN) {
+    if (msg_write.overflowed || mvd.message.cursize + msg_write.cursize >= MAX_MSGLEN) {
         SZ_Clear(&msg_write);
         mvd_error("frame overflowed");
         return;
@@ -1573,6 +1577,11 @@ static void parse_stream_start(gtv_client_t *client)
     // send gamestate if active
     if (mvd.active) {
         emit_gamestate();
+        if (msg_write.overflowed) {
+            SZ_Clear(&msg_write);
+            drop_client(client, "gamestate overflowed");
+            return;
+        }
         write_message(client, GTS_STREAM_DATA);
         SZ_Clear(&msg_write);
     } else {
@@ -1955,7 +1964,7 @@ static void mvd_drop(gtv_serverop_t op)
 // something bad happened, remove all clients
 static void mvd_error(const char *reason)
 {
-    Com_EPrintf("Fatal MVD error: %s\n", reason);
+    Com_EPrintf("Fatal MVD server error: %s\n", reason);
 
     // stop recording
     rec_stop();
@@ -2009,6 +2018,13 @@ void SV_MvdMapChanged(void)
         // build and emit gamestate
         build_gamestate();
         emit_gamestate();
+
+        // check for overflow
+        if (msg_write.overflowed) {
+            SZ_Clear(&msg_write);
+            mvd_error("gamestate overflowed");
+            return;
+        }
 
         // send gamestate to all MVD clients
         FOR_EACH_ACTIVE_GTV(client) {
@@ -2246,11 +2262,20 @@ static void rec_start(qhandle_t demofile)
     magic = MVD_MAGIC;
     FS_Write(&magic, 4, demofile);
 
-    if (mvd.active) {
-        emit_gamestate();
-        rec_write();
+    if (!mvd.active)
+        return;
+
+    emit_gamestate();
+
+    // check for overflow
+    if (msg_write.overflowed) {
         SZ_Clear(&msg_write);
+        mvd_error("gamestate overflowed");
+        return;
     }
+
+    rec_write();
+    SZ_Clear(&msg_write);
 }
 
 /*
