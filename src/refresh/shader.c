@@ -48,6 +48,7 @@ static void write_block(sizebuf_t *buf, glStateBits_t bits)
 {
     GLSF("layout(std140) uniform u_block {\n");
     GLSL(mat4 m_vp;);
+    GLSL(mat4 m_model;);
 
     if (bits & GLS_MESH_ANY) {
         GLSL(
@@ -76,10 +77,17 @@ static void write_block(sizebuf_t *buf, glStateBits_t bits)
         float u_add;
         float u_intensity;
         float u_intensity2;
-        float pad_4;
+        float u_fog_sky_factor;
         vec2 w_amp;
         vec2 w_phase;
         vec2 u_scroll;
+        vec4 u_fog_color;
+        vec4 u_heightfog_start;
+        vec4 u_heightfog_end;
+        float u_heightfog_density;
+        float u_heightfog_falloff;
+        vec2 pad_4;
+        vec3 u_vieworg;
     )
     GLSF("};\n");
 }
@@ -135,6 +143,9 @@ static void write_skel_shader(sizebuf_t *buf, glStateBits_t bits)
         out vec4 v_color;
     )
 
+    if (bits & GLS_FOG_HEIGHT)
+        GLSL(out vec3 v_world_pos;)
+
     if (bits & GLS_MESH_SHADE)
         write_shadedot(buf);
 
@@ -182,6 +193,9 @@ static void write_skel_shader(sizebuf_t *buf, glStateBits_t bits)
     if (bits & GLS_MESH_SHELL)
         GLSL(out_pos += out_norm * u_shellscale;)
 
+    if (bits & GLS_FOG_HEIGHT)
+        GLSL(v_world_pos = (m_model * vec4(out_pos, 1.0)).xyz;)
+
     GLSL(gl_Position = m_vp * vec4(out_pos, 1.0);)
     GLSF("}\n");
 }
@@ -218,6 +232,9 @@ static void write_mesh_shader(sizebuf_t *buf, glStateBits_t bits)
         out vec2 v_tc;
         out vec4 v_color;
     )
+
+    if (bits & GLS_FOG_HEIGHT)
+        GLSL(out vec3 v_world_pos;)
 
     if (bits & (GLS_MESH_SHELL | GLS_MESH_SHADE))
         write_getnormal(buf);
@@ -259,6 +276,9 @@ static void write_mesh_shader(sizebuf_t *buf, glStateBits_t bits)
             GLSL(v_color = u_color;)
     }
 
+    if (bits & GLS_FOG_HEIGHT)
+        GLSL(v_world_pos = (m_model * vec4(pos, 1.0)).xyz;)
+
     GLSL(gl_Position = m_vp * vec4(pos, 1.0);)
     GLSF("}\n");
 }
@@ -298,6 +318,9 @@ static void write_vertex_shader(sizebuf_t *buf, glStateBits_t bits)
         GLSL(out vec4 v_color;)
     }
 
+    if (bits & GLS_FOG_HEIGHT)
+        GLSL(out vec3 v_world_pos;)
+
     GLSF("void main() {\n");
         if (bits & GLS_CLASSIC_SKY) {
             GLSL(v_dir = (m_sky[1] * a_pos).xyz;)
@@ -315,8 +338,28 @@ static void write_vertex_shader(sizebuf_t *buf, glStateBits_t bits)
         if (!(bits & GLS_TEXTURE_REPLACE))
             GLSL(v_color = a_color;)
 
+        if (bits & GLS_FOG_HEIGHT)
+            GLSL(v_world_pos = (m_model * a_pos).xyz;)
+
         GLSL(gl_Position = m_vp * a_pos;)
     GLSF("}\n");
+}
+
+// XXX: this is very broken. but that's how it is in re-release.
+static void write_height_fog(sizebuf_t *buf)
+{
+    GLSL({
+        float dir_z = normalize(v_world_pos - u_vieworg).z;
+        float eye = u_vieworg.z - u_heightfog_start.w;
+        float pos = v_world_pos.z - u_heightfog_start.w;
+        float density = (exp(-u_heightfog_falloff * eye) -
+                         exp(-u_heightfog_falloff * pos)) / (u_heightfog_falloff * dir_z);
+        float extinction = 1.0 - clamp(exp(-density), 0.0, 1.0);
+        float fraction = clamp((pos - u_heightfog_start.w) / (u_heightfog_end.w - u_heightfog_start.w), 0.0, 1.0);
+        vec3 fog_color = mix(u_heightfog_start.rgb, u_heightfog_end.rgb, fraction) * extinction;
+        float fog = (1.0 - exp(-(u_heightfog_density * frag_depth))) * extinction;
+        diffuse.rgb = mix(diffuse.rgb, fog_color.rgb, fog);
+    })
 }
 
 static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
@@ -326,7 +369,7 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
     if (gl_config.ver_es)
         GLSL(precision mediump float;)
 
-    if (bits & (GLS_WARP_ENABLE | GLS_LIGHTMAP_ENABLE | GLS_INTENSITY_ENABLE | GLS_SKY_MASK))
+    if (bits & GLS_UNIFORM_MASK)
         write_block(buf, bits);
 
     if (bits & GLS_CLASSIC_SKY) {
@@ -357,6 +400,9 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
         GLSL(in vec4 v_color;)
 
     GLSL(out vec4 o_color;)
+
+    if (bits & GLS_FOG_HEIGHT)
+        GLSL(in vec3 v_world_pos;)
 
     GLSF("void main() {\n");
         if (bits & GLS_CLASSIC_SKY) {
@@ -413,6 +459,22 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
             else
                 GLSL(diffuse.rgb += glowmap.rgb;)
         }
+
+        if (bits & (GLS_FOG_GLOBAL | GLS_FOG_HEIGHT))
+            GLSL(float frag_depth = gl_FragCoord.z / gl_FragCoord.w;)
+
+        if (bits & GLS_FOG_GLOBAL)
+            GLSL({
+                float d = u_fog_color.a * frag_depth;
+                float fog = 1.0f - exp(-(d * d));
+                diffuse.rgb = mix(diffuse.rgb, u_fog_color.rgb, fog);
+            })
+
+        if (bits & GLS_FOG_HEIGHT)
+            write_height_fog(buf);
+
+        if (bits & GLS_FOG_SKY)
+            GLSL(diffuse.rgb = mix(diffuse.rgb, u_fog_color.rgb, u_fog_sky_factor);)
 
         GLSL(o_color = diffuse;)
     GLSF("}\n");
@@ -672,6 +734,25 @@ static void shader_setup_2d(void)
     gls.u_block.w_phase[1] = M_PIf * 10;
 }
 
+static void shader_setup_fog(void)
+{
+    if (!glr.fog_bits)
+        return;
+
+    VectorCopy(glr.fd.fog.color, gls.u_block.fog_color);
+    gls.u_block.fog_color[3] = glr.fd.fog.density / 64;
+    gls.u_block.fog_sky_factor = glr.fd.fog.sky_factor;
+
+    VectorCopy(glr.fd.heightfog.start.color, gls.u_block.heightfog_start);
+    gls.u_block.heightfog_start[3] = glr.fd.heightfog.start.dist;
+
+    VectorCopy(glr.fd.heightfog.end.color, gls.u_block.heightfog_end);
+    gls.u_block.heightfog_end[3] = glr.fd.heightfog.end.dist;
+
+    gls.u_block.heightfog_density = glr.fd.heightfog.density;
+    gls.u_block.heightfog_falloff = glr.fd.heightfog.falloff;
+}
+
 static void shader_setup_3d(void)
 {
     gls.u_block.time = glr.fd.time;
@@ -685,9 +766,15 @@ static void shader_setup_3d(void)
     gls.u_block.w_phase[0] = 4;
     gls.u_block.w_phase[1] = 4;
 
+    shader_setup_fog();
+
     R_RotateForSky();
 
-    memcpy(gls.u_block.m_sky, glr.skymatrix, sizeof(glr.skymatrix));
+    // setup default matrices for world
+    memcpy(gls.u_block.m_sky, glr.skymatrix, sizeof(gls.u_block.m_sky));
+    memcpy(gls.u_block.m_model, gl_identity, sizeof(gls.u_block.m_model));
+
+    VectorCopy(glr.fd.vieworg, gls.u_block.vieworg);
 }
 
 static void shader_disable_state(void)

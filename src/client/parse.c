@@ -320,6 +320,9 @@ static void CL_ParseFrame(int extrabits)
 
     // parse playerstate
     bits = MSG_ReadWord();
+    if (cl.psFlags & MSG_PS_MOREBITS && bits & PS_MOREBITS)
+        bits |= (uint32_t)MSG_ReadByte() << 16;
+
     if (cls.serverProtocol > PROTOCOL_VERSION_DEFAULT) {
         MSG_ParseDeltaPlayerstate_Enhanced(from, &frame.ps, bits, extraflags, cl.psFlags);
 #if USE_DEBUG
@@ -532,7 +535,7 @@ static void CL_ParseServerData(void)
                       cls.serverProtocol, protocol);
         }
         // BIG HACK to let demos from release work with the 3.0x patch!!!
-        if (protocol == PROTOCOL_VERSION_EXTENDED || protocol == PROTOCOL_VERSION_EXTENDED_OLD) {
+        if (EXTENDED_SUPPORTED(protocol)) {
             cl.csr = cs_remap_new;
             cls.serverProtocol = PROTOCOL_VERSION_DEFAULT;
         } else if (protocol < PROTOCOL_VERSION_OLD || protocol > PROTOCOL_VERSION_DEFAULT) {
@@ -649,6 +652,8 @@ static void CL_ParseServerData(void)
                 Com_DPrintf("Q2PRO protocol extensions v2 enabled\n");
                 cl.esFlags |= MSG_ES_EXTENSIONS_2;
                 cl.psFlags |= MSG_PS_EXTENSIONS_2;
+                if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_PLAYERFOG)
+                    cl.psFlags |= MSG_PS_MOREBITS;
                 PmoveEnableExt(&cl.pmp);
             }
         } else {
@@ -684,9 +689,13 @@ static void CL_ParseServerData(void)
         cl.psFlags |= MSG_PS_EXTENSIONS;
 
         // hack for demo playback
-        if (protocol == PROTOCOL_VERSION_EXTENDED) {
-            cl.esFlags |= MSG_ES_EXTENSIONS_2;
-            cl.psFlags |= MSG_PS_EXTENSIONS_2;
+        if (EXTENDED_SUPPORTED(protocol)) {
+            if (protocol >= PROTOCOL_VERSION_EXTENDED_LIMITS_2) {
+                cl.esFlags |= MSG_ES_EXTENSIONS_2;
+                cl.psFlags |= MSG_PS_EXTENSIONS_2;
+            }
+            if (protocol >= PROTOCOL_VERSION_EXTENDED_PLAYERFOG)
+                cl.psFlags |= MSG_PS_MOREBITS;
         }
     }
 

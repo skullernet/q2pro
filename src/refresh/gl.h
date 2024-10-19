@@ -127,6 +127,7 @@ typedef struct {
     lightpoint_t    lightpoint;
     int             num_beams;
     int             num_flares;
+    int             fog_bits, fog_bits_sky;
     int             framebuffer_width;
     int             framebuffer_height;
     bool            framebuffer_ok;
@@ -507,14 +508,20 @@ typedef enum {
     GLS_SCROLL_FLIP         = BIT(24),
     GLS_SCROLL_SLOW         = BIT(25),
 
+    GLS_FOG_GLOBAL          = BIT(26),
+    GLS_FOG_HEIGHT          = BIT(27),
+    GLS_FOG_SKY             = BIT(28),
+
     GLS_BLEND_MASK  = GLS_BLEND_BLEND | GLS_BLEND_ADD | GLS_BLEND_MODULATE,
     GLS_COMMON_MASK = GLS_DEPTHMASK_FALSE | GLS_DEPTHTEST_DISABLE | GLS_CULL_DISABLE | GLS_BLEND_MASK,
     GLS_SKY_MASK    = GLS_CLASSIC_SKY | GLS_DEFAULT_SKY,
+    GLS_FOG_MASK    = GLS_FOG_GLOBAL | GLS_FOG_HEIGHT | GLS_FOG_SKY,
     GLS_MESH_ANY    = GLS_MESH_MD2 | GLS_MESH_MD5,
     GLS_MESH_MASK   = GLS_MESH_ANY | GLS_MESH_LERP | GLS_MESH_SHELL | GLS_MESH_SHADE,
     GLS_SHADER_MASK = GLS_ALPHATEST_ENABLE | GLS_TEXTURE_REPLACE | GLS_SCROLL_ENABLE |
         GLS_LIGHTMAP_ENABLE | GLS_WARP_ENABLE | GLS_INTENSITY_ENABLE | GLS_GLOWMAP_ENABLE |
-        GLS_SKY_MASK | GLS_DEFAULT_FLARE | GLS_MESH_MASK,
+        GLS_SKY_MASK | GLS_DEFAULT_FLARE | GLS_MESH_MASK | GLS_FOG_MASK,
+    GLS_UNIFORM_MASK = GLS_WARP_ENABLE | GLS_LIGHTMAP_ENABLE | GLS_INTENSITY_ENABLE | GLS_SKY_MASK | GLS_FOG_MASK,
     GLS_SCROLL_MASK = GLS_SCROLL_ENABLE | GLS_SCROLL_X | GLS_SCROLL_Y | GLS_SCROLL_FLIP | GLS_SCROLL_SLOW,
 } glStateBits_t;
 
@@ -602,6 +609,7 @@ typedef struct {
 
 typedef struct {
     mat4_t      m_vp;
+    mat4_t      m_model;
     union {
         mat4_t          m_sky[2];
         glMeshBlock_t   mesh;
@@ -611,10 +619,17 @@ typedef struct {
     GLfloat     add;
     GLfloat     intensity;
     GLfloat     intensity2;
-    GLfloat     pad_4;
+    GLfloat     fog_sky_factor;
     vec2_t      w_amp;
     vec2_t      w_phase;
     vec2_t      scroll;
+    vec4_t      fog_color;
+    vec4_t      heightfog_start;
+    vec4_t      heightfog_end;
+    GLfloat     heightfog_density;
+    GLfloat     heightfog_falloff;
+    vec2_t      pad_4;
+    vec4_t      vieworg;
 } glUniformBlock_t;
 
 typedef struct {
@@ -666,6 +681,8 @@ typedef struct {
 } glbackend_t;
 
 extern const glbackend_t *gl_backend;
+
+extern const mat4_t gl_identity;
 
 static inline void GL_ActiveTexture(glTmu_t tmu)
 {

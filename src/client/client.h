@@ -495,6 +495,7 @@ typedef struct {
         player_packed_t     ps;
         entity_packed_t     entities[MAX_EDICTS];
         msgEsFlags_t        esFlags;    // for writing
+        msgPsFlags_t        psFlags;
 
         sizebuf_t       message;
     } gtv;
@@ -693,7 +694,7 @@ void CL_SendCmd(void);
     (MSG_ES_LONGSOLID | MSG_ES_UMASK | MSG_ES_BEAMORIGIN | MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS)
 
 #define CL_ES_EXTENDED_MASK_2 (CL_ES_EXTENDED_MASK | MSG_ES_EXTENSIONS_2)
-#define CL_PS_EXTENDED_MASK_2 (MSG_PS_EXTENSIONS | MSG_PS_EXTENSIONS_2)
+#define CL_PS_EXTENDED_MASK_2 (MSG_PS_EXTENSIONS | MSG_PS_EXTENSIONS_2 | MSG_PS_MOREBITS)
 
 typedef struct {
     int type;

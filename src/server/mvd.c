@@ -2147,7 +2147,7 @@ void SV_MvdPostInit(void)
 
         if (IS_NEW_GAME_API) {
             mvd.esFlags |= MSG_ES_EXTENSIONS_2;
-            mvd.psFlags |= MSG_PS_EXTENSIONS_2;
+            mvd.psFlags |= MSG_PS_EXTENSIONS_2 | MSG_PS_MOREBITS;
         }
     }
 }

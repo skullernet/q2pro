@@ -29,8 +29,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define PROTOCOL_VERSION_R1Q2           35
 #define PROTOCOL_VERSION_Q2PRO          36
 #define PROTOCOL_VERSION_MVD            37      // not used for UDP connections
-#define PROTOCOL_VERSION_EXTENDED_OLD   3434
-#define PROTOCOL_VERSION_EXTENDED       3435
+
+#define PROTOCOL_VERSION_EXTENDED_MINIMUM       3434    // r2894
+#define PROTOCOL_VERSION_EXTENDED_LIMITS_2      3435    // r3300
+#define PROTOCOL_VERSION_EXTENDED_PLAYERFOG     3436    // r3579
+#define PROTOCOL_VERSION_EXTENDED_CURRENT       3436    // r3579
 
 #define PROTOCOL_VERSION_R1Q2_MINIMUM           1903    // b6377
 #define PROTOCOL_VERSION_R1Q2_UCMD              1904    // b7387
@@ -48,13 +51,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define PROTOCOL_VERSION_Q2PRO_CINEMATICS           1023    // r2263
 #define PROTOCOL_VERSION_Q2PRO_EXTENDED_LIMITS      1024    // r2894
 #define PROTOCOL_VERSION_Q2PRO_EXTENDED_LIMITS_2    1025    // r3300
-#define PROTOCOL_VERSION_Q2PRO_CURRENT              1025    // r3300
+#define PROTOCOL_VERSION_Q2PRO_PLAYERFOG            1026    // r3579
+#define PROTOCOL_VERSION_Q2PRO_CURRENT              1026    // r3579
 
 #define PROTOCOL_VERSION_MVD_MINIMUM            2009    // r168
 #define PROTOCOL_VERSION_MVD_DEFAULT            2010    // r177
 #define PROTOCOL_VERSION_MVD_EXTENDED_LIMITS    2011    // r2894
 #define PROTOCOL_VERSION_MVD_EXTENDED_LIMITS_2  2012    // r3300
-#define PROTOCOL_VERSION_MVD_CURRENT            2012    // r3300
+#define PROTOCOL_VERSION_MVD_PLAYERFOG          2013    // r3579
+#define PROTOCOL_VERSION_MVD_CURRENT            2013    // r3579
 
 #define R1Q2_SUPPORTED(x) \
     ((x) >= PROTOCOL_VERSION_R1Q2_MINIMUM && \
@@ -67,6 +72,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MVD_SUPPORTED(x) \
     ((x) >= PROTOCOL_VERSION_MVD_MINIMUM && \
      (x) <= PROTOCOL_VERSION_MVD_CURRENT)
+
+#define EXTENDED_SUPPORTED(x) \
+    ((x) >= PROTOCOL_VERSION_EXTENDED_MINIMUM && \
+     (x) <= PROTOCOL_VERSION_EXTENDED_CURRENT)
 
 #define VALIDATE_CLIENTNUM(csr, x) \
     ((x) >= -1 && (x) < (csr)->max_edicts - 1)
@@ -213,6 +222,17 @@ typedef enum {
 
 //==============================================
 
+typedef enum {
+    FOG_BIT_COLOR               = BIT(0),
+    FOG_BIT_DENSITY             = BIT(1),
+    FOG_BIT_HEIGHT_DENSITY      = BIT(2),
+    FOG_BIT_HEIGHT_FALLOFF      = BIT(3),
+    FOG_BIT_HEIGHT_START_COLOR  = BIT(4),
+    FOG_BIT_HEIGHT_END_COLOR    = BIT(5),
+    FOG_BIT_HEIGHT_START_DIST   = BIT(6),
+    FOG_BIT_HEIGHT_END_DIST     = BIT(7),
+} fog_bits_t;
+
 // player_state_t communication
 
 #define PS_M_TYPE           BIT(0)
@@ -231,7 +251,9 @@ typedef enum {
 #define PS_WEAPONINDEX      BIT(12)
 #define PS_WEAPONFRAME      BIT(13)
 #define PS_RDFLAGS          BIT(14)
-#define PS_RESERVED         BIT(15)
+#define PS_MOREBITS         BIT(15)     // read one additional byte
+
+#define PS_FOG              BIT(16)
 
 // R1Q2 protocol specific extra flags
 #define EPS_GUNOFFSET       BIT(0)
@@ -264,7 +286,11 @@ typedef enum {
 #define PPS_GUNANGLES       BIT(12)
 #define PPS_RDFLAGS         BIT(13)
 #define PPS_STATS           BIT(14)
-#define PPS_REMOVE          BIT(15)
+#define PPS_MOREBITS        BIT(15)     // read one additional byte
+                                        // same as PPS_REMOVE for old demos!!!
+
+#define PPS_REMOVE          BIT(16)
+#define PPS_FOG             BIT(17)
 
 // this is just a small hack to store inuse flag
 // in a field left otherwise unused by MVD code

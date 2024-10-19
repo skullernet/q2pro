@@ -1315,6 +1315,14 @@ static inline float lerp_client_fov(float ofov, float nfov, float lerp)
     return ofov + lerp * (nfov - ofov);
 }
 
+static inline void lerp_values(const void *from, const void *to, float lerp, void *out, int count)
+{
+    float backlerp = 1.0f - lerp;
+
+    for (int i = 0; i < count; i++)
+        ((float *)out)[i] = ((const float *)from)[i] * backlerp + ((const float *)to)[i] * lerp;
+}
+
 /*
 ===============
 CL_CalcViewValues
@@ -1388,6 +1396,19 @@ void CL_CalcViewValues(void)
     // don't interpolate blend color
     Vector4Copy(ps->blend, cl.refdef.screen_blend);
     Vector4Copy(ps->damage_blend, cl.refdef.damage_blend);
+
+    // interpolate fog
+    if (cl.psFlags & MSG_PS_MOREBITS) {
+        lerp_values(&ops->fog, &ps->fog, lerp,
+                    &cl.refdef.fog, sizeof(cl.refdef.fog) / sizeof(float));
+        // no lerping if moved too far
+        if (fabsf(ps->heightfog.start.dist - ops->heightfog.start.dist) > 512 ||
+            fabsf(ps->heightfog.end  .dist - ops->heightfog.end  .dist) > 512)
+            cl.refdef.heightfog = ps->heightfog;
+        else
+            lerp_values(&ops->heightfog, &ps->heightfog, lerp,
+                        &cl.refdef.heightfog, sizeof(cl.refdef.heightfog) / sizeof(float));
+    }
 
 #if USE_FPS
     ps = &cl.keyframe.ps;

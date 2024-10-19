@@ -775,7 +775,7 @@ void MVD_BroadcastPrintf(mvd_t *mvd, int level, int mask, const char *fmt, ...)
 }
 
 #define ES_MASK     (MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS | MSG_ES_EXTENSIONS_2)
-#define PS_MASK     (MSG_PS_EXTENSIONS | MSG_PS_EXTENSIONS_2)
+#define PS_MASK     (MSG_PS_EXTENSIONS | MSG_PS_EXTENSIONS_2 | MSG_PS_MOREBITS)
 
 static void MVD_SetServerState(client_t *cl, mvd_t *mvd)
 {
@@ -798,6 +798,9 @@ static void MVD_SetServerState(client_t *cl, mvd_t *mvd)
     cl->psFlags &= ~PS_MASK;
     cl->esFlags |= mvd->esFlags & ES_MASK;
     cl->psFlags |= mvd->psFlags & PS_MASK;
+
+    if (cl->protocol != PROTOCOL_VERSION_Q2PRO || cl->version < PROTOCOL_VERSION_Q2PRO_PLAYERFOG)
+        cl->psFlags &= ~MSG_PS_MOREBITS;
 }
 
 void MVD_SwitchChannel(mvd_client_t *client, mvd_t *mvd)

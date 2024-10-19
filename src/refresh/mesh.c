@@ -663,7 +663,7 @@ static void draw_alias_mesh(const uint16_t *indices, int num_indices,
         qglColorMask(1, 1, 1, 1);
     }
 
-    state = GLS_INTENSITY_ENABLE;
+    state = GLS_INTENSITY_ENABLE | glr.fog_bits;
     if (!gls.currentva)
         state |= meshbits;
     else if (dotshading)

@@ -1022,6 +1022,9 @@ static void init_pmove_and_es_flags(client_t *newcl)
             if (IS_NEW_GAME_API) {
                 newcl->esFlags |= MSG_ES_EXTENSIONS_2;
                 newcl->psFlags |= MSG_PS_EXTENSIONS_2;
+                if (newcl->version >= PROTOCOL_VERSION_Q2PRO_PLAYERFOG) {
+                    newcl->psFlags |= MSG_PS_MOREBITS;
+                }
             }
         }
         force = 1;

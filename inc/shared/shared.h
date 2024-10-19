@@ -1538,6 +1538,21 @@ typedef struct {
 
 #if USE_NEW_GAME_API
 typedef struct {
+    vec3_t color;
+    float density;
+    float sky_factor;
+} player_fog_t;
+
+typedef struct {
+    struct {
+        vec3_t color;
+        float dist;
+    } start, end;
+    float density;
+    float falloff;
+} player_heightfog_t;
+
+typedef struct {
     pmove_state_new_t   pmove;  // for prediction
 
     // these fields do not need to be communicated bit-precise
@@ -1551,15 +1566,21 @@ typedef struct {
     vec3_t      gunoffset;
     int         gunindex;
     int         gunframe;
+    int         reserved_1;
+    int         reserved_2;
 
     vec4_t      blend;          // rgba full screen effect
     vec4_t      damage_blend;
+
+    player_fog_t        fog;
+    player_heightfog_t  heightfog;
 
     float       fov;            // horizontal field of view
 
     int         rdflags;        // refdef flags
 
-    int         reserved[4];
+    int         reserved_3;
+    int         reserved_4;
 
     int16_t     stats[MAX_STATS_NEW];   // fast status bar updates
 } player_state_new_t;

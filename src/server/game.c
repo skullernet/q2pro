@@ -1015,8 +1015,8 @@ void SV_InitGameProgs(void)
     Com_DPrintf("Game API version: %d\n", ge->apiversion);
 
     if (ge->apiversion != GAME_API_VERSION_OLD && ge->apiversion != GAME_API_VERSION_NEW) {
-        Com_Error(ERR_DROP, "Game library is version %d, expected %d",
-                  ge->apiversion, GAME_API_VERSION_OLD);
+        Com_Error(ERR_DROP, "Game library is version %d, expected %d or %d",
+                  ge->apiversion, GAME_API_VERSION_OLD, GAME_API_VERSION_NEW);
     }
 
     // get extended api if present

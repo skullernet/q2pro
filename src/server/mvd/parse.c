@@ -737,6 +737,12 @@ static void MVD_ParsePacketPlayers(mvd_t *mvd)
         player = &mvd->players[number];
 
         bits = MSG_ReadWord();
+        if (bits & PPS_MOREBITS) {
+            if (mvd->psFlags & MSG_PS_MOREBITS)
+                bits |= (uint32_t)MSG_ReadByte() << 16;
+            else
+                bits |= PPS_REMOVE; // MOREBITS == REMOVE for old demos
+        }
 
 #if USE_DEBUG
         if (mvd_shownet->integer > 2) {
@@ -929,6 +935,8 @@ static void MVD_ParseServerData(mvd_t *mvd, int extrabits)
         if (!(mvd->flags & MVF_EXTLIMITS)) {
             MVD_Destroyf(mvd, "MVF_EXTLIMITS_2 without MVF_EXTLIMITS");
         }
+        if (mvd->version >= PROTOCOL_VERSION_MVD_PLAYERFOG)
+            mvd->psFlags |= MSG_PS_MOREBITS;
     }
 
 #if 0

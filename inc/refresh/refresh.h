@@ -91,6 +91,8 @@ typedef struct {
     vec3_t      viewangles;
     vec4_t      screen_blend;       // rgba 0-1 full screen blend
     vec4_t      damage_blend;       // rgba 0-1 damage blend
+    player_fog_t        fog;
+    player_heightfog_t  heightfog;
     float       time;               // time is uesed to auto animate
     int         rdflags;            // RDF_UNDERWATER, etc
     bool        extended;

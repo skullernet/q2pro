@@ -76,7 +76,7 @@ void GL_DrawParticles(void)
     GL_LoadUniforms();
     GL_BindArrays(VA_EFFECT);
 
-    bits = (gl_partstyle->integer ? GLS_BLEND_ADD : GLS_BLEND_BLEND) | GLS_DEPTHMASK_FALSE;
+    bits = (gl_partstyle->integer ? GLS_BLEND_ADD : GLS_BLEND_BLEND) | GLS_DEPTHMASK_FALSE | glr.fog_bits;
 
     p = glr.fd.particles;
     total = glr.fd.num_particles;
@@ -147,7 +147,7 @@ static void GL_FlushBeamSegments(void)
         array |= GLA_TC;
 
     GL_BindTexture(TMU_TEXTURE, texnum);
-    GL_StateBits(GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE);
+    GL_StateBits(GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE | glr.fog_bits);
     GL_ArrayBits(array);
     GL_DrawIndexed(SHOWTRIS_FX);
 
@@ -666,6 +666,11 @@ void GL_Flush3D(void)
 
     if (!(state & GLS_TEXTURE_REPLACE))
         array |= GLA_COLOR;
+
+    if (state & GLS_SKY_MASK)
+        state |= glr.fog_bits_sky;
+    else
+        state |= glr.fog_bits;
 
     GL_StateBits(state);
     GL_ArrayBits(array);

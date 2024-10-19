@@ -49,6 +49,14 @@ typedef struct {
 } entity_packed_t;
 
 typedef struct {
+    uint8_t             color[3][3];
+    uint32_t            density;
+    uint16_t            height_density;
+    uint16_t            height_falloff;
+    int32_t             height_dist[2];
+} player_packed_fog_t;
+
+typedef struct {
     pmove_state_new_t   pmove;
     int16_t             viewangles[3];
     int8_t              viewoffset[3];
@@ -59,6 +67,7 @@ typedef struct {
     uint8_t             gunframe;
     uint8_t             blend[4];
     uint8_t             damage_blend[4];
+    player_packed_fog_t fog;
     uint8_t             fov;
     uint8_t             rdflags;
     int16_t             stats[MAX_STATS_NEW];
@@ -73,8 +82,9 @@ typedef enum {
     MSG_PS_IGNORE_PREDICTION    = BIT(5),   // mutually exclusive with IGNORE_VIEWANGLES
     MSG_PS_EXTENSIONS           = BIT(6),   // enable protocol extensions
     MSG_PS_EXTENSIONS_2         = BIT(7),   // enable more protocol extensions
-    MSG_PS_FORCE                = BIT(8),   // send even if unchanged (MVD stream only)
-    MSG_PS_REMOVE               = BIT(9),   // player is removed (MVD stream only)
+    MSG_PS_MOREBITS             = BIT(8),   // read more playerstate bits
+    MSG_PS_FORCE                = BIT(9),   // send even if unchanged (MVD stream only)
+    MSG_PS_REMOVE               = BIT(10),  // player is removed (MVD stream only)
 } msgPsFlags_t;
 
 typedef enum {
