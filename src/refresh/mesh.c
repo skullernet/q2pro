@@ -43,7 +43,7 @@ static bool     dotshading;
 static float    celscale;
 
 static drawshadow_t drawshadow;
-static GLfloat      shadowmatrix[16];
+static mat4_t       shadowmatrix;
 
 #if USE_MD5
 static md5_joint_t  temp_skeleton[MD5_MAX_JOINTS];
@@ -524,7 +524,7 @@ static void proj_matrix(GLfloat *matrix, const cplane_t *plane, const vec3_t dir
 
 static void setup_shadow(void)
 {
-    GLfloat matrix[16], tmp[16];
+    mat4_t matrix, tmp;
     vec3_t dir;
 
     if (!drawshadow)

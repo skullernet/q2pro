@@ -654,7 +654,7 @@ static void shader_load_matrix(GLenum mode, const GLfloat *matrix)
         Q_assert(!"bad mode");
     }
 
-    GL_MultMatrix(gls.u_block.mvp, gls.proj_matrix, gls.view_matrix);
+    GL_MultMatrix(gls.u_block.m_vp, gls.proj_matrix, gls.view_matrix);
     gls.u_block_dirty = true;
 }
 
@@ -687,7 +687,7 @@ static void shader_setup_3d(void)
 
     R_RotateForSky();
 
-    memcpy(gls.u_block.msky, glr.skymatrix, sizeof(glr.skymatrix));
+    memcpy(gls.u_block.m_sky, glr.skymatrix, sizeof(glr.skymatrix));
 }
 
 static void shader_disable_state(void)

@@ -22,7 +22,7 @@ glState_t gls;
 
 const glbackend_t *gl_backend;
 
-static const GLfloat identity[16] = { [0] = 1, [5] = 1, [10] = 1, [15] = 1 };
+static const mat4_t identity = { [0] = 1, [5] = 1, [10] = 1, [15] = 1 };
 
 // for uploading
 void GL_ForceTexture(glTmu_t tmu, GLuint texnum)
@@ -172,7 +172,7 @@ void GL_ScrollPos(vec2_t scroll, glStateBits_t bits)
 void GL_Ortho(GLfloat xmin, GLfloat xmax, GLfloat ymin, GLfloat ymax, GLfloat znear, GLfloat zfar)
 {
     GLfloat width, height, depth;
-    GLfloat matrix[16];
+    mat4_t matrix;
 
     width  = xmax - xmin;
     height = ymax - ymin;
@@ -226,7 +226,7 @@ void GL_Frustum(GLfloat fov_x, GLfloat fov_y, GLfloat reflect_x)
 {
     GLfloat xmin, xmax, ymin, ymax, zfar, znear;
     GLfloat width, height, depth;
-    GLfloat matrix[16];
+    mat4_t matrix;
 
     znear = gl_znear->value;
 

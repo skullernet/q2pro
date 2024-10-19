@@ -108,7 +108,7 @@ typedef struct {
 typedef struct {
     refdef_t        fd;
     vec3_t          viewaxis[3];
-    GLfloat         viewmatrix[16];
+    mat4_t          viewmatrix;
     unsigned        visframe;
     unsigned        drawframe;
     unsigned        dlightframe;
@@ -122,8 +122,8 @@ typedef struct {
     bool            entrotated;
     float           entscale;
     vec3_t          entaxis[3];
-    GLfloat         entmatrix[16];
-    GLfloat         skymatrix[2][16];
+    mat4_t          entmatrix;
+    mat4_t          skymatrix[2];
     lightpoint_t    lightpoint;
     int             num_beams;
     int             num_flares;
@@ -601,9 +601,9 @@ typedef struct {
 } glMeshBlock_t;
 
 typedef struct {
-    GLfloat     mvp[16];
+    mat4_t      m_vp;
     union {
-        GLfloat         msky[2][16];
+        mat4_t          m_sky[2];
         glMeshBlock_t   mesh;
     };
     GLfloat     time;
@@ -612,9 +612,9 @@ typedef struct {
     GLfloat     intensity;
     GLfloat     intensity2;
     GLfloat     pad_4;
-    GLfloat     w_amp[2];
-    GLfloat     w_phase[2];
-    GLfloat     scroll[2];
+    vec2_t      w_amp;
+    vec2_t      w_phase;
+    vec2_t      scroll;
 } glUniformBlock_t;
 
 typedef struct {
@@ -627,8 +627,8 @@ typedef struct {
     GLuint              currentbuffer[GLB_COUNT];
     glVertexArray_t     currentva;
     const GLfloat      *currentmatrix;
-    GLfloat             view_matrix[16];
-    GLfloat             proj_matrix[16];
+    mat4_t              view_matrix;
+    mat4_t              proj_matrix;
     glUniformBlock_t    u_block;
     bool                u_block_dirty;
 } glState_t;

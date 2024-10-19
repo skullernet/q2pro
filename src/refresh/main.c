@@ -313,12 +313,12 @@ void GL_RotationMatrix(GLfloat *matrix)
 
 void GL_RotateForEntity(bool skies)
 {
-    GLfloat matrix[16];
+    mat4_t matrix;
 
     GL_RotationMatrix(matrix);
     if (skies) {
-        GL_MultMatrix(gls.u_block.msky[0], glr.skymatrix[0], matrix);
-        GL_MultMatrix(gls.u_block.msky[1], glr.skymatrix[1], matrix);
+        GL_MultMatrix(gls.u_block.m_sky[0], glr.skymatrix[0], matrix);
+        GL_MultMatrix(gls.u_block.m_sky[1], glr.skymatrix[1], matrix);
     }
     GL_MultMatrix(glr.entmatrix, glr.viewmatrix, matrix);
     GL_ForceMatrix(glr.entmatrix);
