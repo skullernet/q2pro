@@ -736,7 +736,7 @@ static void shader_setup_2d(void)
 
 static void shader_setup_fog(void)
 {
-    if (!glr.fog_bits)
+    if (!(glr.fog_bits | glr.fog_bits_sky))
         return;
 
     VectorCopy(glr.fd.fog.color, gls.u_block.fog_color);
