@@ -43,7 +43,8 @@ static bool     dotshading;
 static float    celscale;
 
 static drawshadow_t drawshadow;
-static mat4_t       shadowmatrix;
+static mat4_t       m_shadow_view;
+static mat4_t       m_shadow_model;     // fog hack
 
 #if USE_MD5
 static md5_joint_t  temp_skeleton[MD5_MAX_JOINTS];
@@ -439,7 +440,7 @@ static void draw_celshading(const uint16_t *indices, int num_indices)
         return;
 
     GL_BindTexture(TMU_TEXTURE, TEXNUM_BLACK);
-    GL_StateBits(GLS_BLEND_BLEND | (meshbits & ~GLS_MESH_SHADE));
+    GL_StateBits(GLS_BLEND_BLEND | (meshbits & ~GLS_MESH_SHADE) | glr.fog_bits);
     if (gls.currentva)
         GL_ArrayBits(GLA_VERTEX);
 
@@ -499,7 +500,7 @@ static drawshadow_t cull_shadow(const model_t *model)
     return SHADOW_YES;
 }
 
-static void proj_matrix(GLfloat *matrix, const cplane_t *plane, const vec3_t dir)
+static void proj_matrix(mat4_t matrix, const cplane_t *plane, const vec3_t dir)
 {
     matrix[ 0] =  plane->normal[1] * dir[1] + plane->normal[2] * dir[2];
     matrix[ 4] = -plane->normal[1] * dir[0];
@@ -524,7 +525,7 @@ static void proj_matrix(GLfloat *matrix, const cplane_t *plane, const vec3_t dir
 
 static void setup_shadow(void)
 {
-    mat4_t matrix, tmp;
+    mat4_t m_proj, m_rot;
     vec3_t dir;
 
     if (!drawshadow)
@@ -537,12 +538,13 @@ static void setup_shadow(void)
         VectorSet(dir, 0, 0, 1);
 
     // project shadow on ground plane
-    proj_matrix(matrix, &glr.lightpoint.plane, dir);
-    GL_MultMatrix(tmp, glr.viewmatrix, matrix);
+    proj_matrix(m_proj, &glr.lightpoint.plane, dir);
 
     // rotate for entity
-    GL_RotationMatrix(matrix);
-    GL_MultMatrix(shadowmatrix, tmp, matrix);
+    GL_RotationMatrix(m_rot);
+
+    GL_MultMatrix(m_shadow_model, m_proj, m_rot);
+    GL_MultMatrix(m_shadow_view, glr.viewmatrix, m_shadow_model);
 }
 
 static void draw_shadow(const uint16_t *indices, int num_indices)
@@ -550,8 +552,12 @@ static void draw_shadow(const uint16_t *indices, int num_indices)
     if (!drawshadow)
         return;
 
+    // fog hack
+    if (glr.fog_bits)
+        memcpy(gls.u_block.m_model, m_shadow_model, sizeof(gls.u_block.m_model));
+
     // load shadow projection matrix
-    GL_LoadMatrix(shadowmatrix);
+    GL_LoadMatrix(m_shadow_view);
 
     // eliminate z-fighting by utilizing stencil buffer, if available
     if (gl_config.stencilbits) {
@@ -561,7 +567,7 @@ static void draw_shadow(const uint16_t *indices, int num_indices)
     }
 
     GL_BindTexture(TMU_TEXTURE, TEXNUM_WHITE);
-    GL_StateBits(GLS_BLEND_BLEND | (meshbits & ~GLS_MESH_SHADE));
+    GL_StateBits(GLS_BLEND_BLEND | (meshbits & ~GLS_MESH_SHADE) | glr.fog_bits);
     if (gls.currentva)
         GL_ArrayBits(GLA_VERTEX);
 
@@ -580,6 +586,10 @@ static void draw_shadow(const uint16_t *indices, int num_indices)
         qglDisable(GL_STENCIL_TEST);
         gl_static.stencil_buffer_bit |= GL_STENCIL_BUFFER_BIT;
     }
+
+    // fog hack
+    if (glr.fog_bits)
+        GL_RotationMatrix(gls.u_block.m_model);
 }
 
 static const image_t *skin_for_mesh(image_t **skins, int num_skins)
