@@ -668,10 +668,10 @@ void R_RenderFrame(const refdef_t *fd)
     if (gl_dynamic->integer != 1 || gl_vertexlight->integer)
         glr.fd.num_dlights = 0;
 
-    if (gl_fog->integer > 0) {
+    if (gl_static.use_shaders && gl_fog->integer > 0) {
         if (glr.fd.fog.density > 0)
             glr.fog_bits |= GLS_FOG_GLOBAL;
-        if (glr.fd.heightfog.density > 0 && glr.fd.heightfog.falloff > 0 && gl_fog->integer > 1)
+        if (glr.fd.heightfog.density > 0 && glr.fd.heightfog.falloff > 0)
             glr.fog_bits |= GLS_FOG_HEIGHT;
         if (glr.fd.fog.sky_factor > 0)
             glr.fog_bits_sky |= GLS_FOG_SKY;
@@ -913,7 +913,7 @@ static void GL_Register(void)
 #endif
     gl_damageblend_frac = Cvar_Get("gl_damageblend_frac", "0.2", 0);
     gl_waterwarp = Cvar_Get("gl_waterwarp", "0", 0);
-    gl_fog = Cvar_Get("gl_fog", "2", 0);
+    gl_fog = Cvar_Get("gl_fog", "1", 0);
     gl_swapinterval = Cvar_Get("gl_swapinterval", "1", CVAR_ARCHIVE);
     gl_swapinterval->changed = gl_swapinterval_changed;
 
