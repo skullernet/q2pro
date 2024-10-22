@@ -812,6 +812,9 @@ static void CL_AddPacketEntities(void)
 
         ent.scale = s1->scale;
 
+        if (IS_TRACKER(effects))
+            ent.flags |= RF_TRACKER;
+
         // add to refresh list
         V_AddEntity(&ent);
 
@@ -862,6 +865,9 @@ static void CL_AddPacketEntities(void)
             ent.alpha = s1->alpha;
         }
 
+        if (IS_TRACKER(effects))
+            ent.flags |= RF_TRACKER;
+
         // duplicate for linked models
         if (s1->modelindex2) {
             if (s1->modelindex2 == MODELINDEX_PLAYER) {
@@ -898,6 +904,9 @@ static void CL_AddPacketEntities(void)
             ent.flags = RF_TRANSLUCENT;
             ent.alpha = s1->alpha;
         }
+
+        if (IS_TRACKER(effects))
+            ent.flags |= RF_TRACKER;
 
         if (s1->modelindex3) {
             ent.model = cl.model_draw[s1->modelindex3];

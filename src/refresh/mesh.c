@@ -60,7 +60,7 @@ static void setup_dotshading(void)
     if (!gl_dotshading->integer)
         return;
 
-    if (glr.ent->flags & RF_SHELL_MASK)
+    if (glr.ent->flags & (RF_SHELL_MASK | RF_TRACKER))
         return;
 
     if (drawshadow == SHADOW_ONLY)
@@ -356,7 +356,7 @@ static void setup_frame_scale(const model_t *model)
 
 static void setup_color(void)
 {
-    int flags = glr.ent->flags;
+    uint64_t flags = glr.ent->flags;
     float f, m;
     int i;
 
@@ -382,6 +382,8 @@ static void setup_color(void)
         VectorSet(color, 1, 1, 1);
     } else if ((flags & RF_IR_VISIBLE) && (glr.fd.rdflags & RDF_IRGOGGLES)) {
         VectorSet(color, 1, 0, 0);
+    } else if (flags & RF_TRACKER) {
+        VectorClear(color);
     } else {
         GL_LightPoint(origin, color);
 
@@ -418,7 +420,7 @@ static void setup_celshading(void)
 {
     float value = Cvar_ClampValue(gl_celshading, 0, 10);
 
-    if (value == 0 || (glr.ent->flags & (RF_TRANSLUCENT | RF_SHELL_MASK)) || !qglPolygonMode || !qglLineWidth)
+    if (value == 0 || (glr.ent->flags & (RF_TRANSLUCENT | RF_SHELL_MASK | RF_TRACKER)) || !qglPolygonMode || !qglLineWidth)
         celscale = 0;
     else
         celscale = 1.0f - Distance(origin, glr.fd.vieworg) / 700.0f;

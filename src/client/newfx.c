@@ -358,20 +358,24 @@ static void RandomDir(vec3_t dir)
 void CL_Tracker_Shell(const centity_t *ent, const vec3_t origin)
 {
     vec3_t          org, dir, mid;
-    int             i;
+    int             i, count;
     cparticle_t     *p;
-    float           radius;
+    float           radius, scale;
 
     if (cl.csr.extended) {
         VectorAvg(ent->mins, ent->maxs, mid);
         VectorAdd(origin, mid, org);
         radius = ent->radius;
+        scale = Q_clipf(ent->radius / 40.0f, 1, 2);
+        count = 300 * scale;
     } else {
         VectorCopy(origin, org);
         radius = 40.0f;
+        scale = 1.0f;
+        count = 300;
     }
 
-    for (i = 0; i < 300; i++) {
+    for (i = 0; i < count; i++) {
         p = CL_AllocParticle();
         if (!p)
             return;
@@ -382,6 +386,7 @@ void CL_Tracker_Shell(const centity_t *ent, const vec3_t origin)
         p->alpha = 1.0f;
         p->alphavel = INSTANT_PARTICLE;
         p->color = 0;
+        p->scale = scale;
 
         RandomDir(dir);
         VectorMA(org, radius, dir, p->org);

@@ -29,6 +29,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define POWERSUIT_SCALE     4.0f
 #define WEAPONSHELL_SCALE   0.5f
 
+#define RF_TRACKER          BIT_ULL(32)
+
 #define RF_SHELL_MASK       (RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE | \
                              RF_SHELL_DOUBLE | RF_SHELL_HALF_DAM | RF_SHELL_LITE_GREEN)
 
@@ -60,9 +62,9 @@ typedef struct entity_s {
     float   alpha;                  // ignore if RF_TRANSLUCENT isn't set
     color_t rgba;
 
-    qhandle_t   skin;           // NULL for inline skin
-    int         flags;
+    uint64_t    flags;
 
+    qhandle_t   skin;           // NULL for inline skin
     float       scale;
 } entity_t;
 
@@ -76,6 +78,7 @@ typedef struct {
 typedef struct {
     vec3_t  origin;
     int     color;              // -1 => use rgba
+    float   scale;
     float   alpha;
     color_t rgba;
 } particle_t;

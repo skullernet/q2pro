@@ -745,6 +745,9 @@ bool CL_SeekDemoMessage(void);
                          EF_TRACKERTRAIL | EF_TRACKER | EF_GREENGIB | EF_IONRIPPER | \
                          EF_BLUEHYPERBLASTER | EF_PLASMA)
 
+#define IS_TRACKER(effects) \
+    (((effects) & (EF_TRACKERTRAIL | EF_TRACKER)) == EF_TRACKERTRAIL)
+
 void CL_DeltaFrame(void);
 void CL_AddEntities(void);
 void CL_CalcViewValues(void);
@@ -846,6 +849,7 @@ typedef struct cparticle_s {
     vec3_t  vel;
     vec3_t  accel;
     int     color;      // -1 => use rgba
+    float   scale;
     float   alpha;
     float   alphavel;
     color_t rgba;

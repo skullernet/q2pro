@@ -97,7 +97,7 @@ void GL_DrawParticles(void)
             scale = 1.0f;
             if (dist > 20)
                 scale += dist * 0.004f;
-            scale *= gl_partscale->value;
+            scale *= gl_partscale->value * p->scale;
             scale2 = scale * PARTICLE_SCALE;
 
             VectorMA(p->origin, scale2, glr.viewaxis[1], dst_vert);

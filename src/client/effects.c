@@ -897,6 +897,7 @@ cparticle_t *CL_AllocParticle(void)
     p->next = active_particles;
     active_particles = p;
 
+    p->scale = 1.0f;
     return p;
 }
 
@@ -1758,6 +1759,7 @@ void CL_AddParticles(void)
         part->rgba = p->rgba;
         part->color = p->color;
         part->alpha = min(alpha, 1.0f);
+        part->scale = p->scale;
 
         if (p->alphavel == INSTANT_PARTICLE) {
             p->alphavel = 0.0f;
