@@ -312,6 +312,8 @@ typedef struct {
 
     unsigned hit_marker_time;
     int hit_marker_count;
+
+    player_fog_t custom_fog;
 } client_state_t;
 
 extern client_state_t   cl;

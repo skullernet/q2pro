@@ -421,6 +421,10 @@ void V_RenderView(void)
             Vector4Clear(cl.refdef.screen_blend);
             Vector4Clear(cl.refdef.damage_blend);
         }
+        if (cl.custom_fog.density) {
+            cl.refdef.fog = cl.custom_fog;
+            cl.refdef.heightfog = (player_heightfog_t){ 0 };
+        }
 
         cl.refdef.num_entities = r_numentities;
         cl.refdef.entities = r_entities;
@@ -456,11 +460,78 @@ static void V_Viewpos_f(void)
     Com_Printf("%s : %.f\n", vtos(cl.refdef.vieworg), cl.refdef.viewangles[YAW]);
 }
 
+/*
+=============
+V_Fog_f
+=============
+*/
+static void dump_fog(const player_fog_t *fog)
+{
+    Com_Printf("(%.3f %.3f %.3f) %f %f\n",
+               fog->color[0], fog->color[1], fog->color[2],
+               fog->density, fog->sky_factor);
+}
+
+static void dump_heightfog(const player_heightfog_t *fog)
+{
+    Com_Printf("Start  : (%.3f %.3f %.3f) %.f\n",
+               fog->start.color[0], fog->start.color[1], fog->start.color[2], fog->start.dist);
+    Com_Printf("End    : (%.3f %.3f %.3f) %.f\n",
+               fog->end.color[0], fog->end.color[1], fog->end.color[2], fog->end.dist);
+    Com_Printf("Density: %f\n", fog->density);
+    Com_Printf("Falloff: %f\n", fog->falloff);
+}
+
+static void V_Fog_f(void)
+{
+    int argc = Cmd_Argc();
+    float args[5];
+
+    if (argc == 1) {
+        if (cl.custom_fog.density) {
+            Com_Printf("User set global fog:\n");
+            dump_fog(&cl.custom_fog);
+            return;
+        }
+        if (!cl.frame.ps.fog.density && !cl.frame.ps.heightfog.density) {
+            Com_Printf("No fog.\n");
+            return;
+        }
+        if (cl.frame.ps.fog.density) {
+            Com_Printf("Global fog:\n");
+            dump_fog(&cl.frame.ps.fog);
+        }
+        if (cl.frame.ps.heightfog.density) {
+            Com_Printf("Height fog:\n");
+            dump_heightfog(&cl.frame.ps.heightfog);
+        }
+        return;
+    }
+
+    if (argc < 5) {
+        Com_Printf("Usage: %s <r g b density> [sky_factor]\n", Cmd_Argv(0));
+        return;
+    }
+
+    for (int i = 0; i < 5; i++)
+        args[i] = Q_clipf(Q_atof(Cmd_Argv(i + 1)), 0, 1);
+
+    cl.custom_fog.color[0]   = args[0];
+    cl.custom_fog.color[1]   = args[1];
+    cl.custom_fog.color[2]   = args[2];
+    cl.custom_fog.density    = args[3];
+    cl.custom_fog.sky_factor = args[4];
+
+    cl.refdef.fog = cl.custom_fog;
+    cl.refdef.heightfog = (player_heightfog_t){ 0 };
+}
+
 static const cmdreg_t v_cmds[] = {
     { "gun_next", V_Gun_Next_f },
     { "gun_prev", V_Gun_Prev_f },
     { "gun_model", V_Gun_Model_f },
     { "viewpos", V_Viewpos_f },
+    { "fog", V_Fog_f },
     { NULL }
 };
 
