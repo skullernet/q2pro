@@ -914,7 +914,7 @@ static void CL_AddPlayerBeams(void)
             vectoangles2(dist, angles);
 
             // if it's the heatbeam, draw the particle effect
-            if (cl_mod_heatbeam && b->model == cl_mod_heatbeam)
+            if (cl_mod_heatbeam && b->model == cl_mod_heatbeam && !sv_paused->integer)
                 CL_Heatbeam(org, dist);
 
             framenum = 1;
