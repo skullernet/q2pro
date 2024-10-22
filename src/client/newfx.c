@@ -338,12 +338,21 @@ void CL_TrackerTrail(centity_t *ent, const vec3_t end)
     VectorCopy(move, ent->lerp_origin);
 }
 
+// Marsaglia 1972 rejection method
 static void RandomDir(vec3_t dir)
 {
-    dir[0] = crand();
-    dir[1] = crand();
-    dir[2] = crand();
-    VectorNormalize(dir);
+    float x, y, s, a;
+
+    do {
+        x = crand();
+        y = crand();
+        s = x * x + y * y;
+    } while (s > 1);
+
+    a = 2 * sqrtf(1 - s);
+    dir[0] = x * a;
+    dir[1] = y * a;
+    dir[2] = -1 + 2 * s;
 }
 
 void CL_Tracker_Shell(const centity_t *ent, const vec3_t origin)
