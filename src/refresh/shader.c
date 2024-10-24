@@ -350,6 +350,8 @@ static void write_height_fog(sizebuf_t *buf)
 {
     GLSL({
         float dir_z = normalize(v_world_pos - u_vieworg).z;
+        float s = sign(dir_z);
+        dir_z += 0.00001 * (1.0 - s * s);
         float eye = u_vieworg.z - u_heightfog_start.w;
         float pos = v_world_pos.z - u_heightfog_start.w;
         float density = (exp(-u_heightfog_falloff * eye) -
