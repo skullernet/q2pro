@@ -62,6 +62,7 @@ cvar_t *gl_md5_distance;
 cvar_t *gl_damageblend_frac;
 cvar_t *gl_waterwarp;
 cvar_t *gl_fog;
+cvar_t *gl_bloom;
 cvar_t *gl_swapinterval;
 
 // development variables
@@ -72,6 +73,7 @@ cvar_t *gl_drawsky;
 cvar_t *gl_showtris;
 cvar_t *gl_showorigins;
 cvar_t *gl_showtearing;
+cvar_t *gl_showbloom;
 #if USE_DEBUG
 cvar_t *gl_showstats;
 cvar_t *gl_showscrap;
@@ -623,31 +625,69 @@ bool GL_ShowErrors(const char *func)
     return true;
 }
 
-static void GL_WaterWarp(void)
+static void GL_PostProcess(glStateBits_t bits, int x, int y, int w, int h)
 {
-    float x0, x1, y0, y1;
-
-    GL_ForceTexture(TMU_TEXTURE, gl_static.warp_texture);
-    GL_BindArrays(VA_WATERWARP);
+    GL_BindArrays(VA_POSTPROCESS);
     GL_StateBits(GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE |
-                 GLS_CULL_DISABLE | GLS_TEXTURE_REPLACE | GLS_WARP_ENABLE);
+                 GLS_CULL_DISABLE | GLS_TEXTURE_REPLACE | bits);
     GL_ArrayBits(GLA_VERTEX | GLA_TC);
-    GL_LoadUniforms();
+    gl_backend->load_uniforms();
 
-    x0 = glr.fd.x;
-    x1 = glr.fd.x + glr.fd.width;
-
-    y0 = glr.fd.y;
-    y1 = glr.fd.y + glr.fd.height;
-
-    Vector4Set(tess.vertices,      x0, y0, 0, 1);
-    Vector4Set(tess.vertices +  4, x0, y1, 0, 0);
-    Vector4Set(tess.vertices +  8, x1, y0, 1, 1);
-    Vector4Set(tess.vertices + 12, x1, y1, 1, 0);
+    Vector4Set(tess.vertices,      x,     y,     0, 1);
+    Vector4Set(tess.vertices +  4, x,     y + h, 0, 0);
+    Vector4Set(tess.vertices +  8, x + w, y,     1, 1);
+    Vector4Set(tess.vertices + 12, x + w, y + h, 1, 0);
 
     GL_LockArrays(4);
     qglDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     GL_UnlockArrays();
+}
+
+static void GL_DrawBloom(bool waterwarp)
+{
+    int iterations = Cvar_ClampInteger(gl_bloom, 1, 8) * 2;
+    int w = glr.fd.width / 4;
+    int h = glr.fd.height / 4;
+
+    qglViewport(0, 0, w, h);
+    GL_Ortho(0, w, h, 0, -1, 1);
+
+    // downscale
+    gls.u_block.fog_color[0] = 1.0f / w;
+    gls.u_block.fog_color[1] = 1.0f / h;
+    GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_BLOOM);
+    qglBindFramebuffer(GL_FRAMEBUFFER, FBO_BLUR_0);
+    GL_PostProcess(GLS_BLOOM_DOWNSCALE, 0, 0, w, h);
+
+    // blur X/Y
+    for (int i = 0; i < iterations; i++) {
+        int j = i & 1;
+
+        gls.u_block.fog_color[0] = 1.0f / w;
+        gls.u_block.fog_color[1] = 1.0f / h;
+        gls.u_block.fog_color[j] = 0;
+
+        GL_ForceTexture(TMU_TEXTURE, j ? TEXNUM_PP_BLUR_1 : TEXNUM_PP_BLUR_0);
+        qglBindFramebuffer(GL_FRAMEBUFFER, j ? FBO_BLUR_0 : FBO_BLUR_1);
+        GL_PostProcess(GLS_BLOOM_BLUR, 0, 0, w, h);
+    }
+
+    GL_Setup2D();
+
+    glStateBits_t bits = GLS_BLOOM_OUTPUT;
+    if (q_unlikely(gl_showbloom->integer)) {
+        GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_BLUR_0);
+        bits = GLS_DEFAULT;
+    } else {
+        GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_SCENE);
+        GL_ForceTexture(TMU_LIGHTMAP, TEXNUM_PP_BLUR_0);
+        if (waterwarp)
+            bits |= GLS_WARP_ENABLE;
+    }
+
+    // upscale & add
+    qglBindFramebuffer(GL_FRAMEBUFFER, 0);
+    GL_PostProcess(bits, glr.fd.x, glr.fd.y, glr.fd.width, glr.fd.height);
 }
 
 void R_RenderFrame(const refdef_t *fd)
@@ -683,20 +723,32 @@ void R_RenderFrame(const refdef_t *fd)
     }
 
     bool waterwarp = (glr.fd.rdflags & RDF_UNDERWATER) && gl_static.use_shaders && gl_waterwarp->integer;
+    bool bloom = !(glr.fd.rdflags & RDF_NOWORLDMODEL) && gl_static.use_shaders && gl_bloom->integer;
 
-    if (waterwarp) {
-        if (glr.fd.width != glr.framebuffer_width || glr.fd.height != glr.framebuffer_height) {
-            glr.framebuffer_ok = GL_InitWarpTexture();
+    if (waterwarp || bloom || gl_bloom->modified) {
+        if (glr.fd.width != glr.framebuffer_width || glr.fd.height != glr.framebuffer_height || gl_bloom->modified) {
+            glr.framebuffer_ok = GL_InitFramebuffers();
             glr.framebuffer_width = glr.fd.width;
             glr.framebuffer_height = glr.fd.height;
+            gl_bloom->modified = false;
         }
-        waterwarp = glr.framebuffer_ok;
+        if (!glr.framebuffer_ok)
+            waterwarp = bloom = false;
     }
 
-    if (waterwarp)
-        qglBindFramebuffer(GL_FRAMEBUFFER, gl_static.warp_framebuffer);
+    if (waterwarp || bloom) {
+        qglBindFramebuffer(GL_FRAMEBUFFER, FBO_SCENE);
+        glr.framebuffer_bound = true;
 
-    GL_Setup3D(waterwarp);
+        if (gl_clear->integer) {
+            GLenum buffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+            qglDrawBuffers(bloom + 1, buffers);
+            qglClear(GL_COLOR_BUFFER_BIT);
+            qglDrawBuffers(1, buffers);
+        }
+    }
+
+    GL_Setup3D();
 
     GL_SetupFrustum();
 
@@ -722,14 +774,20 @@ void R_RenderFrame(const refdef_t *fd)
 
     GL_DrawDebugObjects();
 
-    if (waterwarp)
+    if (glr.framebuffer_bound) {
         qglBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glr.framebuffer_bound = false;
+    }
 
     // go back into 2D mode
     GL_Setup2D();
 
-    if (waterwarp)
-        GL_WaterWarp();
+    if (bloom) {
+        GL_DrawBloom(waterwarp);
+    } else if (waterwarp) {
+        GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_SCENE);
+        GL_PostProcess(GLS_WARP_ENABLE, glr.fd.x, glr.fd.y, glr.fd.width, glr.fd.height);
+    }
 
     if (gl_polyblend->integer)
         GL_Blend();
@@ -914,6 +972,7 @@ static void GL_Register(void)
     gl_damageblend_frac = Cvar_Get("gl_damageblend_frac", "0.2", 0);
     gl_waterwarp = Cvar_Get("gl_waterwarp", "0", 0);
     gl_fog = Cvar_Get("gl_fog", "1", 0);
+    gl_bloom = Cvar_Get("gl_bloom", "0", 0);
     gl_swapinterval = Cvar_Get("gl_swapinterval", "1", CVAR_ARCHIVE);
     gl_swapinterval->changed = gl_swapinterval_changed;
 
@@ -926,6 +985,7 @@ static void GL_Register(void)
     gl_showtris = Cvar_Get("gl_showtris", "0", CVAR_CHEAT);
     gl_showorigins = Cvar_Get("gl_showorigins", "0", CVAR_CHEAT);
     gl_showtearing = Cvar_Get("gl_showtearing", "0", CVAR_CHEAT);
+    gl_showbloom = Cvar_Get("gl_showbloom", "0", CVAR_CHEAT);
 #if USE_DEBUG
     gl_showstats = Cvar_Get("gl_showstats", "0", 0);
     gl_showscrap = Cvar_Get("gl_showscrap", "0", 0);

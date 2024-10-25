@@ -244,6 +244,7 @@ static const glsection_t sections[] = {
             QGL_FN(CreateShader),
             QGL_FN(DeleteProgram),
             QGL_FN(DeleteShader),
+            QGL_FN(DrawBuffers),
             QGL_FN(DisableVertexAttribArray),
             QGL_FN(EnableVertexAttribArray),
             QGL_FN(GetProgramInfoLog),
@@ -297,6 +298,15 @@ static const glsection_t sections[] = {
             QGL_FN(GenVertexArrays),
             QGL_FN(GetStringi),
             QGL_FN(VertexAttribIPointer),
+            { NULL }
+        }
+    },
+
+    // GL 3.0, not ES
+    {
+        .ver_gl = QGL_VER(3, 0),
+        .functions = (const glfunction_t []) {
+            QGL_FN(BindFragDataLocation),
             { NULL }
         }
     },

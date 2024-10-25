@@ -436,6 +436,20 @@ static bool GL_MakePowerOfTwo(int *width, int *height)
     return false;
 }
 
+static void GL_ClampTextureSize(int *width, int *height)
+{
+    while (*width > gl_config.max_texture_size ||
+           *height > gl_config.max_texture_size) {
+        *width >>= 1;
+        *height >>= 1;
+    }
+
+    if (*width < 1)
+        *width = 1;
+    if (*height < 1)
+        *height = 1;
+}
+
 /*
 ===============
 GL_Upload32
@@ -467,17 +481,7 @@ static void GL_Upload32(byte *data, int width, int height, int baselevel, imaget
     }
 
     // don't ever bother with >256 textures
-    while (scaled_width > gl_config.max_texture_size ||
-           scaled_height > gl_config.max_texture_size) {
-        scaled_width >>= 1;
-        scaled_height >>= 1;
-    }
-
-    if (scaled_width < 1)
-        scaled_width = 1;
-    if (scaled_height < 1)
-        scaled_height = 1;
-
+    GL_ClampTextureSize(&scaled_width, &scaled_height);
     upload_width = scaled_width;
     upload_height = scaled_height;
 
@@ -1145,25 +1149,40 @@ static void GL_InitCubemaps(void)
     sky->texnum = TEXNUM_CUBEMAP_DEFAULT;
 }
 
-bool GL_InitWarpTexture(void)
+static void GL_InitPostProcTexture(int w, int h)
 {
-    GL_ClearErrors();
-
-    GL_ForceTexture(TMU_TEXTURE, gl_static.warp_texture);
-    qglTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, glr.fd.width, glr.fd.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    qglTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+}
 
-    qglBindFramebuffer(GL_FRAMEBUFFER, gl_static.warp_framebuffer);
-    qglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl_static.warp_texture, 0);
+bool GL_InitFramebuffers(void)
+{
+    GL_ClearErrors();
 
-    qglBindRenderbuffer(GL_RENDERBUFFER, gl_static.warp_renderbuffer);
+    GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_SCENE);
+    GL_InitPostProcTexture(glr.fd.width, glr.fd.height);
+
+    int w = glr.fd.width;
+    int h = glr.fd.height;
+
+    if (!gl_bloom->integer)
+        w = h = 0;
+
+    GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_BLOOM);
+    GL_InitPostProcTexture(w, h);
+
+    qglBindFramebuffer(GL_FRAMEBUFFER, FBO_SCENE);
+    qglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, TEXNUM_PP_SCENE, 0);
+    qglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gl_bloom->integer ? TEXNUM_PP_BLOOM : GL_NONE, 0);
+
+    qglBindRenderbuffer(GL_RENDERBUFFER, gl_static.renderbuffer);
     qglRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, glr.fd.width, glr.fd.height);
     qglBindRenderbuffer(GL_RENDERBUFFER, 0);
 
-    qglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, gl_static.warp_renderbuffer);
+    qglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, gl_static.renderbuffer);
 
     GLenum status = qglCheckFramebufferStatus(GL_FRAMEBUFFER);
     qglBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -1176,23 +1195,25 @@ bool GL_InitWarpTexture(void)
         return false;
     }
 
-    return true;
-}
+    GL_UpdateBlurParams();
 
-static void GL_DeleteWarpTexture(void)
-{
-    if (gl_static.warp_framebuffer) {
-        qglDeleteFramebuffers(1, &gl_static.warp_framebuffer);
-        gl_static.warp_framebuffer = 0;
-    }
-    if (gl_static.warp_renderbuffer) {
-        qglDeleteRenderbuffers(1, &gl_static.warp_renderbuffer);
-        gl_static.warp_renderbuffer = 0;
-    }
-    if (gl_static.warp_texture) {
-        qglDeleteTextures(1, &gl_static.warp_texture);
-        gl_static.warp_texture = 0;
-    }
+    GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_BLUR_0);
+    GL_InitPostProcTexture(w / 4, h / 4);
+
+    GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_BLUR_1);
+    GL_InitPostProcTexture(w / 4, h / 4);
+
+    qglBindFramebuffer(GL_FRAMEBUFFER, FBO_BLUR_0);
+    qglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl_bloom->integer ? TEXNUM_PP_BLUR_0 : GL_NONE, 0);
+
+    qglBindFramebuffer(GL_FRAMEBUFFER, FBO_BLUR_1);
+    qglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl_bloom->integer ? TEXNUM_PP_BLUR_1 : GL_NONE, 0);
+
+    qglBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    GL_ShowErrors(__func__);
+
+    return true;
 }
 
 static void gl_partshape_changed(cvar_t *self)
@@ -1269,9 +1290,8 @@ void GL_InitImages(void)
     qglGenTextures(LM_MAX_LIGHTMAPS, lm.texnums);
 
     if (gl_static.use_shaders) {
-        qglGenTextures(1, &gl_static.warp_texture);
-        qglGenRenderbuffers(1, &gl_static.warp_renderbuffer);
-        qglGenFramebuffers(1, &gl_static.warp_framebuffer);
+        qglGenRenderbuffers(1, &gl_static.renderbuffer);
+        qglGenFramebuffers(FBO_COUNT, gl_static.framebuffers);
     }
 
     Scrap_Init();
@@ -1312,7 +1332,14 @@ void GL_ShutdownImages(void)
     memset(gl_static.texnums, 0, sizeof(gl_static.texnums));
     memset(lm.texnums, 0, sizeof(lm.texnums));
 
-    GL_DeleteWarpTexture();
+    // delete framebuffers
+    if (gl_static.use_shaders) {
+        qglDeleteFramebuffers(FBO_COUNT, gl_static.framebuffers);
+        memset(gl_static.framebuffers, 0, sizeof(gl_static.framebuffers));
+
+        qglDeleteRenderbuffers(1, &gl_static.renderbuffer);
+        gl_static.renderbuffer = 0;
+    }
 
 #if USE_DEBUG
     r_charset = 0;

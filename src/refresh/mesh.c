@@ -688,6 +688,12 @@ static void draw_alias_mesh(const uint16_t *indices, int num_indices,
     if (skin->texnum2)
         state |= GLS_GLOWMAP_ENABLE;
 
+    if (glr.framebuffer_bound && gl_bloom->integer) {
+        state |= GLS_BLOOM_GENERATE;
+        if (glr.ent->flags & RF_SHELL_MASK)
+            state |= GLS_BLOOM_SHELL;
+    }
+
     GL_StateBits(state);
 
     GL_BindTexture(TMU_TEXTURE, skin->texnum);

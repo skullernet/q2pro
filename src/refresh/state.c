@@ -297,9 +297,9 @@ static void GL_RotateForViewer(void)
     GL_ForceMatrix(matrix);
 }
 
-void GL_Setup3D(bool waterwarp)
+void GL_Setup3D(void)
 {
-    if (waterwarp)
+    if (glr.framebuffer_bound)
         qglViewport(0, 0, glr.fd.width, glr.fd.height);
     else
         qglViewport(glr.fd.x, r_config.height - (glr.fd.y + glr.fd.height),
