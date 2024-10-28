@@ -230,7 +230,7 @@ void CL_MuzzleFlash(void)
     case MZ_SSHOTGUN:
         VectorSet(dl->color, 1, 1, 0);
         S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/sshotf1b.wav"), volume, ATTN_NORM, 0);
-        CL_AddWeaponMuzzleFX(MFLASH_SHOTG2, (const vec3_t) { 20.0f, 7.0f, -5.5f }, 12.0f);
+        CL_AddWeaponMuzzleFX(MFLASH_SHOTG2, (const vec3_t) { 25.0f, 7.0f, -5.5f }, 12.0f);
         break;
     case MZ_CHAINGUN1:
         dl->radius = 200 + (Q_rand() & 31);
@@ -268,7 +268,7 @@ void CL_MuzzleFlash(void)
         VectorSet(dl->color, 1, 0.5f, 0.2f);
         S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/rocklf1a.wav"), volume, ATTN_NORM, 0);
         S_StartSound(NULL, mz.entity, CHAN_AUTO,   S_RegisterSound("weapons/rocklr1b.wav"), volume, ATTN_NORM, 0.1f);
-        CL_AddWeaponMuzzleFX(MFLASH_ROCKET, (const vec3_t) { 18.0f, 5.0f, -11.0f }, 10.0f);
+        CL_AddWeaponMuzzleFX(MFLASH_ROCKET, (const vec3_t) { 20.8f, 5.0f, -11.0f }, 10.0f);
         break;
     case MZ_GRENADE:
         VectorSet(dl->color, 1, 0.5f, 0);
@@ -311,7 +311,7 @@ void CL_MuzzleFlash(void)
     case MZ_IONRIPPER:
         VectorSet(dl->color, 1, 0.5f, 0.5f);
         S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/rippfire.wav"), volume, ATTN_NORM, 0);
-        CL_AddWeaponMuzzleFX(MFLASH_BOOMER, (const vec3_t) { 18.0f, 3.8f, -4.5f }, 15.0f);
+        CL_AddWeaponMuzzleFX(MFLASH_BOOMER, (const vec3_t) { 24.0f, 3.8f, -5.5f }, 15.0f);
         break;
 
     case MZ_PROX:
@@ -323,14 +323,14 @@ void CL_MuzzleFlash(void)
     case MZ_ETF_RIFLE:
         VectorSet(dl->color, 0.9f, 0.7f, 0);
         S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/nail1.wav"), volume, ATTN_NORM, 0);
-        CL_AddWeaponMuzzleFX(MFLASH_ETF_RIFLE, (const vec3_t) { 18.0f, 4.25f, -4.5f }, 4.0f);
+        CL_AddWeaponMuzzleFX(MFLASH_ETF_RIFLE, (const vec3_t) { 24.0f, 5.25f, -5.5f }, 4.0f);
         break;
     case MZ_SHOTGUN2:
         // remaster overloads this as MZ_ETF_RIFLE_2
         if (cl.csr.extended) {
             VectorSet(dl->color, 0.9f, 0.7f, 0);
             S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/nail1.wav"), volume, ATTN_NORM, 0);
-            CL_AddWeaponMuzzleFX(MFLASH_ETF_RIFLE, (const vec3_t) { 18.0f, 3.0f, -4.5f }, 4.0f);
+            CL_AddWeaponMuzzleFX(MFLASH_ETF_RIFLE, (const vec3_t) { 24.0f, 4.0f, -5.5f }, 4.0f);
         } else {
             VectorSet(dl->color, 1, 1, 0);
             S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/shotg2.wav"), volume, ATTN_NORM, 0);
