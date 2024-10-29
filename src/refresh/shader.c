@@ -691,14 +691,14 @@ static GLuint create_and_use_program(glStateBits_t bits)
     write_vertex_shader(&sb, bits);
     GLuint shader_v = create_shader(GL_VERTEX_SHADER, &sb);
     if (!shader_v)
-        return program;
+        goto fail;
 
     SZ_Clear(&sb);
     write_fragment_shader(&sb, bits);
     GLuint shader_f = create_shader(GL_FRAGMENT_SHADER, &sb);
     if (!shader_f) {
         qglDeleteShader(shader_v);
-        return program;
+        goto fail;
     }
 
     qglAttachShader(program, shader_v);
@@ -748,20 +748,20 @@ static GLuint create_and_use_program(glStateBits_t bits)
             Com_Printf("%s", buffer);
 
         Com_EPrintf("Error linking program\n");
-        return program;
+        goto fail;
     }
 
     GLuint index = qglGetUniformBlockIndex(program, "u_block");
     if (index == GL_INVALID_INDEX) {
         Com_EPrintf("Uniform block not found\n");
-        return program;
+        goto fail;
     }
 
     GLint size = 0;
     qglGetActiveUniformBlockiv(program, index, GL_UNIFORM_BLOCK_DATA_SIZE, &size);
     if (size != sizeof(gls.u_block)) {
         Com_EPrintf("Uniform block size mismatch: %d != %zu\n", size, sizeof(gls.u_block));
-        return program;
+        goto fail;
     }
 
     qglUniformBlockBinding(program, index, UBO_UNIFORMS);
@@ -771,7 +771,7 @@ static GLuint create_and_use_program(glStateBits_t bits)
         index = qglGetUniformBlockIndex(program, "Skeleton");
         if (index == GL_INVALID_INDEX) {
             Com_EPrintf("Skeleton block not found\n");
-            return program;
+            goto fail;
         }
         qglUniformBlockBinding(program, index, UBO_SKELETON);
     }
@@ -799,6 +799,10 @@ static GLuint create_and_use_program(glStateBits_t bits)
         qglUniform1i(qglGetUniformLocation(program, "u_glowmap"), TMU_GLOWMAP);
 
     return program;
+
+fail:
+    qglDeleteProgram(program);
+    return 0;
 }
 
 static void shader_use_program(glStateBits_t key)
