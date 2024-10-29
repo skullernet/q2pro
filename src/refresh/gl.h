@@ -374,6 +374,11 @@ typedef struct {
 
 /* Joint */
 typedef struct {
+    vec4_t pos;
+    vec4_t axis[3];
+} glJoint_t;
+
+typedef struct {
     vec3_t pos;
     float scale;
     quat_t orient;

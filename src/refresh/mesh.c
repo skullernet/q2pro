@@ -861,11 +861,6 @@ static void draw_skeleton_mesh(const md5_model_t *model, const md5_mesh_t *mesh,
                     model->skins, model->num_skins);
 }
 
-typedef struct {
-    vec4_t pos;
-    vec4_t axis[3];
-} glJoint_t;
-
 static void draw_alias_skeleton(const md5_model_t *model)
 {
     const md5_joint_t *skel = temp_skeleton;

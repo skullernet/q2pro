@@ -65,7 +65,7 @@ static void write_header(sizebuf_t *buf, glStateBits_t bits)
 
 static void write_block(sizebuf_t *buf, glStateBits_t bits)
 {
-    GLSF("layout(std140) uniform u_block {\n");
+    GLSF("layout(std140) uniform Uniforms {\n");
     GLSL(mat4 m_vp;);
     GLSL(mat4 m_model;);
 
@@ -676,6 +676,35 @@ static GLuint create_shader(GLenum type, const sizebuf_t *buf)
     return shader;
 }
 
+static bool bind_uniform_block(GLuint program, const char *name, size_t cpu_size, GLuint binding)
+{
+    GLuint index = qglGetUniformBlockIndex(program, name);
+    if (index == GL_INVALID_INDEX) {
+        Com_EPrintf("%s block not found\n", name);
+        return false;
+    }
+
+    GLint gpu_size = 0;
+    qglGetActiveUniformBlockiv(program, index, GL_UNIFORM_BLOCK_DATA_SIZE, &gpu_size);
+    if (gpu_size != cpu_size) {
+        Com_EPrintf("%s block size mismatch: %d != %zu\n", name, gpu_size, cpu_size);
+        return false;
+    }
+
+    qglUniformBlockBinding(program, index, binding);
+    return true;
+}
+
+static void bind_texture_unit(GLuint program, const char *name, GLuint tmu)
+{
+    GLint loc = qglGetUniformLocation(program, name);
+    if (loc == -1) {
+        Com_EPrintf("Texture %s not found\n", name);
+        return;
+    }
+    qglUniform1i(loc, tmu);
+}
+
 static GLuint create_and_use_program(glStateBits_t bits)
 {
     char buffer[MAX_SHADER_CHARS];
@@ -751,52 +780,38 @@ static GLuint create_and_use_program(glStateBits_t bits)
         goto fail;
     }
 
-    GLuint index = qglGetUniformBlockIndex(program, "u_block");
-    if (index == GL_INVALID_INDEX) {
-        Com_EPrintf("Uniform block not found\n");
+    if (!bind_uniform_block(program, "Uniforms", sizeof(gls.u_block), UBO_UNIFORMS))
         goto fail;
-    }
-
-    GLint size = 0;
-    qglGetActiveUniformBlockiv(program, index, GL_UNIFORM_BLOCK_DATA_SIZE, &size);
-    if (size != sizeof(gls.u_block)) {
-        Com_EPrintf("Uniform block size mismatch: %d != %zu\n", size, sizeof(gls.u_block));
-        goto fail;
-    }
-
-    qglUniformBlockBinding(program, index, UBO_UNIFORMS);
 
 #if USE_MD5
-    if (bits & GLS_MESH_MD5) {
-        index = qglGetUniformBlockIndex(program, "Skeleton");
-        if (index == GL_INVALID_INDEX) {
-            Com_EPrintf("Skeleton block not found\n");
+    if (bits & GLS_MESH_MD5)
+        if (!bind_uniform_block(program, "Skeleton", sizeof(glJoint_t) * MD5_MAX_JOINTS, UBO_SKELETON))
             goto fail;
-        }
-        qglUniformBlockBinding(program, index, UBO_SKELETON);
-    }
 #endif
 
     qglUseProgram(program);
 
 #if USE_MD5
     if (bits & GLS_MESH_MD5 && !(gl_config.caps & QGL_CAP_SHADER_STORAGE)) {
-        qglUniform1i(qglGetUniformLocation(program, "u_weights"), TMU_SKEL_WEIGHTS);
-        qglUniform1i(qglGetUniformLocation(program, "u_jointnums"), TMU_SKEL_JOINTNUMS);
+        bind_texture_unit(program, "u_weights", TMU_SKEL_WEIGHTS);
+        bind_texture_unit(program, "u_jointnums", TMU_SKEL_JOINTNUMS);
     }
 #endif
+
     if (bits & GLS_CLASSIC_SKY) {
-        qglUniform1i(qglGetUniformLocation(program, "u_texture1"), TMU_TEXTURE);
-        qglUniform1i(qglGetUniformLocation(program, "u_texture2"), TMU_LIGHTMAP);
+        bind_texture_unit(program, "u_texture1", TMU_TEXTURE);
+        bind_texture_unit(program, "u_texture2", TMU_LIGHTMAP);
     } else {
-        qglUniform1i(qglGetUniformLocation(program, "u_texture"), TMU_TEXTURE);
+        bind_texture_unit(program, "u_texture", TMU_TEXTURE);
         if ((bits & GLS_BLOOM_MASK) == GLS_BLOOM_OUTPUT)
-            qglUniform1i(qglGetUniformLocation(program, "u_bloom"), TMU_LIGHTMAP);
+            bind_texture_unit(program, "u_bloom", TMU_LIGHTMAP);
     }
+
     if (bits & GLS_LIGHTMAP_ENABLE)
-        qglUniform1i(qglGetUniformLocation(program, "u_lightmap"), TMU_LIGHTMAP);
+        bind_texture_unit(program, "u_lightmap", TMU_LIGHTMAP);
+
     if (bits & GLS_GLOWMAP_ENABLE)
-        qglUniform1i(qglGetUniformLocation(program, "u_glowmap"), TMU_GLOWMAP);
+        bind_texture_unit(program, "u_glowmap", TMU_GLOWMAP);
 
     return program;
 
