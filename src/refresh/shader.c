@@ -106,7 +106,7 @@ static void write_block(sizebuf_t *buf, glStateBits_t bits)
         float u_heightfog_density;
         float u_heightfog_falloff;
         vec2 pad_4;
-        vec3 u_vieworg;
+        vec4 u_vieworg;
     )
     GLSF("};\n");
 }
@@ -452,7 +452,7 @@ static void write_box_blur(sizebuf_t *buf)
 static void write_height_fog(sizebuf_t *buf, glStateBits_t bits)
 {
     GLSL({
-        float dir_z = normalize(v_world_pos - u_vieworg).z;
+        float dir_z = normalize(v_world_pos - u_vieworg.xyz).z;
         float s = sign(dir_z);
         dir_z += 0.00001 * (1.0 - s * s);
         float eye = u_vieworg.z - u_heightfog_start.w;
