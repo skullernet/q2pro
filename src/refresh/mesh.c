@@ -815,7 +815,7 @@ static void lerp_alias_skeleton(const md5_model_t *model)
 #pragma GCC reset_options
 #endif
 
-static void bind_skel_arrays(const md5_mesh_t *mesh, const md5_joint_t *skel)
+static void bind_skel_arrays(const md5_mesh_t *mesh)
 {
     if (gl_config.caps & QGL_CAP_SHADER_STORAGE) {
         qglBindBufferRange(GL_SHADER_STORAGE_BUFFER, SSBO_WEIGHTS, buffer,
@@ -848,7 +848,7 @@ static void bind_skel_arrays(const md5_mesh_t *mesh, const md5_joint_t *skel)
 static void draw_skeleton_mesh(const md5_model_t *model, const md5_mesh_t *mesh, const md5_joint_t *skel)
 {
     if (buffer)
-        bind_skel_arrays(mesh, skel);
+        bind_skel_arrays(mesh);
     else if (glr.ent->flags & RF_SHELL_MASK)
         tess_shell_skel(mesh, skel);
     else if (dotshading)
