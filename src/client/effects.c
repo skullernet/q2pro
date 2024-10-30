@@ -502,10 +502,15 @@ void CL_MuzzleFlash2(void)
     case MZ2_CARRIER_MACHINEGUN_L1:
     case MZ2_CARRIER_MACHINEGUN_L2:
         VectorSet(dl->color, 1, 1, 0);
-        CL_ParticleEffect(origin, vec3_origin, 0, 40);
-        CL_SmokeAndFlash(origin);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("infantry/infatck1.wav"), 1, ATTN_NONE, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 32.0f * scale);
+        if (cl.csr.extended && mz.weapon == MZ2_BOSS2_MACHINEGUN_L2) {
+            S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("flyer/flyatck3.wav"), 1, ATTN_NONE, 0);
+            CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 12.0f * scale);
+        } else {
+            CL_ParticleEffect(origin, vec3_origin, 0, 40);
+            CL_SmokeAndFlash(origin);
+            S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("infantry/infatck1.wav"), 1, ATTN_NONE, 0);
+            CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 32.0f * scale);
+        }
         break;
 
     case MZ2_SOLDIER_BLASTER_1:
@@ -734,10 +739,15 @@ void CL_MuzzleFlash2(void)
     case MZ2_BOSS2_MACHINEGUN_R5:
     case MZ2_CARRIER_MACHINEGUN_R1:
     case MZ2_CARRIER_MACHINEGUN_R2:
-        VectorSet(dl->color, 1, 1, 0);
-        CL_ParticleEffect(origin, vec3_origin, 0, 40);
-        CL_SmokeAndFlash(origin);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 32.0f * scale);
+        if (cl.csr.extended && mz.weapon == MZ2_BOSS2_MACHINEGUN_R2) {
+            S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("flyer/flyatck3.wav"), 1, ATTN_NONE, 0);
+            CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 12.0f * scale);
+        } else {
+            VectorSet(dl->color, 1, 1, 0);
+            CL_ParticleEffect(origin, vec3_origin, 0, 40);
+            CL_SmokeAndFlash(origin);
+            CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 32.0f * scale);
+        }
         break;
 
     case MZ2_STALKER_BLASTER:
