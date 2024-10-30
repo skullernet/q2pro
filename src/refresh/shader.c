@@ -1041,15 +1041,13 @@ static void shader_init(void)
     gl_static.programs = HashMap_TagCreate(glStateBits_t, GLuint, HashInt32, NULL, TAG_RENDERER);
 
     qglGenBuffers(1, &gl_static.uniform_buffer);
-    GL_BindBuffer(GL_UNIFORM_BUFFER, gl_static.uniform_buffer);
-    qglBindBufferBase(GL_UNIFORM_BUFFER, UBO_UNIFORMS, gl_static.uniform_buffer);
+    GL_BindBufferBase(GL_UNIFORM_BUFFER, UBO_UNIFORMS, gl_static.uniform_buffer);
     qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_block), NULL, GL_DYNAMIC_DRAW);
 
 #if USE_MD5
     if (gl_config.caps & QGL_CAP_SKELETON_MASK) {
         qglGenBuffers(1, &gl_static.skeleton_buffer);
-        GL_BindBuffer(GL_UNIFORM_BUFFER, gl_static.skeleton_buffer);
-        qglBindBufferBase(GL_UNIFORM_BUFFER, UBO_SKELETON, gl_static.skeleton_buffer);
+        GL_BindBufferBase(GL_UNIFORM_BUFFER, UBO_SKELETON, gl_static.skeleton_buffer);
 
         if ((gl_config.caps & QGL_CAP_SKELETON_MASK) == QGL_CAP_BUFFER_TEXTURE)
             qglGenTextures(2, gl_static.skeleton_tex);

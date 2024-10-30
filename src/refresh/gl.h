@@ -798,6 +798,13 @@ static inline void GL_BindBuffer(GLenum target, GLuint buffer)
     }
 }
 
+static inline void GL_BindBufferBase(GLenum target, GLuint index, GLuint buffer)
+{
+    glBufferBinding_t i = GL_BindingForTarget(target);
+    qglBindBufferBase(target, index, buffer);
+    gls.currentbuffer[i] = buffer;
+}
+
 static inline void GL_ClearDepth(GLfloat d)
 {
     if (qglClearDepthf)
