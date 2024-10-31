@@ -653,6 +653,9 @@ static GLuint create_shader(GLenum type, const sizebuf_t *buf)
         return 0;
     }
 
+    Com_DDDPrintf("Compiling %s shader (%d bytes):\n%.*s\n",
+                  type == GL_VERTEX_SHADER ? "vertex" : "fragment", size, size, data);
+
     qglShaderSource(shader, 1, &data, &size);
     qglCompileShader(shader);
     GLint status = 0;
