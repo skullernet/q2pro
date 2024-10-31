@@ -657,7 +657,7 @@ static void GL_DrawBloom(bool waterwarp)
     gls.u_block.fog_color[1] = 1.0f / h;
     GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_BLOOM);
     qglBindFramebuffer(GL_FRAMEBUFFER, FBO_BLUR_0);
-    GL_PostProcess(GLS_BLOOM_DOWNSCALE, 0, 0, w, h);
+    GL_PostProcess(GLS_BLUR_BOX, 0, 0, w, h);
 
     // blur X/Y
     for (int i = 0; i < iterations; i++) {
@@ -669,7 +669,7 @@ static void GL_DrawBloom(bool waterwarp)
 
         GL_ForceTexture(TMU_TEXTURE, j ? TEXNUM_PP_BLUR_1 : TEXNUM_PP_BLUR_0);
         qglBindFramebuffer(GL_FRAMEBUFFER, j ? FBO_BLUR_0 : FBO_BLUR_1);
-        GL_PostProcess(GLS_BLOOM_BLUR, 0, 0, w, h);
+        GL_PostProcess(GLS_BLUR_GAUSS, 0, 0, w, h);
     }
 
     GL_Setup2D();

@@ -50,6 +50,8 @@ typedef GLushort glIndex_t;
 typedef GLuint glIndex_t;
 #endif
 
+typedef uint64_t glStateBits_t;
+
 #define TAB_SIN(x)  gl_static.sintab[(x) & 255]
 #define TAB_COS(x)  gl_static.sintab[((x) + 64) & 255]
 
@@ -149,7 +151,7 @@ typedef struct {
     lightpoint_t    lightpoint;
     int             num_beams;
     int             num_flares;
-    int             fog_bits, fog_bits_sky;
+    glStateBits_t   fog_bits, fog_bits_sky;
     int             framebuffer_width;
     int             framebuffer_height;
     bool            framebuffer_ok;
@@ -505,62 +507,64 @@ void GL_LoadWorld(const char *name);
  * gl_state.c
  *
  */
-typedef enum {
-    GLS_DEFAULT             = 0,
-    GLS_DEPTHMASK_FALSE     = BIT(0),
-    GLS_DEPTHTEST_DISABLE   = BIT(1),
-    GLS_CULL_DISABLE        = BIT(2),
-    GLS_BLEND_BLEND         = BIT(3),
-    GLS_BLEND_ADD           = BIT(4),
-    GLS_BLEND_MODULATE      = BIT(5),
+#define GLS_DEFAULT             0ULL
 
-    GLS_ALPHATEST_ENABLE    = BIT(6),
-    GLS_TEXTURE_REPLACE     = BIT(7),
-    GLS_SCROLL_ENABLE       = BIT(8),
-    GLS_LIGHTMAP_ENABLE     = BIT(9),
-    GLS_WARP_ENABLE         = BIT(10),
-    GLS_INTENSITY_ENABLE    = BIT(11),
-    GLS_GLOWMAP_ENABLE      = BIT(12),
-    GLS_CLASSIC_SKY         = BIT(13),
-    GLS_DEFAULT_SKY         = BIT(14),
-    GLS_DEFAULT_FLARE       = BIT(15),
+#define GLS_DEPTHMASK_FALSE     BIT_ULL(0)
+#define GLS_DEPTHTEST_DISABLE   BIT_ULL(1)
+#define GLS_CULL_DISABLE        BIT_ULL(2)
+#define GLS_BLEND_BLEND         BIT_ULL(3)
+#define GLS_BLEND_ADD           BIT_ULL(4)
+#define GLS_BLEND_MODULATE      BIT_ULL(5)
 
-    GLS_MESH_MD2            = BIT(16),
-    GLS_MESH_MD5            = BIT(17),
-    GLS_MESH_LERP           = BIT(18),
-    GLS_MESH_SHELL          = BIT(19),
-    GLS_MESH_SHADE          = BIT(20),
+#define GLS_ALPHATEST_ENABLE    BIT_ULL(6)
+#define GLS_TEXTURE_REPLACE     BIT_ULL(7)
+#define GLS_SCROLL_ENABLE       BIT_ULL(8)
+#define GLS_LIGHTMAP_ENABLE     BIT_ULL(9)
+#define GLS_WARP_ENABLE         BIT_ULL(10)
+#define GLS_INTENSITY_ENABLE    BIT_ULL(11)
+#define GLS_GLOWMAP_ENABLE      BIT_ULL(12)
+#define GLS_CLASSIC_SKY         BIT_ULL(13)
+#define GLS_DEFAULT_SKY         BIT_ULL(14)
+#define GLS_DEFAULT_FLARE       BIT_ULL(15)
 
-    GLS_SHADE_SMOOTH        = BIT(21),
-    GLS_SCROLL_X            = BIT(22),
-    GLS_SCROLL_Y            = BIT(23),
-    GLS_SCROLL_FLIP         = BIT(24),
-    GLS_SCROLL_SLOW         = BIT(25),
+#define GLS_MESH_MD2            BIT_ULL(16)
+#define GLS_MESH_MD5            BIT_ULL(17)
+#define GLS_MESH_LERP           BIT_ULL(18)
+#define GLS_MESH_SHELL          BIT_ULL(19)
+#define GLS_MESH_SHADE          BIT_ULL(20)
 
-    GLS_FOG_GLOBAL          = BIT(26),
-    GLS_FOG_HEIGHT          = BIT(27),
-    GLS_FOG_SKY             = BIT(28),
+#define GLS_SHADE_SMOOTH        BIT_ULL(21)
+#define GLS_SCROLL_X            BIT_ULL(22)
+#define GLS_SCROLL_Y            BIT_ULL(23)
+#define GLS_SCROLL_FLIP         BIT_ULL(24)
+#define GLS_SCROLL_SLOW         BIT_ULL(25)
 
-    GLS_BLOOM_GENERATE      = BIT(29),
-    GLS_BLOOM_BLUR          = BIT(30),
-    GLS_BLOOM_SHELL         = BIT(31),
-    GLS_BLOOM_OUTPUT        = GLS_BLOOM_GENERATE | GLS_BLOOM_BLUR,
-    GLS_BLOOM_DOWNSCALE     = GLS_BLOOM_BLUR | GLS_BLOOM_SHELL,
-    GLS_BLOOM_MASK          = GLS_BLOOM_OUTPUT,
+#define GLS_FOG_GLOBAL          BIT_ULL(26)
+#define GLS_FOG_HEIGHT          BIT_ULL(27)
+#define GLS_FOG_SKY             BIT_ULL(28)
 
-    GLS_BLEND_MASK  = GLS_BLEND_BLEND | GLS_BLEND_ADD | GLS_BLEND_MODULATE,
-    GLS_COMMON_MASK = GLS_DEPTHMASK_FALSE | GLS_DEPTHTEST_DISABLE | GLS_CULL_DISABLE | GLS_BLEND_MASK,
-    GLS_SKY_MASK    = GLS_CLASSIC_SKY | GLS_DEFAULT_SKY,
-    GLS_FOG_MASK    = GLS_FOG_GLOBAL | GLS_FOG_HEIGHT | GLS_FOG_SKY,
-    GLS_MESH_ANY    = GLS_MESH_MD2 | GLS_MESH_MD5,
-    GLS_MESH_MASK   = GLS_MESH_ANY | GLS_MESH_LERP | GLS_MESH_SHELL | GLS_MESH_SHADE,
-    GLS_SHADER_MASK = GLS_ALPHATEST_ENABLE | GLS_TEXTURE_REPLACE | GLS_SCROLL_ENABLE |
-        GLS_LIGHTMAP_ENABLE | GLS_WARP_ENABLE | GLS_INTENSITY_ENABLE | GLS_GLOWMAP_ENABLE |
-        GLS_SKY_MASK | GLS_DEFAULT_FLARE | GLS_MESH_MASK | GLS_FOG_MASK | GLS_BLOOM_MASK | GLS_BLOOM_SHELL,
-    GLS_UNIFORM_MASK = GLS_WARP_ENABLE | GLS_LIGHTMAP_ENABLE | GLS_INTENSITY_ENABLE |
-        GLS_SKY_MASK | GLS_FOG_MASK | GLS_BLOOM_MASK,
-    GLS_SCROLL_MASK = GLS_SCROLL_ENABLE | GLS_SCROLL_X | GLS_SCROLL_Y | GLS_SCROLL_FLIP | GLS_SCROLL_SLOW,
-} glStateBits_t;
+#define GLS_BLOOM_GENERATE      BIT_ULL(29)
+#define GLS_BLOOM_OUTPUT        BIT_ULL(30)
+#define GLS_BLOOM_SHELL         BIT_ULL(31)
+
+#define GLS_BLUR_GAUSS          BIT_ULL(32)
+#define GLS_BLUR_BOX            BIT_ULL(33)
+
+#define GLS_BLEND_MASK          (GLS_BLEND_BLEND | GLS_BLEND_ADD | GLS_BLEND_MODULATE)
+#define GLS_COMMON_MASK         (GLS_DEPTHMASK_FALSE | GLS_DEPTHTEST_DISABLE | GLS_CULL_DISABLE | GLS_BLEND_MASK)
+#define GLS_SKY_MASK            (GLS_CLASSIC_SKY | GLS_DEFAULT_SKY)
+#define GLS_FOG_MASK            (GLS_FOG_GLOBAL | GLS_FOG_HEIGHT | GLS_FOG_SKY)
+#define GLS_MESH_ANY            (GLS_MESH_MD2 | GLS_MESH_MD5)
+#define GLS_MESH_MASK           (GLS_MESH_ANY | GLS_MESH_LERP | GLS_MESH_SHELL | GLS_MESH_SHADE)
+#define GLS_BLOOM_MASK          (GLS_BLOOM_GENERATE | GLS_BLOOM_OUTPUT | GLS_BLOOM_SHELL)
+#define GLS_BLUR_MASK           (GLS_BLUR_GAUSS | GLS_BLUR_BOX)
+#define GLS_SHADER_MASK         (GLS_ALPHATEST_ENABLE | GLS_TEXTURE_REPLACE | GLS_SCROLL_ENABLE | \
+                                 GLS_LIGHTMAP_ENABLE | GLS_WARP_ENABLE | GLS_INTENSITY_ENABLE | \
+                                 GLS_GLOWMAP_ENABLE | GLS_SKY_MASK | GLS_DEFAULT_FLARE | GLS_MESH_MASK | \
+                                 GLS_FOG_MASK | GLS_BLOOM_MASK | GLS_BLUR_MASK)
+#define GLS_UNIFORM_MASK        (GLS_WARP_ENABLE | GLS_LIGHTMAP_ENABLE | GLS_INTENSITY_ENABLE | \
+                                 GLS_SKY_MASK | GLS_FOG_MASK | GLS_BLUR_MASK)
+#define GLS_SCROLL_MASK         (GLS_SCROLL_ENABLE | GLS_SCROLL_X | GLS_SCROLL_Y | GLS_SCROLL_FLIP | GLS_SCROLL_SLOW)
 
 typedef enum {
     VERT_ATTR_POS,

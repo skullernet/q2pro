@@ -466,7 +466,7 @@ static void write_height_fog(sizebuf_t *buf, glStateBits_t bits)
         diffuse.rgb = mix(diffuse.rgb, fog_color.rgb, fog);
     )
 
-    if ((bits & GLS_BLOOM_MASK) == GLS_BLOOM_GENERATE)
+    if (bits & GLS_BLOOM_GENERATE)
         GLSL(bloom.rgb *= 1.0 - fog;)
 
     GLSL(})
@@ -491,7 +491,7 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
         GLSL(uniform samplerCube u_texture;)
     } else {
         GLSL(uniform sampler2D u_texture;)
-        if ((bits & GLS_BLOOM_MASK) == GLS_BLOOM_OUTPUT)
+        if (bits & GLS_BLOOM_OUTPUT)
             GLSL(uniform sampler2D u_bloom;)
     }
 
@@ -514,7 +514,8 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
     if (gl_config.ver_es)
         GLSL(layout(location = 0))
     GLSL(out vec4 o_color;)
-    if ((bits & GLS_BLOOM_MASK) == GLS_BLOOM_GENERATE) {
+
+    if (bits & GLS_BLOOM_GENERATE) {
         if (gl_config.ver_es)
             GLSL(layout(location = 1))
         GLSL(out vec4 o_bloom;)
@@ -523,12 +524,10 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
     if (bits & GLS_FOG_HEIGHT)
         GLSL(in vec3 v_world_pos;)
 
-    if ((bits & GLS_BLOOM_MASK) == GLS_BLOOM_BLUR) {
-        if (bits & GLS_BLOOM_SHELL)
-            write_box_blur(buf);
-        else
-            write_gaussian_blur(buf);
-    }
+    if (bits & GLS_BLUR_GAUSS)
+        write_gaussian_blur(buf);
+    else if (bits & GLS_BLUR_BOX)
+        write_box_blur(buf);
 
     GLSF("void main() {\n");
     if (bits & GLS_CLASSIC_SKY) {
@@ -549,7 +548,7 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
         if (bits & GLS_WARP_ENABLE)
             GLSL(tc += w_amp * sin(tc.ts * w_phase + u_time);)
 
-        if ((bits & GLS_BLOOM_MASK) == GLS_BLOOM_BLUR)
+        if (bits & GLS_BLUR_MASK)
             GLSL(vec4 diffuse = blur(u_texture, tc, u_fog_color.xy);)
         else
             GLSL(vec4 diffuse = texture(u_texture, tc);)
@@ -558,7 +557,7 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
     if (bits & GLS_ALPHATEST_ENABLE)
         GLSL(if (diffuse.a <= 0.666) discard;)
 
-    if ((bits & GLS_BLOOM_MASK) == GLS_BLOOM_GENERATE)
+    if (bits & GLS_BLOOM_GENERATE)
         GLSL(vec4 bloom = vec4(0.0);)
 
     if (bits & GLS_LIGHTMAP_ENABLE) {
@@ -568,7 +567,7 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
             GLSL(vec4 glowmap = texture(u_glowmap, tc);)
             GLSL(lightmap.rgb = mix(lightmap.rgb, vec3(1.0), glowmap.a);)
 
-            if ((bits & GLS_BLOOM_MASK) == GLS_BLOOM_GENERATE) {
+            if (bits & GLS_BLOOM_GENERATE) {
                 GLSL(bloom.rgb = diffuse.rgb * glowmap.a;)
                 if (bits & GLS_INTENSITY_ENABLE)
                     GLSL(bloom.rgb *= u_intensity;)
@@ -597,14 +596,14 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
         else
             GLSL(diffuse.rgb += glowmap.rgb;)
 
-        if ((bits & GLS_BLOOM_MASK) == GLS_BLOOM_GENERATE) {
+        if (bits & GLS_BLOOM_GENERATE) {
             GLSL(bloom.rgb = glowmap.rgb;)
             if (bits & GLS_INTENSITY_ENABLE)
                 GLSL(bloom.rgb *= u_intensity2;)
         }
     }
 
-    if ((bits & GLS_BLOOM_MASK) == GLS_BLOOM_GENERATE) {
+    if (bits & GLS_BLOOM_GENERATE) {
         if (bits & GLS_BLOOM_SHELL)
             GLSL(bloom = diffuse;)
         else
@@ -621,7 +620,7 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
             diffuse.rgb = mix(diffuse.rgb, u_fog_color.rgb, fog);
         )
 
-        if ((bits & GLS_BLOOM_MASK) == GLS_BLOOM_GENERATE)
+        if (bits & GLS_BLOOM_GENERATE)
             GLSL(bloom.rgb *= 1.0 - fog;)
 
         GLSL(})
@@ -633,10 +632,10 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
     if (bits & GLS_FOG_SKY)
         GLSL(diffuse.rgb = mix(diffuse.rgb, u_fog_color.rgb, u_fog_sky_factor);)
 
-    if ((bits & GLS_BLOOM_MASK) == GLS_BLOOM_OUTPUT)
+    if (bits & GLS_BLOOM_OUTPUT)
         GLSL(diffuse.rgb += texture(u_bloom, tc).rgb;)
 
-    if ((bits & GLS_BLOOM_MASK) == GLS_BLOOM_GENERATE)
+    if (bits & GLS_BLOOM_GENERATE)
         GLSL(o_bloom = bloom;)
 
     GLSL(o_color = diffuse;)
@@ -755,7 +754,7 @@ static GLuint create_and_use_program(glStateBits_t bits)
             qglBindAttribLocation(program, VERT_ATTR_COLOR, "a_color");
     }
 
-    if ((bits & GLS_BLOOM_MASK) == GLS_BLOOM_GENERATE && !gl_config.ver_es) {
+    if (bits & GLS_BLOOM_GENERATE && !gl_config.ver_es) {
         qglBindFragDataLocation(program, 0, "o_color");
         qglBindFragDataLocation(program, 1, "o_bloom");
     }
@@ -803,7 +802,7 @@ static GLuint create_and_use_program(glStateBits_t bits)
         bind_texture_unit(program, "u_texture2", TMU_LIGHTMAP);
     } else {
         bind_texture_unit(program, "u_texture", TMU_TEXTURE);
-        if ((bits & GLS_BLOOM_MASK) == GLS_BLOOM_OUTPUT)
+        if (bits & GLS_BLOOM_OUTPUT)
             bind_texture_unit(program, "u_bloom", TMU_LIGHTMAP);
     }
 
@@ -847,8 +846,8 @@ static void shader_state_bits(glStateBits_t bits)
         gls.u_block_dirty = true;
     }
 
-    if (diff & GLS_BLOOM_MASK && glr.framebuffer_bound) {
-        int n = (bits & GLS_BLOOM_MASK) == GLS_BLOOM_GENERATE ? 2 : 1;
+    if (diff & GLS_BLOOM_GENERATE && glr.framebuffer_bound) {
+        int n = (bits & GLS_BLOOM_GENERATE) ? 2 : 1;
         qglDrawBuffers(n, (const GLenum []) {
             GL_COLOR_ATTACHMENT0,
             GL_COLOR_ATTACHMENT1
@@ -1016,7 +1015,7 @@ void GL_UpdateBlurParams(void)
     uint32_t map_size = HashMap_Size(gl_static.programs);
     for (int i = 0; i < map_size; i++) {
         glStateBits_t *bits = HashMap_GetKey(glStateBits_t, gl_static.programs, i);
-        if ((*bits & (GLS_BLOOM_MASK | GLS_BLOOM_SHELL)) == GLS_BLOOM_BLUR) {
+        if (*bits & GLS_BLUR_GAUSS) {
             GLuint *prog = HashMap_GetValue(GLuint, gl_static.programs, i);
             qglDeleteProgram(*prog);
             *prog = create_and_use_program(*bits);
@@ -1038,7 +1037,7 @@ static void shader_init(void)
     gl_bloom_sigma = Cvar_Get("gl_bloom_sigma", "4", 0);
     gl_bloom_sigma->changed = gl_bloom_sigma_changed;
 
-    gl_static.programs = HashMap_TagCreate(glStateBits_t, GLuint, HashInt32, NULL, TAG_RENDERER);
+    gl_static.programs = HashMap_TagCreate(glStateBits_t, GLuint, HashInt64, NULL, TAG_RENDERER);
 
     qglGenBuffers(1, &gl_static.uniform_buffer);
     GL_BindBufferBase(GL_UNIFORM_BUFFER, UBO_UNIFORMS, gl_static.uniform_buffer);
