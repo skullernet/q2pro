@@ -1084,8 +1084,13 @@ static int shell_effect_hack(void)
         flags |= RF_SHELL_DOUBLE;
     if (ent->current.effects & EF_HALF_DAMAGE)
         flags |= RF_SHELL_HALF_DAM;
-    if (ent->current.morefx & EFX_DUALFIRE)
-        flags |= RF_SHELL_LITE_GREEN;
+
+    if (cl.csr.extended) {
+        if (ent->current.morefx & EFX_DUALFIRE)
+            flags |= RF_SHELL_LITE_GREEN;
+        if (ent->current.effects & EF_COLOR_SHELL)
+            flags |= ent->current.renderfx & RF_SHELL_MASK;
+    }
 
     return flags;
 }
