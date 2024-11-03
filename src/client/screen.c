@@ -160,21 +160,28 @@ void SCR_DrawStringMulti(int x, int y, int flags, size_t maxlen,
 {
     char    *p;
     size_t  len;
+    int     last_x = x;
+    int     last_y = y;
 
     while (*s && maxlen) {
         p = strchr(s, '\n');
         if (!p) {
-            SCR_DrawStringEx(x, y, flags, maxlen, s, font);
+            last_x = SCR_DrawStringEx(x, y, flags, maxlen, s, font);
+            last_y = y;
             break;
         }
 
         len = min(p - s, maxlen);
-        SCR_DrawStringEx(x, y, flags, len, s, font);
+        last_x = SCR_DrawStringEx(x, y, flags, len, s, font);
+        last_y = y;
         maxlen -= len;
 
         y += CHAR_HEIGHT;
         s = p + 1;
     }
+
+    if (flags & UI_DRAWCURSOR && com_localTime & BIT(8))
+        R_DrawChar(last_x, last_y, flags, 11, font);
 }
 
 
@@ -446,7 +453,7 @@ void SCR_CenterPrint(const char *str, bool typewrite)
 static void SCR_DrawCenterString(void)
 {
     centerprint_t *cp;
-    int y;
+    int y, flags;
     float alpha;
     size_t maxlen;
 
@@ -470,13 +477,16 @@ static void SCR_DrawCenterString(void)
     R_SetAlpha(alpha * scr_alpha->value);
 
     y = scr.hud_height / 4 - cp->lines * CHAR_HEIGHT / 2;
+    flags = UI_CENTER;
 
-    if (cp->typewrite)
+    if (cp->typewrite) {
         maxlen = scr_printspeed->value * 0.001f * (cls.realtime - cp->start);
-    else
+        flags |= UI_DROPSHADOW | UI_DRAWCURSOR;
+    } else {
         maxlen = MAX_STRING_CHARS;
+    }
 
-    SCR_DrawStringMulti(scr.hud_width / 2, y, UI_CENTER,
+    SCR_DrawStringMulti(scr.hud_width / 2, y, flags,
                         maxlen, cp->string, scr.font_pic);
 
     R_SetAlpha(scr_alpha->value);
