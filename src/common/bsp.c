@@ -186,6 +186,7 @@ static void BSP_PrintStats(const bsp_t *bsp)
 #endif
         Com_Printf("\n");
     }
+    Com_Printf("Checksum : %#x\n", bsp->checksum);
 
     Com_Printf("------------------\n");
 }
@@ -1083,7 +1084,7 @@ overrun:
                 Q_SetBit(mask, 939);
                 Q_SetBit(mask, 947);
             }
-        } else if (bsp->checksum == 0x2b2ccdd1) {
+        } else if (bsp->checksum == 0x1ebe8001) {
             // mgu6m2, waterfall
             Q_SetBit(mask, 213);
             Q_SetBit(mask, 214);
