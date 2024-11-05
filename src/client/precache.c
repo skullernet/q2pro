@@ -328,8 +328,12 @@ static qhandle_t CL_RegisterImage(const char *s)
     // if it's in a subdir and has an extension, it's either a sprite or a skin
     // allow /some/pic.pcx escape syntax
     if (cl.csr.extended && *s != '/' && *s != '\\' && *COM_FileExtension(s)) {
+        if (!FS_pathcmpn(s, CONST_STR_LEN("sprites/psx_flare")))
+            return R_RegisterImage(s, IT_SPRITE, IF_DEFAULT_FLARE);
+
         if (!FS_pathcmpn(s, CONST_STR_LEN("sprites/")))
             return R_RegisterSprite(s);
+
         if (strchr(s, '/'))
             return R_RegisterSkin(s);
     }
