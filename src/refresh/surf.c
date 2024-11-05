@@ -1046,7 +1046,7 @@ void GL_LoadWorld(const char *name)
         if (info->c.flags & SURF_SKY) {
             if (!gl_static.use_cubemaps) {
                 info->image = R_NOTEXTURE;
-            } else if (Q_stricmpn(info->name, CONST_STR_LEN("n64/env/sky")) == 0) {
+            } else if (Q_stristr(info->name, "env/sky")) {
                 Q_concat(buffer, sizeof(buffer), "textures/", info->name, ".tga");
                 info->image = IMG_Find(buffer, IT_SKY, IF_REPEAT | IF_CLASSIC_SKY);
             } else if (Q_stricmpn(info->name, CONST_STR_LEN("sky/")) == 0) {
