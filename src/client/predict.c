@@ -261,8 +261,14 @@ void CL_PredictMovement(void)
     if (pm.s.pm_type != PM_SPECTATOR && (pm.s.pm_flags & PMF_ON_GROUND)) {
         oldz = cl.predicted_origins[cl.predicted_step_frame & CMD_MASK][2];
         step = pm.s.origin[2] - oldz;
-        if (step > 63 && step < 160) {
-            cl.predicted_step = step * 0.125f;
+        if (step >= 63 && step < 160) {
+            // check for stepping up before a previous step is completed
+            unsigned delta = cls.realtime - cl.predicted_step_time;
+            float prev_step = 0;
+            if (delta < 100)
+                prev_step = cl.predicted_step * (100 - delta) * 0.01f;
+
+            cl.predicted_step = min(prev_step + step * 0.125f, 32);
             cl.predicted_step_time = cls.realtime;
             cl.predicted_step_frame = frame + 1;    // don't double step
         }
