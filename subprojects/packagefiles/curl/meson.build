@@ -1,4 +1,4 @@
-project('libcurl', 'c', version: '8.10.1', license: 'bsd')
+project('libcurl', 'c', version: '8.11.0', license: 'bsd')
 
 src = [
   'lib/vauth/cleartext.c',
@@ -39,6 +39,7 @@ src = [
 
   'lib/vssh/libssh.c',
   'lib/vssh/libssh2.c',
+  'lib/vssh/curl_path.c',
   'lib/vssh/wolfssh.c',
 
   'lib/altsvc.c',
@@ -69,7 +70,6 @@ src = [
   'lib/curl_memrchr.c',
   'lib/curl_multibyte.c',
   'lib/curl_ntlm_core.c',
-  'lib/curl_path.c',
   'lib/curl_range.c',
   'lib/curl_rtmp.c',
   'lib/curl_sasl.c',
