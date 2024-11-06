@@ -166,7 +166,7 @@ static void emit_delta_frame(const server_frame_t *from, const server_frame_t *t
     MSG_WriteLong(tonum);
     MSG_WriteLong(fromnum); // what we are delta'ing from
     if (cls.serverProtocol != PROTOCOL_VERSION_OLD)
-        MSG_WriteByte(0);   // rate dropped packets
+        MSG_WriteByte(cl.suppress_count);   // rate dropped packets
 
     // send over the areabits
     MSG_WriteByte(to->areabytes);

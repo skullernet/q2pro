@@ -33,3 +33,7 @@ void CL_PreInit(void)
     for (int i = 0; i < q_countof(nullcmds); i++)
         Cmd_AddCommand(nullcmds[i], NULL);
 }
+
+void SCR_DebugGraph(float value, int color)
+{
+}

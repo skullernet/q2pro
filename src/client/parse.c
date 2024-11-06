@@ -230,9 +230,15 @@ static void CL_ParseFrame(int extrabits)
                 // CLIENTDROP is implied, don't draw both
                 suppressed &= ~FF_CLIENTDROP;
             }
+            if (suppressed & FF_SUPPRESSED) {
+                cl.suppress_count = 1;
+            }
             cl.frameflags |= suppressed;
-        } else if (suppressed) {
-            cl.frameflags |= FF_SUPPRESSED;
+        } else {
+            if (suppressed) {
+                cl.frameflags |= FF_SUPPRESSED;
+            }
+            cl.suppress_count = suppressed;
         }
         extraflags = (extrabits << 4) | (bits >> SUPPRESSCOUNT_BITS);
     } else {
@@ -245,7 +251,7 @@ static void CL_ParseFrame(int extrabits)
 
         // BIG HACK to let old demos continue to work
         if (cls.serverProtocol != PROTOCOL_VERSION_OLD) {
-            suppressed = MSG_ReadByte();
+            cl.suppress_count = suppressed = MSG_ReadByte();
             if (suppressed) {
                 cl.frameflags |= FF_SUPPRESSED;
             }

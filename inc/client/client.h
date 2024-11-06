@@ -34,6 +34,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 void CL_PreInit(void);
 
+void SCR_DebugGraph(float value, int color);
+
 #if USE_CLIENT
 
 #define MAX_LOCAL_SERVERS   16
