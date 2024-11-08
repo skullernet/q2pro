@@ -167,7 +167,7 @@ static bool GL_LightPoint_(const vec3_t start, vec3_t color)
     end[2] = start[2] - 8192;
 
     // get base lightpoint from world
-    BSP_LightPoint(&glr.lightpoint, start, end, bsp->nodes, gl_static.nolm_mask);
+    BSP_LightPoint(&glr.lightpoint, start, end, bsp->nodes, gl_static.nolm_mask | SURF_TRANS_MASK);
 
     // trace to other BSP models
     for (i = 0, ent = glr.fd.entities; i < glr.fd.num_entities; i++, ent++) {
@@ -201,7 +201,7 @@ static bool GL_LightPoint_(const vec3_t start, vec3_t color)
         }
 
         BSP_TransformedLightPoint(&pt, start, end, model->headnode,
-                                  gl_static.nolm_mask, ent->origin, angles);
+                                  gl_static.nolm_mask | SURF_TRANS_MASK, ent->origin, angles);
 
         if (pt.fraction < glr.lightpoint.fraction)
             glr.lightpoint = pt;
