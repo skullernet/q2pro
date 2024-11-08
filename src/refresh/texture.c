@@ -38,6 +38,7 @@ static cvar_t *gl_downsample_skins;
 static cvar_t *gl_gamma_scale_pics;
 static cvar_t *gl_bilerp_chars;
 static cvar_t *gl_bilerp_pics;
+static cvar_t *gl_bilerp_skies;
 static cvar_t *gl_upscale_pcx;
 static cvar_t *gl_texturemode;
 static cvar_t *gl_texturebits;
@@ -159,6 +160,12 @@ static void gl_bilerp_pics_changed(cvar_t *self)
     update_image_params(BIT(IT_PIC));
     if (r_numImages)
         GL_InitRawTexture();
+}
+
+static void gl_bilerp_skies_changed(cvar_t *self)
+{
+    // change all the existing sky texture objects
+    update_image_params(BIT(IT_SKY));
 }
 
 static void gl_texturebits_changed(cvar_t *self)
@@ -620,9 +627,6 @@ static void GL_SetFilterAndRepeat(imagetype_t type, imageflags_t flags)
     if (type == IT_WALL || type == IT_SKIN) {
         qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
         qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
-    } else if (type == IT_SKY) {
-        qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_max);
-        qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
     } else {
         bool    nearest;
 
@@ -635,6 +639,8 @@ static void GL_SetFilterAndRepeat(imagetype_t type, imageflags_t flags)
                 nearest = (gl_bilerp_pics->integer == 0 || gl_bilerp_pics->integer == 1);
             else
                 nearest = (gl_bilerp_pics->integer == 0);
+        } else if (type == IT_SKY) {
+            nearest = (gl_bilerp_skies->integer == 0);
         } else {
             nearest = false;
         }
@@ -693,8 +699,10 @@ static const byte gl_env_ofs[6][14] = {
 
 static void GL_SetCubemapFilterAndRepeat(void)
 {
-    qglTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, gl_filter_max);
-    qglTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, gl_filter_max);
+    GLenum filter = gl_bilerp_skies->integer ? GL_LINEAR : GL_NEAREST;
+
+    qglTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, filter);
+    qglTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, filter);
 
     qglTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     qglTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -1232,6 +1240,8 @@ void GL_InitImages(void)
     gl_bilerp_chars->changed = gl_bilerp_chars_changed;
     gl_bilerp_pics = Cvar_Get("gl_bilerp_pics", "1", 0);
     gl_bilerp_pics->changed = gl_bilerp_pics_changed;
+    gl_bilerp_skies = Cvar_Get("gl_bilerp_skies", "1", 0);
+    gl_bilerp_skies->changed = gl_bilerp_skies_changed;
     gl_texturemode = Cvar_Get("gl_texturemode", "GL_LINEAR_MIPMAP_LINEAR", CVAR_ARCHIVE);
     gl_texturemode->changed = gl_texturemode_changed;
     gl_texturemode->generator = gl_texturemode_g;
@@ -1319,6 +1329,7 @@ void GL_ShutdownImages(void)
 {
     gl_bilerp_chars->changed = NULL;
     gl_bilerp_pics->changed = NULL;
+    gl_bilerp_skies->changed = NULL;
     gl_texturemode->changed = NULL;
     gl_texturemode->generator = NULL;
     gl_anisotropy->changed = NULL;
