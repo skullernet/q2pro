@@ -450,10 +450,16 @@ static void GL_OccludeFlares(void)
         }
 
         if (q) {
-            if (q->pending)
-                continue;
-            if (com_eventTime - q->timestamp <= 33)
-                continue;
+            // reset visibility if entity disappeared
+            if (com_eventTime - q->timestamp >= 2500) {
+                q->pending = q->visible = false;
+                q->frac = 0;
+            } else {
+                if (q->pending)
+                    continue;
+                if (com_eventTime - q->timestamp <= 33)
+                    continue;
+            }
         } else {
             glquery_t new = { 0 };
             uint32_t map_size = HashMap_Size(gl_static.queries);
