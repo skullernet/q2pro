@@ -122,7 +122,7 @@ static void gl_texturemode_changed(cvar_t *self)
     }
 
     // change all the existing mipmap texture objects
-    update_image_params(BIT(IT_WALL) | BIT(IT_SKIN) | BIT(IT_SKY));
+    update_image_params(BIT(IT_WALL) | BIT(IT_SKIN));
 }
 
 static void gl_texturemode_g(genctx_t *ctx)
