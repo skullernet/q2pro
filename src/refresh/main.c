@@ -427,6 +427,8 @@ static void GL_OccludeFlares(void)
     const entity_t *e;
     glquery_t *q;
     int i, j;
+    vec3_t dir, org;
+    float scale, dist;
     bool set = false;
 
     if (!glr.num_flares)
@@ -480,14 +482,19 @@ static void GL_OccludeFlares(void)
             set = true;
         }
 
+        VectorSubtract(e->origin, glr.fd.vieworg, dir);
+        dist = DotProduct(dir, glr.viewaxis[0]);
+
+        scale = 2.5f;
+        if (dist > 20)
+            scale += dist * 0.004f;
+
         if (bsp && BSP_PointLeaf(bsp->nodes, e->origin)->contents == CONTENTS_SOLID) {
-            vec3_t dir, org;
-            VectorSubtract(glr.fd.vieworg, e->origin, dir);
             VectorNormalize(dir);
-            VectorMA(e->origin, 5.0f, dir, org);
-            make_flare_quad(org, 2.5f);
+            VectorMA(e->origin, -5.0f, dir, org);
+            make_flare_quad(org, scale);
         } else
-            make_flare_quad(e->origin, 2.5f);
+            make_flare_quad(e->origin, scale);
 
         GL_LockArrays(4);
         qglBeginQuery(gl_static.samples_passed, q->query);
