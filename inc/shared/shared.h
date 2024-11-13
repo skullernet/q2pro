@@ -1265,6 +1265,7 @@ enum {
     SPLASH_SLIME,
     SPLASH_LAVA,
     SPLASH_BLOOD,
+    SPLASH_ELECTRIC_N64, // KEX
 };
 
 // sound channels
