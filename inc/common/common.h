@@ -136,11 +136,15 @@ void        Sys_Printf(const char *fmt, ...) q_printf(1, 2);
 #define Com_DDDDPrintf(...) \
     do { if (developer && developer->integer > 3) \
         Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
+#define Com_DWPrintf(...) \
+    do { if (developer && developer->integer > 0) \
+        Com_LPrintf(PRINT_WARNING, __VA_ARGS__); } while (0)
 #else
 #define Com_DPrintf(...) ((void)0)
 #define Com_DDPrintf(...) ((void)0)
 #define Com_DDDPrintf(...) ((void)0)
 #define Com_DDDDPrintf(...) ((void)0)
+#define Com_DWPrintf(...) ((void)0
 #endif
 
 #if USE_TESTS

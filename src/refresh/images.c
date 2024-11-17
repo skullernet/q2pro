@@ -309,7 +309,7 @@ static int load_pcx(const byte *rawdata, size_t rawlen,
 
             IMG_FreePixels(pixels);
         } else {
-            Com_WPrintf("%s is a 24-bit PCX file. This is not portable.\n", image->name);
+            Com_DWPrintf("%s is a 24-bit PCX file. This is not portable.\n", image->name);
             *pic = pixels;
             image->flags |= IF_OPAQUE;
         }
