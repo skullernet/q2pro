@@ -874,6 +874,8 @@ static void CL_AddPacketEntities(void)
                 // custom weapon
                 ci = &cl.clientinfo[s1->skinnum & 0xff];
                 i = (s1->skinnum >> 8); // 0 is default weapon model
+                if (cl.csr.extended)
+                    i &= 0xff;
                 if (i < 0 || i > cl.numWeaponModels - 1)
                     i = 0;
                 ent.model = ci->weaponmodel[i];
