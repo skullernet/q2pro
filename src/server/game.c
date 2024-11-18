@@ -101,13 +101,13 @@ static void PF_Unicast(edict_t *ent, qboolean reliable)
 
     clientNum = NUM_FOR_EDICT(ent) - 1;
     if (clientNum < 0 || clientNum >= sv_maxclients->integer) {
-        Com_WPrintf("%s to a non-client %d\n", __func__, clientNum);
+        Com_DWPrintf("%s to a non-client %d\n", __func__, clientNum);
         goto clear;
     }
 
     client = svs.client_pool + clientNum;
     if (client->state <= cs_zombie) {
-        Com_WPrintf("%s to a free/zombie client %d\n", __func__, clientNum);
+        Com_DWPrintf("%s to a free/zombie client %d\n", __func__, clientNum);
         goto clear;
     }
 
@@ -162,7 +162,7 @@ static void PF_bprintf(int level, const char *fmt, ...)
     va_end(argptr);
 
     if (len >= sizeof(string)) {
-        Com_WPrintf("%s: overflow\n", __func__);
+        Com_DWPrintf("%s: overflow\n", __func__);
         return;
     }
 
@@ -241,7 +241,7 @@ static void PF_cprintf(edict_t *ent, int level, const char *fmt, ...)
     va_end(argptr);
 
     if (len >= sizeof(msg)) {
-        Com_WPrintf("%s: overflow\n", __func__);
+        Com_DWPrintf("%s: overflow\n", __func__);
         return;
     }
 
@@ -252,13 +252,13 @@ static void PF_cprintf(edict_t *ent, int level, const char *fmt, ...)
 
     clientNum = NUM_FOR_EDICT(ent) - 1;
     if (clientNum < 0 || clientNum >= sv_maxclients->integer) {
-        Com_WPrintf("%s to a non-client %d\n", __func__, clientNum);
+        Com_DWPrintf("%s to a non-client %d\n", __func__, clientNum);
         return;
     }
 
     client = svs.client_pool + clientNum;
     if (client->state <= cs_zombie) {
-        Com_WPrintf("%s to a free/zombie client %d\n", __func__, clientNum);
+        Com_DWPrintf("%s to a free/zombie client %d\n", __func__, clientNum);
         return;
     }
 
@@ -296,7 +296,7 @@ static void PF_centerprintf(edict_t *ent, const char *fmt, ...)
 
     n = NUM_FOR_EDICT(ent);
     if (n < 1 || n > sv_maxclients->integer) {
-        Com_WPrintf("%s to a non-client %d\n", __func__, n - 1);
+        Com_DWPrintf("%s to a non-client %d\n", __func__, n - 1);
         return;
     }
 
@@ -305,7 +305,7 @@ static void PF_centerprintf(edict_t *ent, const char *fmt, ...)
     va_end(argptr);
 
     if (len >= sizeof(msg)) {
-        Com_WPrintf("%s: overflow\n", __func__);
+        Com_DWPrintf("%s: overflow\n", __func__);
         return;
     }
 
@@ -375,7 +375,7 @@ static void PF_configstring(int index, const char *val)
         Com_Error(ERR_DROP, "%s: bad index: %d", __func__, index);
 
     if (sv.state == ss_dead) {
-        Com_WPrintf("%s: not yet initialized\n", __func__);
+        Com_DWPrintf("%s: not yet initialized\n", __func__);
         return;
     }
 
@@ -394,7 +394,7 @@ static void PF_configstring(int index, const char *val)
     // print a warning and truncate everything else
     maxlen = Com_ConfigstringSize(&svs.csr, index);
     if (len >= maxlen) {
-        Com_WPrintf(
+        Com_DWPrintf(
             "%s: index %d overflowed: %zu > %zu\n",
             __func__, index, len, maxlen - 1);
         len = maxlen - 1;
