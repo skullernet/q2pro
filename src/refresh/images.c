@@ -1919,21 +1919,23 @@ static image_t *find_or_load_image(const char *name, size_t len,
     image_t         *image;
     byte            *pic;
     unsigned        hash;
+    size_t          baselen;
     imageformat_t   fmt;
     int             ret;
 
     Q_assert(len < MAX_QPATH);
+    baselen = COM_FileExtension(name) - name;
 
     // must have an extension and at least 1 char of base name
-    if (len <= 4 || name[len - 4] != '.') {
+    if (baselen < 1 || name[baselen] != '.') {
         ret = Q_ERR_INVALID_PATH;
         goto fail;
     }
 
-    hash = FS_HashPathLen(name, len - 4, RIMAGES_HASH);
+    hash = FS_HashPathLen(name, baselen, RIMAGES_HASH);
 
     // look for it
-    if ((image = lookup_image(name, type, hash, len - 4)) != NULL) {
+    if ((image = lookup_image(name, type, hash, baselen)) != NULL) {
         image->registration_sequence = r_registration_sequence;
         if (image->upload_width && image->upload_height) {
             image->flags |= flags & IF_PERMANENT;
@@ -1951,7 +1953,7 @@ static image_t *find_or_load_image(const char *name, size_t len,
 
     // fill in some basic info
     memcpy(image->name, name, len + 1);
-    image->baselen = len - 4;
+    image->baselen = baselen;
     image->type = type;
     image->flags = flags;
     image->registration_sequence = r_registration_sequence;
