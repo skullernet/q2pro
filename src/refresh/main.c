@@ -735,18 +735,23 @@ void R_RenderFrame(const refdef_t *fd)
         lm.dirty = false;
     }
 
-    bool waterwarp = (glr.fd.rdflags & RDF_UNDERWATER) && gl_static.use_shaders && gl_waterwarp->integer;
-    bool bloom = !(glr.fd.rdflags & RDF_NOWORLDMODEL) && gl_static.use_shaders && gl_bloom->integer;
+    bool waterwarp = false;
+    bool bloom = false;
 
-    if (waterwarp || bloom || gl_bloom->modified) {
-        if (glr.fd.width != glr.framebuffer_width || glr.fd.height != glr.framebuffer_height || gl_bloom->modified) {
-            glr.framebuffer_ok = GL_InitFramebuffers();
-            glr.framebuffer_width = glr.fd.width;
-            glr.framebuffer_height = glr.fd.height;
-            gl_bloom->modified = false;
+    if (gl_static.use_shaders) {
+        waterwarp = (glr.fd.rdflags & RDF_UNDERWATER) && gl_waterwarp->integer;
+        bloom = !(glr.fd.rdflags & RDF_NOWORLDMODEL) && gl_bloom->integer;
+
+        if (waterwarp || bloom || gl_bloom->modified) {
+            if (glr.fd.width != glr.framebuffer_width || glr.fd.height != glr.framebuffer_height || gl_bloom->modified) {
+                glr.framebuffer_ok = GL_InitFramebuffers();
+                glr.framebuffer_width = glr.fd.width;
+                glr.framebuffer_height = glr.fd.height;
+                gl_bloom->modified = false;
+            }
+            if (!glr.framebuffer_ok)
+                waterwarp = bloom = false;
         }
-        if (!glr.framebuffer_ok)
-            waterwarp = bloom = false;
     }
 
     if (waterwarp || bloom) {
