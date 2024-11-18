@@ -303,8 +303,8 @@ static bool init(void)
 
     SDL_SetWindowMinimumSize(sdl.window, 320, 240);
 
-    SDL_Surface *icon = SDL_CreateRGBSurfaceFrom(q2icon_bits, q2icon_width, q2icon_height,
-                                                 1, q2icon_width / 8, 0, 0, 0, 0);
+    SDL_Surface *icon = SDL_CreateRGBSurfaceWithFormatFrom(q2icon_bits, q2icon_width, q2icon_height,
+                                                           1, q2icon_width / 8, SDL_PIXELFORMAT_INDEX1LSB);
     if (icon) {
         SDL_Color colors[2] = {
             { 255, 255, 255 },
