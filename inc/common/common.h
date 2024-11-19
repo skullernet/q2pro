@@ -144,7 +144,7 @@ void        Sys_Printf(const char *fmt, ...) q_printf(1, 2);
 #define Com_DDPrintf(...) ((void)0)
 #define Com_DDDPrintf(...) ((void)0)
 #define Com_DDDDPrintf(...) ((void)0)
-#define Com_DWPrintf(...) ((void)0
+#define Com_DWPrintf(...) ((void)0)
 #endif
 
 #if USE_TESTS
