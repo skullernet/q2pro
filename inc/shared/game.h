@@ -25,7 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 //
 
 #define GAME_API_VERSION_OLD    3       // game uses gclient_old_t
-#define GAME_API_VERSION_NEW    3301    // game uses gclient_new_t
+#define GAME_API_VERSION_NEW    3302    // game uses gclient_new_t
 
 #if USE_NEW_GAME_API
 #define GAME_API_VERSION    GAME_API_VERSION_NEW

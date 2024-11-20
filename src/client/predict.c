@@ -129,10 +129,10 @@ void CL_Trace(trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mi
 
 static int pm_clipmask;
 
-static trace_t q_gameabi CL_PMTrace(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end)
+static trace_t q_gameabi CL_PMTrace(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int contentmask)
 {
     trace_t t;
-    CL_Trace(&t, start, end, mins, maxs, pm_clipmask);
+    CL_Trace(&t, start, end, mins, maxs, (cl.csr.extended && contentmask) ? contentmask : pm_clipmask);
     return t;
 }
 

@@ -1488,15 +1488,20 @@ void ClientDisconnect(edict_t *ent)
 //==============================================================
 
 edict_t *pm_passent;
+int pm_clipmask;
 
 // pmove doesn't need to know about passent and contentmask
+#if USE_NEW_GAME_API
+trace_t q_gameabi PM_trace(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int contentmask)
+{
+    return gi.trace(start, mins, maxs, end, pm_passent, (game.csr.extended && contentmask) ? contentmask : pm_clipmask);
+}
+#else
 trace_t q_gameabi PM_trace(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end)
 {
-    if (pm_passent->health > 0)
-        return gi.trace(start, mins, maxs, end, pm_passent, MASK_PLAYERSOLID);
-    else
-        return gi.trace(start, mins, maxs, end, pm_passent, MASK_DEADSOLID);
+    return gi.trace(start, mins, maxs, end, pm_passent, pm_clipmask);
 }
+#endif
 
 /*
 ==============
@@ -1525,8 +1530,6 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         return;
     }
 
-    pm_passent = ent;
-
     if (ent->client->chase_target) {
 
         client->resp.cmd_angles[0] = SHORT2ANGLE(ucmd->angles[0]);
@@ -1546,6 +1549,12 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
             client->ps.pmove.pm_type = PM_DEAD;
         else
             client->ps.pmove.pm_type = PM_NORMAL;
+
+        pm_passent = ent;
+        if (ent->health > 0)
+            pm_clipmask = MASK_PLAYERSOLID;
+        else
+            pm_clipmask = MASK_DEADSOLID;
 
         client->ps.pmove.gravity = sv_gravity->value;
         pm.s = client->ps.pmove;

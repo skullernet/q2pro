@@ -24,4 +24,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define PMOVE_FUNC PmoveNew
 #define PMOVE_TIME_SHIFT pmp->time_shift
 #define PMOVE_C2S(x) SignExtend(COORD2SHORT(x), pmp->coord_bits)
+#define PMOVE_TRACE(start, mins, maxs, end) pm->trace(start, mins, maxs, end, 0)
+#define PMOVE_TRACE_MASK(start, mins, maxs, end, mask) pm->trace(start, mins, maxs, end, mask)
 #include "template.c"
