@@ -598,6 +598,17 @@ extern cvar_t   *info_hand;
 extern cvar_t   *info_gender;
 extern cvar_t   *info_uf;
 
+//
+// q2jump strafe_helper
+//
+extern cvar_t    *cl_drawStrafeHelper;
+extern cvar_t    *cl_strafeHelperCenter;
+extern cvar_t    *cl_strafeHelperCenterMarker;
+extern cvar_t    *cl_strafeHelperHeight;
+extern cvar_t    *cl_strafeHelperScale;
+extern cvar_t    *cl_strafeHelperY;
+
+
 //=============================================================================
 
 static inline void CL_AdvanceValue(float *restrict val, float target, float speed)

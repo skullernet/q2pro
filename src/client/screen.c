@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // cl_scrn.c -- master for refresh, status bar, console, chat, notify, etc
 
 #include "client.h"
+#include "src/jump/strafe_helper/strafe_helper.h"
 
 #define STAT_PICS       11
 #define STAT_MINUS      (STAT_PICS - 1)  // num frame for '-' stats digit
@@ -2266,7 +2267,21 @@ static void SCR_DrawLayout(void)
         return;
 
 draw:
-    SCR_ExecuteLayoutString(cl.layout);
+  SCR_ExecuteLayoutString(cl.layout);
+}
+
+//
+// q2jump strafe_helper
+//
+static void SCR_DrawStrafeHelper(void) {
+  const struct StrafeHelperParams params = {
+      .center = cl_strafeHelperCenter->integer,
+      .center_marker = cl_strafeHelperCenterMarker->integer,
+      .scale = cl_strafeHelperScale->value,
+      .height = cl_strafeHelperHeight->value,
+      .y = cl_strafeHelperY->value,
+  };
+  StrafeHelper_Draw(&params, scr.hud_width, scr.hud_height);
 }
 
 static void SCR_Draw2D(void)
@@ -2284,6 +2299,12 @@ static void SCR_Draw2D(void)
 
     // crosshair has its own color and alpha
     SCR_DrawCrosshair();
+    //
+    // q2jump strafe_helper
+    //
+    if (cl_drawStrafeHelper->integer) {
+      SCR_DrawStrafeHelper();
+    }
 
     // the rest of 2D elements share common alpha
     R_ClearColor();
