@@ -738,7 +738,10 @@ void Cmd_Macro_g(genctx_t *ctx)
 Cmd_AddMacro
 ============
 */
-void Cmd_AddMacro(const char *name, xmacro_t function)
+//
+// q2jump draw_dynamic
+//
+void Cmd_AddMacroDynamic(const char *name, xmacro_t function, xdynamiccolor_t colorfunction)
 {
     cmd_macro_t *macro;
     unsigned hash;
@@ -761,12 +764,18 @@ void Cmd_AddMacro(const char *name, xmacro_t function)
     macro = Cmd_Malloc(sizeof(*macro));
     macro->name = name;
     macro->function = function;
+    macro->colorfunction = colorfunction; // q2jump draw_dynamic
     macro->next = cmd_macros;
     cmd_macros = macro;
 
     hash = Com_HashString(name, MACRO_HASH_SIZE);
     macro->hashNext = cmd_macroHash[hash];
     cmd_macroHash[hash] = macro;
+}
+
+void Cmd_AddMacro(const char *name, xmacro_t function)
+{
+    Cmd_AddMacroDynamic(name, function, NULL);
 }
 
 

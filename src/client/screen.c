@@ -817,6 +817,10 @@ static void SCR_Draw_f(void)
         c = Cmd_Argv(4);
         if (!strcmp(c, "alt")) {
             flags |= UI_ALTCOLOR;
+        } else if (!strcmp(c, "dynamic")) {
+	    // q2jump draw_dynamic
+            flags |= UI_DYNAMICCOLOR;
+            flags &= ~UI_IGNORECOLOR;
         } else if (strcmp(c, "none")) {
             if (!SCR_ParseColor(c, &color)) {
                 Com_Printf("Unknown color '%s'\n", c);
@@ -830,6 +834,16 @@ static void SCR_Draw_f(void)
     macro = Cmd_FindMacro(s);
     if (!macro) {
         cvar = Cvar_WeakGet(s);
+    }
+  
+    //
+    // q2jump draw_dynamic
+    //
+    if (flags & UI_DYNAMICCOLOR) {
+        if (!macro || !macro->colorfunction) {
+            Com_Printf("'%s' does not support dynamic colors!\n", s);
+            return;
+        }
     }
 
     FOR_EACH_DRAWOBJ(obj) {
@@ -940,6 +954,12 @@ static void SCR_DrawObjects(void)
             R_SetColor(obj->color.u32);
         }
         if (obj->macro) {
+            //
+            // q2jump draw_dynamic
+            //
+            if ((obj->flags & UI_DYNAMICCOLOR) && obj->macro->colorfunction) {
+                R_SetColor(obj->macro->colorfunction().u32);
+            }
             obj->macro->function(buffer, sizeof(buffer));
             SCR_DrawString(x, y, obj->flags, buffer);
         } else {
