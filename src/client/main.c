@@ -100,6 +100,16 @@ extern cvar_t *gl_modulate_entities;
 extern cvar_t *gl_brightness;
 #endif
 
+//
+// q2jump strafe_helper
+//
+cvar_t *cl_drawStrafeHelper;
+cvar_t *cl_strafeHelperCenter;
+cvar_t *cl_strafeHelperCenterMarker;
+cvar_t *cl_strafeHelperHeight;
+cvar_t *cl_strafeHelperScale;
+cvar_t *cl_strafeHelperY;
+
 client_static_t cls;
 client_state_t  cl;
 
@@ -2830,6 +2840,17 @@ static void CL_InitLocal(void)
     Cmd_AddMacro("cl_weaponmodel", CL_WeaponModel_m);
     Cmd_AddMacro("cl_numentities", CL_NumEntities_m);
     Cmd_AddMacro("cl_surface", CL_Surface_m);
+
+  //
+  // q2jump strafe_helper
+  //
+  cl_drawStrafeHelper = Cvar_Get("cl_drawstrafehelper", "0", CVAR_ARCHIVE);
+  cl_strafeHelperCenter = Cvar_Get("cl_strafehelpercenter", "1", CVAR_ARCHIVE);
+  cl_strafeHelperCenterMarker =
+      Cvar_Get("cl_strafehelpercentermarker", "1", CVAR_ARCHIVE);
+  cl_strafeHelperHeight = Cvar_Get("cl_strafehelperheight", "25", CVAR_ARCHIVE);
+  cl_strafeHelperScale = Cvar_Get("cl_strafehelperscale", "1.5", CVAR_ARCHIVE);
+  cl_strafeHelperY = Cvar_Get("cl_strafehelpery", "100", CVAR_ARCHIVE);
 }
 
 static const cmdreg_t c_ignores[] = {

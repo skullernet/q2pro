@@ -18,6 +18,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define STEPSIZE    18
 
+#include "src/jump/strafe_helper/strafe_helper.h"
+
 // all of the locals will be zeroed before each
 // pmove, just to make damn sure we don't have
 // any differences when running on client or server
@@ -315,13 +317,24 @@ static void PM_Accelerate(const vec3_t wishdir, float wishspeed, float accel)
     currentspeed = DotProduct(pml.velocity, wishdir);
     addspeed = wishspeed - currentspeed;
     if (addspeed <= 0)
-        return;
+    	goto final;
+
     accelspeed = accel * pml.frametime * wishspeed;
     if (accelspeed > addspeed)
         accelspeed = addspeed;
 
     for (i = 0; i < 3; i++)
         pml.velocity[i] += accelspeed * wishdir[i];
+
+final:
+    ;
+//
+// q2jump strafe_helper
+//
+#if USE_CLIENT
+    StrafeHelper_SetAccelerationValues(pml.forward, pml.velocity, wishdir,
+                                       wishspeed, accel, pml.frametime);
+#endif
 }
 
 static void PM_AirAccelerate(const vec3_t wishdir, float wishspeed, float accel)
