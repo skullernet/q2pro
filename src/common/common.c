@@ -1036,6 +1036,10 @@ void Qcommon_Init(int argc, char **argv)
 
     Com_Printf("====== " PRODUCT " initialized ======\n\n");
     Com_NPrintf(APPLICATION " " VERSION ", " __DATE__ "\n");
+    Com_Printf("https://github.com/q2jump-pro/q2jump-pro\n");
+    Com_Printf("A remake of\n");
+    Com_Printf("https://github.com/TotallyMehis/q2pro-jump\n");
+    Com_Printf("Forked from\n");
     Com_Printf("https://github.com/skullernet/q2pro\n\n");
     Com_DPrintf("Compiled features: %s\n", Com_GetFeatures());
 
