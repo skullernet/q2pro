@@ -102,12 +102,14 @@ typedef struct genctx_s {
 
 typedef void (*xcommand_t)(void);
 typedef size_t (*xmacro_t)(char *, size_t);
+typedef color_t (*xdynamiccolor_t)(void); // q2jump draw_dynamic
 typedef void (*xcompleter_t)(struct genctx_s *, int);
 
 typedef struct cmd_macro_s {
     struct cmd_macro_s  *next, *hashNext;
     const char          *name;
     xmacro_t            function;
+    xdynamiccolor_t     colorfunction; // q2jump draw_dynamic
 } cmd_macro_t;
 
 typedef struct {
@@ -169,6 +171,7 @@ void Cmd_Deregister(const cmdreg_t *reg);
 void Cmd_RemoveCommand(const char *cmd_name);
 
 void Cmd_AddMacro(const char *name, xmacro_t function);
+void Cmd_AddMacroDynamic(const char *name, xmacro_t function, xdynamiccolor_t colorfunction); // q2jump draw_dynamic
 
 from_t  Cmd_From(void);
 int     Cmd_Argc(void);
