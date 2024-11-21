@@ -2,3 +2,6 @@
 !/subprojects/packagefiles/
 /tags
 /TAGS
+.cache/
+build/
+builddir/

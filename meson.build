@@ -437,15 +437,15 @@ executable('q2jump-pro', common_src, client_src, refresh_src,
   install:               system_wide,
 )
 
-executable('q2proded', common_src, server_src,
-  dependencies:          common_deps + server_deps,
-  include_directories:   'inc',
-  gnu_symbol_visibility: 'hidden',
-  win_subsystem:         'console,6.0',
-  link_args:             exe_link_args,
-  c_args:                ['-DUSE_SERVER=1', engine_args],
-  install:               system_wide,
-)
+# executable('q2proded', common_src, server_src,
+#   dependencies:          common_deps + server_deps,
+#   include_directories:   'inc',
+#   gnu_symbol_visibility: 'hidden',
+#   win_subsystem:         'console,6.0',
+#   link_args:             exe_link_args,
+#   c_args:                ['-DUSE_SERVER=1', engine_args],
+#   install:               system_wide,
+# )
 
 shared_library('game' + cpu, game_src,
   name_prefix:           '',

@@ -1,10 +1,10 @@
 name: build
 
 on:
-  push:
-    branches: [master, ci]
   pull_request:
-    branches: [master]
+    branches: [main]
+  push:
+    branches: [main]
 
 env:
   MESON_ARGS: >-
@@ -27,54 +27,27 @@ env:
   MESON_ARGS_LINUX: >-
     -Dwindows-crash-dumps=disabled
     -Dwrap_mode=nofallback
+    -Dc_args=-Wno-unused-but-set-variable
+    -Dcpp_args=-Wno-unused-but-set-variable
 
   MESON_ARGS_MACOS: >-
     -Dbuildtype=release
     -Dicmp-errors=disabled
-    -Dpkg_config_path=/opt/homebrew/opt/openal-soft/lib/pkgconfig
     -Dwayland=disabled
     -Dwindows-crash-dumps=disabled
     -Dwrap_mode=nofallback
     -Dx11=disabled
 
-  MESON_ARGS_FREEBSD: >-
-    -Dbuildtype=release
-    -Dicmp-errors=disabled
-    -Dwindows-crash-dumps=disabled
-    -Dwrap_mode=nofallback
-
 jobs:
-  mingw:
-    runs-on: ubuntu-24.04
-    strategy:
-      matrix:
-        arch: ["i686", "x86_64"]
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/cache@v4
-        with:
-          path: subprojects/packagecache
-          key: ${{ hashFiles('subprojects/*.wrap') }}
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-mingw-w64 nasm meson ninja-build
-
-      - name: Build
-        run: |
-          meson setup --cross-file=.ci/${{ matrix.arch }}-w64-mingw32.txt \
-          ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_WIN }} builddir
-          meson compile -C builddir
-
-  msvc:
+  windows:
     runs-on: windows-latest
     strategy:
       matrix:
-        arch: ["x86", "x64"]
+        arch: ["x64"]
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - uses: actions/cache@v4
         with:
@@ -92,16 +65,29 @@ jobs:
 
       - name: Build
         run: |
-          meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_WIN }} builddir
+          meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_WIN }} builddir --buildtype=release
           meson compile -C builddir
+
+      - name: Compress artifacts to .zip
+        run: |
+          mkdir -p q2jump-pro-windows-x86_64
+          cp builddir/q2jump-pro.exe q2jump-pro-windows-x86_64/
+          cp builddir/game*.dll q2jump-pro-windows-x86_64/
+          7z a -tzip q2jump-pro-windows-x86_64.zip q2jump-pro-windows-x86_64
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          retention-days: 2
+          name: q2jump-pro-windows-x86_64
+          path: q2jump-pro-windows-x86_64.zip
 
   linux:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        cc: [gcc, clang]
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Install dependencies
         run: |
@@ -109,19 +95,80 @@ jobs:
           sudo apt-get install -y meson libsdl2-dev libopenal-dev \
           libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
           libcurl4-gnutls-dev libx11-dev libxi-dev \
-          libwayland-dev wayland-protocols libdecor-0-dev
+          libwayland-dev wayland-protocols libdecor-0-dev gcc g++
 
       - name: Build
         run: |
-          meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_LINUX }} builddir
+          meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_LINUX }} builddir --buildtype=release
           meson compile -C builddir
         env:
-          CC: ${{ matrix.cc }}
+          CC: gcc
+
+      - name: Compress artifacts to .tar.gz
+        run: |
+          mkdir -p q2jump-pro-linux-amd64
+          cp builddir/q2jump-pro q2jump-pro-linux-amd64/
+          cp builddir/game*.so q2jump-pro-linux-amd64/
+          tar --owner=user --group=group -czvf q2jump-pro-linux-amd64.tar.gz q2jump-pro-linux-amd64
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          retention-days: 2
+          name: q2jump-pro-linux-amd64
+          path: q2jump-pro-linux-amd64.tar.gz
+ 
+  # this is very slow - a better way to build for arm64 could be to use a
+  # cross-compilation toolchain, if you know how to do that, please contribute.
+  # it takes 20 minutes to build on a github runner.
+  linux-arm64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/arm64
+
+      - name: Build in ARM64 container
+        run: |
+          docker run --rm --platform linux/arm64 -v $PWD:/workspace -w /workspace arm64v8/ubuntu bash -c "
+            apt-get update
+            apt-get install -y meson libsdl2-dev libopenal-dev \
+            libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
+            libcurl4-gnutls-dev libx11-dev libxi-dev \
+            libwayland-dev wayland-protocols libdecor-0-dev gcc g++
+            export CC=gcc
+            meson setup builddir --buildtype=release
+            meson compile -C builddir
+          "
+      
+      - name: Compress artifacts to .tar.gz
+        run: |
+          mkdir -p q2jump-pro-linux-arm64
+          cp builddir/q2jump-pro q2jump-pro-linux-arm64/
+          cp builddir/game*.so q2jump-pro-linux-arm64/
+          tar --owner=user --group=group -czvf q2jump-pro-linux-arm64.tar.gz q2jump-pro-linux-arm64
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          retention-days: 2
+          name: q2jump-pro-linux-arm64
+          path: q2jump-pro-linux-arm64.tar.gz
 
   macos:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Install dependencies
         run: |
@@ -129,25 +176,111 @@ jobs:
           brew install meson sdl2 openal-soft libpng jpeg-turbo
 
       - name: Build
+        env:
+          CC: clang
+          CFLAGS: "--include stdbool.h --include stddef.h -I/opt/homebrew/opt/openal-soft/include -I/opt/homebrew/opt/openal-soft/include/AL"
         run: |
-          meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_MACOS }} builddir
+          meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_MACOS }} builddir --buildtype=release --pkg-config-path=/opt/homebrew/opt/openal-soft/lib/pkgconfig
           meson compile -C builddir
 
-  freebsd:
+      - name: Compress artifacts to .zip
+        run: |
+          mkdir -p q2jump-pro
+          cp builddir/q2jump-pro q2jump-pro/
+          cp builddir/game*.dylib q2jump-pro/
+          zip -r q2jump-pro-darwin-arm64.zip q2jump-pro
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          retention-days: 2
+          name: q2jump-pro-darwin-arm64
+          path: q2jump-pro-darwin-arm64.zip
+  
+  macos-intel:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup rosetta 2
+        run: |
+          softwareupdate --install-rosetta --agree-to-license
+          arch -x86_64 echo "Running under Rosetta 2"
+
+      - name: Install x86_64 Homebrew
+        run: |
+          arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+      - name: Install dependencies
+        run: |
+          arch -x86_64 /usr/local/bin/brew install --overwrite python@3.13
+          arch -x86_64 /usr/local/bin/brew install meson ninja sdl2 libpng jpeg-turbo zlib openal-soft pkg-config cmake
+          arch -x86_64 /usr/local/bin/brew info openal-soft
+          export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:/usr/local/opt/openal-soft/lib/pkgconfig"
+
+      - name: Build
+        run: |
+          arch -x86_64 bash <<EOF
+            export PATH="/usr/local/bin:/usr/bin:/bin"
+            export LDFLAGS="-L/usr/local/Cellar/openal-soft/1.24.0/lib"
+            export CFLAGS="-I/usr/local/include -I/usr/local/Cellar/openal-soft/1.24.0/include -I/usr/local/Cellar/openal-soft/1.24.0/include/AL --include stdbool.h --include stddef.h"
+            export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:/usr/local/Cellar/openal-soft/1.24.0/lib/pkgconfig"
+            export CC=clang
+            meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_MACOS }} builddir --buildtype=release --pkg-config-path=/usr/local/Cellar/openal-soft/1.24.0/lib/pkgconfig
+          EOF
+          arch -x86_64 meson compile -C builddir
+
+      - name: Compress artifacts to .zip
+        run: |
+          mkdir -p q2jump-pro
+          cp builddir/q2jump-pro q2jump-pro/
+          cp builddir/game*.dylib q2jump-pro/
+          zip -r q2jump-pro-darwin-x86_64.zip q2jump-pro
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          retention-days: 2
+          name: q2jump-pro-darwin-x86_64
+          path: q2jump-pro-darwin-x86_64.zip
+
+  release:
+    if: github.ref == 'refs/heads/main'
+    needs: [windows, linux, linux-arm64, macos, macos-intel]
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    permissions:
+      contents: write
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build
-        uses: cross-platform-actions/action@v0.25.0
+      - name: Create artifacts directory
+        run: mkdir -p artifacts
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
         with:
-          operating_system: freebsd
-          architecture: x86-64
-          version: '14.1'
-          run: |
-            sudo pkg update
-            sudo pkg install -y git meson pkgconf openal-soft \
-            sdl2 curl png jpeg-turbo libx11 libdecor evdev-proto wayland-protocols
-            meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_FREEBSD }} builddir
-            meson compile -C builddir
+          pattern: q2jump-pro-*
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create or update "latest" release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release edit latest -t "Latest" -n "Latest build" --latest --notes "Automatically updated latest build"
+          gh release upload latest ./artifacts/* --clobber
+
+      - name: Update tag
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.git.updateRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: "tags/latest",
+              sha: context.sha,
+              force: true
+            })

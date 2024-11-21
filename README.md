@@ -57,3 +57,10 @@ Try to keep your commits small and focused on a single change. This makes
 it less likely to cause merge conflicts when the upstream q2pro is updated.
 If your editor reformats the whole file when saving, please disable this
 feature as it makes merges not apply cleanly.
+
+## License
+
+This project is licensed under the GPL-2.0 license. See the LICENSE file for
+details. No warranty is provided and no rights are reserved for the changes
+introduced in this project. You are free to use them in any way you like as
+long as you comply with the upstream q2pro license.
