@@ -1,0 +1,14 @@
+[binaries]
+c = '/usr/bin/clang'
+cpp = '/usr/bin/clang++'
+ar = '/usr/bin/ar'
+
+[properties]
+c_args = ['-arch', 'x86_64']
+cpp_args = ['-arch', 'x86_64']
+
+[host_machine]
+system = 'darwin'
+cpu_family = 'x86_64'
+cpu = 'x86_64'
+endian = 'little'

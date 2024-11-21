@@ -2,9 +2,11 @@ name: build
 
 on:
   push:
-    branches: [master, ci]
+    branches:
+      - main
   pull_request:
-    branches: [master]
+    branches:
+      - main
 
 env:
   MESON_ARGS: >-
@@ -42,37 +44,15 @@ env:
     -Dwrap_mode=nofallback
 
 jobs:
-  mingw:
-    runs-on: ubuntu-24.04
-    strategy:
-      matrix:
-        arch: ["i686", "x86_64"]
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/cache@v4
-        with:
-          path: subprojects/packagecache
-          key: ${{ hashFiles('subprojects/*.wrap') }}
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-mingw-w64 nasm meson ninja-build
-
-      - name: Build
-        run: |
-          meson setup --cross-file=.ci/${{ matrix.arch }}-w64-mingw32.txt \
-          ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_WIN }} builddir
-          meson compile -C builddir
-
-  msvc:
+  windows:
     runs-on: windows-latest
     strategy:
       matrix:
         arch: ["x86", "x64"]
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - uses: actions/cache@v4
         with:
@@ -92,14 +72,36 @@ jobs:
         run: |
           meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_WIN }} builddir
           meson compile -C builddir
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          retention-days: 2
+          name: q2jump-pro-windows-${{ matrix.arch }}
+          path: |
+            builddir/q2jump*
+            builddir/q2pro*
+            builddir/game*
 
   linux:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        cc: [gcc, clang]
+        arch: [x86_64, arm64, armv7]
+        include:
+          - arch: x86_64
+            toolchain: gcc
+            cross_file: ""
+          - arch: arm64
+            toolchain: gcc-aarch64-linux-gnu
+            cross_file: config/linux-arm64-cross-file
+          - arch: armv7
+            toolchain: gcc-arm-linux-gnueabihf
+            cross_file: config/linux-armv7-cross-file
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Install dependencies
         run: |
@@ -107,45 +109,100 @@ jobs:
           sudo apt-get install -y meson libsdl2-dev libopenal-dev \
           libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
           libcurl4-gnutls-dev libx11-dev libxi-dev \
-          libwayland-dev wayland-protocols libdecor-0-dev
+          libwayland-dev wayland-protocols libdecor-0-dev \
+          ninja-build ${{ matrix.toolchain }}-g++ \
+          ${{ matrix.toolchain }}-gcc 
+
+      - name: Configure build
+        env:
+          CC: gcc
+        run: |
+          if [ -z "${{ matrix.cross_file }}" ]; then
+            # Native build for x86_64
+            meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_LINUX }} builddir --buildtype=release
+          else
+            # Cross-compile for arm64 or armv7
+            meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_LINUX }} builddir --cross-file ${{ matrix.cross_file }}
+          fi
 
       - name: Build
         run: |
-          meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_LINUX }} builddir
           meson compile -C builddir
         env:
           CC: ${{ matrix.cc }}
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          retention-days: 2
+          name: q2jump-pro-linux-${{ matrix.arch }}
+          path: |
+            builddir/q2jump*
+            builddir/q2pro*
+            builddir/game*
 
   macos:
     runs-on: macos-latest
+    strategy:
+      matrix:
+        arch: [x86_64, arm64, universal]
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Install dependencies
         run: |
           brew update
           brew install meson sdl2 openal-soft libpng jpeg-turbo
 
+      - name: Configure build
+        env:
+          CC: clang
+        run: |
+          if [ "${{ matrix.arch }}" == "x86_64" ]; then
+            export GH_ARCH_NAME=amd64
+            meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_MACOS }} --native-file config/darwin-x86_64-native-file builddir
+          elif [ "${{ matrix.arch }}" == "arm64" ]; then
+            export GH_ARCH_NAME=arm64
+            meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_MACOS }} --native-file config/darwin-arm64-native-file builddir
+          elif [ "${{ matrix.arch }}" == "universal" ]; then
+            export GH_ARCH_NAME=universal
+            CFLAGS="-arch x86_64 -arch arm64" LDFLAGS="-arch x86_64 -arch arm64" \
+            meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_MACOS }} builddir
+          fi
+
       - name: Build
         run: |
-          meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_MACOS }} builddir
           meson compile -C builddir
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          retention-days: 2
+          name: q2jump-pro-darwin-${{ env.GH_ARCH_NAME }}
+          path: |
+            builddir/q2jump*
+            builddir/q2pro*
+            builddir/game*
 
-  freebsd:
+  release:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    needs: [windows, linux, macos, freebsd]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build
-        uses: cross-platform-actions/action@v0.25.0
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
         with:
-          operating_system: freebsd
-          architecture: x86-64
-          version: '14.1'
-          run: |
-            sudo pkg update
-            sudo pkg install -y git meson pkgconf openal-soft \
-            sdl2 curl png jpeg-turbo libx11 libdecor evdev-proto wayland-protocols
-            meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_FREEBSD }} builddir
-            meson compile -C builddir
+          path: ./artifacts
+
+      - name: Create or update release
+        if: github.ref == 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create latest ./artifacts/* \
+            --prerelease --latest \
+            --title "Latest Release" \
+            --notes "Automatically generated release"

@@ -1,0 +1,14 @@
+[binaries]
+c = '/usr/bin/aarch64-linux-gnu-gcc'
+cpp = '/usr/bin/aarch64-linux-gnu-g++'
+ar = '/usr/bin/aarch64-linux-gnu-ar'
+
+[properties]
+c_args = ['-march=armv8-a']
+cpp_args = ['-march=armv8-a']
+
+[host_machine]
+system = 'linux'
+cpu_family = 'aarch64'
+cpu = 'armv8-a'
+endian = 'little'
