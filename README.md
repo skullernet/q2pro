@@ -1,31 +1,43 @@
-Q2PRO
-=====
+# Q2JUMP-PRO
 
-Q2PRO is an enhanced Quake 2 client and server for Windows and Linux. Supported
-features include:
+This is a remake of the [q2pro-jump](https://github.com/TotallyMehis/q2pro-jump)
+client for Quake 2 with some additional features and improvements specifically
+for playing the [q2jump](http://q2jump.net) mod. The q2pro-jump was forked
+from the [q2pro-speed](https://github.com/kugelrund/q2pro-speed), a custom client
+focused on single-player speed runs, which itself was forked from
+[q2pro](https://github.com/skullernet/q2pro), an enhanced multiplayer-oriented
+Quake 2 client and server. While q2pro is still actively maintained, the
+q2pro-jump and q2pro-speed clients have been unmaintained for some time and
+thus have become out of date and hard to keep synchronised with the latest
+upstream q2pro changes.
 
-* unified OpenGL renderer with support for wide range of OpenGL versions
-* enhanced console command completion
-* persistent and searchable console command history
-* rendering / physics / packet rate separation
-* ZIP packfiles (.pkz)
-* JPEG/PNG textures
-* MD3 and MD5 (re-release) models
-* Ogg Vorbis music and Ogg Theora cinematics
-* fast and secure HTTP downloads
-* multichannel sound using OpenAL
-* stereo WAV files support
-* forward and backward seeking in demos
-* recording from demos
-* server side multiview demos
-* live game broadcasting capabilities
-* network protocol extensions for larger maps
-* won't crash if game data is corrupted
+The main goal of this project is to reimplement the essential q2pro-jump 
+features and try to keep it in sync with q2pro.
 
-For building Q2PRO, consult the INSTALL.md file.
+## Current status
 
-Q2PRO doesn't have releases. It is always recommended to use the git master
-version.
+### Implemented features
 
-For information on using and configuring Q2PRO, refer to client and server
-manuals available in doc/ subdirectory.
+- Added [strafe_helper](https://github.com/kugelrund/strafe_helper) acceleration
+  HUD
+- Added the dynamic colorization of `cl_ups` when using
+  `draw cl_ups <x> <y> dynamic`
+- Added the additional console auto-completions for commands available in the
+  q2jump mod.
+
+These have been almost directly copied from the q2pro-jump client, with some
+minor modifications to make them work with the latest q2pro codebase.
+
+### Missing features
+
+- Server code is currently vanilla q2pro, not q2jump.
+- An introduction to the q2jump mod with a tutorial and video links would be
+  nice.
+
+## Building
+
+Follow the instructions in the
+[q2pro INSTALL.md](https://github.com/skullernet/q2pro/blob/master/INSTALL.md)
+
+It should be possible to compile a version for at least Windows, Linux, and
+macOS.
