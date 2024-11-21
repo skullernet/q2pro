@@ -93,7 +93,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
                      GMF_IPV6_ADDRESS_AWARE | GMF_ALLOW_INDEX_OVERFLOW | \
                      GMF_PROTOCOL_EXTENSIONS)
 
-// flag indicating if game uses gclient_new_t or gclient_old_t.
+// flag indicating if game uses new versions of gclient_t and pmove_t.
 // doesn't enable protocol extensions by itself.
 #define IS_NEW_GAME_API    (ge->apiversion == GAME_API_VERSION_NEW)
 
