@@ -1756,7 +1756,7 @@ void CL_LoadFilterList(string_entry_t **list, const char *name, const char *comm
 {
     string_entry_t *entry, *next;
     char *raw, *data, *p;
-    int len, count, line;
+    int len, count q_unused, line;
 
     // free previous entries
     for (entry = *list; entry; entry = next) {
