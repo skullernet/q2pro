@@ -727,9 +727,24 @@ static int MOD_LoadMD3(model_t *model, const void *rawdata, size_t length)
 
 static void MOD_PrintError(const char *path, int err)
 {
-    Com_EPrintf("Couldn't load %s: %s\n", Com_MakePrintable(path),
-                err == Q_ERR_INVALID_FORMAT ?
-                Com_GetLastError() : Q_ErrorString(err));
+    print_type_t level = PRINT_ERROR;
+    const char *msg;
+
+    switch (err) {
+    case Q_ERR_INVALID_FORMAT:
+        msg = Com_GetLastError();
+        break;
+    case Q_ERR(ENOENT):
+        if (COM_DEVELOPER < 2)
+            return;
+        level = PRINT_DEVELOPER;
+        // fall through
+    default:
+        msg = Q_ErrorString(err);
+        break;
+    }
+
+    Com_LPrintf(level, "Couldn't load %s: %s\n", Com_MakePrintable(path), msg);
 }
 
 #if USE_MD5
@@ -1530,12 +1545,8 @@ qhandle_t R_RegisterModel(const char *name)
     }
 
     ret = FS_LoadFile(normalized, (void **)&rawdata);
-    if (!rawdata) {
-        // don't spam about missing models
-        if (ret == Q_ERR(ENOENT))
-            return 0;
+    if (!rawdata)
         goto fail1;
-    }
 
     if (ret < 4) {
         ret = Q_ERR_FILE_TOO_SMALL;
