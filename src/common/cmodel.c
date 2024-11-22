@@ -37,7 +37,6 @@ static unsigned     floodvalid;
 static unsigned     checkcount;
 
 static cvar_t       *map_noareas;
-static cvar_t       *map_allsolid_bug;
 static cvar_t       *map_override_path;
 
 static void    FloodAreaConnections(const cm_t *cm);
@@ -515,7 +514,7 @@ static void CM_ClipBoxToBrush(const vec3_t p1, const vec3_t p2, trace_t *trace, 
         trace->startsolid = true;
         if (!getout) {
             trace->allsolid = true;
-            if (trace_extended || !map_allsolid_bug->integer) {
+            if (trace_extended) {
                 // original Q2 didn't set these
                 trace->fraction = 0;
                 trace->contents = brush->contents;
@@ -1129,6 +1128,5 @@ void CM_Init(void)
     CM_InitBoxHull();
 
     map_noareas = Cvar_Get("map_noareas", "0", 0);
-    map_allsolid_bug = Cvar_Get("map_allsolid_bug", "1", 0);
     map_override_path = Cvar_Get("map_override_path", "", 0);
 }
