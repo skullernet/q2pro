@@ -665,7 +665,7 @@ static void MVD_UpdateClient(mvd_client_t *client)
         if (mvd->cm.cache) {
             vec3_t vieworg;
             VectorMA(client->ps.viewoffset, 0.125f, client->ps.pmove.origin, vieworg);
-            contents = CM_PointContents(vieworg, mvd->cm.cache->nodes);
+            contents = CM_PointContents(vieworg, mvd->cm.cache->nodes, mvd->csr->extended);
         }
 
         if (contents & (CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_WATER))
@@ -2048,7 +2048,7 @@ static mvd_player_t *MVD_HitPlayer(mvd_client_t *client)
 
     if (mvd->cm.cache) {
         CM_BoxTrace(&trace, start, end, vec3_origin, vec3_origin,
-                    mvd->cm.cache->nodes, CONTENTS_SOLID);
+                    mvd->cm.cache->nodes, CONTENTS_SOLID, mvd->csr->extended);
         fraction = trace.fraction;
     } else {
         fraction = 1;
@@ -2069,7 +2069,8 @@ static mvd_player_t *MVD_HitPlayer(mvd_client_t *client)
 
         CM_TransformedBoxTrace(&trace, start, end, vec3_origin, vec3_origin,
                                CM_HeadnodeForBox(ent->mins, ent->maxs),
-                               CONTENTS_MONSTER, ent->s.origin, vec3_origin);
+                               CONTENTS_MONSTER, ent->s.origin, vec3_origin,
+                               mvd->csr->extended);
 
         if (trace.fraction < fraction) {
             fraction = trace.fraction;

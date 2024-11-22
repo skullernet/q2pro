@@ -104,7 +104,8 @@ static void CL_ClipMoveToEntities(trace_t *tr, const vec3_t start, const vec3_t 
 
         CM_TransformedBoxTrace(&trace, start, end,
                                mins, maxs, headnode, contentmask,
-                               ent->current.origin, ent->current.angles);
+                               ent->current.origin, ent->current.angles,
+                               cl.csr.extended);
 
         CM_ClipEntity(tr, &trace, (struct edict_s *)ent);
     }
@@ -118,7 +119,7 @@ CL_Trace
 void CL_Trace(trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int contentmask)
 {
     // check against world
-    CM_BoxTrace(tr, start, end, mins, maxs, cl.bsp->nodes, contentmask);
+    CM_BoxTrace(tr, start, end, mins, maxs, cl.bsp->nodes, contentmask, cl.csr.extended);
     tr->ent = (struct edict_s *)cl_entities;
     if (tr->fraction == 0)
         return;     // blocked by the world
@@ -142,7 +143,7 @@ static int CL_PointContents(const vec3_t point)
     const mmodel_t  *cmodel;
     int i, contents;
 
-    contents = CM_PointContents(point, cl.bsp->nodes);
+    contents = CM_PointContents(point, cl.bsp->nodes, cl.csr.extended);
 
     for (i = 0; i < cl.numSolidEntities; i++) {
         ent = cl.solidEntities[i];
@@ -154,10 +155,8 @@ static int CL_PointContents(const vec3_t point)
         if (!cmodel)
             continue;
 
-        contents |= CM_TransformedPointContents(
-                        point, cmodel->headnode,
-                        ent->current.origin,
-                        ent->current.angles);
+        contents |= CM_TransformedPointContents(point, cmodel->headnode, ent->current.origin,
+                                                ent->current.angles, cl.csr.extended);
     }
 
     return contents;

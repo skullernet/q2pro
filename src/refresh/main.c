@@ -489,7 +489,7 @@ static void GL_OccludeFlares(void)
         if (dist > 20)
             scale += dist * 0.004f;
 
-        if (bsp && BSP_PointLeaf(bsp->nodes, e->origin)->contents == CONTENTS_SOLID) {
+        if (bsp && BSP_PointLeaf(bsp->nodes, e->origin)->contents[0] & CONTENTS_SOLID) {
             VectorNormalize(dir);
             VectorMA(e->origin, -5.0f, dir, org);
             make_flare_quad(org, scale);
