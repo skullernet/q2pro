@@ -455,7 +455,7 @@ BSP_LOAD(Leafs)
 
     for (int i = 0; i < count; i++, out++) {
         out->plane = NULL;
-        out->contents = BSP_Long();
+        out->contents[0] = out->contents[1] = BSP_Long();
 
         uint32_t cluster = BSP_ExtLong();
         if (cluster == BSP_ExtNull) {
@@ -496,7 +496,7 @@ BSP_LOAD(Leafs)
         out->numleafbrushes = numleafbrushes;
     }
 
-    BSP_ENSURE(bsp->leafs[0].contents == CONTENTS_SOLID, "Map leaf 0 is not CONTENTS_SOLID");
+    BSP_ENSURE(bsp->leafs[0].contents[0] == CONTENTS_SOLID, "Map leaf 0 is not CONTENTS_SOLID");
 
     return Q_ERR_SUCCESS;
 }
