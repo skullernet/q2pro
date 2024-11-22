@@ -394,6 +394,7 @@ ffmpeg_defaults = [
   'pcm_u32be_decoder=enabled',
   'pcm_u32le_decoder=enabled',
   'pcm_vidc_decoder=enabled',
+  'vp3_decoder=enabled',
 
   'demuxers=disabled',
   'idcin_demuxer=enabled',
