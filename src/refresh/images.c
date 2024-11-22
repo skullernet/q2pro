@@ -1802,10 +1802,8 @@ static void print_error(const char *name, imageflags_t flags, int err)
             // ugly hack for console code
             if (strcmp(name, "pics/conchars.pcx"))
                 level = PRINT_WARNING;
-#if USE_DEBUG
-        } else if (developer->integer >= 2) {
+        } else if (COM_DEVELOPER >= 2) {
             level = PRINT_DEVELOPER;
-#endif
         } else {
             return;
         }

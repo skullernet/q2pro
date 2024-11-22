@@ -124,6 +124,7 @@ void        Sys_Printf(const char *fmt, ...) q_printf(1, 2);
 #endif
 
 #if USE_DEBUG
+#define COM_DEVELOPER   (developer->integer)
 #define Com_DPrintf(...) \
     do { if (developer && developer->integer > 0) \
         Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
@@ -140,6 +141,7 @@ void        Sys_Printf(const char *fmt, ...) q_printf(1, 2);
     do { if (developer && developer->integer > 0) \
         Com_LPrintf(PRINT_WARNING, __VA_ARGS__); } while (0)
 #else
+#define COM_DEVELOPER   0
 #define Com_DPrintf(...) ((void)0)
 #define Com_DDPrintf(...) ((void)0)
 #define Com_DDDPrintf(...) ((void)0)
