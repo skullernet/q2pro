@@ -117,21 +117,21 @@ typedef struct mface_s {
 typedef struct mnode_s {
     /* ======> */
     cplane_t            *plane;     // never NULL to differentiate from leafs
+    struct mnode_s      *parent;
+
 #if USE_REF
     vec3_t              mins;
     vec3_t              maxs;
-
     unsigned            visframe;
 #endif
-    struct mnode_s      *parent;
     /* <====== */
-
-    struct mnode_s      *children[2];
 
 #if USE_REF
     int                 numfaces;
     mface_t             *firstface;
 #endif
+
+    struct mnode_s      *children[2];
 } mnode_t;
 
 typedef struct {
@@ -149,13 +149,13 @@ typedef struct {
 typedef struct {
     /* ======> */
     cplane_t            *plane;     // always NULL to differentiate from nodes
+    struct mnode_s      *parent;
+
 #if USE_REF
     vec3_t              mins;
     vec3_t              maxs;
-
     unsigned            visframe;
 #endif
-    struct mnode_s      *parent;
     /* <====== */
 
     int             contents[2];    // 0 - original, 1 - merged
