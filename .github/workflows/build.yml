@@ -29,6 +29,7 @@ env:
     -Dwrap_mode=nofallback
 
   MESON_ARGS_MACOS: >-
+    -Dbuildtype=release
     -Dicmp-errors=disabled
     -Dpkg_config_path=/opt/homebrew/opt/openal-soft/lib/pkgconfig
     -Dwayland=disabled
@@ -37,6 +38,7 @@ env:
     -Dx11=disabled
 
   MESON_ARGS_FREEBSD: >-
+    -Dbuildtype=release
     -Dicmp-errors=disabled
     -Dwindows-crash-dumps=disabled
     -Dwrap_mode=nofallback
