@@ -331,6 +331,7 @@ static void GL_DrawSpriteModel(const model_t *model)
     const mspriteframe_t *frame = &model->spriteframes[e->frame % model->numframes];
     const image_t *image = frame->image;
     const float alpha = (e->flags & RF_TRANSLUCENT) ? e->alpha : 1.0f;
+    const float scale = e->scale ? e->scale : 1.0f;
     glStateBits_t bits = GLS_DEPTHMASK_FALSE | glr.fog_bits;
     vec3_t up, down, left, right;
 
@@ -353,10 +354,10 @@ static void GL_DrawSpriteModel(const model_t *model)
     GL_ArrayBits(GLA_VERTEX | GLA_TC);
     GL_Color(1, 1, 1, alpha);
 
-    VectorScale(glr.viewaxis[1], frame->origin_x, left);
-    VectorScale(glr.viewaxis[1], frame->origin_x - frame->width, right);
-    VectorScale(glr.viewaxis[2], -frame->origin_y, down);
-    VectorScale(glr.viewaxis[2], frame->height - frame->origin_y, up);
+    VectorScale(glr.viewaxis[1], frame->origin_x * scale, left);
+    VectorScale(glr.viewaxis[1], (frame->origin_x - frame->width) * scale, right);
+    VectorScale(glr.viewaxis[2], -frame->origin_y * scale, down);
+    VectorScale(glr.viewaxis[2], (frame->height - frame->origin_y) * scale, up);
 
     VectorAdd3(e->origin, down, left,  tess.vertices);
     VectorAdd3(e->origin, up,   left,  tess.vertices +  5);
