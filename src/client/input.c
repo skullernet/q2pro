@@ -691,7 +691,7 @@ void CL_RegisterInput(void)
     Cmd_Register(c_input);
 
     cl_nodelta = Cvar_Get("cl_nodelta", "0", 0);
-    cl_maxpackets = Cvar_Get("cl_maxpackets", "30", 0);
+    cl_maxpackets = Cvar_Get("cl_maxpackets", "125", 0);
     cl_fuzzhack = Cvar_Get("cl_fuzzhack", "0", 0);
     cl_packetdup = Cvar_Get("cl_packetdup", "1", 0);
 #if USE_DEBUG
