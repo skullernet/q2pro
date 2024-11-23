@@ -973,7 +973,7 @@ static int check_header_coherency(FILE *fp, packfile_t *entry)
 
 static voidpf FS_zalloc(voidpf opaque, uInt items, uInt size)
 {
-    return FS_Malloc(items * size);
+    return FS_Malloc((size_t)items * size);
 }
 
 static void FS_zfree(voidpf opaque, voidpf address)

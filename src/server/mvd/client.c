@@ -1100,7 +1100,7 @@ static void send_stream_stop(gtv_t *gtv)
 #if USE_ZLIB
 static voidpf gtv_zalloc(voidpf opaque, uInt items, uInt size)
 {
-    return MVD_Malloc(items * size);
+    return MVD_Malloc((size_t)items * size);
 }
 
 static void gtv_zfree(voidpf opaque, voidpf address)
