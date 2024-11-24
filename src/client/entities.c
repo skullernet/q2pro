@@ -1409,9 +1409,16 @@ void CL_CalcViewValues(void)
         LerpAngles(ops->viewangles, ps->viewangles, lerp, cl.refdef.viewangles);
     }
 
-    // don't interpolate blend color
-    Vector4Copy(ps->blend, cl.refdef.screen_blend);
-    Vector4Copy(ps->damage_blend, cl.refdef.damage_blend);
+    // interpolate blend
+    if (cl.csr.extended && ops->blend[3])
+        lerp_values(ops->blend, ps->blend, lerp, cl.refdef.screen_blend, 4);
+    else
+        Vector4Copy(ps->blend, cl.refdef.screen_blend);
+
+    if (cl.csr.extended && ops->damage_blend[3])
+        lerp_values(ops->damage_blend, ps->damage_blend, lerp, cl.refdef.damage_blend, 4);
+    else
+        Vector4Copy(ps->damage_blend, cl.refdef.damage_blend);
 
     // interpolate fog
     if (cl.psFlags & MSG_PS_MOREBITS) {
