@@ -20,9 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 tesselator_t tess;
 
-#define FACE_HASH_BITS  8
-#define FACE_HASH_SIZE  (1 << FACE_HASH_BITS)
-#define FACE_HASH_MASK  (FACE_HASH_SIZE - 1)
+#define FACE_HASH_SIZE  256
 
 static mface_t  *faces_head[FACE_HASH_SIZE];
 static mface_t  **faces_next[FACE_HASH_SIZE];
