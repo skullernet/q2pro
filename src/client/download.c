@@ -823,7 +823,7 @@ void CL_RequestNextDownload(void)
 
         if (allow_download_textures->integer) {
             for (i = 0; i < cl.bsp->numtexinfo; i++) {
-                if (cl.bsp->texinfo[i].c.flags & SURF_NODRAW)
+                if (cl.bsp->texinfo[i].c.flags & SURF_NODRAW && cl.bsp->has_bspx)
                     continue;
                 len = Q_concat(fn, sizeof(fn), "textures/", cl.bsp->texinfo[i].name, ".wal");
                 check_file_len(fn, len, DL_OTHER);
