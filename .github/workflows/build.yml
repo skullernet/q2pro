@@ -224,11 +224,11 @@ jobs:
         run: |
           arch -x86_64 bash <<EOF
             export PATH="/usr/local/bin:/usr/bin:/bin"
-            export LDFLAGS="-L/usr/local/Cellar/openal-soft/1.24.0/lib"
-            export CFLAGS="-I/usr/local/include -I/usr/local/Cellar/openal-soft/1.24.0/include -I/usr/local/Cellar/openal-soft/1.24.0/include/AL --include stdbool.h --include stddef.h"
-            export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:/usr/local/Cellar/openal-soft/1.24.0/lib/pkgconfig"
+            export LDFLAGS="-L/usr/local/Cellar/openal-soft/1.24.1/lib"
+            export CFLAGS="-I/usr/local/include -I/usr/local/Cellar/openal-soft/1.24.1/include -I/usr/local/Cellar/openal-soft/1.24.1/include/AL --include stdbool.h --include stddef.h"
+            export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:/usr/local/Cellar/openal-soft/1.24.1/lib/pkgconfig"
             export CC=clang
-            meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_MACOS }} builddir --buildtype=release --pkg-config-path=/usr/local/Cellar/openal-soft/1.24.0/lib/pkgconfig
+            meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_MACOS }} builddir --buildtype=release --pkg-config-path=/usr/local/Cellar/openal-soft/1.24.1/lib/pkgconfig
           EOF
           arch -x86_64 meson compile -C builddir
 
