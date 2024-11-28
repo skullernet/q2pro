@@ -995,6 +995,69 @@ void GL_FreeWorld(void)
     memset(&gl_static.world, 0, sizeof(gl_static.world));
 }
 
+static const mnode_t *find_face_node(const bsp_t *bsp, const mface_t *face)
+{
+    const mnode_t *node;
+    int i, left, right;
+
+    left = 0;
+    right = bsp->numnodes - 1;
+    while (left <= right) {
+        i = (left + right) / 2;
+        node = &bsp->nodes[i];
+        if (node->firstface + node->numfaces <= face)
+            left = i + 1;
+        else if (node->firstface > face)
+            right = i - 1;
+        else
+            return node;
+    }
+
+    return NULL;
+}
+
+static void remove_fake_sky_faces(const bsp_t *bsp)
+{
+    const mleaf_t *leaf;
+    const mnode_t *node;
+    int i, j, k, count = 0;
+    mface_t *face;
+
+    // find CONTENTS_MIST leafs
+    for (i = 1, leaf = bsp->leafs + i; i < bsp->numleafs; i++, leaf++) {
+        if (!(leaf->contents[0] & CONTENTS_MIST))
+            continue;
+
+        // remove sky faces in this leaf
+        for (j = 0; j < leaf->numleaffaces; j++) {
+            face = leaf->firstleafface[j];
+            if (!(face->drawflags & SURF_SKY))
+                continue;
+
+            face->drawflags = SURF_NODRAW;
+            count++;
+
+            // find node this face is on
+            node = find_face_node(bsp, face);
+            if (!node) {
+                Com_DPrintf("Sky face node not found\n");
+                continue;
+            }
+
+            // remove other sky faces on this node
+            for (k = 0, face = node->firstface; k < node->numfaces; k++, face++) {
+                if (face->drawflags & SURF_SKY) {
+                    face->drawflags = SURF_NODRAW;
+                    count++;
+                }
+            }
+        }
+    }
+
+    if (count)
+        Com_DPrintf("Removed %d fake sky faces\n", count);
+}
+
 void GL_LoadWorld(const char *name)
 {
     char buffer[MAX_QPATH];
@@ -1092,6 +1155,10 @@ void GL_LoadWorld(const char *name)
 
         size += surf->numsurfedges * VERTEX_SIZE * sizeof(vec_t);
     }
+
+    // remove fake sky faces in vanilla maps
+    if (!bsp->has_bspx && gl_static.use_cubemaps)
+        remove_fake_sky_faces(bsp);
 
     // try VBO first, then allocate on heap
     if (create_surface_vbo(size)) {
