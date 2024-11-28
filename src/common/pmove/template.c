@@ -310,23 +310,6 @@ Handles user intended acceleration
 */
 static void PM_Accelerate(const vec3_t wishdir, float wishspeed, float accel)
 {
-    int         i;
-    float       addspeed, accelspeed, currentspeed;
-
-    currentspeed = DotProduct(pml.velocity, wishdir);
-    addspeed = wishspeed - currentspeed;
-    if (addspeed <= 0)
-    	goto final;
-
-    accelspeed = accel * pml.frametime * wishspeed;
-    if (accelspeed > addspeed)
-        accelspeed = addspeed;
-
-    for (i = 0; i < 3; i++)
-        pml.velocity[i] += accelspeed * wishdir[i];
-
-final:
-    ;
 //
 // q2jump strafe_helper
 //
@@ -334,6 +317,20 @@ final:
     StrafeHelper_SetAccelerationValues(pml.forward, pml.velocity, wishdir,
                                        wishspeed, accel, pml.frametime);
 #endif
+    int         i;
+    float       addspeed, accelspeed, currentspeed;
+
+    currentspeed = DotProduct(pml.velocity, wishdir);
+    addspeed = wishspeed - currentspeed;
+    if (addspeed <= 0)
+    	return;
+
+    accelspeed = accel * pml.frametime * wishspeed;
+    if (accelspeed > addspeed)
+        accelspeed = addspeed;
+
+    for (i = 0; i < 3; i++)
+        pml.velocity[i] += accelspeed * wishdir[i];
 }
 
 static void PM_AirAccelerate(const vec3_t wishdir, float wishspeed, float accel)
