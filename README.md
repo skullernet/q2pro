@@ -60,7 +60,11 @@ feature as it makes merges not apply cleanly.
 
 ## License
 
-This project is licensed under the GPL-2.0 license. See the LICENSE file for
-details. No warranty is provided and no rights are reserved for the changes
-introduced in this project. You are free to use them in any way you like as
-long as you comply with the upstream q2pro license.
+- Q2pro is licensed under the GPL-2.0 license.
+- Q2pro-jump is licensed under the GPL-2.0 license.
+- strafe_helper is licensed under the MPL-2.0 license.
+
+Any modifications made to the files covered by those licenses follow their original licenses.
+
+No warranty is provided and no additional rights are reserved for the changes
+introduced in this project.

@@ -1,3 +1,0 @@
-[submodule "src/jump/strafe_helper"]
-	path = src/jump/strafe_helper
-	url = https://github.com/kugelrund/strafe_helper.git

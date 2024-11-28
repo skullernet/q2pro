@@ -1,0 +1,8 @@
+This project combines code from multiple projects:
+
+Q2pro is licensed under the GPL-2.0 license.
+
+Q2pro-jump is licensed under the GPL-2.0 license. Some of the modifications to q2pro made in this project are adapted from the q2pro-jump project.
+
+strafe_helper is licensed under the MPL-2.0 license. Code from the project and any changes made to it is contained in the src/jump/strafe_helper directory.
+
