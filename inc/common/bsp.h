@@ -299,7 +299,8 @@ typedef struct {
 
     bool            lm_decoupled;
 #endif
-    bool            extended;
+    bool            extended;   // QBSP extended format
+    bool            has_bspx;   // has BSPX header
 
     char            name[1];
 } bsp_t;
