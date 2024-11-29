@@ -1149,7 +1149,7 @@ void GL_LoadWorld(const char *name)
             surf->drawflags &= ~SURF_NODRAW;
         }
 
-        if (surf->drawflags & SURF_N64_UV)
+        if (surf->drawflags & (SURF_N64_UV | SURF_N64_SCROLL_X | SURF_N64_SCROLL_Y))
             n64surfs++;
     }
 
