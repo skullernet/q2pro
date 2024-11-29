@@ -895,8 +895,6 @@ static void upload_world_surfaces(void)
     currvert = 0;
     lastvert = 0;
     for (i = 0, surf = bsp->faces; i < bsp->numfaces; i++, surf++) {
-        if (surf->drawflags & SURF_SKY && !gl_static.use_cubemaps)
-            continue;
         if (surf->drawflags & SURF_NODRAW)
             continue;
 
@@ -1127,8 +1125,7 @@ void GL_LoadWorld(const char *name)
         }
     }
 
-    // calculate vertex buffer size in bytes
-    size = 0;
+    // setup drawflags, etc
     for (i = n64surfs = 0, surf = bsp->faces; i < bsp->numfaces; i++, surf++) {
         // hack surface flags into drawflags for faster access
         surf->drawflags |= surf->texinfo->c.flags & ~DSURF_PLANEBACK;
@@ -1136,10 +1133,12 @@ void GL_LoadWorld(const char *name)
         // clear statebits from previous load
         surf->statebits = GLS_DEFAULT;
 
-        // don't count sky surfaces
+        // don't count sky surfaces unless using cubemaps
         if (surf->drawflags & SURF_SKY) {
-            if (!gl_static.use_cubemaps)
+            if (!gl_static.use_cubemaps) {
+                surf->drawflags |= SURF_NODRAW; // simplify other code
                 continue;
+            }
             surf->drawflags &= ~SURF_NODRAW;
         }
 
@@ -1152,13 +1151,16 @@ void GL_LoadWorld(const char *name)
 
         if (surf->drawflags & SURF_N64_UV)
             n64surfs++;
-
-        size += surf->numsurfedges * VERTEX_SIZE * sizeof(vec_t);
     }
 
     // remove fake sky faces in vanilla maps
     if (!bsp->has_bspx && gl_static.use_cubemaps)
         remove_fake_sky_faces(bsp);
+
+    // calculate vertex buffer size in bytes
+    for (i = size = 0, surf = bsp->faces; i < bsp->numfaces; i++, surf++)
+        if (!(surf->drawflags & SURF_NODRAW))
+            size += surf->numsurfedges * VERTEX_SIZE * sizeof(vec_t);
 
     // try VBO first, then allocate on heap
     if (create_surface_vbo(size)) {
