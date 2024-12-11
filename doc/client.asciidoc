@@ -43,7 +43,7 @@ cl_maxpackets::
     Number of packets client sends per second. 0 means no particular limit.
     Unless connected using Q2PRO protocol, this variable is ignored and packets
     are sent in sync with client physics frame rate, controlled with
-    ‘cl_maxfps’ variable. Default value is 30.
+    ‘cl_maxfps’ variable. Default value is 125.
 
 cl_fuzzhack::
     Enables ‘cl_maxpackets’ limit even if Q2PRO protocol is not in use by
@@ -83,7 +83,7 @@ r_maxfps::
 cl_maxfps::
     Specifies client physics frame rate if ‘cl_async’ 1 or 2 is used.
     Otherwise, limits both rendering and physics frame rates. Default value is
-    60.
+    125.
 
 cl_gibs::
     Controls rendering of entities with ‘EF_GIB’ flag set. When using Q2PRO
