@@ -44,11 +44,11 @@ typedef struct {
     void *(*func)(void *);
     void *arg, *ret;
     HANDLE handle;
-} pthread_t;
+} *pthread_t;
 
 static unsigned __stdcall thread_func(void *arg)
 {
-    pthread_t *t = arg;
+    pthread_t t = arg;
     t->ret = t->func(t->arg);
     return 0;
 }
@@ -56,18 +56,27 @@ static unsigned __stdcall thread_func(void *arg)
 static inline int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
                                  void *(*start_routine)(void *), void *arg)
 {
-    thread->func = start_routine;
-    thread->arg = arg;
-    thread->handle = (HANDLE)_beginthreadex(NULL, 0, thread_func, thread, 0, NULL);
-    return thread->handle ? 0 : EAGAIN;
+    pthread_t t = calloc(1, sizeof(*t));
+    if (!t)
+        return EAGAIN;
+    t->func = start_routine;
+    t->arg = arg;
+    t->handle = (HANDLE)_beginthreadex(NULL, 0, thread_func, t, 0, NULL);
+    if (!t->handle) {
+        free(t);
+        return EAGAIN;
+    }
+    *thread = t;
+    return 0;
 }
 
 static inline int pthread_join(pthread_t thread, void **retval)
 {
-    int ret = WaitForSingleObject(thread.handle, INFINITE);
-    CloseHandle(thread.handle);
+    int ret = WaitForSingleObject(thread->handle, INFINITE);
+    CloseHandle(thread->handle);
     if (retval)
-        *retval = thread.ret;
+        *retval = thread->ret;
+    free(thread);
     return ret ? EINVAL : 0;
 }
 
