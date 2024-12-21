@@ -72,7 +72,7 @@ static void Action_Draw(menuAction_t *a)
         } else {
             flags |= UI_ALTCOLOR;
             if ((uis.realtime >> 8) & 1) {
-                UI_DrawChar(a->generic.x - strlen(a->generic.name) * CHAR_WIDTH / 2 - CHAR_WIDTH, a->generic.y, flags, 13);
+                UI_DrawChar(a->generic.x - strlen(a->generic.name) * CONCHAR_WIDTH / 2 - CONCHAR_WIDTH, a->generic.y, flags, 13);
             }
         }
     }
@@ -208,7 +208,7 @@ static void Keybind_Init(menuKeybind_t *k)
         len = 3;
     }
 
-    k->generic.rect.width += (RCOLUMN_OFFSET - LCOLUMN_OFFSET) + len * CHAR_WIDTH;
+    k->generic.rect.width += (RCOLUMN_OFFSET - LCOLUMN_OFFSET) + len * CONCHAR_WIDTH;
 }
 
 /*
@@ -390,7 +390,7 @@ Field_Init
 */
 static void Field_Init(menuField_t *f)
 {
-    int w = f->width * CHAR_WIDTH;
+    int w = f->width * CONCHAR_WIDTH;
 
     f->generic.uiFlags &= ~(UI_LEFT | UI_RIGHT);
 
@@ -404,7 +404,7 @@ static void Field_Init(menuField_t *f)
         f->generic.rect.x = f->generic.x - w / 2;
         f->generic.rect.y = f->generic.y;
         f->generic.rect.width = w;
-        f->generic.rect.height = CHAR_HEIGHT;
+        f->generic.rect.height = CONCHAR_HEIGHT;
     }
 }
 
@@ -429,13 +429,13 @@ static void Field_Draw(menuField_t *f)
                       f->generic.uiFlags | UI_RIGHT | UI_ALTCOLOR, f->generic.name);
 
         R_DrawFill32(f->generic.x + RCOLUMN_OFFSET, f->generic.y - 1,
-                     f->field.visibleChars * CHAR_WIDTH, CHAR_HEIGHT + 2, color);
+                     f->field.visibleChars * CONCHAR_WIDTH, CONCHAR_HEIGHT + 2, color);
 
         IF_Draw(&f->field, f->generic.x + RCOLUMN_OFFSET, f->generic.y,
                 flags, uis.fontHandle);
     } else {
         R_DrawFill32(f->generic.rect.x, f->generic.rect.y - 1,
-                     f->generic.rect.width, CHAR_HEIGHT + 2, color);
+                     f->generic.rect.width, CONCHAR_HEIGHT + 2, color);
 
         IF_Draw(&f->field, f->generic.rect.x, f->generic.rect.y,
                 flags, uis.fontHandle);
@@ -560,7 +560,7 @@ void SpinControl_Init(menuSpinControl_t *s)
     }
 
     s->generic.rect.width += (RCOLUMN_OFFSET - LCOLUMN_OFFSET) +
-                             maxLength * CHAR_WIDTH;
+                             maxLength * CONCHAR_WIDTH;
 }
 
 /*
@@ -1304,7 +1304,7 @@ static void MenuList_DrawString(int x, int y, int flags,
     rc.left = x;
     rc.right = x + column->width - 1;
     rc.top = y + 1;
-    rc.bottom = y + CHAR_HEIGHT + 1;
+    rc.bottom = y + CONCHAR_HEIGHT + 1;
 
     if ((column->uiFlags & UI_CENTER) == UI_CENTER) {
         x += column->width / 2 - 1;
@@ -1518,14 +1518,14 @@ static void Slider_Free(menuSlider_t *s)
 
 static void Slider_Init(menuSlider_t *s)
 {
-    int len = strlen(s->generic.name) * CHAR_WIDTH;
+    int len = strlen(s->generic.name) * CONCHAR_WIDTH;
 
     s->generic.rect.x = s->generic.x + LCOLUMN_OFFSET - len;
     s->generic.rect.y = s->generic.y;
 
     s->generic.rect.width = (RCOLUMN_OFFSET - LCOLUMN_OFFSET) +
-                            len + (SLIDER_RANGE + 2) * CHAR_WIDTH;
-    s->generic.rect.height = CHAR_HEIGHT;
+                            len + (SLIDER_RANGE + 2) * CONCHAR_WIDTH;
+    s->generic.rect.height = CONCHAR_HEIGHT;
 }
 
 static menuSound_t Slider_Click(menuSlider_t *s)
@@ -1536,31 +1536,31 @@ static menuSound_t Slider_Click(menuSlider_t *s)
 
     pos = Q_clipf((s->curvalue - s->minvalue) / (s->maxvalue - s->minvalue), 0, 1);
 
-    x = CHAR_WIDTH + (SLIDER_RANGE - 1) * CHAR_WIDTH * pos;
+    x = CONCHAR_WIDTH + (SLIDER_RANGE - 1) * CONCHAR_WIDTH * pos;
 
     // click left of thumb
     rect.x = s->generic.x + RCOLUMN_OFFSET;
     rect.y = s->generic.y;
     rect.width = x;
-    rect.height = CHAR_HEIGHT;
+    rect.height = CONCHAR_HEIGHT;
     if (UI_CursorInRect(&rect))
         return Slider_DoSlide(s, -1);
 
     // click on thumb
     rect.x = s->generic.x + RCOLUMN_OFFSET + x;
     rect.y = s->generic.y;
-    rect.width = CHAR_WIDTH;
-    rect.height = CHAR_HEIGHT;
+    rect.width = CONCHAR_WIDTH;
+    rect.height = CONCHAR_HEIGHT;
     if (UI_CursorInRect(&rect)) {
         uis.mouseTracker = &s->generic;
         return QMS_SILENT;
     }
 
     // click right of thumb
-    rect.x = s->generic.x + RCOLUMN_OFFSET + x + CHAR_WIDTH;
+    rect.x = s->generic.x + RCOLUMN_OFFSET + x + CONCHAR_WIDTH;
     rect.y = s->generic.y;
-    rect.width = (SLIDER_RANGE + 1) * CHAR_WIDTH - x;
-    rect.height = CHAR_HEIGHT;
+    rect.width = (SLIDER_RANGE + 1) * CONCHAR_WIDTH - x;
+    rect.height = CONCHAR_HEIGHT;
     if (UI_CursorInRect(&rect))
         return Slider_DoSlide(s, 1);
 
@@ -1575,7 +1575,7 @@ static menuSound_t Slider_MouseMove(menuSlider_t *s)
     if (uis.mouseTracker != &s->generic)
         return QMS_NOTHANDLED;
 
-    pos = (uis.mouseCoords[0] - (s->generic.x + RCOLUMN_OFFSET + CHAR_WIDTH)) * (1.0f / (SLIDER_RANGE * CHAR_WIDTH));
+    pos = (uis.mouseCoords[0] - (s->generic.x + RCOLUMN_OFFSET + CONCHAR_WIDTH)) * (1.0f / (SLIDER_RANGE * CONCHAR_WIDTH));
 
     value = Q_clipf(pos, 0, 1) * (s->maxvalue - s->minvalue);
     steps = Q_rint(value / s->step);
@@ -1648,13 +1648,13 @@ static void Slider_Draw(menuSlider_t *s)
     UI_DrawChar(s->generic.x + RCOLUMN_OFFSET, s->generic.y, flags | UI_LEFT, 128);
 
     for (i = 0; i < SLIDER_RANGE; i++)
-        UI_DrawChar(RCOLUMN_OFFSET + s->generic.x + i * CHAR_WIDTH + CHAR_WIDTH, s->generic.y, flags | UI_LEFT, 129);
+        UI_DrawChar(RCOLUMN_OFFSET + s->generic.x + i * CONCHAR_WIDTH + CONCHAR_WIDTH, s->generic.y, flags | UI_LEFT, 129);
 
-    UI_DrawChar(RCOLUMN_OFFSET + s->generic.x + i * CHAR_WIDTH + CHAR_WIDTH, s->generic.y, flags | UI_LEFT, 130);
+    UI_DrawChar(RCOLUMN_OFFSET + s->generic.x + i * CONCHAR_WIDTH + CONCHAR_WIDTH, s->generic.y, flags | UI_LEFT, 130);
 
     pos = Q_clipf((s->curvalue - s->minvalue) / (s->maxvalue - s->minvalue), 0, 1);
 
-    UI_DrawChar(CHAR_WIDTH + RCOLUMN_OFFSET + s->generic.x + (SLIDER_RANGE - 1) * CHAR_WIDTH * pos, s->generic.y, flags | UI_LEFT, 131);
+    UI_DrawChar(CONCHAR_WIDTH + RCOLUMN_OFFSET + s->generic.x + (SLIDER_RANGE - 1) * CONCHAR_WIDTH * pos, s->generic.y, flags | UI_LEFT, 131);
 }
 
 /*
@@ -2082,7 +2082,7 @@ menuSound_t Menu_AdjustCursor(menuFrameWork_t *m, int dir)
 
 static void Menu_DrawStatus(menuFrameWork_t *menu)
 {
-    int     linewidth = uis.width / CHAR_WIDTH;
+    int     linewidth = uis.width / CONCHAR_WIDTH;
     int     x, y, l, count;
     char    *txt, *p;
     int     lens[8];
@@ -2116,11 +2116,11 @@ static void Menu_DrawStatus(menuFrameWork_t *menu)
 
     lens[count++] = x;
 
-    R_DrawFill8(0, menu->y2 - count * CHAR_HEIGHT, uis.width, count * CHAR_HEIGHT, 4);
+    R_DrawFill8(0, menu->y2 - count * CONCHAR_HEIGHT, uis.width, count * CONCHAR_HEIGHT, 4);
 
     for (l = 0; l < count; l++) {
-        x = (uis.width - lens[l] * CHAR_WIDTH) / 2;
-        y = menu->y2 - (count - l) * CHAR_HEIGHT;
+        x = (uis.width - lens[l] * CONCHAR_WIDTH) / 2;
+        y = menu->y2 - (count - l) * CONCHAR_HEIGHT;
         R_DrawString(x, y, 0, lens[l], ptrs[l], uis.fontHandle);
     }
 }

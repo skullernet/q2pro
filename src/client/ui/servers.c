@@ -899,52 +899,52 @@ static void SizeCompact(void)
 // server list
 //
     m_servers.list.generic.x            = 0;
-    m_servers.list.generic.y            = CHAR_HEIGHT;
-    m_servers.list.generic.height       = uis.height / 2 - CHAR_HEIGHT;
+    m_servers.list.generic.y            = CONCHAR_HEIGHT;
+    m_servers.list.generic.height       = uis.height / 2 - CONCHAR_HEIGHT;
 
-    m_servers.list.columns[0].width     = w - 10 * CHAR_WIDTH - MLIST_PADDING * 2;
+    m_servers.list.columns[0].width     = w - 10 * CONCHAR_WIDTH - MLIST_PADDING * 2;
     m_servers.list.columns[1].width     = 0;
     m_servers.list.columns[2].width     = 0;
-    m_servers.list.columns[3].width     = 7 * CHAR_WIDTH + MLIST_PADDING;
-    m_servers.list.columns[4].width     = 3 * CHAR_WIDTH + MLIST_PADDING;
+    m_servers.list.columns[3].width     = 7 * CONCHAR_WIDTH + MLIST_PADDING;
+    m_servers.list.columns[4].width     = 3 * CONCHAR_WIDTH + MLIST_PADDING;
 
 //
 // player list
 //
     m_servers.players.generic.x         = 0;
     m_servers.players.generic.y         = uis.height / 2 + 1;
-    m_servers.players.generic.height    = (uis.height + 1) / 2 - CHAR_HEIGHT - 2;
+    m_servers.players.generic.height    = (uis.height + 1) / 2 - CONCHAR_HEIGHT - 2;
 
-    m_servers.players.columns[0].width  = 3 * CHAR_WIDTH + MLIST_PADDING;
-    m_servers.players.columns[1].width  = 3 * CHAR_WIDTH + MLIST_PADDING;
-    m_servers.players.columns[2].width  = w - 6 * CHAR_WIDTH - MLIST_PADDING * 2;
+    m_servers.players.columns[0].width  = 3 * CONCHAR_WIDTH + MLIST_PADDING;
+    m_servers.players.columns[1].width  = 3 * CONCHAR_WIDTH + MLIST_PADDING;
+    m_servers.players.columns[2].width  = w - 6 * CONCHAR_WIDTH - MLIST_PADDING * 2;
 
     m_servers.players.mlFlags           |= MLF_SCROLLBAR;
 }
 
 static void SizeFull(void)
 {
-    int w = uis.width - MLIST_SCROLLBAR_WIDTH - 21 * CHAR_WIDTH - MLIST_PADDING * 3;
+    int w = uis.width - MLIST_SCROLLBAR_WIDTH - 21 * CONCHAR_WIDTH - MLIST_PADDING * 3;
 
 //
 // server list
 //
     m_servers.list.generic.x            = 0;
-    m_servers.list.generic.y            = CHAR_HEIGHT;
-    m_servers.list.generic.height       = uis.height / 2 - CHAR_HEIGHT;
+    m_servers.list.generic.y            = CONCHAR_HEIGHT;
+    m_servers.list.generic.height       = uis.height / 2 - CONCHAR_HEIGHT;
 
-    m_servers.list.columns[0].width     = w - 26 * CHAR_WIDTH - MLIST_PADDING * 4;
-    m_servers.list.columns[1].width     = 8 * CHAR_WIDTH + MLIST_PADDING;
-    m_servers.list.columns[2].width     = 8 * CHAR_WIDTH + MLIST_PADDING;
-    m_servers.list.columns[3].width     = 7 * CHAR_WIDTH + MLIST_PADDING;
-    m_servers.list.columns[4].width     = 3 * CHAR_WIDTH + MLIST_PADDING;
+    m_servers.list.columns[0].width     = w - 26 * CONCHAR_WIDTH - MLIST_PADDING * 4;
+    m_servers.list.columns[1].width     = 8 * CONCHAR_WIDTH + MLIST_PADDING;
+    m_servers.list.columns[2].width     = 8 * CONCHAR_WIDTH + MLIST_PADDING;
+    m_servers.list.columns[3].width     = 7 * CONCHAR_WIDTH + MLIST_PADDING;
+    m_servers.list.columns[4].width     = 3 * CONCHAR_WIDTH + MLIST_PADDING;
 
 //
 // server info
 //
     m_servers.info.generic.x            = 0;
     m_servers.info.generic.y            = uis.height / 2 + 1;
-    m_servers.info.generic.height       = (uis.height + 1) / 2 - CHAR_HEIGHT - 2;
+    m_servers.info.generic.height       = (uis.height + 1) / 2 - CONCHAR_HEIGHT - 2;
 
     m_servers.info.columns[0].width     = w / 3;
     m_servers.info.columns[1].width     = w - w / 3;
@@ -953,12 +953,12 @@ static void SizeFull(void)
 // player list
 //
     m_servers.players.generic.x         = w + MLIST_SCROLLBAR_WIDTH;
-    m_servers.players.generic.y         = CHAR_HEIGHT;
-    m_servers.players.generic.height    = uis.height - CHAR_HEIGHT * 2 - 1;
+    m_servers.players.generic.y         = CONCHAR_HEIGHT;
+    m_servers.players.generic.height    = uis.height - CONCHAR_HEIGHT * 2 - 1;
 
-    m_servers.players.columns[0].width  = 3 * CHAR_WIDTH + MLIST_PADDING;
-    m_servers.players.columns[1].width  = 3 * CHAR_WIDTH + MLIST_PADDING;
-    m_servers.players.columns[2].width  = 15 * CHAR_WIDTH + MLIST_PADDING;
+    m_servers.players.columns[0].width  = 3 * CONCHAR_WIDTH + MLIST_PADDING;
+    m_servers.players.columns[1].width  = 3 * CONCHAR_WIDTH + MLIST_PADDING;
+    m_servers.players.columns[2].width  = 15 * CONCHAR_WIDTH + MLIST_PADDING;
 
     m_servers.players.mlFlags           &= ~MLF_SCROLLBAR;
 }
@@ -1017,22 +1017,22 @@ static void DrawStatus(void)
     else
         w = uis.width;
 
-    R_DrawFill8(0, uis.height - CHAR_HEIGHT, w, CHAR_HEIGHT, 4);
-    R_DrawFill8(w, uis.height - CHAR_HEIGHT, uis.width - w, CHAR_HEIGHT, 0);
+    R_DrawFill8(0, uis.height - CONCHAR_HEIGHT, w, CONCHAR_HEIGHT, 4);
+    R_DrawFill8(w, uis.height - CONCHAR_HEIGHT, uis.width - w, CONCHAR_HEIGHT, 0);
 
     if (m_servers.status_c)
-        UI_DrawString(uis.width / 2, uis.height - CHAR_HEIGHT, UI_CENTER, m_servers.status_c);
+        UI_DrawString(uis.width / 2, uis.height - CONCHAR_HEIGHT, UI_CENTER, m_servers.status_c);
 
     if (uis.width < 800)
         return;
 
     if (m_servers.list.numItems)
-        UI_DrawString(uis.width, uis.height - CHAR_HEIGHT, UI_RIGHT, m_servers.status_r);
+        UI_DrawString(uis.width, uis.height - CONCHAR_HEIGHT, UI_RIGHT, m_servers.status_r);
 
     if (m_servers.list.numItems && m_servers.list.curvalue >= 0) {
         serverslot_t *slot = m_servers.list.items[m_servers.list.curvalue];
         if (slot->status > SLOT_PENDING) {
-            UI_DrawString(0, uis.height - CHAR_HEIGHT, UI_LEFT, slot->hostname);
+            UI_DrawString(0, uis.height - CONCHAR_HEIGHT, UI_LEFT, slot->hostname);
         }
     }
 }

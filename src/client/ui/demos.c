@@ -539,26 +539,26 @@ static void Size(menuFrameWork_t *self)
     int w1, w2;
 
     m_demos.list.generic.x      = 0;
-    m_demos.list.generic.y      = CHAR_HEIGHT;
+    m_demos.list.generic.y      = CONCHAR_HEIGHT;
     m_demos.list.generic.width  = 0;
-    m_demos.list.generic.height = uis.height - CHAR_HEIGHT * 2 - 1;
+    m_demos.list.generic.height = uis.height - CONCHAR_HEIGHT * 2 - 1;
 
     w1 = 17 + m_demos.widest_map + m_demos.widest_pov;
-    w2 = uis.width - w1 * CHAR_WIDTH - MLIST_PADDING * 4 - MLIST_SCROLLBAR_WIDTH;
-    if (w2 > 8 * CHAR_WIDTH) {
+    w2 = uis.width - w1 * CONCHAR_WIDTH - MLIST_PADDING * 4 - MLIST_SCROLLBAR_WIDTH;
+    if (w2 > 8 * CONCHAR_WIDTH) {
         // everything fits
         m_demos.list.columns[0].width = w2;
-        m_demos.list.columns[1].width = 12 * CHAR_WIDTH + MLIST_PADDING;
-        m_demos.list.columns[2].width = 5 * CHAR_WIDTH + MLIST_PADDING;
-        m_demos.list.columns[3].width = m_demos.widest_map * CHAR_WIDTH + MLIST_PADDING;
-        m_demos.list.columns[4].width = m_demos.widest_pov * CHAR_WIDTH + MLIST_PADDING;
+        m_demos.list.columns[1].width = 12 * CONCHAR_WIDTH + MLIST_PADDING;
+        m_demos.list.columns[2].width = 5 * CONCHAR_WIDTH + MLIST_PADDING;
+        m_demos.list.columns[3].width = m_demos.widest_map * CONCHAR_WIDTH + MLIST_PADDING;
+        m_demos.list.columns[4].width = m_demos.widest_pov * CONCHAR_WIDTH + MLIST_PADDING;
         m_demos.list.numcolumns = COL_MAX;
     } else {
         // map and pov don't fit
-        w2 = uis.width - 17 * CHAR_WIDTH - MLIST_PADDING * 2 - MLIST_SCROLLBAR_WIDTH;
+        w2 = uis.width - 17 * CONCHAR_WIDTH - MLIST_PADDING * 2 - MLIST_SCROLLBAR_WIDTH;
         m_demos.list.columns[0].width = w2;
-        m_demos.list.columns[1].width = 12 * CHAR_WIDTH + MLIST_PADDING;
-        m_demos.list.columns[2].width = 5 * CHAR_WIDTH + MLIST_PADDING;
+        m_demos.list.columns[1].width = 12 * CONCHAR_WIDTH + MLIST_PADDING;
+        m_demos.list.columns[2].width = 5 * CONCHAR_WIDTH + MLIST_PADDING;
         m_demos.list.columns[3].width = 0;
         m_demos.list.columns[4].width = 0;
         m_demos.list.numcolumns = COL_MAX - 2;
@@ -579,7 +579,7 @@ static void Draw(menuFrameWork_t *self)
 {
     Menu_Draw(self);
     if (uis.width >= 640) {
-        UI_DrawString(uis.width, uis.height - CHAR_HEIGHT,
+        UI_DrawString(uis.width, uis.height - CONCHAR_HEIGHT,
                       UI_RIGHT, m_demos.status);
     }
 }

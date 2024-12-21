@@ -278,7 +278,7 @@ int IF_Draw(const inputField_t *field, int x, int y, int flags, qhandle_t font)
 
     // draw blinking cursor
     if (flags & UI_DRAWCURSOR && com_localTime & BIT(8)) {
-        R_DrawChar(x + cursorPos * CHAR_WIDTH, y, flags,
+        R_DrawChar(x + cursorPos * CONCHAR_WIDTH, y, flags,
                    Key_GetOverstrikeMode() ? 11 : '_', font);
     }
 

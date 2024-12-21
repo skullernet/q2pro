@@ -150,7 +150,7 @@ static void Size(menuFrameWork_t *self)
                                       m_player.refdef.width, m_player.refdef.height);
 
     if (uis.width < 800 && uis.width >= 640) {
-        x -= CHAR_WIDTH * 10;
+        x -= CONCHAR_WIDTH * 10;
     }
 
     if (m_player.menu.banner) {
@@ -161,7 +161,7 @@ static void Size(menuFrameWork_t *self)
     }
 
     if (uis.width < 640) {
-        x -= CHAR_WIDTH * 10;
+        x -= CONCHAR_WIDTH * 10;
         m_player.hand.generic.name = "hand";
     } else {
         m_player.hand.generic.name = "handedness";

@@ -53,7 +53,7 @@ LAYOUTS
 // clients per screen page
 #define PAGE_CLIENTS    16
 
-#define VER_OFS (272 - (int)(sizeof(VERSION) - 1) * CHAR_WIDTH)
+#define VER_OFS (272 - (int)(sizeof(VERSION) - 1) * CONCHAR_WIDTH)
 
 static void MVD_LayoutClients(mvd_client_t *client)
 {

@@ -148,9 +148,9 @@ int SCR_DrawStringEx(int x, int y, int flags, size_t maxlen,
     }
 
     if ((flags & UI_CENTER) == UI_CENTER) {
-        x -= len * CHAR_WIDTH / 2;
+        x -= len * CONCHAR_WIDTH / 2;
     } else if (flags & UI_RIGHT) {
-        x -= len * CHAR_WIDTH;
+        x -= len * CONCHAR_WIDTH;
     }
 
     return R_DrawString(x, y, flags, maxlen, s, font);
@@ -183,7 +183,7 @@ void SCR_DrawStringMulti(int x, int y, int flags, size_t maxlen,
         last_y = y;
         maxlen -= len;
 
-        y += CHAR_HEIGHT;
+        y += CONCHAR_HEIGHT;
         s = p + 1;
     }
 
@@ -410,7 +410,7 @@ static void draw_progress_bar(float progress, bool paused, int framenum)
     size_t len;
 
     w = Q_rint(scr.hud_width * progress);
-    h = Q_rint(CHAR_HEIGHT / scr.hud_scale);
+    h = Q_rint(CONCHAR_HEIGHT / scr.hud_scale);
 
     scr.hud_height -= h;
 
@@ -423,7 +423,7 @@ static void draw_progress_bar(float progress, bool paused, int framenum)
     h = Q_rint(scr.hud_height * scr.hud_scale);
 
     len = Q_scnprintf(buffer, sizeof(buffer), "%.f%%", progress * 100);
-    x = (w - len * CHAR_WIDTH) / 2;
+    x = (w - len * CONCHAR_WIDTH) / 2;
     R_DrawString(x, h, 0, MAX_STRING_CHARS, buffer, scr.font_pic);
 
     if (scr_demobar->integer > 1) {
@@ -589,7 +589,7 @@ static void SCR_DrawCenterString(void)
 
     R_SetAlpha(alpha * scr_alpha->value);
 
-    y = scr.hud_height / 4 - cp->lines * CHAR_HEIGHT / 2;
+    y = scr.hud_height / 4 - cp->lines * CONCHAR_HEIGHT / 2;
     flags = UI_CENTER;
 
     if (cp->typewrite) {
@@ -933,7 +933,7 @@ static void SCR_DrawObjects(void)
             x += scr.hud_width + 1;
         }
         if (y < 0) {
-            y += scr.hud_height - CHAR_HEIGHT + 1;
+            y += scr.hud_height - CONCHAR_HEIGHT + 1;
         }
         if (!(obj->flags & UI_IGNORECOLOR)) {
             R_SetColor(obj->color.u32);
@@ -1016,10 +1016,10 @@ static void SCR_DrawChatHUD(void)
     }
 
     if (y < 0) {
-        y += scr.hud_height - CHAR_HEIGHT + 1;
-        step = -CHAR_HEIGHT;
+        y += scr.hud_height - CONCHAR_HEIGHT + 1;
+        step = -CONCHAR_HEIGHT;
     } else {
-        step = CHAR_HEIGHT;
+        step = CONCHAR_HEIGHT;
     }
 
     lines = scr_chathud_lines->integer;
@@ -1063,13 +1063,13 @@ static void SCR_DrawTurtle(void)
     if (!cl.frameflags)
         return;
 
-    x = CHAR_WIDTH;
-    y = scr.hud_height - 11 * CHAR_HEIGHT;
+    x = CONCHAR_WIDTH;
+    y = scr.hud_height - 11 * CONCHAR_HEIGHT;
 
 #define DF(f) \
     if (cl.frameflags & FF_##f) { \
         SCR_DrawString(x, y, UI_ALTCOLOR, #f); \
-        y += CHAR_HEIGHT; \
+        y += CONCHAR_HEIGHT; \
     }
 
     if (scr_showturtle->integer > 1) {
@@ -1103,8 +1103,8 @@ static void SCR_DrawDebugStats(void)
     if (j > MAX_STATS)
         j = MAX_STATS;
 
-    x = CHAR_WIDTH;
-    y = (scr.hud_height - j * CHAR_HEIGHT) / 2;
+    x = CONCHAR_WIDTH;
+    y = (scr.hud_height - j * CONCHAR_HEIGHT) / 2;
     for (i = 0; i < j; i++) {
         Q_snprintf(buffer, sizeof(buffer), "%2d: %d", i, cl.frame.ps.stats[i]);
         if (cl.oldframe.ps.stats[i] != cl.frame.ps.stats[i]) {
@@ -1112,7 +1112,7 @@ static void SCR_DrawDebugStats(void)
         }
         R_DrawString(x, y, 0, MAX_STRING_CHARS, buffer, scr.font_pic);
         R_ClearColor();
-        y += CHAR_HEIGHT;
+        y += CONCHAR_HEIGHT;
     }
 }
 
@@ -1132,21 +1132,21 @@ static void SCR_DrawDebugPmove(void)
     if (!scr_showpmove->integer)
         return;
 
-    x = CHAR_WIDTH;
-    y = (scr.hud_height - 2 * CHAR_HEIGHT) / 2;
+    x = CONCHAR_WIDTH;
+    y = (scr.hud_height - 2 * CONCHAR_HEIGHT) / 2;
 
     i = cl.frame.ps.pmove.pm_type;
     if (i > PM_FREEZE)
         i = PM_FREEZE;
 
     R_DrawString(x, y, 0, MAX_STRING_CHARS, types[i], scr.font_pic);
-    y += CHAR_HEIGHT;
+    y += CONCHAR_HEIGHT;
 
     j = cl.frame.ps.pmove.pm_flags;
     for (i = 0; i < 8; i++) {
         if (j & (1 << i)) {
             x = R_DrawString(x, y, 0, MAX_STRING_CHARS, flags[i], scr.font_pic);
-            x += CHAR_WIDTH;
+            x += CONCHAR_WIDTH;
         }
     }
 }
@@ -1697,10 +1697,10 @@ static void SCR_DrawInventory(void)
     x += 24;
 
     HUD_DrawString(x, y, "hotkey ### item");
-    y += CHAR_HEIGHT;
+    y += CONCHAR_HEIGHT;
 
     HUD_DrawString(x, y, "------ --- ----");
-    y += CHAR_HEIGHT;
+    y += CONCHAR_HEIGHT;
 
     for (i = top; i < num && i < top + DISPLAY_ITEMS; i++) {
         item = index[i];
@@ -1716,11 +1716,11 @@ static void SCR_DrawInventory(void)
         } else {    // draw a blinky cursor by the selected item
             HUD_DrawString(x, y, string);
             if ((cls.realtime >> 8) & 1) {
-                R_DrawChar(x - CHAR_WIDTH, y, 0, 15, scr.font_pic);
+                R_DrawChar(x - CONCHAR_WIDTH, y, 0, 15, scr.font_pic);
             }
         }
 
-        y += CHAR_HEIGHT;
+        y += CONCHAR_HEIGHT;
     }
 }
 
@@ -1783,7 +1783,7 @@ static void SCR_DrawHealthBar(int x, int y, int value)
     int bar_width = scr.hud_width / 3;
     float percent = (value - 1) / 254.0f;
     int w = bar_width * percent + 0.5f;
-    int h = CHAR_HEIGHT / 2;
+    int h = CONCHAR_HEIGHT / 2;
 
     x -= bar_width / 2;
     R_DrawFill8(x, y, w, h, 240);
@@ -1907,13 +1907,13 @@ static void SCR_ExecuteLayoutString(const char *s)
             time = Q_atoi(token);
 
             HUD_DrawAltString(x + 32, y, ci->name);
-            HUD_DrawString(x + 32, y + CHAR_HEIGHT, "Score: ");
+            HUD_DrawString(x + 32, y + CONCHAR_HEIGHT, "Score: ");
             Q_snprintf(buffer, sizeof(buffer), "%i", score);
-            HUD_DrawAltString(x + 32 + 7 * CHAR_WIDTH, y + CHAR_HEIGHT, buffer);
+            HUD_DrawAltString(x + 32 + 7 * CONCHAR_WIDTH, y + CONCHAR_HEIGHT, buffer);
             Q_snprintf(buffer, sizeof(buffer), "Ping:  %i", ping);
-            HUD_DrawString(x + 32, y + 2 * CHAR_HEIGHT, buffer);
+            HUD_DrawString(x + 32, y + 2 * CONCHAR_HEIGHT, buffer);
             Q_snprintf(buffer, sizeof(buffer), "Time:  %i", time);
-            HUD_DrawString(x + 32, y + 3 * CHAR_HEIGHT, buffer);
+            HUD_DrawString(x + 32, y + 3 * CONCHAR_HEIGHT, buffer);
 
             if (!ci->icon) {
                 ci = &cl.baseclientinfo;
@@ -2145,8 +2145,8 @@ static void SCR_ExecuteLayoutString(const char *s)
             }
 
             HUD_DrawCenterString(x + 320 / 2, y, cl.configstrings[index]);
-            SCR_DrawHealthBar(x + 320 / 2, y + CHAR_HEIGHT + 4, value & 0xff);
-            SCR_DrawHealthBar(x + 320 / 2, y + CHAR_HEIGHT + 12, (value >> 8) & 0xff);
+            SCR_DrawHealthBar(x + 320 / 2, y + CONCHAR_HEIGHT + 4, value & 0xff);
+            SCR_DrawHealthBar(x + 320 / 2, y + CONCHAR_HEIGHT + 12, (value >> 8) & 0xff);
             continue;
         }
     }

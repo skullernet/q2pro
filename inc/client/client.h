@@ -22,8 +22,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/net/net.h"
 #include "common/utils.h"
 
-#define CHAR_WIDTH  8
-#define CHAR_HEIGHT 8
+#define CONCHAR_WIDTH  8
+#define CONCHAR_HEIGHT 8
 
 // only begin attenuating sound volumes when outside the FULLVOLUME range
 #define SOUND_FULLVOLUME        80

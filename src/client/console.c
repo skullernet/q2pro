@@ -372,7 +372,7 @@ void Con_CheckResize(void)
     con.vidWidth = Q_rint(r_config.width * con.scale);
     con.vidHeight = Q_rint(r_config.height * con.scale);
 
-    con.linewidth = Q_clip(con.vidWidth / CHAR_WIDTH - 2, 0, CON_LINEWIDTH);
+    con.linewidth = Q_clip(con.vidWidth / CONCHAR_WIDTH - 2, 0, CON_LINEWIDTH);
     con.prompt.inputLine.visibleChars = con.linewidth;
     con.prompt.widthInChars = con.linewidth;
     con.chatPrompt.inputLine.visibleChars = con.linewidth;
@@ -693,7 +693,7 @@ static int Con_DrawLine(int v, int row, float alpha, bool notify)
     const consoleLine_t *line = &con.text[row & CON_TOTALLINES_MASK];
     const char *s = line->text;
     int flags = 0;
-    int x = CHAR_WIDTH;
+    int x = CONCHAR_WIDTH;
     int w = con.linewidth;
 
     if (notify) {
@@ -724,7 +724,7 @@ static int Con_DrawLine(int v, int row, float alpha, bool notify)
     return R_DrawString(x, v, flags, w, s, con.charsetImage);
 }
 
-#define CON_PRESTEP     (CHAR_HEIGHT * 3 + CHAR_HEIGHT / 4)
+#define CON_PRESTEP     (CONCHAR_HEIGHT * 3 + CONCHAR_HEIGHT / 4)
 
 /*
 ================
@@ -775,7 +775,7 @@ static void Con_DrawNotify(void)
 
         Con_DrawLine(v, i, alpha, true);
 
-        v += CHAR_HEIGHT;
+        v += CONCHAR_HEIGHT;
     }
 
     R_ClearColor();
@@ -789,10 +789,10 @@ static void Con_DrawNotify(void)
             skip = 5;
         }
 
-        R_DrawString(CHAR_WIDTH, v, 0, MAX_STRING_CHARS, text,
+        R_DrawString(CONCHAR_WIDTH, v, 0, MAX_STRING_CHARS, text,
                      con.charsetImage);
         con.chatPrompt.inputLine.visibleChars = con.linewidth - skip + 1;
-        IF_Draw(&con.chatPrompt.inputLine, skip * CHAR_WIDTH, v,
+        IF_Draw(&con.chatPrompt.inputLine, skip * CONCHAR_WIDTH, v,
                 UI_DRAWCURSOR, con.charsetImage);
     }
 }
@@ -836,16 +836,16 @@ static void Con_DrawSolidConsole(void)
 
 // draw the text
     y = vislines - CON_PRESTEP;
-    rows = y / CHAR_HEIGHT + 1;     // rows of text to draw
+    rows = y / CONCHAR_HEIGHT + 1;  // rows of text to draw
 
 // draw arrows to show the buffer is backscrolled
     if (con.display != con.current) {
         R_SetColor(U32_RED);
         for (i = 1; i < con.linewidth / 2; i += 4) {
-            R_DrawChar(i * CHAR_WIDTH, y, 0, '^', con.charsetImage);
+            R_DrawChar(i * CONCHAR_WIDTH, y, 0, '^', con.charsetImage);
         }
 
-        y -= CHAR_HEIGHT;
+        y -= CONCHAR_HEIGHT;
         rows--;
     }
 
@@ -864,7 +864,7 @@ static void Con_DrawSolidConsole(void)
             widths[i] = x;
         }
 
-        y -= CHAR_HEIGHT;
+        y -= CONCHAR_HEIGHT;
         row--;
     }
 
@@ -913,8 +913,8 @@ static void Con_DrawSolidConsole(void)
         Q_strlcat(buffer, suf, sizeof(buffer));
 
         // draw it
-        y = vislines - CON_PRESTEP + CHAR_HEIGHT * 2;
-        R_DrawString(CHAR_WIDTH, y, 0, con.linewidth, buffer, con.charsetImage);
+        y = vislines - CON_PRESTEP + CONCHAR_HEIGHT * 2;
+        R_DrawString(CONCHAR_WIDTH, y, 0, con.linewidth, buffer, con.charsetImage);
     } else if (cls.state == ca_loading) {
         // draw loading state
         switch (con.loadstate) {
@@ -942,35 +942,35 @@ static void Con_DrawSolidConsole(void)
             Q_snprintf(buffer, sizeof(buffer), "Loading %s...", text);
 
             // draw it
-            y = vislines - CON_PRESTEP + CHAR_HEIGHT * 2;
-            R_DrawString(CHAR_WIDTH, y, 0, con.linewidth, buffer, con.charsetImage);
+            y = vislines - CON_PRESTEP + CONCHAR_HEIGHT * 2;
+            R_DrawString(CONCHAR_WIDTH, y, 0, con.linewidth, buffer, con.charsetImage);
         }
     }
 
 // draw the input prompt, user text, and cursor if desired
     x = 0;
     if (cls.key_dest & KEY_CONSOLE) {
-        y = vislines - CON_PRESTEP + CHAR_HEIGHT;
+        y = vislines - CON_PRESTEP + CONCHAR_HEIGHT;
 
         // draw command prompt
         i = con.mode == CON_REMOTE ? '#' : 17;
         R_SetColor(U32_YELLOW);
-        R_DrawChar(CHAR_WIDTH, y, 0, i, con.charsetImage);
+        R_DrawChar(CONCHAR_WIDTH, y, 0, i, con.charsetImage);
         R_ClearColor();
 
         // draw input line
-        x = IF_Draw(&con.prompt.inputLine, 2 * CHAR_WIDTH, y,
+        x = IF_Draw(&con.prompt.inputLine, 2 * CONCHAR_WIDTH, y,
                     UI_DRAWCURSOR, con.charsetImage);
     }
 
 #define APP_VERSION APPLICATION " " VERSION
-#define VER_WIDTH ((int)(sizeof(APP_VERSION) + 1) * CHAR_WIDTH)
+#define VER_WIDTH ((int)(sizeof(APP_VERSION) + 1) * CONCHAR_WIDTH)
 
-    y = vislines - CON_PRESTEP + CHAR_HEIGHT;
+    y = vislines - CON_PRESTEP + CONCHAR_HEIGHT;
     row = 0;
     // shift version upwards to prevent overdraw
     if (x > con.vidWidth - VER_WIDTH) {
-        y -= CHAR_HEIGHT;
+        y -= CONCHAR_HEIGHT;
         row++;
     }
 
@@ -978,16 +978,16 @@ static void Con_DrawSolidConsole(void)
 
 // draw clock
     if (con_clock->integer) {
-        x = Com_Time_m(buffer, sizeof(buffer)) * CHAR_WIDTH;
-        if (widths[row] + x + CHAR_WIDTH <= con.vidWidth) {
-            R_DrawString(con.vidWidth - CHAR_WIDTH - x, y - CHAR_HEIGHT,
+        x = Com_Time_m(buffer, sizeof(buffer)) * CONCHAR_WIDTH;
+        if (widths[row] + x + CONCHAR_WIDTH <= con.vidWidth) {
+            R_DrawString(con.vidWidth - CONCHAR_WIDTH - x, y - CONCHAR_HEIGHT,
                          UI_RIGHT, MAX_STRING_CHARS, buffer, con.charsetImage);
         }
     }
 
 // draw version
     if (!row || widths[0] + VER_WIDTH <= con.vidWidth) {
-        SCR_DrawStringEx(con.vidWidth - CHAR_WIDTH, y, UI_RIGHT,
+        SCR_DrawStringEx(con.vidWidth - CONCHAR_WIDTH, y, UI_RIGHT,
                          MAX_STRING_CHARS, APP_VERSION, con.charsetImage);
     }
 
