@@ -152,6 +152,7 @@ typedef struct {
 typedef struct {
     server_state_t  state;      // precache commands are only valid during load
     int             spawncount; // random number generated each server spawn
+    bool            nextserver_pending;
 
 #if USE_FPS
     int         framerate;

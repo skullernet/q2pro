@@ -775,7 +775,10 @@ static void SV_NextServer_f(void)
     if (Q_atoi(Cmd_Argv(1)) != sv.spawncount)
         return;     // leftover from last server
 
-    sv.spawncount ^= 1;     // make sure another doesn't sneak in
+    if (sv.nextserver_pending)
+        return;
+
+    sv.nextserver_pending = true;   // make sure another doesn't sneak in
 
     const char *v = Cvar_VariableString("nextserver");
     if (*v) {
