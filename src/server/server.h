@@ -60,7 +60,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #if USE_DEBUG
 #define SV_DPrintf(level,...) \
-    do { if (sv_debug && sv_debug->integer > level) \
+    do { if (sv_debug && sv_debug->integer >= level) \
         Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 #else
 #define SV_DPrintf(...)

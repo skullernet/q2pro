@@ -126,19 +126,19 @@ void        Sys_Printf(const char *fmt, ...) q_printf(1, 2);
 #if USE_DEBUG
 #define COM_DEVELOPER   (developer->integer)
 #define Com_DPrintf(...) \
-    do { if (developer && developer->integer > 0) \
+    do { if (developer && developer->integer >= 1) \
         Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 #define Com_DDPrintf(...) \
-    do { if (developer && developer->integer > 1) \
+    do { if (developer && developer->integer >= 2) \
         Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 #define Com_DDDPrintf(...) \
-    do { if (developer && developer->integer > 2) \
+    do { if (developer && developer->integer >= 3) \
         Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 #define Com_DDDDPrintf(...) \
-    do { if (developer && developer->integer > 3) \
+    do { if (developer && developer->integer >= 4) \
         Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 #define Com_DWPrintf(...) \
-    do { if (developer && developer->integer > 0) \
+    do { if (developer && developer->integer >= 1) \
         Com_LPrintf(PRINT_WARNING, __VA_ARGS__); } while (0)
 #else
 #define COM_DEVELOPER   0

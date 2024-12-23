@@ -49,7 +49,7 @@ static bool SV_TruncPacketEntities(client_t *client, const client_frame_t *from,
     if (!sv_trunc_packet_entities->integer || client->netchan.type)
         return false;
 
-    SV_DPrintf(0, "Truncating frame %d at %u bytes for %s\n",
+    SV_DPrintf(1, "Truncating frame %d at %u bytes for %s\n",
                client->framenum, msg_write.cursize, client->name);
 
     if (!from)

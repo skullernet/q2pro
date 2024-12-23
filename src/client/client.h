@@ -544,10 +544,10 @@ extern cvar_t   *cl_nolerp;
 
 #if USE_DEBUG
 #define SHOWNET(level, ...) \
-    do { if (cl_shownet->integer > level) \
+    do { if (cl_shownet->integer >= level) \
         Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 #define SHOWCLAMP(level, ...) \
-    do { if (cl_showclamp->integer > level) \
+    do { if (cl_showclamp->integer >= level) \
         Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 #define SHOWMISS(...) \
     do { if (cl_showmiss->integer) \

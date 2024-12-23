@@ -75,7 +75,7 @@ static bool SV_RateDrop(client_t *client)
 #endif
 
     if (total > client->rate) {
-        SV_DPrintf(0, "Frame %d suppressed for %s (total = %zu)\n",
+        SV_DPrintf(1, "Frame %d suppressed for %s (total = %zu)\n",
                    client->framenum, client->name, total);
         client->frameflags |= FF_SUPPRESSED;
         client->suppress_count++;
@@ -404,11 +404,11 @@ void SV_ClientAddMessage(client_t *client, int flags)
 
     if ((flags & MSG_COMPRESS) && (len = compress_message(client)) && len < msg_write.cursize) {
         client->AddMessage(client, get_compressed_data(), len, flags & MSG_RELIABLE);
-        SV_DPrintf(0, "Compressed %sreliable message to %s: %u into %d\n",
+        SV_DPrintf(1, "Compressed %sreliable message to %s: %u into %d\n",
                    (flags & MSG_RELIABLE) ? "" : "un", client->name, msg_write.cursize, len);
     } else {
         client->AddMessage(client, msg_write.data, msg_write.cursize, flags & MSG_RELIABLE);
-        SV_DPrintf(1, "Added %sreliable message to %s: %u bytes\n",
+        SV_DPrintf(2, "Added %sreliable message to %s: %u bytes\n",
                    (flags & MSG_RELIABLE) ? "" : "un", client->name, msg_write.cursize);
     }
 
@@ -540,7 +540,7 @@ static void emit_snd(const client_t *client, const message_packet_t *msg)
 
     // check if position needs to be explicitly sent
     if (!(flags & SND_POS) && !check_entity(client, entnum)) {
-        SV_DPrintf(1, "Forcing position on entity %d for %s\n",
+        SV_DPrintf(2, "Forcing position on entity %d for %s\n",
                    entnum, client->name);
         flags |= SND_POS;   // entity is not present in frame
     }
@@ -627,7 +627,7 @@ static void write_reliables_old(client_t *client, unsigned maxsize)
     int count;
 
     if (client->netchan.reliable_length) {
-        SV_DPrintf(1, "%s to %s: unacked\n", __func__, client->name);
+        SV_DPrintf(2, "%s to %s: unacked\n", __func__, client->name);
         return;    // there is still outgoing reliable message pending
     }
 
@@ -644,7 +644,7 @@ static void write_reliables_old(client_t *client, unsigned maxsize)
             break;
         }
 
-        SV_DPrintf(1, "%s to %s: writing msg %d: %d bytes\n",
+        SV_DPrintf(2, "%s to %s: writing msg %d: %d bytes\n",
                    __func__, client->name, count, msg->cursize);
 
         SZ_Write(&client->netchan.message, msg->data, msg->cursize);
@@ -733,7 +733,7 @@ static void write_datagram_old(client_t *client)
     // send over all the relevant entity_state_t
     // and the player_state_t
     if (!client->WriteFrame(client, maxsize)) {
-        SV_DPrintf(0, "Frame %d overflowed for %s\n", client->framenum, client->name);
+        SV_DPrintf(1, "Frame %d overflowed for %s\n", client->framenum, client->name);
         SZ_Clear(&msg_write);
     }
 
@@ -999,7 +999,7 @@ void SV_SendAsyncPackets(void)
         // make sure all fragments are transmitted first
         if (netchan->fragment_pending) {
             cursize = Netchan_TransmitNextFragment(netchan);
-            SV_DPrintf(1, "%s: frag: %d\n", client->name, cursize);
+            SV_DPrintf(2, "%s: frag: %d\n", client->name, cursize);
             goto calctime;
         }
 
@@ -1027,7 +1027,7 @@ void SV_SendAsyncPackets(void)
         if (netchan->message.cursize || netchan->reliable_ack_pending ||
             netchan->reliable_length || retransmit) {
             cursize = Netchan_Transmit(netchan, 0, NULL, 1);
-            SV_DPrintf(1, "%s: send: %d\n", client->name, cursize);
+            SV_DPrintf(2, "%s: send: %d\n", client->name, cursize);
 calctime:
             SV_CalcSendTime(client, cursize);
         }

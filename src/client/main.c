@@ -2924,35 +2924,35 @@ static void CL_SetClientTime(void)
 
     prevtime = cl.servertime - CL_FRAMETIME;
     if (cl.time > cl.servertime) {
-        SHOWCLAMP(1, "high clamp %i\n", cl.time - cl.servertime);
+        SHOWCLAMP(2, "high clamp %i\n", cl.time - cl.servertime);
         cl.time = cl.servertime;
         cl.lerpfrac = 1.0f;
     } else if (cl.time < prevtime) {
-        SHOWCLAMP(1, "low clamp %i\n", prevtime - cl.time);
+        SHOWCLAMP(2, "low clamp %i\n", prevtime - cl.time);
         cl.time = prevtime;
         cl.lerpfrac = 0;
     } else {
         cl.lerpfrac = (cl.time - prevtime) * CL_1_FRAMETIME;
     }
 
-    SHOWCLAMP(2, "time %d %d, lerpfrac %.3f\n",
+    SHOWCLAMP(3, "time %d %d, lerpfrac %.3f\n",
               cl.time, cl.servertime, cl.lerpfrac);
 
 #if USE_FPS
     prevtime = cl.keyservertime - BASE_FRAMETIME;
     if (cl.keytime > cl.keyservertime) {
-        SHOWCLAMP(1, "high keyclamp %i\n", cl.keytime - cl.keyservertime);
+        SHOWCLAMP(2, "high keyclamp %i\n", cl.keytime - cl.keyservertime);
         cl.keytime = cl.keyservertime;
         cl.keylerpfrac = 1.0f;
     } else if (cl.keytime < prevtime) {
-        SHOWCLAMP(1, "low keyclamp %i\n", prevtime - cl.keytime);
+        SHOWCLAMP(2, "low keyclamp %i\n", prevtime - cl.keytime);
         cl.keytime = prevtime;
         cl.keylerpfrac = 0;
     } else {
         cl.keylerpfrac = (cl.keytime - prevtime) * BASE_1_FRAMETIME;
     }
 
-    SHOWCLAMP(2, "keytime %d %d keylerpfrac %.3f\n",
+    SHOWCLAMP(3, "keytime %d %d keylerpfrac %.3f\n",
               cl.keytime, cl.keyservertime, cl.keylerpfrac);
 #endif
 }
