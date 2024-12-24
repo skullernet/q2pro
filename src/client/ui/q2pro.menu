@@ -133,7 +133,7 @@ begin effects
     values "dynamic lighting" gl_dynamic "no" "yes" "only switchable"
     values "entity cel-shading" gl_celshading no 1x 2x 3x
     toggle "entity glowing" cl_noglow ~
-    toggle "ground shadows" gl_shadows
+    values "ground shadows" gl_shadows no yes fade
     toggle "screen blending" gl_polyblend
     toggle "screen warping" gl_waterwarp
     toggle "grenade explosions" cl_disable_explosions ~0

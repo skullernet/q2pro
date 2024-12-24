@@ -743,6 +743,12 @@ gl_dotshading::
     truly 3D-ish by simulating diffuse lighting from a fake light source.
     Default value is 1 (enabled).
 
+gl_shadows::
+    Enables drawing stencil shadows underneath 3D models. Default value is 0.
+      - 0 — disabled
+      - 1 — enabled, constant alpha
+      - 2 — enabled, alpha fade with distance
+
 gl_saturation::
     Enables grayscaling of world textures. 1 keeps original colors, 0 converts
     textures to grayscale format (this may save some video memory and speed up

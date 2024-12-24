@@ -41,6 +41,7 @@ static vec3_t   shadedir;
 static bool     dotshading;
 
 static float    celscale;
+static float    shadowalpha;
 
 static drawshadow_t drawshadow;
 static mat4_t       m_shadow_view;
@@ -461,8 +462,7 @@ static void draw_celshading(const uint16_t *indices, int num_indices)
 static drawshadow_t cull_shadow(const model_t *model)
 {
     const cplane_t *plane;
-    float radius, d, w;
-    vec3_t point;
+    float radius, w;
 
     if (!gl_shadows->integer)
         return SHADOW_NO;
@@ -483,19 +483,26 @@ static drawshadow_t cull_shadow(const model_t *model)
     if (w < 0.5f)
         return SHADOW_NO;   // too steep
 
-    if (!gl_cull_models->integer)
-        return SHADOW_YES;
+    radius = (model->frames[newframenum].radius * frontlerp + model->frames[oldframenum].radius * backlerp) * glr.entscale;
 
-    // project on plane
-    d = PlaneDiffFast(origin, plane);
-    VectorMA(origin, -d, plane->normal, point);
+    shadowalpha = 0.5f;
 
-    radius = max(model->frames[newframenum].radius, model->frames[oldframenum].radius) / w;
+    // check if faded out
+    if (gl_shadows->integer >= 2) {
+        float dist = origin[2] - glr.lightpoint.pos[2] - radius;
+        if (dist > radius * 4.0f)
+            return SHADOW_NO;
+        if (dist > 0)
+            shadowalpha = 0.5f - dist / (radius * 8.0f);
+    }
 
-    for (int i = 0; i < 4; i++) {
-        if (PlaneDiff(point, &glr.frustumPlanes[i]) < -radius) {
-            c.spheresCulled++;
-            return SHADOW_NO;   // culled out
+    if (gl_cull_models->integer) {
+        float min_d = -radius / w;
+        for (int i = 0; i < 4; i++) {
+            if (PlaneDiff(glr.lightpoint.pos, &glr.frustumPlanes[i]) < min_d) {
+                c.spheresCulled++;
+                return SHADOW_NO;   // culled out
+            }
         }
     }
 
@@ -573,7 +580,7 @@ static void draw_shadow(const uint16_t *indices, int num_indices)
     if (gls.currentva)
         GL_ArrayBits(GLA_VERTEX);
 
-    uniform_mesh_color(0, 0, 0, color[3] * 0.5f);
+    uniform_mesh_color(0, 0, 0, color[3] * shadowalpha);
     GL_LoadUniforms();
 
     qglEnable(GL_POLYGON_OFFSET_FILL);
