@@ -500,7 +500,7 @@ static drawshadow_t cull_shadow(const model_t *model)
         float min_d = -radius / w;
         for (int i = 0; i < 4; i++) {
             if (PlaneDiff(glr.lightpoint.pos, &glr.frustumPlanes[i]) < min_d) {
-                c.spheresCulled++;
+                c.shadowsCulled++;
                 return SHADOW_NO;   // culled out
             }
         }
@@ -649,6 +649,8 @@ static void draw_alias_mesh(const uint16_t *indices, int num_indices,
     glStateBits_t state;
     const image_t *skin;
 
+    c.trisDrawn += num_indices / 3;
+
     // if the model was culled, just draw the shadow
     if (drawshadow == SHADOW_ONLY) {
         GL_LockArrays(num_verts);
@@ -719,7 +721,6 @@ static void draw_alias_mesh(const uint16_t *indices, int num_indices,
     GL_LockArrays(num_verts);
 
     qglDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, indices);
-    c.trisDrawn += num_indices / 3;
 
     draw_celshading(indices, num_indices);
 

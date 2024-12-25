@@ -421,7 +421,7 @@ void Draw_Stats(void)
     int x = 10, y = 10;
 
     R_SetScale(1.0f / get_auto_scale());
-    R_DrawFill8(8, 8, 25*8, 23*10+2, 4);
+    R_DrawFill8(8, 8, 25*8, 24*10+2, 4);
 
     Draw_Stringf(x, y, "Nodes visible  : %i", glr.nodes_visible); y += 10;
     Draw_Stringf(x, y, "Nodes culled   : %i", c.nodesCulled); y += 10;
@@ -432,6 +432,7 @@ void Draw_Stats(void)
     Draw_Stringf(x, y, "Boxes culled   : %i", c.boxesCulled); y += 10;
     Draw_Stringf(x, y, "Spheres culled : %i", c.spheresCulled); y += 10;
     Draw_Stringf(x, y, "RtBoxes culled : %i", c.rotatedBoxesCulled); y += 10;
+    Draw_Stringf(x, y, "Shadows culled : %i", c.shadowsCulled); y += 10;
     Draw_Stringf(x, y, "Tris drawn     : %i", c.trisDrawn); y += 10;
     Draw_Stringf(x, y, "Tex switches   : %i", c.texSwitches); y += 10;
     Draw_Stringf(x, y, "Tex uploads    : %i", c.texUploads); y += 10;
