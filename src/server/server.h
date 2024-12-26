@@ -353,14 +353,14 @@ typedef struct client_s {
     entity_packed_t     *entities;      // [num_entities]
 
     // server state pointers (hack for MVD channels implementation)
-    configstring_t      *configstrings;
-    const cs_remap_t    *csr;
-    char                *gamedir, *mapname;
-    const game_export_t *ge;
-    cm_t                *cm;
-    int                 infonum;    // slot number visible to client
-    int                 spawncount;
-    int                 maxclients;
+    const configstring_t    *configstrings;
+    const cs_remap_t        *csr;
+    const char              *gamedir, *mapname;
+    const game_export_t     *ge;
+    const cm_t              *cm;
+    int                     infonum;    // slot number visible to client
+    int                     spawncount;
+    int                     maxclients;
 
     // netchan type dependent methods
     void            (*AddMessage)(struct client_s *, const byte *, size_t, bool);
