@@ -93,6 +93,7 @@ bool IF_KeyEvent(inputField_t *field, int key)
         while (field->text[pos] > 32) {
             pos++;
         }
+        Q_assert(pos < sizeof(field->text));
         memmove(field->text + field->cursorPos, field->text + pos,
                 sizeof(field->text) - pos);
         return true;
