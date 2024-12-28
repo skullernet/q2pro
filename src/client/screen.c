@@ -1100,8 +1100,8 @@ static void SCR_DrawDebugStats(void)
     if (j <= 0)
         return;
 
-    if (j > MAX_STATS)
-        j = MAX_STATS;
+    if (j > cl.max_stats)
+        j = cl.max_stats;
 
     x = CONCHAR_WIDTH;
     y = (scr.hud_height - j * CONCHAR_HEIGHT) / 2;
@@ -1854,7 +1854,7 @@ static void SCR_ExecuteLayoutString(const char *s)
             // draw a pic from a stat number
             token = COM_Parse(&s);
             value = Q_atoi(token);
-            if (value < 0 || value >= MAX_STATS) {
+            if (value < 0 || value >= cl.max_stats) {
                 Com_Error(ERR_DROP, "%s: invalid stat index", __func__);
             }
             value = cl.frame.ps.stats[value];
@@ -1969,7 +1969,7 @@ static void SCR_ExecuteLayoutString(const char *s)
             width = Q_atoi(token);
             token = COM_Parse(&s);
             value = Q_atoi(token);
-            if (value < 0 || value >= MAX_STATS) {
+            if (value < 0 || value >= cl.max_stats) {
                 Com_Error(ERR_DROP, "%s: invalid stat index", __func__);
             }
             value = cl.frame.ps.stats[value];
@@ -2039,7 +2039,7 @@ static void SCR_ExecuteLayoutString(const char *s)
             char *cmd = token + 5;
             token = COM_Parse(&s);
             index = Q_atoi(token);
-            if (index < 0 || index >= MAX_STATS) {
+            if (index < 0 || index >= cl.max_stats) {
                 Com_Error(ERR_DROP, "%s: invalid stat index", __func__);
             }
             index = cl.frame.ps.stats[index];
@@ -2101,7 +2101,7 @@ static void SCR_ExecuteLayoutString(const char *s)
         if (!strcmp(token, "if")) {
             token = COM_Parse(&s);
             value = Q_atoi(token);
-            if (value < 0 || value >= MAX_STATS) {
+            if (value < 0 || value >= cl.max_stats) {
                 Com_Error(ERR_DROP, "%s: invalid stat index", __func__);
             }
             value = cl.frame.ps.stats[value];
@@ -2133,7 +2133,7 @@ static void SCR_ExecuteLayoutString(const char *s)
         if (!strcmp(token, "health_bars")) {
             token = COM_Parse(&s);
             value = Q_atoi(token);
-            if (value < 0 || value >= MAX_STATS) {
+            if (value < 0 || value >= cl.max_stats) {
                 Com_Error(ERR_DROP, "%s: invalid stat index", __func__);
             }
             value = cl.frame.ps.stats[value];

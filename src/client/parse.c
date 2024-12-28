@@ -705,6 +705,8 @@ static void CL_ParseServerData(void)
         }
     }
 
+    cl.max_stats = (cl.psFlags & MSG_PS_EXTENSIONS_2) ? MAX_STATS_NEW : MAX_STATS_OLD;
+
     // use full extended flags unless writing backward compatible demo
     cls.demo.esFlags = cl.csr.extended ? CL_ES_EXTENDED_MASK_2 : 0;
     cls.demo.psFlags = cl.csr.extended ? CL_PS_EXTENDED_MASK_2 : 0;

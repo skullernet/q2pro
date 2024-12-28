@@ -264,6 +264,7 @@ typedef struct {
     char        gamedir[MAX_QPATH];
     int         clientNum;            // never changed during gameplay, set by serverdata packet
     int         maxclients;
+    int         max_stats;
     pmoveParams_t pmp;
 
 #if USE_FPS

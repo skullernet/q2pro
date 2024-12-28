@@ -756,6 +756,7 @@ static void CL_PlayDemo_f(void)
     Q_strlcpy(cls.servername, COM_SkipPath(name), sizeof(cls.servername));
     cls.serverAddress.type = NA_LOOPBACK;
     cl.csr = cs_remap_old;
+    cl.max_stats = MAX_STATS_OLD;
 
     Con_Popup(true);
     SCR_UpdateScreen();
