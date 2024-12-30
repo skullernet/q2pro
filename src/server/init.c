@@ -269,8 +269,9 @@ static bool parse_and_check_server(mapcmd_t *cmd, const char *server, bool nexts
             ret = SCR_CheckForCinematic(expanded);
         break;
 
+    // demos are handled specially, because they are played locally on the client
     case ss_demo:
-        if (!sv_cinematics->integer && nextserver)
+        if (nextserver && (!sv_cinematics->integer || (sv.state && sv_maxclients->integer > 1)))
             return false;       // skip it
         if (Q_concat(expanded, sizeof(expanded), "demos/", cmd->server) >= sizeof(expanded))
             break;
