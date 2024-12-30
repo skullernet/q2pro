@@ -554,8 +554,8 @@ static uint32_t color_for_surface(const mface_t *surf)
 
 static bool enable_intensity_for_surface(const mface_t *surf)
 {
-    // enable for any surface with a lightmap in DECOUPLED_LM maps
-    if (surf->lightmap && gl_static.world.cache->lm_decoupled)
+    // enable for any surface with a lightmap in BSPX maps
+    if (surf->lightmap && gl_static.world.cache->has_bspx)
         return true;
 
     // enable for non-transparent, non-warped surfaces
@@ -1172,15 +1172,13 @@ void GL_LoadWorld(const char *name)
     gl_static.world.buffer_size = size;
 
     gl_static.nolm_mask = SURF_NOLM_MASK_DEFAULT;
-    gl_static.use_bmodel_skies = false;
+    gl_static.use_bmodel_skies = gl_static.use_cubemaps && bsp->has_bspx;
 
-    // only supported in DECOUPLED_LM maps because vanilla maps have broken
+    // only supported in BSPX and N64 maps because vanilla maps have broken
     // lightofs for liquids/alphas. legacy renderer doesn't support lightmapped
     // liquids too.
-    if ((bsp->lm_decoupled || n64surfs > 100) && gl_static.use_shaders) {
+    if ((bsp->has_bspx || n64surfs > 100) && gl_static.use_shaders)
         gl_static.nolm_mask = SURF_NOLM_MASK_REMASTER;
-        gl_static.use_bmodel_skies = gl_static.use_cubemaps;
-    }
 
     glr.fd.lightstyles = &(lightstyle_t){ 1 };
 
