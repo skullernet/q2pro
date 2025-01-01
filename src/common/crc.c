@@ -17,7 +17,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 /* crc.c */
 
-#include "client.h"
+#include "shared/shared.h"
+#include "common/crc.h"
 
 // this is a 16 bit, non-reflected CRC using the polynomial 0x1021
 // and the initial and final xor values shown below...  in other words, the
@@ -61,7 +62,7 @@ static const uint16_t crctable[256] = {
     0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0x0ed1, 0x1ef0
 };
 
-static uint16_t CRC_Block(const byte *start, size_t count)
+uint16_t CRC_Block(const byte *start, size_t count)
 {
     uint16_t    crc = CRC_INIT_VALUE;
 
@@ -70,6 +71,8 @@ static uint16_t CRC_Block(const byte *start, size_t count)
 
     return crc;
 }
+
+#if USE_CLIENT
 
 static const byte chktbl[1024] = {
     0x84, 0x47, 0x51, 0xc1, 0x93, 0x22, 0x21, 0x24, 0x2f, 0x66, 0x60, 0x4d, 0xb0, 0x7c, 0xda,
@@ -178,3 +181,5 @@ byte COM_BlockSequenceCRCByte(const byte *base, size_t length, int sequence)
 
     return crc;
 }
+
+#endif // USE_CLIENT

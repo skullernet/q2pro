@@ -13,6 +13,7 @@ common_src = [
   'src/common/cmd.c',
   'src/common/cmodel.c',
   'src/common/common.c',
+  'src/common/crc.c',
   'src/common/cvar.c',
   'src/common/error.c',
   'src/common/field.c',
@@ -37,7 +38,6 @@ common_src = [
 client_src = [
   'src/client/ascii.c',
   'src/client/console.c',
-  'src/client/crc.c',
   'src/client/demo.c',
   'src/client/download.c',
   'src/client/effects.c',

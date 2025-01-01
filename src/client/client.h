@@ -1090,8 +1090,3 @@ void CL_GTV_Shutdown(void);
 #define CL_GTV_Init()                   (void)0
 #define CL_GTV_Shutdown()               (void)0
 #endif
-
-//
-// crc.c
-//
-byte COM_BlockSequenceCRCByte(const byte *base, size_t length, int sequence);
