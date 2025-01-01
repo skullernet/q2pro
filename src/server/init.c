@@ -286,7 +286,7 @@ static bool parse_and_check_server(mapcmd_t *cmd, const char *server, bool nexts
         break;
 
     default:
-        CM_LoadOverrides(&cmd->cm, cmd->server, sizeof(cmd->server));   // may override server!
+        CM_LoadOverride(&cmd->cm, cmd->server, sizeof(cmd->server));    // may override server!
         if (Q_concat(expanded, sizeof(expanded), "maps/", cmd->server, ".bsp") < sizeof(expanded))
             ret = CM_LoadMap(&cmd->cm, expanded);
         if (ret < 0)

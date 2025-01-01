@@ -22,6 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/cmd.h"
 #include "common/cmodel.h"
 #include "common/common.h"
+#include "common/crc.h"
 #include "common/cvar.h"
 #include "common/files.h"
 #include "common/math.h"
@@ -50,20 +51,43 @@ enum {
     OVERRIDE_ALL    = MASK(3)
 };
 
-static void load_entstring_override(cm_t *cm, const char *server)
+static void load_entstring_override(cm_t *cm)
 {
-    char buffer[MAX_QPATH], *data = NULL;
-    int ret;
+    char buffer[MAX_QPATH], name[MAX_QPATH], *data = NULL;
+    const bsp_t *bsp = cm->cache;
+    const char *path = map_override_path->string;
+    int ret, crc = 0;
 
-    if (Q_snprintf(buffer, sizeof(buffer), "%s/%s.ent", map_override_path->string, server) >= sizeof(buffer)) {
+    if (!*path)
+        return;
+
+    if (!Com_ParseMapName(name, bsp->name, sizeof(name)))
+        return;
+
+    // last byte is excluded from CRC (why?)
+    if (bsp->numentitychars > 0)
+        crc = CRC_Block((const byte *)bsp->entitystring, bsp->numentitychars - 1);
+
+    // load entity string from `<mapname>@<hash>.ent'
+    if (Q_snprintf(buffer, sizeof(buffer), "%s/%s@%04x.ent", path, name, crc) >= sizeof(buffer)) {
         ret = Q_ERR(ENAMETOOLONG);
         goto fail;
     }
-
     ret = FS_LoadFileEx(buffer, (void **)&data, 0, TAG_CMODEL);
-    if (!data) {
-        if (ret == Q_ERR(ENOENT))
-            return;
+
+    // fall back to no hash
+    if (ret == Q_ERR(ENOENT)) {
+        Q_snprintf(buffer, sizeof(buffer), "%s/%s.ent", path, name);
+        ret = FS_LoadFileEx(buffer, (void **)&data, 0, TAG_CMODEL);
+    }
+    if (ret == Q_ERR(ENOENT))
+        return;
+
+    if (ret < 0)
+        goto fail;
+
+    if (ret < 2) {
+        ret = Q_ERR_FILE_TOO_SMALL;
         goto fail;
     }
 
@@ -77,13 +101,27 @@ fail:
     Com_EPrintf("Couldn't load entity string from %s: %s\n", buffer, Q_ErrorString(ret));
 }
 
-static void load_binary_override(cm_t *cm, char *server, size_t server_size)
+/*
+==================
+CM_LoadOverride
+
+Load R1Q2-style binary override file.
+
+Must be called before CM_LoadMap().
+May modify server buffer if name override is in effect.
+May allocate enstring, must be freed with CM_FreeMap().
+==================
+*/
+void CM_LoadOverride(cm_t *cm, char *server, size_t server_size)
 {
     sizebuf_t sz;
     char buffer[MAX_QPATH];
     byte *data = NULL;
     int ret, bits, len;
     char *buf, name_buf[MAX_QPATH];
+
+    if (!*map_override_path->string)
+        return;
 
     if (Q_snprintf(buffer, sizeof(buffer), "%s/%s.bsp.override", map_override_path->string, server) >= sizeof(buffer)) {
         ret = Q_ERR(ENAMETOOLONG);
@@ -143,28 +181,6 @@ fail:
 
 /*
 ==================
-CM_LoadOverrides
-
-Ugly hack to override entstring and other parameters.
-
-Must be called before CM_LoadMap.
-May modify server buffer if name override is in effect.
-May allocate enstring, must be freed with CM_FreeMap().
-==================
-*/
-void CM_LoadOverrides(cm_t *cm, char *server, size_t server_size)
-{
-    if (!*map_override_path->string)
-        return;
-
-    load_binary_override(cm, server, server_size);
-
-    if (!(cm->override_bits & OVERRIDE_ENTS))
-        load_entstring_override(cm, server);
-}
-
-/*
-==================
 CM_FreeMap
 ==================
 */
@@ -195,6 +211,9 @@ int CM_LoadMap(cm_t *cm, const char *name)
     ret = BSP_Load(name, &cm->cache);
     if (!cm->cache)
         return ret;
+
+    if (!(cm->override_bits & OVERRIDE_ENTS))
+        load_entstring_override(cm);
 
     if (!(cm->override_bits & OVERRIDE_CSUM))
         cm->checksum = cm->cache->checksum;

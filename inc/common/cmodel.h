@@ -40,7 +40,7 @@ void        CM_Init(void);
 
 void        CM_FreeMap(cm_t *cm);
 int         CM_LoadMap(cm_t *cm, const char *name);
-void        CM_LoadOverrides(cm_t *cm, char *server, size_t server_size);
+void        CM_LoadOverride(cm_t *cm, char *server, size_t server_size);
 
 const mnode_t   *CM_NodeNum(const cm_t *cm, int number);
 const mleaf_t   *CM_LeafNum(const cm_t *cm, int number);
