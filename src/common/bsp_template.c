@@ -21,6 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // with BSP_EXTENDED = 1 (strictly in this order).
 //
 // This code doesn't use structs to allow for unaligned lumps reading.
+// Needed for buggy N64 maps from remaster which have unaligned lumps.
 
 #if BSP_EXTENDED
 
