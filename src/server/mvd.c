@@ -78,6 +78,7 @@ typedef struct {
     int             numframes; // stop after that many frames
 
     // TCP client pool
+    int             maxclients;
     gtv_client_t    *clients; // [sv_mvd_maxclients]
 } mvd_server_t;
 
@@ -316,11 +317,10 @@ static void dummy_spawn(void)
 static client_t *dummy_find_slot(void)
 {
     client_t *c;
-    int i, j;
+    int i;
 
     // first check if there is a free reserved slot
-    j = sv_maxclients->integer - sv_reserved_slots->integer;
-    for (i = j; i < sv_maxclients->integer; i++) {
+    for (i = svs.maxclients_soft; i < svs.maxclients; i++) {
         c = &svs.client_pool[i];
         if (!c->state) {
             return c;
@@ -328,7 +328,7 @@ static client_t *dummy_find_slot(void)
     }
 
     // then check regular slots
-    for (i = 0; i < j; i++) {
+    for (i = 0; i < svs.maxclients_soft; i++) {
         c = &svs.client_pool[i];
         if (!c->state) {
             return c;
@@ -492,7 +492,7 @@ static bool player_is_active(const edict_t *ent)
     }
 
     num = NUM_FOR_EDICT(ent) - 1;
-    if (num < 0 || num >= sv_maxclients->integer) {
+    if (num < 0 || num >= svs.maxclients) {
         return false;
     }
 
@@ -576,11 +576,11 @@ static void build_gamestate(void)
     edict_t *ent;
     int i;
 
-    memset(mvd.players, 0, sizeof(mvd.players[0]) * sv_maxclients->integer);
+    memset(mvd.players, 0, sizeof(mvd.players[0]) * svs.maxclients);
     memset(mvd.entities, 0, sizeof(mvd.entities[0]) * svs.csr.max_edicts);
 
     // set base player states
-    for (i = 0; i < sv_maxclients->integer; i++) {
+    for (i = 0; i < svs.maxclients; i++) {
         ent = EDICT_NUM(i + 1);
 
         if (!player_is_active(ent)) {
@@ -669,7 +669,7 @@ static void emit_gamestate(void)
     MSG_WriteData(portalbits, portalbytes);
 
     // send player states
-    for (i = 0, ps = mvd.players; i < sv_maxclients->integer; i++, ps++) {
+    for (i = 0, ps = mvd.players; i < svs.maxclients; i++, ps++) {
         flags = mvd.psFlags;
         if (!PPS_INUSE(ps)) {
             flags |= MSG_PS_REMOVE;
@@ -682,7 +682,7 @@ static void emit_gamestate(void)
     for (i = 1, es = mvd.entities + 1; i < ge->num_edicts; i++, es++) {
         flags = mvd.esFlags;
         if ((j = es->number) != 0) {
-            if (i <= sv_maxclients->integer) {
+            if (i <= svs.maxclients) {
                 ps = &mvd.players[i - 1];
                 if (PPS_INUSE(ps) && ps->pmove.pm_type == PM_NORMAL) {
                     flags |= MSG_ES_FIRSTPERSON;
@@ -720,7 +720,7 @@ static void emit_frame(void)
     MSG_WriteData(portalbits, portalbytes);
 
     // send player states
-    for (i = 0; i < sv_maxclients->integer; i++) {
+    for (i = 0; i < svs.maxclients; i++) {
         oldps = &mvd.players[i];
         ent = EDICT_NUM(i + 1);
 
@@ -776,7 +776,7 @@ static void emit_frame(void)
         // calculate flags
         flags = mvd.esFlags;
         oldps = NULL; // shut up compiler
-        if (i <= sv_maxclients->integer) {
+        if (i <= svs.maxclients) {
             oldps = &mvd.players[i - 1];
             if (PPS_INUSE(oldps) && oldps->pmove.pm_type == PM_NORMAL) {
                 // do not waste bandwidth on origin/angle updates,
@@ -867,7 +867,7 @@ static bool players_active(void)
     int i;
     edict_t *ent;
 
-    for (i = 0; i < sv_maxclients->integer; i++) {
+    for (i = 0; i < svs.maxclients; i++) {
         ent = EDICT_NUM(i + 1);
         if (mvd.dummy && ent == mvd.dummy->edict)
             continue;
@@ -1722,7 +1722,7 @@ static gtv_client_t *find_slot(void)
     gtv_client_t *client;
     int i;
 
-    for (i = 0; i < sv_mvd_maxclients->integer; i++) {
+    for (i = 0; i < mvd.maxclients; i++) {
         client = &mvd.clients[i];
         if (!client->state) {
             return client;
@@ -2086,17 +2086,16 @@ void SV_MvdPreInit(void)
     Cvar_ClampInteger(sv_maxclients, 1, CLIENTNUM_NONE);
 
     // reserve the slot for dummy MVD client
-    if (!sv_reserved_slots->integer) {
-        Cvar_Set("sv_reserved_slots", "1");
-    }
+    Cvar_ClampInteger(sv_reserved_slots, 1, sv_maxclients->integer - 1);
 
-    Cvar_ClampInteger(sv_mvd_maxclients, 1, 256);
+    Cvar_ClampInteger(sv_mvd_maxclients, 1, MAX_CLIENTS);
 
     // open server TCP socket
     if (sv_mvd_enable->integer > 1) {
         neterr_t ret = NET_Listen(true);
         if (ret == NET_OK) {
-            mvd.clients = SV_Mallocz(sizeof(mvd.clients[0]) * sv_mvd_maxclients->integer);
+            mvd.maxclients = sv_mvd_maxclients->integer;
+            mvd.clients = SV_Mallocz(sizeof(mvd.clients[0]) * mvd.maxclients);
         } else {
             if (ret == NET_ERROR)
                 Com_EPrintf("Error opening server TCP port.\n");
@@ -2126,7 +2125,7 @@ void SV_MvdPostInit(void)
     // allocate buffers
     SZ_InitWrite(&mvd.message, SV_Malloc(MAX_MSGLEN), MAX_MSGLEN);
     SZ_InitWrite(&mvd.datagram, SV_Malloc(MAX_MSGLEN), MAX_MSGLEN);
-    mvd.players = SV_Malloc(sizeof(mvd.players[0]) * sv_maxclients->integer);
+    mvd.players = SV_Malloc(sizeof(mvd.players[0]) * svs.maxclients);
     mvd.entities = SV_Malloc(sizeof(mvd.entities[0]) * svs.csr.max_edicts);
 
     // setup protocol flags

@@ -412,9 +412,8 @@ static size_t SV_StatusString(char *status)
     char *tmp = sv_maxclients->string;
 
     // XXX: ugly hack to hide reserved slots
-    if (sv_reserved_slots->integer) {
-        Q_snprintf(entry, sizeof(entry), "%d",
-                   sv_maxclients->integer - sv_reserved_slots->integer);
+    if (svs.maxclients_soft != svs.maxclients) {
+        Q_snprintf(entry, sizeof(entry), "%d", svs.maxclients_soft);
         sv_maxclients->string = entry;
     }
 
@@ -531,7 +530,7 @@ static void SVC_Info(void)
     size_t  len;
     int     version;
 
-    if (sv_maxclients->integer == 1)
+    if (svs.maxclients == 1)
         return; // ignore in single player
 
     version = Q_atoi(Cmd_Argv(1));
@@ -541,7 +540,7 @@ static void SVC_Info(void)
     len = Q_scnprintf(buffer, sizeof(buffer),
                       "\xff\xff\xff\xffinfo\n%16s %8s %2i/%2i\n",
                       sv_hostname->string, sv.name, SV_CountClients(),
-                      sv_maxclients->integer - sv_reserved_slots->integer);
+                      svs.maxclients_soft);
 
     NET_SendPacket(NS_SERVER, buffer, len, &net_from);
 }
@@ -625,7 +624,7 @@ typedef struct {
     int         nctype;
     bool        has_zlib;
 
-    int         reserved;   // hidden client slots
+    int         maxclients; // hidden client slots
     char        reconnect_var[16];
     char        reconnect_val[16];
 } conn_params_t;
@@ -861,6 +860,9 @@ static bool parse_userinfo(conn_params_t *params, char *userinfo)
     if (COM_IsWhite(s))
         return reject("Please set your name before connecting.\n");
 
+    // allow them to use reserved slots if they know the password
+    params->maxclients = svs.maxclients;
+
     // check password
     s = Info_ValueForKey(info, "password");
     if (sv_password->string[0]) {
@@ -875,13 +877,11 @@ static bool parse_userinfo(conn_params_t *params, char *userinfo)
 
         // valid connect packets are not rate limited
         SV_RateRecharge(&svs.ratelimit_auth);
-
-        // allow them to use reserved slots
     } else if (!sv_reserved_password->string[0] ||
                strcmp(sv_reserved_password->string, s)) {
         // if no reserved password is set on the server, do not allow
         // anyone to access reserved slots at all
-        params->reserved = sv_reserved_slots->integer;
+        params->maxclients = svs.maxclients_soft;
     }
 
     // copy userinfo off
@@ -955,18 +955,18 @@ static client_t *find_client_slot(conn_params_t *params)
 
     // check for forced redirect to a different address
     s = sv_redirect_address->string;
-    if (*s == '!' && sv_reserved_slots->integer == params->reserved)
+    if (*s == '!' && params->maxclients == svs.maxclients_soft)
         return redirect(s + 1);
 
     // find a free client slot
-    for (i = 0; i < sv_maxclients->integer - params->reserved; i++) {
+    for (i = 0; i < params->maxclients; i++) {
         cl = &svs.client_pool[i];
         if (cl->state == cs_free)
             return cl;
     }
 
     // clients that know the password are never redirected
-    if (sv_reserved_slots->integer != params->reserved)
+    if (params->maxclients != svs.maxclients_soft)
         return reject_ptr("Server and reserved slots are full.\n");
 
     // optionally redirect them to a different address
@@ -1124,7 +1124,7 @@ static void SVC_DirectConnect(void)
     newcl->ge = ge;
     newcl->cm = &sv.cm;
     newcl->spawncount = sv.spawncount;
-    newcl->maxclients = sv_maxclients->integer;
+    newcl->maxclients = svs.maxclients;
     Q_strlcpy(newcl->reconnect_var, params.reconnect_var, sizeof(newcl->reconnect_var));
     Q_strlcpy(newcl->reconnect_val, params.reconnect_val, sizeof(newcl->reconnect_val));
 #if USE_FPS

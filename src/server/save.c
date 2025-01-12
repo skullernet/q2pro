@@ -501,7 +501,7 @@ void SV_AutoSaveBegin(const mapcmd_t *cmd)
     // clear all the client inuse flags before saving so that
     // when the level is re-entered, the clients will spawn
     // at spawn points instead of occupying body shells
-    for (i = 0; i < sv_maxclients->integer; i++) {
+    for (i = 0; i < svs.maxclients; i++) {
         ent = EDICT_NUM(i + 1);
         if (ent->inuse) {
             Q_SetBit(bitmap, i);
@@ -514,7 +514,7 @@ void SV_AutoSaveBegin(const mapcmd_t *cmd)
         Com_EPrintf("Couldn't write level file.\n");
 
     // we must restore these for clients to transfer over correctly
-    for (i = 0; i < sv_maxclients->integer; i++) {
+    for (i = 0; i < svs.maxclients; i++) {
         ent = EDICT_NUM(i + 1);
         ent->inuse = Q_IsBitSet(bitmap, i);
     }
@@ -671,7 +671,7 @@ static void SV_Savegame_f(void)
         if (!gex->CanSave())
             return;
     } else {
-        if (sv_maxclients->integer == 1 && SV_GetClient_Stat(&svs.client_pool[0], STAT_HEALTH) <= 0) {
+        if (svs.maxclients == 1 && SV_GetClient_Stat(&svs.client_pool[0], STAT_HEALTH) <= 0) {
             Com_Printf("Can't savegame while dead!\n");
             return;
         }

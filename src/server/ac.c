@@ -618,7 +618,7 @@ static client_t *AC_ParseClient(void)
     clientID = MSG_ReadWord();
     challenge = MSG_ReadLong();
 
-    if (clientID >= sv_maxclients->integer) {
+    if (clientID >= svs.maxclients) {
         Com_WPrintf("ANTICHEAT: Illegal client ID: %u\n", clientID);
         return NULL;
     }
@@ -1577,7 +1577,7 @@ void AC_Info_f(void)
 
         if (COM_IsUint(substring)) {
             clientID = Q_atoi(substring);
-            if (clientID < 0 || clientID >= sv_maxclients->integer) {
+            if (clientID < 0 || clientID >= svs.maxclients) {
                 Com_Printf("Invalid client ID.\n");
                 return;
             }

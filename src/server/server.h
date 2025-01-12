@@ -468,7 +468,9 @@ typedef struct {
     bool        initialized;        // sv_init has completed
     unsigned    realtime;           // always increasing, no clamping, etc
 
-    client_t    *client_pool;   // [maxclients]
+    int         maxclients_soft;    // minus reserved slots
+    int         maxclients;
+    client_t    *client_pool;       // [maxclients]
 
 #if USE_ZLIB
     z_stream        z;  // for compressing messages at once

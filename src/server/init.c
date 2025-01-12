@@ -194,7 +194,7 @@ void SV_SpawnServer(const mapcmd_t *cmd)
         ge->RunFrame();
 
     // make sure maxclients string is correct
-    sprintf(sv.configstrings[svs.csr.maxclients], "%d", sv_maxclients->integer);
+    sprintf(sv.configstrings[svs.csr.maxclients], "%d", svs.maxclients);
 
     // check for a savegame
     SV_CheckForSavegame(cmd);
@@ -271,7 +271,7 @@ static bool parse_and_check_server(mapcmd_t *cmd, const char *server, bool nexts
 
     // demos are handled specially, because they are played locally on the client
     case ss_demo:
-        if (nextserver && (!sv_cinematics->integer || (sv.state && sv_maxclients->integer > 1)))
+        if (nextserver && (!sv_cinematics->integer || (sv.state && svs.maxclients > 1)))
             return false;       // skip it
         if (Q_concat(expanded, sizeof(expanded), "demos/", cmd->server) >= sizeof(expanded))
             break;
@@ -445,8 +445,10 @@ void SV_InitGame(unsigned mvd_spawn)
     }
 
     Cvar_ClampInteger(sv_reserved_slots, 0, sv_maxclients->integer - 1);
+    svs.maxclients_soft = sv_maxclients->integer - sv_reserved_slots->integer;
 
-    svs.client_pool = SV_Mallocz(sizeof(svs.client_pool[0]) * sv_maxclients->integer);
+    svs.maxclients = sv_maxclients->integer;
+    svs.client_pool = SV_Mallocz(sizeof(svs.client_pool[0]) * svs.maxclients);
 
 #if USE_ZLIB
     svs.z.zalloc = SV_zalloc;
@@ -485,7 +487,7 @@ void SV_InitGame(unsigned mvd_spawn)
     svs.last_heartbeat = -(HEARTBEAT_SECONDS - 5) * 1000;
     svs.heartbeat_index = 0;
 
-    for (i = 0; i < sv_maxclients->integer; i++) {
+    for (i = 0; i < svs.maxclients; i++) {
         client = svs.client_pool + i;
         entnum = i + 1;
         ent = EDICT_NUM(entnum);

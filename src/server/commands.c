@@ -126,7 +126,7 @@ client_t *SV_GetPlayer(const char *s, bool partial)
     // numeric values are just slot numbers
     if (COM_IsUint(s)) {
         i = Q_atoi(s);
-        if (i < 0 || i >= sv_maxclients->integer) {
+        if (i < 0 || i >= svs.maxclients) {
             Com_Printf("Bad client slot number: %d\n", i);
             return NULL;
         }
@@ -990,7 +990,7 @@ static void SV_PickClient_f(void)
         Com_Printf("No server running.\n");
         return;
     }
-    if (sv_maxclients->integer == 1) {
+    if (svs.maxclients == 1) {
         Com_Printf("Single player server running.\n");
         return;
     }
