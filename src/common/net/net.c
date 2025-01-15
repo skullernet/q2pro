@@ -54,15 +54,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <arpa/inet.h>
 #include <poll.h>
 #include <errno.h>
-#ifdef __linux__
-#include <linux/types.h>
 #if USE_ICMP
 #include <linux/errqueue.h>
 #else
 #undef IP_RECVERR
 #undef IPV6_RECVERR
 #endif
-#endif // __linux__
 #endif // !_WIN32
 
 // prevents infinite retry loops caused by broken TCP/IP stacks

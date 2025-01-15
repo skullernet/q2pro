@@ -28,7 +28,7 @@ static const char *os_error_string(int err)
 // returns true if failed socket operation should be retried.
 static bool process_error_queue(qsocket_t sock, const netadr_t *to)
 {
-#ifdef IP_RECVERR
+#if USE_ICMP
     byte buffer[1024];
     struct sockaddr_storage from_addr;
     struct msghdr msg;
