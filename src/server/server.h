@@ -757,7 +757,7 @@ void SV_PrintMiscInfo(void);
 static inline void SV_CheckEntityNumber(edict_t *ent, int e, const char *func)
 {
     if (q_unlikely(ent->s.number != e)) {
-        Com_WPrintf("%s: fixing ent->s.number: %d to %d\n", func, ent->s.number, e);
+        Com_DWPrintf("%s: fixing ent->s.number: %d to %d\n", func, ent->s.number, e);
         ent->s.number = e;
     }
 }
