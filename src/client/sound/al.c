@@ -60,7 +60,8 @@ static void s_underwater_gain_hf_changed(cvar_t *self)
 
 static bool AL_Init(void)
 {
-    int i;
+    const ALchar *s;
+    int i, major, minor;
 
     Com_DPrintf("Initializing OpenAL\n");
 
@@ -73,8 +74,14 @@ static bool AL_Init(void)
     Com_DPrintf("AL_VERSION: %s\n", qalGetString(AL_VERSION));
     Com_DDPrintf("AL_EXTENSIONS: %s\n", qalGetString(AL_EXTENSIONS));
 
+    s = qalGetString(AL_VERSION);
+    if (!s || sscanf(s, "%d.%d", &major, &minor) < 2 || major < 1 || minor < 0) {
+        Com_SetLastError("Couldn't parse AL_VERSION");
+        goto fail1;
+    }
+
     // check for linear distance extension
-    if (!qalIsExtensionPresent("AL_EXT_LINEAR_DISTANCE")) {
+    if (major == 1 && minor == 0 && !qalIsExtensionPresent("AL_EXT_LINEAR_DISTANCE")) {
         Com_SetLastError("AL_EXT_LINEAR_DISTANCE extension is missing");
         goto fail1;
     }
