@@ -18,7 +18,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #pragma once
 
+#ifndef QAL_HARD_LINKED
 #define AL_NO_PROTOTYPES
+#endif
 
 #include <AL/al.h>
 #include <AL/alext.h>
@@ -32,6 +34,34 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define AL_REMIX_UNMATCHED_SOFT     0x0002
 #endif
 
+#ifdef QAL_HARD_LINKED
+#define qalBufferData alBufferData
+#define qalBufferiv alBufferiv
+#define qalDeleteBuffers alDeleteBuffers
+#define qalDeleteSources alDeleteSources
+#define qalDisable alDisable
+#define qalDistanceModel alDistanceModel
+#define qalEnable alEnable
+#define qalGenBuffers alGenBuffers
+#define qalGenSources alGenSources
+#define qalGetEnumValue alGetEnumValue
+#define qalGetError alGetError
+#define qalGetProcAddress alGetProcAddress
+#define qalGetSourcef alGetSourcef
+#define qalGetSourcei alGetSourcei
+#define qalGetString alGetString
+#define qalIsExtensionPresent alIsExtensionPresent
+#define qalListener3f alListener3f
+#define qalListenerf alListenerf
+#define qalListenerfv alListenerfv
+#define qalSource3f alSource3f
+#define qalSourcePlay alSourcePlay
+#define qalSourceQueueBuffers alSourceQueueBuffers
+#define qalSourceStop alSourceStop
+#define qalSourceUnqueueBuffers alSourceUnqueueBuffers
+#define qalSourcef alSourcef
+#define qalSourcei alSourcei
+#else
 // AL 1.1
 QALAPI LPALBUFFERDATA qalBufferData;
 QALAPI LPALBUFFERIV qalBufferiv;
@@ -59,6 +89,7 @@ QALAPI LPALSOURCESTOP qalSourceStop;
 QALAPI LPALSOURCEUNQUEUEBUFFERS qalSourceUnqueueBuffers;
 QALAPI LPALSOURCEF qalSourcef;
 QALAPI LPALSOURCEI qalSourcei;
+#endif
 
 // ALC_EXT_EFX
 QALAPI LPALDELETEFILTERS qalDeleteFilters;
