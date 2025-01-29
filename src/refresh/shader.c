@@ -61,6 +61,12 @@ static void write_header(sizebuf_t *buf, glStateBits_t bits)
         GLSF("#version 130\n");
         GLSF("#extension GL_ARB_uniform_buffer_object : require\n");
     }
+
+    if (gl_config.ver_es) {
+        GLSL(precision mediump float;)
+        if (bits & GLS_MESH_ANY)
+            GLSL(precision mediump int;)
+    }
 }
 
 static void write_block(sizebuf_t *buf, glStateBits_t bits)
@@ -475,9 +481,6 @@ static void write_height_fog(sizebuf_t *buf, glStateBits_t bits)
 static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
 {
     write_header(buf, bits);
-
-    if (gl_config.ver_es)
-        GLSL(precision mediump float;)
 
     if (bits & GLS_UNIFORM_MASK)
         write_block(buf, bits);
