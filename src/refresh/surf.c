@@ -985,7 +985,7 @@ void GL_FreeWorld(void)
 
     BSP_Free(gl_static.world.cache);
     Z_Free(gl_static.world.vertices);
-    GL_DeleteBuffer(gl_static.world.buffer);
+    GL_DeleteBuffers(1, &gl_static.world.buffer);
 
     if (gls.currentva == VA_3D)
         gls.currentva = VA_NONE;

@@ -996,9 +996,9 @@ void GL_DrawAliasModel(const model_t *model)
     if (ent->flags & RF_SHELL_MASK)
         shellscale = (ent->flags & RF_WEAPONMODEL) ? WEAPONSHELL_SCALE : POWERSUIT_SCALE;
 
-    buffer = model->buffer;
-    GL_BindBuffer(GL_ARRAY_BUFFER, model->buffer);
-    GL_BindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->buffer);
+    buffer = model->buffers[0];
+    GL_BindBuffer(GL_ARRAY_BUFFER, model->buffers[0]);
+    GL_BindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->buffers[1]);
 
     if (gl_static.use_gpu_lerp) {
         Q_assert(buffer);
