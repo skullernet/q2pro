@@ -497,6 +497,7 @@ static bool parse_gl_version(void)
     ver = parse_version(s);
     if (gl_es) {
         gl_config.ver_es = ver;
+        gl_config.webgl = strstr(s, "WebGL");
         return ver;
     }
 
@@ -748,6 +749,15 @@ bool QGL_Init(void)
             Com_DPrintf("Detected forward compatible context\n");
             qglLineWidth = NULL;
         }
+    }
+
+    if (gl_config.ver_es && !gl_config.webgl)
+        gl_config.webgl = extension_present("GL_ANGLE_webgl_compatibility");
+
+    // disable client vertex arrays in WebGL contexts
+    if (gl_config.webgl) {
+        Com_DPrintf("Detected WebGL compatible context\n");
+        gl_config.caps &= ~QGL_CAP_CLIENT_VA;
     }
 
     Com_DPrintf("Detected OpenGL capabilities: %#x\n", gl_config.caps);
