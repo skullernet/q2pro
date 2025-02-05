@@ -42,6 +42,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <SDL.h>
 #endif
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#define exit(s) emscripten_force_exit(s)
+#endif
+
 cvar_t  *sys_basedir;
 cvar_t  *sys_libdir;
 cvar_t  *sys_homedir;
@@ -434,14 +439,19 @@ int main(int argc, char **argv)
         }
     }
 
+#ifndef __EMSCRIPTEN__
     if (!getuid() || !geteuid()) {
         fprintf(stderr, "You can not run " PRODUCT " as superuser "
                 "for security reasons!\n");
         return EXIT_FAILURE;
     }
+#endif
 
     Qcommon_Init(argc, argv);
 
+#ifdef __EMSCRIPTEN__
+    emscripten_set_main_loop(Qcommon_Frame, 0, true);
+#else
     while (!terminate) {
         if (flush_logs) {
             Com_FlushLogs();
@@ -449,6 +459,7 @@ int main(int argc, char **argv)
         }
         Qcommon_Frame();
     }
+#endif
 
     Com_Printf("%s\n", strsignal(terminate));
     Com_Quit(NULL, ERR_DISCONNECT);

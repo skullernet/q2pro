@@ -156,14 +156,17 @@ game_src = [
   'src/game/p_trail.c',
   'src/game/p_view.c',
   'src/game/p_weapon.c',
-  'src/shared/m_flash.c',
-  'src/shared/shared.c',
 ]
 
 cc = meson.get_compiler('c')
 
 win32 = host_machine.system() == 'windows'
+web = host_machine.system() == 'emscripten'
 x86 = host_machine.cpu_family() == 'x86'
+
+if not web
+  game_src += ['src/shared/m_flash.c', 'src/shared/shared.c']
+endif
 
 cpuremap = {
   'x86': win32 ? 'x86' : 'i386',
@@ -211,6 +214,7 @@ endif
 common_link_args = []
 exe_link_args = []
 dll_link_args = []
+exe_link_with = []
 
 if cc.get_argument_syntax() == 'gcc'
   if x86
@@ -242,6 +246,14 @@ if cc.get_argument_syntax() == 'gcc'
     endif
 
     dll_link_args += '-static-libgcc'
+  elif web
+    common_link_args += [
+      '-sMAX_WEBGL_VERSION=2',
+      '-sMIN_WEBGL_VERSION=2',
+      '-sSTACK_SIZE=4MB',
+      '-sTOTAL_MEMORY=200MB',
+      '-sEXIT_RUNTIME=1',
+    ]
   endif
 elif cc.get_id() == 'msvc'
   common_args += ['/wd4146', '/wd4244', '/wd4305']
@@ -332,6 +344,9 @@ if openal.found()
   client_src += [ 'src/client/sound/al.c', 'src/client/sound/qal.c' ]
   client_deps += openal.partial_dependency(compile_args: true, includes: true)
   config.set10('USE_OPENAL', true)
+  if web
+    config.set('QAL_HARD_LINKED', true)
+  endif
 endif
 
 # require FFmpeg >= 5.1.3
@@ -402,7 +417,7 @@ if get_option('save-games')
   config.set10('USE_SAVEGAMES', true)
 endif
 
-if get_option('system-console')
+if not web and get_option('system-console')
   if not win32
     common_src += 'src/unix/tty.c'
   endif
@@ -423,36 +438,45 @@ if get_option('game-abi-hack').require(x86 and cc.get_id() == 'gcc' and cc.has_a
   engine_args += '-mstackrealign'
 endif
 
+if web
+  exe_link_with += static_library('game', game_src, include_directories: 'inc')
+  config.set('GAME_HARD_LINKED', true)
+endif
+
 executable('q2pro', common_src, client_src, refresh_src,
   dependencies:          common_deps + client_deps,
   include_directories:   'inc',
   gnu_symbol_visibility: 'hidden',
   win_subsystem:         'windows,6.0',
   link_args:             exe_link_args,
+  link_with:             exe_link_with,
   c_args:                ['-DUSE_CLIENT=1', '-DUSE_REF=1', engine_args],
   install:               system_wide,
 )
 
-executable('q2proded', common_src, server_src,
-  dependencies:          common_deps + server_deps,
-  include_directories:   'inc',
-  gnu_symbol_visibility: 'hidden',
-  win_subsystem:         'console,6.0',
-  link_args:             exe_link_args,
-  c_args:                ['-DUSE_SERVER=1', engine_args],
-  install:               system_wide,
-)
+if not web
+  executable('q2proded', common_src, server_src,
+    dependencies:          common_deps + server_deps,
+    include_directories:   'inc',
+    gnu_symbol_visibility: 'hidden',
+    win_subsystem:         'console,6.0',
+    link_args:             exe_link_args,
+    link_with:             exe_link_with,
+    c_args:                ['-DUSE_SERVER=1', engine_args],
+    install:               system_wide,
+  )
 
-shared_library('game' + cpu, game_src,
-  name_prefix:           '',
-  dependencies:          game_deps,
-  include_directories:   'inc',
-  gnu_symbol_visibility: 'hidden',
-  link_args:             dll_link_args,
-  install:               system_wide,
-  install_dir:           libdir / get_option('base-game'),
-  override_options:      get_option('game-build-options'),
-)
+  shared_library('game' + cpu, game_src,
+    name_prefix:           '',
+    dependencies:          game_deps,
+    include_directories:   'inc',
+    gnu_symbol_visibility: 'hidden',
+    link_args:             dll_link_args,
+    install:               system_wide,
+    install_dir:           libdir / get_option('base-game'),
+    override_options:      get_option('game-build-options'),
+  )
+endif
 
 config.set('REVISION',            meson.project_version().substring(1).split('~')[0].to_int())
 config.set_quoted('VERSION',      meson.project_version())
@@ -475,7 +499,7 @@ config.set10('USE_FPS',           get_option('variable-fps'))
 config.set10('USE_GLES',          get_option('opengl-es1'))
 config.set10('USE_ICMP',          get_option('icmp-errors').require(win32 or cc.has_header('linux/errqueue.h')).allowed())
 config.set10('USE_MD3',           get_option('md3'))
-config.set10('USE_MD5',           get_option('md5'))
+config.set10('USE_MD5',           not web and get_option('md5'))
 config.set10('USE_PACKETDUP',     get_option('packetdup-hack'))
 config.set10('USE_TGA',           get_option('tga'))
 config.set10('USE_' + host_machine.endian().to_upper() + '_ENDIAN', true)

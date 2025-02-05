@@ -16,7 +16,9 @@ if cc.has_function('dlopen', dependencies: libdl, prefix: '#include <dlfcn.h>')
   common_deps += libdl
 endif
 
-client_deps += dependency('threads')
+if not web
+  client_deps += dependency('threads')
+endif
 
 if not sdl2.found() and not cc.has_header_symbol('GL/glext.h', 'GL_VERSION_4_3', prefix: '#include <GL/gl.h>')
   warning('Neither SDL2 nor OpenGL 4.3 headers found, client will not be built')

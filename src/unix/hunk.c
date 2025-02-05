@@ -81,6 +81,7 @@ void Hunk_FreeToWatermark(memhunk_t *hunk, size_t size)
 
 void Hunk_End(memhunk_t *hunk)
 {
+#ifndef __EMSCRIPTEN__
     size_t newsize;
 
     Q_assert(hunk->cursize <= hunk->maxsize);
@@ -102,6 +103,7 @@ void Hunk_End(memhunk_t *hunk)
     }
 
     hunk->mapped = newsize;
+#endif
 }
 
 void Hunk_Free(memhunk_t *hunk)
