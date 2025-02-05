@@ -1,4 +1,4 @@
-project('libcurl', 'c', version: '8.11.1', license: 'bsd')
+project('libcurl', 'c', version: '8.12.0', license: 'bsd')
 
 src = [
   'lib/vauth/cleartext.c',
@@ -27,6 +27,8 @@ src = [
   'lib/vtls/schannel_verify.c',
   'lib/vtls/sectransp.c',
   'lib/vtls/vtls.c',
+  'lib/vtls/vtls_scache.c',
+  'lib/vtls/vtls_spack.c',
   'lib/vtls/wolfssl.c',
   'lib/vtls/x509asn1.c',
 
@@ -49,7 +51,6 @@ src = [
   'lib/base64.c',
   'lib/bufq.c',
   'lib/bufref.c',
-  'lib/c-hyper.c',
   'lib/cf-h1-proxy.c',
   'lib/cf-h2-proxy.c',
   'lib/cf-haproxy.c',
@@ -114,6 +115,7 @@ src = [
   'lib/http_negotiate.c',
   'lib/http_ntlm.c',
   'lib/http_proxy.c',
+  'lib/httpsrr.c',
   'lib/idn.c',
   'lib/if2ip.c',
   'lib/imap.c',
@@ -160,6 +162,7 @@ src = [
   'lib/strcase.c',
   'lib/strdup.c',
   'lib/strerror.c',
+  'lib/strparse.c',
   'lib/strtok.c',
   'lib/strtoofft.c',
   'lib/system_win32.c',

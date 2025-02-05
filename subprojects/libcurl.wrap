@@ -1,8 +1,8 @@
 [wrap-file]
-directory = curl-8.11.1
-source_url = https://curl.se/download/curl-8.11.1.tar.xz
-source_filename = curl-8.11.1.tar.xz
-source_hash = c7ca7db48b0909743eaef34250da02c19bc61d4f1dcedd6603f109409536ab56
+directory = curl-8.12.0
+source_url = https://curl.se/download/curl-8.12.0.tar.xz
+source_filename = curl-8.12.0.tar.xz
+source_hash = 9a4628c764be6b1a9909567c13e8e771041609df43b2158fcac4e05ea7097e5d
 patch_directory = curl
 
 [provide]
