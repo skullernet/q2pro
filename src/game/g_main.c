@@ -43,7 +43,7 @@ cvar_t  *maxspectators;
 cvar_t  *maxentities;
 cvar_t  *g_select_empty;
 cvar_t  *g_protocol_extensions;
-cvar_t  *dedicated;
+cvar_t  *g_dedicated;
 
 cvar_t  *filterban;
 
@@ -127,7 +127,7 @@ void InitGame(void)
     sv_gravity = gi.cvar("sv_gravity", "800", 0);
 
     // noset vars
-    dedicated = gi.cvar("dedicated", "0", CVAR_NOSET);
+    g_dedicated = gi.cvar("dedicated", "0", CVAR_NOSET);
 
     // latched vars
     sv_cheats = gi.cvar("cheats", "0", CVAR_SERVERINFO | CVAR_LATCH);

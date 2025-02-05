@@ -431,6 +431,7 @@ static void PF_configstring(int index, const char *val)
     SZ_Clear(&msg_write);
 }
 
+#ifndef GAME_HARD_LINKED
 static const char *PF_GetConfigstring(int index)
 {
     if (index < 0 || index >= svs.csr.end)
@@ -438,6 +439,7 @@ static const char *PF_GetConfigstring(int index)
 
     return sv.configstrings[index];
 }
+#endif
 
 static void PF_WriteFloat(float f)
 {
@@ -689,6 +691,7 @@ static void PF_StartSound(edict_t *entity, int channel,
     SV_StartSound(NULL, entity, channel, soundindex, volume, attenuation, timeofs);
 }
 
+#ifndef GAME_HARD_LINKED
 // TODO: support origin/entity/volume/attenuation/timeofs
 static void PF_LocalSound(edict_t *target, const vec3_t origin,
                           edict_t *entity, int channel,
@@ -712,6 +715,7 @@ static void PF_LocalSound(edict_t *target, const vec3_t origin,
 
     PF_Unicast(target, !!(channel & CHAN_RELIABLE));
 }
+#endif
 
 void PF_Pmove(void *pm)
 {
@@ -768,6 +772,7 @@ static void PF_FreeTags(unsigned tag)
     Z_FreeTags(tag + TAG_MAX);
 }
 
+#ifndef GAME_HARD_LINKED
 static int PF_LoadFile(const char *path, void **buffer, unsigned flags, unsigned tag)
 {
     if (tag > UINT16_MAX - TAG_MAX) {
@@ -783,6 +788,7 @@ static void *PF_TagRealloc(void *ptr, size_t size)
     }
     return Z_Realloc(ptr, size);
 }
+#endif
 
 //==============================================
 
@@ -840,6 +846,8 @@ static const game_import_t game_import = {
     .SetAreaPortalState = PF_SetAreaPortalState,
     .AreasConnected = PF_AreasConnected,
 };
+
+#ifndef GAME_HARD_LINKED
 
 static const filesystem_api_v1_t filesystem_api_v1 = {
     .OpenFile = FS_OpenFile,
@@ -905,6 +913,7 @@ static const game_import_ex_t game_import_ex = {
 };
 
 static void *game_library;
+#endif
 
 /*
 ===============
@@ -921,15 +930,18 @@ void SV_ShutdownGameProgs(void)
         ge->Shutdown();
         ge = NULL;
     }
+#ifndef GAME_HARD_LINKED
     if (game_library) {
         Sys_FreeLibrary(game_library);
         game_library = NULL;
     }
+#endif
     Cvar_Set("g_features", "0");
 
     Z_LeakTest(TAG_FREE);
 }
 
+#ifndef GAME_HARD_LINKED
 static void *SV_LoadGameLibraryFrom(const char *path)
 {
     void *entry;
@@ -961,6 +973,7 @@ static void *SV_LoadGameLibrary(const char *libdir, const char *gamedir)
 
     return SV_LoadGameLibraryFrom(path);
 }
+#endif
 
 /*
 ===============
@@ -977,6 +990,10 @@ void SV_InitGameProgs(void)
     // unload anything we have now
     SV_ShutdownGameProgs();
 
+#ifdef GAME_HARD_LINKED
+    extern game_export_t *GetGameAPI(game_import_t *);
+    entry = GetGameAPI;
+#else
     // for debugging or `proxy' mods
     if (sys_forcegamelib->string[0])
         entry = SV_LoadGameLibraryFrom(sys_forcegamelib->string);
@@ -1000,6 +1017,7 @@ void SV_InitGameProgs(void)
     // all paths failed
     if (!entry)
         Com_Error(ERR_DROP, "Failed to load game library");
+#endif
 
     // load a new game dll
     import = game_import;
@@ -1016,6 +1034,7 @@ void SV_InitGameProgs(void)
                   ge->apiversion, GAME_API_VERSION_OLD, GAME_API_VERSION_NEW);
     }
 
+#ifndef GAME_HARD_LINKED
     // get extended api if present
     game_entry_ex_t entry_ex = Sys_GetProcAddress(game_library, "GetGameAPIEx");
     if (entry_ex) {
@@ -1025,6 +1044,7 @@ void SV_InitGameProgs(void)
         else
             gex = NULL;
     }
+#endif
 
     // initialize
     ge->Init();

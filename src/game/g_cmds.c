@@ -782,7 +782,7 @@ void Cmd_Say_f(edict_t *ent, bool team, bool arg0)
 
     Q_strlcat(text, "\n", sizeof(text));
 
-    if (dedicated->value)
+    if (g_dedicated->value)
         gi.cprintf(NULL, PRINT_CHAT, "%s", text);
 
     for (j = 1; j <= game.maxclients; j++) {
