@@ -67,7 +67,9 @@ static int      com_printEntered;
 
 static qhandle_t    com_logFile;
 static bool         com_logNewline;
+#if USE_SYSCON
 static bool         com_conNewline;
+#endif
 
 static char     **com_argv;
 static int      com_argc;
@@ -88,7 +90,9 @@ cvar_t  *logfile_enable;    // 1 = create new, 2 = append to existing
 cvar_t  *logfile_flush;     // 1 = flush after each print
 cvar_t  *logfile_name;
 cvar_t  *logfile_prefix;
+#if USE_SYSCON
 cvar_t  *console_prefix;
+#endif
 
 #if USE_CLIENT
 cvar_t  *cl_running;
@@ -342,6 +346,7 @@ static void logfile_write(print_type_t type, const char *text)
     Cvar_Set("logfile", "0");
 }
 
+#if USE_SYSCON
 static void console_write(print_type_t type, const char *text)
 {
     char buf[MAXPRINTMSG];
@@ -354,7 +359,6 @@ static void console_write(print_type_t type, const char *text)
     Sys_ConsoleOutput(buf, len);
 }
 
-#if USE_SYSCON
 void Sys_Printf(const char *fmt, ...)
 {
     va_list     argptr;
@@ -475,8 +479,10 @@ void Com_LPrintf(print_type_t type, const char *fmt, ...)
         // graphical console
         Con_Print(msg);
 
+#if USE_SYSCON
         // debugging console
         console_write(type, msg);
+#endif
 
         // remote console
         //SV_ConsoleOutput(msg);
@@ -907,7 +913,9 @@ void Qcommon_Init(int argc, char **argv)
     logfile_flush = Cvar_Get("logfile_flush", "0", 0);
     logfile_name = Cvar_Get("logfile_name", "console", 0);
     logfile_prefix = Cvar_Get("logfile_prefix", "[%Y-%m-%d %H:%M] ", 0);
+#if USE_SYSCON
     console_prefix = Cvar_Get("console_prefix", "", 0);
+#endif
 #if USE_CLIENT
     dedicated = Cvar_Get("dedicated", "0", CVAR_NOSET);
     cl_running = Cvar_Get("cl_running", "0", CVAR_ROM);

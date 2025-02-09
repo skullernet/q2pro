@@ -46,7 +46,9 @@ cvar_t  *sys_basedir;
 cvar_t  *sys_libdir;
 cvar_t  *sys_homedir;
 
+#if USE_SYSCON
 extern cvar_t   *console_prefix;
+#endif
 
 static int terminate;
 static bool flush_logs;
@@ -216,8 +218,10 @@ void Sys_Error(const char *error, ...)
     Q_vsnprintf(text, sizeof(text), error, argptr);
     va_end(argptr);
 
+#if USE_SYSCON
     if (console_prefix && !strncmp(console_prefix->string, "<?>", 3))
         pre = "<3>";
+#endif
 
     fprintf(stderr,
             "%s********************\n"
