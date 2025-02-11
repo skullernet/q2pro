@@ -27,7 +27,7 @@ endif
 
 subdir('video')
 
-if not config.has('USE_SDL') and not config.has('USE_X11') and not config.has('USE_WAYLAND')
+if not web and not config.has('USE_SDL') and not config.has('USE_X11') and not config.has('USE_WAYLAND')
   warning('No video drivers enabled, client will not be built')
   client_deps += disabler()
 endif

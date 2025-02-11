@@ -235,6 +235,10 @@ extern const vid_driver_t   vid_wayland;
 extern const vid_driver_t   vid_x11;
 #endif
 
+#ifdef __EMSCRIPTEN__
+extern const vid_driver_t   vid_emscripten;
+#endif
+
 #if USE_SDL
 extern const vid_driver_t   vid_sdl;
 #endif
@@ -251,6 +255,9 @@ static const vid_driver_t *const vid_drivers[] = {
 #endif
 #if USE_X11
     &vid_x11,
+#endif
+#ifdef __EMSCRIPTEN__
+    &vid_emscripten,
 #endif
 #if USE_SDL
     &vid_sdl,

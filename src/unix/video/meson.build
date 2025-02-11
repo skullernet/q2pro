@@ -1,3 +1,8 @@
+if web
+  client_src += files('emscripten.c')
+  subdir_done()
+endif
+
 x11_use = true
 x11_deps = [
   dependency('x11', required: get_option('x11')),
