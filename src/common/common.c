@@ -482,6 +482,8 @@ void Com_LPrintf(print_type_t type, const char *fmt, ...)
 #if USE_SYSCON
         // debugging console
         console_write(type, msg);
+#elif (defined __EMSCRIPTEN__)
+        fwrite(msg, 1, len, stdout);
 #endif
 
         // remote console
