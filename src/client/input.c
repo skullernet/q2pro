@@ -76,8 +76,10 @@ static bool IN_GetCurrentGrab(void)
     if (cls.active != ACT_ACTIVATED)
         return false;   // main window doesn't have focus
 
+#ifndef __EMSCRIPTEN__
     if (r_config.flags & QVF_FULLSCREEN)
         return true;    // full screen
+#endif
 
     if (cls.key_dest & (KEY_MENU | KEY_CONSOLE))
         return false;   // menu or console is up
