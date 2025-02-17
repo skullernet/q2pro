@@ -1578,7 +1578,7 @@ static menuSound_t Slider_MouseMove(menuSlider_t *s)
     pos = (uis.mouseCoords[0] - (s->generic.x + RCOLUMN_OFFSET + CONCHAR_WIDTH)) * (1.0f / (SLIDER_RANGE * CONCHAR_WIDTH));
 
     value = Q_clipf(pos, 0, 1) * (s->maxvalue - s->minvalue);
-    steps = Q_rint(value / s->step);
+    steps = Q_rint2(value / s->step);
 
     s->modified = true;
     s->curvalue = s->minvalue + steps * s->step;
