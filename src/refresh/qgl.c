@@ -497,7 +497,8 @@ static bool parse_gl_version(void)
     ver = parse_version(s);
     if (gl_es) {
         gl_config.ver_es = ver;
-        gl_config.webgl = strstr(s, "WebGL");
+        if (ver >= QGL_VER(3, 0))
+            gl_config.webgl = strstr(s, "WebGL");
         return ver;
     }
 
@@ -751,7 +752,7 @@ bool QGL_Init(void)
         }
     }
 
-    if (gl_config.ver_es && !gl_config.webgl)
+    if (gl_config.ver_es >= QGL_VER(3, 0) && !gl_config.webgl)
         gl_config.webgl = extension_present("GL_ANGLE_webgl_compatibility");
 
     // disable client vertex arrays in WebGL contexts
