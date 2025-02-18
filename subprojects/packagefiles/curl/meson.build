@@ -1,4 +1,4 @@
-project('libcurl', 'c', version: '8.12.0', license: 'bsd')
+project('libcurl', 'c', version: '8.12.1', license: 'bsd')
 
 src = [
   'lib/vauth/cleartext.c',
