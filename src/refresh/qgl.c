@@ -30,7 +30,7 @@ typedef struct {
     uint16_t excl_gl;
     uint16_t excl_es;
     uint32_t caps;
-    char suffix[4];
+    const char *suffix;
     const char *extension;
     const glfunction_t *functions;
 } glsection_t;
@@ -113,6 +113,16 @@ static const glsection_t sections[] = {
         .functions = (const glfunction_t []) {
             QGL_FN(ClearDepth),
             QGL_FN(DepthRange),
+            QGL_FN(PolygonMode),
+            { NULL }
+        }
+    },
+
+    // WEBGL_polygon_mode
+    {
+        .extension = "WEBGL_polygon_mode",
+        .suffix = "WEBGL",
+        .functions = (const glfunction_t []) {
             QGL_FN(PolygonMode),
             { NULL }
         }
@@ -674,19 +684,19 @@ bool QGL_Init(void)
             const char *suffix = sec->suffix;
 
             // GL_KHR_debug weirdness
-            if (*suffix == '?') {
+            if (suffix && *suffix == '?') {
                 if (gl_config.ver_es)
                     suffix++;
                 else
-                    suffix = "";
+                    suffix = NULL;
             }
 
             for (func = sec->functions; func->name; func++) {
                 const char *name = func->name;
 
                 // add suffix if this is an extension
-                if (!core && *suffix)
-                    name = va("%s%.3s", name, suffix);
+                if (!core && suffix)
+                    name = va("%s%s", name, suffix);
 
                 void *addr = vid->get_proc_addr(name);
                 if (!addr) {
