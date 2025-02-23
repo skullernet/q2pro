@@ -1607,6 +1607,7 @@ void trigger_elevator_use(edict_t *self, edict_t *other, edict_t *activator)
         return;
     }
 
+    self->movetarget->activator = activator;
     self->movetarget->target_ent = target;
     train_resume(self->movetarget);
 }
