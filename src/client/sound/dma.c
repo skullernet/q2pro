@@ -442,14 +442,12 @@ static void PaintChannels(int endtime)
                 if (!sc)
                     break;
 
-                Q_assert(sc->width == 1 || sc->width == 2);
-                Q_assert(sc->channels == 1 || sc->channels == 2);
-
                 // max painting is to the end of the buffer
                 int count = min(end, ch->end) - ltime;
 
                 if (count > 0) {
                     int func = (sc->width - 1) * 3 + (sc->channels - 1) * (S_IsFullVolume(ch) + 1);
+                    Q_assert(func < q_countof(paintfuncs));
                     paintfuncs[func](ch, sc, count, &paintbuffer[ltime - s_paintedtime]);
                     ch->pos += count;
                     ltime += count;
