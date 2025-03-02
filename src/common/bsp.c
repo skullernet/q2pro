@@ -809,7 +809,7 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
             if (!info->lump) {
                 // EntString workaround for eg ztnmap1
                 Com_WPrintf("%s lump out of bounds, fixing\n", info->name);
-                len = filelen - ofs;
+                len = filelen - min(ofs, filelen);
             } else {
                 Com_SetLastError(va("%s lump out of bounds", info->name));
                 ret = Q_ERR_INVALID_FORMAT;
