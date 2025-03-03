@@ -806,10 +806,10 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
         ofs = LittleLong(header->lumps[info->lump].fileofs);
         len = LittleLong(header->lumps[info->lump].filelen);
         if ((uint64_t)ofs + len > filelen) {
-            if (!info->lump) {
+            if (!info->lump && ofs < filelen) {
                 // EntString workaround for eg ztnmap1
                 Com_WPrintf("%s lump out of bounds, fixing\n", info->name);
-                len = filelen - min(ofs, filelen);
+                len = filelen - ofs;
             } else {
                 Com_SetLastError(va("%s lump out of bounds", info->name));
                 ret = Q_ERR_INVALID_FORMAT;
