@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "g_local.h"
 
-void    Svcmd_Test_f(void)
+static void Svcmd_Test_f(void)
 {
     gi.cprintf(NULL, PRINT_HIGH, "Svcmd_Test_f()\n");
 }
@@ -59,8 +59,8 @@ typedef struct {
 
 #define MAX_IPFILTERS   1024
 
-ipfilter_t  ipfilters[MAX_IPFILTERS];
-int         numipfilters;
+static ipfilter_t   ipfilters[MAX_IPFILTERS];
+static int          numipfilters;
 
 /*
 =================
@@ -148,7 +148,7 @@ bool SV_FilterPacket(char *from)
 SV_AddIP_f
 =================
 */
-void SVCmd_AddIP_f(void)
+static void SVCmd_AddIP_f(void)
 {
     int     i;
 
@@ -177,7 +177,7 @@ void SVCmd_AddIP_f(void)
 SV_RemoveIP_f
 =================
 */
-void SVCmd_RemoveIP_f(void)
+static void SVCmd_RemoveIP_f(void)
 {
     ipfilter_t  f;
     int         i, j;
@@ -207,7 +207,7 @@ void SVCmd_RemoveIP_f(void)
 SV_ListIP_f
 =================
 */
-void SVCmd_ListIP_f(void)
+static void SVCmd_ListIP_f(void)
 {
     int     i;
     union {
@@ -227,7 +227,7 @@ void SVCmd_ListIP_f(void)
 SV_WriteIP_f
 =================
 */
-void SVCmd_WriteIP_f(void)
+static void SVCmd_WriteIP_f(void)
 {
     FILE    *f;
     char    name[MAX_OSPATH];

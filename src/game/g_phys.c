@@ -42,7 +42,7 @@ SV_TestEntityPosition
 
 ============
 */
-edict_t *SV_TestEntityPosition(edict_t *ent)
+static edict_t *SV_TestEntityPosition(edict_t *ent)
 {
     trace_t trace;
     int     mask;
@@ -64,7 +64,7 @@ edict_t *SV_TestEntityPosition(edict_t *ent)
 SV_CheckVelocity
 ================
 */
-void SV_CheckVelocity(edict_t *ent)
+static void SV_CheckVelocity(edict_t *ent)
 {
     float speed = sv_maxvelocity->value;
 
@@ -83,7 +83,7 @@ SV_RunThink
 Runs thinking code for this frame if necessary
 =============
 */
-bool SV_RunThink(edict_t *ent)
+static bool SV_RunThink(edict_t *ent)
 {
     int     thinktime;
 
@@ -108,7 +108,7 @@ SV_Impact
 Two entities have touched, so run their touch functions
 ==================
 */
-void SV_Impact(edict_t *e1, trace_t *trace)
+static void SV_Impact(edict_t *e1, trace_t *trace)
 {
     edict_t     *e2;
 //  cplane_t    backplane;
@@ -132,7 +132,7 @@ returns the blocked flags (1 = floor, 2 = step / wall)
 */
 #define STOP_EPSILON    0.1f
 
-int ClipVelocity(vec3_t in, vec3_t normal, vec3_t out, float overbounce)
+static int ClipVelocity(vec3_t in, vec3_t normal, vec3_t out, float overbounce)
 {
     float   backoff;
     float   change;
@@ -168,7 +168,7 @@ Returns the clipflags if the velocity was modified (hit something solid)
 ============
 */
 #define MAX_CLIP_PLANES 5
-int SV_FlyMove(edict_t *ent, float time, int mask)
+static int SV_FlyMove(edict_t *ent, float time, int mask)
 {
     edict_t     *hit;
     int         bumpcount, numbumps;
@@ -296,7 +296,7 @@ SV_AddGravity
 
 ============
 */
-void SV_AddGravity(edict_t *ent)
+static void SV_AddGravity(edict_t *ent)
 {
     ent->velocity[2] -= ent->gravity * sv_gravity->value * FRAMETIME;
 }
@@ -316,7 +316,7 @@ SV_PushEntity
 Does not change the entities velocity at all
 ============
 */
-trace_t SV_PushEntity(edict_t *ent, vec3_t push)
+static trace_t SV_PushEntity(edict_t *ent, vec3_t push)
 {
     trace_t trace;
     vec3_t  start;
@@ -360,9 +360,9 @@ typedef struct {
     vec3_t  origin;
     vec3_t  angles;
 } pushed_t;
-pushed_t    pushed[MAX_EDICTS], *pushed_p;
 
-edict_t *obstacle;
+static pushed_t     pushed[MAX_EDICTS], *pushed_p;
+static edict_t      *obstacle;
 
 float SnapToEights(float x);
 
@@ -374,7 +374,7 @@ Objects need to be moved back on a failed push,
 otherwise riders would continue to slide.
 ============
 */
-bool SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
+static bool SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
 {
     int         i, e;
     edict_t     *check, *block;
@@ -510,7 +510,7 @@ Bmodel objects don't interact with each other, but
 push all box objects
 ================
 */
-void SV_Physics_Pusher(edict_t *ent)
+static void SV_Physics_Pusher(edict_t *ent)
 {
     vec3_t      move, amove;
     edict_t     *part, *mv;
@@ -570,7 +570,7 @@ SV_Physics_None
 Non moving objects can only think
 =============
 */
-void SV_Physics_None(edict_t *ent)
+static void SV_Physics_None(edict_t *ent)
 {
 // regular thinking
     SV_RunThink(ent);
@@ -583,7 +583,7 @@ SV_Physics_Noclip
 A moving object that doesn't obey physics
 =============
 */
-void SV_Physics_Noclip(edict_t *ent)
+static void SV_Physics_Noclip(edict_t *ent)
 {
 // regular thinking
     if (!SV_RunThink(ent))
@@ -612,7 +612,7 @@ SV_Physics_Toss
 Toss, bounce, and fly movement.  When onground, do nothing.
 =============
 */
-void SV_Physics_Toss(edict_t *ent)
+static void SV_Physics_Toss(edict_t *ent)
 {
     trace_t     trace;
     vec3_t      move;
@@ -730,7 +730,7 @@ FIXME: is this true?
 #define sv_friction         6
 #define sv_waterfriction    1
 
-void SV_AddRotationalFriction(edict_t *ent)
+static void SV_AddRotationalFriction(edict_t *ent)
 {
     int     n;
     float   adjustment;
@@ -750,7 +750,7 @@ void SV_AddRotationalFriction(edict_t *ent)
     }
 }
 
-void SV_Physics_Step(edict_t *ent)
+static void SV_Physics_Step(edict_t *ent)
 {
     bool        wasonground;
     bool        hitsound = false;

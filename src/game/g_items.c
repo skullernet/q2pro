@@ -46,7 +46,7 @@ static int  power_shield_index;
 #define HEALTH_IGNORE_MAX   1
 #define HEALTH_TIMED        2
 
-void Use_Quad(edict_t *ent, const gitem_t *item);
+static void Use_Quad(edict_t *ent, const gitem_t *item);
 static int  quad_drop_timeout_hack;
 
 //======================================================================
@@ -148,7 +148,7 @@ void SetRespawn(edict_t *ent, float delay)
 
 //======================================================================
 
-bool Pickup_Powerup(edict_t *ent, edict_t *other)
+static bool Pickup_Powerup(edict_t *ent, edict_t *other)
 {
     int     quantity;
 
@@ -174,7 +174,7 @@ bool Pickup_Powerup(edict_t *ent, edict_t *other)
     return true;
 }
 
-void Drop_General(edict_t *ent, const gitem_t *item)
+static void Drop_General(edict_t *ent, const gitem_t *item)
 {
     Drop_Item(ent, item);
     ent->client->pers.inventory[ITEM_INDEX(item)]--;
@@ -183,7 +183,7 @@ void Drop_General(edict_t *ent, const gitem_t *item)
 
 //======================================================================
 
-bool Pickup_Adrenaline(edict_t *ent, edict_t *other)
+static bool Pickup_Adrenaline(edict_t *ent, edict_t *other)
 {
     if (!deathmatch->value)
         other->max_health += 1;
@@ -197,7 +197,7 @@ bool Pickup_Adrenaline(edict_t *ent, edict_t *other)
     return true;
 }
 
-bool Pickup_AncientHead(edict_t *ent, edict_t *other)
+static bool Pickup_AncientHead(edict_t *ent, edict_t *other)
 {
     other->max_health += 2;
 
@@ -207,7 +207,7 @@ bool Pickup_AncientHead(edict_t *ent, edict_t *other)
     return true;
 }
 
-bool Pickup_Bandolier(edict_t *ent, edict_t *other)
+static bool Pickup_Bandolier(edict_t *ent, edict_t *other)
 {
     const gitem_t   *item;
     int     index;
@@ -243,7 +243,7 @@ bool Pickup_Bandolier(edict_t *ent, edict_t *other)
     return true;
 }
 
-bool Pickup_Pack(edict_t *ent, edict_t *other)
+static bool Pickup_Pack(edict_t *ent, edict_t *other)
 {
     const gitem_t   *item;
     int     index;
@@ -317,7 +317,7 @@ bool Pickup_Pack(edict_t *ent, edict_t *other)
 
 //======================================================================
 
-void Use_Quad(edict_t *ent, const gitem_t *item)
+static void Use_Quad(edict_t *ent, const gitem_t *item)
 {
     int     timeout;
 
@@ -341,7 +341,7 @@ void Use_Quad(edict_t *ent, const gitem_t *item)
 
 //======================================================================
 
-void Use_Breather(edict_t *ent, const gitem_t *item)
+static void Use_Breather(edict_t *ent, const gitem_t *item)
 {
     ent->client->pers.inventory[ITEM_INDEX(item)]--;
     ValidateSelectedItem(ent);
@@ -356,7 +356,7 @@ void Use_Breather(edict_t *ent, const gitem_t *item)
 
 //======================================================================
 
-void Use_Envirosuit(edict_t *ent, const gitem_t *item)
+static void Use_Envirosuit(edict_t *ent, const gitem_t *item)
 {
     ent->client->pers.inventory[ITEM_INDEX(item)]--;
     ValidateSelectedItem(ent);
@@ -371,7 +371,7 @@ void Use_Envirosuit(edict_t *ent, const gitem_t *item)
 
 //======================================================================
 
-void Use_Invulnerability(edict_t *ent, const gitem_t *item)
+static void Use_Invulnerability(edict_t *ent, const gitem_t *item)
 {
     ent->client->pers.inventory[ITEM_INDEX(item)]--;
     ValidateSelectedItem(ent);
@@ -386,7 +386,7 @@ void Use_Invulnerability(edict_t *ent, const gitem_t *item)
 
 //======================================================================
 
-void Use_Silencer(edict_t *ent, const gitem_t *item)
+static void Use_Silencer(edict_t *ent, const gitem_t *item)
 {
     ent->client->pers.inventory[ITEM_INDEX(item)]--;
     ValidateSelectedItem(ent);
@@ -397,7 +397,7 @@ void Use_Silencer(edict_t *ent, const gitem_t *item)
 
 //======================================================================
 
-bool Pickup_Key(edict_t *ent, edict_t *other)
+static bool Pickup_Key(edict_t *ent, edict_t *other)
 {
     if (coop->value) {
         if (strcmp(ent->classname, "key_power_cube") == 0) {
@@ -454,7 +454,7 @@ bool Add_Ammo(edict_t *ent, const gitem_t *item, int count)
     return true;
 }
 
-bool Pickup_Ammo(edict_t *ent, edict_t *other)
+static bool Pickup_Ammo(edict_t *ent, edict_t *other)
 {
     int         oldcount;
     int         count;
@@ -483,7 +483,7 @@ bool Pickup_Ammo(edict_t *ent, edict_t *other)
     return true;
 }
 
-void Drop_Ammo(edict_t *ent, const gitem_t *item)
+static void Drop_Ammo(edict_t *ent, const gitem_t *item)
 {
     edict_t *dropped;
     int     index;
@@ -524,7 +524,7 @@ void MegaHealth_think(edict_t *self)
         G_FreeEdict(self);
 }
 
-bool Pickup_Health(edict_t *ent, edict_t *other)
+static bool Pickup_Health(edict_t *ent, edict_t *other)
 {
     if (!(ent->style & HEALTH_IGNORE_MAX))
         if (other->health >= other->max_health)
@@ -571,7 +571,7 @@ int ArmorIndex(edict_t *ent)
     return 0;
 }
 
-bool Pickup_Armor(edict_t *ent, edict_t *other)
+static bool Pickup_Armor(edict_t *ent, edict_t *other)
 {
     int             old_armor_index;
     const gitem_armor_t *oldinfo;
@@ -663,7 +663,7 @@ int PowerArmorType(edict_t *ent)
     return POWER_ARMOR_NONE;
 }
 
-void Use_PowerArmor(edict_t *ent, const gitem_t *item)
+static void Use_PowerArmor(edict_t *ent, const gitem_t *item)
 {
     int     index;
 
@@ -681,7 +681,7 @@ void Use_PowerArmor(edict_t *ent, const gitem_t *item)
     }
 }
 
-bool Pickup_PowerArmor(edict_t *ent, edict_t *other)
+static bool Pickup_PowerArmor(edict_t *ent, edict_t *other)
 {
     int     quantity;
 
@@ -700,7 +700,7 @@ bool Pickup_PowerArmor(edict_t *ent, edict_t *other)
     return true;
 }
 
-void Drop_PowerArmor(edict_t *ent, const gitem_t *item)
+static void Drop_PowerArmor(edict_t *ent, const gitem_t *item)
 {
     if ((ent->flags & FL_POWER_ARMOR) && (ent->client->pers.inventory[ITEM_INDEX(item)] == 1))
         Use_PowerArmor(ent, item);

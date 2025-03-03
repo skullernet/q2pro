@@ -23,11 +23,11 @@ static  edict_t     *current_player;
 static  gclient_t   *current_client;
 
 static  vec3_t  forward, right, up;
-float   xyspeed;
+static float    xyspeed;
 
-float   bobmove;
-int     bobcycle;       // odd cycles are right foot going forward
-float   bobfracsin;     // sin(bobfrac*M_PI)
+static float    bobmove;
+static int      bobcycle;       // odd cycles are right foot going forward
+static float    bobfracsin;     // sin(bobfrac*M_PI)
 
 /*
 ===============
@@ -35,7 +35,7 @@ SV_CalcRoll
 
 ===============
 */
-float SV_CalcRoll(vec3_t angles, vec3_t velocity)
+static float SV_CalcRoll(vec3_t angles, vec3_t velocity)
 {
     float   sign;
     float   side;
@@ -53,7 +53,6 @@ float SV_CalcRoll(vec3_t angles, vec3_t velocity)
         side = value;
 
     return side * sign;
-
 }
 
 /*
@@ -63,7 +62,7 @@ P_DamageFeedback
 Handles color blends and view kicks
 ===============
 */
-void P_DamageFeedback(edict_t *player)
+static void P_DamageFeedback(edict_t *player)
 {
     gclient_t   *client;
     float   side;
@@ -200,7 +199,7 @@ Auto pitching on slopes?
 
 ===============
 */
-void SV_CalcViewOffset(edict_t *ent)
+static void SV_CalcViewOffset(edict_t *ent)
 {
     float       *angles;
     float       bob;
@@ -307,7 +306,7 @@ void SV_CalcViewOffset(edict_t *ent)
 SV_CalcGunOffset
 ==============
 */
-void SV_CalcGunOffset(edict_t *ent)
+static void SV_CalcGunOffset(edict_t *ent)
 {
     int     i;
     float   delta;
@@ -352,7 +351,7 @@ void SV_CalcGunOffset(edict_t *ent)
 SV_AddBlend
 =============
 */
-void SV_AddBlend(float r, float g, float b, float a, float *v_blend)
+static void SV_AddBlend(float r, float g, float b, float a, float *v_blend)
 {
     float   a2, a3;
 
@@ -372,7 +371,7 @@ void SV_AddBlend(float r, float g, float b, float a, float *v_blend)
 SV_CalcBlend
 =============
 */
-void SV_CalcBlend(edict_t *ent)
+static void SV_CalcBlend(edict_t *ent)
 {
     int     contents;
     vec3_t  vieworg;
@@ -446,7 +445,7 @@ void SV_CalcBlend(edict_t *ent)
 P_FallingDamage
 =================
 */
-void P_FallingDamage(edict_t *ent)
+static void P_FallingDamage(edict_t *ent)
 {
     float   delta;
     int     damage;
@@ -514,7 +513,7 @@ void P_FallingDamage(edict_t *ent)
 P_WorldEffects
 =============
 */
-void P_WorldEffects(void)
+static void P_WorldEffects(void)
 {
     bool        breather;
     bool        envirosuit;
@@ -663,7 +662,7 @@ void P_WorldEffects(void)
 G_SetClientEffects
 ===============
 */
-void G_SetClientEffects(edict_t *ent)
+static void G_SetClientEffects(edict_t *ent)
 {
     int     pa_type;
     int     remaining;
@@ -708,7 +707,7 @@ void G_SetClientEffects(edict_t *ent)
 G_SetClientEvent
 ===============
 */
-void G_SetClientEvent(edict_t *ent)
+static void G_SetClientEvent(edict_t *ent)
 {
     if (ent->s.event)
         return;
@@ -724,7 +723,7 @@ void G_SetClientEvent(edict_t *ent)
 G_SetClientSound
 ===============
 */
-void G_SetClientSound(edict_t *ent)
+static void G_SetClientSound(edict_t *ent)
 {
     char    *weap;
 
@@ -761,7 +760,7 @@ void G_SetClientSound(edict_t *ent)
 G_SetClientFrame
 ===============
 */
-void G_SetClientFrame(edict_t *ent)
+static void G_SetClientFrame(edict_t *ent)
 {
     gclient_t   *client;
     bool        duck, run;

@@ -203,7 +203,7 @@ void M_CatagorizePosition(edict_t *ent)
         ent->waterlevel = 3;
 }
 
-void M_WorldEffects(edict_t *ent)
+static void M_WorldEffects(edict_t *ent)
 {
     int     dmg;
 
@@ -297,7 +297,7 @@ void M_droptofloor(edict_t *ent)
     M_CatagorizePosition(ent);
 }
 
-void M_SetEffects(edict_t *ent)
+static void M_SetEffects(edict_t *ent)
 {
     ent->s.effects &= ~(EF_COLOR_SHELL | EF_POWERSCREEN);
     ent->s.renderfx &= ~(RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE);
@@ -320,7 +320,7 @@ void M_SetEffects(edict_t *ent)
     }
 }
 
-void M_MoveFrame(edict_t *self)
+static void M_MoveFrame(edict_t *self)
 {
     const mmove_t   *move;
     int     index;
@@ -435,7 +435,7 @@ void monster_triggered_spawn_use(edict_t *self, edict_t *other, edict_t *activat
     self->use = monster_use;
 }
 
-void monster_triggered_start(edict_t *self)
+static void monster_triggered_start(edict_t *self)
 {
     self->solid = SOLID_NOT;
     self->movetype = MOVETYPE_NONE;
@@ -473,7 +473,7 @@ void monster_death_use(edict_t *self)
 
 //============================================================================
 
-bool monster_start(edict_t *self)
+static bool monster_start(edict_t *self)
 {
     if (deathmatch->value) {
         G_FreeEdict(self);

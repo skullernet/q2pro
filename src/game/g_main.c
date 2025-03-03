@@ -275,7 +275,7 @@ void Com_Error(error_type_t type, const char *fmt, ...)
 ClientEndServerFrames
 =================
 */
-void ClientEndServerFrames(void)
+static void ClientEndServerFrames(void)
 {
     int     i;
     edict_t *ent;
@@ -297,7 +297,7 @@ CreateTargetChangeLevel
 Returns the created target changelevel
 =================
 */
-edict_t *CreateTargetChangeLevel(char *map)
+static edict_t *CreateTargetChangeLevel(char *map)
 {
     edict_t *ent;
 
@@ -316,7 +316,7 @@ EndDMLevel
 The timelimit or fraglimit has been exceeded
 =================
 */
-void EndDMLevel(void)
+static void EndDMLevel(void)
 {
     edict_t     *ent;
     char *s, *t, *f;
@@ -373,7 +373,7 @@ void EndDMLevel(void)
 CheckNeedPass
 =================
 */
-void CheckNeedPass(void)
+static void CheckNeedPass(void)
 {
     int need;
 
@@ -398,7 +398,7 @@ void CheckNeedPass(void)
 CheckDMRules
 =================
 */
-void CheckDMRules(void)
+static void CheckDMRules(void)
 {
     int         i;
     gclient_t   *cl;
@@ -437,7 +437,7 @@ void CheckDMRules(void)
 ExitLevel
 =============
 */
-void ExitLevel(void)
+static void ExitLevel(void)
 {
     int     i;
     edict_t *ent;

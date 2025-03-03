@@ -21,11 +21,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 bool FindTarget(edict_t *self);
 
-bool ai_checkattack(edict_t *self, float dist);
+static bool ai_checkattack(edict_t *self, float dist);
 
-bool        enemy_vis;
-int         enemy_range;
-float       enemy_yaw;
+static bool     enemy_vis;
+static int      enemy_range;
+static float    enemy_yaw;
 
 //============================================================================
 
@@ -298,7 +298,7 @@ bool infront(edict_t *self, edict_t *other)
 
 //============================================================================
 
-void HuntTarget(edict_t *self)
+static void HuntTarget(edict_t *self)
 {
     vec3_t  vec;
 
@@ -611,7 +611,7 @@ ai_run_melee
 Turn and close until within an angle to launch a melee attack
 =============
 */
-void ai_run_melee(edict_t *self)
+static void ai_run_melee(edict_t *self)
 {
     self->ideal_yaw = enemy_yaw;
     M_ChangeYaw(self);
@@ -629,7 +629,7 @@ ai_run_missile
 Turn in place until within an angle to launch a missile attack
 =============
 */
-void ai_run_missile(edict_t *self)
+static void ai_run_missile(edict_t *self)
 {
     self->ideal_yaw = enemy_yaw;
     M_ChangeYaw(self);
@@ -647,7 +647,7 @@ ai_run_slide
 Strafe sideways, but stay at aproximately the same range
 =============
 */
-void ai_run_slide(edict_t *self, float distance)
+static void ai_run_slide(edict_t *self, float distance)
 {
     float   ofs;
 
@@ -674,7 +674,7 @@ Decides if we're going to attack or do something else
 used by ai_run and ai_stand
 =============
 */
-bool ai_checkattack(edict_t *self, float dist)
+static bool ai_checkattack(edict_t *self, float dist)
 {
     vec3_t      temp;
     bool        hesDeadJim;

@@ -105,7 +105,7 @@ void Move_Begin(edict_t *ent)
 
 void Think_AccelMove(edict_t *ent);
 
-void Move_Calc(edict_t *ent, const vec3_t dest, void (*func)(edict_t *))
+static void Move_Calc(edict_t *ent, const vec3_t dest, void (*func)(edict_t *))
 {
     VectorClear(ent->velocity);
     VectorSubtract(dest, ent->s.origin, ent->moveinfo.dir);
@@ -191,7 +191,7 @@ void AngleMove_Begin(edict_t *ent)
     ent->think = AngleMove_Final;
 }
 
-void AngleMove_Calc(edict_t *ent, void (*func)(edict_t *))
+static void AngleMove_Calc(edict_t *ent, void (*func)(edict_t *))
 {
     VectorClear(ent->avelocity);
     ent->moveinfo.endfunc = func;
@@ -213,7 +213,7 @@ change the speed for the next frame
 */
 #define AccelerationDistance(target, rate)  (target * ((target / rate) + 1) / 2)
 
-void plat_CalcAcceleratedMove(moveinfo_t *moveinfo)
+static void plat_CalcAcceleratedMove(moveinfo_t *moveinfo)
 {
     float   accel_dist;
     float   decel_dist;
@@ -239,7 +239,7 @@ void plat_CalcAcceleratedMove(moveinfo_t *moveinfo)
     moveinfo->decel_distance = decel_dist;
 }
 
-void plat_Accelerate(moveinfo_t *moveinfo)
+static void plat_Accelerate(moveinfo_t *moveinfo)
 {
     // are we decelerating?
     if (moveinfo->remaining_distance <= moveinfo->decel_distance) {
@@ -361,7 +361,7 @@ void plat_go_down(edict_t *ent)
     Move_Calc(ent, ent->moveinfo.end_origin, plat_hit_bottom);
 }
 
-void plat_go_up(edict_t *ent)
+static void plat_go_up(edict_t *ent)
 {
     if (!(ent->flags & FL_TEAMSLAVE)) {
         if (ent->moveinfo.sound_start)
@@ -413,7 +413,7 @@ void Touch_Plat_Center(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t
         ent->nextthink = level.framenum + 1 * BASE_FRAMERATE;   // the player is still on the plat, so delay going down
 }
 
-void plat_spawn_inside_trigger(edict_t *ent)
+static void plat_spawn_inside_trigger(edict_t *ent)
 {
     edict_t *trigger;
     vec3_t  tmin, tmax;
@@ -678,7 +678,7 @@ void button_wait(edict_t *self)
     }
 }
 
-void button_fire(edict_t *self)
+static void button_fire(edict_t *self)
 {
     if (self->moveinfo.state == STATE_UP || self->moveinfo.state == STATE_TOP)
         return;
@@ -802,7 +802,7 @@ NOMONSTER   monsters will not trigger this door
 4)  heavy
 */
 
-void door_use_areaportals(edict_t *self, bool open)
+static void door_use_areaportals(edict_t *self, bool open)
 {
     edict_t *t = NULL;
 
@@ -864,7 +864,7 @@ void door_go_down(edict_t *self)
         AngleMove_Calc(self, door_hit_bottom);
 }
 
-void door_go_up(edict_t *self, edict_t *activator)
+static void door_go_up(edict_t *self, edict_t *activator)
 {
     if (self->moveinfo.state == STATE_UP)
         return;     // already going up
@@ -1485,7 +1485,7 @@ again:
     self->spawnflags |= TRAIN_START_ON;
 }
 
-void train_resume(edict_t *self)
+static void train_resume(edict_t *self)
 {
     edict_t *ent;
     vec3_t  dest;

@@ -465,7 +465,7 @@ Parses an edict out of the given string, returning the new position
 ed should be a properly initialized empty edict.
 ====================
 */
-void ED_ParseEdict(const char **data, edict_t *ent)
+static void ED_ParseEdict(const char **data, edict_t *ent)
 {
     bool        init;
     char        *key, *value;
@@ -518,7 +518,7 @@ All but the first will have the FL_TEAMSLAVE flag set.
 All but the last will have the teamchain field set to the next one
 ================
 */
-void G_FindTeams(void)
+static void G_FindTeams(void)
 {
     edict_t *e, *e2, *chain;
     int     i, j;

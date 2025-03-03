@@ -17,7 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 #include "g_local.h"
 
-void InitTrigger(edict_t *self)
+static void InitTrigger(edict_t *self)
 {
     if (!VectorEmpty(self->s.angles))
         G_SetMovedir(self->s.angles, self->movedir);
@@ -37,7 +37,7 @@ void multi_wait(edict_t *ent)
 // the trigger was just activated
 // ent->activator should be set to the activator so it can be held through a delay
 // so wait for the delay time before firing
-void multi_trigger(edict_t *ent)
+static void multi_trigger(edict_t *ent)
 {
     if (ent->nextthink)
         return;     // already been triggered

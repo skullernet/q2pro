@@ -536,7 +536,7 @@ void target_laser_think(edict_t *self)
     self->nextthink = level.framenum + 1;
 }
 
-void target_laser_on(edict_t *self)
+static void target_laser_on(edict_t *self)
 {
     if (!self->activator)
         self->activator = self;
@@ -545,7 +545,7 @@ void target_laser_on(edict_t *self)
     target_laser_think(self);
 }
 
-void target_laser_off(edict_t *self)
+static void target_laser_off(edict_t *self)
 {
     self->spawnflags &= ~1;
     self->svflags |= SVF_NOCLIENT;

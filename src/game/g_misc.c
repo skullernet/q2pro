@@ -51,7 +51,7 @@ void SP_func_areaportal(edict_t *ent)
 Misc functions
 =================
 */
-void VelocityForDamage(int damage, vec3_t v)
+static void VelocityForDamage(int damage, vec3_t v)
 {
     v[0] = 100.0f * crandom();
     v[1] = 100.0f * crandom();
@@ -63,7 +63,7 @@ void VelocityForDamage(int damage, vec3_t v)
         VectorScale(v, 1.2f, v);
 }
 
-void ClipGibVelocity(edict_t *ent)
+static void ClipGibVelocity(edict_t *ent)
 {
     ent->velocity[0] = Q_clipf(ent->velocity[0], -300, 300);
     ent->velocity[1] = Q_clipf(ent->velocity[1], -300, 300);
@@ -287,7 +287,7 @@ void BecomeExplosion1(edict_t *self)
     G_FreeEdict(self);
 }
 
-void BecomeExplosion2(edict_t *self)
+static void BecomeExplosion2(edict_t *self)
 {
     gi.WriteByte(svc_temp_entity);
     gi.WriteByte(TE_EXPLOSION2);

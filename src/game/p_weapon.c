@@ -23,7 +23,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 static bool     is_quad;
 static byte     is_silenced;
 
-void weapon_grenade_fire(edict_t *ent, bool held);
+static void weapon_grenade_fire(edict_t *ent, bool held);
 
 static void P_ProjectSource(gclient_t *client, vec3_t point, vec3_t distance, vec3_t forward, vec3_t right, vec3_t result)
 {
@@ -208,7 +208,7 @@ void ChangeWeapon(edict_t *ent)
 NoAmmoWeaponChange
 =================
 */
-void NoAmmoWeaponChange(edict_t *ent)
+static void NoAmmoWeaponChange(edict_t *ent)
 {
     if (ent->client->pers.inventory[ITEM_INDEX(FindItem("slugs"))]
         &&  ent->client->pers.inventory[ITEM_INDEX(FindItem("railgun"))]) {
@@ -470,7 +470,7 @@ GRENADE
 #define GRENADE_MINSPEED    400
 #define GRENADE_MAXSPEED    800
 
-void weapon_grenade_fire(edict_t *ent, bool held)
+static void weapon_grenade_fire(edict_t *ent, bool held)
 {
     vec3_t  offset;
     vec3_t  forward, right;
@@ -610,7 +610,7 @@ GRENADE LAUNCHER
 ======================================================================
 */
 
-void weapon_grenadelauncher_fire(edict_t *ent)
+static void weapon_grenadelauncher_fire(edict_t *ent)
 {
     vec3_t  offset;
     vec3_t  forward, right;
@@ -660,7 +660,7 @@ ROCKET
 ======================================================================
 */
 
-void Weapon_RocketLauncher_Fire(edict_t *ent)
+static void Weapon_RocketLauncher_Fire(edict_t *ent)
 {
     vec3_t  offset, start;
     vec3_t  forward, right;
@@ -715,7 +715,7 @@ BLASTER / HYPERBLASTER
 ======================================================================
 */
 
-void Blaster_Fire(edict_t *ent, const vec3_t g_offset, int damage, bool hyper, int effect)
+static void Blaster_Fire(edict_t *ent, const vec3_t g_offset, int damage, bool hyper, int effect)
 {
     vec3_t  forward, right;
     vec3_t  start;
@@ -745,7 +745,7 @@ void Blaster_Fire(edict_t *ent, const vec3_t g_offset, int damage, bool hyper, i
     PlayerNoise(ent, start, PNOISE_WEAPON);
 }
 
-void Weapon_Blaster_Fire(edict_t *ent)
+static void Weapon_Blaster_Fire(edict_t *ent)
 {
     int     damage;
 
@@ -765,7 +765,7 @@ void Weapon_Blaster(edict_t *ent)
     Weapon_Generic(ent, 4, 8, 52, 55, pause_frames, fire_frames, Weapon_Blaster_Fire);
 }
 
-void Weapon_HyperBlaster_Fire(edict_t *ent)
+static void Weapon_HyperBlaster_Fire(edict_t *ent)
 {
     float   rotation;
     vec3_t  offset;
@@ -820,7 +820,6 @@ void Weapon_HyperBlaster_Fire(edict_t *ent)
         gi.sound(ent, CHAN_AUTO, gi.soundindex("weapons/hyprbd1a.wav"), 1, ATTN_NORM, 0);
         ent->client->weapon_sound = 0;
     }
-
 }
 
 void Weapon_HyperBlaster(edict_t *ent)
@@ -839,7 +838,7 @@ MACHINEGUN / CHAINGUN
 ======================================================================
 */
 
-void Machinegun_Fire(edict_t *ent)
+static void Machinegun_Fire(edict_t *ent)
 {
     int i;
     vec3_t      start;
@@ -924,7 +923,7 @@ void Weapon_Machinegun(edict_t *ent)
     Weapon_Generic(ent, 3, 5, 45, 49, pause_frames, fire_frames, Machinegun_Fire);
 }
 
-void Chaingun_Fire(edict_t *ent)
+static void Chaingun_Fire(edict_t *ent)
 {
     int         i;
     int         shots;
@@ -1041,7 +1040,7 @@ SHOTGUN / SUPERSHOTGUN
 ======================================================================
 */
 
-void weapon_shotgun_fire(edict_t *ent)
+static void weapon_shotgun_fire(edict_t *ent)
 {
     vec3_t      start;
     vec3_t      forward, right;
@@ -1093,7 +1092,7 @@ void Weapon_Shotgun(edict_t *ent)
     Weapon_Generic(ent, 7, 18, 36, 39, pause_frames, fire_frames, weapon_shotgun_fire);
 }
 
-void weapon_supershotgun_fire(edict_t *ent)
+static void weapon_supershotgun_fire(edict_t *ent)
 {
     vec3_t      start;
     vec3_t      forward, right;
@@ -1153,7 +1152,7 @@ RAILGUN
 ======================================================================
 */
 
-void weapon_railgun_fire(edict_t *ent)
+static void weapon_railgun_fire(edict_t *ent)
 {
     vec3_t      start;
     vec3_t      forward, right;
@@ -1213,7 +1212,7 @@ BFG10K
 ======================================================================
 */
 
-void weapon_bfg_fire(edict_t *ent)
+static void weapon_bfg_fire(edict_t *ent)
 {
     vec3_t  offset, start;
     vec3_t  forward, right;

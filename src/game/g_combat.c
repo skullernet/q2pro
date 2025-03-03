@@ -83,7 +83,7 @@ bool CanDamage(edict_t *targ, edict_t *inflictor)
 Killed
 ============
 */
-void Killed(edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
+static void Killed(edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
     if (targ->health < -999)
         targ->health = -999;
@@ -121,7 +121,7 @@ void Killed(edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, ve
 SpawnDamage
 ================
 */
-void SpawnDamage(int type, const vec3_t origin, const vec3_t normal, int damage)
+static void SpawnDamage(int type, const vec3_t origin, const vec3_t normal, int damage)
 {
     if (damage > 255)
         damage = 255;
@@ -275,7 +275,7 @@ static int CheckArmor(edict_t *ent, const vec3_t point, const vec3_t normal, int
     return save;
 }
 
-void M_ReactToDamage(edict_t *targ, edict_t *attacker)
+static void M_ReactToDamage(edict_t *targ, edict_t *attacker)
 {
     if (!(attacker->client) && !(attacker->svflags & SVF_MONSTER))
         return;
@@ -343,7 +343,7 @@ void M_ReactToDamage(edict_t *targ, edict_t *attacker)
     }
 }
 
-bool CheckTeamDamage(edict_t *targ, edict_t *attacker)
+static bool CheckTeamDamage(edict_t *targ, edict_t *attacker)
 {
     //FIXME make the next line real and uncomment this block
     // if ((ability to damage a teammate == OFF) && (targ's team == attacker's team))

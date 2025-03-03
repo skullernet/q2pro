@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "g_local.h"
 #include "m_player.h"
 
-char *ClientTeam(edict_t *ent)
+static char *ClientTeam(edict_t *ent)
 {
     char        *p;
     static char value[MAX_INFO_STRING];
@@ -58,7 +58,7 @@ bool OnSameTeam(edict_t *ent1, edict_t *ent2)
     return false;
 }
 
-void SelectNextItem(edict_t *ent, int itflags)
+static void SelectNextItem(edict_t *ent, int itflags)
 {
     gclient_t   *cl;
     int         i, index;
@@ -89,7 +89,7 @@ void SelectNextItem(edict_t *ent, int itflags)
     cl->pers.selected_item = -1;
 }
 
-void SelectPrevItem(edict_t *ent, int itflags)
+static void SelectPrevItem(edict_t *ent, int itflags)
 {
     gclient_t   *cl;
     int         i, index;
@@ -141,7 +141,7 @@ Cmd_Give_f
 Give items to a client
 ==================
 */
-void Cmd_Give_f(edict_t *ent)
+static void Cmd_Give_f(edict_t *ent)
 {
     char        *name;
     const gitem_t   *it;
@@ -280,7 +280,7 @@ Sets client to godmode
 argv(0) god
 ==================
 */
-void Cmd_God_f(edict_t *ent)
+static void Cmd_God_f(edict_t *ent)
 {
     if ((deathmatch->value || coop->value) && !sv_cheats->value) {
         gi.cprintf(ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
@@ -303,7 +303,7 @@ Sets client to notarget
 argv(0) notarget
 ==================
 */
-void Cmd_Notarget_f(edict_t *ent)
+static void Cmd_Notarget_f(edict_t *ent)
 {
     if ((deathmatch->value || coop->value) && !sv_cheats->value) {
         gi.cprintf(ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
@@ -324,7 +324,7 @@ Cmd_Noclip_f
 argv(0) noclip
 ==================
 */
-void Cmd_Noclip_f(edict_t *ent)
+static void Cmd_Noclip_f(edict_t *ent)
 {
     if ((deathmatch->value || coop->value) && !sv_cheats->value) {
         gi.cprintf(ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
@@ -347,7 +347,7 @@ Cmd_Use_f
 Use an inventory item
 ==================
 */
-void Cmd_Use_f(edict_t *ent)
+static void Cmd_Use_f(edict_t *ent)
 {
     int         index;
     const gitem_t   *it;
@@ -379,7 +379,7 @@ Cmd_Drop_f
 Drop an inventory item
 ==================
 */
-void Cmd_Drop_f(edict_t *ent)
+static void Cmd_Drop_f(edict_t *ent)
 {
     int         index;
     const gitem_t   *it;
@@ -409,7 +409,7 @@ void Cmd_Drop_f(edict_t *ent)
 Cmd_Inven_f
 =================
 */
-void Cmd_Inven_f(edict_t *ent)
+static void Cmd_Inven_f(edict_t *ent)
 {
     int         i;
     gclient_t   *cl;
@@ -438,7 +438,7 @@ void Cmd_Inven_f(edict_t *ent)
 Cmd_InvUse_f
 =================
 */
-void Cmd_InvUse_f(edict_t *ent)
+static void Cmd_InvUse_f(edict_t *ent)
 {
     const gitem_t   *it;
 
@@ -462,7 +462,7 @@ void Cmd_InvUse_f(edict_t *ent)
 Cmd_WeapPrev_f
 =================
 */
-void Cmd_WeapPrev_f(edict_t *ent)
+static void Cmd_WeapPrev_f(edict_t *ent)
 {
     gclient_t   *cl;
     int         i, index;
@@ -497,7 +497,7 @@ void Cmd_WeapPrev_f(edict_t *ent)
 Cmd_WeapNext_f
 =================
 */
-void Cmd_WeapNext_f(edict_t *ent)
+static void Cmd_WeapNext_f(edict_t *ent)
 {
     gclient_t   *cl;
     int         i, index;
@@ -532,7 +532,7 @@ void Cmd_WeapNext_f(edict_t *ent)
 Cmd_WeapLast_f
 =================
 */
-void Cmd_WeapLast_f(edict_t *ent)
+static void Cmd_WeapLast_f(edict_t *ent)
 {
     gclient_t   *cl;
     int         index;
@@ -559,7 +559,7 @@ void Cmd_WeapLast_f(edict_t *ent)
 Cmd_InvDrop_f
 =================
 */
-void Cmd_InvDrop_f(edict_t *ent)
+static void Cmd_InvDrop_f(edict_t *ent)
 {
     const gitem_t   *it;
 
@@ -583,7 +583,7 @@ void Cmd_InvDrop_f(edict_t *ent)
 Cmd_Kill_f
 =================
 */
-void Cmd_Kill_f(edict_t *ent)
+static void Cmd_Kill_f(edict_t *ent)
 {
     if ((level.framenum - ent->client->respawn_framenum) < 5 * BASE_FRAMERATE)
         return;
@@ -598,14 +598,14 @@ void Cmd_Kill_f(edict_t *ent)
 Cmd_PutAway_f
 =================
 */
-void Cmd_PutAway_f(edict_t *ent)
+static void Cmd_PutAway_f(edict_t *ent)
 {
     ent->client->showscores = false;
     ent->client->showhelp = false;
     ent->client->showinventory = false;
 }
 
-int PlayerSort(void const *a, void const *b)
+static int PlayerSort(void const *a, void const *b)
 {
     int     anum, bnum;
 
@@ -627,7 +627,7 @@ int PlayerSort(void const *a, void const *b)
 Cmd_Players_f
 =================
 */
-void Cmd_Players_f(edict_t *ent)
+static void Cmd_Players_f(edict_t *ent)
 {
     int     i;
     int     count;
@@ -668,7 +668,7 @@ void Cmd_Players_f(edict_t *ent)
 Cmd_Wave_f
 =================
 */
-void Cmd_Wave_f(edict_t *ent)
+static void Cmd_Wave_f(edict_t *ent)
 {
     int     i;
 
@@ -748,7 +748,7 @@ static bool FloodProtect(edict_t *ent)
 Cmd_Say_f
 ==================
 */
-void Cmd_Say_f(edict_t *ent, bool team, bool arg0)
+static void Cmd_Say_f(edict_t *ent, bool team, bool arg0)
 {
     int     j;
     edict_t *other;
@@ -799,7 +799,7 @@ void Cmd_Say_f(edict_t *ent, bool team, bool arg0)
     }
 }
 
-void Cmd_PlayerList_f(edict_t *ent)
+static void Cmd_PlayerList_f(edict_t *ent)
 {
     int i;
     char st[80];
