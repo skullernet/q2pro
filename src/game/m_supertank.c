@@ -178,11 +178,6 @@ static const mframe_t supertank_frames_forward[] = {
 };
 const mmove_t supertank_move_forward = {FRAME_forwrd_1, FRAME_forwrd_18, supertank_frames_forward, NULL};
 
-static void supertank_forward(edict_t *self)
-{
-    self->monsterinfo.currentmove = &supertank_move_forward;
-}
-
 void supertank_walk(edict_t *self)
 {
     self->monsterinfo.currentmove = &supertank_move_forward;

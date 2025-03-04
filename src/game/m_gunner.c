@@ -218,11 +218,6 @@ static const mframe_t gunner_frames_runandshoot[] = {
 
 const mmove_t gunner_move_runandshoot = {FRAME_runs01, FRAME_runs06, gunner_frames_runandshoot, NULL};
 
-static void gunner_runandshoot(edict_t *self)
-{
-    self->monsterinfo.currentmove = &gunner_move_runandshoot;
-}
-
 static const mframe_t gunner_frames_pain3[] = {
     { ai_move, -3, NULL },
     { ai_move, 1,  NULL },

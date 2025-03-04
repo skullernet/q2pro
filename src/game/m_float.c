@@ -44,7 +44,6 @@ void floater_idle(edict_t *self)
     gi.sound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
 }
 
-//void floater_stand1 (edict_t *self);
 void floater_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point);
 void floater_run(edict_t *self);
 

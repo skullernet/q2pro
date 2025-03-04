@@ -35,8 +35,6 @@ static int  sound_idle;
 static int  sound_search;
 static int  sound_sight;
 
-void flipper_stand(edict_t *self);
-
 static const mframe_t flipper_frames_stand[] = {
     { ai_stand, 0, NULL }
 };

@@ -28,8 +28,6 @@ flyer
 
 bool visible(edict_t *self, edict_t *other);
 
-static int  nextmove;           // Used for start/stop frames
-
 static int  sound_sight;
 static int  sound_idle;
 static int  sound_pain1;
@@ -43,8 +41,6 @@ void flyer_stand(edict_t *self);
 
 static void flyer_check_melee(edict_t *self);
 static void flyer_loop_melee(edict_t *self);
-static void flyer_setstart(edict_t *self);
-static void flyer_nextmove(edict_t *self);
 
 void flyer_sight(edict_t *self, edict_t *other)
 {
@@ -224,37 +220,6 @@ void flyer_walk(edict_t *self)
 void flyer_stand(edict_t *self)
 {
     self->monsterinfo.currentmove = &flyer_move_stand;
-}
-
-static const mframe_t flyer_frames_start[] = {
-    { ai_move, 0, NULL },
-    { ai_move, 0, NULL },
-    { ai_move, 0, NULL },
-    { ai_move, 0, NULL },
-    { ai_move, 0, NULL },
-    { ai_move, 0, flyer_nextmove }
-};
-const mmove_t flyer_move_start = {FRAME_start01, FRAME_start06, flyer_frames_start, NULL};
-
-static const mframe_t flyer_frames_stop[] = {
-    { ai_move, 0, NULL },
-    { ai_move, 0, NULL },
-    { ai_move, 0, NULL },
-    { ai_move, 0, NULL },
-    { ai_move, 0, NULL },
-    { ai_move, 0, NULL },
-    { ai_move, 0, flyer_nextmove }
-};
-const mmove_t flyer_move_stop = {FRAME_stop01, FRAME_stop07, flyer_frames_stop, NULL};
-
-static void flyer_stop(edict_t *self)
-{
-    self->monsterinfo.currentmove = &flyer_move_stop;
-}
-
-static void flyer_start(edict_t *self)
-{
-    self->monsterinfo.currentmove = &flyer_move_start;
 }
 
 static const mframe_t flyer_frames_rollright[] = {
@@ -457,26 +422,8 @@ void flyer_attack(edict_t *self)
     self->monsterinfo.currentmove = &flyer_move_attack2;
 }
 
-static void flyer_setstart(edict_t *self)
-{
-    nextmove = ACTION_run;
-    self->monsterinfo.currentmove = &flyer_move_start;
-}
-
-static void flyer_nextmove(edict_t *self)
-{
-    if (nextmove == ACTION_attack1)
-        self->monsterinfo.currentmove = &flyer_move_start_melee;
-    else if (nextmove == ACTION_attack2)
-        self->monsterinfo.currentmove = &flyer_move_attack2;
-    else if (nextmove == ACTION_run)
-        self->monsterinfo.currentmove = &flyer_move_run;
-}
-
 void flyer_melee(edict_t *self)
 {
-//  flyer.nextmove = ACTION_attack1;
-//  self->monsterinfo.currentmove = &flyer_move_stop;
     self->monsterinfo.currentmove = &flyer_move_start_melee;
 }
 

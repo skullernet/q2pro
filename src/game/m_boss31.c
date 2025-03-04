@@ -42,7 +42,6 @@ static int  sound_attack2;
 static int  sound_firegun;
 static int  sound_step_left;
 static int  sound_step_right;
-static int  sound_death_hit;
 
 void BossExplode(edict_t *self);
 void MakronToss(edict_t *self);
@@ -69,7 +68,6 @@ static void jorg_attack1(edict_t *self);
 static void jorg_idle(edict_t *self);
 static void jorg_step_left(edict_t *self);
 static void jorg_step_right(edict_t *self);
-static void jorg_death_hit(edict_t *self);
 
 //
 // stand
@@ -133,11 +131,6 @@ const mmove_t jorg_move_stand = {FRAME_stand01, FRAME_stand51, jorg_frames_stand
 static void jorg_idle(edict_t *self)
 {
     gi.sound(self, CHAN_VOICE, sound_idle, 1, ATTN_NORM, 0);
-}
-
-static void jorg_death_hit(edict_t *self)
-{
-    gi.sound(self, CHAN_BODY, sound_death_hit, 1, ATTN_NORM, 0);
 }
 
 static void jorg_step_left(edict_t *self)
@@ -616,7 +609,6 @@ static void jorg_precache(void)
     sound_step_left = gi.soundindex("boss3/step1.wav");
     sound_step_right = gi.soundindex("boss3/step2.wav");
     sound_firegun = gi.soundindex("boss3/xfire.wav");
-    sound_death_hit = gi.soundindex("boss3/d_hit.wav");
 
     MakronPrecache();
 }

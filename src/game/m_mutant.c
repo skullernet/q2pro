@@ -66,11 +66,6 @@ void mutant_search(edict_t *self)
     gi.sound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM, 0);
 }
 
-static void mutant_swing(edict_t *self)
-{
-    gi.sound(self, CHAN_VOICE, sound_swing, 1, ATTN_NORM, 0);
-}
-
 //
 // STAND
 //
