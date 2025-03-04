@@ -699,6 +699,8 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
         ED_CallSpawn(ent);
     }
 
+    memset(&st, 0, sizeof(st));
+
     gi.dprintf("%i entities inhibited\n", inhibit);
 
 #ifdef DEBUG
