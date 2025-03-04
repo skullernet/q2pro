@@ -44,13 +44,14 @@ void boss2_search(edict_t *self)
 
 void boss2_run(edict_t *self);
 void boss2_stand(edict_t *self);
-void boss2_dead(edict_t *self);
 void boss2_attack(edict_t *self);
-void boss2_attack_mg(edict_t *self);
-void boss2_reattack_mg(edict_t *self);
 void boss2_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point);
 
-void Boss2Rocket(edict_t *self)
+static void boss2_dead(edict_t *self);
+static void boss2_attack_mg(edict_t *self);
+static void boss2_reattack_mg(edict_t *self);
+
+static void Boss2Rocket(edict_t *self)
 {
     vec3_t  forward, right;
     vec3_t  start;
@@ -92,7 +93,7 @@ void Boss2Rocket(edict_t *self)
     monster_fire_rocket(self, start, dir, 50, 500, MZ2_BOSS2_ROCKET_4);
 }
 
-void boss2_firebullet_right(edict_t *self)
+static void boss2_firebullet_right(edict_t *self)
 {
     vec3_t  forward, right, target;
     vec3_t  start;
@@ -108,7 +109,7 @@ void boss2_firebullet_right(edict_t *self)
     monster_fire_bullet(self, start, forward, 6, 4, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, MZ2_BOSS2_MACHINEGUN_R1);
 }
 
-void boss2_firebullet_left(edict_t *self)
+static void boss2_firebullet_left(edict_t *self)
 {
     vec3_t  forward, right, target;
     vec3_t  start;
@@ -125,7 +126,7 @@ void boss2_firebullet_left(edict_t *self)
     monster_fire_bullet(self, start, forward, 6, 4, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, MZ2_BOSS2_MACHINEGUN_L1);
 }
 
-void Boss2MachineGun(edict_t *self)
+static void Boss2MachineGun(edict_t *self)
 {
     boss2_firebullet_left(self);
     boss2_firebullet_right(self);
@@ -414,12 +415,12 @@ void boss2_attack(edict_t *self)
     }
 }
 
-void boss2_attack_mg(edict_t *self)
+static void boss2_attack_mg(edict_t *self)
 {
     self->monsterinfo.currentmove = &boss2_move_attack_mg;
 }
 
-void boss2_reattack_mg(edict_t *self)
+static void boss2_reattack_mg(edict_t *self)
 {
     if (infront(self, self->enemy))
         if (random() <= 0.7f)
@@ -452,7 +453,7 @@ void boss2_pain(edict_t *self, edict_t *other, float kick, int damage)
     }
 }
 
-void boss2_dead(edict_t *self)
+static void boss2_dead(edict_t *self)
 {
     VectorSet(self->mins, -56, -56, 0);
     VectorSet(self->maxs, 56, 56, 80);

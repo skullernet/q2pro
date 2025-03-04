@@ -39,7 +39,7 @@ static  int tread_sound;
 
 void BossExplode(edict_t *self);
 
-void TreadSound(edict_t *self)
+static void TreadSound(edict_t *self)
 {
     gi.sound(self, CHAN_VOICE, tread_sound, 1, ATTN_NORM, 0);
 }
@@ -52,10 +52,10 @@ void supertank_search(edict_t *self)
         gi.sound(self, CHAN_VOICE, sound_search2, 1, ATTN_NORM, 0);
 }
 
-void supertank_dead(edict_t *self);
-void supertankRocket(edict_t *self);
-void supertankMachineGun(edict_t *self);
-void supertank_reattack1(edict_t *self);
+static void supertank_dead(edict_t *self);
+static void supertankRocket(edict_t *self);
+static void supertankMachineGun(edict_t *self);
+static void supertank_reattack1(edict_t *self);
 
 //
 // stand
@@ -178,7 +178,7 @@ static const mframe_t supertank_frames_forward[] = {
 };
 const mmove_t supertank_move_forward = {FRAME_forwrd_1, FRAME_forwrd_18, supertank_frames_forward, NULL};
 
-void supertank_forward(edict_t *self)
+static void supertank_forward(edict_t *self)
 {
     self->monsterinfo.currentmove = &supertank_move_forward;
 }
@@ -415,7 +415,7 @@ static const mframe_t supertank_frames_end_attack1[] = {
 };
 const mmove_t supertank_move_end_attack1 = {FRAME_attak1_7, FRAME_attak1_20, supertank_frames_end_attack1, supertank_run};
 
-void supertank_reattack1(edict_t *self)
+static void supertank_reattack1(edict_t *self)
 {
     if (visible(self, self->enemy))
         if (random() < 0.9f)
@@ -428,7 +428,6 @@ void supertank_reattack1(edict_t *self)
 
 void supertank_pain(edict_t *self, edict_t *other, float kick, int damage)
 {
-
     if (self->health < (self->max_health / 2))
         self->s.skinnum = 1;
 
@@ -462,7 +461,7 @@ void supertank_pain(edict_t *self, edict_t *other, float kick, int damage)
     }
 }
 
-void supertankRocket(edict_t *self)
+static void supertankRocket(edict_t *self)
 {
     vec3_t  forward, right;
     vec3_t  start;
@@ -488,7 +487,7 @@ void supertankRocket(edict_t *self)
     monster_fire_rocket(self, start, dir, 50, 500, flash_number);
 }
 
-void supertankMachineGun(edict_t *self)
+static void supertankMachineGun(edict_t *self)
 {
     vec3_t  dir;
     vec3_t  vec;
@@ -540,7 +539,7 @@ void supertank_attack(edict_t *self)
 // death
 //
 
-void supertank_dead(edict_t *self)
+static void supertank_dead(edict_t *self)
 {
     VectorSet(self->mins, -60, -60, 0);
     VectorSet(self->maxs, 60, 60, 72);

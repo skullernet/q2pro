@@ -28,13 +28,13 @@ Makron -- Final Boss
 
 bool visible(edict_t *self, edict_t *other);
 
-void MakronRailgun(edict_t *self);
-void MakronSaveloc(edict_t *self);
-void MakronHyperblaster(edict_t *self);
-void makron_step_left(edict_t *self);
-void makron_step_right(edict_t *self);
-void makronBFG(edict_t *self);
-void makron_dead(edict_t *self);
+static void MakronRailgun(edict_t *self);
+static void MakronSaveloc(edict_t *self);
+static void MakronHyperblaster(edict_t *self);
+static void makron_step_left(edict_t *self);
+static void makron_step_right(edict_t *self);
+static void makronBFG(edict_t *self);
+static void makron_dead(edict_t *self);
 
 static int  sound_pain4;
 static int  sound_pain5;
@@ -51,7 +51,7 @@ static int  sound_taunt2;
 static int  sound_taunt3;
 static int  sound_hit;
 
-void makron_taunt(edict_t *self)
+static void makron_taunt(edict_t *self)
 {
     float r;
 
@@ -151,32 +151,32 @@ static const mframe_t makron_frames_run[] = {
 };
 const mmove_t makron_move_run = {FRAME_walk204, FRAME_walk213, makron_frames_run, NULL};
 
-void makron_hit(edict_t *self)
+static void makron_hit(edict_t *self)
 {
     gi.sound(self, CHAN_AUTO, sound_hit, 1, ATTN_NONE, 0);
 }
 
-void makron_popup(edict_t *self)
+static void makron_popup(edict_t *self)
 {
     gi.sound(self, CHAN_BODY, sound_popup, 1, ATTN_NONE, 0);
 }
 
-void makron_step_left(edict_t *self)
+static void makron_step_left(edict_t *self)
 {
     gi.sound(self, CHAN_BODY, sound_step_left, 1, ATTN_NORM, 0);
 }
 
-void makron_step_right(edict_t *self)
+static void makron_step_right(edict_t *self)
 {
     gi.sound(self, CHAN_BODY, sound_step_right, 1, ATTN_NORM, 0);
 }
 
-void makron_brainsplorch(edict_t *self)
+static void makron_brainsplorch(edict_t *self)
 {
     gi.sound(self, CHAN_VOICE, sound_brainsplorch, 1, ATTN_NORM, 0);
 }
 
-void makron_prerailgun(edict_t *self)
+static void makron_prerailgun(edict_t *self)
 {
     gi.sound(self, CHAN_WEAPON, sound_prerailgun, 1, ATTN_NORM, 0);
 }
@@ -383,7 +383,7 @@ static const mframe_t makron_frames_sight[] = {
 };
 const mmove_t makron_move_sight = {FRAME_active01, FRAME_active13, makron_frames_sight, makron_run};
 
-void makronBFG(edict_t *self)
+static void makronBFG(edict_t *self)
 {
     vec3_t  forward, right;
     vec3_t  start;
@@ -463,14 +463,14 @@ static const mframe_t makron_frames_attack5[] = {
 };
 const mmove_t makron_move_attack5 = {FRAME_attak501, FRAME_attak516, makron_frames_attack5, makron_run};
 
-void MakronSaveloc(edict_t *self)
+static void MakronSaveloc(edict_t *self)
 {
     VectorCopy(self->enemy->s.origin, self->pos1);  //save for aiming the shot
     self->pos1[2] += self->enemy->viewheight;
 }
 
 // FIXME: He's not firing from the proper Z
-void MakronRailgun(edict_t *self)
+static void MakronRailgun(edict_t *self)
 {
     vec3_t  start;
     vec3_t  dir;
@@ -487,7 +487,7 @@ void MakronRailgun(edict_t *self)
 }
 
 // FIXME: This is all wrong. He's not firing at the proper angles.
-void MakronHyperblaster(edict_t *self)
+static void MakronHyperblaster(edict_t *self)
 {
     vec3_t  dir;
     vec3_t  vec;
@@ -522,7 +522,6 @@ void MakronHyperblaster(edict_t *self)
 
 void makron_pain(edict_t *self, edict_t *other, float kick, int damage)
 {
-
     if (self->health < (self->max_health / 2))
         self->s.skinnum = 1;
 
@@ -594,7 +593,7 @@ void makron_torso_think(edict_t *self)
     }
 }
 
-void makron_torso(edict_t *ent)
+static void makron_torso(edict_t *ent)
 {
     ent->movetype = MOVETYPE_NONE;
     ent->solid = SOLID_NOT;
@@ -612,7 +611,7 @@ void makron_torso(edict_t *ent)
 // death
 //
 
-void makron_dead(edict_t *self)
+static void makron_dead(edict_t *self)
 {
     VectorSet(self->mins, -60, -60, 0);
     VectorSet(self->maxs, 60, 60, 72);

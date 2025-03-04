@@ -26,9 +26,9 @@ TANK
 #include "g_local.h"
 #include "m_tank.h"
 
-void tank_refire_rocket(edict_t *self);
-void tank_doattack_rocket(edict_t *self);
-void tank_reattack_blaster(edict_t *self);
+static void tank_refire_rocket(edict_t *self);
+static void tank_doattack_rocket(edict_t *self);
+static void tank_reattack_blaster(edict_t *self);
 
 static int  sound_thud;
 static int  sound_pain;
@@ -48,17 +48,17 @@ void tank_sight(edict_t *self, edict_t *other)
     gi.sound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
 }
 
-void tank_footstep(edict_t *self)
+static void tank_footstep(edict_t *self)
 {
     gi.sound(self, CHAN_BODY, sound_step, 1, ATTN_NORM, 0);
 }
 
-void tank_thud(edict_t *self)
+static void tank_thud(edict_t *self)
 {
     gi.sound(self, CHAN_BODY, sound_thud, 1, ATTN_NORM, 0);
 }
 
-void tank_windup(edict_t *self)
+static void tank_windup(edict_t *self)
 {
     gi.sound(self, CHAN_WEAPON, sound_windup, 1, ATTN_NORM, 0);
 }
@@ -304,7 +304,7 @@ void tank_pain(edict_t *self, edict_t *other, float kick, int damage)
 // attacks
 //
 
-void TankBlaster(edict_t *self)
+static void TankBlaster(edict_t *self)
 {
     vec3_t  forward, right;
     vec3_t  start;
@@ -329,12 +329,12 @@ void TankBlaster(edict_t *self)
     monster_fire_blaster(self, start, dir, 30, 800, flash_number, EF_BLASTER);
 }
 
-void TankStrike(edict_t *self)
+static void TankStrike(edict_t *self)
 {
     gi.sound(self, CHAN_WEAPON, sound_strike, 1, ATTN_NORM, 0);
 }
 
-void TankRocket(edict_t *self)
+static void TankRocket(edict_t *self)
 {
     vec3_t  forward, right;
     vec3_t  start;
@@ -360,7 +360,7 @@ void TankRocket(edict_t *self)
     monster_fire_rocket(self, start, dir, 50, 550, flash_number);
 }
 
-void TankMachineGun(edict_t *self)
+static void TankMachineGun(edict_t *self)
 {
     vec3_t  dir;
     vec3_t  vec;
@@ -433,7 +433,7 @@ static const mframe_t tank_frames_attack_post_blast[] = {
 };
 const mmove_t tank_move_attack_post_blast = {FRAME_attak117, FRAME_attak122, tank_frames_attack_post_blast, tank_run};
 
-void tank_reattack_blaster(edict_t *self)
+static void tank_reattack_blaster(edict_t *self)
 {
     if (skill->value >= 2)
         if (visible(self, self->enemy))
@@ -445,7 +445,7 @@ void tank_reattack_blaster(edict_t *self)
     self->monsterinfo.currentmove = &tank_move_attack_post_blast;
 }
 
-void tank_poststrike(edict_t *self)
+static void tank_poststrike(edict_t *self)
 {
     self->enemy = NULL;
     tank_run(self);
@@ -595,7 +595,7 @@ static const mframe_t tank_frames_attack_chain[] = {
 };
 const mmove_t tank_move_attack_chain = {FRAME_attak401, FRAME_attak429, tank_frames_attack_chain, tank_run};
 
-void tank_refire_rocket(edict_t *self)
+static void tank_refire_rocket(edict_t *self)
 {
     // Only on hard or nightmare
     if (skill->value >= 2)
@@ -608,7 +608,7 @@ void tank_refire_rocket(edict_t *self)
     self->monsterinfo.currentmove = &tank_move_attack_post_rocket;
 }
 
-void tank_doattack_rocket(edict_t *self)
+static void tank_doattack_rocket(edict_t *self)
 {
     self->monsterinfo.currentmove = &tank_move_attack_fire_rocket;
 }
@@ -655,7 +655,7 @@ void tank_attack(edict_t *self)
 // death
 //
 
-void tank_dead(edict_t *self)
+static void tank_dead(edict_t *self)
 {
     VectorSet(self->mins, -16, -16, -16);
     VectorSet(self->maxs, 16, 16, -0);

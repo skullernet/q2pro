@@ -39,7 +39,7 @@ static int  sound_hook_hit;
 static int  sound_hook_heal;
 static int  sound_hook_retract;
 
-edict_t *medic_FindDeadMonster(edict_t *self)
+static edict_t *medic_FindDeadMonster(edict_t *self)
 {
     edict_t *ent = NULL;
     edict_t *best = NULL;
@@ -316,7 +316,7 @@ void medic_pain(edict_t *self, edict_t *other, float kick, int damage)
     }
 }
 
-void medic_fire_blaster(edict_t *self)
+static void medic_fire_blaster(edict_t *self)
 {
     vec3_t  start;
     vec3_t  forward, right;
@@ -341,7 +341,7 @@ void medic_fire_blaster(edict_t *self)
     monster_fire_blaster(self, start, dir, 2, 1000, MZ2_MEDIC_BLASTER_1, effect);
 }
 
-void medic_dead(edict_t *self)
+static void medic_dead(edict_t *self)
 {
     VectorSet(self->mins, -16, -16, -24);
     VectorSet(self->maxs, 16, 16, -8);
@@ -416,7 +416,7 @@ void medic_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage,
     self->monsterinfo.currentmove = &medic_move_death;
 }
 
-void medic_duck_down(edict_t *self)
+static void medic_duck_down(edict_t *self)
 {
     if (self->monsterinfo.aiflags & AI_DUCKED)
         return;
@@ -427,7 +427,7 @@ void medic_duck_down(edict_t *self)
     gi.linkentity(self);
 }
 
-void medic_duck_hold(edict_t *self)
+static void medic_duck_hold(edict_t *self)
 {
     if (level.framenum >= self->monsterinfo.pause_framenum)
         self->monsterinfo.aiflags &= ~AI_HOLD_FRAME;
@@ -435,7 +435,7 @@ void medic_duck_hold(edict_t *self)
         self->monsterinfo.aiflags |= AI_HOLD_FRAME;
 }
 
-void medic_duck_up(edict_t *self)
+static void medic_duck_up(edict_t *self)
 {
     self->monsterinfo.aiflags &= ~AI_DUCKED;
     self->maxs[2] += 32;
@@ -494,7 +494,7 @@ static const mframe_t medic_frames_attackHyperBlaster[] = {
 };
 const mmove_t medic_move_attackHyperBlaster = {FRAME_attack15, FRAME_attack30, medic_frames_attackHyperBlaster, medic_run};
 
-void medic_continue(edict_t *self)
+static void medic_continue(edict_t *self)
 {
     if (visible(self, self->enemy))
         if (random() <= 0.95f)
@@ -519,7 +519,7 @@ static const mframe_t medic_frames_attackBlaster[] = {
 };
 const mmove_t medic_move_attackBlaster = {FRAME_attack1, FRAME_attack14, medic_frames_attackBlaster, medic_run};
 
-void medic_hook_launch(edict_t *self)
+static void medic_hook_launch(edict_t *self)
 {
     gi.sound(self, CHAN_WEAPON, sound_hook_launch, 1, ATTN_NORM, 0);
 }
@@ -539,7 +539,7 @@ static const vec3_t medic_cable_offsets[] = {
     { 32.7, -19.7, 10.4 }
 };
 
-void medic_cable_attack(edict_t *self)
+static void medic_cable_attack(edict_t *self)
 {
     vec3_t  offset, start, end, f, r;
     trace_t tr;
@@ -612,7 +612,7 @@ void medic_cable_attack(edict_t *self)
     gi.multicast(self->s.origin, MULTICAST_PVS);
 }
 
-void medic_hook_retract(edict_t *self)
+static void medic_hook_retract(edict_t *self)
 {
     gi.sound(self, CHAN_WEAPON, sound_hook_retract, 1, ATTN_NORM, 0);
     self->enemy->monsterinfo.aiflags &= ~AI_RESURRECTING;

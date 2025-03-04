@@ -31,34 +31,35 @@ static int  sound_shake;
 static int  sound_moan;
 static int  sound_scream[8];
 
-void insane_fist(edict_t *self)
+static void insane_fist(edict_t *self)
 {
     gi.sound(self, CHAN_VOICE, sound_fist, 1, ATTN_IDLE, 0);
 }
 
-void insane_shake(edict_t *self)
+static void insane_shake(edict_t *self)
 {
     gi.sound(self, CHAN_VOICE, sound_shake, 1, ATTN_IDLE, 0);
 }
 
-void insane_moan(edict_t *self)
+static void insane_moan(edict_t *self)
 {
     gi.sound(self, CHAN_VOICE, sound_moan, 1, ATTN_IDLE, 0);
 }
 
-void insane_scream(edict_t *self)
+static void insane_scream(edict_t *self)
 {
     gi.sound(self, CHAN_VOICE, sound_scream[Q_rand() % 8], 1, ATTN_IDLE, 0);
 }
 
 void insane_stand(edict_t *self);
-void insane_dead(edict_t *self);
-void insane_cross(edict_t *self);
 void insane_walk(edict_t *self);
 void insane_run(edict_t *self);
-void insane_checkdown(edict_t *self);
-void insane_checkup(edict_t *self);
-void insane_onground(edict_t *self);
+
+static void insane_dead(edict_t *self);
+static void insane_cross(edict_t *self);
+static void insane_checkdown(edict_t *self);
+static void insane_checkup(edict_t *self);
+static void insane_onground(edict_t *self);
 
 static const mframe_t insane_frames_stand_normal[] = {
     { ai_stand, 0, NULL },
@@ -409,7 +410,7 @@ static const mframe_t insane_frames_struggle_cross[] = {
 };
 const mmove_t insane_move_struggle_cross = {FRAME_cross16, FRAME_cross30, insane_frames_struggle_cross, insane_cross};
 
-void insane_cross(edict_t *self)
+static void insane_cross(edict_t *self)
 {
     if (random() < 0.8f)
         self->monsterinfo.currentmove = &insane_move_cross;
@@ -483,15 +484,14 @@ void insane_pain(edict_t *self, edict_t *other, float kick, int damage)
         self->monsterinfo.currentmove = &insane_move_crawl_pain;
     } else
         self->monsterinfo.currentmove = &insane_move_stand_pain;
-
 }
 
-void insane_onground(edict_t *self)
+static void insane_onground(edict_t *self)
 {
     self->monsterinfo.currentmove = &insane_move_down;
 }
 
-void insane_checkdown(edict_t *self)
+static void insane_checkdown(edict_t *self)
 {
 //  if ( (self->s.frame == FRAME_stand94) || (self->s.frame == FRAME_stand65) )
     if (self->spawnflags & 32)              // Always stand
@@ -504,7 +504,7 @@ void insane_checkdown(edict_t *self)
     }
 }
 
-void insane_checkup(edict_t *self)
+static void insane_checkup(edict_t *self)
 {
     // If Hold_Ground and Crawl are set
     if ((self->spawnflags & 4) && (self->spawnflags & 16))
@@ -529,7 +529,7 @@ void insane_stand(edict_t *self)
         self->monsterinfo.currentmove = &insane_move_stand_insane;
 }
 
-void insane_dead(edict_t *self)
+static void insane_dead(edict_t *self)
 {
     if (self->spawnflags & 8) {
         self->flags |= FL_FLY;

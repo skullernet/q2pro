@@ -246,7 +246,7 @@ void actor_pain(edict_t *self, edict_t *other, float kick, int damage)
         self->monsterinfo.currentmove = &actor_move_pain3;
 }
 
-void actorMachineGun(edict_t *self)
+static void actorMachineGun(edict_t *self)
 {
     vec3_t  start, target;
     vec3_t  forward, right;
@@ -269,7 +269,7 @@ void actorMachineGun(edict_t *self)
     monster_fire_bullet(self, start, forward, 3, 4, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, MZ2_ACTOR_MACHINEGUN_1);
 }
 
-void actor_dead(edict_t *self)
+static void actor_dead(edict_t *self)
 {
     VectorSet(self->mins, -16, -16, -24);
     VectorSet(self->maxs, 16, 16, -8);
@@ -338,7 +338,7 @@ void actor_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage,
         self->monsterinfo.currentmove = &actor_move_death2;
 }
 
-void actor_fire(edict_t *self)
+static void actor_fire(edict_t *self)
 {
     actorMachineGun(self);
 

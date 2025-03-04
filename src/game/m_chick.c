@@ -30,9 +30,10 @@ bool visible(edict_t *self, edict_t *other);
 
 void chick_stand(edict_t *self);
 void chick_run(edict_t *self);
-void chick_reslash(edict_t *self);
-void chick_rerocket(edict_t *self);
-void chick_attack1(edict_t *self);
+
+static void chick_reslash(edict_t *self);
+static void chick_rerocket(edict_t *self);
+static void chick_attack1(edict_t *self);
 
 static int  sound_missile_prelaunch;
 static int  sound_missile_launch;
@@ -50,7 +51,7 @@ static int  sound_pain3;
 static int  sound_sight;
 static int  sound_search;
 
-void ChickMoan(edict_t *self)
+static void ChickMoan(edict_t *self)
 {
     if (random() < 0.5f)
         gi.sound(self, CHAN_VOICE, sound_idle1, 1, ATTN_IDLE, 0);
@@ -92,7 +93,7 @@ static const mframe_t chick_frames_fidget[] = {
 };
 const mmove_t chick_move_fidget = {FRAME_stand201, FRAME_stand230, chick_frames_fidget, chick_stand};
 
-void chick_fidget(edict_t *self)
+static void chick_fidget(edict_t *self)
 {
     if (self->monsterinfo.aiflags & AI_STAND_GROUND)
         return;
@@ -279,7 +280,7 @@ void chick_pain(edict_t *self, edict_t *other, float kick, int damage)
         self->monsterinfo.currentmove = &chick_move_pain3;
 }
 
-void chick_dead(edict_t *self)
+static void chick_dead(edict_t *self)
 {
     VectorSet(self->mins, -16, -16, 0);
     VectorSet(self->maxs, 16, 16, 16);
@@ -366,7 +367,7 @@ void chick_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage,
     }
 }
 
-void chick_duck_down(edict_t *self)
+static void chick_duck_down(edict_t *self)
 {
     if (self->monsterinfo.aiflags & AI_DUCKED)
         return;
@@ -377,7 +378,7 @@ void chick_duck_down(edict_t *self)
     gi.linkentity(self);
 }
 
-void chick_duck_hold(edict_t *self)
+static void chick_duck_hold(edict_t *self)
 {
     if (level.framenum >= self->monsterinfo.pause_framenum)
         self->monsterinfo.aiflags &= ~AI_HOLD_FRAME;
@@ -385,7 +386,7 @@ void chick_duck_hold(edict_t *self)
         self->monsterinfo.aiflags |= AI_HOLD_FRAME;
 }
 
-void chick_duck_up(edict_t *self)
+static void chick_duck_up(edict_t *self)
 {
     self->monsterinfo.aiflags &= ~AI_DUCKED;
     self->maxs[2] += 32;
@@ -415,7 +416,7 @@ void chick_dodge(edict_t *self, edict_t *attacker, float eta)
     self->monsterinfo.currentmove = &chick_move_duck;
 }
 
-void ChickSlash(edict_t *self)
+static void ChickSlash(edict_t *self)
 {
     vec3_t  aim = { MELEE_DISTANCE, self->mins[0], 10 };
 
@@ -423,7 +424,7 @@ void ChickSlash(edict_t *self)
     fire_hit(self, aim, (10 + (Q_rand() % 6)), 100);
 }
 
-void ChickRocket(edict_t *self)
+static void ChickRocket(edict_t *self)
 {
     vec3_t  forward, right;
     vec3_t  start;
@@ -441,12 +442,12 @@ void ChickRocket(edict_t *self)
     monster_fire_rocket(self, start, dir, 50, 500, MZ2_CHICK_ROCKET_1);
 }
 
-void Chick_PreAttack1(edict_t *self)
+static void Chick_PreAttack1(edict_t *self)
 {
     gi.sound(self, CHAN_VOICE, sound_missile_prelaunch, 1, ATTN_NORM, 0);
 }
 
-void ChickReload(edict_t *self)
+static void ChickReload(edict_t *self)
 {
     gi.sound(self, CHAN_VOICE, sound_missile_reload, 1, ATTN_NORM, 0);
 }
@@ -496,7 +497,7 @@ static const mframe_t chick_frames_end_attack1[] = {
 };
 const mmove_t chick_move_end_attack1 = {FRAME_attak128, FRAME_attak132, chick_frames_end_attack1, chick_run};
 
-void chick_rerocket(edict_t *self)
+static void chick_rerocket(edict_t *self)
 {
     if (self->enemy->health > 0) {
         if (range(self, self->enemy) > RANGE_MELEE)
@@ -509,7 +510,7 @@ void chick_rerocket(edict_t *self)
     self->monsterinfo.currentmove = &chick_move_end_attack1;
 }
 
-void chick_attack1(edict_t *self)
+static void chick_attack1(edict_t *self)
 {
     self->monsterinfo.currentmove = &chick_move_attack1;
 }
@@ -535,7 +536,7 @@ static const mframe_t chick_frames_end_slash[] = {
 };
 const mmove_t chick_move_end_slash = {FRAME_attak213, FRAME_attak216, chick_frames_end_slash, chick_run};
 
-void chick_reslash(edict_t *self)
+static void chick_reslash(edict_t *self)
 {
     if (self->enemy->health > 0) {
         if (range(self, self->enemy) == RANGE_MELEE) {
@@ -551,7 +552,7 @@ void chick_reslash(edict_t *self)
     self->monsterinfo.currentmove = &chick_move_end_slash;
 }
 
-void chick_slash(edict_t *self)
+static void chick_slash(edict_t *self)
 {
     self->monsterinfo.currentmove = &chick_move_slash;
 }

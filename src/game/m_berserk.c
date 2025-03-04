@@ -43,7 +43,8 @@ void berserk_search(edict_t *self)
     gi.sound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM, 0);
 }
 
-void berserk_fidget(edict_t *self);
+static void berserk_fidget(edict_t *self);
+
 static const mframe_t berserk_frames_stand[] = {
     { ai_stand, 0, berserk_fidget },
     { ai_stand, 0, NULL },
@@ -82,7 +83,7 @@ static const mframe_t berserk_frames_stand_fidget[] = {
 };
 const mmove_t berserk_move_stand_fidget = {FRAME_standb1, FRAME_standb20, berserk_frames_stand_fidget, berserk_stand};
 
-void berserk_fidget(edict_t *self)
+static void berserk_fidget(edict_t *self)
 {
     if (self->monsterinfo.aiflags & AI_STAND_GROUND)
         return;
@@ -156,14 +157,14 @@ void berserk_run(edict_t *self)
         self->monsterinfo.currentmove = &berserk_move_run1;
 }
 
-void berserk_attack_spike(edict_t *self)
+static void berserk_attack_spike(edict_t *self)
 {
     vec3_t  aim = { MELEE_DISTANCE, 0, -24 };
 
     fire_hit(self, aim, (15 + (Q_rand() % 6)), 400);    //  Faster attack -- upwards and backwards
 }
 
-void berserk_swing(edict_t *self)
+static void berserk_swing(edict_t *self)
 {
     gi.sound(self, CHAN_WEAPON, sound_punch, 1, ATTN_NORM, 0);
 }
@@ -180,7 +181,7 @@ static const mframe_t berserk_frames_attack_spike[] = {
 };
 const mmove_t berserk_move_attack_spike = {FRAME_att_c1, FRAME_att_c8, berserk_frames_attack_spike, berserk_run};
 
-void berserk_attack_club(edict_t *self)
+static void berserk_attack_club(edict_t *self)
 {
     vec3_t  aim = { MELEE_DISTANCE, self->mins[0], -4 };
 
@@ -203,7 +204,7 @@ static const mframe_t berserk_frames_attack_club[] = {
 };
 const mmove_t berserk_move_attack_club = {FRAME_att_c9, FRAME_att_c20, berserk_frames_attack_club, berserk_run};
 
-void berserk_strike(edict_t *self)
+static void berserk_strike(edict_t *self)
 {
     //FIXME play impact sound
 }
@@ -308,7 +309,7 @@ void berserk_pain(edict_t *self, edict_t *other, float kick, int damage)
         self->monsterinfo.currentmove = &berserk_move_pain2;
 }
 
-void berserk_dead(edict_t *self)
+static void berserk_dead(edict_t *self)
 {
     VectorSet(self->mins, -16, -16, -24);
     VectorSet(self->maxs, 16, 16, -8);

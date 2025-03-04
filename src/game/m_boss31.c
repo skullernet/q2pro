@@ -61,16 +61,15 @@ void jorg_search(edict_t *self)
         gi.sound(self, CHAN_VOICE, sound_search3, 1, ATTN_NORM, 0);
 }
 
-void jorg_dead(edict_t *self);
-void jorgBFG(edict_t *self);
-void jorgMachineGun(edict_t *self);
-void jorg_firebullet(edict_t *self);
-void jorg_reattack1(edict_t *self);
-void jorg_attack1(edict_t *self);
-void jorg_idle(edict_t *self);
-void jorg_step_left(edict_t *self);
-void jorg_step_right(edict_t *self);
-void jorg_death_hit(edict_t *self);
+static void jorg_dead(edict_t *self);
+static void jorgBFG(edict_t *self);
+static void jorg_firebullet(edict_t *self);
+static void jorg_reattack1(edict_t *self);
+static void jorg_attack1(edict_t *self);
+static void jorg_idle(edict_t *self);
+static void jorg_step_left(edict_t *self);
+static void jorg_step_right(edict_t *self);
+static void jorg_death_hit(edict_t *self);
 
 //
 // stand
@@ -131,22 +130,22 @@ static const mframe_t jorg_frames_stand[] = {
 };
 const mmove_t jorg_move_stand = {FRAME_stand01, FRAME_stand51, jorg_frames_stand, NULL};
 
-void jorg_idle(edict_t *self)
+static void jorg_idle(edict_t *self)
 {
     gi.sound(self, CHAN_VOICE, sound_idle, 1, ATTN_NORM, 0);
 }
 
-void jorg_death_hit(edict_t *self)
+static void jorg_death_hit(edict_t *self)
 {
     gi.sound(self, CHAN_BODY, sound_death_hit, 1, ATTN_NORM, 0);
 }
 
-void jorg_step_left(edict_t *self)
+static void jorg_step_left(edict_t *self)
 {
     gi.sound(self, CHAN_BODY, sound_step_left, 1, ATTN_NORM, 0);
 }
 
-void jorg_step_right(edict_t *self)
+static void jorg_step_right(edict_t *self)
 {
     gi.sound(self, CHAN_BODY, sound_step_right, 1, ATTN_NORM, 0);
 }
@@ -372,7 +371,7 @@ static const mframe_t jorg_frames_end_attack1[] = {
 };
 const mmove_t jorg_move_end_attack1 = {FRAME_attak115, FRAME_attak118, jorg_frames_end_attack1, jorg_run};
 
-void jorg_reattack1(edict_t *self)
+static void jorg_reattack1(edict_t *self)
 {
     if (visible(self, self->enemy)) {
         if (random() < 0.9f)
@@ -387,7 +386,7 @@ void jorg_reattack1(edict_t *self)
     }
 }
 
-void jorg_attack1(edict_t *self)
+static void jorg_attack1(edict_t *self)
 {
     self->monsterinfo.currentmove = &jorg_move_attack1;
 }
@@ -442,7 +441,7 @@ void jorg_pain(edict_t *self, edict_t *other, float kick, int damage)
     }
 }
 
-void jorgBFG(edict_t *self)
+static void jorgBFG(edict_t *self)
 {
     vec3_t  forward, right;
     vec3_t  start;
@@ -460,7 +459,7 @@ void jorgBFG(edict_t *self)
     monster_fire_bfg(self, start, dir, 50, 300, 100, 200, MZ2_JORG_BFG_1);
 }
 
-void jorg_firebullet_right(edict_t *self)
+static void jorg_firebullet_right(edict_t *self)
 {
     vec3_t  forward, right, target;
     vec3_t  start;
@@ -476,7 +475,7 @@ void jorg_firebullet_right(edict_t *self)
     monster_fire_bullet(self, start, forward, 6, 4, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, MZ2_JORG_MACHINEGUN_R1);
 }
 
-void jorg_firebullet_left(edict_t *self)
+static void jorg_firebullet_left(edict_t *self)
 {
     vec3_t  forward, right, target;
     vec3_t  start;
@@ -492,7 +491,7 @@ void jorg_firebullet_left(edict_t *self)
     monster_fire_bullet(self, start, forward, 6, 4, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, MZ2_JORG_MACHINEGUN_L1);
 }
 
-void jorg_firebullet(edict_t *self)
+static void jorg_firebullet(edict_t *self)
 {
     jorg_firebullet_left(self);
     jorg_firebullet_right(self);
@@ -510,7 +509,7 @@ void jorg_attack(edict_t *self)
     }
 }
 
-void jorg_dead(edict_t *self)
+static void jorg_dead(edict_t *self)
 {
 }
 

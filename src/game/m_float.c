@@ -45,13 +45,14 @@ void floater_idle(edict_t *self)
 }
 
 //void floater_stand1 (edict_t *self);
-void floater_dead(edict_t *self);
 void floater_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point);
 void floater_run(edict_t *self);
-void floater_wham(edict_t *self);
-void floater_zap(edict_t *self);
 
-void floater_fire_blaster(edict_t *self)
+static void floater_dead(edict_t *self);
+static void floater_wham(edict_t *self);
+static void floater_zap(edict_t *self);
+
+static void floater_fire_blaster(edict_t *self)
 {
     vec3_t  start;
     vec3_t  forward, right;
@@ -493,7 +494,7 @@ void floater_walk(edict_t *self)
     self->monsterinfo.currentmove = &floater_move_walk;
 }
 
-void floater_wham(edict_t *self)
+static void floater_wham(edict_t *self)
 {
     vec3_t aim = { MELEE_DISTANCE, 0, 0 };
 
@@ -501,7 +502,7 @@ void floater_wham(edict_t *self)
     fire_hit(self, aim, 5 + Q_rand() % 6, -50);
 }
 
-void floater_zap(edict_t *self)
+static void floater_zap(edict_t *self)
 {
     vec3_t  forward, right;
     vec3_t  origin;
@@ -567,7 +568,7 @@ void floater_pain(edict_t *self, edict_t *other, float kick, int damage)
     }
 }
 
-void floater_dead(edict_t *self)
+static void floater_dead(edict_t *self)
 {
     VectorSet(self->mins, -16, -16, -24);
     VectorSet(self->maxs, 16, 16, -8);

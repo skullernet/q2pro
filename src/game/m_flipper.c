@@ -80,7 +80,7 @@ static const mframe_t flipper_frames_run[] = {
 };
 const mmove_t flipper_move_run_loop = {FRAME_flpver06, FRAME_flpver29, flipper_frames_run, NULL};
 
-void flipper_run_loop(edict_t *self)
+static void flipper_run_loop(edict_t *self)
 {
     self->monsterinfo.currentmove = &flipper_move_run_loop;
 }
@@ -95,7 +95,7 @@ static const mframe_t flipper_frames_run_start[] = {
 };
 const mmove_t flipper_move_run_start = {FRAME_flpver01, FRAME_flpver06, flipper_frames_run_start, flipper_run_loop};
 
-void flipper_run(edict_t *self)
+static void flipper_run(edict_t *self)
 {
     self->monsterinfo.currentmove = &flipper_move_run_start;
 }
@@ -166,14 +166,14 @@ static const mframe_t flipper_frames_pain1[] = {
 };
 const mmove_t flipper_move_pain1 = {FRAME_flppn201, FRAME_flppn205, flipper_frames_pain1, flipper_run};
 
-void flipper_bite(edict_t *self)
+static void flipper_bite(edict_t *self)
 {
     vec3_t  aim = { MELEE_DISTANCE, 0, 0 };
 
     fire_hit(self, aim, 5, 0);
 }
 
-void flipper_preattack(edict_t *self)
+static void flipper_preattack(edict_t *self)
 {
     gi.sound(self, CHAN_WEAPON, sound_chomp, 1, ATTN_NORM, 0);
 }
@@ -232,7 +232,7 @@ void flipper_pain(edict_t *self, edict_t *other, float kick, int damage)
     }
 }
 
-void flipper_dead(edict_t *self)
+static void flipper_dead(edict_t *self)
 {
     VectorSet(self->mins, -16, -16, -24);
     VectorSet(self->maxs, 16, 16, -8);

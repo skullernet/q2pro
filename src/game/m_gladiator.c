@@ -52,7 +52,7 @@ void gladiator_search(edict_t *self)
     gi.sound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM, 0);
 }
 
-void gladiator_cleaver_swing(edict_t *self)
+static void gladiator_cleaver_swing(edict_t *self)
 {
     gi.sound(self, CHAN_WEAPON, sound_cleaver_swing, 1, ATTN_NORM, 0);
 }
@@ -116,7 +116,7 @@ void gladiator_run(edict_t *self)
         self->monsterinfo.currentmove = &gladiator_move_run;
 }
 
-void GaldiatorMelee(edict_t *self)
+static void GaldiatorMelee(edict_t *self)
 {
     vec3_t  aim = { MELEE_DISTANCE, self->mins[0], -4 };
 
@@ -152,7 +152,7 @@ void gladiator_melee(edict_t *self)
     self->monsterinfo.currentmove = &gladiator_move_attack_melee;
 }
 
-void GladiatorGun(edict_t *self)
+static void GladiatorGun(edict_t *self)
 {
     vec3_t  start;
     vec3_t  dir;
@@ -222,7 +222,6 @@ const mmove_t gladiator_move_pain_air = {FRAME_painup1, FRAME_painup7, gladiator
 
 void gladiator_pain(edict_t *self, edict_t *other, float kick, int damage)
 {
-
     if (self->health < (self->max_health / 2))
         self->s.skinnum = 1;
 
@@ -246,10 +245,9 @@ void gladiator_pain(edict_t *self, edict_t *other, float kick, int damage)
         self->monsterinfo.currentmove = &gladiator_move_pain_air;
     else
         self->monsterinfo.currentmove = &gladiator_move_pain;
-
 }
 
-void gladiator_dead(edict_t *self)
+static void gladiator_dead(edict_t *self)
 {
     VectorSet(self->mins, -16, -16, -24);
     VectorSet(self->maxs, 16, 16, -8);

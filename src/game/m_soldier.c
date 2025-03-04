@@ -37,13 +37,13 @@ static int  sound_death;
 static int  sound_death_ss;
 static int  sound_cock;
 
-void soldier_idle(edict_t *self)
+static void soldier_idle(edict_t *self)
 {
     if (random() > 0.8f)
         gi.sound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
 }
 
-void soldier_cock(edict_t *self)
+static void soldier_cock(edict_t *self)
 {
     if (self->s.frame == FRAME_stand322)
         gi.sound(self, CHAN_WEAPON, sound_cock, 1, ATTN_IDLE, 0);
@@ -149,7 +149,7 @@ void soldier_stand(edict_t *self)
 // WALK
 //
 
-void soldier_walk1_random(edict_t *self)
+static void soldier_walk1_random(edict_t *self)
 {
     if (random() > 0.1f)
         self->monsterinfo.nextframe = FRAME_walk101;
@@ -398,7 +398,7 @@ static const byte machinegun_flash[] = {
     MZ2_SOLDIER_MACHINEGUN_8
 };
 
-void soldier_fire(edict_t *self, int flash_number)
+static void soldier_fire(edict_t *self, int flash_number)
 {
     vec3_t  start;
     vec3_t  forward, right, up;
@@ -456,12 +456,12 @@ void soldier_fire(edict_t *self, int flash_number)
 
 // ATTACK1 (blaster/shotgun)
 
-void soldier_fire1(edict_t *self)
+static void soldier_fire1(edict_t *self)
 {
     soldier_fire(self, 0);
 }
 
-void soldier_attack1_refire1(edict_t *self)
+static void soldier_attack1_refire1(edict_t *self)
 {
     if (self->s.skinnum > 1)
         return;
@@ -475,7 +475,7 @@ void soldier_attack1_refire1(edict_t *self)
         self->monsterinfo.nextframe = FRAME_attak110;
 }
 
-void soldier_attack1_refire2(edict_t *self)
+static void soldier_attack1_refire2(edict_t *self)
 {
     if (self->s.skinnum < 2)
         return;
@@ -505,12 +505,12 @@ const mmove_t soldier_move_attack1 = {FRAME_attak101, FRAME_attak112, soldier_fr
 
 // ATTACK2 (blaster/shotgun)
 
-void soldier_fire2(edict_t *self)
+static void soldier_fire2(edict_t *self)
 {
     soldier_fire(self, 1);
 }
 
-void soldier_attack2_refire1(edict_t *self)
+static void soldier_attack2_refire1(edict_t *self)
 {
     if (self->s.skinnum > 1)
         return;
@@ -524,7 +524,7 @@ void soldier_attack2_refire1(edict_t *self)
         self->monsterinfo.nextframe = FRAME_attak216;
 }
 
-void soldier_attack2_refire2(edict_t *self)
+static void soldier_attack2_refire2(edict_t *self)
 {
     if (self->s.skinnum < 2)
         return;
@@ -560,7 +560,7 @@ const mmove_t soldier_move_attack2 = {FRAME_attak201, FRAME_attak218, soldier_fr
 
 // ATTACK3 (duck and shoot)
 
-void soldier_duck_down(edict_t *self)
+static void soldier_duck_down(edict_t *self)
 {
     if (self->monsterinfo.aiflags & AI_DUCKED)
         return;
@@ -571,7 +571,7 @@ void soldier_duck_down(edict_t *self)
     gi.linkentity(self);
 }
 
-void soldier_duck_up(edict_t *self)
+static void soldier_duck_up(edict_t *self)
 {
     self->monsterinfo.aiflags &= ~AI_DUCKED;
     self->maxs[2] += 32;
@@ -579,13 +579,13 @@ void soldier_duck_up(edict_t *self)
     gi.linkentity(self);
 }
 
-void soldier_fire3(edict_t *self)
+static void soldier_fire3(edict_t *self)
 {
     soldier_duck_down(self);
     soldier_fire(self, 2);
 }
 
-void soldier_attack3_refire(edict_t *self)
+static void soldier_attack3_refire(edict_t *self)
 {
     if ((level.framenum + 0.4f * BASE_FRAMERATE) < self->monsterinfo.pause_framenum)
         self->monsterinfo.nextframe = FRAME_attak303;
@@ -606,7 +606,7 @@ const mmove_t soldier_move_attack3 = {FRAME_attak301, FRAME_attak309, soldier_fr
 
 // ATTACK4 (machinegun)
 
-void soldier_fire4(edict_t *self)
+static void soldier_fire4(edict_t *self)
 {
     soldier_fire(self, 3);
 }
@@ -623,12 +623,12 @@ const mmove_t soldier_move_attack4 = {FRAME_attak401, FRAME_attak406, soldier_fr
 
 // ATTACK6 (run & shoot)
 
-void soldier_fire8(edict_t *self)
+static void soldier_fire8(edict_t *self)
 {
     soldier_fire(self, 7);
 }
 
-void soldier_attack6_refire(edict_t *self)
+static void soldier_attack6_refire(edict_t *self)
 {
     if (self->enemy->health <= 0)
         return;
@@ -691,7 +691,7 @@ void soldier_sight(edict_t *self, edict_t *other)
 // DUCK
 //
 
-void soldier_duck_hold(edict_t *self)
+static void soldier_duck_hold(edict_t *self)
 {
     if (level.framenum >= self->monsterinfo.pause_framenum)
         self->monsterinfo.aiflags &= ~AI_HOLD_FRAME;
@@ -750,17 +750,17 @@ void soldier_dodge(edict_t *self, edict_t *attacker, float eta)
 // DEATH
 //
 
-void soldier_fire6(edict_t *self)
+static void soldier_fire6(edict_t *self)
 {
     soldier_fire(self, 5);
 }
 
-void soldier_fire7(edict_t *self)
+static void soldier_fire7(edict_t *self)
 {
     soldier_fire(self, 6);
 }
 
-void soldier_dead(edict_t *self)
+static void soldier_dead(edict_t *self)
 {
     VectorSet(self->mins, -16, -16, -24);
     VectorSet(self->maxs, 16, 16, -8);

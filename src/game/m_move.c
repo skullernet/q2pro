@@ -99,7 +99,7 @@ pr_global_struct->trace_normal is set to the normal of the blocking wall
 */
 //FIXME since we need to test end position contents here, can we avoid doing
 //it again later in catagorize position?
-bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
+static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
 {
     float       dz;
     vec3_t      oldorg, neworg, end;
@@ -310,7 +310,7 @@ facing it.
 
 ======================
 */
-bool SV_StepDirection(edict_t *ent, float yaw, float dist)
+static bool SV_StepDirection(edict_t *ent, float yaw, float dist)
 {
     vec3_t      move, oldorigin;
     float       delta;
@@ -345,7 +345,7 @@ SV_FixCheckBottom
 
 ======================
 */
-void SV_FixCheckBottom(edict_t *ent)
+static void SV_FixCheckBottom(edict_t *ent)
 {
     ent->flags |= FL_PARTIALGROUND;
 }
@@ -357,7 +357,7 @@ SV_NewChaseDir
 ================
 */
 #define DI_NODIR    -1
-void SV_NewChaseDir(edict_t *actor, edict_t *enemy, float dist)
+static void SV_NewChaseDir(edict_t *actor, edict_t *enemy, float dist)
 {
     float   deltax, deltay;
     float   d1, d2;
@@ -439,7 +439,7 @@ SV_CloseEnough
 
 ======================
 */
-bool SV_CloseEnough(edict_t *ent, edict_t *goal, float dist)
+static bool SV_CloseEnough(edict_t *ent, edict_t *goal, float dist)
 {
     int     i;
 

@@ -26,7 +26,7 @@ INFANTRY
 #include "g_local.h"
 #include "m_infantry.h"
 
-void InfantryMachineGun(edict_t *self);
+static void InfantryMachineGun(edict_t *self);
 
 static int  sound_pain1;
 static int  sound_pain2;
@@ -240,7 +240,7 @@ static const vec3_t aimangles[] = {
     { 90.0, 35.0, 0.0 }
 };
 
-void InfantryMachineGun(edict_t *self)
+static void InfantryMachineGun(edict_t *self)
 {
     vec3_t  start, target;
     vec3_t  forward, right;
@@ -278,7 +278,7 @@ void infantry_sight(edict_t *self, edict_t *other)
     gi.sound(self, CHAN_BODY, sound_sight, 1, ATTN_NORM, 0);
 }
 
-void infantry_dead(edict_t *self)
+static void infantry_dead(edict_t *self)
 {
     VectorSet(self->mins, -16, -16, -24);
     VectorSet(self->maxs, 16, 16, -8);
@@ -392,7 +392,7 @@ void infantry_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int dama
     }
 }
 
-void infantry_duck_down(edict_t *self)
+static void infantry_duck_down(edict_t *self)
 {
     if (self->monsterinfo.aiflags & AI_DUCKED)
         return;
@@ -403,7 +403,7 @@ void infantry_duck_down(edict_t *self)
     gi.linkentity(self);
 }
 
-void infantry_duck_hold(edict_t *self)
+static void infantry_duck_hold(edict_t *self)
 {
     if (level.framenum >= self->monsterinfo.pause_framenum)
         self->monsterinfo.aiflags &= ~AI_HOLD_FRAME;
@@ -411,7 +411,7 @@ void infantry_duck_hold(edict_t *self)
         self->monsterinfo.aiflags |= AI_HOLD_FRAME;
 }
 
-void infantry_duck_up(edict_t *self)
+static void infantry_duck_up(edict_t *self)
 {
     self->monsterinfo.aiflags &= ~AI_DUCKED;
     self->maxs[2] += 32;
@@ -439,7 +439,7 @@ void infantry_dodge(edict_t *self, edict_t *attacker, float eta)
     self->monsterinfo.currentmove = &infantry_move_duck;
 }
 
-void infantry_cock_gun(edict_t *self)
+static void infantry_cock_gun(edict_t *self)
 {
     int     n;
 
@@ -448,7 +448,7 @@ void infantry_cock_gun(edict_t *self)
     self->monsterinfo.pause_framenum = level.framenum + n;
 }
 
-void infantry_fire(edict_t *self)
+static void infantry_fire(edict_t *self)
 {
     InfantryMachineGun(self);
 
@@ -477,12 +477,12 @@ static const mframe_t infantry_frames_attack1[] = {
 };
 const mmove_t infantry_move_attack1 = {FRAME_attak101, FRAME_attak115, infantry_frames_attack1, infantry_run};
 
-void infantry_swing(edict_t *self)
+static void infantry_swing(edict_t *self)
 {
     gi.sound(self, CHAN_WEAPON, sound_punch_swing, 1, ATTN_NORM, 0);
 }
 
-void infantry_smack(edict_t *self)
+static void infantry_smack(edict_t *self)
 {
     vec3_t  aim = { MELEE_DISTANCE, 0, 0 };
 

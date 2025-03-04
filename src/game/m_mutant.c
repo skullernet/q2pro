@@ -44,7 +44,7 @@ static int  sound_thud;
 // SOUNDS
 //
 
-void mutant_step(edict_t *self)
+static void mutant_step(edict_t *self)
 {
     int     n;
     n = (Q_rand() + 1) % 3;
@@ -66,7 +66,7 @@ void mutant_search(edict_t *self)
     gi.sound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM, 0);
 }
 
-void mutant_swing(edict_t *self)
+static void mutant_swing(edict_t *self)
 {
     gi.sound(self, CHAN_VOICE, sound_swing, 1, ATTN_NORM, 0);
 }
@@ -144,7 +144,7 @@ void mutant_stand(edict_t *self)
 // IDLE
 //
 
-void mutant_idle_loop(edict_t *self)
+static void mutant_idle_loop(edict_t *self)
 {
     if (random() < 0.75f)
         self->monsterinfo.nextframe = FRAME_stand155;
@@ -195,7 +195,7 @@ static const mframe_t mutant_frames_walk[] = {
 };
 const mmove_t mutant_move_walk = {FRAME_walk05, FRAME_walk16, mutant_frames_walk, NULL};
 
-void mutant_walk_loop(edict_t *self)
+static void mutant_walk_loop(edict_t *self)
 {
     self->monsterinfo.currentmove = &mutant_move_walk;
 }
@@ -239,7 +239,7 @@ void mutant_run(edict_t *self)
 // MELEE
 //
 
-void mutant_hit_left(edict_t *self)
+static void mutant_hit_left(edict_t *self)
 {
     vec3_t  aim = { MELEE_DISTANCE, self->mins[0], 8 };
 
@@ -249,7 +249,7 @@ void mutant_hit_left(edict_t *self)
         gi.sound(self, CHAN_WEAPON, sound_swing, 1, ATTN_NORM, 0);
 }
 
-void mutant_hit_right(edict_t *self)
+static void mutant_hit_right(edict_t *self)
 {
     vec3_t  aim = { MELEE_DISTANCE, self->maxs[0], 8 };
 
@@ -259,7 +259,7 @@ void mutant_hit_right(edict_t *self)
         gi.sound(self, CHAN_WEAPON, sound_swing, 1, ATTN_NORM, 0);
 }
 
-void mutant_check_refire(edict_t *self)
+static void mutant_check_refire(edict_t *self)
 {
     if (!self->enemy || !self->enemy->inuse || self->enemy->health <= 0)
         return;
@@ -320,7 +320,7 @@ void mutant_jump_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_
     self->touch = NULL;
 }
 
-void mutant_jump_takeoff(edict_t *self)
+static void mutant_jump_takeoff(edict_t *self)
 {
     vec3_t  forward;
 
@@ -335,7 +335,7 @@ void mutant_jump_takeoff(edict_t *self)
     self->touch = mutant_jump_touch;
 }
 
-void mutant_check_landing(edict_t *self)
+static void mutant_check_landing(edict_t *self)
 {
     if (self->groundentity) {
         gi.sound(self, CHAN_WEAPON, sound_thud, 1, ATTN_NORM, 0);
@@ -371,14 +371,14 @@ void mutant_jump(edict_t *self)
 // CHECKATTACK
 //
 
-bool mutant_check_melee(edict_t *self)
+static bool mutant_check_melee(edict_t *self)
 {
     if (range(self, self->enemy) == RANGE_MELEE)
         return true;
     return false;
 }
 
-bool mutant_check_jump(edict_t *self)
+static bool mutant_check_jump(edict_t *self)
 {
     vec3_t  v;
     float   distance;
@@ -493,7 +493,7 @@ void mutant_pain(edict_t *self, edict_t *other, float kick, int damage)
 // DEATH
 //
 
-void mutant_dead(edict_t *self)
+static void mutant_dead(edict_t *self)
 {
     VectorSet(self->mins, -16, -16, -24);
     VectorSet(self->maxs, 16, 16, -8);

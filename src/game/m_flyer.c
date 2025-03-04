@@ -38,12 +38,13 @@ static int  sound_slash;
 static int  sound_sproing;
 static int  sound_die;
 
-void flyer_check_melee(edict_t *self);
-void flyer_loop_melee(edict_t *self);
 void flyer_melee(edict_t *self);
-void flyer_setstart(edict_t *self);
 void flyer_stand(edict_t *self);
-void flyer_nextmove(edict_t *self);
+
+static void flyer_check_melee(edict_t *self);
+static void flyer_loop_melee(edict_t *self);
+static void flyer_setstart(edict_t *self);
+static void flyer_nextmove(edict_t *self);
 
 void flyer_sight(edict_t *self, edict_t *other)
 {
@@ -55,7 +56,7 @@ void flyer_idle(edict_t *self)
     gi.sound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
 }
 
-void flyer_pop_blades(edict_t *self)
+static void flyer_pop_blades(edict_t *self)
 {
     gi.sound(self, CHAN_VOICE, sound_sproing, 1, ATTN_NORM, 0);
 }
@@ -246,12 +247,12 @@ static const mframe_t flyer_frames_stop[] = {
 };
 const mmove_t flyer_move_stop = {FRAME_stop01, FRAME_stop07, flyer_frames_stop, NULL};
 
-void flyer_stop(edict_t *self)
+static void flyer_stop(edict_t *self)
 {
     self->monsterinfo.currentmove = &flyer_move_stop;
 }
 
-void flyer_start(edict_t *self)
+static void flyer_start(edict_t *self)
 {
     self->monsterinfo.currentmove = &flyer_move_start;
 }
@@ -343,7 +344,7 @@ static const mframe_t flyer_frames_bankleft[] = {
 };
 const mmove_t flyer_move_bankleft = {FRAME_bankl01, FRAME_bankl07, flyer_frames_bankleft, NULL};
 
-void flyer_fire(edict_t *self, int flash_number)
+static void flyer_fire(edict_t *self, int flash_number)
 {
     vec3_t  start;
     vec3_t  forward, right;
@@ -365,12 +366,12 @@ void flyer_fire(edict_t *self, int flash_number)
     monster_fire_blaster(self, start, dir, 1, 1000, flash_number, effect);
 }
 
-void flyer_fireleft(edict_t *self)
+static void flyer_fireleft(edict_t *self)
 {
     flyer_fire(self, MZ2_FLYER_BLASTER_1);
 }
 
-void flyer_fireright(edict_t *self)
+static void flyer_fireright(edict_t *self)
 {
     flyer_fire(self, MZ2_FLYER_BLASTER_2);
 }
@@ -396,7 +397,7 @@ static const mframe_t flyer_frames_attack2[] = {
 };
 const mmove_t flyer_move_attack2 = {FRAME_attak201, FRAME_attak217, flyer_frames_attack2, flyer_run};
 
-void flyer_slash_left(edict_t *self)
+static void flyer_slash_left(edict_t *self)
 {
     vec3_t  aim = { MELEE_DISTANCE, self->mins[0], 0 };
 
@@ -404,7 +405,7 @@ void flyer_slash_left(edict_t *self)
     gi.sound(self, CHAN_WEAPON, sound_slash, 1, ATTN_NORM, 0);
 }
 
-void flyer_slash_right(edict_t *self)
+static void flyer_slash_right(edict_t *self)
 {
     vec3_t  aim = { MELEE_DISTANCE, self->maxs[0], 0 };
 
@@ -446,7 +447,7 @@ static const mframe_t flyer_frames_loop_melee[] = {
 };
 const mmove_t flyer_move_loop_melee = {FRAME_attak107, FRAME_attak118, flyer_frames_loop_melee, flyer_check_melee};
 
-void flyer_loop_melee(edict_t *self)
+static void flyer_loop_melee(edict_t *self)
 {
     self->monsterinfo.currentmove = &flyer_move_loop_melee;
 }
@@ -456,13 +457,13 @@ void flyer_attack(edict_t *self)
     self->monsterinfo.currentmove = &flyer_move_attack2;
 }
 
-void flyer_setstart(edict_t *self)
+static void flyer_setstart(edict_t *self)
 {
     nextmove = ACTION_run;
     self->monsterinfo.currentmove = &flyer_move_start;
 }
 
-void flyer_nextmove(edict_t *self)
+static void flyer_nextmove(edict_t *self)
 {
     if (nextmove == ACTION_attack1)
         self->monsterinfo.currentmove = &flyer_move_start_melee;
@@ -479,7 +480,7 @@ void flyer_melee(edict_t *self)
     self->monsterinfo.currentmove = &flyer_move_start_melee;
 }
 
-void flyer_check_melee(edict_t *self)
+static void flyer_check_melee(edict_t *self)
 {
     if (range(self, self->enemy) == RANGE_MELEE)
         if (random() <= 0.8f)

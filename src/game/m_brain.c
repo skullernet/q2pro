@@ -52,7 +52,7 @@ void brain_search(edict_t *self)
 }
 
 void brain_run(edict_t *self);
-void brain_dead(edict_t *self);
+static void brain_dead(edict_t *self);
 
 //
 // STAND
@@ -232,7 +232,7 @@ const mmove_t brain_move_pain1 = {FRAME_pain101, FRAME_pain121, brain_frames_pai
 // DUCK
 //
 
-void brain_duck_down(edict_t *self)
+static void brain_duck_down(edict_t *self)
 {
     if (self->monsterinfo.aiflags & AI_DUCKED)
         return;
@@ -242,7 +242,7 @@ void brain_duck_down(edict_t *self)
     gi.linkentity(self);
 }
 
-void brain_duck_hold(edict_t *self)
+static void brain_duck_hold(edict_t *self)
 {
     if (level.framenum >= self->monsterinfo.pause_framenum)
         self->monsterinfo.aiflags &= ~AI_HOLD_FRAME;
@@ -250,7 +250,7 @@ void brain_duck_hold(edict_t *self)
         self->monsterinfo.aiflags |= AI_HOLD_FRAME;
 }
 
-void brain_duck_up(edict_t *self)
+static void brain_duck_up(edict_t *self)
 {
     self->monsterinfo.aiflags &= ~AI_DUCKED;
     self->maxs[2] += 32;
@@ -317,12 +317,12 @@ const mmove_t brain_move_death1 = {FRAME_death101, FRAME_death118, brain_frames_
 // MELEE
 //
 
-void brain_swing_right(edict_t *self)
+static void brain_swing_right(edict_t *self)
 {
     gi.sound(self, CHAN_BODY, sound_melee1, 1, ATTN_NORM, 0);
 }
 
-void brain_hit_right(edict_t *self)
+static void brain_hit_right(edict_t *self)
 {
     vec3_t  aim = { MELEE_DISTANCE, self->maxs[0], 8 };
 
@@ -330,12 +330,12 @@ void brain_hit_right(edict_t *self)
         gi.sound(self, CHAN_WEAPON, sound_melee3, 1, ATTN_NORM, 0);
 }
 
-void brain_swing_left(edict_t *self)
+static void brain_swing_left(edict_t *self)
 {
     gi.sound(self, CHAN_BODY, sound_melee2, 1, ATTN_NORM, 0);
 }
 
-void brain_hit_left(edict_t *self)
+static void brain_hit_left(edict_t *self)
 {
     vec3_t  aim = { MELEE_DISTANCE, self->mins[0], 8 };
 
@@ -365,14 +365,14 @@ static const mframe_t brain_frames_attack1[] = {
 };
 const mmove_t brain_move_attack1 = {FRAME_attak101, FRAME_attak118, brain_frames_attack1, brain_run};
 
-void brain_chest_open(edict_t *self)
+static void brain_chest_open(edict_t *self)
 {
     self->spawnflags &= ~65536;
     self->monsterinfo.power_armor_type = POWER_ARMOR_NONE;
     gi.sound(self, CHAN_BODY, sound_chest_open, 1, ATTN_NORM, 0);
 }
 
-void brain_tentacle_attack(edict_t *self)
+static void brain_tentacle_attack(edict_t *self)
 {
     vec3_t  aim = { MELEE_DISTANCE, 0, 8 };
 
@@ -381,7 +381,7 @@ void brain_tentacle_attack(edict_t *self)
     gi.sound(self, CHAN_WEAPON, sound_tentacles_retract, 1, ATTN_NORM, 0);
 }
 
-void brain_chest_closed(edict_t *self)
+static void brain_chest_closed(edict_t *self)
 {
     self->monsterinfo.power_armor_type = POWER_ARMOR_SCREEN;
     if (self->spawnflags & 65536) {
@@ -474,7 +474,7 @@ void brain_pain(edict_t *self, edict_t *other, float kick, int damage)
     }
 }
 
-void brain_dead(edict_t *self)
+static void brain_dead(edict_t *self)
 {
     VectorSet(self->mins, -16, -16, -24);
     VectorSet(self->maxs, 16, 16, -8);

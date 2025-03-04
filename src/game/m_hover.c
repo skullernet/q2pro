@@ -51,11 +51,12 @@ void hover_search(edict_t *self)
 
 void hover_run(edict_t *self);
 void hover_stand(edict_t *self);
-void hover_dead(edict_t *self);
-void hover_attack(edict_t *self);
-void hover_reattack(edict_t *self);
-void hover_fire_blaster(edict_t *self);
 void hover_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point);
+
+static void hover_dead(edict_t *self);
+static void hover_attack(edict_t *self);
+static void hover_reattack(edict_t *self);
+static void hover_fire_blaster(edict_t *self);
 
 static const mframe_t hover_frames_stand[] = {
     { ai_stand, 0, NULL },
@@ -396,7 +397,7 @@ static const mframe_t hover_frames_end_attack[] = {
 };
 const mmove_t hover_move_end_attack = {FRAME_attak107, FRAME_attak108, hover_frames_end_attack, hover_run};
 
-void hover_reattack(edict_t *self)
+static void hover_reattack(edict_t *self)
 {
     if (self->enemy->health > 0)
         if (visible(self, self->enemy))
@@ -407,7 +408,7 @@ void hover_reattack(edict_t *self)
     self->monsterinfo.currentmove = &hover_move_end_attack;
 }
 
-void hover_fire_blaster(edict_t *self)
+static void hover_fire_blaster(edict_t *self)
 {
     vec3_t  start;
     vec3_t  forward, right;
@@ -453,7 +454,7 @@ void hover_start_attack(edict_t *self)
     self->monsterinfo.currentmove = &hover_move_start_attack;
 }
 
-void hover_attack(edict_t *self)
+static void hover_attack(edict_t *self)
 {
     self->monsterinfo.currentmove = &hover_move_attack1;
 }
@@ -494,7 +495,7 @@ void hover_deadthink(edict_t *self)
     BecomeExplosion1(self);
 }
 
-void hover_dead(edict_t *self)
+static void hover_dead(edict_t *self)
 {
     VectorSet(self->mins, -16, -16, -24);
     VectorSet(self->maxs, 16, 16, -8);
