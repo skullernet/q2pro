@@ -26,8 +26,6 @@ Makron -- Final Boss
 #include "g_local.h"
 #include "m_boss32.h"
 
-bool visible(edict_t *self, edict_t *other);
-
 static void MakronRailgun(edict_t *self);
 static void MakronSaveloc(edict_t *self);
 static void MakronHyperblaster(edict_t *self);

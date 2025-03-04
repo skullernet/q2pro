@@ -18,8 +18,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "g_local.h"
 #include "m_player.h"
 
-void ClientUserinfoChanged(edict_t *ent, char *userinfo);
-
 void SP_misc_teleporter_dest(edict_t *ent);
 
 //
@@ -562,7 +560,7 @@ This is only called when the game first initializes in single player,
 but is called after each death and level change in deathmatch
 ==============
 */
-void InitClientPersistant(gclient_t *client)
+static void InitClientPersistant(gclient_t *client)
 {
     const gitem_t   *item;
 
@@ -587,7 +585,7 @@ void InitClientPersistant(gclient_t *client)
     client->pers.connected = true;
 }
 
-void InitClientResp(gclient_t *client)
+static void InitClientResp(gclient_t *client)
 {
     memset(&client->resp, 0, sizeof(client->resp));
     client->resp.enterframe = level.framenum;
@@ -923,6 +921,8 @@ static void CopyToBodyQue(edict_t *ent)
     gi.linkentity(body);
 }
 
+static void PutClientInServer(edict_t *ent);
+
 void respawn(edict_t *self)
 {
     if (deathmatch->value || coop->value) {
@@ -1038,7 +1038,7 @@ Called when a player connects to a server or respawns in
 a deathmatch.
 ============
 */
-void PutClientInServer(edict_t *ent)
+static void PutClientInServer(edict_t *ent)
 {
     char    userinfo[MAX_INFO_STRING];
     vec3_t  mins = { -16, -16, -24};

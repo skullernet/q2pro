@@ -27,7 +27,6 @@ jorg
 #include "m_boss31.h"
 
 extern void SP_monster_makron(edict_t *self);
-bool visible(edict_t *self, edict_t *other);
 
 static int  sound_pain1;
 static int  sound_pain2;

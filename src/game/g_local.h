@@ -583,6 +583,7 @@ extern const gitem_t    itemlist[];
 //
 void Cmd_Help_f(edict_t *ent);
 void Cmd_Score_f(edict_t *ent);
+void ClientCommand(edict_t *ent);
 
 //
 // g_items.c
@@ -697,6 +698,7 @@ void ai_run(edict_t *self, float dist);
 void ai_charge(edict_t *self, float dist);
 int range(edict_t *self, edict_t *other);
 
+bool FindTarget(edict_t *self);
 void FoundTarget(edict_t *self);
 bool infront(edict_t *self, edict_t *other);
 bool visible(edict_t *self, edict_t *other);
@@ -717,7 +719,7 @@ void fire_rail(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick)
 void fire_bfg(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, float damage_radius);
 
 //
-// g_ptrail.c
+// p_trail.c
 //
 void PlayerTrail_Init(void);
 void PlayerTrail_Add(vec3_t spot);
@@ -727,19 +729,18 @@ edict_t *PlayerTrail_PickNext(edict_t *self);
 edict_t *PlayerTrail_LastSpot(void);
 
 //
-// g_client.c
+// p_client.c
 //
-void respawn(edict_t *ent);
-void BeginIntermission(edict_t *targ);
-void PutClientInServer(edict_t *ent);
-void InitClientPersistant(gclient_t *client);
-void InitClientResp(gclient_t *client);
+void respawn(edict_t *self);
 void InitBodyQue(void);
 void ClientBeginServerFrame(edict_t *ent);
-
-//
-// g_player.c
-//
+void ClientBegin(edict_t *ent);
+qboolean ClientConnect(edict_t *ent, char *userinfo);
+void ClientDisconnect(edict_t *ent);
+void ClientThink(edict_t *ent, usercmd_t *ucmd);
+void ClientUserinfoChanged(edict_t *ent, char *userinfo);
+void SaveClientData(void);
+void FetchClientEntData(edict_t *ent);
 void player_pain(edict_t *self, edict_t *other, float kick, int damage);
 void player_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point);
 
@@ -758,6 +759,7 @@ void ClientEndServerFrame(edict_t *ent);
 // p_hud.c
 //
 void MoveClientToIntermission(edict_t *client);
+void BeginIntermission(edict_t *targ);
 void G_SetStats(edict_t *ent);
 void G_SetSpectatorStats(edict_t *ent);
 void G_CheckChaseStats(edict_t *ent);
@@ -765,7 +767,7 @@ void ValidateSelectedItem(edict_t *ent);
 void DeathmatchScoreboardMessage(edict_t *client, edict_t *killer);
 
 //
-// g_pweapon.c
+// p_weapon.c
 //
 void PlayerNoise(edict_t *who, vec3_t where, int type);
 
@@ -783,12 +785,6 @@ void M_ChangeYaw(edict_t *ent);
 void G_RunEntity(edict_t *ent);
 
 //
-// g_main.c
-//
-void SaveClientData(void);
-void FetchClientEntData(edict_t *ent);
-
-//
 // g_chase.c
 //
 void UpdateChaseCam(edict_t *ent);
@@ -801,6 +797,16 @@ void GetChaseTarget(edict_t *ent);
 //
 void G_AddPrecache(void (*func)(void));
 void G_RefreshPrecaches(void);
+void ED_CallSpawn(edict_t *ent);
+void SpawnEntities(const char *mapname, const char *entities, const char *spawnpoint);
+
+//
+// g_save.c
+//
+void WriteGame(const char *filename, qboolean autosave);
+void ReadGame(const char *filename);
+void WriteLevel(const char *filename);
+void ReadLevel(const char *filename);
 
 //============================================================================
 

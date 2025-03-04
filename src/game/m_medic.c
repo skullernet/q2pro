@@ -26,8 +26,6 @@ MEDIC
 #include "g_local.h"
 #include "m_medic.h"
 
-bool visible(edict_t *self, edict_t *other);
-
 static int  sound_idle1;
 static int  sound_pain1;
 static int  sound_pain2;
@@ -523,8 +521,6 @@ static void medic_hook_launch(edict_t *self)
 {
     gi.sound(self, CHAN_WEAPON, sound_hook_launch, 1, ATTN_NORM, 0);
 }
-
-void ED_CallSpawn(edict_t *ent);
 
 static const vec3_t medic_cable_offsets[] = {
     { 45.0,  -9.2, 15.5 },

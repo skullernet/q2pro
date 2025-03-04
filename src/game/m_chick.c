@@ -26,8 +26,6 @@ chick
 #include "g_local.h"
 #include "m_chick.h"
 
-bool visible(edict_t *self, edict_t *other);
-
 void chick_stand(edict_t *self);
 void chick_run(edict_t *self);
 

@@ -26,8 +26,6 @@ flyer
 #include "g_local.h"
 #include "m_flyer.h"
 
-bool visible(edict_t *self, edict_t *other);
-
 static int  sound_sight;
 static int  sound_idle;
 static int  sound_pain1;

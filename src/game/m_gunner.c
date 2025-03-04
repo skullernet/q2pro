@@ -49,8 +49,6 @@ void gunner_search(edict_t *self)
     gi.sound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM, 0);
 }
 
-bool visible(edict_t *self, edict_t *other);
-
 static void GunnerGrenade(edict_t *self);
 static void GunnerFire(edict_t *self);
 static void gunner_fire_chain(edict_t *self);

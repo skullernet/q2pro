@@ -19,8 +19,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "g_local.h"
 
-bool FindTarget(edict_t *self);
-
 static bool ai_checkattack(edict_t *self, float dist);
 
 static bool     enemy_vis;
