@@ -860,7 +860,7 @@ static void CL_AddPlayerBeams(void)
     int         i, j, steps;
     beam_t      *b;
     vec3_t      dist, org;
-    float       d;
+    float       x, y, z, d;
     entity_t    ent;
     vec3_t      angles;
     float       len;
@@ -891,9 +891,22 @@ static void CL_AddPlayerBeams(void)
                 b->start[j] = cl.refdef.vieworg[j] + ops->gunoffset[j] +
                     CL_KEYLERPFRAC * (ps->gunoffset[j] - ops->gunoffset[j]);
 
-            VectorMA(b->start, (hand_multiplier * b->offset[0]), cl.v_right, org);
-            VectorMA(org, b->offset[1], cl.v_forward, org);
-            VectorMA(org, b->offset[2], cl.v_up, org);
+            x = b->offset[0];
+            y = b->offset[1];
+            z = b->offset[2];
+
+            // adjust offset for gun fov
+            if (cl_gunfov->value > 0) {
+                float fov_x = Cvar_ClampValue(cl_gunfov, 30, 160);
+                float fov_y = V_CalcFov(fov_x, 4, 3);
+
+                x *= tan(cl.fov_x * (M_PIf / 360)) / tan(fov_x * (M_PIf / 360));
+                z *= tan(cl.fov_y * (M_PIf / 360)) / tan(fov_y * (M_PIf / 360));
+            }
+
+            VectorMA(b->start, hand_multiplier * x, cl.v_right, org);
+            VectorMA(org, y, cl.v_forward, org);
+            VectorMA(org, z, cl.v_up, org);
             if (info_hand->integer == 2)
                 VectorMA(org, -1, cl.v_up, org);
 
