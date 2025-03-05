@@ -901,14 +901,8 @@ static void CL_AddPlayerBeams(void)
             VectorSubtract(b->end, org, dist);
 
             if (b->model != cl_mod_grapple_cable) {
-                // FIXME: don't add offset twice?
                 d = VectorLength(dist);
                 VectorScale(cl.v_forward, d, dist);
-                VectorMA(dist, (hand_multiplier * b->offset[0]), cl.v_right, dist);
-                VectorMA(dist, b->offset[1], cl.v_forward, dist);
-                VectorMA(dist, b->offset[2], cl.v_up, dist);
-                if (info_hand->integer == 2)
-                    VectorMA(dist, -1, cl.v_up, dist);
             }
 
             // FIXME: use cl.refdef.viewangles?
