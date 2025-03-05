@@ -869,7 +869,11 @@ static void CL_AddPlayerBeams(void)
     float       hand_multiplier;
     player_state_t  *ps, *ops;
 
-    if (info_hand->integer == 2)
+    if (cl_gun->integer == 3)
+        hand_multiplier = -1;
+    else if (cl_gun->integer == 2)
+        hand_multiplier = 1;
+    else if (info_hand->integer == 2)
         hand_multiplier = 0;
     else if (info_hand->integer == 1)
         hand_multiplier = -1;
@@ -907,7 +911,7 @@ static void CL_AddPlayerBeams(void)
             VectorMA(b->start, hand_multiplier * x, cl.v_right, org);
             VectorMA(org, y, cl.v_forward, org);
             VectorMA(org, z, cl.v_up, org);
-            if (info_hand->integer == 2)
+            if (hand_multiplier == 0)
                 VectorMA(org, -1, cl.v_up, org);
 
             // calculate pitch and yaw
