@@ -185,13 +185,9 @@ void CL_Heatbeam(const vec3_t start, const vec3_t forward)
     float       start_pt;
     float       rot;
     float       variance;
-    vec3_t      end;
-
-    VectorMA(start, 4096, forward, end);
 
     VectorCopy(start, move);
-    VectorSubtract(end, start, vec);
-    len = VectorNormalize(vec);
+    len = VectorNormalize2(forward, vec);
 
     ltime = cl.time * 0.001f;
     start_pt = fmodf(ltime * 96.0f, step);
@@ -201,9 +197,6 @@ void CL_Heatbeam(const vec3_t start, const vec3_t forward)
 
     rstep = M_PIf / 10.0f;
     for (i = start_pt; i < len; i += step) {
-        if (i > step * 5) // don't bother after the 5th ring
-            break;
-
         for (rot = 0; rot < M_PIf * 2; rot += rstep) {
             p = CL_AllocParticle();
             if (!p)
