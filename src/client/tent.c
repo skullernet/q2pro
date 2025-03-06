@@ -903,8 +903,8 @@ static void CL_AddPlayerBeams(void)
                 float fov_x = Cvar_ClampValue(cl_gunfov, 30, 160);
                 float fov_y = V_CalcFov(fov_x, 4, 3);
 
-                x *= tan(cl.fov_x * (M_PIf / 360)) / tan(fov_x * (M_PIf / 360));
-                z *= tan(cl.fov_y * (M_PIf / 360)) / tan(fov_y * (M_PIf / 360));
+                x *= tanf(cl.fov_x * (M_PIf / 360)) / tanf(fov_x * (M_PIf / 360));
+                z *= tanf(cl.fov_y * (M_PIf / 360)) / tanf(fov_y * (M_PIf / 360));
             }
 
             VectorMA(b->start, hand_multiplier * x, cl.v_right, org);
