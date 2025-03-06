@@ -803,20 +803,19 @@ void CL_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model)
         VectorScale(dist, len, dist);
     }
 
+    if (model == cl_mod_lightning) {
+        ent.flags = RF_FULLBRIGHT;
+        ent.angles[0] = -angles[0];
+        ent.angles[1] = angles[1] + 180.0f;
+    } else {
+        ent.flags = RF_NOSHADOW;
+        ent.angles[0] = angles[0];
+        ent.angles[1] = angles[1];
+    }
+
     VectorCopy(start, ent.origin);
     for (i = 0; i < steps; i++) {
-        if (model == cl_mod_lightning) {
-            ent.flags = RF_FULLBRIGHT;
-            ent.angles[0] = -angles[0];
-            ent.angles[1] = angles[1] + 180.0f;
-            ent.angles[2] = Com_SlowRand() % 360;
-        } else {
-            ent.flags = RF_NOSHADOW;
-            ent.angles[0] = angles[0];
-            ent.angles[1] = angles[1];
-            ent.angles[2] = Com_SlowRand() % 360;
-        }
-
+        ent.angles[2] = Com_SlowRand() % 360;
         V_AddEntity(&ent);
         VectorAdd(ent.origin, dist, ent.origin);
     }
@@ -997,26 +996,26 @@ static void CL_AddPlayerBeams(void)
             VectorScale(dist, len, dist);
         }
 
+        if (b->model == cl_mod_heatbeam) {
+            ent.frame = framenum;
+            ent.flags = RF_FULLBRIGHT;
+            ent.angles[0] = -angles[0];
+            ent.angles[1] = angles[1] + 180.0f;
+            ent.angles[2] = cl.time % 360;
+        } else if (b->model == cl_mod_lightning) {
+            ent.flags = RF_FULLBRIGHT;
+            ent.angles[0] = -angles[0];
+            ent.angles[1] = angles[1] + 180.0f;
+        } else {
+            ent.flags = RF_NOSHADOW;
+            ent.angles[0] = angles[0];
+            ent.angles[1] = angles[1];
+        }
+
         VectorCopy(org, ent.origin);
         for (j = 0; j < steps; j++) {
-            if (b->model == cl_mod_heatbeam) {
-                ent.frame = framenum;
-                ent.flags = RF_FULLBRIGHT;
-                ent.angles[0] = -angles[0];
-                ent.angles[1] = angles[1] + 180.0f;
-                ent.angles[2] = cl.time % 360;
-            } else if (b->model == cl_mod_lightning) {
-                ent.flags = RF_FULLBRIGHT;
-                ent.angles[0] = -angles[0];
-                ent.angles[1] = angles[1] + 180.0f;
+            if (b->model != cl_mod_heatbeam)
                 ent.angles[2] = Com_SlowRand() % 360;
-            } else {
-                ent.flags = RF_NOSHADOW;
-                ent.angles[0] = angles[0];
-                ent.angles[1] = angles[1];
-                ent.angles[2] = Com_SlowRand() % 360;
-            }
-
             V_AddEntity(&ent);
             VectorAdd(ent.origin, dist, ent.origin);
         }
