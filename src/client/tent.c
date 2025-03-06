@@ -926,7 +926,7 @@ static void CL_AddPlayerBeams(void)
             vectoangles2(dist, angles);
 
             // if it's the heatbeam, draw the particle effect
-            if (cl_mod_heatbeam && b->model == cl_mod_heatbeam && !sv_paused->integer)
+            if (b->model == cl_mod_heatbeam && !sv_paused->integer)
                 CL_Heatbeam(org, dist);
 
             framenum = 1;
@@ -949,7 +949,7 @@ static void CL_AddPlayerBeams(void)
                 VectorMA(org, -b->offset[0] + 1, r, org);
                 VectorMA(org, -b->offset[1], f, org);
                 VectorMA(org, -b->offset[2] - 10, u, org);
-            } else if (cl_mod_heatbeam && b->model == cl_mod_heatbeam) {
+            } else if (b->model == cl_mod_heatbeam) {
                 // if it's a monster, do the particle effect
                 CL_MonsterPlasma_Shell(b->start);
             }
