@@ -845,6 +845,51 @@ float S_GetEntityLoopDistMult(const centity_state_t *ent)
 }
 
 /*
+=================
+S_SpatializeOrigin
+
+Used for spatializing channels and autosounds
+=================
+*/
+void S_SpatializeOrigin(const vec3_t origin, float master_vol, float dist_mult, float *left_vol, float *right_vol, bool stereo)
+{
+    vec_t       dot;
+    vec_t       dist;
+    vec_t       lscale, rscale, scale;
+    vec3_t      source_vec;
+
+// calculate stereo seperation and distance attenuation
+    VectorSubtract(origin, listener_origin, source_vec);
+
+    dist = VectorNormalize(source_vec);
+    dist -= SOUND_FULLVOLUME;
+    if (dist < 0)
+        dist = 0;           // close enough to be at full volume
+    dist *= dist_mult;      // different attenuation levels
+
+    if (!stereo || !dist_mult) {
+        // no attenuation = no spatialization
+        rscale = 1.0f;
+        lscale = 1.0f;
+    } else {
+        dot = DotProduct(listener_right, source_vec);
+        rscale = 0.5f * (1.0f + dot);
+        lscale = 0.5f * (1.0f - dot);
+    }
+
+    // add in distance effect
+    scale = (1.0f - dist) * rscale;
+    *right_vol = master_vol * scale;
+    if (*right_vol < 0)
+        *right_vol = 0;
+
+    scale = (1.0f - dist) * lscale;
+    *left_vol = master_vol * scale;
+    if (*left_vol < 0)
+        *left_vol = 0;
+}
+
+/*
 ============
 S_Update
 

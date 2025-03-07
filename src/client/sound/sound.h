@@ -184,6 +184,7 @@ void S_IssuePlaysound(playsound_t *ps);
 int S_BuildSoundList(int *sounds);
 float S_GetEntityLoopVolume(const centity_state_t *ent);
 float S_GetEntityLoopDistMult(const centity_state_t *ent);
+void S_SpatializeOrigin(const vec3_t origin, float master_vol, float dist_mult, float *left_vol, float *right_vol, bool stereo);
 
 #if USE_AVCODEC
 bool OGG_Load(sizebuf_t *sz);
