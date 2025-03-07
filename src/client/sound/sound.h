@@ -83,6 +83,7 @@ typedef struct {
     bool        fixed_origin;   // use origin instead of fetching entnum's origin
     bool        autosound;      // from an entity->sound, cleared each frame
 #if USE_OPENAL
+    byte        fullvolume;
     unsigned    autoframe;
     unsigned    srcnum;
 #endif

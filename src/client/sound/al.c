@@ -216,23 +216,30 @@ static int AL_GetBeginofs(float timeofs)
 
 static void AL_Spatialize(channel_t *ch)
 {
-    vec3_t      origin;
 
     // anything coming from the view entity will always be full volume
-    // no attenuation = no spatialization
-    if (S_IsFullVolume(ch)) {
-        VectorCopy(listener_origin, origin);
-    } else if (ch->fixed_origin) {
-        VectorCopy(ch->origin, origin);
-    } else {
+    bool fullvolume = S_IsFullVolume(ch);
+
+    // update fullvolume flag if needed
+    if (ch->fullvolume != fullvolume) {
+        if (s_source_spatialize) {
+            qalSourcei(ch->srcnum, AL_SOURCE_SPATIALIZE_SOFT, !fullvolume);
+        }
+        qalSourcei(ch->srcnum, AL_SOURCE_RELATIVE, fullvolume);
+        if (fullvolume) {
+            qalSource3f(ch->srcnum, AL_POSITION, 0, 0, 0);
+        } else if (ch->fixed_origin) {
+            qalSource3f(ch->srcnum, AL_POSITION, AL_UnpackVector(ch->origin));
+        }
+        ch->fullvolume = fullvolume;
+    }
+
+    // update position if needed
+    if (!ch->fixed_origin && !ch->fullvolume) {
+        vec3_t origin;
         CL_GetEntitySoundOrigin(ch->entnum, origin);
+        qalSource3f(ch->srcnum, AL_POSITION, AL_UnpackVector(origin));
     }
-
-    if (s_source_spatialize) {
-        qalSourcei(ch->srcnum, AL_SOURCE_SPATIALIZE_SOFT, !S_IsFullVolume(ch));
-    }
-
-    qalSource3f(ch->srcnum, AL_POSITION, AL_UnpackVector(origin));
 }
 
 static void AL_StopChannel(channel_t *ch)
@@ -269,6 +276,8 @@ static void AL_PlayChannel(channel_t *ch)
     qalSourcef(ch->srcnum, AL_MAX_DISTANCE, 8192);
     qalSourcef(ch->srcnum, AL_ROLLOFF_FACTOR, ch->dist_mult * (8192 - SOUND_FULLVOLUME));
 
+    // force update
+    ch->fullvolume = -1;
     AL_Spatialize(ch);
 
     // play it
@@ -509,7 +518,7 @@ static void AL_Update(void)
         }
 #endif
 
-        AL_Spatialize(ch);         // respatialize channel
+        AL_Spatialize(ch);  // respatialize channel
     }
 
     s_framecount++;
