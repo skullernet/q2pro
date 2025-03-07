@@ -726,10 +726,8 @@ static void AddLoopSounds(void)
     centity_state_t *ent;
     vec3_t      origin;
 
-    if (cls.state != ca_active || !s_active || sv_paused->integer || !s_ambient->integer)
+    if (!S_BuildSoundList(sounds))
         return;
-
-    S_BuildSoundList(sounds);
 
     for (i = 0; i < cl.frame.numEntities; i++) {
         if (!sounds[i])

@@ -340,10 +340,8 @@ static void AL_AddLoopSounds(void)
     int         num;
     centity_state_t *ent;
 
-    if (cls.state != ca_active || sv_paused->integer || !s_ambient->integer)
+    if (!S_BuildSoundList(sounds))
         return;
-
-    S_BuildSoundList(sounds);
 
     for (i = 0; i < cl.frame.numEntities; i++) {
         if (!sounds[i])

@@ -799,13 +799,15 @@ int S_GetSampleRate(void)
 // Update sound buffer
 // =======================================================================
 
-void S_BuildSoundList(int *sounds)
+int S_BuildSoundList(int *sounds)
 {
-    int         i;
-    int         num;
+    int             i, num, count;
     centity_state_t *ent;
 
-    for (i = 0; i < cl.frame.numEntities; i++) {
+    if (cls.state != ca_active || !s_active || sv_paused->integer || !s_ambient->integer)
+        return 0;
+
+    for (i = count = 0; i < cl.frame.numEntities; i++) {
         num = (cl.frame.firstEntity + i) & PARSE_ENTITIES_MASK;
         ent = &cl.entityStates[num];
         if (s_ambient->integer == 2 && !ent->modelindex) {
@@ -814,8 +816,12 @@ void S_BuildSoundList(int *sounds)
             sounds[i] = 0;
         } else {
             sounds[i] = ent->sound;
+            if (ent->sound)
+                count++;
         }
     }
+
+    return count;
 }
 
 float S_GetEntityLoopVolume(const centity_state_t *ent)
