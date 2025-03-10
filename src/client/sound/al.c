@@ -33,7 +33,8 @@ static ALuint       s_stream;
 static ALuint       s_stream_buffers;
 static ALboolean    s_loop_points;
 static ALboolean    s_source_spatialize;
-static unsigned     s_framecount;
+static ALuint       s_framecount;
+static ALint        s_merge_looping_minval;
 
 static ALuint       s_underwater_filter;
 static bool         s_underwater_flag;
@@ -83,9 +84,10 @@ static bool AL_Init(void)
 
     Com_DPrintf("Initializing OpenAL\n");
 
-    if (!QAL_Init()) {
+    i = QAL_Init();
+    if (i < 0)
         goto fail0;
-    }
+    s_merge_looping_minval = i + 1;
 
     Com_DPrintf("AL_VENDOR: %s\n", qalGetString(AL_VENDOR));
     Com_DPrintf("AL_RENDERER: %s\n", qalGetString(AL_RENDERER));
@@ -247,7 +249,7 @@ static int AL_GetBeginofs(float timeofs)
 static void AL_Spatialize(channel_t *ch)
 {
     // merged autosounds are handled differently
-    if (ch->autosound && al_merge_looping->integer)
+    if (ch->autosound && al_merge_looping->integer >= s_merge_looping_minval)
         return;
 
     // anything coming from the view entity will always be full volume
@@ -659,7 +661,7 @@ static void AL_Update(void)
     s_framecount++;
 
     // add loopsounds
-    if (al_merge_looping->integer) {
+    if (al_merge_looping->integer >= s_merge_looping_minval) {
         AL_MergeLoopSounds();
     } else {
         AL_AddLoopSounds();

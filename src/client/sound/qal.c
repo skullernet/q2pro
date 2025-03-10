@@ -27,6 +27,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define QALAPI
 #include "qal.h"
 
+#ifndef ALC_SOFT_output_mode
+#define ALC_OUTPUT_MODE_SOFT    0x19AC
+#define ALC_STEREO_BASIC_SOFT   0x19AE
+#endif
+
 static LPALCCLOSEDEVICE qalcCloseDevice;
 static LPALCCREATECONTEXT qalcCreateContext;
 static LPALCGETINTEGERV qalcGetIntegerv;
@@ -172,7 +177,7 @@ static void print_device_list(void)
     } while (*list);
 }
 
-bool QAL_Init(void)
+int QAL_Init(void)
 {
     const alsection_t *sec;
     const alfunction_t *func;
@@ -187,7 +192,7 @@ bool QAL_Init(void)
             break;
     }
     if (!handle)
-        return false;
+        return -1;
 
     for (i = 0, sec = sections; i < q_countof(sections); i++, sec++) {
         if (sec->extension)
@@ -261,9 +266,17 @@ bool QAL_Init(void)
     if (qalcIsExtensionPresent(device, "ALC_SOFT_HRTF"))
         al_hrtf->flags |= CVAR_SOUND;
 
-    return true;
+    if (qalcIsExtensionPresent(device, "ALC_SOFT_output_mode")) {
+        ALCint mode = 0;
+        qalcGetIntegerv(device, ALC_OUTPUT_MODE_SOFT, 1, &mode);
+        Com_DDPrintf("ALC_OUTPUT_MODE_SOFT: %#x\n", mode);
+        if (mode != ALC_STEREO_BASIC_SOFT)
+            return 1;
+    }
+
+    return 0;
 
 fail:
     QAL_Shutdown();
-    return false;
+    return -1;
 }

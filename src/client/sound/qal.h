@@ -66,5 +66,5 @@ QALAPI LPALFILTERF qalFilterf;
 QALAPI LPALFILTERI qalFilteri;
 QALAPI LPALGENFILTERS qalGenFilters;
 
-bool QAL_Init(void);
+int QAL_Init(void);
 void QAL_Shutdown(void);

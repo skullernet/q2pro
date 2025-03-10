@@ -331,16 +331,18 @@ al_hrtf::
     Specifies if HRTF mixing is allowed when using OpenAL Soft. Default value
     is 0.
       - 0 — force HRTF off
-      - 1 — use OpenAL Soft default setting
+      - 1 — use OpenAL Soft default setting (typically auto)
       - 2 — force HRTF on
 
 al_merge_looping::
     Enables merging of looped OpenAL sources to make them play at similar
-    loudness compared to DMA sound engine. Default value is 1 (enabled). This
-    method only works in stereo OpenAL speaker configuration (no HRTF). Users
-    of systems with more than 2 speakers (or HRTF) should disable this. If set
-    to 0, each source is played discretely, but they can be too loud or
-    desynchronized.
+    volume compared to DMA sound engine. Default value is 1 (auto). If
+    disabled, each source is played discretely, but overlapping sources can be
+    too loud and/or desynchronized. Merging sources only works in basic stereo
+    output mode.
+      - 0 — force off
+      - 1 — auto (disabled if output mode is not basic stereo)
+      - 2 — force on
 
 TIP: Using https://openal-soft.org/[OpenAL Soft] implementation of OpenAL is
 recommended.
