@@ -29,6 +29,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 static LPALCCLOSEDEVICE qalcCloseDevice;
 static LPALCCREATECONTEXT qalcCreateContext;
+static LPALCGETINTEGERV qalcGetIntegerv;
+static LPALCGETSTRING qalcGetString;
 static LPALCDESTROYCONTEXT qalcDestroyContext;
 static LPALCISEXTENSIONPRESENT qalcIsExtensionPresent;
 static LPALCMAKECONTEXTCURRENT qalcMakeContextCurrent;
@@ -53,6 +55,8 @@ static const alsection_t sections[] = {
             QALC_FN(CloseDevice),
             QALC_FN(CreateContext),
             QALC_FN(DestroyContext),
+            QALC_FN(GetIntegerv),
+            QALC_FN(GetString),
             QALC_FN(IsExtensionPresent),
             QALC_FN(MakeContextCurrent),
             QALC_FN(OpenDevice),
