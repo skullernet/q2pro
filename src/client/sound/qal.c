@@ -149,6 +149,29 @@ static const char *const al_drivers[] = {
 #endif
 };
 
+static const char *get_device_list(void)
+{
+    if (qalcIsExtensionPresent(NULL, "ALC_ENUMERATE_ALL_EXT"))
+        return qalcGetString(NULL, ALC_ALL_DEVICES_SPECIFIER);
+
+    return qalcGetString(NULL, ALC_DEVICE_SPECIFIER);
+}
+
+static void print_device_list(void)
+{
+    const char *list = get_device_list();
+    if (!list || !*list) {
+        Com_Printf("No devices available\n");
+        return;
+    }
+
+    Com_Printf("Available devices:\n");
+    do {
+        Com_Printf("%s\n", list);
+        list += strlen(list) + 1;
+    } while (*list);
+}
+
 bool QAL_Init(void)
 {
     const alsection_t *sec;
@@ -176,6 +199,11 @@ bool QAL_Init(void)
                 goto fail;
             *(void **)func->dest = addr;
         }
+    }
+
+    if (!strcmp(al_device->string, "?")) {
+        print_device_list();
+        Cvar_Reset(al_device);
     }
 
     device = qalcOpenDevice(al_device->string[0] ? al_device->string : NULL);

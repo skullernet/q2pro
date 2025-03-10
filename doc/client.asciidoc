@@ -324,8 +324,8 @@ s_driver::
 
 al_device::
     Specifies the name of OpenAL device to use. Format of this value depends on
-    your OpenAL implementation. Default value is empty, which means default
-    sound output device is used.
+    OpenAL implementation. Empty value means default sound output device. Can
+    be set to "?" to list available output devices.
 
 al_hrtf::
     Specifies if HRTF mixing is allowed when using OpenAL Soft. Default value
