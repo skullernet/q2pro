@@ -151,7 +151,7 @@ extern sndstarted_t     s_started;
 extern bool             s_active;
 extern const sndapi_t   *s_api;
 
-#define MAX_CHANNELS            32
+#define MAX_CHANNELS            64
 extern channel_t    s_channels[MAX_CHANNELS];
 extern int          s_numchannels;
 
