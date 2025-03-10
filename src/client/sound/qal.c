@@ -181,6 +181,7 @@ int QAL_Init(void)
 {
     const alsection_t *sec;
     const alfunction_t *func;
+    ALCint major, minor;
     int i;
 
     al_device = Cvar_Get("al_device", "", 0);
@@ -204,6 +205,14 @@ int QAL_Init(void)
                 goto fail;
             *(void **)func->dest = addr;
         }
+    }
+
+    major = minor = 0;
+    qalcGetIntegerv(NULL, ALC_MAJOR_VERSION, 1, &major);
+    qalcGetIntegerv(NULL, ALC_MINOR_VERSION, 1, &minor);
+    if (major < 1 || minor < 0 || (major == 1 && minor == 0)) {
+        Com_SetLastError("At least OpenAL 1.1 required");
+        goto fail;
     }
 
     if (!strcmp(al_device->string, "?")) {
