@@ -184,6 +184,8 @@ bool QAL_Init(void)
         goto fail;
     }
 
+    Com_DDPrintf("ALC_EXTENSIONS: %s\n", qalcGetString(device, ALC_EXTENSIONS));
+
     if (al_hrtf->integer != 1 && qalcIsExtensionPresent(device, "ALC_SOFT_HRTF")) {
         ALCint attrs[] = {
             ALC_HRTF_SOFT, al_hrtf->integer > 1,
