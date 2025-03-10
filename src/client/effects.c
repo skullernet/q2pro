@@ -24,6 +24,8 @@ static void CL_LogoutEffect(const vec3_t org, int color);
 
 static vec3_t avelocities[NUMVERTEXNORMALS];
 
+static cvar_t *cl_lerp_lightstyles;
+
 /*
 ==============================================================
 
@@ -72,9 +74,25 @@ void CL_AddLightStyles(void)
     int     i, ofs = cl.time / 100;
     clightstyle_t   *ls;
 
-    for (i = 0, ls = cl_lightstyles; i < MAX_LIGHTSTYLES; i++, ls++) {
-        float value = ls->length ? ls->map[ofs % ls->length] : 1.0f;
-        V_AddLightStyle(i, value);
+    if (cl_lerp_lightstyles->integer) {
+        float f = (cl.time % 100) * 0.01f;
+        float b = 1.0f - f;
+
+        for (i = 0, ls = cl_lightstyles; i < MAX_LIGHTSTYLES; i++, ls++) {
+            float value = 1.0f;
+
+            if (ls->length > 1)
+                value = ls->map[ofs % ls->length] * b + ls->map[(ofs + 1) % ls->length] * f;
+            else if (ls->length)
+                value = ls->map[0];
+
+            V_AddLightStyle(i, value);
+        }
+    } else {
+        for (i = 0, ls = cl_lightstyles; i < MAX_LIGHTSTYLES; i++, ls++) {
+            float value = ls->length ? ls->map[ofs % ls->length] : 1.0f;
+            V_AddLightStyle(i, value);
+        }
     }
 }
 
@@ -1791,4 +1809,6 @@ void CL_InitEffects(void)
     for (i = 0; i < NUMVERTEXNORMALS; i++)
         for (j = 0; j < 3; j++)
             avelocities[i][j] = (Q_rand() & 255) * 0.01f;
+
+    cl_lerp_lightstyles = Cvar_Get("cl_lerp_lightstyles", "0", 0);
 }
