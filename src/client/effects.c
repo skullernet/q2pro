@@ -262,6 +262,7 @@ void CL_MuzzleFlash(void)
     case MZ_RAILGUN:
         VectorSet(dl->color, 0.5f, 0.5f, 1.0f);
         S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/railgf1a.wav"), volume, ATTN_NORM, 0);
+        S_StartSound(NULL, mz.entity, CHAN_AUTO,   S_RegisterSound("weapons/railgr1b.wav"), volume, ATTN_NORM, 0.4f);
         CL_AddWeaponMuzzleFX(MFLASH_RAIL, (const vec3_t) { 20.0f, 5.2f, -7.0f }, 12.0f);
         break;
     case MZ_ROCKET:
