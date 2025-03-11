@@ -68,7 +68,7 @@ static void init_formats(void)
         Q_strlcat(extensions, f->ext, sizeof(extensions));
     }
 
-    Com_DPrintf("Supported music formats: %#x\n", supported);
+    Com_DPrintf("Supported music formats: %s\n", extensions);
 }
 
 static void ogg_stop(void)

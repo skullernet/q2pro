@@ -82,8 +82,6 @@ static bool AL_Init(void)
 {
     int i;
 
-    Com_DPrintf("Initializing OpenAL\n");
-
     i = QAL_Init();
     if (i < 0)
         goto fail0;

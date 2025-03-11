@@ -96,7 +96,7 @@ void SCR_InitCinematics(void)
         Q_strlcat(extensions, f->ext, sizeof(extensions));
     }
 
-    Com_DPrintf("Supported cinematic formats: %#x\n", supported);
+    Com_DPrintf("Supported cinematic formats: %s\n", extensions);
 }
 
 static void packet_queue_destroy(PacketQueue *q);

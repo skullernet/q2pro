@@ -188,6 +188,7 @@ int QAL_Init(void)
     al_hrtf = Cvar_Get("al_hrtf", "0", 0);
 
     for (i = 0; i < q_countof(al_drivers); i++) {
+        Com_DPrintf("Trying %s\n", al_drivers[i]);
         Sys_LoadLibrary(al_drivers[i], NULL, &handle);
         if (handle)
             break;
