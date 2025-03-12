@@ -25,6 +25,7 @@ static void CL_LogoutEffect(const vec3_t org, int color);
 static vec3_t avelocities[NUMVERTEXNORMALS];
 
 static cvar_t *cl_lerp_lightstyles;
+static cvar_t *cl_muzzlelight_time;
 
 /*
 ==============================================================
@@ -196,7 +197,7 @@ void CL_MuzzleFlash(void)
     VectorMA(dl->origin, 18, fv, dl->origin);
     VectorMA(dl->origin, 16, rv, dl->origin);
     dl->radius = 100 * (2 - mz.silenced) + (Q_rand() & 31);
-    dl->die = cl.time + 16;
+    dl->die = cl.time + Cvar_ClampInteger(cl_muzzlelight_time, 0, 1000);
 
     volume = 1.0f - 0.8f * mz.silenced;
 
@@ -417,7 +418,7 @@ void CL_MuzzleFlash2(void)
     dl = CL_AllocDlight(mz.entity);
     VectorCopy(origin,  dl->origin);
     dl->radius = 200 + (Q_rand() & 31);
-    dl->die = cl.time + 16;
+    dl->die = cl.time + Cvar_ClampInteger(cl_muzzlelight_time, 0, 1000);
 
     switch (mz.weapon) {
     case MZ2_INFANTRY_MACHINEGUN_1:
@@ -1822,4 +1823,5 @@ void CL_InitEffects(void)
             avelocities[i][j] = (Q_rand() & 255) * 0.01f;
 
     cl_lerp_lightstyles = Cvar_Get("cl_lerp_lightstyles", "0", 0);
+    cl_muzzlelight_time = Cvar_Get("cl_muzzlelight_time", "16", 0);
 }
