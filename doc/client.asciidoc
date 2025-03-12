@@ -245,7 +245,11 @@ cl_dlight_hacks::
     is a bitmask. Default value is 0.
       - 1 — make rocket projectile light red instead of yellow
       - 2 — make rocket/grenade explosion light radius smaller
-      - 4 — disable muzzle flashes for machinegun and chaingun
+      - 4 — disable muzzleflash lights for machinegun and chaingun
+
+cl_lerp_lightstyles::
+    Enables interpolation of dynamic light styles. Default value is 0
+    (disabled).
 
 cl_noglow::
     Disables the glowing effect on bonus entities like ammo, health, etc.
@@ -266,10 +270,17 @@ cl_gunfov::
 cl_gun_x::
 cl_gun_y::
 cl_gun_z::
-    Specifies custom gun model offset. Default value is 0.
+    Specifies custom gun model offset. Default value is 0. These variables are
+    for developers only. Non-zero values may cause certain gun effects to look
+    misplaced.
 
 cl_muzzleflashes::
-    Specifies if re-release muzzleflash effects are enabled. Default value is 1.
+    Specifies if re-release muzzleflash models are enabled. Does _not_ affect
+    muzzleflash dynamic lights. Default value is 1.
+
+cl_muzzlelight_time::
+    Lifetime, in milliseconds, of muzzleflash dynamic lights. Default value is
+    16.
 
 cl_hit_markers::
     Specifies if re-release hit marker effects are enabled. Default value is 2.
