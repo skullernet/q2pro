@@ -134,6 +134,7 @@ typedef struct {
 typedef enum {
     QVF_FULLSCREEN      = BIT(0),
     QVF_GAMMARAMP       = BIT(1),
+    QVF_VIDEOSYNC       = BIT(2),
 } vidFlags_t;
 
 typedef struct {
@@ -238,5 +239,6 @@ void    R_DrawFill32(int x, int y, int w, int h, uint32_t color);
 void    R_BeginFrame(void);
 void    R_EndFrame(void);
 void    R_ModeChanged(int width, int height, int flags);
+bool    R_VideoSync(void);
 
 r_opengl_config_t R_GetGLConfig(void);

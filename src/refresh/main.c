@@ -838,6 +838,8 @@ void R_BeginFrame(void)
 
 void R_EndFrame(void)
 {
+    extern cvar_t *cl_async;
+
 #if USE_DEBUG
     if (gl_showstats->integer) {
         GL_Flush2D();
@@ -855,6 +857,23 @@ void R_EndFrame(void)
         GL_ShowErrors(__func__);
 
     vid->swap_buffers();
+
+    if (qglFenceSync && cl_async->integer > 1 && !gl_static.sync)
+        gl_static.sync = qglFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+}
+
+bool R_VideoSync(void)
+{
+    if (!gl_static.sync)
+        return true;
+
+    if (qglClientWaitSync(gl_static.sync, GL_SYNC_FLUSH_COMMANDS_BIT, 0) == GL_TIMEOUT_EXPIRED)
+        return false;
+
+    qglDeleteSync(gl_static.sync);
+    gl_static.sync = 0;
+
+    return true;
 }
 
 // ==============================================================================
@@ -1264,6 +1283,11 @@ void R_Shutdown(bool total)
     if (!total)
         return;
 
+    if (gl_static.sync) {
+        qglDeleteSync(gl_static.sync);
+        gl_static.sync = 0;
+    }
+
     GL_ShutdownDebugDraw();
 
     GL_ShutdownState();
@@ -1374,6 +1398,9 @@ R_ModeChanged
 */
 void R_ModeChanged(int width, int height, int flags)
 {
+    if (qglFenceSync)
+        flags |= QVF_VIDEOSYNC;
+
     r_config.width = width;
     r_config.height = height;
     r_config.flags = flags;

@@ -338,6 +338,20 @@ static const glsection_t sections[] = {
         }
     },
 
+    // GL 3.2, ES 3.0
+    // GL_ARB_sync
+    {
+        .extension = "GL_ARB_sync",
+        .ver_gl = QGL_VER(3, 2),
+        .ver_es = QGL_VER(3, 0),
+        .functions = (const glfunction_t []) {
+            QGL_FN(ClientWaitSync),
+            QGL_FN(DeleteSync),
+            QGL_FN(FenceSync),
+            { NULL }
+        }
+    },
+
     // GL 4.1
     {
         .ver_gl = QGL_VER(4, 1),

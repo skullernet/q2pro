@@ -168,6 +168,11 @@ QGLAPI GLuint (APIENTRYP qglGetUniformBlockIndex)(GLuint program, const GLchar *
 QGLAPI void (APIENTRYP qglTexBuffer)(GLenum target, GLenum internalformat, GLuint buffer);
 QGLAPI void (APIENTRYP qglUniformBlockBinding)(GLuint program, GLuint uniformBlockIndex, GLuint uniformBlockBinding);
 
+// GL 3.2
+QGLAPI GLenum (APIENTRYP qglClientWaitSync)(GLsync sync, GLbitfield flags, GLuint64 timeout);
+QGLAPI void (APIENTRYP qglDeleteSync)(GLsync sync);
+QGLAPI GLsync (APIENTRYP qglFenceSync)(GLenum condition, GLbitfield flags);
+
 // GL 4.1
 QGLAPI void (APIENTRYP qglClearDepthf)(GLfloat d);
 QGLAPI void (APIENTRYP qglDepthRangef)(GLfloat n, GLfloat f);

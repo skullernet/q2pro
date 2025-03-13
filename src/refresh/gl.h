@@ -114,6 +114,7 @@ typedef struct {
     GLuint          texnums[NUM_AUTO_TEXTURES];
     GLenum          samples_passed;
     GLbitfield      stencil_buffer_bit;
+    GLsync          sync;
     float           entity_modulate;
     float           bloom_sigma;
     uint32_t        inverse_intensity_33;

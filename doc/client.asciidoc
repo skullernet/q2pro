@@ -67,6 +67,8 @@ cl_async::
     the table below.
         - 0 — run synchronous, like original Quake 2 does
         - 1 — run asynchronous
+        - 2 — run asynchronous, sync rendering to GPU (experimental, requires
+        OpenGL 3.2 or higher)
 
 .Rate limits depending on ‘cl_async’ value
 [options="header"]
@@ -74,7 +76,11 @@ cl_async::
 | Value of ‘cl_async’ | Rendering          | Physics   | Main loop
 | 0                   | cl_maxfps          | cl_maxfps | cl_maxfps
 | 1                   | r_maxfps           | cl_maxfps | _unlimited_
+| 2                   | _GPU controlled_   | cl_maxfps | _unlimited_
 |===================================================================
+
+TIP: When using non-zero ‘gl_swapinterval’, ‘cl_async’ can be set to 2 to avoid
+blocking on buffer swaps, reducing input lag.
 
 r_maxfps::
     Specifies maximum rendering frame rate if ‘cl_async’ is set to 1, otherwise
