@@ -336,7 +336,6 @@ typedef struct {
         ex_flash,
         ex_mflash,
         ex_poly,
-        ex_poly2,
         ex_light
     } type;
 
@@ -551,16 +550,6 @@ static void CL_AddExplosions(void)
                 else
                     ent->skinnum = 6;
             }
-            break;
-        case ex_poly2:
-            if (f >= ex->frames - 1) {
-                ex->type = ex_free;
-                break;
-            }
-
-            ent->alpha = (5.0f - (float)f) / 5.0f;
-            ent->skinnum = 0;
-            ent->flags |= RF_TRANSLUCENT;
             break;
         default:
             Q_assert(!"bad type");
