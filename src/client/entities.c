@@ -1052,31 +1052,26 @@ skip:
     }
 }
 
-static float player_alpha_hack(void)
+static const centity_t *get_player_entity(void)
 {
-    centity_t   *ent;
+    const centity_t *ent = &cl_entities[cl.frame.clientNum + 1];
 
-    ent = &cl_entities[cl.frame.clientNum + 1];
     if (ent->serverframe != cl.frame.number)
-        return 1;
+        return NULL;
+    if (!ent->current.modelindex)
+        return NULL;
 
-    if (!ent->current.modelindex || !ent->current.alpha)
-        return 1;
-
-    return ent->current.alpha;
+    return ent;
 }
 
-static int shell_effect_hack(void)
+static float player_alpha_hack(const centity_t *ent)
 {
-    centity_t   *ent;
-    int         flags = 0;
+    return ent->current.alpha ? ent->current.alpha : 1.0f;
+}
 
-    ent = &cl_entities[cl.frame.clientNum + 1];
-    if (ent->serverframe != cl.frame.number)
-        return 0;
-
-    if (!ent->current.modelindex)
-        return 0;
+static int shell_effect_hack(const centity_t *ent)
+{
+    int flags = 0;
 
     if (ent->current.effects & EF_PENT)
         flags |= RF_SHELL_RED;
@@ -1104,7 +1099,8 @@ CL_AddViewWeapon
 */
 static void CL_AddViewWeapon(void)
 {
-    player_state_t *ps, *ops;
+    const centity_t *ent;
+    const player_state_t *ps, *ops;
     entity_t    gun;        // view model
     int         i, flags;
 
@@ -1169,11 +1165,13 @@ static void CL_AddViewWeapon(void)
 
     gun.flags = RF_MINLIGHT | RF_DEPTHHACK | RF_WEAPONMODEL;
 
+    ent = get_player_entity();
+
     if (cl_gunalpha->value != 1) {
         gun.alpha = Cvar_ClampValue(cl_gunalpha, 0.1f, 1.0f);
         gun.flags |= RF_TRANSLUCENT;
-    } else {
-        gun.alpha = player_alpha_hack();
+    } else if (ent) {
+        gun.alpha = player_alpha_hack(ent);
         if (gun.alpha != 1)
             gun.flags |= RF_TRANSLUCENT;
     }
@@ -1181,8 +1179,7 @@ static void CL_AddViewWeapon(void)
     V_AddEntity(&gun);
 
     // add shell effect from player entity
-    flags = shell_effect_hack();
-    if (flags) {
+    if (ent && (flags = shell_effect_hack(ent))) {
         gun.alpha = 0.30f * cl_gunalpha->value;
         gun.flags |= flags | RF_TRANSLUCENT;
         V_AddEntity(&gun);
@@ -1291,23 +1288,10 @@ static void CL_SetupThirdPersionView(void)
 
 static void CL_FinishViewValues(void)
 {
-    centity_t *ent;
-
-    if (!cl_thirdperson->integer)
-        goto first;
-
-    ent = &cl_entities[cl.frame.clientNum + 1];
-    if (ent->serverframe != cl.frame.number)
-        goto first;
-
-    if (!ent->current.modelindex)
-        goto first;
-
-    CL_SetupThirdPersionView();
-    return;
-
-first:
-    CL_SetupFirstPersonView();
+    if (cl_thirdperson->integer && get_player_entity())
+        CL_SetupThirdPersionView();
+    else
+        CL_SetupFirstPersonView();
 }
 
 static inline float lerp_client_fov(float ofov, float nfov, float lerp)
