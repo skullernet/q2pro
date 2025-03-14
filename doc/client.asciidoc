@@ -253,6 +253,10 @@ cl_dlight_hacks::
       - 2 — make rocket/grenade explosion light radius smaller
       - 4 — disable muzzleflash lights for machinegun and chaingun
 
+cl_smooth_explosions::
+    Enables smooth fading of explosions, also fixing their duration in some
+    cases. Default value is 1 (enabled).
+
 cl_lerp_lightstyles::
     Enables interpolation of dynamic light styles. Default value is 0
     (disabled).
