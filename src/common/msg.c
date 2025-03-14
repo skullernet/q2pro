@@ -486,6 +486,12 @@ void MSG_WriteDir(const vec3_t dir)
      out[1] = ANGLE2SHORT(in[1]),   \
      out[2] = ANGLE2SHORT(in[2]))
 
+// ensure small positive values remain >= 1 (0 means default)
+#define VAL2BYTE(value, scale) \
+    ((value) > 0.0f ? Q_clip((value) * (scale), 1, 255) : 0)
+
+#define LOOPATTN_NONE   (ATTN_STATIC * 64)
+
 void MSG_PackEntity(entity_packed_t *out, const entity_state_t *in, const entity_state_extension_t *ext)
 {
     // allow 0 to accomodate empty baselines
@@ -510,15 +516,15 @@ void MSG_PackEntity(entity_packed_t *out, const entity_state_t *in, const entity
 
     if (ext) {
         out->morefx = ext->morefx;
-        out->alpha = Q_clip_uint8(ext->alpha * 255.0f);
-        out->scale = Q_clip_uint8(ext->scale * 16.0f);
-        out->loop_volume = Q_clip_uint8(ext->loop_volume * 255.0f);
+        out->alpha = VAL2BYTE(ext->alpha, 255.0f);
+        out->scale = VAL2BYTE(ext->scale,  16.0f);
+        out->loop_volume = VAL2BYTE(ext->loop_volume, 255.0f);
         // encode ATTN_STATIC (192) as 0, and ATTN_LOOP_NONE (-1) as 192
         if (ext->loop_attenuation == ATTN_LOOP_NONE) {
-            out->loop_attenuation = 192;
+            out->loop_attenuation = LOOPATTN_NONE;
         } else {
-            out->loop_attenuation = Q_clip_uint8(ext->loop_attenuation * 64.0f);
-            if (out->loop_attenuation == 192)
+            out->loop_attenuation = VAL2BYTE(ext->loop_attenuation, 64.0f);
+            if (out->loop_attenuation == LOOPATTN_NONE)
                 out->loop_attenuation = 0;
         }
         // save network bandwidth
@@ -2207,7 +2213,7 @@ void MSG_ParseDeltaEntity(entity_state_t            *to,
                 ext->loop_volume = MSG_ReadByte() / 255.0f;
             if (w & 0x8000) {
                 int b = MSG_ReadByte();
-                if (b == 192)
+                if (b == LOOPATTN_NONE)
                     ext->loop_attenuation = ATTN_LOOP_NONE;
                 else
                     ext->loop_attenuation = b / 64.0f;
