@@ -744,7 +744,7 @@ bool QGL_Init(void)
 
     // reject unsupported configurations, such as GL ES 2.0
     if (!(gl_config.caps & (QGL_CAP_LEGACY | QGL_CAP_SHADER))) {
-        Com_EPrintf("Unsupported OpenGL version\n");
+        Com_EPrintf("Unsupported OpenGL version: %s\n", qglGetString(GL_VERSION));
         return false;
     }
 
