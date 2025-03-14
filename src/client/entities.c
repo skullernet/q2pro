@@ -479,6 +479,18 @@ INTERPOLATE BETWEEN FRAMES TO GET RENDERING PARMS
 ==========================================================================
 */
 
+static float lerp_entity_alpha(const centity_t *ent)
+{
+    float prev = ent->prev.alpha;
+    float curr = ent->current.alpha;
+
+    // no lerping from/to default alpha
+    if (prev && curr)
+        return prev + cl.lerpfrac * (curr - prev);
+
+    return curr ? curr : 1.0f;
+}
+
 /*
 ===============
 CL_AddPacketEntities
@@ -497,6 +509,7 @@ static void CL_AddPacketEntities(void)
     clientinfo_t        *ci;
     unsigned int        effects, renderfx;
     bool                has_alpha, has_trail;
+    float               custom_alpha;
 
     // bonus items rotate at a fixed rate
     autorotate = anglemod(cl.time * 0.1f);
@@ -803,11 +816,18 @@ static void CL_AddPacketEntities(void)
                 ent.alpha = 0.3f;
         }
 
+        // custom alpha overrides any derived value
+        custom_alpha = 1.0f;
         has_alpha = false;
-        if (!(ent.flags & RF_TRANSLUCENT) && s1->alpha > 0 && s1->alpha < 1) {
-            ent.flags |= RF_TRANSLUCENT;
-            ent.alpha = s1->alpha;
-            has_alpha = true;
+        if (s1->alpha) {
+            ent.alpha = lerp_entity_alpha(cent);
+            if (ent.alpha == 1.0f) {
+                ent.flags &= ~RF_TRANSLUCENT;
+            } else {
+                ent.flags |= RF_TRANSLUCENT;
+                has_alpha = true;
+            }
+            custom_alpha = ent.alpha;
         }
 
         ent.scale = s1->scale;
@@ -850,7 +870,7 @@ static void CL_AddPacketEntities(void)
                 }
             }
             ent.flags = renderfx | RF_TRANSLUCENT;
-            ent.alpha = 0.30f;
+            ent.alpha = custom_alpha * 0.30f;
             V_AddEntity(&ent);
         }
 
@@ -862,7 +882,7 @@ static void CL_AddPacketEntities(void)
         // duplicate alpha
         if (has_alpha) {
             ent.flags = RF_TRANSLUCENT;
-            ent.alpha = s1->alpha;
+            ent.alpha = custom_alpha;
         }
 
         if (IS_TRACKER(effects))
@@ -890,7 +910,7 @@ static void CL_AddPacketEntities(void)
 
             // PMM - check for the defender sphere shell .. make it translucent
             if (!Q_strcasecmp(cl.configstrings[cl.csr.models + s1->modelindex2], "models/items/shell/tris.md2")) {
-                ent.alpha = 0.32f;
+                ent.alpha = custom_alpha * 0.32f;
                 ent.flags = RF_TRANSLUCENT;
             }
 
@@ -904,7 +924,7 @@ static void CL_AddPacketEntities(void)
         // duplicate alpha
         if (has_alpha) {
             ent.flags = RF_TRANSLUCENT;
-            ent.alpha = s1->alpha;
+            ent.alpha = custom_alpha;
         }
 
         if (IS_TRACKER(effects))
@@ -925,7 +945,7 @@ static void CL_AddPacketEntities(void)
             ent.oldframe = 0;
             ent.frame = 0;
             ent.flags = RF_TRANSLUCENT;
-            ent.alpha = 0.30f;
+            ent.alpha = custom_alpha * 0.30f;
 
             // remaster powerscreen is tiny and needs scaling
             if (cl.need_powerscreen_scale) {
@@ -1064,11 +1084,6 @@ static const centity_t *get_player_entity(void)
     return ent;
 }
 
-static float player_alpha_hack(const centity_t *ent)
-{
-    return ent->current.alpha ? ent->current.alpha : 1.0f;
-}
-
 static int shell_effect_hack(const centity_t *ent)
 {
     int flags = 0;
@@ -1164,23 +1179,24 @@ static void CL_AddViewWeapon(void)
     }
 
     gun.flags = RF_MINLIGHT | RF_DEPTHHACK | RF_WEAPONMODEL;
+    gun.alpha = 1.0f;
 
     ent = get_player_entity();
 
-    if (cl_gunalpha->value != 1) {
+    // add alpha from cvar or player entity
+    if (cl_gunalpha->value != 1.0f)
         gun.alpha = Cvar_ClampValue(cl_gunalpha, 0.1f, 1.0f);
+    else if (ent)
+        gun.alpha = lerp_entity_alpha(ent);
+
+    if (gun.alpha != 1.0f)
         gun.flags |= RF_TRANSLUCENT;
-    } else if (ent) {
-        gun.alpha = player_alpha_hack(ent);
-        if (gun.alpha != 1)
-            gun.flags |= RF_TRANSLUCENT;
-    }
 
     V_AddEntity(&gun);
 
     // add shell effect from player entity
     if (ent && (flags = shell_effect_hack(ent))) {
-        gun.alpha = 0.30f * cl_gunalpha->value;
+        gun.alpha *= 0.30f;
         gun.flags |= flags | RF_TRANSLUCENT;
         V_AddEntity(&gun);
     }

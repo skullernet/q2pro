@@ -528,7 +528,6 @@ void MSG_PackEntity(entity_packed_t *out, const entity_state_t *in, const entity
                 out->loop_attenuation = 0;
         }
         // save network bandwidth
-        if (out->alpha == 255) out->alpha = 0;
         if (out->scale == 16) out->scale = 0;
         if (out->loop_volume == 255) out->loop_volume = 0;
     }
