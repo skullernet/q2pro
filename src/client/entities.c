@@ -191,7 +191,7 @@ static void parse_entity_update(const centity_state_t *state)
 // an entity has just been parsed that has an event value
 static void parse_entity_event(int number)
 {
-    centity_t *cent = &cl_entities[number];
+    const centity_t *cent = &cl_entities[number];
 
     if (CL_FRAMESYNC) {
         // EF_TELEPORTER acts like an event, but is not cleared each frame
@@ -302,7 +302,7 @@ static void
 check_player_lerp(server_frame_t *oldframe, server_frame_t *frame, int framediv)
 {
     player_state_t *ps, *ops;
-    centity_t *ent;
+    const centity_t *ent;
     int oldnum;
 
     // find states to interpolate between
@@ -447,7 +447,7 @@ void CL_DeltaFrame(void)
 // for debugging problems when out-of-date entity origin is referenced
 void CL_CheckEntityPresent(int entnum, const char *what)
 {
-    centity_t *e;
+    const centity_t *e;
 
     if (entnum == cl.frame.clientNum + 1) {
         return; // player entity = current
@@ -499,17 +499,17 @@ CL_AddPacketEntities
 */
 static void CL_AddPacketEntities(void)
 {
-    entity_t            ent;
-    centity_state_t     *s1;
-    float               autorotate, autobob;
-    int                 i;
-    int                 pnum;
-    centity_t           *cent;
-    int                 autoanim;
-    clientinfo_t        *ci;
-    unsigned int        effects, renderfx;
-    bool                has_alpha, has_trail;
-    float               custom_alpha;
+    entity_t                ent;
+    const centity_state_t   *s1;
+    float                   autorotate, autobob;
+    int                     i;
+    int                     pnum;
+    centity_t               *cent;
+    int                     autoanim;
+    const clientinfo_t      *ci;
+    unsigned int            effects, renderfx;
+    bool                    has_alpha, has_trail;
+    float                   custom_alpha;
 
     // bonus items rotate at a fixed rate
     autorotate = anglemod(cl.time * 0.1f);
@@ -1233,18 +1233,10 @@ static void CL_AddViewWeapon(void)
 
 static void CL_SetupFirstPersonView(void)
 {
-    player_state_t *ps, *ops;
-    vec3_t kickangles;
-    float lerp;
-
     // add kick angles
     if (cl_kickangles->integer) {
-        ps = CL_KEYPS;
-        ops = CL_OLDKEYPS;
-
-        lerp = CL_KEYLERPFRAC;
-
-        LerpAngles(ops->kick_angles, ps->kick_angles, lerp, kickangles);
+        vec3_t kickangles;
+        LerpAngles(CL_OLDKEYPS->kick_angles, CL_KEYPS->kick_angles, CL_KEYLERPFRAC, kickangles);
         VectorAdd(cl.refdef.viewangles, kickangles, cl.refdef.viewangles);
     }
 
@@ -1353,7 +1345,7 @@ loop if rendering is disabled but sound is running.
 */
 void CL_CalcViewValues(void)
 {
-    player_state_t *ps, *ops;
+    const player_state_t *ps, *ops;
     vec3_t viewoffset;
     float lerp;
 
@@ -1380,10 +1372,8 @@ void CL_CalcViewValues(void)
             cl.refdef.vieworg[2] -= cl.predicted_step * (100 - delta) * 0.01f;
         }
     } else {
-        int i;
-
         // just use interpolated values
-        for (i = 0; i < 3; i++) {
+        for (int i = 0; i < 3; i++) {
             cl.refdef.vieworg[i] = SHORT2COORD(ops->pmove.origin[i] +
                 lerp * (ps->pmove.origin[i] - ops->pmove.origin[i]));
         }

@@ -143,16 +143,16 @@ typedef struct {
 #define CL_1_FRAMETIME  cl.frametime_inv
 #define CL_FRAMEDIV     cl.frametime.div
 #define CL_FRAMESYNC    !(cl.frame.number % cl.frametime.div)
-#define CL_KEYPS        &cl.keyframe.ps
-#define CL_OLDKEYPS     &cl.oldkeyframe.ps
+#define CL_KEYPS        (&cl.keyframe.ps)
+#define CL_OLDKEYPS     (&cl.oldkeyframe.ps)
 #define CL_KEYLERPFRAC  cl.keylerpfrac
 #else
 #define CL_FRAMETIME    BASE_FRAMETIME
 #define CL_1_FRAMETIME  BASE_1_FRAMETIME
 #define CL_FRAMEDIV     1
 #define CL_FRAMESYNC    1
-#define CL_KEYPS        &cl.frame.ps
-#define CL_OLDKEYPS     &cl.oldframe.ps
+#define CL_KEYPS        (&cl.frame.ps)
+#define CL_OLDKEYPS     (&cl.oldframe.ps)
 #define CL_KEYLERPFRAC  cl.lerpfrac
 #endif
 
