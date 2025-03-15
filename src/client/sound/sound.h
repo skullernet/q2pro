@@ -177,13 +177,14 @@ extern cvar_t       *s_underwater_gain_hf;
 #define S_Malloc(x)     Z_TagMalloc(x, TAG_SOUND)
 #define S_CopyString(x) Z_TagCopyString(x, TAG_SOUND)
 
+#define S_GetEntityLoopVolume(ent)      ((ent)->loop_volume ? (ent)->loop_volume : 1.0f)
+#define S_GetEntityLoopDistMult(ent)    Com_GetEntityLoopDistMult((ent)->loop_attenuation)
+
 sfx_t *S_SfxForHandle(qhandle_t hSfx);
 sfxcache_t *S_LoadSound(sfx_t *s);
 channel_t *S_PickChannel(int entnum, int entchannel);
 void S_IssuePlaysound(playsound_t *ps);
 int S_BuildSoundList(int *sounds);
-float S_GetEntityLoopVolume(const centity_state_t *ent);
-float S_GetEntityLoopDistMult(const centity_state_t *ent);
 void S_SpatializeOrigin(const vec3_t origin, float master_vol, float dist_mult, float *left_vol, float *right_vol, bool stereo);
 
 #if USE_AVCODEC

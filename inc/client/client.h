@@ -25,13 +25,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define CONCHAR_WIDTH  8
 #define CONCHAR_HEIGHT 8
 
-// only begin attenuating sound volumes when outside the FULLVOLUME range
-#define SOUND_FULLVOLUME        80
-
-#define SOUND_LOOPATTENUATE     0.003f
-
-#define SOUND_LOOPATTENUATE_MULT    0.0006f
-
 void CL_PreInit(void);
 
 void SCR_DebugGraph(float value, int color);

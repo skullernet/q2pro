@@ -478,13 +478,10 @@ static bool SV_EntityVisible(const client_t *client, const edict_t *ent, const b
 
 static bool SV_EntityAttenuatedAway(const vec3_t org, const edict_t *ent)
 {
-    float dist = Distance(org, ent->s.origin);
-    float dist_mult = SOUND_LOOPATTENUATE;
+    float mult = Com_GetEntityLoopDistMult(ent->x.loop_attenuation);
+    float dist = Distance(org, ent->s.origin) - SOUND_FULLVOLUME;
 
-    if (ent->x.loop_attenuation && ent->x.loop_attenuation != ATTN_STATIC)
-        dist_mult = ent->x.loop_attenuation * SOUND_LOOPATTENUATE_MULT;
-
-    return (dist - SOUND_FULLVOLUME) * dist_mult > 1.0f;
+    return dist * mult > 1.0f;
 }
 
 #define IS_MONSTER(ent) \

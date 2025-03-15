@@ -292,6 +292,24 @@ void Com_PlayerToEntityState(const player_state_t *ps, entity_state_t *es)
 
 /*
 ================
+Com_GetEntityLoopDistMult
+
+Converts remaster autosound attenuation into distance multiplier.
+================
+*/
+float Com_GetEntityLoopDistMult(float attenuation)
+{
+    if (attenuation == ATTN_LOOP_NONE)
+        return 0;
+
+    if (attenuation > 0 && attenuation != ATTN_STATIC)
+        return attenuation * SOUND_LOOPATTENUATE_MULT;
+
+    return SOUND_LOOPATTENUATE;
+}
+
+/*
+================
 Com_ParseMapName
 ================
 */
