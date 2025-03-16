@@ -277,6 +277,11 @@ static int BSP_ValidateTree(bsp_t *bsp)
     int j;
 #endif
 
+    // what the fuck?
+    if (bsp->checksum == 0x247a28b4 && bsp->nummodels == 99 &&
+        bsp->models[90].headnode == bsp->models[91].headnode)
+        bsp->models[90].headnode = (mnode_t *)bsp->leafs;
+
     for (i = 0, mod = bsp->models; i < bsp->nummodels; i++, mod++) {
         if (i == 0 && mod->headnode != bsp->nodes) {
             BSP_ERROR("Map model 0 headnode is not the first node");
