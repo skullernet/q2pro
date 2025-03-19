@@ -661,7 +661,6 @@ CL_ClearState
 void CL_ClearState(void)
 {
     S_StopAllSounds();
-    OGG_Stop();
     SCR_StopCinematic();
     SCR_ClearCenterPrints();
     CL_ClearEffects();
@@ -745,6 +744,11 @@ void CL_Disconnect(error_type_t type)
 
     cls.state = ca_disconnected;
     cls.userinfo_modified = 0;
+
+    // start menu track, or stop music
+    if (type == ERR_DROP || type == ERR_DISCONNECT) {
+        OGG_Play();
+    }
 
     if (type == ERR_DISCONNECT) {
         UI_OpenMenu(UIMENU_DEFAULT);
@@ -3417,6 +3421,8 @@ void CL_Init(void)
     cls.key_dest = KEY_CONSOLE;
 
     CL_InitRefresh();
+
+    OGG_Init();
     S_Init();   // sound must be initialized after window is created
 
     CL_InitLocal();
@@ -3427,7 +3433,6 @@ void CL_Init(void)
 #endif
 
     SCR_InitCinematics();
-    OGG_Init();
 
     CL_LoadDownloadIgnores();
     CL_LoadStuffTextWhiteList();

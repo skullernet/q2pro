@@ -30,6 +30,7 @@ typedef struct {
     AVFrame             *frame_out;
     struct SwrContext   *swr_ctx;
     int                 stream_index;
+    char                autotrack[MAX_QPATH];
 } ogg_state_t;
 
 static ogg_state_t  ogg;
@@ -37,6 +38,7 @@ static ogg_state_t  ogg;
 static cvar_t   *ogg_enable;
 static cvar_t   *ogg_volume;
 static cvar_t   *ogg_shuffle;
+static cvar_t   *ogg_menu_track;
 
 static void     **tracklist;
 static int      trackcount;
@@ -243,25 +245,39 @@ static void shuffle(void)
 
 void OGG_Play(void)
 {
-    ogg_stop();
+    const char *s;
 
-    if (!s_started)
+    if (!s_started || !ogg_enable->integer || cls.state == ca_cinematic)
         return;
 
-    if (!ogg_enable->integer)
+    if (cls.state >= ca_connected)
+        s = cl.configstrings[CS_CDTRACK];
+    else
+        s = ogg_menu_track->string;
+
+    if (!*s || !strcmp(s, "0")) {
+        OGG_Stop();
+        return;
+    }
+
+    if (COM_IsUint(s))
+        s = va("track%02d", Q_atoi(s));
+
+    // don't restart the same track
+    if (!strcmp(ogg.autotrack, s))
         return;
 
-    const char *s = cl.configstrings[CS_CDTRACK];
-    if (!*s || !strcmp(s, "0"))
-        return;
+    // drop samples if we were playing something
+    if (ogg.fmt_ctx)
+        OGG_Stop();
+
+    Q_strlcpy(ogg.autotrack, s, sizeof(ogg.autotrack));
 
     if (ogg_shuffle->integer && trackcount) {
         if (trackindex == 0)
             shuffle();
         s = tracklist[trackindex];
         trackindex = (trackindex + 1) % trackcount;
-    } else if (COM_IsUint(s)) {
-        s = va("track%02d", Q_atoi(s));
     }
 
     ogg_play(ogg_open(s, true));
@@ -324,6 +340,7 @@ static bool decode_next_frame(void)
         Com_EPrintf("Error decoding audio: %s\n", av_err2str(ret));
 
     // play next file
+    ogg_stop();
     OGG_Play();
 
     return ogg.dec_ctx && decode_frame() >= 0;
@@ -717,6 +734,17 @@ static void OGG_Cmd_c(genctx_t *ctx, int argnum)
         FS_File_g("music", extensions, FS_SEARCH_STRIPEXT | FS_TYPE_REAL, ctx);
 }
 
+static void OGG_Next_f(void)
+{
+    if (cls.state == ca_cinematic) {
+        Com_Printf("Can't play music in cinematic mode.\n");
+        return;
+    }
+
+    ogg.autotrack[0] = 0;
+    OGG_Play();
+}
+
 static void OGG_Cmd_f(void)
 {
     const char *cmd = Cmd_Argv(1);
@@ -728,14 +756,14 @@ static void OGG_Cmd_f(void)
     else if (!strcmp(cmd, "stop"))
         OGG_Stop();
     else if (!strcmp(cmd, "next"))
-        OGG_Play();
+        OGG_Next_f();
     else
         Com_Printf("Usage: %s <info|play|stop|next>\n", Cmd_Argv(0));
 }
 
 static void ogg_enable_changed(cvar_t *self)
 {
-    if (cls.state < ca_precached || cls.state > ca_active)
+    if (cls.state == ca_cinematic)
         return;
     if (self->integer)
         OGG_Play();
@@ -746,6 +774,12 @@ static void ogg_enable_changed(cvar_t *self)
 static void ogg_volume_changed(cvar_t *self)
 {
     Cvar_ClampValue(self, 0, 1);
+}
+
+static void ogg_menu_track_changed(cvar_t *self)
+{
+    if (cls.state < ca_connected)
+        OGG_Play();
 }
 
 static const cmdreg_t c_ogg[] = {
@@ -760,6 +794,8 @@ void OGG_Init(void)
     ogg_volume = Cvar_Get("ogg_volume", "1", 0);
     ogg_volume->changed = ogg_volume_changed;
     ogg_shuffle = Cvar_Get("ogg_shuffle", "0", 0);
+    ogg_menu_track = Cvar_Get("ogg_menu_track", "0", 0);
+    ogg_menu_track->changed = ogg_menu_track_changed;
 
     Cmd_Register(c_ogg);
 

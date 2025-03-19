@@ -369,21 +369,23 @@ TIP: Using https://openal-soft.org/[OpenAL Soft] implementation of OpenAL is
 recommended.
 
 
-Ogg Vorbis music
+Background music
 ~~~~~~~~~~~~~~~~
 
 ogg_enable::
-    Enables automatic playback of background music in Ogg Vorbis format.
+    Enables automatic playback of background music in supported formats.
     Default value is 1.
 
 ogg_volume::
     Background music volume, relative to master volume. Default value is 1.
 
 ogg_shuffle::
-    If disabled, play music tracks named ‘music/trackNN.ogg’, where NN is
-    current CD track number (typically in range 02-11).  If enabled, play all
-    files with ‘.ogg’ extension from ‘music’ directory in random order. Default
-    value is 0 (disabled).
+    Play _all_ supported files from the ‘music’ directory in random order,
+    ignoring track numbers. Default value is 0 (disabled).
+
+ogg_menu_track::
+    Specifies track number that is played while disconnected from server.
+    Default value is 0 (don't play anything).
 
 
 Graphical Console

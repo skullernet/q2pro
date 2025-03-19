@@ -191,8 +191,7 @@ void S_Init(void)
     s_registration_sequence = 1;
 
     // start the cd track
-    if (cls.state >= ca_precached)
-        OGG_Play();
+    OGG_Play();
 
 fail:
     Cvar_SetInteger(s_enable, s_started, FROM_CODE);
