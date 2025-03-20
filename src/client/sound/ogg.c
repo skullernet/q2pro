@@ -92,6 +92,7 @@ static AVFormatContext *ogg_open(const char *name, bool autoplay)
     const char      *path = NULL, *ext;
     AVFormatContext *fmt_ctx = NULL;
     int             ret;
+    print_type_t    level = PRINT_ERROR;
 
     fullname[0] = 0;
 
@@ -143,18 +144,23 @@ static AVFormatContext *ogg_open(const char *name, bool autoplay)
         }
     }
 
-    if (ret == AVERROR(ENOENT) && autoplay)
-        return NULL;
-
 done:
-    if (ret < 0) {
-        Com_LPrintf(ret == AVERROR(ENOENT) ? PRINT_ALL : PRINT_ERROR,
-                    "Couldn't open %s: %s\n", ret == AVERROR(ENOENT) ||
-                    !*fullname ? normalized : fullname, av_err2str(ret));
-        return NULL;
+    if (ret >= 0)
+        return fmt_ctx;
+
+    if (ret == AVERROR(ENOENT)) {
+        if (autoplay) {
+            if (!COM_DEVELOPER)
+                return NULL;
+            level = PRINT_DEVELOPER;
+        } else {
+            level = PRINT_ALL;
+        }
     }
 
-    return fmt_ctx;
+    Com_LPrintf(level, "Couldn't open %s: %s\n", ret == AVERROR(ENOENT) ||
+                !*fullname ? normalized : fullname, av_err2str(ret));
+    return NULL;
 }
 
 static bool ogg_try_play(void)
@@ -736,6 +742,11 @@ static void OGG_Cmd_c(genctx_t *ctx, int argnum)
 
 static void OGG_Next_f(void)
 {
+    if (!s_started) {
+        Com_Printf("Sound system not started.\n");
+        return;
+    }
+
     if (cls.state == ca_cinematic) {
         Com_Printf("Can't play music in cinematic mode.\n");
         return;
