@@ -119,6 +119,7 @@ typedef struct {
     void (*page_in_sfx)(sfx_t *s);
     bool (*raw_samples)(int samples, int rate, int width, int channels, const byte *data, float volume);
     int (*need_raw_samples)(void);
+    int (*have_raw_samples)(void);
     void (*drop_raw_samples)(void);
     int (*get_begin_ofs)(float timeofs);
     void (*play_channel)(channel_t *ch);

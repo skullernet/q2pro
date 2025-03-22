@@ -522,7 +522,7 @@ static void AL_AddLoopSounds(void)
     }
 }
 
-#define MAX_STREAM_BUFFERS  128
+#define MAX_STREAM_BUFFERS  32
 
 static void AL_StreamUpdate(void)
 {
@@ -552,6 +552,11 @@ static void AL_StreamStop(void)
 static int AL_NeedRawSamples(void)
 {
     return s_stream_buffers < MAX_STREAM_BUFFERS ? MAX_RAW_SAMPLES : 0;
+}
+
+static int AL_HaveRawSamples(void)
+{
+    return s_stream_buffers * MAX_RAW_SAMPLES;
 }
 
 static bool AL_RawSamples(int samples, int rate, int width, int channels, const byte *data, float volume)
@@ -686,6 +691,7 @@ const sndapi_t snd_openal = {
     .delete_sfx = AL_DeleteSfx,
     .raw_samples = AL_RawSamples,
     .need_raw_samples = AL_NeedRawSamples,
+    .have_raw_samples = AL_HaveRawSamples,
     .drop_raw_samples = AL_StreamStop,
     .get_begin_ofs = AL_GetBeginofs,
     .play_channel = AL_PlayChannel,

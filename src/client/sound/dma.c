@@ -153,11 +153,14 @@ static bool DMA_RawSamples(int samples, int rate, int width, int channels, const
 
 #undef RESAMPLE
 
+static int DMA_HaveRawSamples(void)
+{
+    return Q_clip(s_rawend - s_paintedtime, 0, MAX_RAW_SAMPLES);
+}
+
 static int DMA_NeedRawSamples(void)
 {
-    int avail = MAX_RAW_SAMPLES - (s_rawend - s_paintedtime);
-    avail = Q_clip(avail, 0, MAX_RAW_SAMPLES);
-    return avail & ~127;
+    return MAX_RAW_SAMPLES - DMA_HaveRawSamples();
 }
 
 static void DMA_DropRawSamples(void)
@@ -850,6 +853,7 @@ const sndapi_t snd_dma = {
     .page_in_sfx = DMA_PageInSfx,
     .raw_samples = DMA_RawSamples,
     .need_raw_samples = DMA_NeedRawSamples,
+    .have_raw_samples = DMA_HaveRawSamples,
     .drop_raw_samples = DMA_DropRawSamples,
     .get_begin_ofs = DMA_DriftBeginofs,
     .play_channel = DMA_Spatialize,

@@ -25,15 +25,18 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 typedef struct {
     AVFormatContext     *fmt_ctx;
     AVCodecContext      *dec_ctx;
-    AVPacket            *pkt;
-    AVFrame             *frame_in;
-    AVFrame             *frame_out;
-    struct SwrContext   *swr_ctx;
     int                 stream_index;
     char                autotrack[MAX_QPATH];
 } ogg_state_t;
 
-static ogg_state_t  ogg;
+static ogg_state_t          ogg;
+
+static AVPacket             *ogg_pkt;
+static AVFrame              *ogg_frame_in;
+static AVFrame              *ogg_frame_out;
+static struct SwrContext    *ogg_swr_ctx;
+static bool                 ogg_swr_draining;
+static bool                 ogg_manual_play;
 
 static cvar_t   *ogg_enable;
 static cvar_t   *ogg_volume;
@@ -73,14 +76,10 @@ static void init_formats(void)
     Com_DPrintf("Supported music formats: %s\n", extensions);
 }
 
-static void ogg_stop(void)
+static void ogg_close(void)
 {
     avcodec_free_context(&ogg.dec_ctx);
     avformat_close_input(&ogg.fmt_ctx);
-    av_packet_free(&ogg.pkt);
-    av_frame_free(&ogg.frame_in);
-    av_frame_free(&ogg.frame_out);
-    swr_free(&ogg.swr_ctx);
 
     memset(&ogg, 0, sizeof(ogg));
 }
@@ -216,29 +215,24 @@ static bool ogg_try_play(void)
 
     dec_ctx->pkt_timebase = st->time_base;
 
-    ogg.pkt = av_packet_alloc();
-    ogg.frame_in = av_frame_alloc();
-    ogg.frame_out = av_frame_alloc();
-    ogg.swr_ctx = swr_alloc();
-    if (!ogg.pkt || !ogg.frame_in || !ogg.frame_out || !ogg.swr_ctx) {
-        Com_EPrintf("Couldn't allocate memory\n");
-        return false;
-    }
-
     Com_DPrintf("Playing %s\n", ogg.fmt_ctx->url);
     return true;
 }
 
-static void ogg_play(AVFormatContext *fmt_ctx)
+static bool ogg_play(AVFormatContext *fmt_ctx)
 {
     if (!fmt_ctx)
-        return;
+        return false;
 
     Q_assert(!ogg.fmt_ctx);
     ogg.fmt_ctx = fmt_ctx;
 
-    if (!ogg_try_play())
-        ogg_stop();
+    if (!ogg_try_play()) {
+        ogg_close();
+        return false;
+    }
+
+    return true;
 }
 
 static void shuffle(void)
@@ -254,6 +248,10 @@ void OGG_Play(void)
     const char *s;
 
     if (!s_started || !ogg_enable->integer || cls.state == ca_cinematic)
+        return;
+
+    // don't interfere with manual playback
+    if (ogg_manual_play)
         return;
 
     if (cls.state >= ca_connected)
@@ -291,7 +289,16 @@ void OGG_Play(void)
 
 void OGG_Stop(void)
 {
-    ogg_stop();
+    Com_DPrintf("Stopping music playback\n");
+    ogg_close();
+
+    av_frame_unref(ogg_frame_in);
+    av_frame_unref(ogg_frame_out);
+    if (ogg_swr_ctx)
+        swr_close(ogg_swr_ctx);
+
+    ogg_swr_draining = false;
+    ogg_manual_play = false;
 
     if (s_api)
         s_api->drop_raw_samples();
@@ -312,30 +319,30 @@ static int read_packet(AVPacket *pkt)
 static int decode_frame(void)
 {
     AVCodecContext *dec = ogg.dec_ctx;
-    AVPacket *pkt = ogg.pkt;
+    AVPacket *pkt = ogg_pkt;
 
     while (1) {
-        int ret = avcodec_receive_frame(dec, ogg.frame_in);
+        int ret = avcodec_receive_frame(dec, ogg_frame_in);
+        if (ret != AVERROR(EAGAIN))
+            return ret;
 
-        if (ret == AVERROR(EAGAIN)) {
-            ret = read_packet(pkt);
-            if (ret == AVERROR_EOF) {
-                ret = avcodec_send_packet(dec, NULL);
-            } else if (ret >= 0) {
-                ret = avcodec_send_packet(dec, pkt);
-                av_packet_unref(pkt);
-            }
-            if (ret < 0)
-                return ret;
-            continue;
+        ret = read_packet(pkt);
+        if (ret == AVERROR_EOF) {
+            ret = avcodec_send_packet(dec, NULL);
+        } else if (ret >= 0) {
+            ret = avcodec_send_packet(dec, pkt);
+            av_packet_unref(pkt);
         }
-
-        return ret;
+        if (ret < 0)
+            return ret;
     }
 }
 
 static bool decode_next_frame(void)
 {
+    if (!ogg.dec_ctx)
+        return false;
+
     int ret = decode_frame();
     if (ret >= 0)
         return true;
@@ -346,53 +353,25 @@ static bool decode_next_frame(void)
         Com_EPrintf("Error decoding audio: %s\n", av_err2str(ret));
 
     // play next file
-    ogg_stop();
+    ogg_close();
     OGG_Play();
 
     return ogg.dec_ctx && decode_frame() >= 0;
 }
 
-static int convert_samples(AVFrame *in)
-{
-    AVFrame *out = ogg.frame_out;
-    int ret;
-
-    // exit if not configured yet
-    if (out->format < 0)
-        return 0;
-
-    // get available free space
-    out->nb_samples = s_api->need_raw_samples();
-    Q_assert((unsigned)out->nb_samples <= MAX_RAW_SAMPLES);
-
-    ret = swr_convert_frame(ogg.swr_ctx, out, in);
-    if (ret < 0)
-        return ret;
-    if (!out->nb_samples)
-        return 0;
-
-    Com_DDDPrintf("%d raw samples\n", out->nb_samples);
-
-    if (!s_api->raw_samples(out->nb_samples, out->sample_rate, 2,
-                            out->ch_layout.nb_channels,
-                            out->data[0], ogg_volume->value))
-        s_api->drop_raw_samples();
-
-    return 1;
-}
-
 static int reconfigure_swr(void)
 {
-    AVFrame *in = ogg.frame_in;
-    AVFrame *out = ogg.frame_out;
+    AVFrame *in = ogg_frame_in;
+    AVFrame *out = ogg_frame_out;
     int sample_rate = S_GetSampleRate();
+    int ret;
 
     if (!sample_rate)
         sample_rate = out->sample_rate;
     if (!sample_rate)
         sample_rate = in->sample_rate;
 
-    swr_close(ogg.swr_ctx);
+    swr_close(ogg_swr_ctx);
     av_frame_unref(out);
 
     out->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
@@ -400,41 +379,168 @@ static int reconfigure_swr(void)
     out->sample_rate = sample_rate;
     out->nb_samples = MAX_RAW_SAMPLES;
 
-    return av_frame_get_buffer(out, 0);
+    char buf[MAX_QPATH];
+    av_channel_layout_describe(&in->ch_layout, buf, sizeof(buf));
+
+    Com_DDPrintf("Initializing SWR\n"
+                 "Input : %d Hz, %s, %s\n"
+                 "Output: %d Hz, stereo, s16\n",
+                 in->sample_rate, buf,
+                 av_get_sample_fmt_name(in->format),
+                 out->sample_rate);
+
+    ret = swr_config_frame(ogg_swr_ctx, out, in);
+    if (ret < 0)
+        return ret;
+
+    ret = swr_init(ogg_swr_ctx);
+    if (ret < 0)
+        return ret;
+
+    ret = av_frame_get_buffer(out, 0);
+    if (ret < 0)
+        return ret;
+
+    return 0;
+}
+
+static void flush_samples(const AVFrame *out)
+{
+    Com_DDDPrintf("%d raw samples\n", out->nb_samples);
+
+    if (!s_api->raw_samples(out->nb_samples, out->sample_rate, 2,
+                            out->ch_layout.nb_channels,
+                            out->data[0], ogg_volume->value))
+        s_api->drop_raw_samples();
+}
+
+static int convert_frame(AVFrame *out, AVFrame *in)
+{
+    int ret = swr_convert_frame(ogg_swr_ctx, out, in);
+    if (ret < 0)
+        return ret;
+    in->nb_samples = 0; // don't convert again
+    return 0;
+}
+
+static int convert_audio(void)
+{
+    AVFrame *in = ogg_frame_in;
+    AVFrame *out = ogg_frame_out;
+    int ret = 0, need, have = 0;
+
+    // get available free space
+    need = s_api->need_raw_samples();
+    if (need <= 0)
+        return 0;
+
+    Q_assert(need <= MAX_RAW_SAMPLES);
+    out->nb_samples = need;
+
+drain:
+    if (ogg_swr_draining) {
+        ret = swr_convert_frame(ogg_swr_ctx, out, NULL);
+        if (ret < 0)
+            return ret;
+        if (out->nb_samples) {
+            flush_samples(out);
+            return 0;
+        }
+
+        Com_DDPrintf("Draining done\n");
+        ogg_swr_draining = false;
+
+        if (!ogg.dec_ctx) {
+            // playback just stopped
+            swr_close(ogg_swr_ctx);
+            av_frame_unref(in);
+            av_frame_unref(out);
+            return 0;
+        }
+
+        ret = reconfigure_swr();
+        if (ret < 0)
+            return ret;
+        ret = convert_frame(NULL, in);
+        if (ret < 0)
+            return ret;
+    }
+
+    // see how much we buffered
+    if (swr_is_initialized(ogg_swr_ctx)) {
+        have = swr_get_out_samples(ogg_swr_ctx, 0);
+        if (have < 0)
+            return have;
+    }
+
+    // buffer more frames to fill available space
+    while (have < need) {
+        if (!decode_next_frame()) {
+            Com_DDPrintf("No next frame, draining\n");
+            ogg_swr_draining = true;
+            goto drain;
+        }
+
+        // work around swr channel layout bug
+        if (in->ch_layout.order == AV_CHANNEL_ORDER_UNSPEC)
+            av_channel_layout_default(&in->ch_layout, in->ch_layout.nb_channels);
+
+        // now that we have a frame, configure swr
+        if (!swr_is_initialized(ogg_swr_ctx)) {
+            ret = reconfigure_swr();
+            if (ret < 0)
+                return ret;
+        }
+
+        have = swr_get_out_samples(ogg_swr_ctx, in->nb_samples);
+        if (have < 0)
+            return have;
+        if (have < need) {
+            ret = convert_frame(NULL, in);
+            if (ret < 0)
+                break;
+        }
+    }
+
+    // now output what we have
+    if (ret >= 0)
+        ret = convert_frame(out, in);
+
+    if (ret == AVERROR_INPUT_CHANGED) {
+        // wait for swr buffer to drain, then reconfigure
+        Com_DDPrintf("Input changed, draining\n");
+        ogg_swr_draining = true;
+        goto drain;
+    }
+
+    if (ret < 0)
+        return ret;
+
+    if (out->nb_samples)
+        flush_samples(out);
+
+    return 0;
 }
 
 void OGG_Update(void)
 {
-    if (!s_started || !s_active || !ogg.dec_ctx)
+    if (!s_started || !s_active)
         return;
 
-    while (s_api->need_raw_samples() > 0) {
-        int ret = convert_samples(NULL);
-
-        // if swr buffer is empty, decode more input
-        if (ret == 0) {
-            if (!decode_next_frame())
-                break;
-
-            // now that we have a frame, configure output
-            if (ogg.frame_out->format < 0)
-                ret = reconfigure_swr();
-
-            if (ret >= 0) {
-                ret = convert_samples(ogg.frame_in);
-                if (ret == AVERROR_INPUT_CHANGED) {
-                    ret = reconfigure_swr();
-                    if (ret >= 0)
-                        ret = convert_samples(ogg.frame_in);
-                }
-            }
+    if (!ogg.dec_ctx && !ogg_swr_draining) {
+        // resume auto playback if manual playback just stopped
+        if (ogg_manual_play && !s_api->have_raw_samples()) {
+            ogg_manual_play = false;
+            OGG_Play();
         }
+        if (!ogg.dec_ctx)
+            return;
+    }
 
-        if (ret < 0) {
-            Com_EPrintf("Error converting audio: %s\n", av_err2str(ret));
-            OGG_Stop();
-            break;
-        }
+    int ret = convert_audio();
+    if (ret < 0) {
+        Com_EPrintf("Error converting audio: %s\n", av_err2str(ret));
+        OGG_Stop();
     }
 }
 
@@ -708,9 +814,12 @@ static void OGG_Play_f(void)
     if (!fmt_ctx)
         return;
 
-    OGG_Stop();
+    if (!strcmp(Cmd_Argv(3), "soft"))
+        ogg_close();
+    else
+        OGG_Stop();
 
-    ogg_play(fmt_ctx);
+    ogg_manual_play = ogg_play(fmt_ctx);
 }
 
 static void OGG_Info_f(void)
@@ -752,7 +861,9 @@ static void OGG_Next_f(void)
         return;
     }
 
+    ogg_manual_play = false;
     ogg.autotrack[0] = 0;
+
     OGG_Play();
 }
 
@@ -813,11 +924,24 @@ void OGG_Init(void)
     init_formats();
 
     OGG_LoadTrackList();
+
+    Q_assert(ogg_pkt = av_packet_alloc());
+    Q_assert(ogg_frame_in = av_frame_alloc());
+    Q_assert(ogg_frame_out = av_frame_alloc());
+    Q_assert(ogg_swr_ctx = swr_alloc());
 }
 
 void OGG_Shutdown(void)
 {
-    ogg_stop();
+    ogg_close();
+
+    av_packet_free(&ogg_pkt);
+    av_frame_free(&ogg_frame_in);
+    av_frame_free(&ogg_frame_out);
+    swr_free(&ogg_swr_ctx);
+
+    ogg_swr_draining = false;
+    ogg_manual_play = false;
 
     FS_FreeList(tracklist);
     tracklist = NULL;
