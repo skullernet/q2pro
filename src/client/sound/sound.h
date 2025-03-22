@@ -187,7 +187,3 @@ channel_t *S_PickChannel(int entnum, int entchannel);
 void S_IssuePlaysound(playsound_t *ps);
 int S_BuildSoundList(int *sounds);
 void S_SpatializeOrigin(const vec3_t origin, float master_vol, float dist_mult, float *left_vol, float *right_vol, bool stereo);
-
-#if USE_AVCODEC
-bool OGG_Load(sizebuf_t *sz);
-#endif

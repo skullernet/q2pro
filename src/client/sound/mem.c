@@ -27,6 +27,264 @@ wavinfo_t s_info;
 /*
 ===============================================================================
 
+OGG loading
+
+===============================================================================
+*/
+
+#ifdef USE_AVCODEC
+
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libswresample/swresample.h>
+
+static int sz_read_packet(void *opaque, uint8_t *buf, int size)
+{
+    sizebuf_t *sz = opaque;
+
+    if (size < 0)
+        return AVERROR(EINVAL);
+
+    size = min(size, sz->cursize - sz->readcount);
+    if (!size)
+        return AVERROR_EOF;
+
+    memcpy(buf, sz->data + sz->readcount, size);
+    sz->readcount += size;
+    return size;
+}
+
+static int64_t sz_seek(void *opaque, int64_t offset, int whence)
+{
+    sizebuf_t *sz = opaque;
+
+    switch (whence) {
+    case SEEK_SET:
+        if (offset < 0)
+            return AVERROR(EINVAL);
+        sz->readcount = min(offset, sz->cursize);
+        break;
+    case SEEK_CUR:
+        if (offset < -(int64_t)sz->readcount)
+            return AVERROR(EINVAL);
+        sz->readcount += min(offset, (int64_t)(sz->cursize - sz->readcount));
+        break;
+    case SEEK_END:
+        sz->readcount = sz->cursize;
+        break;
+    default:
+        return AVERROR(EINVAL);
+    }
+
+    return sz->readcount;
+}
+
+static bool OGG_Load(sizebuf_t *sz)
+{
+    AVFormatContext *fmt_ctx = NULL;
+    AVIOContext *avio_ctx = NULL;
+    uint8_t *avio_ctx_buffer = NULL;
+    const size_t avio_ctx_buffer_size = 4096;
+    AVPacket *pkt = NULL;
+    AVFrame *frame = NULL, *out = NULL;
+    struct SwrContext *swr_ctx = NULL;
+    AVCodecContext *dec_ctx = NULL;
+    AVStream *st;
+    bool res = false;
+    int ret, sample_rate;
+
+    const AVInputFormat *fmt = av_find_input_format("ogg");
+    if (!fmt) {
+        Com_SetLastError("Ogg input format not found");
+        return false;
+    }
+
+    const AVCodec *dec = avcodec_find_decoder(AV_CODEC_ID_VORBIS);
+    if (!dec) {
+        Com_SetLastError("Vorbis decoder not found");
+        return false;
+    }
+
+    fmt_ctx = avformat_alloc_context();
+    if (!fmt_ctx) {
+        Com_SetLastError("Failed to allocate format context");
+        return false;
+    }
+
+    avio_ctx_buffer = av_malloc(avio_ctx_buffer_size);
+    if (!avio_ctx_buffer) {
+        Com_SetLastError("Failed to allocate avio buffer");
+        goto fail;
+    }
+
+    avio_ctx = avio_alloc_context(avio_ctx_buffer, avio_ctx_buffer_size,
+                                  0, sz, sz_read_packet, NULL, sz_seek);
+    if (!avio_ctx) {
+        Com_SetLastError("Failed to allocate avio context");
+        goto fail;
+    }
+
+    fmt_ctx->pb = avio_ctx;
+
+    ret = avformat_open_input(&fmt_ctx, NULL, fmt, NULL);
+    if (ret < 0) {
+        Com_SetLastError(av_err2str(ret));
+        goto fail;
+    }
+
+    if (fmt_ctx->nb_streams != 1) {
+        Com_SetLastError("Multiple Ogg streams are not supported");
+        goto fail;
+    }
+
+    st = fmt_ctx->streams[0];
+    if (st->codecpar->codec_id != AV_CODEC_ID_VORBIS) {
+        Com_SetLastError("First stream is not Vorbis");
+        goto fail;
+    }
+
+    if (st->codecpar->ch_layout.nb_channels < 1 || st->codecpar->ch_layout.nb_channels > 2) {
+        Com_SetLastError("Unsupported number of channels");
+        goto fail;
+    }
+
+    if (st->codecpar->sample_rate < 6000 || st->codecpar->sample_rate > 48000) {
+        Com_SetLastError("Unsupported sample rate");
+        goto fail;
+    }
+
+    if (st->duration < 1 || st->duration > MAX_SFX_SAMPLES) {
+        Com_SetLastError("Unsupported duration");
+        goto fail;
+    }
+
+    dec_ctx = avcodec_alloc_context3(dec);
+    if (!dec_ctx) {
+        Com_SetLastError("Failed to allocate codec context");
+        goto fail;
+    }
+
+    ret = avcodec_parameters_to_context(dec_ctx, st->codecpar);
+    if (ret < 0) {
+        Com_SetLastError("Failed to copy codec parameters to decoder context");
+        goto fail;
+    }
+
+    ret = avcodec_open2(dec_ctx, dec, NULL);
+    if (ret < 0) {
+        Com_SetLastError("Failed to open codec");
+        goto fail;
+    }
+
+    dec_ctx->pkt_timebase = st->time_base;
+
+    pkt = av_packet_alloc();
+    frame = av_frame_alloc();
+    out = av_frame_alloc();
+    swr_ctx = swr_alloc();
+    if (!pkt || !frame || !out || !swr_ctx) {
+        Com_SetLastError("Failed to allocate memory");
+        goto fail;
+    }
+
+    sample_rate = S_GetSampleRate();
+    if (!sample_rate)
+        sample_rate = dec_ctx->sample_rate;
+
+    ret = av_channel_layout_copy(&out->ch_layout, &dec_ctx->ch_layout);
+    if (ret < 0) {
+        Com_SetLastError("Failed to copy channel layout");
+        goto fail;
+    }
+    out->format = AV_SAMPLE_FMT_S16;
+    out->sample_rate = sample_rate;
+    out->nb_samples = MAX_RAW_SAMPLES;
+
+    ret = av_frame_get_buffer(out, 0);
+    if (ret < 0) {
+        Com_SetLastError("Failed to allocate audio buffer");
+        goto fail;
+    }
+
+    int64_t nb_samples = st->duration;
+
+    if (out->sample_rate != dec_ctx->sample_rate)
+        nb_samples = av_rescale_rnd(st->duration + 2, out->sample_rate, dec_ctx->sample_rate, AV_ROUND_UP) + 2;
+
+    int bufsize = nb_samples << out->ch_layout.nb_channels;
+    int offset = 0;
+    bool eof = false;
+
+    s_info.channels = out->ch_layout.nb_channels;
+    s_info.rate = out->sample_rate;
+    s_info.width = 2;
+    s_info.loopstart = -1;
+    s_info.data = FS_AllocTempMem(bufsize);
+
+    while (!eof) {
+        ret = avcodec_receive_frame(dec_ctx, frame);
+
+        if (ret == AVERROR(EAGAIN)) {
+            ret = av_read_frame(fmt_ctx, pkt);
+            if (ret == AVERROR_EOF) {
+                ret = avcodec_send_packet(dec_ctx, NULL);
+            } else if (ret >= 0) {
+                ret = avcodec_send_packet(dec_ctx, pkt);
+                av_packet_unref(pkt);
+            }
+            if (ret < 0)
+                break;
+            continue;
+        }
+
+        out->nb_samples = MAX_RAW_SAMPLES;
+        if (ret == AVERROR_EOF) {
+            ret = swr_convert_frame(swr_ctx, out, NULL);
+            eof = true;
+        } else if (ret >= 0) {
+            ret = swr_convert_frame(swr_ctx, out, frame);
+        }
+        if (ret < 0)
+            break;
+
+        int size = out->nb_samples << out->ch_layout.nb_channels;
+        if (size > bufsize - offset) {
+            size = bufsize - offset;
+            eof = true;
+        }
+
+        memcpy(s_info.data + offset, out->data[0], size);
+        offset += size;
+    }
+
+    if (ret < 0) {
+        Com_SetLastError(av_err2str(ret));
+        Z_Freep(&s_info.data);
+        goto fail;
+    }
+
+    s_info.samples = offset >> s_info.channels;
+    res = true;
+
+fail:
+    avformat_close_input(&fmt_ctx);
+    if (avio_ctx)
+        av_freep(&avio_ctx->buffer);
+    avio_context_free(&avio_ctx);
+    avcodec_free_context(&dec_ctx);
+    av_packet_free(&pkt);
+    av_frame_free(&frame);
+    av_frame_free(&out);
+    swr_free(&swr_ctx);
+
+    return res;
+}
+
+#endif // USE_AVCODEC
+
+/*
+===============================================================================
+
 WAV loading
 
 ===============================================================================
@@ -205,6 +463,8 @@ static void ConvertSamples(void)
     }
 #endif
 }
+
+// ===============================================================================
 
 /*
 ==============
