@@ -278,13 +278,17 @@ void OGG_Play(void)
     Q_strlcpy(ogg.autotrack, s, sizeof(ogg.autotrack));
 
     if (ogg_shuffle->integer && trackcount) {
-        if (trackindex == 0)
-            shuffle();
-        s = tracklist[trackindex];
-        trackindex = (trackindex + 1) % trackcount;
+        for (int i = 0; i < trackcount; i++) {
+            if (trackindex == 0)
+                shuffle();
+            s = tracklist[trackindex];
+            trackindex = (trackindex + 1) % trackcount;
+            if (ogg_play(ogg_open(s, true)))
+                break;
+        }
+    } else {
+        ogg_play(ogg_open(s, true));
     }
-
-    ogg_play(ogg_open(s, true));
 }
 
 void OGG_Stop(void)
