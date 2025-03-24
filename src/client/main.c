@@ -303,7 +303,7 @@ void CL_ClientCommand(const char *string)
         return;
     }
 
-    Com_DDPrintf("%s: %s\n", __func__, string);
+    Com_DDPrintf("%s: %s\n", __func__, Com_MakePrintable(string));
 
     MSG_WriteByte(clc_stringcmd);
     MSG_WriteString(string);
