@@ -859,7 +859,7 @@ static void upload_surface_vbo(int lastvert)
     size_t offset = lastvert * VERTEX_SIZE * sizeof(vec_t);
     size_t size = tess.numverts * VERTEX_SIZE * sizeof(vec_t);
 
-    Com_DDPrintf("%s: %zu bytes at %zu\n", __func__, size, offset);
+    Com_DDDPrintf("%s: %zu bytes at %zu\n", __func__, size, offset);
 
     qglBufferSubData(GL_ARRAY_BUFFER, offset, size, tess.vertices);
     tess.numverts = 0;
