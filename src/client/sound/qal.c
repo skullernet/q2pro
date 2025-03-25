@@ -85,6 +85,7 @@ static const alsection_t sections[] = {
             QAL_FN(Listenerf),
             QAL_FN(Listenerfv),
             QAL_FN(Source3f),
+            QAL_FN(SourcePause),
             QAL_FN(SourcePlay),
             QAL_FN(SourceQueueBuffers),
             QAL_FN(SourceStop),

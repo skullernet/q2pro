@@ -613,6 +613,20 @@ static void AL_UpdateUnderWater(void)
     s_underwater_flag = underwater;
 }
 
+static void AL_Activate(void)
+{
+    S_StopAllSounds();
+
+    ALint state = 0;
+    qalGetSourcei(s_stream, AL_SOURCE_STATE, &state);
+
+    if (!s_active && state == AL_PLAYING)
+        qalSourcePause(s_stream);
+
+    if (s_active && state != AL_PLAYING && s_stream_buffers)
+        qalSourcePlay(s_stream);
+}
+
 static void AL_Update(void)
 {
     int         i;
@@ -685,7 +699,7 @@ const sndapi_t snd_openal = {
     .init = AL_Init,
     .shutdown = AL_Shutdown,
     .update = AL_Update,
-    .activate = S_StopAllSounds,
+    .activate = AL_Activate,
     .sound_info = AL_SoundInfo,
     .upload_sfx = AL_UploadSfx,
     .delete_sfx = AL_DeleteSfx,
