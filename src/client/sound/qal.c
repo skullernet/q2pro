@@ -291,3 +291,15 @@ fail:
     QAL_Shutdown();
     return -1;
 }
+
+int QAL_GetSampleRate(void)
+{
+    ALCint freq = 0;
+    qalcGetIntegerv(device, ALC_FREQUENCY, 1, &freq);
+
+    // sanity check
+    if (freq < 11025 || freq > 48000)
+        return 0;
+
+    return freq;
+}

@@ -711,4 +711,5 @@ const sndapi_t snd_openal = {
     .play_channel = AL_PlayChannel,
     .stop_channel = AL_StopChannel,
     .stop_all_sounds = AL_StopAllSounds,
+    .get_sample_rate = QAL_GetSampleRate,
 };

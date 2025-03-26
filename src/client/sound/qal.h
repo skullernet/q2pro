@@ -69,3 +69,4 @@ QALAPI LPALGENFILTERS qalGenFilters;
 
 int QAL_Init(void);
 void QAL_Shutdown(void);
+int QAL_GetSampleRate(void);
