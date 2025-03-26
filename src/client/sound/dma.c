@@ -109,7 +109,7 @@ RAW SAMPLES
          k = frac >> 8, i < outcount; \
          i++, frac += fracstep, j = (j + 1) & (MAX_RAW_SAMPLES - 1))
 
-static bool DMA_RawSamples(int samples, int rate, int width, int channels, const byte *data, float volume)
+static bool DMA_RawSamples(int samples, int rate, int width, int channels, const void *data, float volume)
 {
     float stepscale = (float)rate / dma.speed;
     int i, j, k, frac, fracstep = stepscale * 256;
@@ -119,7 +119,21 @@ static bool DMA_RawSamples(int samples, int rate, int width, int channels, const
     if (s_rawend < s_paintedtime)
         s_rawend = s_paintedtime;
 
-    if (width == 2) {
+    if (width == 4) {
+        const float *src = (const float *)data;
+        vol *= 32768;
+        if (channels == 2) {
+            RESAMPLE {
+                s_rawsamples[j].left  = src[k*2+0] * vol;
+                s_rawsamples[j].right = src[k*2+1] * vol;
+            }
+        } else if (channels == 1) {
+            RESAMPLE {
+                s_rawsamples[j].left  =
+                s_rawsamples[j].right = src[k] * vol;
+            }
+        }
+    } else if (width == 2) {
         const int16_t *src = (const int16_t *)data;
         if (channels == 2) {
             RESAMPLE {
@@ -133,16 +147,17 @@ static bool DMA_RawSamples(int samples, int rate, int width, int channels, const
             }
         }
     } else if (width == 1) {
+        const uint8_t *src = (const uint8_t *)data;
         vol *= 256;
         if (channels == 2) {
             RESAMPLE {
-                s_rawsamples[j].left  = (data[k*2+0] - 128) * vol;
-                s_rawsamples[j].right = (data[k*2+1] - 128) * vol;
+                s_rawsamples[j].left  = (src[k*2+0] - 128) * vol;
+                s_rawsamples[j].right = (src[k*2+1] - 128) * vol;
             }
         } else if (channels == 1) {
             RESAMPLE {
                 s_rawsamples[j].left  =
-                s_rawsamples[j].right = (data[k] - 128) * vol;
+                s_rawsamples[j].right = (src[k] - 128) * vol;
             }
         }
     }
@@ -578,6 +593,7 @@ static bool DMA_Init(void)
     s_volume_changed(s_volume);
 
     s_numchannels = MAX_CHANNELS;
+    s_supports_float = true;
 
     Com_Printf("sound sampling rate: %i\n", dma.speed);
 

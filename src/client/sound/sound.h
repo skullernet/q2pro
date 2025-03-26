@@ -117,7 +117,7 @@ typedef struct {
     sfxcache_t *(*upload_sfx)(sfx_t *s);
     void (*delete_sfx)(sfx_t *s);
     void (*page_in_sfx)(sfx_t *s);
-    bool (*raw_samples)(int samples, int rate, int width, int channels, const byte *data, float volume);
+    bool (*raw_samples)(int samples, int rate, int width, int channels, const void *data, float volume);
     int (*need_raw_samples)(void);
     int (*have_raw_samples)(void);
     void (*drop_raw_samples)(void);
@@ -150,6 +150,7 @@ typedef enum {
 
 extern sndstarted_t     s_started;
 extern bool             s_active;
+extern bool             s_supports_float;
 extern const sndapi_t   *s_api;
 
 #define MAX_CHANNELS            64

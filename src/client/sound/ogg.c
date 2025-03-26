@@ -379,7 +379,7 @@ static int reconfigure_swr(void)
     av_frame_unref(out);
 
     out->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
-    out->format = AV_SAMPLE_FMT_S16;
+    out->format = s_supports_float ? AV_SAMPLE_FMT_FLT : AV_SAMPLE_FMT_S16;
     out->sample_rate = sample_rate;
     out->nb_samples = MAX_RAW_SAMPLES;
 
@@ -388,10 +388,11 @@ static int reconfigure_swr(void)
 
     Com_DDPrintf("Initializing SWR\n"
                  "Input : %d Hz, %s, %s\n"
-                 "Output: %d Hz, stereo, s16\n",
+                 "Output: %d Hz, stereo, %s\n",
                  in->sample_rate, buf,
                  av_get_sample_fmt_name(in->format),
-                 out->sample_rate);
+                 out->sample_rate,
+                 av_get_sample_fmt_name(out->format));
 
     ret = swr_config_frame(ogg_swr_ctx, out, in);
     if (ret < 0)
@@ -412,7 +413,8 @@ static void flush_samples(const AVFrame *out)
 {
     Com_DDDPrintf("%d raw samples\n", out->nb_samples);
 
-    if (!s_api->raw_samples(out->nb_samples, out->sample_rate, 2,
+    if (!s_api->raw_samples(out->nb_samples, out->sample_rate,
+                            av_get_bytes_per_sample(out->format),
                             out->ch_layout.nb_channels,
                             out->data[0], ogg_volume->value))
         s_api->drop_raw_samples();

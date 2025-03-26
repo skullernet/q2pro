@@ -119,6 +119,7 @@ static bool AL_Init(void)
 
     s_loop_points = qalIsExtensionPresent("AL_SOFT_loop_points");
     s_source_spatialize = qalIsExtensionPresent("AL_SOFT_source_spatialize");
+    s_supports_float = qalIsExtensionPresent("AL_EXT_float32");
 
     // init distance model
     qalDistanceModel(AL_LINEAR_DISTANCE_CLAMPED);
@@ -182,11 +183,35 @@ static void AL_Shutdown(void)
     QAL_Shutdown();
 }
 
+static ALenum AL_GetSampleFormat(int width, int channels)
+{
+    if (channels < 1 || channels > 2)
+        return 0;
+
+    switch (width) {
+    case 1:
+        return AL_FORMAT_MONO8 + (channels - 1) * 2;
+    case 2:
+        return AL_FORMAT_MONO16 + (channels - 1) * 2;
+    case 4:
+        if (!s_supports_float)
+            return 0;
+        return AL_FORMAT_MONO_FLOAT32 + (channels - 1);
+    default:
+        return 0;
+    }
+}
+
 static sfxcache_t *AL_UploadSfx(sfx_t *s)
 {
     ALsizei size = s_info.samples * s_info.width * s_info.channels;
-    ALenum format = AL_FORMAT_MONO8 + (s_info.channels - 1) * 2 + (s_info.width - 1);
+    ALenum format = AL_GetSampleFormat(s_info.width, s_info.channels);
     ALuint buffer = 0;
+
+    if (!format) {
+        Com_SetLastError("Unsupported sample format");
+        goto fail;
+    }
 
     qalGetError();
     qalGenBuffers(1, &buffer);
@@ -559,12 +584,15 @@ static int AL_HaveRawSamples(void)
     return s_stream_buffers * MAX_RAW_SAMPLES;
 }
 
-static bool AL_RawSamples(int samples, int rate, int width, int channels, const byte *data, float volume)
+static bool AL_RawSamples(int samples, int rate, int width, int channels, const void *data, float volume)
 {
-    ALenum format = AL_FORMAT_MONO8 + (channels - 1) * 2 + (width - 1);
-    ALuint buffer = 0;
+    ALenum format = AL_GetSampleFormat(width, channels);
+    if (!format)
+        return false;
 
     if (AL_NeedRawSamples()) {
+        ALuint buffer = 0;
+
         qalGetError();
         qalGenBuffers(1, &buffer);
         if (qalGetError())

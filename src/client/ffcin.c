@@ -241,7 +241,9 @@ static int process_audio(void)
         return ret;
     }
 
-    S_RawSamples(out->nb_samples, out->sample_rate, 2, out->ch_layout.nb_channels, out->data[0]);
+    S_RawSamples(out->nb_samples, out->sample_rate,
+                 av_get_bytes_per_sample(out->format),
+                 out->ch_layout.nb_channels, out->data[0]);
     return 0;
 }
 
@@ -549,7 +551,7 @@ static bool open_codec_context(enum AVMediaType type)
             out->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
         else
             out->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
-        out->format = AV_SAMPLE_FMT_S16;
+        out->format = S_SupportsFloat() ? AV_SAMPLE_FMT_FLT : AV_SAMPLE_FMT_S16;
         out->sample_rate = sample_rate;
         out->nb_samples = MAX_RAW_SAMPLES;
 
