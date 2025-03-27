@@ -649,7 +649,7 @@ static void OGG_Cmd_f(void)
 
 static void ogg_enable_changed(cvar_t *self)
 {
-    if (cls.state == ca_cinematic)
+    if (cls.state == ca_cinematic || ogg_manual_play)
         return;
     if (self->integer)
         OGG_Play();
