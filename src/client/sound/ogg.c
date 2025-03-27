@@ -504,6 +504,8 @@ drain:
     // buffer more frames to fill available space
     while (have < need) {
         if (!decode_next_frame()) {
+            if (!swr_is_initialized(ogg_swr_ctx))
+                return 0;
             Com_DDPrintf("No next frame, draining\n");
             ogg_swr_draining = true;
             goto drain;
