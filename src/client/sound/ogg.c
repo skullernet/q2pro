@@ -342,6 +342,24 @@ static int decode_frame(void)
     }
 }
 
+static bool ogg_rewind(void)
+{
+    if (ogg_manual_play || ogg_shuffle->integer)
+        return false;
+
+    int ret = av_seek_frame(ogg.fmt_ctx, ogg.stream_index, 0, AVSEEK_FLAG_BACKWARD);
+    if (ret < 0)
+        return false;
+
+    avcodec_flush_buffers(ogg.dec_ctx);
+    ret = decode_frame();
+    if (ret < 0)
+        return false;
+
+    Com_DPrintf("Rewind successful\n");
+    return true;
+}
+
 static bool decode_next_frame(void)
 {
     if (!ogg.dec_ctx)
@@ -355,6 +373,10 @@ static bool decode_next_frame(void)
         Com_DPrintf("%s decoding audio\n", av_err2str(ret));
     else
         Com_EPrintf("Error decoding audio: %s\n", av_err2str(ret));
+
+    // try to rewind if possible
+    if (ogg_rewind())
+        return true;
 
     // play next file
     ogg_close();
