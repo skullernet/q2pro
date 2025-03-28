@@ -98,11 +98,11 @@ Q2PRO supports playback of background music ripped off original CD in Ogg
 Vorbis format. Music files should be placed in `music` subdirectory of the game
 directory in format `music/trackNN.ogg`, where `NN` corresponds to CD track
 number. `NN` should be typically in range 02-11 (track 01 is data track on
-original CD and should never be used).
+original CD and should never be used). GOG naming scheme which has tracks 02-21
+(with extra tracks for `rogue` and `xatrix` addons) is also supported.
 
-Note that so-called ‘GOG’ naming convention where music tracks are named
-‘Track01’ to ‘Track21’ is not supported.
-
+Depending on FFmpeg configuration, music in several other formats can be
+transparently supported: FLAC, Opus, MP3 and WAV.
 
 MinGW-w64
 ---------

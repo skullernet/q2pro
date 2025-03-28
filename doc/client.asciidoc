@@ -387,6 +387,9 @@ ogg_menu_track::
     Specifies track number that is played while disconnected from server.
     Default value is 0 (don't play anything).
 
+ogg_remap_tracks::
+    Remap track numbers for ‘rogue’ and ‘xatrix’ addons according to GOG
+    naming scheme. Default value is 1 (enabled).
 
 Graphical Console
 ~~~~~~~~~~~~~~~~~
