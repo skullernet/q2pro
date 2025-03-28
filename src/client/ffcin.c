@@ -583,6 +583,11 @@ static bool SCR_StartCinematic(const char *name)
     const char  *path = NULL;
     int         ret;
 
+    if (!supported) {
+        Com_EPrintf("No supported cinematic formats\n");
+        return false;
+    }
+
     FS_NormalizePathBuffer(normalized, name, sizeof(normalized));
     *COM_FileExtension(normalized) = 0;
 
@@ -740,6 +745,9 @@ void SCR_Cinematic_g(genctx_t *ctx)
     const unsigned flags = FS_SEARCH_RECURSIVE | FS_SEARCH_STRIPEXT | FS_TYPE_REAL;
     int count;
     void **list;
+
+    if (!*extensions)
+        return;
 
     ctx->ignoredups = true;
     list = FS_ListFiles("video", extensions, flags, &count);

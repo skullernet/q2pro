@@ -626,6 +626,9 @@ static void free_track_list(void)
 
 void OGG_LoadTrackList(void)
 {
+    if (!*extensions)
+        return;
+
     free_track_list();
 
     trackmap = HashMap_Create(char *, char *, HashCaseStr, HashCaseStrCmp);
