@@ -2756,15 +2756,10 @@ void **FS_ListFiles(const char *path, const char *filter, unsigned flags, int *c
     pack_t          *pack;
     packfile_t      *file;
     void            *info;
-    int             i, j, total;
+    int             i, j;
     char            normalized[MAX_OSPATH], buffer[MAX_OSPATH];
-    listfiles_t     list;
     size_t          len, pathlen;
     char            *s, *p;
-    path_valid_t    valid;
-
-    memset(&list, 0, sizeof(list));
-    valid = PATH_NOT_CHECKED;
 
     if (count_p) {
         *count_p = 0;
@@ -2791,6 +2786,9 @@ void **FS_ListFiles(const char *path, const char *filter, unsigned flags, int *c
     if ((flags & FS_SEARCH_DIRSONLY) && (flags & FS_SEARCH_MASK & ~FS_SEARCH_DIRSONLY)) {
         return NULL;
     }
+
+    listfiles_t list = { .filter = filter, .flags = flags };
+    path_valid_t valid = PATH_NOT_CHECKED;
 
     flags = default_lookup_flags(flags);
 
@@ -2924,8 +2922,6 @@ void **FS_ListFiles(const char *path, const char *filter, unsigned flags, int *c
                 s = search->filename;
             }
 
-            list.filter = filter;
-            list.flags = flags;
             list.baselen = len;
             Sys_ListFiles_r(&list, s, 0);
         }
@@ -2935,36 +2931,49 @@ void **FS_ListFiles(const char *path, const char *filter, unsigned flags, int *c
         }
     }
 
-    if (!list.count) {
+    FS_FinalizeList(&list);
+
+    if (count_p) {
+        *count_p = list.count;
+    }
+
+    return list.files;
+}
+
+void **FS_FinalizeList(listfiles_t *list)
+{
+    int total;
+
+    if (!list->count) {
+        Q_assert(!list->files);
         return NULL;
     }
 
-    if (flags & FS_SEARCH_EXTRAINFO) {
+    if (list->flags & FS_SEARCH_EXTRAINFO) {
         // TODO
-        qsort(list.files, list.count, sizeof(list.files[0]), infocmp);
-        total = list.count;
+        qsort(list->files, list->count, sizeof(list->files[0]), infocmp);
+        total = list->count;
     } else {
         // sort alphabetically
-        qsort(list.files, list.count, sizeof(list.files[0]), alphacmp);
+        qsort(list->files, list->count, sizeof(list->files[0]), alphacmp);
+        total = 0;
 
         // remove duplicates
-        for (i = total = 0; i < list.count; i++, total++) {
-            info = list.files[i];
-            while (i + 1 < list.count && !FS_pathcmp(list.files[i + 1], info)) {
-                Z_Free(list.files[++i]);
+        for (int i = 0; i < list->count; i++) {
+            char *info = list->files[i];
+            while (i + 1 < list->count && !FS_pathcmp(list->files[i + 1], info)) {
+                Z_Free(list->files[++i]);
             }
-            list.files[total] = info;
+            list->files[total++] = info;
         }
+        list->count = total;
     }
 
-    if (count_p) {
-        *count_p = total;
-    }
+    // NULL terminate
+    list->files = FS_ReallocList(list->files, total + 1);
+    list->files[total] = NULL;
 
-    list.files = FS_ReallocList(list.files, total + 1);
-    list.files[total] = NULL;
-
-    return list.files;
+    return list->files;
 }
 
 /*

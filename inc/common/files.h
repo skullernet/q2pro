@@ -22,6 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/error.h"
 #include "common/zone.h"
 #include "shared/files.h"
+#include "system/system.h"
 
 #define MIN_LISTED_FILES    1024
 #define MAX_LISTED_FILES    250000000
@@ -104,6 +105,7 @@ void    **FS_ListFiles(const char *path, const char *filter, unsigned flags, int
 void    **FS_CopyList(void **list, int count);
 file_info_t *FS_CopyInfo(const char *name, int64_t size, time_t ctime, time_t mtime);
 void    FS_FreeList(void **list);
+void    **FS_FinalizeList(listfiles_t *list);
 
 size_t FS_NormalizePathBuffer(char *out, const char *in, size_t size);
 #define FS_NormalizePath(path)  FS_NormalizePathBuffer(path, path, SIZE_MAX)
