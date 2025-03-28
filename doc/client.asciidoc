@@ -1669,6 +1669,7 @@ ogg <info|play|stop|next>::
     play <track>::: Start playing background music track ‘music/_track_.ogg’.
     stop::: Stop playing background music track.
     next::: Play next track if shuffling is enabled, or restart auto playback.
+    pause::: Pause playing background music track.
 
 whereis <path> [all]::
     Search for _path_ and print the name of packfile or directory where it is

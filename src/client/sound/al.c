@@ -31,8 +31,9 @@ static cvar_t       *al_merge_looping;
 static ALuint       s_srcnums[MAX_CHANNELS];
 static ALuint       s_stream;
 static ALuint       s_stream_buffers;
-static ALboolean    s_loop_points;
-static ALboolean    s_source_spatialize;
+static bool         s_stream_paused;
+static bool         s_loop_points;
+static bool         s_source_spatialize;
 static ALuint       s_framecount;
 static ALint        s_merge_looping_minval;
 
@@ -572,6 +573,25 @@ static void AL_StreamStop(void)
     qalSourceStop(s_stream);
     AL_StreamUpdate();
     Q_assert(!s_stream_buffers);
+    s_stream_paused = false;
+}
+
+static void AL_StreamPause(bool paused)
+{
+    s_stream_paused = paused;
+
+    // force pause if not active
+    if (!s_active)
+        paused = true;
+
+    ALint state = 0;
+    qalGetSourcei(s_stream, AL_SOURCE_STATE, &state);
+
+    if (paused && state == AL_PLAYING)
+        qalSourcePause(s_stream);
+
+    if (!paused && state != AL_PLAYING && s_stream_buffers)
+        qalSourcePlay(s_stream);
 }
 
 static int AL_NeedRawSamples(void)
@@ -616,8 +636,10 @@ static bool AL_RawSamples(int samples, int rate, int width, int channels, const 
 
     ALint state = AL_PLAYING;
     qalGetSourcei(s_stream, AL_SOURCE_STATE, &state);
-    if (state != AL_PLAYING)
+    if (state != AL_PLAYING) {
         qalSourcePlay(s_stream);
+        s_stream_paused = false;
+    }
     return true;
 }
 
@@ -644,15 +666,7 @@ static void AL_UpdateUnderWater(void)
 static void AL_Activate(void)
 {
     S_StopAllSounds();
-
-    ALint state = 0;
-    qalGetSourcei(s_stream, AL_SOURCE_STATE, &state);
-
-    if (!s_active && state == AL_PLAYING)
-        qalSourcePause(s_stream);
-
-    if (s_active && state != AL_PLAYING && s_stream_buffers)
-        qalSourcePlay(s_stream);
+    AL_StreamPause(s_stream_paused);
 }
 
 static void AL_Update(void)
@@ -735,6 +749,7 @@ const sndapi_t snd_openal = {
     .need_raw_samples = AL_NeedRawSamples,
     .have_raw_samples = AL_HaveRawSamples,
     .drop_raw_samples = AL_StreamStop,
+    .pause_raw_samples = AL_StreamPause,
     .get_begin_ofs = AL_GetBeginofs,
     .play_channel = AL_PlayChannel,
     .stop_channel = AL_StopChannel,

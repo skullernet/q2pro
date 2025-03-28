@@ -121,6 +121,7 @@ typedef struct {
     int (*need_raw_samples)(void);
     int (*have_raw_samples)(void);
     void (*drop_raw_samples)(void);
+    void (*pause_raw_samples)(bool paused);
     int (*get_begin_ofs)(float timeofs);
     void (*play_channel)(channel_t *ch);
     void (*stop_channel)(channel_t *ch);

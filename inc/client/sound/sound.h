@@ -43,6 +43,7 @@ void S_EndRegistration(void);
 void S_RawSamples(int samples, int rate, int width, int channels, const void *data);
 int S_GetSampleRate(void);
 bool S_SupportsFloat(void);
+void S_PauseRawSamples(bool paused);
 
 #if USE_AVCODEC
 void OGG_Play(void);

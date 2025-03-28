@@ -37,6 +37,7 @@ static AVFrame              *ogg_frame_out;
 static struct SwrContext    *ogg_swr_ctx;
 static bool                 ogg_swr_draining;
 static bool                 ogg_manual_play;
+static bool                 ogg_paused;
 
 static cvar_t   *ogg_enable;
 static cvar_t   *ogg_volume;
@@ -247,11 +248,7 @@ void OGG_Play(void)
 {
     const char *s;
 
-    if (!s_started || !ogg_enable->integer || cls.state == ca_cinematic)
-        return;
-
-    // don't interfere with manual playback
-    if (ogg_manual_play)
+    if (!s_started || cls.state == ca_cinematic || ogg_manual_play)
         return;
 
     if (cls.state >= ca_connected)
@@ -274,6 +271,10 @@ void OGG_Play(void)
     // drop samples if we were playing something
     if (ogg.fmt_ctx)
         OGG_Stop();
+
+    // don't start new track if auto playback disabled
+    if (!ogg_enable->integer)
+        return;
 
     Q_strlcpy(ogg.autotrack, s, sizeof(ogg.autotrack));
 
@@ -303,6 +304,7 @@ void OGG_Stop(void)
 
     ogg_swr_draining = false;
     ogg_manual_play = false;
+    ogg_paused = false;
 
     if (s_api)
         s_api->drop_raw_samples();
@@ -344,7 +346,7 @@ static int decode_frame(void)
 
 static bool ogg_rewind(void)
 {
-    if (ogg_manual_play || ogg_shuffle->integer)
+    if (ogg_manual_play || !ogg_enable->integer || ogg_shuffle->integer)
         return false;
 
     int ret = av_seek_frame(ogg.fmt_ctx, ogg.stream_index, 0, AVSEEK_FLAG_BACKWARD);
@@ -456,6 +458,9 @@ static int convert_audio(void)
     AVFrame *in = ogg_frame_in;
     AVFrame *out = ogg_frame_out;
     int ret = 0, need, have = 0;
+
+    if (ogg_paused)
+        return 0;
 
     // get available free space
     need = s_api->need_raw_samples();
@@ -615,9 +620,10 @@ static void OGG_Info_f(void)
     AVCodecContext *dec = ogg.dec_ctx;
 
     if (dec) {
-        Com_Printf("Playing %s, %s, %d Hz, %d ch\n",
+        Com_Printf("Playing %s, %s, %d Hz, %d ch%s\n",
                    COM_SkipPath(ogg.fmt_ctx->url), dec->codec->name,
-                   dec->sample_rate, dec->ch_layout.nb_channels);
+                   dec->sample_rate, dec->ch_layout.nb_channels,
+                   ogg_paused ? " [PAUSED]" : "");
     } else {
         Com_Printf("Playback stopped.\n");
     }
@@ -630,6 +636,7 @@ static void OGG_Cmd_c(genctx_t *ctx, int argnum)
         Prompt_AddMatch(ctx, "play");
         Prompt_AddMatch(ctx, "stop");
         Prompt_AddMatch(ctx, "next");
+        Prompt_AddMatch(ctx, "pause");
         return;
     }
 
@@ -655,6 +662,21 @@ static void OGG_Next_f(void)
     OGG_Play();
 }
 
+static void OGG_Pause_f(void)
+{
+    if (!ogg.dec_ctx) {
+        Com_Printf("Playback stopped.\n");
+        return;
+    }
+
+    if (Cmd_Argc() > 2)
+        ogg_paused = Q_atoi(Cmd_Argv(2));
+    else
+        ogg_paused ^= true;
+
+    S_PauseRawSamples(ogg_paused);
+}
+
 static void OGG_Cmd_f(void)
 {
     const char *cmd = Cmd_Argv(1);
@@ -667,14 +689,24 @@ static void OGG_Cmd_f(void)
         OGG_Stop();
     else if (!strcmp(cmd, "next"))
         OGG_Next_f();
+    else if (!strcmp(cmd, "pause") || !strcmp(cmd, "toggle"))
+        OGG_Pause_f();
     else
-        Com_Printf("Usage: %s <info|play|stop|next>\n", Cmd_Argv(0));
+        Com_Printf("Usage: %s <info|play|stop|next|pause>\n", Cmd_Argv(0));
 }
 
 static void ogg_enable_changed(cvar_t *self)
 {
     if (cls.state == ca_cinematic || ogg_manual_play)
         return;
+
+    // pause/resume if already playing
+    if (ogg.dec_ctx) {
+        ogg_paused = !self->integer;
+        S_PauseRawSamples(ogg_paused);
+        return;
+    }
+
     if (self->integer)
         OGG_Play();
     else
@@ -730,6 +762,7 @@ void OGG_Shutdown(void)
 
     ogg_swr_draining = false;
     ogg_manual_play = false;
+    ogg_paused = false;
 
     FS_FreeList(tracklist);
     tracklist = NULL;

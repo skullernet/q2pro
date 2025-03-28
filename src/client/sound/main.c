@@ -798,6 +798,12 @@ bool S_SupportsFloat(void)
     return s_supports_float;
 }
 
+void S_PauseRawSamples(bool paused)
+{
+    if (s_api && s_api->pause_raw_samples)
+        s_api->pause_raw_samples(paused);
+}
+
 // =======================================================================
 // Update sound buffer
 // =======================================================================
