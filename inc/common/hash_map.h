@@ -111,14 +111,29 @@ static inline uint32_t HashVec3(const void *const val)
 }
 
 // FNV-1a hash
+#define FNV_32_PRIME    0x01000193
+
 static inline uint32_t HashStr(const void *const val)
 {
     const unsigned char  *str = *(const unsigned char **)val;
-    static const uint32_t FNV_32_PRIME = 0x01000193;
 
     uint32_t hval = 0;
     while (*str) {
-        hval ^= (uint32_t) * str;
+        hval ^= (uint32_t)*str;
+        hval *= FNV_32_PRIME;
+        ++str;
+    }
+
+    return hval;
+}
+
+static inline uint32_t HashCaseStr(const void *const val)
+{
+    const unsigned char  *str = *(const unsigned char **)val;
+
+    uint32_t hval = 0;
+    while (*str) {
+        hval ^= (uint32_t)Q_tolower(*str);
         hval *= FNV_32_PRIME;
         ++str;
     }
@@ -131,4 +146,11 @@ static inline bool HashStrCmp(const void *const a, const void *const b)
     const char *str_a = *(const char **)a;
     const char *str_b = *(const char **)b;
     return strcmp(str_a, str_b) == 0;
+}
+
+static inline bool HashCaseStrCmp(const void *const a, const void *const b)
+{
+    const char *str_a = *(const char **)a;
+    const char *str_b = *(const char **)b;
+    return Q_stricmp(str_a, str_b) == 0;
 }
