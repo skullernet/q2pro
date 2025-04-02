@@ -52,7 +52,6 @@ static int          trackcount;
 static int          trackindex;
 
 static char     extensions[MAX_QPATH];
-static int      supported;
 
 static const avformat_t formats[] = {
     { ".flac", "flac", AV_CODEC_ID_FLAC },
@@ -71,13 +70,20 @@ static void init_formats(void)
         if (f->codec_id != AV_CODEC_ID_NONE &&
             !avcodec_find_decoder(f->codec_id))
             continue;
-        supported |= BIT(i);
         if (*extensions)
             Q_strlcat(extensions, ";", sizeof(extensions));
         Q_strlcat(extensions, f->ext, sizeof(extensions));
     }
 
     Com_DPrintf("Supported music formats: %s\n", extensions);
+}
+
+static const avformat_t *find_format(const char *ext)
+{
+    for (int i = 0; i < q_countof(formats); i++)
+        if (!Q_stricmp(ext, formats[i].ext))
+            return &formats[i];
+    return NULL;
 }
 
 static void ogg_close(void)
@@ -90,14 +96,28 @@ static void ogg_close(void)
 
 static bool ogg_play(const char *path)
 {
-    AVStream        *st;
-    const AVCodec   *dec;
-    int             ret;
+    const avformat_t    *avf;
+    const AVInputFormat *fmt;
+    const AVStream      *st;
+    const AVCodec       *dec;
+    int                 ret;
 
     Q_assert(!ogg.fmt_ctx);
     Q_assert(!ogg.dec_ctx);
 
-    ret = avformat_open_input(&ogg.fmt_ctx, path, NULL, NULL);
+    avf = find_format(COM_FileExtension(path));
+    if (!avf) {
+        Com_EPrintf("Bad filename: %s\n", path);
+        return false;
+    }
+
+    fmt = av_find_input_format(avf->fmt);
+    if (!fmt) {
+        Com_EPrintf("Failed to find input format %s\n", avf->fmt);
+        return false;
+    }
+
+    ret = avformat_open_input(&ogg.fmt_ctx, path, fmt, NULL);
     if (ret < 0) {
         Com_EPrintf("Couldn't open %s: %s\n", path, av_err2str(ret));
         return false;
@@ -188,14 +208,6 @@ static const char *lookup_track(const char *name)
     return path ? *path : NULL;
 }
 
-static bool is_known_ext(const char *ext)
-{
-    for (int i = 0; i < q_countof(formats); i++)
-        if (!Q_stricmp(ext, formats[i].ext))
-            return true;
-    return false;
-}
-
 static const char *lookup_track_path(const char *name)
 {
     if (!trackcount)
@@ -213,9 +225,9 @@ static const char *lookup_track_path(const char *name)
         char normalized[MAX_OSPATH];
         if (FS_NormalizePathBuffer(normalized, name, sizeof(normalized)) >= sizeof(normalized))
             return NULL;
-        // strip `.ogg' and lookup first possible format
+        // strip extension and lookup first possible format
         char *ext = COM_FileExtension(normalized);
-        if (is_known_ext(ext))
+        if (find_format(ext))
             *ext = 0;
         return lookup_track(normalized);
     }

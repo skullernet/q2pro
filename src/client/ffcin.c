@@ -75,6 +75,7 @@ static const avformat_t formats[] = {
 
 static char extensions[MAX_QPATH];
 static int  supported;
+static const AVInputFormat *fmt_cache[q_countof(formats)];
 
 /*
 ==================
@@ -85,7 +86,8 @@ void SCR_InitCinematics(void)
 {
     for (int i = 0; i < q_countof(formats); i++) {
         const avformat_t *f = &formats[i];
-        if (!av_find_input_format(f->fmt))
+        fmt_cache[i] = av_find_input_format(f->fmt);
+        if (!fmt_cache[i])
             continue;
         if (f->codec_id != AV_CODEC_ID_NONE &&
             !avcodec_find_decoder(f->codec_id))
@@ -610,7 +612,7 @@ static bool SCR_StartCinematic(const char *name)
                 goto done;
             }
 
-            ret = avformat_open_input(&cin.fmt_ctx, fullname, NULL, NULL);
+            ret = avformat_open_input(&cin.fmt_ctx, fullname, fmt_cache[i], NULL);
             if (ret != AVERROR(ENOENT))
                 goto done;
         }
