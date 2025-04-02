@@ -569,7 +569,7 @@ void OGG_Update(void)
     }
 }
 
-static void add_music_dir(const char *path)
+static void add_music_dir(const char *path, unsigned flags)
 {
     char fullpath[MAX_OSPATH];
     size_t len;
@@ -578,10 +578,7 @@ static void add_music_dir(const char *path)
     if (len >= sizeof(fullpath))
         return;
 
-    listfiles_t list = {
-        .filter = extensions,
-        .flags = FS_SEARCH_RECURSIVE,
-    };
+    listfiles_t list = { .filter = extensions, .flags = flags };
     Sys_ListFiles_r(&list, fullpath, 0);
     FS_FinalizeList(&list);
 
@@ -635,13 +632,13 @@ void OGG_LoadTrackList(void)
 
     const char *path = NULL;
     while ((path = FS_NextPath(path)))
-        add_music_dir(path);
+        add_music_dir(path, FS_SEARCH_RECURSIVE);
 
     // GOG hacks
     if (sys_homedir->string[0])
-        add_music_dir(sys_homedir->string);
+        add_music_dir(sys_homedir->string, 0);
 
-    add_music_dir(sys_basedir->string);
+    add_music_dir(sys_basedir->string, 0);
 
     // prepare tracklist for shuffling
     trackcount = HashMap_Size(trackmap);
