@@ -88,27 +88,25 @@ static void ogg_close(void)
     memset(&ogg, 0, sizeof(ogg));
 }
 
-static AVFormatContext *ogg_open(const char *path)
-{
-    AVFormatContext *fmt_ctx = NULL;
-    int ret = avformat_open_input(&fmt_ctx, path, NULL, NULL);
-    if (ret < 0)
-        Com_EPrintf("Couldn't open %s: %s\n", path, av_err2str(ret));
-
-    return fmt_ctx;
-}
-
-static bool ogg_try_play(void)
+static bool ogg_play(const char *path)
 {
     AVStream        *st;
     const AVCodec   *dec;
-    AVCodecContext  *dec_ctx;
     int             ret;
+
+    Q_assert(!ogg.fmt_ctx);
+    Q_assert(!ogg.dec_ctx);
+
+    ret = avformat_open_input(&ogg.fmt_ctx, path, NULL, NULL);
+    if (ret < 0) {
+        Com_EPrintf("Couldn't open %s: %s\n", path, av_err2str(ret));
+        return false;
+    }
 
     ret = avformat_find_stream_info(ogg.fmt_ctx, NULL);
     if (ret < 0) {
         Com_EPrintf("Couldn't find stream info: %s\n", av_err2str(ret));
-        return false;
+        goto fail0;
     }
 
 #if USE_DEBUG
@@ -119,7 +117,7 @@ static bool ogg_try_play(void)
     ret = av_find_best_stream(ogg.fmt_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, NULL, 0);
     if (ret < 0) {
         Com_EPrintf("Couldn't find audio stream\n");
-        return false;
+        goto fail0;
     }
 
     ogg.stream_index = ret;
@@ -128,47 +126,37 @@ static bool ogg_try_play(void)
     dec = avcodec_find_decoder(st->codecpar->codec_id);
     if (!dec) {
         Com_EPrintf("Failed to find audio codec %s\n", avcodec_get_name(st->codecpar->codec_id));
-        return false;
+        goto fail0;
     }
 
-    ogg.dec_ctx = dec_ctx = avcodec_alloc_context3(dec);
-    if (!dec_ctx) {
+    ogg.dec_ctx = avcodec_alloc_context3(dec);
+    if (!ogg.dec_ctx) {
         Com_EPrintf("Failed to allocate audio codec context\n");
-        return false;
+        goto fail0;
     }
 
-    ret = avcodec_parameters_to_context(dec_ctx, st->codecpar);
+    ret = avcodec_parameters_to_context(ogg.dec_ctx, st->codecpar);
     if (ret < 0) {
         Com_EPrintf("Failed to copy audio codec parameters to decoder context\n");
-        return false;
+        goto fail1;
     }
 
-    ret = avcodec_open2(dec_ctx, dec, NULL);
+    ret = avcodec_open2(ogg.dec_ctx, dec, NULL);
     if (ret < 0) {
         Com_EPrintf("Failed to open audio codec\n");
-        return false;
+        goto fail1;
     }
 
-    dec_ctx->pkt_timebase = st->time_base;
+    ogg.dec_ctx->pkt_timebase = st->time_base;
 
-    Com_DPrintf("Playing %s\n", ogg.fmt_ctx->url);
+    Com_DPrintf("Playing %s\n", path);
     return true;
-}
 
-static bool ogg_play(AVFormatContext *fmt_ctx)
-{
-    if (!fmt_ctx)
-        return false;
-
-    Q_assert(!ogg.fmt_ctx);
-    ogg.fmt_ctx = fmt_ctx;
-
-    if (!ogg_try_play()) {
-        ogg_close();
-        return false;
-    }
-
-    return true;
+fail1:
+    avcodec_free_context(&ogg.dec_ctx);
+fail0:
+    avformat_close_input(&ogg.fmt_ctx);
+    return false;
 }
 
 static void shuffle(void)
@@ -254,7 +242,7 @@ void OGG_Play(void)
     if (!Q_stricmp(ogg.autotrack, s))
         return;
 
-    // drop samples if we were playing something
+    // drop samples if server is changing tracks
     if (ogg.fmt_ctx)
         OGG_Stop();
 
@@ -270,13 +258,13 @@ void OGG_Play(void)
                 shuffle();
             path = tracklist[trackindex];
             trackindex = (trackindex + 1) % trackcount;
-            if (ogg_play(ogg_open(path)))
+            if (ogg_play(path))
                 break;
         }
     } else {
         path = lookup_track_path(s);
         if (path)
-            ogg_play(ogg_open(path));
+            ogg_play(path);
         else
             Com_DPrintf("No such track: %s\n", s);
     }
@@ -673,16 +661,13 @@ static void OGG_Play_f(void)
         return;
     }
 
-    AVFormatContext *fmt_ctx = ogg_open(path);
-    if (!fmt_ctx)
-        return;
-
     if (!strcmp(Cmd_Argv(3), "soft"))
         ogg_close();
     else
         OGG_Stop();
 
-    ogg_manual_play = ogg_play(fmt_ctx);
+    if (ogg_play(path))
+        ogg_manual_play = true;
 }
 
 static void OGG_Info_f(void)
