@@ -42,6 +42,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <SDL.h>
 #endif
 
+#if USE_CLIENT
+#include <pthread.h>
+static pthread_t main_thread;
+#endif
+
 cvar_t  *sys_basedir;
 cvar_t  *sys_libdir;
 cvar_t  *sys_homedir;
@@ -65,6 +70,13 @@ void Sys_DebugBreak(void)
 {
     raise(SIGTRAP);
 }
+
+#if USE_CLIENT
+bool Sys_IsMainThread(void)
+{
+    return pthread_equal(main_thread, pthread_self());
+}
+#endif
 
 unsigned Sys_Milliseconds(void)
 {
@@ -439,6 +451,10 @@ int main(int argc, char **argv)
                 "for security reasons!\n");
         return EXIT_FAILURE;
     }
+
+#if USE_CLIENT
+    main_thread = pthread_self();
+#endif
 
     Qcommon_Init(argc, argv);
 

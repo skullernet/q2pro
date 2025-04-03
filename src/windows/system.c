@@ -38,6 +38,7 @@ static atomic_int               shouldExit;
 static atomic_int               errorEntered;
 
 static LARGE_INTEGER            timer_freq;
+static DWORD                    main_thread_id;
 
 static cvar_t                   *sys_exitonerror;
 
@@ -855,6 +856,11 @@ void Sys_DebugBreak(void)
     DebugBreak();
 }
 
+bool Sys_IsMainThread(void)
+{
+    return GetCurrentThreadId() == main_thread_id;
+}
+
 unsigned Sys_Milliseconds(void)
 {
     LARGE_INTEGER tm;
@@ -1182,6 +1188,8 @@ static int Sys_Main(int argc, char **argv)
 #ifndef _WIN64
     HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
 #endif
+
+    main_thread_id = GetCurrentThreadId();
 
     Qcommon_Init(argc, argv);
 

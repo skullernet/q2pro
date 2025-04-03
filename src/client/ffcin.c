@@ -21,6 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/fifo.h>
+#include <libavutil/log.h>
 #include <libswresample/swresample.h>
 #include <libswscale/swscale.h>
 
@@ -77,6 +78,30 @@ static char extensions[MAX_QPATH];
 static int  supported;
 static const AVInputFormat *fmt_cache[q_countof(formats)];
 
+static void my_av_log_cb(void *avcl, int level, const char *fmt, va_list vl)
+{
+    static int print_prefix = 1;
+    char line[MAX_STRING_CHARS];
+    print_type_t type;
+
+    if (!Sys_IsMainThread()) {
+        av_log_default_callback(avcl, level, fmt, vl);
+        return;
+    }
+
+    if (level <= AV_LOG_ERROR)
+        type = PRINT_ERROR;
+    else if (level <= AV_LOG_WARNING)
+        type = PRINT_WARNING;
+    else if (level <= AV_LOG_INFO)
+        type = PRINT_ALL;
+    else
+        return;
+
+    av_log_format_line2(avcl, level, fmt, vl, line, sizeof(line), &print_prefix);
+    Com_LPrintf(type, "%s", line);
+}
+
 /*
 ==================
 SCR_InitCinematics
@@ -84,6 +109,8 @@ SCR_InitCinematics
 */
 void SCR_InitCinematics(void)
 {
+    av_log_set_callback(my_av_log_cb);
+
     for (int i = 0; i < q_countof(formats); i++) {
         const avformat_t *f = &formats[i];
         fmt_cache[i] = av_find_input_format(f->fmt);
