@@ -470,16 +470,16 @@ static void add_msg_packet(client_t *client, const byte *data,
 
     if (len > MSG_TRESHOLD) {
         if (client->msg_dynamic_bytes > MAX_MSGLEN - len) {
-            Com_WPrintf("%s: %s: out of dynamic memory\n",
-                        __func__, client->name);
+            Com_DWPrintf("%s to %s: out of dynamic memory\n",
+                         __func__, client->name);
             goto overflowed;
         }
         msg = SV_Malloc(sizeof(*msg) + len - MSG_TRESHOLD);
         client->msg_dynamic_bytes += len;
     } else {
         if (LIST_EMPTY(&client->msg_free_list)) {
-            Com_WPrintf("%s: %s: out of message slots\n",
-                        __func__, client->name);
+            Com_DWPrintf("%s to %s: out of message slots\n",
+                         __func__, client->name);
             goto overflowed;
         }
         msg = MSG_FIRST(&client->msg_free_list);

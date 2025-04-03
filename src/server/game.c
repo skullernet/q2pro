@@ -651,8 +651,8 @@ static void SV_StartSound(const vec3_t origin, edict_t *edict,
         }
 
         if (LIST_EMPTY(&client->msg_free_list)) {
-            Com_WPrintf("%s: %s: out of message slots\n",
-                        __func__, client->name);
+            Com_DWPrintf("%s to %s: out of message slots\n",
+                         __func__, client->name);
             continue;
         }
 

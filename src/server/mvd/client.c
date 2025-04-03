@@ -627,7 +627,7 @@ static void demo_emit_snapshot(mvd_t *mvd)
     }
 
     if (msg_write.overflowed) {
-        Com_WPrintf("%s: message buffer overflowed\n", __func__);
+        Com_DWPrintf("%s: message buffer overflowed\n", __func__);
     } else {
         snap = MVD_Malloc(sizeof(*snap) + msg_write.cursize - 1);
         snap->framenum = mvd->framenum;

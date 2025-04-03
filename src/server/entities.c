@@ -593,8 +593,8 @@ void SV_BuildClientFrame(client_t *client)
     if (g_features->integer & GMF_CLIENTNUM) {
         frame->clientNum = SV_GetClient_ClientNum(client);
         if (!VALIDATE_CLIENTNUM(client->csr, frame->clientNum)) {
-            Com_WPrintf("%s: bad clientNum %d for client %d\n",
-                        __func__, frame->clientNum, client->number);
+            Com_DWPrintf("%s: bad clientNum %d for client %d\n",
+                         __func__, frame->clientNum, client->number);
             frame->clientNum = client->number;
         }
     } else {

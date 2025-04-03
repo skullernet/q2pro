@@ -854,7 +854,7 @@ void CL_EmitDemoSnapshot(void)
     MSG_WriteString(cl.layout);
 
     if (msg_write.overflowed) {
-        Com_WPrintf("%s: message buffer overflowed\n", __func__);
+        Com_DWPrintf("%s: message buffer overflowed\n", __func__);
     } else {
         snap = Z_Malloc(sizeof(*snap) + msg_write.cursize - 1);
         snap->framenum = cls.demo.frames_read;

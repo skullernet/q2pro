@@ -530,8 +530,8 @@ static void MVD_ParseSound(mvd_t *mvd, int extrabits)
         }
 
         if (LIST_EMPTY(&cl->msg_free_list)) {
-            Com_WPrintf("%s: %s: out of message slots\n",
-                        __func__, cl->name);
+            Com_DWPrintf("%s to %s: out of message slots\n",
+                         __func__, cl->name);
             continue;
         }
 
