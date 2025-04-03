@@ -232,7 +232,7 @@ static int process_video(void)
 
 static int process_audio(void)
 {
-    AVFrame *in = cin.frame;
+    AVFrame *in = cin.audio.eof ? NULL : cin.frame;
     AVFrame *out = cin.audio.frame;
     int ret;
 
@@ -243,9 +243,10 @@ static int process_audio(void)
         return ret;
     }
 
-    S_RawSamples(out->nb_samples, out->sample_rate,
-                 av_get_bytes_per_sample(out->format),
-                 out->ch_layout.nb_channels, out->data[0]);
+    if (out->nb_samples)
+        S_RawSamples(out->nb_samples, out->sample_rate,
+                     av_get_bytes_per_sample(out->format),
+                     out->ch_layout.nb_channels, out->data[0]);
     return 0;
 }
 
@@ -268,6 +269,12 @@ static int decode_frames(DecoderState *s)
             Com_DPrintf("%s from %s decoder\n", av_err2str(ret),
                         av_get_media_type_string(dec->codec->type));
             s->eof = true;
+            if (dec->codec->type == AVMEDIA_TYPE_AUDIO) {
+                // flush swr
+                ret = process_audio();
+                if (ret < 0)
+                    return ret;
+            }
             return 0;
         }
 
