@@ -94,6 +94,8 @@ static void ogg_close(void)
     memset(&ogg, 0, sizeof(ogg));
 }
 
+// open from filesystem only. since packfiles are downloadable, music from
+// packfiles can pose security risk due to huge lavf/lavc attack surface.
 static bool ogg_play(const char *path)
 {
     const avformat_t    *avf;
@@ -634,7 +636,7 @@ void OGG_LoadTrackList(void)
     while ((path = FS_NextPath(path)))
         add_music_dir(path, FS_SEARCH_RECURSIVE);
 
-    // GOG hacks
+    // GOG hacks. not recursing here to avoid security issues.
     if (sys_homedir->string[0])
         add_music_dir(sys_homedir->string, 0);
 
