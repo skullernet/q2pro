@@ -192,9 +192,9 @@ sv_redirect_address::
     Default value is empty (don't redirect).
 
 sv_downloadserver::
-    Specifies the URL clients should use for HTTP downloading. URL must begin
-    with a ‘http://’ or ‘https://’ prefix and must end with a slash. Default
-    value is empty (no download URL).
+    Specifies the initial portion of URL compatible clients will use for HTTP
+    downloading. It must begin with a ‘http://’ or ‘https://’ prefix and
+    should typically end with a slash. Default value is empty (no download URL).
 
 TIP: It is highly advisable to setup HTTP downloading on any public Quake 2
 server. The easiest way to do so is to run
@@ -277,15 +277,19 @@ sv_max_packet_entities::
     equivalent to 128 for non-extended servers and 512 for extended servers.
 
 sv_trunc_packet_entities::
-    Truncates packetentities instead of dropping client frame on overflow. This
-    does not break delta compression and should be generally safe to use. Only
-    relevant for legacy clients not using Q2PRO network channel implementation.
-    Default value is 1 (enabled).
+    When client frame is about to overflow, truncate packetentities instead of
+    dropping client frame. This does not break delta compression and should be
+    generally safe to use. Some negative effects like entities temporary
+    freezing, or delayed spawning can be observed. Only relevant for legacy
+    clients not using Q2PRO network channel implementation. Default value is 1
+    (enabled).
 
 sv_prioritize_entities::
     Sort entities by priority if number of entities in client frame exceeds
-    ‘sv_max_packet_entities’ limit. Default value is 0, which simply throws
-    out entities with higher numbers that don't fit into frame.
+    ‘sv_max_packet_entities’ limit, and throw out low priority entities.
+    Default value is 0, which simply throws out entities with higher numbers
+    that don't fit into frame. Sorting is potentially CPU intensive and thus
+    disabled by default.
 
 Downloads
 ~~~~~~~~~
