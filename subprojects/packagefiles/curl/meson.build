@@ -1,4 +1,4 @@
-project('libcurl', 'c', version: '8.12.1', license: 'bsd')
+project('libcurl', 'c', version: '8.13.0', license: 'bsd')
 
 src = [
   'lib/vauth/cleartext.c',
@@ -58,6 +58,7 @@ src = [
   'lib/cf-socket.c',
   'lib/cfilters.c',
   'lib/conncache.c',
+  'lib/cshutdn.c',
   'lib/connect.c',
   'lib/content_encoding.c',
   'lib/cookie.c',
@@ -79,6 +80,7 @@ src = [
   'lib/curl_threads.c',
   'lib/curl_trc.c',
   'lib/cw-out.c',
+  'lib/cw-pause.c',
   'lib/dict.c',
   'lib/dllmain.c',
   'lib/doh.c',
@@ -98,6 +100,7 @@ src = [
   'lib/getinfo.c',
   'lib/gopher.c',
   'lib/hash.c',
+  'lib/hash_offt.c',
   'lib/headers.c',
   'lib/hmac.c',
   'lib/hostasyn.c',
@@ -132,6 +135,7 @@ src = [
   'lib/mprintf.c',
   'lib/mqtt.c',
   'lib/multi.c',
+  'lib/multi_ev.c',
   'lib/netrc.c',
   'lib/nonblock.c',
   'lib/noproxy.c',
@@ -161,10 +165,9 @@ src = [
   'lib/splay.c',
   'lib/strcase.c',
   'lib/strdup.c',
+  'lib/strequal.c',
   'lib/strerror.c',
   'lib/strparse.c',
-  'lib/strtok.c',
-  'lib/strtoofft.c',
   'lib/system_win32.c',
   'lib/telnet.c',
   'lib/tftp.c',
