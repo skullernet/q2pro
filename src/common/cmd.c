@@ -117,7 +117,7 @@ void Cbuf_InsertText(cmdbuf_t *buf, const char *text)
         return;
     }
     Q_assert(buf->cursize <= buf->maxsize);
-    if (l + 1 > buf->maxsize - buf->cursize) {
+    if (l >= buf->maxsize - buf->cursize) {
         Com_WPrintf("%s: overflow\n", __func__);
         return;
     }
@@ -1638,7 +1638,7 @@ int Cmd_ExecuteFile(const char *path, unsigned flags)
 
     // sanity check file size after stripping off comments
     len = COM_Compress(f);
-    if (len > CMD_BUFFER_SIZE) {
+    if (len >= CMD_BUFFER_SIZE) {
         ret = Q_ERR(EFBIG);
         goto finish;
     }
@@ -1654,7 +1654,7 @@ int Cmd_ExecuteFile(const char *path, unsigned flags)
     }
 
     // check for overflow
-    if (buf->cursize + len + 1 > buf->maxsize) {
+    if (len >= buf->maxsize - buf->cursize) {
         ret = Q_ERR_STRING_TRUNCATED;
         goto finish;
     }
