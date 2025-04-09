@@ -30,7 +30,7 @@ DEMOS MENU
 
 #define DEMO_EXTENSIONS ".dm2;.dm2.gz;.mvd2;.mvd2.gz"
 
-#define DEMO_EXTRASIZE  q_offsetof(demoEntry_t, name)
+#define DEMO_EXTRASIZE  offsetof(demoEntry_t, name)
 
 #define DEMO_MVD_POV    "\x90\xcd\xd6\xc4\x91" // [MVD]
 #define DEMO_DIR_SIZE   "\x90\xc4\xc9\xd2\x91" // [DIR]

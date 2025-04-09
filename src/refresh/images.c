@@ -267,7 +267,7 @@ static int load_pcx(const byte *rawdata, size_t rawlen,
         int ret = 0;
 
         SZ_InitRead(&s, rawdata, rawlen);
-        s.readcount = q_offsetof(dpcx_t, data);
+        s.readcount = offsetof(dpcx_t, data);
 
         out = pixels = IMG_AllocPixels(w * h * (is_pal ? 1 : 4));
         scanline = IMG_AllocPixels(bytes_per_scanline);

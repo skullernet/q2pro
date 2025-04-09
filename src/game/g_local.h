@@ -492,11 +492,11 @@ extern  int meansOfDeath;
 
 extern  edict_t         *g_edicts;
 
-#define FOFS(x) q_offsetof(edict_t, x)
-#define STOFS(x) q_offsetof(spawn_temp_t, x)
-#define LLOFS(x) q_offsetof(level_locals_t, x)
-#define GLOFS(x) q_offsetof(game_locals_t, x)
-#define CLOFS(x) q_offsetof(gclient_t, x)
+#define FOFS(x) offsetof(edict_t, x)
+#define STOFS(x) offsetof(spawn_temp_t, x)
+#define LLOFS(x) offsetof(level_locals_t, x)
+#define GLOFS(x) offsetof(game_locals_t, x)
+#define CLOFS(x) offsetof(gclient_t, x)
 
 #define random()    frand()
 #define crandom()   crand()

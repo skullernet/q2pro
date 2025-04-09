@@ -112,11 +112,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define q_likely(x)         __builtin_expect(!!(x), 1)
 #define q_unlikely(x)       __builtin_expect(!!(x), 0)
-#if __GNUC__ >= 4
-#define q_offsetof(t, m)    __builtin_offsetof(t, m)
-#else
-#define q_offsetof(t, m)    ((size_t)&((t *)0)->m)
-#endif
 #define q_alignof(t)        __alignof__(t)
 
 #if USE_GAME_ABI_HACK
@@ -166,7 +161,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define q_likely(x)         (x)
 #define q_unlikely(x)       (x)
-#define q_offsetof(t, m)    ((size_t)&((t *)0)->m)
 
 #define q_gameabi
 

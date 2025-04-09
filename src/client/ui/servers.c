@@ -33,7 +33,7 @@ SERVERS MENU
 #define MAX_STATUS_RULES    64
 #define MAX_STATUS_SERVERS  1024
 
-#define SLOT_EXTRASIZE  q_offsetof(serverslot_t, name)
+#define SLOT_EXTRASIZE  offsetof(serverslot_t, name)
 
 #define COL_NAME    0
 #define COL_MOD     1

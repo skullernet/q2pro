@@ -93,7 +93,7 @@ static inline void List_Remove(list_t *elem)
 }
 
 #define LIST_ENTRY(type, elem, member) \
-    ((type *)((unsigned char *)elem - q_offsetof(type, member)))
+    ((type *)((unsigned char *)elem - offsetof(type, member)))
 
 #define LIST_EMPTY(list) \
     ((list)->next == list)
@@ -157,4 +157,4 @@ static inline void *List_Index(list_t *list, size_t offset, int index)
 }
 
 #define LIST_INDEX(type, index, list, member) \
-    ((type *)List_Index(list, q_offsetof(type, member), index))
+    ((type *)List_Index(list, offsetof(type, member), index))

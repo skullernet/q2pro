@@ -121,7 +121,7 @@ static const lump_info_t bsp_lumps[] = {
 #undef L
 #undef E
 
-#define F(x) { q_offsetof(bsp_t, num##x), #x }
+#define F(x) { offsetof(bsp_t, num##x), #x }
 
 static const bsp_stat_t bsp_stats[] = {
     F(brushsides),
