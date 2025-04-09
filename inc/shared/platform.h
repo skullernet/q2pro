@@ -98,11 +98,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define q_noreturn_ptr      q_noreturn
 #define q_noinline          __attribute__((noinline))
 #define q_malloc            __attribute__((malloc))
-#if __GNUC__ >= 4
 #define q_sentinel          __attribute__((sentinel))
-#else
-#define q_sentinel
-#endif
 #define q_cold              __attribute__((cold))
 
 #define q_likely(x)         __builtin_expect(!!(x), 1)
