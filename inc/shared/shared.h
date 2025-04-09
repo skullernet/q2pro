@@ -22,6 +22,19 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // shared.h -- included first by ALL program modules
 //
 
+#include <ctype.h>
+#include <inttypes.h>
+#include <limits.h>
+#include <math.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -33,18 +46,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef USE_NEW_GAME_API
 #define USE_NEW_GAME_API (USE_CLIENT || USE_SERVER)
 #endif
-
-#include <math.h>
-#include <ctype.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <inttypes.h>
-#include <limits.h>
-#include <time.h>
 
 #include "shared/platform.h"
 
