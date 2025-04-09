@@ -39,6 +39,7 @@ env:
 
   MESON_ARGS_FREEBSD: >-
     -Dbuildtype=release
+    -Dc_std=c23
     -Dicmp-errors=disabled
     -Dwindows-crash-dumps=disabled
     -Dwrap_mode=nofallback
