@@ -1036,28 +1036,31 @@ void BSP_TransformedLightPoint(lightpoint_t *point, const vec3_t start, const ve
 
 #endif
 
-byte *BSP_ClusterVis(const bsp_t *bsp, byte *mask, int cluster, int vis)
+void BSP_ClusterVis(const bsp_t *bsp, visrow_t *mask, int cluster, int vis)
 {
-    byte    *in, *out, *in_end, *out_end;
-    int     c;
+    const byte  *in, *in_end;
+    byte        *out, *out_end;
+    int         c;
 
     Q_assert(vis == DVIS_PVS || vis == DVIS_PHS);
 
     if (!bsp || !bsp->vis) {
-        return memset(mask, 0xff, VIS_MAX_BYTES);
+        memset(mask, 0xff, sizeof(*mask));
+        return;
     }
     if (cluster == -1) {
-        return memset(mask, 0, bsp->visrowsize);
+        memset(mask, 0, bsp->visrowsize);
+        return;
     }
     if (cluster < 0 || cluster >= bsp->vis->numclusters) {
         Com_Error(ERR_DROP, "%s: bad cluster", __func__);
     }
 
     // decompress vis
-    in_end = (byte *)bsp->vis + bsp->numvisibility;
-    in = (byte *)bsp->vis + bsp->vis->bitofs[cluster][vis];
-    out_end = mask + bsp->visrowsize;
-    out = mask;
+    in_end = (const byte *)bsp->vis + bsp->numvisibility;
+    in = (const byte *)bsp->vis + bsp->vis->bitofs[cluster][vis];
+    out_end = mask->b + bsp->visrowsize;
+    out = mask->b;
     do {
         if (in >= in_end) {
             goto overrun;
@@ -1119,8 +1122,6 @@ overrun:
             Q_SetBit(mask, 217);
         }
     }
-
-    return mask;
 }
 
 const mleaf_t *BSP_PointLeaf(const mnode_t *node, const vec3_t p)

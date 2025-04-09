@@ -99,7 +99,7 @@ static inline const mleaf_t *CM_PointLeaf(const cm_t *cm, const vec3_t p)
     return BSP_PointLeaf(cm->cache->nodes, p);
 }
 
-byte        *CM_FatPVS(const cm_t *cm, byte *mask, const vec3_t org);
+void        CM_FatPVS(const cm_t *cm, visrow_t *mask, const vec3_t org);
 
 void        CM_SetAreaPortalState(const cm_t *cm, int portalnum, bool open);
 bool        CM_AreasConnected(const cm_t *cm, int area1, int area2);

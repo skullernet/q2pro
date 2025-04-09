@@ -28,8 +28,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define VIS_MAX_BYTES   (MAX_MAP_CLUSTERS >> 3)
 
 // take advantage of 64-bit systems
-#define VIS_FAST_LONGS(bsp) \
-    (((bsp)->visrowsize + sizeof(size_t) - 1) / sizeof(size_t))
+#define VIS_FAST_LONGS(visrowsize) \
+    (((visrowsize) + sizeof(size_t) - 1) / sizeof(size_t))
+
+typedef union {
+    byte    b[VIS_MAX_BYTES];
+    size_t  l[VIS_FAST_LONGS(VIS_MAX_BYTES)];
+} visrow_t;
 
 #if USE_CLIENT
 
@@ -329,7 +334,7 @@ void BSP_TransformedLightPoint(lightpoint_t *point, const vec3_t start, const ve
 const lightgrid_sample_t *BSP_LookupLightgrid(const lightgrid_t *grid, const uint32_t point[3]);
 #endif
 
-byte *BSP_ClusterVis(const bsp_t *bsp, byte *mask, int cluster, int vis);
+void BSP_ClusterVis(const bsp_t *bsp, visrow_t *mask, int cluster, int vis);
 const mleaf_t *BSP_PointLeaf(const mnode_t *node, const vec3_t p);
 const mmodel_t *BSP_InlineModel(const bsp_t *bsp, const char *name);
 

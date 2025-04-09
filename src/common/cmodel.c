@@ -1085,21 +1085,22 @@ The client will interpolate the view position,
 so we can't use a single PVS point
 ===========
 */
-byte *CM_FatPVS(const cm_t *cm, byte *mask, const vec3_t org)
+void CM_FatPVS(const cm_t *cm, visrow_t *mask, const vec3_t org)
 {
-    const bsp_t *bsp = cm->cache;
-    byte    temp[VIS_MAX_BYTES];
+    const bsp_t     *bsp = cm->cache;
     const mleaf_t   *leafs[64];
-    int     clusters[64];
-    int     i, j, count, longs;
-    size_t  *src, *dst;
-    vec3_t  mins, maxs;
+    int             clusters[64];
+    visrow_t        temp;
+    int             i, j, count, longs;
+    vec3_t          mins, maxs;
 
     if (!bsp) {   // map not loaded
-        return memset(mask, 0, VIS_MAX_BYTES);
+        memset(mask, 0, sizeof(*mask));
+        return;
     }
     if (!bsp->vis) {
-        return memset(mask, 0xff, VIS_MAX_BYTES);
+        memset(mask, 0xff, sizeof(*mask));
+        return;
     }
 
     for (i = 0; i < 3; i++) {
@@ -1116,25 +1117,22 @@ byte *CM_FatPVS(const cm_t *cm, byte *mask, const vec3_t org)
     }
 
     BSP_ClusterVis(bsp, mask, clusters[0], DVIS_PVS);
-    longs = VIS_FAST_LONGS(bsp);
+    longs = VIS_FAST_LONGS(bsp->visrowsize);
 
     // or in all the other leaf bits
     for (i = 1; i < count; i++) {
         for (j = 0; j < i; j++) {
             if (clusters[i] == clusters[j]) {
-                goto nextleaf; // already have the cluster we want
+                break; // already have the cluster we want
             }
         }
-        src = (size_t *)BSP_ClusterVis(bsp, temp, clusters[i], DVIS_PVS);
-        dst = (size_t *)mask;
-        for (j = 0; j < longs; j++) {
-            *dst++ |= *src++;
+        if (j == i) {
+            BSP_ClusterVis(bsp, &temp, clusters[i], DVIS_PVS);
+            for (j = 0; j < longs; j++) {
+                mask->l[j] |= temp.l[j];
+            }
         }
-
-nextleaf:;
     }
-
-    return mask;
 }
 
 /*

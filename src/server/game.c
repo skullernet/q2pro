@@ -452,15 +452,15 @@ static void PF_WritePos(const vec3_t pos)
 static qboolean PF_inVIS(const vec3_t p1, const vec3_t p2, vis_t vis)
 {
     const mleaf_t *leaf1, *leaf2;
-    byte mask[VIS_MAX_BYTES];
+    visrow_t mask;
 
     leaf1 = CM_PointLeaf(&sv.cm, p1);
-    BSP_ClusterVis(sv.cm.cache, mask, leaf1->cluster, vis & VIS_PHS);
+    BSP_ClusterVis(sv.cm.cache, &mask, leaf1->cluster, vis & VIS_PHS);
 
     leaf2 = CM_PointLeaf(&sv.cm, p2);
     if (leaf2->cluster == -1)
         return false;
-    if (!Q_IsBitSet(mask, leaf2->cluster))
+    if (!Q_IsBitSet(mask.b, leaf2->cluster))
         return false;
     if (vis & VIS_NOAREAS)
         return true;
@@ -526,7 +526,7 @@ static void SV_StartSound(const vec3_t origin, edict_t *edict,
     int         i, ent, vol, att, ofs, flags, sendchan;
     vec3_t      origin_v;
     client_t    *client;
-    byte        mask[VIS_MAX_BYTES];
+    visrow_t    mask;
     const mleaf_t       *leaf1, *leaf2;
     message_packet_t    *msg;
     bool        force_pos;
@@ -616,7 +616,7 @@ static void SV_StartSound(const vec3_t origin, edict_t *edict,
     leaf1 = NULL;
     if (!(channel & CHAN_NO_PHS_ADD)) {
         leaf1 = CM_PointLeaf(&sv.cm, origin);
-        BSP_ClusterVis(sv.cm.cache, mask, leaf1->cluster, DVIS_PHS);
+        BSP_ClusterVis(sv.cm.cache, &mask, leaf1->cluster, DVIS_PHS);
     }
 
     // decide per client if origin needs to be sent
@@ -633,7 +633,7 @@ static void SV_StartSound(const vec3_t origin, edict_t *edict,
                 continue;
             if (leaf2->cluster == -1)
                 continue;
-            if (!Q_IsBitSet(mask, leaf2->cluster))
+            if (!Q_IsBitSet(mask.b, leaf2->cluster))
                 continue;
         }
 

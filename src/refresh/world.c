@@ -327,9 +327,8 @@ void R_LightPoint(const vec3_t origin, vec3_t color)
 static void GL_MarkLeaves(void)
 {
     const bsp_t *bsp = gl_static.world.cache;
-    byte vis1[VIS_MAX_BYTES];
-    byte vis2[VIS_MAX_BYTES];
     const mleaf_t *leaf;
+    visrow_t vis1, vis2;
     int i, cluster1, cluster2;
     vec3_t tmp;
 
@@ -366,14 +365,12 @@ static void GL_MarkLeaves(void)
         return;
     }
 
-    BSP_ClusterVis(bsp, vis1, cluster1, DVIS_PVS);
+    BSP_ClusterVis(bsp, &vis1, cluster1, DVIS_PVS);
     if (cluster1 != cluster2) {
-        BSP_ClusterVis(bsp, vis2, cluster2, DVIS_PVS);
-        int longs = VIS_FAST_LONGS(bsp);
-        size_t *src1 = (size_t *)vis1;
-        size_t *src2 = (size_t *)vis2;
-        while (longs--)
-            *src1++ |= *src2++;
+        BSP_ClusterVis(bsp, &vis2, cluster2, DVIS_PVS);
+        int longs = VIS_FAST_LONGS(bsp->visrowsize);
+        for (i = 0; i < longs; i++)
+            vis1.l[i] |= vis2.l[i];
     }
 
     glr.nodes_visible = 0;
@@ -381,7 +378,7 @@ static void GL_MarkLeaves(void)
         cluster1 = leaf->cluster;
         if (cluster1 == -1)
             continue;
-        if (!Q_IsBitSet(vis1, cluster1))
+        if (!Q_IsBitSet(vis1.b, cluster1))
             continue;
         // mark parent nodes visible
         for (mnode_t *node = (mnode_t *)leaf; node && node->visframe != glr.visframe; node = node->parent) {

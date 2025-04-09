@@ -462,15 +462,15 @@ fix_old_origin(const client_t *client, entity_packed_t *state, const edict_t *en
 }
 #endif
 
-static bool SV_EntityVisible(const client_t *client, const edict_t *ent, const byte *mask)
+static bool SV_EntityVisible(const client_t *client, const edict_t *ent, const visrow_t *mask)
 {
     if (ent->num_clusters == -1)
         // too many leafs for individual check, go by headnode
-        return CM_HeadnodeVisible(CM_NodeNum(client->cm, ent->headnode), mask);
+        return CM_HeadnodeVisible(CM_NodeNum(client->cm, ent->headnode), mask->b);
 
     // check individual leafs
     for (int i = 0; i < ent->num_clusters; i++)
-        if (Q_IsBitSet(mask, ent->clusternums[i]))
+        if (Q_IsBitSet(mask->b, ent->clusternums[i]))
             return true;
 
     return false;
@@ -545,8 +545,8 @@ void SV_BuildClientFrame(client_t *client)
     entity_packed_t *state;
     const mleaf_t   *leaf;
     int         clientarea, clientcluster;
-    byte        clientphs[VIS_MAX_BYTES];
-    byte        clientpvs[VIS_MAX_BYTES];
+    visrow_t    clientphs;
+    visrow_t    clientpvs;
     bool        need_clientnum_fix;
     int         max_packet_entities;
     edict_t     *edicts[MAX_EDICTS];
@@ -616,8 +616,8 @@ void SV_BuildClientFrame(client_t *client)
         customize = gex->CustomizeEntityToClient;
     }
 
-    CM_FatPVS(client->cm, clientpvs, org);
-    BSP_ClusterVis(client->cm->cache, clientphs, clientcluster, DVIS_PHS);
+    CM_FatPVS(client->cm, &clientpvs, org);
+    BSP_ClusterVis(client->cm->cache, &clientphs, clientcluster, DVIS_PHS);
 
     // build up the list of visible entities
     frame->num_entities = 0;
@@ -668,7 +668,7 @@ void SV_BuildClientFrame(client_t *client)
             // remaster uses different sound culling rules
             bool sound_cull = client->csr->extended && ent->s.sound;
 
-            if (!SV_EntityVisible(client, ent, (beam_cull || sound_cull) ? clientphs : clientpvs))
+            if (!SV_EntityVisible(client, ent, (beam_cull || sound_cull) ? &clientphs : &clientpvs))
                 continue;
 
             // don't send sounds if they will be attenuated away
@@ -676,7 +676,7 @@ void SV_BuildClientFrame(client_t *client)
                 if (SV_EntityAttenuatedAway(org, ent)) {
                     if (!ent->s.modelindex)
                         continue;
-                    if (!beam_cull && !SV_EntityVisible(client, ent, clientpvs))
+                    if (!beam_cull && !SV_EntityVisible(client, ent, &clientpvs))
                         continue;
                 }
             } else if (!ent->s.modelindex) {

@@ -256,7 +256,7 @@ MULTICAST_PHS    send to clients potentially hearable from org
 void SV_Multicast(const vec3_t origin, multicast_t to)
 {
     client_t        *client;
-    byte            mask[VIS_MAX_BYTES];
+    visrow_t        mask;
     const mleaf_t   *leaf1 = NULL;
     int             flags = 0;
 
@@ -281,7 +281,7 @@ void SV_Multicast(const vec3_t origin, multicast_t to)
 
     if (to) {
         leaf1 = CM_PointLeaf(&sv.cm, origin);
-        BSP_ClusterVis(sv.cm.cache, mask, leaf1->cluster, MULTICAST_PVS - to);
+        BSP_ClusterVis(sv.cm.cache, &mask, leaf1->cluster, MULTICAST_PVS - to);
     }
 
     // send the data to all relevent clients
@@ -300,7 +300,7 @@ void SV_Multicast(const vec3_t origin, multicast_t to)
                 continue;
             if (leaf2->cluster == -1)
                 continue;
-            if (!Q_IsBitSet(mask, leaf2->cluster))
+            if (!Q_IsBitSet(mask.b, leaf2->cluster))
                 continue;
         }
 
