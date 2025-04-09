@@ -663,8 +663,9 @@ void SV_BuildClientFrame(client_t *client)
             }
 
             // beams just check one point for PHS
-            // remaster uses different sound culling rules
             bool beam_cull = ent->s.renderfx & RF_BEAM;
+
+            // remaster uses different sound culling rules
             bool sound_cull = client->csr->extended && ent->s.sound;
 
             if (!SV_EntityVisible(client, ent, (beam_cull || sound_cull) ? clientphs : clientpvs))
@@ -679,7 +680,7 @@ void SV_BuildClientFrame(client_t *client)
                         continue;
                 }
             } else if (!ent->s.modelindex) {
-                if (Distance(org, ent->s.origin) > 400)
+                if (DistanceSquared(org, ent->s.origin) > 400 * 400)
                     continue;
             }
         }
