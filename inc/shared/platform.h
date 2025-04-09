@@ -53,13 +53,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define os_unlink(p)        _unlink(p)
 #define os_stat(p, s)       _stat64(p, s)
 #define os_fstat(f, s)      _fstat64(f, s)
-#ifdef __MINGW32__
-#define os_fseek(f, o, w)   fseeko64(f, o, w)
-#define os_ftell(f)         ftello64(f)
-#else
 #define os_fseek(f, o, w)   _fseeki64(f, o, w)
 #define os_ftell(f)         _ftelli64(f)
-#endif
 #define os_fileno(f)        _fileno(f)
 #define os_access(p, m)     _access(p, (m) & ~X_OK)
 #define Q_ISREG(m)          (((m) & _S_IFMT) == _S_IFREG)
