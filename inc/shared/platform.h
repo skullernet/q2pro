@@ -89,7 +89,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #ifdef __GNUC__
 
-#if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4)
+#if (defined __MINGW32__) && !(defined __clang__)
 #define q_printf(f, a)      __attribute__((format(gnu_printf, f, a)))
 #else
 #define q_printf(f, a)      __attribute__((format(printf, f, a)))
