@@ -158,7 +158,7 @@ static void BuildDir(const char *name, int type)
     m_demos.list.items[m_demos.list.numItems++] = e;
 }
 
-static char *LoadCache(void **list)
+static char *LoadCache(void)
 {
     char buffer[MAX_OSPATH], *cache;
     int i, len;
@@ -323,7 +323,7 @@ static void BuildList(void)
     // add demos
     if (demolist) {
         CalcHash(demolist);
-        if ((cache = LoadCache(demolist)) != NULL) {
+        if ((cache = LoadCache()) != NULL) {
             p = cache + 32 + 1;
             for (i = 0; i < numDemos; i++) {
                 BuildName(demolist[i], &p);
