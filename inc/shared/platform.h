@@ -140,7 +140,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define q_noreturn
 #define q_noinline
 #define q_malloc
-#define q_alignof(t)        1
+#define q_alignof(t)        _Alignof(t)
 #define q_unreachable()     abort()
 #define q_forceinline       inline
 #endif
