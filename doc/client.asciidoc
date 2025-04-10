@@ -1741,6 +1741,8 @@ it used to be you know where to look. The following list may be incomplete.
 - Likewise, ‘link’ command syntax has been changed to work with virtual paths
   constrained to the quake file system. All arguments to ‘link’ are normalized.
 
+- Accessing data from CD and ‘cddir’ variable are not supported.
+
 - Joysticks are not supported.
 
 - Single player savegame format has been rewritten from scratch for better
