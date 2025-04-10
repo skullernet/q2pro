@@ -2559,9 +2559,8 @@ alphacmp:
 
 // sets fs_gamedir, adds the directory to the head of the path,
 // then loads and adds pak*.pak, then anything else in alphabethical order.
-static void q_printf(2, 3) add_game_dir(unsigned mode, const char *fmt, ...)
+static void add_game_dir(unsigned mode, const char *base, const char *game, bool skip_if_not_exist)
 {
-    va_list         argptr;
     searchpath_t    *search;
     pack_t          *pack;
     listfiles_t     list;
@@ -2569,12 +2568,14 @@ static void q_printf(2, 3) add_game_dir(unsigned mode, const char *fmt, ...)
     char            path[MAX_OSPATH];
     size_t          len;
 
-    va_start(argptr, fmt);
-    len = Q_vsnprintf(fs_gamedir, sizeof(fs_gamedir), fmt, argptr);
-    va_end(argptr);
-
+    len = Q_concat(fs_gamedir, sizeof(fs_gamedir), base, "/", game);
     if (len >= sizeof(fs_gamedir)) {
         Com_EPrintf("%s: refusing oversize path\n", __func__);
+        return;
+    }
+
+    if (skip_if_not_exist && os_access(fs_gamedir, F_OK) == -1) {
+        Com_DPrintf("%s does not exist, skipping\n", path);
         return;
     }
 
@@ -3547,11 +3548,14 @@ static void add_game_kpf(const char *dir)
 
 static void setup_base_paths(void)
 {
-    add_game_kpf(sys_basedir->string);
-    add_game_dir(FS_PATH_BASE | FS_DIR_BASE, "%s/"BASEGAME, sys_basedir->string);
+    const char *base = sys_basedir->string;
+    const char *home = sys_homedir->string;
 
-    if (sys_homedir->string[0]) {
-        add_game_dir(FS_PATH_BASE | FS_DIR_HOME, "%s/"BASEGAME, sys_homedir->string);
+    add_game_kpf(base);
+    add_game_dir(FS_PATH_BASE | FS_DIR_BASE, base, BASEGAME, *home);
+
+    if (*home) {
+        add_game_dir(FS_PATH_BASE | FS_DIR_HOME, home, BASEGAME, false);
     }
 
     fs_base_searchpaths = fs_searchpaths;
@@ -3560,13 +3564,16 @@ static void setup_base_paths(void)
 // Sets the gamedir and path to a different directory.
 static void setup_game_paths(void)
 {
+    const char *base = sys_basedir->string;
+    const char *home = sys_homedir->string;
+
     if (fs_game->string[0]) {
         // add system path first
-        add_game_dir(FS_PATH_GAME | FS_DIR_BASE, "%s/%s", sys_basedir->string, fs_game->string);
+        add_game_dir(FS_PATH_GAME | FS_DIR_BASE, base, fs_game->string, *home);
 
         // home paths override system paths
-        if (sys_homedir->string[0]) {
-            add_game_dir(FS_PATH_GAME | FS_DIR_HOME, "%s/%s", sys_homedir->string, fs_game->string);
+        if (*home) {
+            add_game_dir(FS_PATH_GAME | FS_DIR_HOME, home, fs_game->string, false);
         }
     }
 
