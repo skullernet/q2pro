@@ -1,5 +1,5 @@
 /*
-Copyright (C) 1997-2001 Id Software, Inc.
+Copyright (C) 2023 Andrey Nazarov
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -18,43 +18,105 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "client.h"
 
-typedef struct {
-    uint32_t    width;
-    uint32_t    height;
-    uint32_t    s_rate;
-    uint32_t    s_width;
-    uint32_t    s_channels;
-} cheader_t;
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libavutil/fifo.h>
+#include <libavutil/log.h>
+#include <libswresample/swresample.h>
+#include <libswscale/swscale.h>
+
+#define MAX_PACKETS     2048    // max packets in queue
 
 typedef struct {
-    int16_t     children[2];
-} hnode_t;
+    AVFifo      *pkt_list;
+    int         nb_packets;
+    int64_t     duration;
+} PacketQueue;
+
+typedef struct {
+    AVCodecContext  *dec_ctx;
+    PacketQueue     queue;
+    unsigned        timestamp;
+    int             stream_idx;
+    AVFrame         *frame;
+    bool            eof;
+} DecoderState;
+
+typedef struct {
+    const char  *name;
+    uint32_t    size;
+    uint16_t    start;
+    uint16_t    crop;
+} crop_info_t;
 
 typedef struct {
     int         width;
     int         height;
+    int         pix_fmt;
     int         crop;
-    int         s_rate;
-    int         s_width;
-    int         s_channels;
 
     qhandle_t   static_pic;
 
-    uint32_t    *pic;
-    uint32_t    palette[256];
+    AVFormatContext     *fmt_ctx;
+    AVPacket            *pkt;
+    AVFrame             *frame;
+    struct SwsContext   *sws_ctx;
+    struct SwrContext   *swr_ctx;
 
-    hnode_t     hnodes[256][256];
-    int         numhnodes[256];
+    DecoderState        video;
+    DecoderState        audio;
 
-    int         h_count[512];
-    bool        h_used[512];
-
-    qhandle_t   file;
-    unsigned    frame;
-    unsigned    time;
+    const crop_info_t   *info;
+    unsigned            framenum;
+    unsigned            start_time;
+    bool                eof;
 } cinematic_t;
 
 static cinematic_t  cin;
+
+static const crop_info_t crop_info[] = {
+    { "ntro.cin",   82836235, 727, 30 },
+    { "end.cin",    19311290,   0, 30 },
+    { "rintro.cin", 38434032,   0, 24 },
+    { "rend.cin",   22580919,   0, 24 },
+    { "xin.cin",    13226649,   0, 32 },
+    { "xout.cin",   11194445,   0, 32 },
+};
+
+static const avformat_t formats[] = {
+    { ".ogv", "ogg", AV_CODEC_ID_THEORA },
+    { ".mkv", "matroska", AV_CODEC_ID_NONE },
+    { ".mp4", "mp4", AV_CODEC_ID_H264 },
+    { ".cin", "idcin", AV_CODEC_ID_IDCIN },
+};
+
+static char extensions[MAX_QPATH];
+static int  supported;
+static const AVInputFormat *fmt_cache[q_countof(formats)];
+
+static void my_av_log_cb(void *avcl, int level, const char *fmt, va_list vl)
+{
+    static int print_prefix = 1;
+    char line[MAX_STRING_CHARS];
+    print_type_t type;
+
+    if (!Sys_IsMainThread()) {
+        av_log_default_callback(avcl, level, fmt, vl);
+        return;
+    }
+
+    if (level <= AV_LOG_ERROR)
+        type = PRINT_ERROR;
+    else if (level <= AV_LOG_WARNING)
+        type = PRINT_WARNING;
+    else if (level <= AV_LOG_INFO)
+        type = PRINT_ALL;
+    else
+        return;
+
+    av_log_format_line2(avcl, level, fmt, vl, line, sizeof(line), &print_prefix);
+    Com_LPrintf(type, "%s", line);
+}
 
 /*
 ==================
@@ -63,8 +125,26 @@ SCR_InitCinematics
 */
 void SCR_InitCinematics(void)
 {
-    // nothing to do here
+    av_log_set_callback(my_av_log_cb);
+
+    for (int i = 0; i < q_countof(formats); i++) {
+        const avformat_t *f = &formats[i];
+        fmt_cache[i] = av_find_input_format(f->fmt);
+        if (!fmt_cache[i])
+            continue;
+        if (f->codec_id != AV_CODEC_ID_NONE &&
+            !avcodec_find_decoder(f->codec_id))
+            continue;
+        supported |= BIT(i);
+        if (*extensions)
+            Q_strlcat(extensions, ";", sizeof(extensions));
+        Q_strlcat(extensions, f->ext, sizeof(extensions));
+    }
+
+    Com_DPrintf("Supported cinematic formats: %s\n", extensions);
 }
+
+static void packet_queue_destroy(PacketQueue *q);
 
 /*
 ==================
@@ -73,11 +153,25 @@ SCR_StopCinematic
 */
 void SCR_StopCinematic(void)
 {
-    if (cin.pic)
+    if (cin.video.frame)
         R_UpdateRawPic(0, 0, NULL);
 
-    Z_Free(cin.pic);
-    FS_CloseFile(cin.file);
+    avcodec_free_context(&cin.video.dec_ctx);
+    avcodec_free_context(&cin.audio.dec_ctx);
+
+    avformat_close_input(&cin.fmt_ctx);
+    av_packet_free(&cin.pkt);
+    av_frame_free(&cin.frame);
+
+    sws_freeContext(cin.sws_ctx);
+    swr_free(&cin.swr_ctx);
+
+    av_frame_free(&cin.video.frame);
+    av_frame_free(&cin.audio.frame);
+
+    packet_queue_destroy(&cin.video.queue);
+    packet_queue_destroy(&cin.audio.queue);
+
     memset(&cin, 0, sizeof(cin));
 }
 
@@ -91,7 +185,7 @@ Called when either the cinematic completes, or it is aborted
 void SCR_FinishCinematic(void)
 {
     // stop cinematic, but keep static pic
-    if (cin.file) {
+    if (cin.fmt_ctx) {
         SCR_StopCinematic();
         SCR_BeginLoadingPlaque();
     }
@@ -100,124 +194,206 @@ void SCR_FinishCinematic(void)
     CL_ClientCommand(va("nextserver %i\n", cl.servercount));
 }
 
-/*
-==================
-SmallestNode1
-==================
-*/
-static int SmallestNode1(int numhnodes)
+static int packet_queue_put(PacketQueue *q, AVPacket *pkt)
 {
-    int     i;
-    int     best, bestnode;
+    AVPacket *pkt1;
+    int ret;
 
-    best = 99999999;
-    bestnode = -1;
-    for (i = 0; i < numhnodes; i++) {
-        if (cin.h_used[i])
-            continue;
-        if (!cin.h_count[i])
-            continue;
-        if (cin.h_count[i] < best) {
-            best = cin.h_count[i];
-            bestnode = i;
-        }
-    }
-
-    if (bestnode == -1)
+    if (q->nb_packets >= MAX_PACKETS) {
+        av_packet_unref(pkt);
         return -1;
-
-    cin.h_used[bestnode] = true;
-    return bestnode;
-}
-
-/*
-==================
-Huff1TableInit
-
-Reads the 64k counts table and initializes the node trees
-==================
-*/
-static bool Huff1TableInit(void)
-{
-    for (int prev = 0; prev < 256; prev++) {
-        hnode_t *hnodes = cin.hnodes[prev];
-        byte counts[256];
-        int numhnodes;
-
-        memset(cin.h_count, 0, sizeof(cin.h_count));
-        memset(cin.h_used, 0, sizeof(cin.h_used));
-
-        // read a row of counts
-        if (FS_Read(counts, sizeof(counts), cin.file) != sizeof(counts))
-            return false;
-
-        for (int i = 0; i < 256; i++)
-            cin.h_count[i] = counts[i];
-
-        // build the nodes
-        for (numhnodes = 256; numhnodes < 512; numhnodes++) {
-            hnode_t *node = &hnodes[numhnodes - 256];
-
-            // pick two lowest counts
-            node->children[0] = SmallestNode1(numhnodes);
-            if (node->children[0] == -1)
-                break;  // no more
-
-            node->children[1] = SmallestNode1(numhnodes);
-            if (node->children[1] == -1)
-                break;
-
-            cin.h_count[numhnodes] =
-                cin.h_count[node->children[0]] +
-                cin.h_count[node->children[1]];
-        }
-
-        cin.numhnodes[prev] = numhnodes - 1;
     }
 
-    return true;
+    pkt1 = av_packet_alloc();
+    if (!pkt1) {
+        av_packet_unref(pkt);
+        return -1;
+    }
+    av_packet_move_ref(pkt1, pkt);
+
+    ret = av_fifo_write(q->pkt_list, &pkt1, 1);
+    if (ret < 0) {
+        av_packet_free(&pkt1);
+        return ret;
+    }
+
+    q->nb_packets++;
+    q->duration += pkt1->duration;
+    return 0;
 }
 
-/*
-==================
-Huff1Decompress
-==================
-*/
-static bool Huff1Decompress(const byte *data, int size)
+static int packet_queue_get(PacketQueue *q, AVPacket *pkt)
 {
-    const byte  *in, *in_end;
-    uint32_t    *out;
-    int         prev, bitpos, inbyte, count;
+    AVPacket *pkt1;
+    int ret;
 
-    in = data + 4;
-    in_end = data + size;
+    ret = av_fifo_read(q->pkt_list, &pkt1, 1);
+    if (ret < 0)
+        return ret;
 
-    out = cin.pic;
-    count = cin.width * cin.height;
+    q->nb_packets--;
+    q->duration -= pkt1->duration;
 
-    // read bits
-    prev = bitpos = inbyte = 0;
-    for (int i = 0; i < count; i++) {
-        int nodenum = cin.numhnodes[prev];
-        hnode_t *hnodes = cin.hnodes[prev];
+    av_packet_move_ref(pkt, pkt1);
+    av_packet_free(&pkt1);
+    return 0;
+}
 
-        while (nodenum >= 256) {
-            if (bitpos == 0) {
-                if (in >= in_end)
-                    return false;
-                inbyte = *in++;
-                bitpos = 8;
+static void packet_queue_destroy(PacketQueue *q)
+{
+    AVPacket *pkt1;
+
+    if (!q->pkt_list)
+        return;
+
+    while (av_fifo_read(q->pkt_list, &pkt1, 1) >= 0)
+        av_packet_free(&pkt1);
+
+    av_fifo_freep2(&q->pkt_list);
+}
+
+static int process_video(int frames)
+{
+    AVFrame *in = cin.frame;
+    AVFrame *out = cin.video.frame;
+    int ret;
+
+    if (frames > 1)
+        Com_DPrintf("Dropped %d video frames\n", frames - 1);
+
+    if (in->width != cin.width || in->height != cin.height || in->format != cin.pix_fmt) {
+        Com_EPrintf("Video parameters changed\n");
+        return AVERROR_INPUT_CHANGED;
+    }
+
+    ret = sws_scale_frame(cin.sws_ctx, out, in);
+    if (ret < 0) {
+        Com_EPrintf("Error scaling video: %s\n", av_err2str(ret));
+        return ret;
+    }
+
+    cin.crop = (cin.info && cin.framenum >= cin.info->start) ? cin.info->crop * 2 : 0;
+    cin.framenum += frames;
+
+    R_UpdateRawPic(cin.width, cin.height, (uint32_t *)out->data[0]);
+    return 0;
+}
+
+static int process_audio(void)
+{
+    AVFrame *in = cin.audio.eof ? NULL : cin.frame;
+    AVFrame *out = cin.audio.frame;
+    int ret;
+
+    out->nb_samples = MAX_RAW_SAMPLES;
+    ret = swr_convert_frame(cin.swr_ctx, out, in);
+    if (ret < 0) {
+        Com_EPrintf("Error converting audio: %s\n", av_err2str(ret));
+        return ret;
+    }
+
+    if (out->nb_samples)
+        S_RawSamples(out->nb_samples, out->sample_rate,
+                     av_get_bytes_per_sample(out->format),
+                     out->ch_layout.nb_channels, out->data[0]);
+    return 0;
+}
+
+static int decode_frames(DecoderState *s)
+{
+    AVFrame *frame = cin.frame;
+    AVPacket *pkt = cin.pkt;
+    AVCodecContext *dec = s->dec_ctx;
+    int ret, video_frames = 0;
+
+    if (!dec || s->eof)
+        return 0;
+
+    // naive decoding loop:
+    // - keep reading frames until PTS >= current time
+    // - assume PTS starts at 0 and monotonically increases
+    // - no A/V synchronization
+    while (s->timestamp < cls.realtime - cin.start_time) {
+        ret = avcodec_receive_frame(dec, frame);
+        if (ret == AVERROR_EOF) {
+            Com_DPrintf("%s from %s decoder\n", av_err2str(ret),
+                        av_get_media_type_string(dec->codec->type));
+            s->eof = true;
+            if (dec->codec->type == AVMEDIA_TYPE_AUDIO) {
+                // flush swr
+                ret = process_audio();
+                if (ret < 0)
+                    return ret;
             }
-            nodenum = hnodes[nodenum - 256].children[inbyte & 1];
-            inbyte >>= 1;
-            bitpos--;
+            return 0;
         }
 
-        *out++ = cin.palette[nodenum];
-        prev = nodenum;
+        // do we need a packet?
+        if (ret == AVERROR(EAGAIN)) {
+            if (packet_queue_get(&s->queue, pkt) < 0) {
+                if (cin.eof) {
+                    // enter draining mode
+                    ret = avcodec_send_packet(dec, NULL);
+                } else {
+                    // wait for more packets...
+                    return 0;
+                }
+            } else {
+                // submit the packet to the decoder
+                ret = avcodec_send_packet(dec, pkt);
+                av_packet_unref(pkt);
+            }
+            if (ret < 0) {
+                Com_EPrintf("Error submitting %s packet for decoding: %s\n",
+                            av_get_media_type_string(dec->codec->type), av_err2str(ret));
+                return ret;
+            }
+
+            continue;
+        }
+
+        if (ret < 0) {
+            Com_EPrintf("Error during decoding %s: %s\n",
+                        av_get_media_type_string(dec->codec->type), av_err2str(ret));
+            return ret;
+        }
+
+        // ignore AV_NOPTS_VALUE, etc
+        if (frame->pts > 0)
+            s->timestamp = av_rescale(frame->pts, dec->pkt_timebase.num * 1000LL, dec->pkt_timebase.den);
+
+        // drop video if we can't keep up, but never drop audio
+        if (dec->codec->type == AVMEDIA_TYPE_VIDEO) {
+            video_frames++;
+        } else {
+            ret = process_audio();
+            if (ret < 0)
+                return ret;
+        }
     }
 
-    return true;
+    if (video_frames)
+        return process_video(video_frames);
+
+    return 0;
+}
+
+// buffer 1.5 seconds worth of packets
+static int min_duration(AVCodecContext *dec)
+{
+    if (dec) {
+        AVRational *r = &dec->pkt_timebase;
+        if (r->num)
+            return (r->den + r->den / 2) / r->num;
+    }
+    return 0;
+}
+
+static bool need_more_packets(void)
+{
+    return
+        cin.video.queue.duration < min_duration(cin.video.dec_ctx) ||
+        cin.audio.queue.duration < min_duration(cin.audio.dec_ctx);
 }
 
 /*
@@ -227,67 +403,44 @@ SCR_ReadNextFrame
 */
 static bool SCR_ReadNextFrame(void)
 {
-    uint32_t    command, size;
-    byte        compressed[0x20000];
+    AVPacket *pkt = cin.pkt;
+    int ret;
 
-    // read the next frame
-    if (FS_Read(&command, 4, cin.file) != 4)
-        return false;
-    command = LittleLong(command);
-    if (command >= 2)
-        return false;   // last frame marker
-    if (command == 1) {
-        // read palette
-        byte palette[768], *p;
-        int i;
-
-        if (FS_Read(palette, sizeof(palette), cin.file) != sizeof(palette))
-            return false;
-
-        for (i = 0, p = palette; i < 256; i++, p += 3)
-            cin.palette[i] = MakeColor(p[0], p[1], p[2], 255);
-    }
-
-    // decompress the next frame
-    if (FS_Read(&size, 4, cin.file) != 4)
-        return false;
-    size = LittleLong(size);
-    if (size < 4 || size > sizeof(compressed)) {
-        Com_EPrintf("Bad compressed frame size\n");
-        return false;
-    }
-    if (FS_Read(compressed, size, cin.file) != size)
-        return false;
-    if (!Huff1Decompress(compressed, size)) {
-        Com_EPrintf("Decompression overread\n");
-        return false;
-    }
-
-    // read sound
-    if (cin.s_rate) {
-        unsigned start = cin.frame * cin.s_rate / 14;
-        unsigned end = (cin.frame + 1) * cin.s_rate / 14;
-        unsigned s_size = (end - start) * cin.s_width * cin.s_channels;
-        byte samples[22050 / 14 * 4];
-
-        Q_assert(s_size <= sizeof(samples));
-        if (FS_Read(samples, s_size, cin.file) != s_size)
-            return false;
-
-#if USE_BIG_ENDIAN
-        if (cin.s_width == 2) {
-            uint16_t *data = (uint16_t *)samples;
-            for (int i = 0; i < s_size >> 1; i++)
-                data[i] = LittleShort(data[i]);
+    // read frames from the file
+    while (!cin.eof && need_more_packets()) {
+        ret = av_read_frame(cin.fmt_ctx, pkt);
+        // idcin demuxer returns AVERROR(EIO) on EOF packet...
+        if (ret == AVERROR_EOF || ret == AVERROR(EIO)) {
+            Com_DPrintf("%s from demuxer\n", av_err2str(ret));
+            cin.eof = true;
+            break;
         }
-#endif
-        S_RawSamples(end - start, cin.s_rate, cin.s_width, cin.s_channels, samples);
+        if (ret < 0) {
+            Com_EPrintf("Error reading packet: %s\n", av_err2str(ret));
+            return false;
+        }
+
+        // check if the packet belongs to a stream we are interested in,
+        // otherwise skip it
+        if (pkt->stream_index == cin.video.stream_idx)
+            ret = packet_queue_put(&cin.video.queue, pkt);
+        else if (pkt->stream_index == cin.audio.stream_idx)
+            ret = packet_queue_put(&cin.audio.queue, pkt);
+        else
+            av_packet_unref(pkt);
+        if (ret < 0) {
+            Com_EPrintf("Failed to queue packet\n");
+            return false;
+        }
     }
 
-    cin.crop = SCR_GetCinematicCrop(cin.frame, FS_Length(cin.file));
+    if (decode_frames(&cin.video) < 0)
+        return false;
+    if (decode_frames(&cin.audio) < 0)
+        return false;
+    if (cin.video.eof && cin.audio.eof)
+        return false;
 
-    R_UpdateRawPic(cin.width, cin.height, cin.pic);
-    cin.frame++;
     return true;
 }
 
@@ -298,27 +451,16 @@ SCR_RunCinematic
 */
 void SCR_RunCinematic(void)
 {
-    unsigned    frame;
-
     if (cls.state != ca_cinematic)
         return;
 
-    if (!cin.file)
+    if (!cin.video.frame)
         return;     // static image
 
     if (cls.key_dest != KEY_GAME) {
         // pause if menu or console is up
-        cin.time = cls.realtime - cin.frame * 1000 / 14;
+        cin.start_time = cls.realtime - cin.video.timestamp;
         return;
-    }
-
-    frame = (cls.realtime - cin.time) * 14 / 1000;
-    if (frame <= cin.frame)
-        return;
-
-    if (frame > cin.frame + 1) {
-        Com_DPrintf("Dropped frame: %u > %u\n", frame, cin.frame + 1);
-        cin.time = cls.realtime - cin.frame * 1000 / 14;
     }
 
     if (!SCR_ReadNextFrame()) {
@@ -336,7 +478,7 @@ void SCR_DrawCinematic(void)
 {
     R_DrawFill8(0, 0, r_config.width, r_config.height, 0);
 
-    if (cin.width > 0 && cin.height > cin.crop) {
+    if (cin.width > 0 && cin.height > cin.crop && !cin.video.eof) {
         float scale_w = (float)r_config.width / cin.width;
         float scale_h = (float)r_config.height / (cin.height - cin.crop);
         float scale = min(scale_w, scale_h);
@@ -346,11 +488,141 @@ void SCR_DrawCinematic(void)
         int x = (r_config.width - w) / 2;
         int y = (r_config.height - h) / 2;
 
-        if (cin.pic)
+        if (cin.video.frame)
             R_DrawStretchRaw(x, y, w, h);
         else if (cin.static_pic)
             R_DrawStretchPic(x, y, w, h, cin.static_pic);
     }
+}
+
+static bool open_codec_context(enum AVMediaType type)
+{
+    int ret, stream_index;
+    AVStream *st;
+    const AVCodec *dec;
+    AVCodecContext *dec_ctx;
+    AVFrame *out;
+
+    ret = av_find_best_stream(cin.fmt_ctx, type, -1, -1, NULL, 0);
+    if (ret < 0) {
+        if (type == AVMEDIA_TYPE_VIDEO) {
+            Com_EPrintf("Couldn't find video stream\n");
+            return false;
+        }
+        // if there is no audio, pretend it hit EOF
+        cin.audio.eof = true;
+        return true;
+    }
+
+    stream_index = ret;
+    st = cin.fmt_ctx->streams[stream_index];
+
+    dec = avcodec_find_decoder(st->codecpar->codec_id);
+    if (!dec) {
+        Com_EPrintf("Failed to find %s codec %s\n", av_get_media_type_string(type), avcodec_get_name(st->codecpar->codec_id));
+        return false;
+    }
+
+    dec_ctx = avcodec_alloc_context3(dec);
+    if (!dec_ctx) {
+        Com_EPrintf("Failed to allocate %s codec context\n", av_get_media_type_string(type));
+        return false;
+    }
+
+    ret = avcodec_parameters_to_context(dec_ctx, st->codecpar);
+    if (ret < 0) {
+        Com_EPrintf("Failed to copy %s codec parameters to decoder context\n", av_get_media_type_string(type));
+        avcodec_free_context(&dec_ctx);
+        return false;
+    }
+
+    ret = avcodec_open2(dec_ctx, dec, NULL);
+    if (ret < 0) {
+        Com_EPrintf("Failed to open %s codec\n", av_get_media_type_string(type));
+        avcodec_free_context(&dec_ctx);
+        return false;
+    }
+
+    dec_ctx->pkt_timebase = st->time_base;
+
+    if (type == AVMEDIA_TYPE_VIDEO) {
+        cin.video.stream_idx = stream_index;
+        cin.video.dec_ctx = dec_ctx;
+        cin.width = dec_ctx->width;
+        cin.height = dec_ctx->height;
+        cin.pix_fmt = dec_ctx->pix_fmt;
+
+        cin.sws_ctx = sws_getContext(dec_ctx->width, dec_ctx->height, dec_ctx->pix_fmt,
+                                     dec_ctx->width, dec_ctx->height, AV_PIX_FMT_RGBA,
+                                     0, NULL, NULL, NULL);
+        if (!cin.sws_ctx) {
+            Com_EPrintf("Failed to allocate sws context\n");
+            return false;
+        }
+
+        cin.video.frame = out = av_frame_alloc();
+        if (!out) {
+            Com_EPrintf("Failed to allocate video frame\n");
+            return false;
+        }
+
+        out->width = dec_ctx->width;
+        out->height = dec_ctx->height;
+        out->format = AV_PIX_FMT_RGBA;
+
+        ret = av_frame_get_buffer(out, 0);
+        if (ret < 0) {
+            Com_EPrintf("Failed to allocate video buffer\n");
+            return false;
+        }
+
+        cin.video.queue.pkt_list = av_fifo_alloc2(1, sizeof(AVPacket *), AV_FIFO_FLAG_AUTO_GROW);
+        if (!cin.video.queue.pkt_list) {
+            Com_EPrintf("Failed to allocate video packet queue\n");
+            return false;
+        }
+    } else {
+        cin.audio.stream_idx = stream_index;
+        cin.audio.dec_ctx = dec_ctx;
+
+        cin.swr_ctx = swr_alloc();
+        if (!cin.swr_ctx) {
+            Com_EPrintf("Failed to allocate swr context\n");
+            return false;
+        }
+
+        cin.audio.frame = out = av_frame_alloc();
+        if (!out) {
+            Com_EPrintf("Failed to allocate audio frame\n");
+            return false;
+        }
+
+        int sample_rate = S_GetSampleRate();
+        if (!sample_rate)
+            sample_rate = dec_ctx->sample_rate;
+
+        if (dec_ctx->ch_layout.nb_channels >= 2)
+            out->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
+        else
+            out->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
+        out->format = S_SupportsFloat() ? AV_SAMPLE_FMT_FLT : AV_SAMPLE_FMT_S16;
+        out->sample_rate = sample_rate;
+        out->nb_samples = MAX_RAW_SAMPLES;
+
+        ret = av_frame_get_buffer(out, 0);
+        if (ret < 0) {
+            Com_EPrintf("Failed to allocate audio buffer\n");
+            return false;
+        }
+
+        cin.audio.queue.pkt_list = av_fifo_alloc2(1, sizeof(AVPacket *), AV_FIFO_FLAG_AUTO_GROW);
+        if (!cin.audio.queue.pkt_list) {
+            Com_EPrintf("Failed to allocate audio packet queue\n");
+            return false;
+        }
+    }
+
+    return true;
 }
 
 /*
@@ -360,51 +632,92 @@ SCR_StartCinematic
 */
 static bool SCR_StartCinematic(const char *name)
 {
-    cheader_t header;
-    char    fullname[MAX_QPATH];
-    int     ret;
+    char        normalized[MAX_QPATH];
+    char        fullname[MAX_OSPATH];
+    const char  *path = NULL;
+    int         ret;
 
-    if (Q_snprintf(fullname, sizeof(fullname), "video/%s", name) >= sizeof(fullname)) {
-        Com_EPrintf("Oversize cinematic name\n");
+    if (!supported) {
+        Com_EPrintf("No supported cinematic formats\n");
         return false;
     }
 
-    ret = FS_OpenFile(fullname, &cin.file, FS_MODE_READ);
-    if (!cin.file) {
-        Com_EPrintf("Couldn't open %s: %s\n", fullname, Q_ErrorString(ret));
+    FS_NormalizePathBuffer(normalized, name, sizeof(normalized));
+    *COM_FileExtension(normalized) = 0;
+
+    // open from filesystem only. since packfiles are downloadable, videos from
+    // packfiles can pose security risk due to huge lavf/lavc attack surface.
+    while (1) {
+        path = FS_NextPath(path);
+        if (!path) {
+            ret = AVERROR(ENOENT);
+            break;
+        }
+
+        for (int i = 0; i < q_countof(formats); i++) {
+            if (!(supported & BIT(i)))
+                continue;
+
+            if (Q_snprintf(fullname, sizeof(fullname), "%s/video/%s%s",
+                           path, normalized, formats[i].ext) >= sizeof(fullname)) {
+                ret = AVERROR(ENAMETOOLONG);
+                goto done;
+            }
+
+            ret = avformat_open_input(&cin.fmt_ctx, fullname, fmt_cache[i], NULL);
+            if (ret != AVERROR(ENOENT))
+                goto done;
+        }
+    }
+
+done:
+    if (ret < 0) {
+        Com_EPrintf("Couldn't open %s: %s\n", ret == AVERROR(ENOENT) ? name : fullname, av_err2str(ret));
         return false;
     }
 
-    if (FS_Read(&header, sizeof(header), cin.file) != sizeof(header)) {
-        Com_EPrintf("Error reading cinematic header\n");
+    ret = avformat_find_stream_info(cin.fmt_ctx, NULL);
+    if (ret < 0) {
+        Com_EPrintf("Couldn't find stream info: %s\n", av_err2str(ret));
         return false;
     }
 
-    cin.width = LittleLong(header.width);
-    cin.height = LittleLong(header.height);
-    cin.s_rate = LittleLong(header.s_rate);
-    cin.s_width = LittleLong(header.s_width);
-    cin.s_channels = LittleLong(header.s_channels);
+#if USE_DEBUG
+    if (developer->integer)
+        av_dump_format(cin.fmt_ctx, 0, fullname, 0);
+#endif
 
-    if (cin.width < 1 || cin.width > 640 || cin.height < 1 || cin.height > 480) {
-        Com_EPrintf("Bad cinematic video dimensions\n");
-        return false;
-    }
-    if (cin.s_rate && (cin.s_rate < 8000 || cin.s_rate > 22050 ||
-                       cin.s_width < 1 || cin.s_width > 2 ||
-                       cin.s_channels < 1 || cin.s_channels > 2)) {
-        Com_EPrintf("Bad cinematic audio parameters\n");
-        return false;
-    }
+    cin.video.stream_idx = cin.audio.stream_idx = -1;
 
-    if (!Huff1TableInit()) {
-        Com_EPrintf("Error reading huffman table\n");
+    if (!open_codec_context(AVMEDIA_TYPE_VIDEO))
+        return false;
+
+    if (!open_codec_context(AVMEDIA_TYPE_AUDIO))
+        return false;
+
+    cin.frame = av_frame_alloc();
+    cin.pkt = av_packet_alloc();
+    if (!cin.frame || !cin.pkt) {
+        Com_EPrintf("Couldn't allocate memory\n");
         return false;
     }
 
-    cin.frame = 0;
-    cin.time = cls.realtime;
-    cin.pic = Z_Malloc(cin.width * cin.height * 4);
+    cin.framenum = 0;
+    cin.start_time = cls.realtime - 1;
+    cin.info = NULL;
+
+    // find cropping info for some well-known cinematics
+    name = COM_SkipPath(fullname);
+    for (int i = 0; i < q_countof(crop_info); i++) {
+        const crop_info_t *info = &crop_info[i];
+        if (!Q_stricmp(name, info->name)) {
+            if (avio_size(cin.fmt_ctx->pb) == info->size) {
+                Com_DPrintf("Found cropping info for %s\n", info->name);
+                cin.info = info;
+            }
+            break;
+        }
+    }
 
     return SCR_ReadNextFrame();
 }
@@ -416,8 +729,8 @@ SCR_ReloadCinematic
 */
 void SCR_ReloadCinematic(void)
 {
-    if (cin.pic) {
-        R_UpdateRawPic(cin.width, cin.height, cin.pic);
+    if (cin.video.frame) {
+        R_UpdateRawPic(cin.width, cin.height, (uint32_t *)cin.video.frame->data[0]);
     } else if (cl.mapname[0]) {
         cin.static_pic = R_RegisterTempPic(cl.mapname);
         R_GetPicSize(&cin.width, &cin.height, cin.static_pic);
@@ -431,19 +744,28 @@ SCR_PlayCinematic
 */
 void SCR_PlayCinematic(const char *name)
 {
+    const char *ext = COM_FileExtension(name);
+
     // make sure CD isn't playing music
     OGG_Stop();
 
-    if (!COM_CompareExtension(name, ".pcx")) {
+    if (!Q_stricmp(ext, ".pcx")) {
         cin.static_pic = R_RegisterTempPic(name);
-        if (!cin.static_pic)
-            goto finish;
+        if (!cin.static_pic) {
+            SCR_FinishCinematic();
+            return;
+        }
         R_GetPicSize(&cin.width, &cin.height, cin.static_pic);
-    } else if (!COM_CompareExtension(name, ".cin")) {
-        if (!SCR_StartCinematic(name))
-            goto finish;
+    } else if (!Q_stricmp(ext, ".cin")) {
+        if (!SCR_StartCinematic(name)) {
+            SCR_FinishCinematic();
+            return;
+        }
     } else {
-        goto finish;
+        // could be a regular map without player entity
+        Com_DPrintf("Unknown cinematic extension: %s\n", name);
+        SCR_FinishCinematic();
+        return;
     }
 
     // save picture name for reloading
@@ -453,10 +775,6 @@ void SCR_PlayCinematic(const char *name)
 
     SCR_EndLoadingPlaque();     // get rid of loading plaque
     Con_Close(false);           // get rid of connection screen
-    return;
-
-finish:
-    SCR_FinishCinematic();
 }
 
 /*
@@ -469,7 +787,17 @@ Name should be in format "video/<something>.cin".
 */
 int SCR_CheckForCinematic(const char *name)
 {
-    int ret = FS_LoadFile(name, NULL);
+    int len = strlen(name) - 4;
+    int ret = Q_ERR(ENOSYS);
+
+    for (int i = 0; i < q_countof(formats); i++) {
+        if (!(supported & BIT(i)))
+            continue;
+        ret = FS_LoadFileEx(va("%.*s%s", len, name, formats[i].ext),
+                            NULL, FS_TYPE_REAL, TAG_FREE);
+        if (ret != Q_ERR(ENOENT))
+            break;
+    }
 
     if (ret == Q_ERR(EFBIG))
         ret = Q_ERR_SUCCESS;
@@ -484,5 +812,16 @@ SCR_Cinematic_g
 */
 void SCR_Cinematic_g(genctx_t *ctx)
 {
-    FS_File_g("video", ".cin", FS_SEARCH_RECURSIVE | FS_TYPE_REAL, ctx);
+    const unsigned flags = FS_SEARCH_RECURSIVE | FS_SEARCH_STRIPEXT | FS_TYPE_REAL;
+    int count;
+    void **list;
+
+    if (!*extensions)
+        return;
+
+    ctx->ignoredups = true;
+    list = FS_ListFiles("video", extensions, flags, &count);
+    for (int i = 0; i < count; i++)
+        Prompt_AddMatch(ctx, va("%s.cin", (char *)list[i]));
+    FS_FreeList(list);
 }

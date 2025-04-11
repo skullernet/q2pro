@@ -342,11 +342,9 @@ avutil = dependency('libavutil', version: '>= 57.28.100', required: avcodec_opt)
 swresample = dependency('libswresample', version: '>= 4.7.100', required: avcodec_opt)
 swscale = dependency('libswscale', version: '>= 6.7.100', required: avcodec_opt)
 if avcodec.found() and avformat.found() and avutil.found() and swresample.found() and swscale.found()
-  client_src += ['src/client/ffcin.c', 'src/client/sound/ogg.c']
+  client_src += ['src/client/cin.c', 'src/client/sound/ogg.c']
   client_deps += [avcodec, avformat, avutil, swresample, swscale]
   config.set10('USE_AVCODEC', true)
-else
-  client_src += 'src/client/cin.c'
 endif
 
 if win32

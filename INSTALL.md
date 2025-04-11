@@ -16,8 +16,7 @@ network protocol level. The rest of dependencies are optional.
 For JPEG support libjpeg-turbo is required, plain libjpeg will not work. Most
 Linux distributions already provide libjpeg-turbo in place of libjpeg.
 
-For playing back cinematics in Ogg Theora format and music in Ogg Vorbis format
-FFmpeg libraries are required.
+For playing back music and cinematics FFmpeg libraries are required.
 
 OpenAL sound backend requires OpenAL Soft development headers for compilation.
 At runtime, OpenAL library from any vendor can be used (but OpenAL Soft is

@@ -1020,8 +1020,6 @@ void    SCR_DrawStringMulti(int x, int y, int flags, size_t maxlen, const char *
 void    SCR_ClearChatHUD_f(void);
 void    SCR_AddToChatHUD(const char *text);
 
-int     SCR_GetCinematicCrop(unsigned framenum, int64_t filesize);
-
 //
 // cin.c
 //
@@ -1034,8 +1032,6 @@ typedef struct {
     int codec_id;
 } avformat_t;
 
-#endif
-
 void    SCR_InitCinematics(void);
 void    SCR_StopCinematic(void);
 void    SCR_FinishCinematic(void);
@@ -1043,6 +1039,23 @@ void    SCR_RunCinematic(void);
 void    SCR_DrawCinematic(void);
 void    SCR_ReloadCinematic(void);
 void    SCR_PlayCinematic(const char *name);
+
+#else
+
+static inline void SCR_FinishCinematic(void)
+{
+    // tell the server to advance to the next map / cinematic
+    CL_ClientCommand(va("nextserver %i\n", cl.servercount));
+}
+
+#define SCR_InitCinematics()    (void)0
+#define SCR_StopCinematic()     (void)0
+#define SCR_RunCinematic()      (void)0
+#define SCR_DrawCinematic()     (void)0
+#define SCR_ReloadCinematic()   (void)0
+#define SCR_PlayCinematic(name) SCR_FinishCinematic()
+
+#endif
 
 //
 // ascii.c

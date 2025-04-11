@@ -94,9 +94,6 @@ void Con_Close(bool force);
 void SCR_BeginLoadingPlaque(void);
 void SCR_EndLoadingPlaque(void);
 
-int SCR_CheckForCinematic(const char *name);
-void SCR_Cinematic_g(genctx_t *ctx);
-
 void SCR_ModeChanged(void);
 void SCR_UpdateScreen(void);
 
@@ -148,10 +145,15 @@ float V_CalcFov(float fov_x, float width, float height);
 #define SCR_BeginLoadingPlaque()        (void)0
 #define SCR_EndLoadingPlaque()          (void)0
 
-#define SCR_CheckForCinematic(name)     Q_ERR_SUCCESS
-#define SCR_Cinematic_g(ctx)            (void)0
-
 #endif // !USE_CLIENT
+
+#if USE_CLIENT && USE_AVCODEC
+int SCR_CheckForCinematic(const char *name);
+void SCR_Cinematic_g(genctx_t *ctx);
+#else
+#define SCR_CheckForCinematic(name)     Q_ERR(ENOSYS)
+#define SCR_Cinematic_g(ctx)            (void)0
+#endif
 
 #if USE_REF && USE_DEBUG
 void R_ClearDebugLines(void);
