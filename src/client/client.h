@@ -400,7 +400,7 @@ typedef struct {
 // so that the client knows to send it to the server
 
     unsigned    realtime;           // always increasing, no clamping, etc
-    float       frametime;          // seconds since last frame
+    float       frametime;          // seconds since last video frame
 
 // preformance measurement
 #define C_FPS   cls.measure.fps[0]
