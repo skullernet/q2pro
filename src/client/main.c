@@ -2919,6 +2919,9 @@ static void CL_SetClientTime(void)
 {
     int prevtime;
 
+    if (cls.state != ca_active || sv_paused->integer)
+        return;
+
     if (com_timedemo->integer) {
         cl.time = cl.servertime;
         cl.lerpfrac = 1.0f;
@@ -3294,12 +3297,10 @@ unsigned CL_Frame(unsigned msec)
     }
 
     // read next demo frame
-    if (cls.demo.playback)
-        CL_DemoFrame(main_extra);
+    CL_DemoFrame();
 
     // calculate local time
-    if (cls.state == ca_active && !sv_paused->integer)
-        CL_SetClientTime();
+    CL_SetClientTime();
 
 #if USE_AUTOREPLY
     // check for version reply

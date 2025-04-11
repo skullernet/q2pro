@@ -1294,9 +1294,9 @@ void CL_CleanupDemos(void)
 CL_DemoFrame
 ====================
 */
-void CL_DemoFrame(int msec)
+void CL_DemoFrame(void)
 {
-    if (cls.state < ca_connected) {
+    if (!cls.demo.playback) {
         return;
     }
 

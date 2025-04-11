@@ -942,7 +942,7 @@ void CL_BarrelExplodingParticles(const vec3_t org);
 //
 void CL_InitDemos(void);
 void CL_CleanupDemos(void);
-void CL_DemoFrame(int msec);
+void CL_DemoFrame(void);
 bool CL_WriteDemoMessage(sizebuf_t *buf);
 void CL_PackEntity(entity_packed_t *out, const centity_state_t *in);
 void CL_EmitDemoFrame(void);
