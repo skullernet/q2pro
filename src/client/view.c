@@ -403,6 +403,7 @@ void V_RenderView(void)
             cl.refdef.fov_y = V_CalcFov(cl.refdef.fov_x, cl.refdef.width, cl.refdef.height);
         }
 
+        cl.refdef.frametime = cls.frametime;
         cl.refdef.time = cl.time * 0.001f;
 
         if (cl.frame.areabytes) {

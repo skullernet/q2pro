@@ -96,7 +96,8 @@ typedef struct {
     vec4_t      damage_blend;       // rgba 0-1 damage blend
     player_fog_t        fog;
     player_heightfog_t  heightfog;
-    float       time;               // time is uesed to auto animate
+    float       frametime;          // seconds since last video frame
+    float       time;               // time is used to auto animate
     int         rdflags;            // RDF_UNDERWATER, etc
     bool        extended;
 

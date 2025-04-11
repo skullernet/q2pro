@@ -136,8 +136,6 @@ typedef struct {
     unsigned        visframe;
     unsigned        drawframe;
     unsigned        dlightframe;
-    unsigned        timestamp;
-    float           frametime;
     int             viewcluster1;
     int             viewcluster2;
     int             nodes_visible;
@@ -304,11 +302,11 @@ static inline void GL_AdvanceValue(float *restrict val, float target, float spee
     if (speed <= 0) {
         *val = target;
     } else if (*val < target) {
-        *val += speed * glr.frametime;
+        *val += speed * glr.fd.frametime;
         if (*val > target)
             *val = target;
     } else if (*val > target) {
-        *val -= speed * glr.frametime;
+        *val -= speed * glr.fd.frametime;
         if (*val < target)
             *val = target;
     }

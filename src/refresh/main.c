@@ -710,9 +710,6 @@ void R_RenderFrame(const refdef_t *fd)
 
     Q_assert(gl_static.world.cache || (fd->rdflags & RDF_NOWORLDMODEL));
 
-    glr.frametime = (com_eventTime - glr.timestamp) * 0.001f;
-    glr.timestamp = com_eventTime;
-
     glr.drawframe++;
 
     glr.fd = *fd;
