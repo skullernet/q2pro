@@ -1014,6 +1014,12 @@ static const mnode_t *find_face_node(const bsp_t *bsp, const mface_t *face)
     return NULL;
 }
 
+static bool is_removable_sky(const mface_t *face)
+{
+    return face->drawflags & SURF_SKY &&
+        face->texinfo->c.flags & (SURF_LIGHT | SURF_NODRAW);
+}
+
 static void remove_fake_sky_faces(const bsp_t *bsp)
 {
     const mleaf_t *leaf;
@@ -1029,7 +1035,7 @@ static void remove_fake_sky_faces(const bsp_t *bsp)
         // remove sky faces in this leaf
         for (j = 0; j < leaf->numleaffaces; j++) {
             face = leaf->firstleafface[j];
-            if (!(face->drawflags & SURF_SKY))
+            if (!is_removable_sky(face))
                 continue;
 
             face->drawflags = SURF_NODRAW;
@@ -1044,7 +1050,7 @@ static void remove_fake_sky_faces(const bsp_t *bsp)
 
             // remove other sky faces on this node
             for (k = 0, face = node->firstface; k < node->numfaces; k++, face++) {
-                if (face->drawflags & SURF_SKY) {
+                if (is_removable_sky(face)) {
                     face->drawflags = SURF_NODRAW;
                     count++;
                 }
