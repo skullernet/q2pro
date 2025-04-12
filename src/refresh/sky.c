@@ -327,17 +327,20 @@ R_DrawSkyBox
 */
 void R_DrawSkyBox(void)
 {
-    int i;
-
     // check for no sky at all
     if (!skyfaces)
         return; // nothing visible
 
+    glStateBits_t bits = GLS_TEXTURE_REPLACE | glr.fog_bits_sky;
+
+    if (glr.framebuffer_bound && gl_bloom->integer)
+        bits |= GLS_BLOOM_GENERATE;
+
     GL_BindArrays(VA_SPRITE);
-    GL_StateBits(GLS_TEXTURE_REPLACE | glr.fog_bits_sky);
+    GL_StateBits(bits);
     GL_ArrayBits(GLA_VERTEX | GLA_TC);
 
-    for (i = 0; i < 6; i++) {
+    for (int i = 0; i < 6; i++) {
         if (skymins[0][i] >= skymaxs[0][i] ||
             skymins[1][i] >= skymaxs[1][i])
             continue;
