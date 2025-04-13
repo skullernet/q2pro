@@ -368,7 +368,7 @@ void GL_DrawOutlines(GLsizei count, GLenum type, const void *indices)
 
 void GL_ClearState(void)
 {
-    qglClearColor(0, 0, 0, 1);
+    qglClearColor(Vector4Unpack(gl_static.clearcolor));
     GL_ClearDepth(1);
     qglClearStencil(0);
 

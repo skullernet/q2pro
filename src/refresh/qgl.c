@@ -294,6 +294,7 @@ static const glsection_t sections[] = {
             QGL_FN(BindBufferBase),
             QGL_FN(BindBufferRange),
             QGL_FN(BindVertexArray),
+            QGL_FN(ClearBufferfv),
             QGL_FN(DeleteVertexArrays),
             QGL_FN(GenVertexArrays),
             QGL_FN(GetStringi),

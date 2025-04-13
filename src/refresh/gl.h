@@ -125,6 +125,7 @@ typedef struct {
     float           sintab[256];
     byte            latlngtab[NUMVERTEXNORMALS][2];
     byte            lightstylemap[MAX_LIGHTSTYLES];
+    vec4_t          clearcolor;
     hash_map_t      *queries;
     hash_map_t      *programs;
 } glStatic_t;

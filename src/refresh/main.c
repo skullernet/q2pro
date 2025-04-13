@@ -84,6 +84,7 @@ cvar_t *gl_test;
 cvar_t *gl_cull_nodes;
 cvar_t *gl_cull_models;
 cvar_t *gl_clear;
+cvar_t *gl_clearcolor;
 cvar_t *gl_finish;
 cvar_t *gl_novis;
 cvar_t *gl_lockpvs;
@@ -596,7 +597,7 @@ static void GL_DrawTearing(void)
         qglClearColor(1, 0, 0, 0);
 
     qglClear(GL_COLOR_BUFFER_BIT);
-    qglClearColor(0, 0, 0, 1);
+    qglClearColor(Vector4Unpack(gl_static.clearcolor));
 }
 
 static const char *GL_ErrorString(GLenum err)
@@ -757,10 +758,16 @@ void R_RenderFrame(const refdef_t *fd)
         glr.framebuffer_bound = true;
 
         if (gl_clear->integer) {
-            GLenum buffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-            qglDrawBuffers(bloom + 1, buffers);
-            qglClear(GL_COLOR_BUFFER_BIT);
-            qglDrawBuffers(1, buffers);
+            if (bloom) {
+                static const GLenum buffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+                static const vec4_t black = { 0, 0, 0, 1 };
+                qglDrawBuffers(2, buffers);
+                qglClearBufferfv(GL_COLOR, 0, gl_static.clearcolor);
+                qglClearBufferfv(GL_COLOR, 1, black);
+                qglDrawBuffers(1, buffers);
+            } else {
+                qglClear(GL_COLOR_BUFFER_BIT);
+            }
         }
     }
 
@@ -988,6 +995,25 @@ static void gl_swapinterval_changed(cvar_t *self)
         vid->swap_interval(self->integer);
 }
 
+static void gl_clearcolor_changed(cvar_t *self)
+{
+    color_t color;
+
+    if (!SCR_ParseColor(self->string, &color)) {
+        Com_WPrintf("Invalid value '%s' for '%s'\n", self->string, self->name);
+        Cvar_Reset(self);
+        color.u32 = U32_BLACK;
+    }
+
+    gl_static.clearcolor[0] = color.u8[0] / 255.0f;
+    gl_static.clearcolor[1] = color.u8[1] / 255.0f;
+    gl_static.clearcolor[2] = color.u8[2] / 255.0f;
+    gl_static.clearcolor[3] = color.u8[3] / 255.0f;
+
+    if (qglClearColor)
+        qglClearColor(Vector4Unpack(gl_static.clearcolor));
+}
+
 static void GL_Register(void)
 {
     // regular variables
@@ -1049,6 +1075,9 @@ static void GL_Register(void)
     gl_cull_nodes = Cvar_Get("gl_cull_nodes", "1", 0);
     gl_cull_models = Cvar_Get("gl_cull_models", "1", 0);
     gl_clear = Cvar_Get("gl_clear", "0", 0);
+    gl_clearcolor = Cvar_Get("gl_clearcolor", "black", 0);
+    gl_clearcolor->changed = gl_clearcolor_changed;
+    gl_clearcolor->generator = Com_Color_g;
     gl_finish = Cvar_Get("gl_finish", "0", 0);
     gl_novis = Cvar_Get("gl_novis", "0", 0);
     gl_novis->changed = gl_novis_changed;
@@ -1065,6 +1094,7 @@ static void GL_Register(void)
     gl_lightmap_changed(NULL);
     gl_modulate_entities_changed(NULL);
     gl_swapinterval_changed(gl_swapinterval);
+    gl_clearcolor_changed(gl_clearcolor);
 
     Cmd_AddCommand("strings", GL_Strings_f);
 
