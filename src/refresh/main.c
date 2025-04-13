@@ -923,10 +923,28 @@ static void GL_Strings_f(void)
                gl_config.colorbits, gl_config.depthbits, gl_config.stencilbits);
 }
 
+#if USE_DEBUG
+
 static size_t GL_ViewCluster_m(char *buffer, size_t size)
 {
     return Q_snprintf(buffer, size, "%d", glr.viewcluster1);
 }
+
+static size_t GL_ViewLeaf_m(char *buffer, size_t size)
+{
+    const bsp_t *bsp = gl_static.world.cache;
+
+    if (bsp) {
+        const mleaf_t *leaf = BSP_PointLeaf(bsp->nodes, glr.fd.vieworg);
+        return Q_snprintf(buffer, size, "%td %d %d %d %#x", leaf - bsp->leafs,
+                          leaf->cluster, leaf->numleafbrushes, leaf->numleaffaces,
+                          leaf->contents[0]);
+    }
+
+    return Q_strlcpy(buffer, "", size);
+}
+
+#endif
 
 static void gl_lightmap_changed(cvar_t *self)
 {
@@ -1049,7 +1067,11 @@ static void GL_Register(void)
     gl_swapinterval_changed(gl_swapinterval);
 
     Cmd_AddCommand("strings", GL_Strings_f);
+
+#if USE_DEBUG
     Cmd_AddMacro("gl_viewcluster", GL_ViewCluster_m);
+    Cmd_AddMacro("gl_viewleaf", GL_ViewLeaf_m);
+#endif
 }
 
 static void GL_Unregister(void)
