@@ -379,10 +379,10 @@ static int decode_frames(DecoderState *s)
 }
 
 // buffer 1.5 seconds worth of packets
-static int min_duration(AVCodecContext *dec)
+static int min_duration(const AVCodecContext *dec)
 {
     if (dec) {
-        AVRational *r = &dec->pkt_timebase;
+        const AVRational *r = &dec->pkt_timebase;
         if (r->num)
             return (r->den + r->den / 2) / r->num;
     }
