@@ -44,6 +44,7 @@ cvar_t  *maxentities;
 cvar_t  *g_select_empty;
 cvar_t  *g_protocol_extensions;
 cvar_t  *dedicated;
+cvar_t  *aimfix;
 
 cvar_t  *filterban;
 
@@ -136,6 +137,7 @@ static void InitGame(void)
     spectator_password = gi.cvar("spectator_password", "", CVAR_USERINFO);
     needpass = gi.cvar("needpass", "0", CVAR_SERVERINFO);
     filterban = gi.cvar("filterban", "1", 0);
+    aimfix = gi.cvar("aimfix", "0", 0);
 
     g_select_empty = gi.cvar("g_select_empty", "0", CVAR_ARCHIVE);
     g_protocol_extensions = gi.cvar("g_protocol_extensions", "0", CVAR_LATCH);
