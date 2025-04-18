@@ -456,20 +456,20 @@ void R_SetSky(const char *name, float rotate, bool autorotate, const vec3_t axis
     Com_DDPrintf("%s: %s %.1f %d (%.1f %.1f %.1f)\n", __func__,
                  name, rotate, autorotate, axis[0], axis[1], axis[2]);
 
-    if (VectorEmpty(axis))
+    // check for no rotation
+    if (VectorNormalize2(axis, skyaxis) < 0.001f)
         rotate = 0;
     if (!rotate)
         autorotate = false;
 
     skyrotate = rotate;
     skyautorotate = autorotate;
-    VectorNormalize2(axis, skyaxis);
     SetupRotationMatrix(skymatrix, skyaxis, skyrotate);
-    if (gl_static.use_cubemaps)
-        TransposeAxis(skymatrix);
 
     // try to load cubemap image first
     if (gl_static.use_cubemaps) {
+        TransposeAxis(skymatrix);
+
         if (Q_concat(pathname, sizeof(pathname), "sky/", name, ".tga") >= sizeof(pathname)) {
             R_UnsetSky();
             return;
