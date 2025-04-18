@@ -46,7 +46,7 @@ static bool SV_TruncPacketEntities(client_t *client, const client_frame_t *from,
     int i, oldnum, newnum, entities_mask, from_num_entities, to_num_entities;
     bool ret = true;
 
-    if (!sv_trunc_packet_entities->integer || client->netchan.type)
+    if (!sv_trunc_packet_entities->integer || client->netchan.type == NETCHAN_NEW)
         return false;
 
     SV_DPrintf(1, "Truncating frame %d at %u bytes for %s\n",
