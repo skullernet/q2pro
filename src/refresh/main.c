@@ -315,8 +315,15 @@ void GL_RotationMatrix(GLfloat *matrix)
     matrix[15] = 1;
 }
 
-void GL_RotateForEntity(bool skies)
+void GL_RotateForEntity(void)
 {
+    bool skies = false;
+
+    if (glr.ent == &gl_world)
+        skies = gl_static.use_cubemaps;
+    else if (glr.ent->model & BIT(31))
+        skies = gl_static.use_bmodel_skies;
+
     GL_RotationMatrix(gls.u_block.m_model);
     if (skies) {
         GL_MultMatrix(gls.u_block.m_sky[0], glr.skymatrix[0], gls.u_block.m_model);

@@ -821,9 +821,7 @@ void GL_DrawAlphaFaces(void)
             glr.ent = face->entity;
             GL_Flush3D();
             GL_SetEntityAxis();
-            GL_RotateForEntity(glr.ent == &gl_world ?
-                               gl_static.use_cubemaps :
-                               gl_static.use_bmodel_skies);
+            GL_RotateForEntity();
         }
         GL_DrawFace(face);
     }

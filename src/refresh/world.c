@@ -434,7 +434,7 @@ void GL_DrawBspModel(mmodel_t *model)
 
     GL_TransformLights(model);
 
-    GL_RotateForEntity(gl_static.use_bmodel_skies);
+    GL_RotateForEntity();
 
     skymask = gl_static.use_bmodel_skies ? GLS_SKY_MASK : 0;
 

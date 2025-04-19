@@ -1041,7 +1041,7 @@ void GL_DrawAliasModel(const model_t *model)
         }
     }
 
-    GL_RotateForEntity(false);
+    GL_RotateForEntity();
 
     if (ent->flags & RF_WEAPONMODEL)
         setup_weaponmodel();
