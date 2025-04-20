@@ -311,9 +311,8 @@ void GL_DrawBeams(void)
     color_t color;
     float width, scale;
     const entity_t *ent;
-    int i;
 
-    if (!glr.num_beams)
+    if (!glr.ents.beams)
         return;
 
     GL_LoadMatrix(glr.viewmatrix);
@@ -326,12 +325,7 @@ void GL_DrawBeams(void)
         scale = 1.2f;
     }
 
-    for (i = 0, ent = glr.fd.entities; i < glr.fd.num_entities; i++, ent++) {
-        if (!(ent->flags & RF_BEAM))
-            continue;
-        if (!ent->frame)
-            continue;
-
+    for (ent = glr.ents.beams; ent; ent = ent->next) {
         VectorCopy(ent->origin, segs[0]);
         VectorCopy(ent->oldorigin, segs[1]);
 
@@ -383,20 +377,15 @@ void GL_DrawFlares(void)
     glquery_t *q;
     float scale;
     bool def;
-    int i, j;
+    int j;
 
-    if (!glr.num_flares)
-        return;
-    if (!gl_static.queries)
+    if (!glr.ents.flares)
         return;
 
     GL_LoadMatrix(glr.viewmatrix);
     GL_BindArrays(VA_EFFECT);
 
-    for (i = 0, ent = glr.fd.entities; i < glr.fd.num_entities; i++, ent++) {
-        if (!(ent->flags & RF_FLARE))
-            continue;
-
+    for (ent = glr.ents.flares; ent; ent = ent->next) {
         q = HashMap_Lookup(glquery_t, gl_static.queries, &ent->skinnum);
         if (!q)
             continue;

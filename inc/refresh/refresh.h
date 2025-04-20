@@ -66,6 +66,8 @@ typedef struct entity_s {
 
     qhandle_t   skin;           // NULL for inline skin
     float       scale;
+
+    struct entity_s *next;
 } entity_t;
 
 typedef struct {

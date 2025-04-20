@@ -435,20 +435,12 @@ static void GL_OccludeFlares(void)
     const bsp_t *bsp = gl_static.world.cache;
     const entity_t *e;
     glquery_t *q;
-    int i, j;
+    int j;
     vec3_t dir, org;
     float scale, dist;
     bool set = false;
 
-    if (!glr.num_flares)
-        return;
-    if (!gl_static.queries)
-        return;
-
-    for (i = 0, e = glr.fd.entities; i < glr.fd.num_entities; i++, e++) {
-        if (!(e->flags & RF_FLARE))
-            continue;
-
+    for (e = glr.ents.flares; e; e = e->next) {
         q = HashMap_Lookup(glquery_t, gl_static.queries, &e->skinnum);
 
         for (j = 0; j < 4; j++)
@@ -521,31 +513,101 @@ static void GL_OccludeFlares(void)
         qglColorMask(1, 1, 1, 1);
 }
 
-static void GL_DrawEntities(int musthave, int canthave)
+// entity is in foreground if straight line can be traced to it without hitting
+// any surface. trace to bmodels too?
+static bool GL_EntityInForeground(const entity_t *ent)
+{
+    vec3_t absmin, absmax;
+    lightpoint_t p;
+
+    if (ent->flags & RF_WEAPONMODEL)
+        return true;
+
+    const bsp_t *bsp = gl_static.world.cache;
+    if (!bsp)
+        return true;
+
+    // check origin point for sprites, etc
+    BSP_LightPoint(&p, glr.fd.vieworg, ent->origin, bsp->nodes, -1);
+    if (!p.surf)
+        return true;
+
+    const model_t *model = MOD_ForHandle(ent->model);
+    if (!model || model->type != MOD_ALIAS)
+        return false;
+
+    const maliasframe_t *frame = &model->frames[ent->frame % model->numframes];
+
+    // this is very approximate, don't bother with frame lerping and rotation
+    VectorAdd(ent->origin, frame->bounds[0], absmin);
+    VectorAdd(ent->origin, frame->bounds[1], absmax);
+
+    BSP_LightPoint(&p, glr.fd.vieworg, absmin, bsp->nodes, -1);
+    if (!p.surf)
+        return true;
+
+    BSP_LightPoint(&p, glr.fd.vieworg, absmax, bsp->nodes, -1);
+    if (!p.surf)
+        return true;
+
+    return false;
+}
+
+static void GL_ClassifyEntities(void)
 {
     entity_t *ent;
-    model_t *model;
     int i;
+
+    memset(&glr.ents, 0, sizeof(glr.ents));
 
     if (!gl_drawentities->integer)
         return;
 
     for (i = 0, ent = glr.fd.entities; i < glr.fd.num_entities; i++, ent++) {
         if (ent->flags & RF_BEAM) {
-            // beams are drawn elsewhere in single batch
-            glr.num_beams++;
+            if (ent->frame) {
+                ent->next = glr.ents.beams;
+                glr.ents.beams = ent;
+            }
             continue;
         }
 
         if (ent->flags & RF_FLARE) {
-            // flares are drawn elsewhere in single batch
-            glr.num_flares++;
+            if (gl_static.queries) {
+                ent->next = glr.ents.flares;
+                glr.ents.flares = ent;
+            }
             continue;
         }
 
-        if ((ent->flags & musthave) != musthave || (ent->flags & canthave))
+        if (ent->model & BIT(31)) {
+            ent->next = glr.ents.bmodels;
+            glr.ents.bmodels = ent;
             continue;
+        }
 
+        if (!(ent->flags & RF_TRANSLUCENT)) {
+            ent->next = glr.ents.opaque;
+            glr.ents.opaque = ent;
+            continue;
+        }
+
+        if (GL_EntityInForeground(ent)) {
+            ent->next = glr.ents.alpha_front;
+            glr.ents.alpha_front = ent;
+            continue;
+        }
+
+        ent->next = glr.ents.alpha_back;
+        glr.ents.alpha_back = ent;
+    }
+}
+
+static void GL_DrawEntities(entity_t *ent)
+{
+    model_t *model;
+
+    for (; ent; ent = ent->next) {
         glr.ent = ent;
 
         // convert angles to axis
@@ -556,7 +618,7 @@ static void GL_DrawEntities(int musthave, int canthave)
             const bsp_t *bsp = gl_static.world.cache;
             int index = ~ent->model;
 
-            if (glr.fd.rdflags & RDF_NOWORLDMODEL)
+            if (!bsp)
                 Com_Error(ERR_DROP, "%s: inline model without world",
                           __func__);
 
@@ -721,11 +783,11 @@ void R_RenderFrame(const refdef_t *fd)
     glr.drawframe++;
 
     glr.fd = *fd;
-    glr.num_beams = glr.num_flares   = 0;
-    glr.fog_bits  = glr.fog_bits_sky = 0;
 
     if (gl_dynamic->integer != 1 || gl_vertexlight->integer)
         glr.fd.num_dlights = 0;
+
+    glr.fog_bits = glr.fog_bits_sky = 0;
 
     if (gl_static.use_shaders && gl_fog->integer > 0) {
         if (glr.fd.fog.density > 0)
@@ -785,22 +847,25 @@ void R_RenderFrame(const refdef_t *fd)
     if (!(glr.fd.rdflags & RDF_NOWORLDMODEL) && gl_drawworld->integer)
         GL_DrawWorld();
 
-    GL_DrawEntities(0, RF_TRANSLUCENT);
+    GL_ClassifyEntities();
+
+    GL_DrawEntities(glr.ents.bmodels);
+
+    GL_DrawEntities(glr.ents.opaque);
+
+    GL_DrawEntities(glr.ents.alpha_back);
+
+    GL_DrawAlphaFaces();
 
     GL_DrawBeams();
 
     GL_DrawParticles();
 
-    GL_DrawEntities(RF_TRANSLUCENT, RF_WEAPONMODEL);
-
     GL_OccludeFlares();
 
     GL_DrawFlares();
 
-    if (!(glr.fd.rdflags & RDF_NOWORLDMODEL))
-        GL_DrawAlphaFaces();
-
-    GL_DrawEntities(RF_TRANSLUCENT | RF_WEAPONMODEL, 0);
+    GL_DrawEntities(glr.ents.alpha_front);
 
     GL_DrawDebugObjects();
 

@@ -284,25 +284,39 @@ static void V_Gun_Model_f(void)
 
 //============================================================================
 
+// renderer will iterate the list backwards, so sorting order must be reversed
 static int entitycmpfnc(const void *_a, const void *_b)
 {
     const entity_t *a = (const entity_t *)_a;
     const entity_t *b = (const entity_t *)_b;
 
+    bool a_trans = a->flags & RF_TRANSLUCENT;
+    bool b_trans = b->flags & RF_TRANSLUCENT;
+    if (a_trans != b_trans)
+        return b_trans - a_trans;
+    if (a_trans) {
+        float dist_a = DistanceSquared(a->origin, cl.refdef.vieworg);
+        float dist_b = DistanceSquared(b->origin, cl.refdef.vieworg);
+        if (dist_a > dist_b)
+            return 1;
+        if (dist_a < dist_b)
+            return -1;
+    }
+
     // all other models are sorted by model then skin
     if (a->model > b->model)
-        return 1;
-    if (a->model < b->model)
         return -1;
+    if (a->model < b->model)
+        return 1;
 
     if (a->skin > b->skin)
-        return 1;
-    if (a->skin < b->skin)
         return -1;
+    if (a->skin < b->skin)
+        return 1;
 
     bool a_shell = a->flags & RF_SHELL_MASK;
     bool b_shell = b->flags & RF_SHELL_MASK;
-    return a_shell - b_shell;
+    return b_shell - a_shell;
 }
 
 static void V_SetLightLevel(void)

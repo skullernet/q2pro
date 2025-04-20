@@ -152,7 +152,7 @@ static bool GL_LightGridPoint(const lightgrid_t *grid, const vec3_t start, vec3_
 static bool GL_LightPoint_(const vec3_t start, vec3_t color)
 {
     const bsp_t     *bsp = gl_static.world.cache;
-    int             i, index;
+    int             index;
     lightpoint_t    pt;
     vec3_t          end, mins, maxs;
     const entity_t  *ent;
@@ -170,7 +170,7 @@ static bool GL_LightPoint_(const vec3_t start, vec3_t color)
     BSP_LightPoint(&glr.lightpoint, start, end, bsp->nodes, gl_static.nolm_mask | SURF_TRANS_MASK);
 
     // trace to other BSP models
-    for (i = 0, ent = glr.fd.entities; i < glr.fd.num_entities; i++, ent++) {
+    for (ent = glr.ents.bmodels; ent; ent = ent->next) {
         index = ent->model;
         if (!(index & BIT(31)))
             break;  // BSP models are at the start of entity array
