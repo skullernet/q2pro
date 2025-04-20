@@ -377,7 +377,7 @@ void GL_DrawFlares(void)
     glquery_t *q;
     float scale;
     bool def;
-    int j;
+    int i;
 
     if (!glr.ents.flares)
         return;
@@ -451,9 +451,9 @@ void GL_DrawFlares(void)
         VectorAdd3(ent->origin, up,   right, dst_vert + 18);
         VectorAdd3(ent->origin, down, right, dst_vert + 24);
 
-        for (j = 0; j < 5; j++) {
-            dst_vert[j * 6 + 3] = tcoords[j * 2 + 0];
-            dst_vert[j * 6 + 4] = tcoords[j * 2 + 1];
+        for (i = 0; i < 5; i++) {
+            dst_vert[i * 6 + 3] = tcoords[i * 2 + 0];
+            dst_vert[i * 6 + 4] = tcoords[i * 2 + 1];
         }
 
         inner.u32 = ent->rgba.u32;
@@ -478,8 +478,8 @@ void GL_DrawFlares(void)
         WN32(dst_vert + 29, outer.u32);
 
         dst_indices = tess.indices + tess.numindices;
-        for (j = 0; j < 12; j++)
-            dst_indices[j] = tess.numverts + indices[j];
+        for (i = 0; i < 12; i++)
+            dst_indices[i] = tess.numverts + indices[i];
 
         tess.numverts += 5;
         tess.numindices += 12;

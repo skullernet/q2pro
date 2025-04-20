@@ -433,20 +433,20 @@ static void make_flare_quad(const vec3_t origin, float scale)
 static void GL_OccludeFlares(void)
 {
     const bsp_t *bsp = gl_static.world.cache;
-    const entity_t *e;
+    const entity_t *ent;
     glquery_t *q;
-    int j;
     vec3_t dir, org;
     float scale, dist;
     bool set = false;
+    int i;
 
-    for (e = glr.ents.flares; e; e = e->next) {
-        q = HashMap_Lookup(glquery_t, gl_static.queries, &e->skinnum);
+    for (ent = glr.ents.flares; ent; ent = ent->next) {
+        q = HashMap_Lookup(glquery_t, gl_static.queries, &ent->skinnum);
 
-        for (j = 0; j < 4; j++)
-            if (PlaneDiff(e->origin, &glr.frustumPlanes[j]) < -2.5f)
+        for (i = 0; i < 4; i++)
+            if (PlaneDiff(ent->origin, &glr.frustumPlanes[i]) < -2.5f)
                 break;
-        if (j != 4) {
+        if (i != 4) {
             if (q)
                 q->pending = q->visible = false;
             continue;   // not visible
@@ -468,7 +468,7 @@ static void GL_OccludeFlares(void)
             uint32_t map_size = HashMap_Size(gl_static.queries);
             Q_assert(map_size < MAX_EDICTS);
             qglGenQueries(1, &new.query);
-            HashMap_Insert(gl_static.queries, &e->skinnum, &new);
+            HashMap_Insert(gl_static.queries, &ent->skinnum, &new);
             q = HashMap_GetValue(glquery_t, gl_static.queries, map_size);
         }
 
@@ -483,19 +483,19 @@ static void GL_OccludeFlares(void)
             set = true;
         }
 
-        VectorSubtract(e->origin, glr.fd.vieworg, dir);
+        VectorSubtract(ent->origin, glr.fd.vieworg, dir);
         dist = DotProduct(dir, glr.viewaxis[0]);
 
         scale = 2.5f;
         if (dist > 20)
             scale += dist * 0.004f;
 
-        if (bsp && BSP_PointLeaf(bsp->nodes, e->origin)->contents[0] & CONTENTS_SOLID) {
+        if (bsp && BSP_PointLeaf(bsp->nodes, ent->origin)->contents[0] & CONTENTS_SOLID) {
             VectorNormalize(dir);
-            VectorMA(e->origin, -5.0f, dir, org);
+            VectorMA(ent->origin, -5.0f, dir, org);
             make_flare_quad(org, scale);
         } else
-            make_flare_quad(e->origin, scale);
+            make_flare_quad(ent->origin, scale);
 
         GL_LockArrays(4);
         qglBeginQuery(gl_static.samples_passed, q->query);

@@ -171,11 +171,7 @@ static bool GL_LightPoint_(const vec3_t start, vec3_t color)
 
     // trace to other BSP models
     for (ent = glr.ents.bmodels; ent; ent = ent->next) {
-        index = ent->model;
-        if (!(index & BIT(31)))
-            break;  // BSP models are at the start of entity array
-
-        index = ~index;
+        index = ~ent->model;
         if (index < 1 || index >= bsp->nummodels)
             continue;
 
