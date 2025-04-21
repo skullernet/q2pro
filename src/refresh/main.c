@@ -777,6 +777,58 @@ static void GL_DrawBloom(bool waterwarp)
     GL_PostProcess(bits, glr.fd.x, glr.fd.y, glr.fd.width, glr.fd.height);
 }
 
+typedef enum {
+    PP_NONE      = 0,
+    PP_WATERWARP = BIT(0),
+    PP_BLOOM     = BIT(1),
+} pp_flags_t;
+
+static pp_flags_t GL_BindFramebuffer(void)
+{
+    pp_flags_t flags = PP_NONE;
+    bool resized = false;
+
+    if (!gl_static.use_shaders)
+        return PP_NONE;
+
+    if ((glr.fd.rdflags & RDF_UNDERWATER) && gl_waterwarp->integer)
+        flags |= PP_WATERWARP;
+
+    if (!(glr.fd.rdflags & RDF_NOWORLDMODEL) && gl_bloom->integer)
+        flags |= PP_BLOOM;
+
+    if (flags)
+        resized = glr.fd.width != glr.framebuffer_width || glr.fd.height != glr.framebuffer_height;
+
+    if (resized || gl_bloom->modified) {
+        glr.framebuffer_ok = GL_InitFramebuffers();
+        glr.framebuffer_width = glr.fd.width;
+        glr.framebuffer_height = glr.fd.height;
+        gl_bloom->modified = false;
+    }
+
+    if (!flags || !glr.framebuffer_ok)
+        return PP_NONE;
+
+    qglBindFramebuffer(GL_FRAMEBUFFER, FBO_SCENE);
+    glr.framebuffer_bound = true;
+
+    if (gl_clear->integer) {
+        if (flags & PP_BLOOM) {
+            static const GLenum buffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+            static const vec4_t black = { 0, 0, 0, 1 };
+            qglDrawBuffers(2, buffers);
+            qglClearBufferfv(GL_COLOR, 0, gl_static.clearcolor);
+            qglClearBufferfv(GL_COLOR, 1, black);
+            qglDrawBuffers(1, buffers);
+        } else {
+            qglClear(GL_COLOR_BUFFER_BIT);
+        }
+    }
+
+    return flags;
+}
+
 void R_RenderFrame(const refdef_t *fd)
 {
     GL_Flush2D();
@@ -806,42 +858,7 @@ void R_RenderFrame(const refdef_t *fd)
         lm.dirty = false;
     }
 
-    bool waterwarp = false;
-    bool bloom = false;
-
-    if (gl_static.use_shaders) {
-        waterwarp = (glr.fd.rdflags & RDF_UNDERWATER) && gl_waterwarp->integer;
-        bloom = !(glr.fd.rdflags & RDF_NOWORLDMODEL) && gl_bloom->integer;
-
-        if (waterwarp || bloom || gl_bloom->modified) {
-            if (glr.fd.width != glr.framebuffer_width || glr.fd.height != glr.framebuffer_height || gl_bloom->modified) {
-                glr.framebuffer_ok = GL_InitFramebuffers();
-                glr.framebuffer_width = glr.fd.width;
-                glr.framebuffer_height = glr.fd.height;
-                gl_bloom->modified = false;
-            }
-            if (!glr.framebuffer_ok)
-                waterwarp = bloom = false;
-        }
-    }
-
-    if (waterwarp || bloom) {
-        qglBindFramebuffer(GL_FRAMEBUFFER, FBO_SCENE);
-        glr.framebuffer_bound = true;
-
-        if (gl_clear->integer) {
-            if (bloom) {
-                static const GLenum buffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-                static const vec4_t black = { 0, 0, 0, 1 };
-                qglDrawBuffers(2, buffers);
-                qglClearBufferfv(GL_COLOR, 0, gl_static.clearcolor);
-                qglClearBufferfv(GL_COLOR, 1, black);
-                qglDrawBuffers(1, buffers);
-            } else {
-                qglClear(GL_COLOR_BUFFER_BIT);
-            }
-        }
-    }
+    pp_flags_t pp_flags = GL_BindFramebuffer();
 
     GL_Setup3D();
 
@@ -880,9 +897,9 @@ void R_RenderFrame(const refdef_t *fd)
     // go back into 2D mode
     GL_Setup2D();
 
-    if (bloom) {
-        GL_DrawBloom(waterwarp);
-    } else if (waterwarp) {
+    if (pp_flags & PP_BLOOM) {
+        GL_DrawBloom(pp_flags & PP_WATERWARP);
+    } else if (pp_flags & PP_WATERWARP) {
         GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_SCENE);
         GL_PostProcess(GLS_WARP_ENABLE, glr.fd.x, glr.fd.y, glr.fd.width, glr.fd.height);
     }
