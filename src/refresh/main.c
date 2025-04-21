@@ -386,6 +386,9 @@ static void GL_DrawNullModel(void)
 {
     const entity_t *e = glr.ent;
 
+    if (e->flags & RF_WEAPONMODEL)
+        return;
+
     VectorCopy(e->origin, tess.vertices +  0);
     VectorCopy(e->origin, tess.vertices +  8);
     VectorCopy(e->origin, tess.vertices + 16);
