@@ -516,13 +516,36 @@ static void GL_OccludeFlares(void)
         qglColorMask(1, 1, 1, 1);
 }
 
+static bool visible(const bsp_t *bsp, const vec3_t org)
+{
+    lightpoint_t pt;
+
+    BSP_LightPoint(&pt, glr.fd.vieworg, org, bsp->nodes, -1);
+    if (pt.surf)
+        return false;
+
+    for (const entity_t *ent = glr.ents.bmodels; ent; ent = ent->next) {
+        int index = ~ent->model;
+        if (index < 1 || index >= bsp->nummodels)
+            continue;
+
+        const mmodel_t *model = &bsp->models[index];
+        if (!model->numfaces)
+            continue;
+
+        BSP_TransformedLightPoint(&pt, glr.fd.vieworg, org, model->headnode,
+                                  -1, ent->origin, ent->angles);
+        if (pt.surf)
+            return false;
+    }
+
+    return true;
+}
+
 // entity is in foreground if straight line can be traced to it without hitting
-// any surface. trace to bmodels too?
+// any surface
 static bool GL_EntityInForeground(const entity_t *ent)
 {
-    vec3_t absmin, absmax;
-    lightpoint_t p;
-
     if (ent->flags & RF_WEAPONMODEL)
         return true;
 
@@ -531,8 +554,7 @@ static bool GL_EntityInForeground(const entity_t *ent)
         return true;
 
     // check origin point for sprites, etc
-    BSP_LightPoint(&p, glr.fd.vieworg, ent->origin, bsp->nodes, -1);
-    if (!p.surf)
+    if (visible(bsp, ent->origin))
         return true;
 
     const model_t *model = MOD_ForHandle(ent->model);
@@ -542,18 +564,11 @@ static bool GL_EntityInForeground(const entity_t *ent)
     const maliasframe_t *frame = &model->frames[ent->frame % model->numframes];
 
     // this is very approximate, don't bother with frame lerping and rotation
+    vec3_t absmin, absmax;
     VectorAdd(ent->origin, frame->bounds[0], absmin);
     VectorAdd(ent->origin, frame->bounds[1], absmax);
 
-    BSP_LightPoint(&p, glr.fd.vieworg, absmin, bsp->nodes, -1);
-    if (!p.surf)
-        return true;
-
-    BSP_LightPoint(&p, glr.fd.vieworg, absmax, bsp->nodes, -1);
-    if (!p.surf)
-        return true;
-
-    return false;
+    return visible(bsp, absmin) || visible(bsp, absmax);
 }
 
 static void GL_ClassifyEntities(void)
