@@ -283,6 +283,13 @@ void Prompt_CompleteCommand(commandPrompt_t *prompt, bool backslash)
     memcpy(sorted, ctx.matches, ctx.count * sizeof(sorted[0]));
     qsort(sorted, ctx.count, sizeof(sorted[0]), ctx.ignorecase ? SortStricmp : SortStrcmp);
 
+    // add opening quote if needed
+    for (i = 0; i < ctx.count; i++)
+        if (needs_quotes(ctx.matches[i]))
+            break;
+    if (i < ctx.count)
+        Q_strlcat(text, "\"", size);
+
     // copy matching part
     first = sorted[0];
     last = sorted[ctx.count - 1];
