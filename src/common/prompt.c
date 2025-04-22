@@ -259,7 +259,7 @@ void Prompt_CompleteCommand(commandPrompt_t *prompt, bool backslash)
 
     if (ctx.count == 1) {
         // we have finished completion!
-        if (needs_quotes(ctx.matches[0])) {
+        if (!ctx.stripquotes && needs_quotes(ctx.matches[0])) {
             Q_strlcat(text, "\"", size);
             Q_strlcat(text, ctx.matches[0], size);
             Q_strlcat(text, "\"", size);

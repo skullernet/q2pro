@@ -98,6 +98,7 @@ typedef struct genctx_s {
     void *data;
     bool ignorecase;
     bool ignoredups;
+    bool stripquotes;
 } genctx_t;
 
 typedef void (*xcommand_t)(void);

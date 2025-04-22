@@ -2179,6 +2179,17 @@ static void CL_Say_c(genctx_t *ctx, int argnum)
     CL_Name_g(ctx);
 }
 
+static void CL_Item_c(genctx_t *ctx, int argnum)
+{
+    if (cls.state < ca_connected || cls.demo.playback || argnum != 1)
+        return;
+
+    ctx->ignorecase = true;
+    ctx->stripquotes = true;
+    for (int i = 0; i < MAX_ITEMS; i++)
+        Prompt_AddMatch(ctx, cl.configstrings[cl.csr.items + i]);
+}
+
 static size_t CL_Mapname_m(char *buffer, size_t size)
 {
     return Q_strlcpy(buffer, cl.mapname, size);
@@ -2671,9 +2682,9 @@ static const cmdreg_t c_client[] = {
     { "say", NULL, CL_Say_c },
     { "say_team", NULL, CL_Say_c },
 
-    { "wave" }, { "inven" }, { "kill" }, { "use" },
-    { "drop" }, { "info" }, { "prog" },
-    { "give" }, { "god" }, { "notarget" }, { "noclip" },
+    { "wave" }, { "inven" }, { "kill" }, { "use", NULL, CL_Item_c },
+    { "drop", NULL, CL_Item_c }, { "info" }, { "prog" },
+    { "give", NULL, CL_Item_c }, { "god" }, { "notarget" }, { "noclip" },
     { "invuse" }, { "invprev" }, { "invnext" }, { "invdrop" },
     { "weapnext" }, { "weapprev" },
 
