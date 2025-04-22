@@ -308,6 +308,11 @@ static int entitycmpfnc(const void *_a, const void *_b)
             return -1;
     }
 
+    bool a_shell = a->flags & RF_SHELL_MASK;
+    bool b_shell = b->flags & RF_SHELL_MASK;
+    if (a_shell != b_shell)
+        return b_shell - a_shell;
+
     // all other models are sorted by model then skin
     if (a->model > b->model)
         return -1;
@@ -319,9 +324,7 @@ static int entitycmpfnc(const void *_a, const void *_b)
     if (a->skin < b->skin)
         return 1;
 
-    bool a_shell = a->flags & RF_SHELL_MASK;
-    bool b_shell = b->flags & RF_SHELL_MASK;
-    return b_shell - a_shell;
+    return 0;
 }
 
 static void V_SetLightLevel(void)
