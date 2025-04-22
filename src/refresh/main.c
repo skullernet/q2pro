@@ -815,11 +815,13 @@ static pp_flags_t GL_BindFramebuffer(void)
     if (flags)
         resized = glr.fd.width != glr.framebuffer_width || glr.fd.height != glr.framebuffer_height;
 
-    if (resized || gl_bloom->modified) {
-        glr.framebuffer_ok = GL_InitFramebuffers();
-        glr.framebuffer_width = glr.fd.width;
+    if (resized || gl_waterwarp->modified || gl_bloom->modified) {
+        glr.framebuffer_ok     = GL_InitFramebuffers();
+        glr.framebuffer_width  = glr.fd.width;
         glr.framebuffer_height = glr.fd.height;
-        gl_bloom->modified = false;
+        gl_waterwarp->modified = false;
+        gl_bloom->modified     = false;
+        GL_UpdateBlurParams();
     }
 
     if (!flags || !glr.framebuffer_ok)

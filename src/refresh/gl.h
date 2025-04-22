@@ -258,6 +258,7 @@ extern cvar_t *gl_md5_use;
 extern cvar_t *gl_md5_distance;
 #endif
 extern cvar_t *gl_damageblend_frac;
+extern cvar_t *gl_waterwarp;
 extern cvar_t *gl_bloom;
 
 // development variables

@@ -1166,62 +1166,78 @@ static void GL_InitPostProcTexture(int w, int h)
     qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 }
 
+static bool GL_CheckFramebufferStatus(bool check, const char *name)
+{
+    GL_ShowErrors(__func__);
+
+    if (!check)
+        return true;
+
+    GLenum status = qglCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (status == GL_FRAMEBUFFER_COMPLETE)
+        return true;
+
+    qglBindFramebuffer(GL_FRAMEBUFFER, 0);
+    if (gl_showerrors->integer)
+        Com_EPrintf("%s framebuffer status %#x\n", name, status);
+
+    return false;
+}
+
+#define CHECK_FB(check, name) \
+    if (!GL_CheckFramebufferStatus(check, name)) return false
+
 bool GL_InitFramebuffers(void)
 {
-    Q_assert(gl_static.use_shaders);
+    int scene_w = 0, scene_h = 0, bloom_w = 0, bloom_h = 0;
+
+    if (gl_waterwarp->integer || gl_bloom->integer) {
+        scene_w = glr.fd.width;
+        scene_h = glr.fd.height;
+    }
+
+    if (gl_bloom->integer) {
+        bloom_w = glr.fd.width;
+        bloom_h = glr.fd.height;
+    }
 
     GL_ClearErrors();
 
     GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_SCENE);
-    GL_InitPostProcTexture(glr.fd.width, glr.fd.height);
-
-    int w = glr.fd.width;
-    int h = glr.fd.height;
-
-    if (!gl_bloom->integer)
-        w = h = 0;
+    GL_InitPostProcTexture(scene_w, scene_h);
 
     GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_BLOOM);
-    GL_InitPostProcTexture(w, h);
-
-    qglBindFramebuffer(GL_FRAMEBUFFER, FBO_SCENE);
-    qglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, TEXNUM_PP_SCENE, 0);
-    qglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gl_bloom->integer ? TEXNUM_PP_BLOOM : GL_NONE, 0);
-
-    qglBindRenderbuffer(GL_RENDERBUFFER, gl_static.renderbuffer);
-    qglRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, glr.fd.width, glr.fd.height);
-    qglBindRenderbuffer(GL_RENDERBUFFER, 0);
-
-    qglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, gl_static.renderbuffer);
-
-    GLenum status = qglCheckFramebufferStatus(GL_FRAMEBUFFER);
-    qglBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    GL_ShowErrors(__func__);
-
-    if (status != GL_FRAMEBUFFER_COMPLETE) {
-        if (gl_showerrors->integer)
-            Com_EPrintf("%s: framebuffer status %#x\n", __func__, status);
-        return false;
-    }
-
-    GL_UpdateBlurParams();
+    GL_InitPostProcTexture(bloom_w, bloom_h);
 
     GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_BLUR_0);
-    GL_InitPostProcTexture(w / 4, h / 4);
+    GL_InitPostProcTexture(bloom_w / 4, bloom_h / 4);
 
     GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_BLUR_1);
-    GL_InitPostProcTexture(w / 4, h / 4);
+    GL_InitPostProcTexture(bloom_w / 4, bloom_h / 4);
+
+    qglBindFramebuffer(GL_FRAMEBUFFER, FBO_SCENE);
+    qglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, scene_w ? TEXNUM_PP_SCENE : GL_NONE, 0);
+    qglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, bloom_w ? TEXNUM_PP_BLOOM : GL_NONE, 0);
+
+    qglBindRenderbuffer(GL_RENDERBUFFER, gl_static.renderbuffer);
+    qglRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, scene_w, scene_h);
+    qglBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+    qglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, scene_w ? gl_static.renderbuffer : GL_NONE);
+
+    CHECK_FB(scene_w, "FBO_SCENE");
 
     qglBindFramebuffer(GL_FRAMEBUFFER, FBO_BLUR_0);
-    qglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl_bloom->integer ? TEXNUM_PP_BLUR_0 : GL_NONE, 0);
+    qglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bloom_w ? TEXNUM_PP_BLUR_0 : GL_NONE, 0);
+
+    CHECK_FB(bloom_w, "FBO_BLUR_0");
 
     qglBindFramebuffer(GL_FRAMEBUFFER, FBO_BLUR_1);
-    qglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl_bloom->integer ? TEXNUM_PP_BLUR_1 : GL_NONE, 0);
+    qglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bloom_w ? TEXNUM_PP_BLUR_1 : GL_NONE, 0);
+
+    CHECK_FB(bloom_w, "FBO_BLUR_1");
 
     qglBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    GL_ShowErrors(__func__);
 
     return true;
 }
