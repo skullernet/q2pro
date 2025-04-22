@@ -508,8 +508,9 @@ static void CL_AddPacketEntities(void)
     int                     autoanim;
     const clientinfo_t      *ci;
     unsigned int            effects, renderfx;
-    bool                    has_alpha, has_trail;
+    bool                    has_trail;
     float                   custom_alpha;
+    uint64_t                custom_flags;
 
     // bonus items rotate at a fixed rate
     autorotate = anglemod(cl.time * 0.1f);
@@ -818,22 +819,24 @@ static void CL_AddPacketEntities(void)
 
         // custom alpha overrides any derived value
         custom_alpha = 1.0f;
-        has_alpha = false;
+        custom_flags = 0;
         if (s1->alpha) {
             ent.alpha = lerp_entity_alpha(cent);
-            if (ent.alpha == 1.0f) {
+            if (ent.alpha == 1.0f)
                 ent.flags &= ~RF_TRANSLUCENT;
-            } else {
+            else
                 ent.flags |= RF_TRANSLUCENT;
-                has_alpha = true;
-            }
             custom_alpha = ent.alpha;
+            custom_flags = ent.flags & RF_TRANSLUCENT;
+        }
+
+        // tracker effect is duplicated for linked models
+        if (IS_TRACKER(effects)) {
+            ent.flags    |= RF_TRACKER;
+            custom_flags |= RF_TRACKER;
         }
 
         ent.scale = s1->scale;
-
-        if (IS_TRACKER(effects))
-            ent.flags |= RF_TRACKER;
 
         // add to refresh list
         V_AddEntity(&ent);
@@ -876,17 +879,8 @@ static void CL_AddPacketEntities(void)
 
         ent.skin = 0;       // never use a custom skin on others
         ent.skinnum = 0;
-        ent.flags = 0;
-        ent.alpha = 0;
-
-        // duplicate alpha
-        if (has_alpha) {
-            ent.flags = RF_TRANSLUCENT;
-            ent.alpha = custom_alpha;
-        }
-
-        if (IS_TRACKER(effects))
-            ent.flags |= RF_TRACKER;
+        ent.flags = custom_flags;
+        ent.alpha = custom_alpha;
 
         // duplicate for linked models
         if (s1->modelindex2) {
@@ -917,18 +911,9 @@ static void CL_AddPacketEntities(void)
             V_AddEntity(&ent);
 
             //PGM - make sure these get reset.
-            ent.flags = 0;
-            ent.alpha = 0;
-        }
-
-        // duplicate alpha
-        if (has_alpha) {
-            ent.flags = RF_TRANSLUCENT;
+            ent.flags = custom_flags;
             ent.alpha = custom_alpha;
         }
-
-        if (IS_TRACKER(effects))
-            ent.flags |= RF_TRACKER;
 
         if (s1->modelindex3) {
             ent.model = cl.model_draw[s1->modelindex3];
