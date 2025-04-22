@@ -1316,7 +1316,7 @@ $Cvars will be expanded unless they are in a quoted token
 void Cmd_TokenizeString(const char *text, bool macroExpand)
 {
     size_t  len;
-    char    *data, *dest;
+    char    *data, *last, *dest;
 
 // clear the args from the last string
     for (int i = 0; i < cmd_argc; i++) {
@@ -1342,21 +1342,9 @@ void Cmd_TokenizeString(const char *text, bool macroExpand)
         }
     }
 
-// skip any leading whitespace
-    while (*text && *text <= ' ') {
-        text++;
-    }
-
-// strip off any trailing whitespace
     len = strlen(text);
-    while (len > 0 && text[len - 1] <= ' ') {
-        len--;
-    }
     if (len >= MAX_STRING_CHARS) {
         Com_Printf("Line exceeded %i chars, discarded.\n", MAX_STRING_CHARS);
-        return;
-    }
-    if (!len) {
         return;
     }
 
@@ -1364,18 +1352,17 @@ void Cmd_TokenizeString(const char *text, bool macroExpand)
 // use memmove because text may overlap with cmd_string
     memmove(cmd_string, text, len);
     cmd_string[len] = 0;
-    cmd_string_len = len;
 
     dest = cmd_data;
-    data = cmd_string;
+    data = last = cmd_string;
     while (cmd_argc < MAX_STRING_TOKENS) {
 // skip whitespace up to a /n
         while (*data <= ' ') {
             if (*data == 0) {
-                return; // end of text
+                goto end; // end of text
             }
             if (*data == '\n') {
-                return; // a newline seperates commands in the buffer
+                goto end; // a newline separates commands in the buffer
             }
             data++;
         }
@@ -1390,12 +1377,13 @@ void Cmd_TokenizeString(const char *text, bool macroExpand)
             data++;
             while (*data != '\"') {
                 if (*data == 0) {
+                    last = data;
                     *dest = 0;
-                    return; // end of data
+                    goto end; // end of data
                 }
                 *dest++ = *data++;
             }
-            data++;
+            last = ++data;
             *dest++ = 0;
             continue;
         }
@@ -1407,8 +1395,13 @@ void Cmd_TokenizeString(const char *text, bool macroExpand)
             }
             *dest++ = *data++;
         }
+        last = data;
         *dest++ = 0;
     }
+
+end:
+    *last = 0; // strip off any trailing whitespace
+    cmd_string_len = last - cmd_string;
 }
 
 /*
