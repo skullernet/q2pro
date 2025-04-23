@@ -686,21 +686,10 @@ static void OGG_Play_f(void)
 
 static void OGG_Info_f(void)
 {
-    AVCodecContext *dec = ogg.dec_ctx;
-
-    if (dec) {
-        const char *path = ogg.fmt_ctx->url;
-
-        if (Cmd_Argc() > 2)
-            av_dump_format(ogg.fmt_ctx, 0, path, 0);
-        else
-            Com_Printf("Playing %s, %s, %d Hz, %d ch%s\n",
-                       COM_SkipPath(path), dec->codec->name,
-                       dec->sample_rate, dec->ch_layout.nb_channels,
-                       ogg_paused ? " [PAUSED]" : "");
-    } else {
+    if (ogg.fmt_ctx)
+        av_dump_format(ogg.fmt_ctx, 0, ogg.fmt_ctx->url, 0);
+    else
         Com_Printf("Playback stopped.\n");
-    }
 }
 
 static void OGG_Cmd_c(genctx_t *ctx, int argnum)
