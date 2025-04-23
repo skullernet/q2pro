@@ -91,6 +91,13 @@ uint32_t Com_SlowRand(void);
 #define Com_SlowCrand()  ((int32_t)Com_SlowRand() * 0x1p-31f)
 #endif
 
+#if USE_CLIENT
+#define UNICODE_UNKNOWN     0xFFFD
+#define UNICODE_MAX         0x10FFFF
+uint32_t UTF8_ReadCodePoint(const char **src);
+size_t UTF8_TranslitBuffer(char *dst, const char *src, size_t size);
+#endif
+
 // Bitmap chunks (for sparse bitmaps)
 #define BC_BITS         (sizeof(size_t) * CHAR_BIT)
 #define BC_COUNT(n)     (((n) + BC_BITS - 1) / BC_BITS)

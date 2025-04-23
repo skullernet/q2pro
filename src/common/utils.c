@@ -681,3 +681,137 @@ uint32_t Com_SlowRand(void)
 }
 
 #endif
+
+/*
+==============================================================================
+
+                        UNICODE
+
+==============================================================================
+*/
+
+#if USE_CLIENT
+
+#define QCHAR_BOX   11
+
+#include "unicode_translit.h"
+
+/*
+==================
+UTF8_ReadCodePoint
+
+Reads at most 4 bytes from *src and advances the pointer.
+Returns 32-bit codepoint, or UNICODE_UNKNOWN on error.
+==================
+*/
+uint32_t UTF8_ReadCodePoint(const char **src)
+{
+    static const uint32_t mincode[3] = { 0x80, 0x800, 0x10000 };
+    const char  *text = *src;
+    uint32_t    code;
+    uint8_t     first, cont;
+    int         bytes, i;
+
+    first = text[0];
+    if (!first)
+        return 0;
+
+    if (first < 128) {
+        *src = text + 1;
+        return first;
+    }
+
+    bytes = 7 - Q_log2(first ^ 255);
+    if (bytes < 2 || bytes > 4) {
+        *src = text + 1;
+        return UNICODE_UNKNOWN;
+    }
+
+    code = first & (127 >> bytes);
+    for (i = 1; i < bytes; i++) {
+        cont = text[i];
+        if ((cont & 0xC0) != 0x80) {
+            *src = text + i;
+            return UNICODE_UNKNOWN;
+        }
+        code = (code << 6) | (cont & 63);
+    }
+
+    *src = text + i;
+
+    if (code > UNICODE_MAX)
+        return UNICODE_UNKNOWN; // out of range
+
+    if (code >= 0xD800 && code <= 0xDFFF)
+        return UNICODE_UNKNOWN; // surrogate
+
+    if (code < mincode[bytes - 2])
+        return UNICODE_UNKNOWN; // overlong
+
+    return code;
+}
+
+static const char *UTF8_TranslitCode(uint32_t code)
+{
+    int left = 0;
+    int right = q_countof(unicode_translit) - 1;
+
+    if (code > unicode_translit[right].code)
+        return NULL;
+
+    while (left <= right) {
+        int i = (left + right) / 2;
+        if (unicode_translit[i].code < code)
+            left = i + 1;
+        else if (unicode_translit[i].code > code)
+            right = i - 1;
+        else
+            return unicode_translit[i].remap;
+    }
+
+    return NULL;
+}
+
+/*
+==================
+UTF8_TranslitBuffer
+
+Transliterates a string from UTF-8 to Quake encoding.
+
+Returns the number of characters (not including the NUL terminator) that would
+be written into output buffer. Return value >= size signifies overflow.
+==================
+*/
+size_t UTF8_TranslitBuffer(char *dst, const char *src, size_t size)
+{
+    size_t len = 0;
+
+    while (*src) {
+        // ASCII fast path
+        uint8_t c = *src;
+        if (q_likely(c < 128)) {
+            if (++len < size)
+                *dst++ = c;
+            src++;
+            continue;
+        }
+
+        // a codepoint produces from 1 to 4 Quake characters
+        const char *res = UTF8_TranslitCode(UTF8_ReadCodePoint(&src));
+        if (res) {
+            for (int i = 0; i < 4 && res[i]; i++)
+                if (++len < size)
+                    *dst++ = res[i];
+        } else {
+            if (++len < size)
+                *dst++ = QCHAR_BOX;
+        }
+    }
+
+    if (size)
+        *dst = 0;
+
+    return len;
+}
+
+#endif // USE_CLINET

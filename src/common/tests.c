@@ -23,6 +23,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/files.h"
 #include "common/mdfour.h"
 #include "common/tests.h"
+#include "common/utils.h"
 #include "refresh/refresh.h"
 #include "system/system.h"
 #include "client/client.h"
@@ -856,6 +857,42 @@ static void Com_Extract_f(void)
         Com_Printf("Extracted %s (%d bytes)\n", path, len);
 }
 
+#if USE_CLIENT
+// https://github.com/flenniken/utf8tests
+static void UTF8_Test_f(void)
+{
+    void *data;
+    int len = FS_LoadFile("utf8tests.bin", &data);
+    if (!data)
+        return;
+
+    const char *src = data;
+    const char *end = src + len;
+    while (src < end) {
+        if (!*src) {
+            Com_Printf("<00>");
+            src++;
+            continue;
+        }
+        const char *pos = src;
+        uint32_t code = UTF8_ReadCodePoint(&src);
+
+        if (code == UNICODE_UNKNOWN) {
+            while (pos < src) {
+                Com_Printf("<%02X>", (byte)*pos);
+                pos++;
+            }
+        } else if (Q_isprint(code) || Q_isspace(code)) {
+            Com_Printf("%c", code);
+        } else {
+            Com_Printf("<U+%04X>", code);
+        }
+    }
+
+    FS_FreeFile(data);
+}
+#endif
+
 static const cmdreg_t c_test[] = {
     { "error", Com_Error_f },
     { "errordrop", Com_ErrorDrop_f },
@@ -875,6 +912,7 @@ static const cmdreg_t c_test[] = {
 #if USE_CLIENT
     { "soundtest", Com_TestSounds_f },
     { "activate", Com_Activate_f },
+    { "utf8test", UTF8_Test_f },
 #endif
     { "mdfourtest", Com_MdfourTest_f },
     { "mdfoursum", Com_MdfourSum_f },
