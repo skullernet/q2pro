@@ -290,11 +290,6 @@ static int entitycmpfnc(const void *_a, const void *_b)
     const entity_t *a = (const entity_t *)_a;
     const entity_t *b = (const entity_t *)_b;
 
-    bool a_bmodel = a->model & BIT(31);
-    bool b_bmodel = b->model & BIT(31);
-    if (a_bmodel != b_bmodel)
-        return b_bmodel - a_bmodel;
-
     bool a_trans = a->flags & RF_TRANSLUCENT;
     bool b_trans = b->flags & RF_TRANSLUCENT;
     if (a_trans != b_trans)
