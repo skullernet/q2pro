@@ -70,6 +70,7 @@ cvar_t *gl_znear;
 cvar_t *gl_drawworld;
 cvar_t *gl_drawentities;
 cvar_t *gl_drawsky;
+cvar_t *gl_draworder;
 cvar_t *gl_showtris;
 cvar_t *gl_showorigins;
 cvar_t *gl_showtearing;
@@ -516,46 +517,6 @@ static void GL_OccludeFlares(void)
         qglColorMask(1, 1, 1, 1);
 }
 
-// entity is in foreground if straight line can be traced to it without hitting
-// any surface. trace to bmodels too?
-static bool GL_EntityInForeground(const entity_t *ent)
-{
-    vec3_t absmin, absmax;
-    lightpoint_t p;
-
-    if (ent->flags & RF_WEAPONMODEL)
-        return true;
-
-    const bsp_t *bsp = gl_static.world.cache;
-    if (!bsp)
-        return true;
-
-    // check origin point for sprites, etc
-    BSP_LightPoint(&p, glr.fd.vieworg, ent->origin, bsp->nodes, -1);
-    if (!p.surf)
-        return true;
-
-    const model_t *model = MOD_ForHandle(ent->model);
-    if (!model || model->type != MOD_ALIAS)
-        return false;
-
-    const maliasframe_t *frame = &model->frames[ent->frame % model->numframes];
-
-    // this is very approximate, don't bother with frame lerping and rotation
-    VectorAdd(ent->origin, frame->bounds[0], absmin);
-    VectorAdd(ent->origin, frame->bounds[1], absmax);
-
-    BSP_LightPoint(&p, glr.fd.vieworg, absmin, bsp->nodes, -1);
-    if (!p.surf)
-        return true;
-
-    BSP_LightPoint(&p, glr.fd.vieworg, absmax, bsp->nodes, -1);
-    if (!p.surf)
-        return true;
-
-    return false;
-}
-
 static void GL_ClassifyEntities(void)
 {
     entity_t *ent;
@@ -595,7 +556,7 @@ static void GL_ClassifyEntities(void)
             continue;
         }
 
-        if (GL_EntityInForeground(ent)) {
+        if ((ent->flags & RF_WEAPONMODEL) || ent->alpha <= gl_draworder->value) {
             ent->next = glr.ents.alpha_front;
             glr.ents.alpha_front = ent;
             continue;
@@ -1156,6 +1117,7 @@ static void GL_Register(void)
     gl_drawentities = Cvar_Get("gl_drawentities", "1", CVAR_CHEAT);
     gl_drawsky = Cvar_Get("gl_drawsky", "1", 0);
     gl_drawsky->changed = gl_drawsky_changed;
+    gl_draworder = Cvar_Get("gl_draworder", "1", 0);
     gl_showtris = Cvar_Get("gl_showtris", "0", CVAR_CHEAT);
     gl_showorigins = Cvar_Get("gl_showorigins", "0", CVAR_CHEAT);
     gl_showtearing = Cvar_Get("gl_showtearing", "0", CVAR_CHEAT);

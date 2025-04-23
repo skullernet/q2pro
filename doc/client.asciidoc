@@ -716,6 +716,11 @@ gl_drawsky::
     Enables skybox texturing. 0 means to draw sky in solid black color.
     Default value is 1 (enabled).
 
+gl_draworder::
+    Alpha sorting treshold for transparent entitites. Entities with lower alpha
+    are drawn in the front, while entities with higher alpha are drawn in the
+    back. Default value is 1 (draw all entities in front).
+
 gl_cubemaps::
     Enables use of cubemaps for skybox drawing. Cubemaps allow multiple skybox
     textures per map, and help to avoid sky rendering bugs. Also enables N64
