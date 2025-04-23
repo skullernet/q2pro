@@ -533,7 +533,7 @@ static inline int Q_charhex(int c)
 // converts quake char to ASCII equivalent
 static inline int Q_charascii(int c)
 {
-    if (Q_isspace(c)) {
+    if (c == ' ' || c == '\r' || c == '\n') {
         // white-space chars are output as-is
         return c;
     }
