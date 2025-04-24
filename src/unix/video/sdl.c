@@ -170,9 +170,8 @@ static void fatal_shutdown(void)
 
 static char *get_clipboard_data(void)
 {
-    // returned data must be Z_Free'd
     char *text = SDL_GetClipboardText();
-    char *copy = Z_CopyString(text);
+    char *copy = UTF8_TranslitString(text);
     SDL_free(text);
     return copy;
 }

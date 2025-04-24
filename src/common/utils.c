@@ -19,6 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "shared/shared.h"
 #include "common/common.h"
 #include "common/utils.h"
+#include "common/zone.h"
 
 /*
 ==============================================================================
@@ -812,6 +813,22 @@ size_t UTF8_TranslitBuffer(char *dst, const char *src, size_t size)
         *dst = 0;
 
     return len;
+}
+
+/*
+==================
+UTF8_TranslitString
+
+Transliterates a string from UTF-8 to Quake encoding.
+Allocates copy of the string. Returned data must be Z_Free'd.
+==================
+*/
+char *UTF8_TranslitString(const char *src)
+{
+    size_t len = UTF8_TranslitBuffer(NULL, src, 0) + 1;
+    char *copy = Z_Malloc(len);
+    UTF8_TranslitBuffer(copy, src, len);
+    return copy;
 }
 
 #endif // USE_CLINET

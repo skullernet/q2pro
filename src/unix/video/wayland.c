@@ -1088,7 +1088,7 @@ static char *get_selection(int fd)
         return NULL;
 
     buf[r] = 0;
-    return Z_CopyString(buf);
+    return UTF8_TranslitString(buf);
 }
 
 static char *get_selection_data(void)

@@ -1161,7 +1161,8 @@ Win_GetClipboardData
 char *Win_GetClipboardData(void)
 {
     HANDLE clipdata;
-    char *cliptext, *data;
+    WCHAR *cliptext;
+    char *data;
 
     if (!OpenClipboard(NULL)) {
         Com_DPrintf("Couldn't open clipboard.\n");
@@ -1169,13 +1170,21 @@ char *Win_GetClipboardData(void)
     }
 
     data = NULL;
-    if ((clipdata = GetClipboardData(CF_TEXT)) != NULL) {
-        if ((cliptext = GlobalLock(clipdata)) != NULL) {
-            data = Z_CopyString(cliptext);
-            GlobalUnlock(clipdata);
-        }
-    }
+    if (!(clipdata = GetClipboardData(CF_UNICODETEXT)))
+        goto fail;
+    if (!(cliptext = GlobalLock(clipdata)))
+        goto fail;
 
+    int len = WideCharToMultiByte(CP_UTF8, 0, cliptext, -1, NULL, 0, NULL, NULL);
+    if (len > 0) {
+        char *text = Z_Malloc(len);
+        if (WideCharToMultiByte(CP_UTF8, 0, cliptext, -1, text, len, NULL, NULL) == len)
+            data = UTF8_TranslitString(text);
+        Z_Free(text);
+    }
+    GlobalUnlock(clipdata);
+
+fail:
     CloseClipboard();
     return data;
 }

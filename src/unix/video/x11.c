@@ -881,7 +881,7 @@ static char *get_selection(Atom sel)
         return NULL;
     }
 
-    char *copy = Z_CopyString((char *)data);
+    char *copy = UTF8_TranslitString((char *)data);
     XFree(data);
     return copy;
 }

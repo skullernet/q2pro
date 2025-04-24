@@ -96,6 +96,7 @@ uint32_t Com_SlowRand(void);
 #define UNICODE_MAX         0x10FFFF
 uint32_t UTF8_ReadCodePoint(const char **src);
 size_t UTF8_TranslitBuffer(char *dst, const char *src, size_t size);
+char *UTF8_TranslitString(const char *src);
 #endif
 
 // Bitmap chunks (for sparse bitmaps)
