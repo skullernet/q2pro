@@ -1164,14 +1164,12 @@ static void CL_AddViewWeapon(void)
     }
 
     gun.flags = RF_MINLIGHT | RF_DEPTHHACK | RF_WEAPONMODEL;
-    gun.alpha = 1.0f;
+    gun.alpha = Cvar_ClampValue(cl_gunalpha, 0.1f, 1.0f);
 
     ent = get_player_entity();
 
     // add alpha from cvar or player entity
-    if (cl_gunalpha->value != 1.0f)
-        gun.alpha = Cvar_ClampValue(cl_gunalpha, 0.1f, 1.0f);
-    else if (ent)
+    if (ent && gun.alpha == 1.0f)
         gun.alpha = lerp_entity_alpha(ent);
 
     if (gun.alpha != 1.0f)
