@@ -418,7 +418,9 @@ static void AL_MergeLoopSounds(void)
 
         // find the total contribution of all sounds of this type
         CL_GetEntitySoundOrigin(ent->number, origin);
-        S_SpatializeOrigin(origin, vol, att, &left_total, &right_total, true);
+        S_SpatializeOrigin(origin, vol, att,
+                           &left_total, &right_total,
+                           S_GetEntityLoopStereoPan(ent));
         for (j = i + 1; j < cl.frame.numEntities; j++) {
             if (sounds[j] != sounds[i])
                 continue;
@@ -431,7 +433,8 @@ static void AL_MergeLoopSounds(void)
             S_SpatializeOrigin(origin,
                                S_GetEntityLoopVolume(ent),
                                S_GetEntityLoopDistMult(ent),
-                               &left, &right, true);
+                               &left, &right,
+                               S_GetEntityLoopStereoPan(ent));
             left_total += left;
             right_total += right;
         }

@@ -679,6 +679,8 @@ static void DMA_Spatialize(channel_t *ch)
     S_SpatializeOrigin(origin, ch->master_vol, ch->dist_mult, &ch->leftvol, &ch->rightvol, dma.channels - 1);
 }
 
+#define GET_STEREO(ent) (S_GetEntityLoopStereoPan(ent) && dma.channels - 1)
+
 /*
 ==================
 AddLoopSounds
@@ -722,7 +724,8 @@ static void AddLoopSounds(void)
 
         // find the total contribution of all sounds of this type
         CL_GetEntitySoundOrigin(ent->number, origin);
-        S_SpatializeOrigin(origin, vol, att, &left_total, &right_total, dma.channels - 1);
+        S_SpatializeOrigin(origin, vol, att, &left_total,
+                           &right_total, GET_STEREO(ent));
         for (j = i + 1; j < cl.frame.numEntities; j++) {
             if (sounds[j] != sounds[i])
                 continue;
@@ -735,7 +738,7 @@ static void AddLoopSounds(void)
             S_SpatializeOrigin(origin,
                                S_GetEntityLoopVolume(ent),
                                S_GetEntityLoopDistMult(ent),
-                               &left, &right, dma.channels - 1);
+                               &left, &right, GET_STEREO(ent));
             left_total += left;
             right_total += right;
         }
