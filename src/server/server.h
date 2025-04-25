@@ -362,10 +362,8 @@ typedef struct client_s {
     int                     spawncount;
     int                     maxclients;
 
-    // netchan type dependent methods
+    // netchan type dependent method
     void            (*AddMessage)(struct client_s *, const byte *, size_t, bool);
-    bool            (*WriteFrame)(struct client_s *, unsigned);
-    void            (*WriteDatagram)(struct client_s *);
 
     // netchan
     netchan_t       netchan;

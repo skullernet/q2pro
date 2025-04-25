@@ -714,6 +714,7 @@ static void write_datagram_old(client_t *client)
 {
     message_packet_t *msg;
     unsigned maxsize, cursize;
+    bool ret;
 
     // determine how much space is left for unreliable data
     maxsize = client->netchan.maxpacketlen;
@@ -732,7 +733,11 @@ static void write_datagram_old(client_t *client)
 
     // send over all the relevant entity_state_t
     // and the player_state_t
-    if (!client->WriteFrame(client, maxsize)) {
+    if (client->protocol == PROTOCOL_VERSION_DEFAULT)
+        ret = SV_WriteFrameToClient_Default(client, maxsize);
+    else
+        ret = SV_WriteFrameToClient_Enhanced(client, maxsize);
+    if (!ret) {
         SV_DPrintf(1, "Frame %d overflowed for %s\n", client->framenum, client->name);
         SZ_Clear(&msg_write);
     }
@@ -801,7 +806,7 @@ static void write_datagram_new(client_t *client)
 
     // send over all the relevant entity_state_t
     // and the player_state_t
-    if (!client->WriteFrame(client, msg_write.maxsize)) {
+    if (!SV_WriteFrameToClient_Enhanced(client, msg_write.maxsize)) {
         // should never really happen
         Com_WPrintf("Frame overflowed for %s\n", client->name);
         SZ_Clear(&msg_write);
@@ -923,7 +928,11 @@ void SV_SendClientMessages(void)
 
         // build the new frame and write it
         SV_BuildClientFrame(client);
-        client->WriteDatagram(client);
+
+        if (client->netchan.type == NETCHAN_NEW)
+            write_datagram_new(client);
+        else
+            write_datagram_old(client);
 
 advance:
         // advance for next frame
@@ -1048,10 +1057,8 @@ void SV_InitClientSend(client_t *newcl)
     // setup protocol
     if (newcl->netchan.type == NETCHAN_NEW) {
         newcl->AddMessage = add_message_new;
-        newcl->WriteDatagram = write_datagram_new;
     } else {
         newcl->AddMessage = add_message_old;
-        newcl->WriteDatagram = write_datagram_old;
     }
 }
 
