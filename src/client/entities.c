@@ -1231,6 +1231,43 @@ static void CL_SetupFirstPersonView(void)
     cl.thirdPersonView = false;
 }
 
+// need to interpolate bmodel positions, or third person view would be very jerky
+static void CL_LerpedTrace(trace_t *tr, const vec3_t start, const vec3_t end,
+                           const vec3_t mins, const vec3_t maxs, int contentmask)
+{
+    trace_t trace;
+    const centity_t *ent;
+    const mmodel_t *cmodel;
+    vec3_t org, ang;
+
+    // check against world
+    CM_BoxTrace(tr, start, end, mins, maxs, cl.bsp->nodes, contentmask, cl.csr.extended);
+    tr->ent = (struct edict_s *)cl_entities;
+    if (tr->fraction == 0)
+        return;     // blocked by the world
+
+    // check all other solid models
+    for (int i = 0; i < cl.numSolidEntities; i++) {
+        ent = cl.solidEntities[i];
+
+        // special value for bmodel
+        if (ent->current.solid != PACKED_BSP)
+            continue;
+
+        cmodel = cl.model_clip[ent->current.modelindex];
+        if (!cmodel)
+            continue;
+
+        LerpVector(ent->prev.origin, ent->current.origin, cl.lerpfrac, org);
+        LerpAngles(ent->prev.angles, ent->current.angles, cl.lerpfrac, ang);
+
+        CM_TransformedBoxTrace(&trace, start, end, mins, maxs, cmodel->headnode,
+                               contentmask, org, ang, cl.csr.extended);
+
+        CM_ClipEntity(tr, &trace, (struct edict_s *)ent);
+    }
+}
+
 /*
 ===============
 CL_SetupThirdPersionView
@@ -1238,11 +1275,12 @@ CL_SetupThirdPersionView
 */
 static void CL_SetupThirdPersionView(void)
 {
+    static const vec3_t mins = { -8, -8, -4 };
+    static const vec3_t maxs = {  8,  8,  4 };
     vec3_t focus;
     float fscale, rscale;
     float dist, angle, range;
     trace_t trace;
-    static const vec3_t mins = { -4, -4, -4 }, maxs = { 4, 4, 4 };
 
     // if dead, set a nice view angle
     if (cl.frame.ps.stats[STAT_HEALTH] <= 0) {
@@ -1264,11 +1302,8 @@ static void CL_SetupThirdPersionView(void)
     VectorMA(cl.refdef.vieworg, -range * fscale, cl.v_forward, cl.refdef.vieworg);
     VectorMA(cl.refdef.vieworg, -range * rscale, cl.v_right, cl.refdef.vieworg);
 
-    CM_BoxTrace(&trace, cl.playerEntityOrigin, cl.refdef.vieworg,
-                mins, maxs, cl.bsp->nodes, MASK_SOLID, cl.csr.extended);
-    if (trace.fraction != 1.0f) {
-        VectorCopy(trace.endpos, cl.refdef.vieworg);
-    }
+    CL_LerpedTrace(&trace, cl.playerEntityOrigin, cl.refdef.vieworg, mins, maxs, CONTENTS_SOLID);
+    VectorCopy(trace.endpos, cl.refdef.vieworg);
 
     VectorSubtract(focus, cl.refdef.vieworg, focus);
     dist = sqrtf(focus[0] * focus[0] + focus[1] * focus[1]);
