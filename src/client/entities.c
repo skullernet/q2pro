@@ -508,7 +508,7 @@ static void CL_AddPacketEntities(void)
     int                     autoanim;
     const clientinfo_t      *ci;
     unsigned int            effects, renderfx;
-    bool                    has_trail;
+    bool                    has_alpha, has_trail;
     float                   custom_alpha;
     uint64_t                custom_flags;
 
@@ -820,13 +820,24 @@ static void CL_AddPacketEntities(void)
         // custom alpha overrides any derived value
         custom_alpha = 1.0f;
         custom_flags = 0;
+        has_alpha = false;
+
         if (s1->alpha) {
-            ent.alpha = lerp_entity_alpha(cent);
-            if (ent.alpha == 1.0f)
+            custom_alpha = lerp_entity_alpha(cent);
+            has_alpha = true;
+        }
+
+        if (s1->number == cl.frame.clientNum + 1 && cl.thirdPersonView && cl.thirdPersonAlpha != 1.0f) {
+            custom_alpha *= cl.thirdPersonAlpha;
+            has_alpha = true;
+        }
+
+        if (has_alpha) {
+            ent.alpha = custom_alpha;
+            if (custom_alpha == 1.0f)
                 ent.flags &= ~RF_TRANSLUCENT;
             else
                 ent.flags |= RF_TRANSLUCENT;
-            custom_alpha = ent.alpha;
             custom_flags = ent.flags & RF_TRANSLUCENT;
         }
 
@@ -1302,6 +1313,7 @@ static void CL_SetupThirdPersionView(void)
 
     CL_LerpedTrace(&trace, cl.playerEntityOrigin, cl.refdef.vieworg, mins, maxs, CONTENTS_SOLID);
     VectorCopy(trace.endpos, cl.refdef.vieworg);
+    cl.thirdPersonAlpha = trace.fraction;
 
     VectorSubtract(focus, cl.refdef.vieworg, focus);
     dist = sqrtf(focus[0] * focus[0] + focus[1] * focus[1]);

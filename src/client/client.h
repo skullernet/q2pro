@@ -245,6 +245,7 @@ typedef struct {
     vec3_t      v_forward, v_right, v_up;    // set when refdef.angles is set
 
     bool        thirdPersonView;
+    float       thirdPersonAlpha;
 
     // predicted values, used for smooth player entity movement in thirdperson view
     vec3_t      playerEntityOrigin;
