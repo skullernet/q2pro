@@ -58,7 +58,7 @@ qhandle_t   cl_img_flare;
 static cvar_t   *cl_muzzleflashes;
 static cvar_t   *cl_hit_markers;
 
-#define MAX_FOOTSTEP_SFX    9
+#define MAX_FOOTSTEP_SFX    15
 
 typedef struct {
     int         num_sfx;
