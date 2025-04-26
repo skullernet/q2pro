@@ -1284,8 +1284,8 @@ CL_SetupThirdPersionView
 */
 static void CL_SetupThirdPersionView(void)
 {
-    static const vec3_t mins = { -8, -8, -4 };
-    static const vec3_t maxs = {  8,  8,  4 };
+    static const vec3_t mins = { -4, -4, -4 };
+    static const vec3_t maxs = {  4,  4,  4 };
     vec3_t focus;
     float fscale, rscale;
     float dist, angle, range;
@@ -1298,7 +1298,6 @@ static void CL_SetupThirdPersionView(void)
     }
 
     VectorMA(cl.refdef.vieworg, 512, cl.v_forward, focus);
-
     cl.refdef.vieworg[2] += 8;
 
     cl.refdef.viewangles[PITCH] *= 0.5f;
