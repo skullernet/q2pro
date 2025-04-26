@@ -170,7 +170,7 @@ void CL_PlayFootstepSfx(int step_id, int entnum, float volume, float attenuation
     if (footstep_sfx == cl_last_footstep)
         footstep_sfx = sfx->sfx[(sfx_num + 1) % sfx->num_sfx];
 
-    S_StartSound(NULL, entnum, CHAN_BODY, footstep_sfx, volume, attenuation, 0);
+    S_StartSound(NULL, entnum, CHAN_FOOTSTEP, footstep_sfx, volume, attenuation, 0);
     cl_last_footstep = footstep_sfx;
 }
 
