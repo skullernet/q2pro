@@ -787,7 +787,7 @@ void CL_RequestNextDownload(void)
             // find sexed sounds
             precache_sexed_total = 0;
             for (i = 1; i < cl.csr.max_sounds; i++) {
-                if (cl.configstrings[cl.csr.max_sounds + i][0] == '*') {
+                if (cl.configstrings[cl.csr.sounds + i][0] == '*') {
                     precache_sexed_sounds[precache_sexed_total++] = i;
                 }
             }
