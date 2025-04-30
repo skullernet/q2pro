@@ -3523,7 +3523,7 @@ static void free_game_paths(void)
 }
 
 // game needs this for localized map messages
-static void add_game_kpf(const char *dir)
+static void add_game_kpf(unsigned mode, const char *dir)
 {
 #if USE_ZLIB
     char path[MAX_OSPATH];
@@ -3538,7 +3538,7 @@ static void add_game_kpf(const char *dir)
         return;
 
     search = FS_Malloc(sizeof(*search));
-    search->mode = FS_PATH_BASE | FS_DIR_BASE;
+    search->mode = mode;
     search->filename[0] = 0;
     search->pack = pack_get(pack);
     search->next = fs_searchpaths;
@@ -3551,10 +3551,11 @@ static void setup_base_paths(void)
     const char *base = sys_basedir->string;
     const char *home = sys_homedir->string;
 
-    add_game_kpf(base);
+    add_game_kpf(FS_PATH_BASE | FS_DIR_BASE, base);
     add_game_dir(FS_PATH_BASE | FS_DIR_BASE, base, BASEGAME, *home);
 
     if (*home) {
+        add_game_kpf(FS_PATH_BASE | FS_DIR_HOME, home);
         add_game_dir(FS_PATH_BASE | FS_DIR_HOME, home, BASEGAME, false);
     }
 
