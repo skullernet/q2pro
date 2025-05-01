@@ -1035,7 +1035,7 @@ void SV_InitGameProgs(void)
     }
 
     // sanitize maxclients
-    if (sv_maxclients->integer != svs.maxclients) {
+    if (sv_maxclients->integer != svs.maxclients || sv_maxclients->value != svs.maxclients) {
         Com_Error(ERR_DROP, "Game library corrupted maxclients value");
     }
 
