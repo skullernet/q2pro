@@ -984,11 +984,14 @@ static void CL_AddPacketEntities(void)
             if (effects & EF_TRACKER) {
                 CL_BlasterTrail2(cent, ent.origin);
                 V_AddLight(ent.origin, 200, 0, 1, 0);
+                has_trail = true;
             } else {
-                CL_BlasterTrail(cent, ent.origin);
+                if (!(cl_disable_particles->integer & NOPART_BLASTER_TRAIL)) {
+                    CL_BlasterTrail(cent, ent.origin);
+                    has_trail = true;
+                }
                 V_AddLight(ent.origin, 200, 1, 1, 0);
             }
-            has_trail = true;
         } else if (effects & EF_HYPERBLASTER) {
             if (effects & EF_TRACKER)
                 V_AddLight(ent.origin, 200, 0, 1, 0);

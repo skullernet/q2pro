@@ -519,6 +519,7 @@ extern char         cl_cmdbuf_text[MAX_STRING_CHARS];
 #define NOPART_ROCKET_EXPLOSION     BIT(2)
 #define NOPART_ROCKET_TRAIL         BIT(3)
 #define NOPART_BLOOD                BIT(4)
+#define NOPART_BLASTER_TRAIL        BIT(5)
 
 #define NOEXP_GRENADE               BIT(0)
 #define NOEXP_ROCKET                BIT(1)

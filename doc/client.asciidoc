@@ -235,6 +235,8 @@ cl_disable_particles::
       - 2 — grenade trails
       - 4 — rocket explosions
       - 8 — rocket trails
+      - 16 — blood splashes
+      - 32 — blaster trails
 
 .Bitmasks
 TIP: Bitmask cvars allow multiple features to be enabled. To enable the needed
