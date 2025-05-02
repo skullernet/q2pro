@@ -515,6 +515,8 @@ static void CM_ClipBoxToBrush(const vec3_t p1, const vec3_t p2, trace_t *trace, 
         if (d1 > d2) {
             // enter
             f = (d1 - DIST_EPSILON) / (d1 - d2);
+            if (f < 0)
+                f = 0;
             if (f > enterfrac) {
                 enterfrac = f;
                 clipplane = plane;
@@ -523,6 +525,8 @@ static void CM_ClipBoxToBrush(const vec3_t p1, const vec3_t p2, trace_t *trace, 
         } else {
             // leave
             f = (d1 + DIST_EPSILON) / (d1 - d2);
+            if (f > 1)
+                f = 1;
             if (f < leavefrac)
                 leavefrac = f;
         }
@@ -543,8 +547,6 @@ static void CM_ClipBoxToBrush(const vec3_t p1, const vec3_t p2, trace_t *trace, 
     }
     if (enterfrac < leavefrac) {
         if (enterfrac > -1 && enterfrac < trace->fraction) {
-            if (enterfrac < 0)
-                enterfrac = 0;
             trace->fraction = enterfrac;
             trace->plane = *clipplane;
             trace->surface = &(leadside->texinfo->c);
