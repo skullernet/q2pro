@@ -284,7 +284,7 @@ void SV_Multicast(const vec3_t origin, multicast_t to)
         BSP_ClusterVis(sv.cm.cache, &mask, leaf1->cluster, MULTICAST_PVS - to);
     }
 
-    // send the data to all relevent clients
+    // send the data to all relevant clients
     FOR_EACH_CLIENT(client) {
         if (client->state < cs_primed) {
             continue;

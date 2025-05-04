@@ -1577,7 +1577,7 @@ void CL_UpdateUserinfo(cvar_t *var, from_t from)
     }
 
     if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO) {
-        // transmit at next oportunity
+        // transmit at next opportunity
         cls.userinfo_modified = MAX_PACKET_USERINFOS;
         goto done;
     }

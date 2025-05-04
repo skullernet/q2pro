@@ -131,7 +131,7 @@ static const keyname_t keynames[] = {
     K(MWHEELRIGHT),
     K(MWHEELLEFT),
 
-    {"SEMICOLON", ';'}, // because a raw semicolon seperates commands
+    {"SEMICOLON", ';'}, // because a raw semicolon separates commands
 
     {NULL, 0}
 };
@@ -739,7 +739,7 @@ void Key_Event(unsigned key, bool down, unsigned time)
         kb = keybindings[key];
         if (kb) {
             if (kb[0] == '+') {
-                // button commands add keynum and time as a parm
+                // button commands add keynum and time as a param
                 Q_snprintf(cmd, sizeof(cmd), "%s %i %i\n", kb, key, time);
                 Cbuf_AddText(&cmd_buffer, cmd);
 

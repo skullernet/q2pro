@@ -828,7 +828,7 @@ void MVD_SwitchChannel(mvd_client_t *client, mvd_t *mvd)
 
 static bool MVD_PartFilter(mvd_client_t *client)
 {
-    unsigned i, delta, treshold;
+    unsigned i, delta, threshold;
     float f = mvd_part_filter->value;
 
     if (!f) {
@@ -844,15 +844,15 @@ static bool MVD_PartFilter(mvd_client_t *client)
         return false; // not talked yet
     }
     if (f > 24 * 24 * 60 * 60) {
-        return true; // treshold too big
+        return true; // threshold too big
     }
 
     // take the most recent sample
     i = (client->floodHead - 1) & FLOOD_MASK;
     delta = svs.realtime - client->floodSamples[i];
-    treshold = f * 1000;
+    threshold = f * 1000;
 
-    return delta < treshold;
+    return delta < threshold;
 }
 
 static bool MVD_ClientCompatible(client_t *cl, mvd_t *mvd)

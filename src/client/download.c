@@ -192,7 +192,7 @@ static bool start_udp_download(dlqueue_t *q)
 
     // download to a temp name, and only rename
     // to the real name when done, so if interrupted
-    // a runt file wont be left
+    // a runt file won't be left
     memcpy(cls.download.temp, q->path, len);
     memcpy(cls.download.temp + len, ".tmp", 5);
 

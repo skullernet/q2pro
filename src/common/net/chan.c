@@ -39,12 +39,12 @@ packet header
 
 The remote connection never knows if it missed a reliable message, the
 local side detects that it has been dropped by seeing a sequence acknowledge
-higher thatn the last reliable sequence, but without the correct evon/odd
+higher than the last reliable sequence, but without the correct even/odd
 bit for the reliable set.
 
 If the sender notices that a reliable message has been dropped, it will be
 retransmitted.  It will not be retransmitted again until a message after
-the retransmit has been acknowledged and the reliable still failed to get theref.
+the retransmit has been acknowledged and the reliable still failed to get there.
 
 if the sequence number is -1, the packet should be handled without a netcon
 
@@ -75,7 +75,7 @@ channel matches even if the IP port differs.  The IP port should be updated
 to the new value before sending out any replies.
 
 
-If there is no information that needs to be transfered on a given frame,
+If there is no information that needs to be transferred on a given frame,
 such as during the connection stage while waiting for the client to load,
 then a packet only needs to be delivered if there is something in the
 unacknowledged reliable
@@ -168,7 +168,7 @@ void Netchan_OutOfBand(netsrc_t sock, const netadr_t *address, const char *forma
 NetchanOld_Transmit
 
 tries to send an unreliable message to a connection, and handles the
-transmition / retransmition of the reliable messages.
+transmission / retransmission of the reliable messages.
 
 A 0 length will still generate a packet and deal with the reliable messages.
 ================
@@ -655,7 +655,7 @@ static bool NetchanNew_Process(netchan_t *chan)
             return false;
         }
 
-        // message has been sucessfully assembled
+        // message has been successfully assembled
         memcpy(msg_read_buffer, chan->fragment_in.data, chan->fragment_in.cursize);
         SZ_InitRead(&msg_read, msg_read_buffer, chan->fragment_in.cursize);
         SZ_Clear(&chan->fragment_in);

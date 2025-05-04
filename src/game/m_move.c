@@ -98,7 +98,7 @@ pr_global_struct->trace_normal is set to the normal of the blocking wall
 =============
 */
 //FIXME since we need to test end position contents here, can we avoid doing
-//it again later in catagorize position?
+//it again later in categorize position?
 static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
 {
     float       dz;

@@ -460,7 +460,7 @@ static void CL_ParseConfigstring(int index)
         Q_SetBit(cl.dcs, index);
     }
 
-    // do something apropriate
+    // do something appropriate
     CL_UpdateConfigstring(index);
 }
 
@@ -714,7 +714,7 @@ static void CL_ParseServerData(void)
     if (cinematic) {
         SCR_PlayCinematic(levelname);
     } else {
-        // seperate the printfs so the server message can have a color
+        // separate the printfs so the server message can have a color
         Con_Printf(
             "\n\n"
             "\35\36\36\36\36\36\36\36\36\36\36\36"

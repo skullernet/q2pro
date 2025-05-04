@@ -240,7 +240,7 @@ typedef struct {
     int         apiversion;
 
     // the init function will only be called when a game starts,
-    // not each time a level is loaded.  Persistant data for clients
+    // not each time a level is loaded.  Persistent data for clients
     // and the server can be allocated in init
     void (*Init)(void);
     void (*Shutdown)(void);
@@ -248,7 +248,7 @@ typedef struct {
     // each new level entered will cause a call to SpawnEntities
     void (*SpawnEntities)(const char *mapname, const char *entstring, const char *spawnpoint);
 
-    // Read/Write Game is for storing persistant cross level information
+    // Read/Write Game is for storing persistent cross level information
     // about the world state and the clients.
     // WriteGame is called every time a level is exited.
     // ReadGame is called on a loadgame.

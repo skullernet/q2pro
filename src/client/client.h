@@ -169,7 +169,7 @@ typedef struct {
     bool        sendPacketNow;
 
     usercmd_t    cmd;
-    usercmd_t    cmds[CMD_BACKUP];    // each mesage will send several old cmds
+    usercmd_t    cmds[CMD_BACKUP];    // each message will send several old cmds
     unsigned     cmdNumber;
     int          predicted_origins[CMD_BACKUP][3];    // for debug comparing against server
     client_history_t    history[CMD_BACKUP];
@@ -324,7 +324,7 @@ extern client_state_t   cl;
 /*
 ==================================================================
 
-the client_static_t structure is persistant through an arbitrary number
+the client_static_t structure is persistent through an arbitrary number
 of server connections
 
 ==================================================================
@@ -403,7 +403,7 @@ typedef struct {
     unsigned    realtime;           // always increasing, no clamping, etc
     float       frametime;          // seconds since last video frame
 
-// preformance measurement
+// performance measurement
 #define C_FPS   cls.measure.fps[0]
 #define R_FPS   cls.measure.fps[1]
 #define C_MPS   cls.measure.fps[2]
@@ -762,7 +762,7 @@ void CL_CalcViewValues(void);
 void CL_CheckEntityPresent(int entnum, const char *what);
 #endif
 
-// the sound code makes callbacks to the client for entitiy position
+// the sound code makes callbacks to the client for entity position
 // information, so entities can be dynamically re-spatialized
 void CL_GetEntitySoundOrigin(unsigned entnum, vec3_t org);
 

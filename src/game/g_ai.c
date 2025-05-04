@@ -160,7 +160,7 @@ void ai_walk(edict_t *self, float dist)
 ai_charge
 
 Turns towards target and advances
-Use this call with a distnace of 0 to replace ai_face
+Use this call with a distance of 0 to replace ai_face
 ==============
 */
 void ai_charge(edict_t *self, float dist)
@@ -224,7 +224,7 @@ walkmove(angle, speed) primitive is all or nothing
 =============
 range
 
-returns the range catagorization of an entity reletive to self
+returns the range categorization of an entity relative to self
 0   melee range, will become hostile even if back is turned
 1   visibility and infront, or visibility and show hostile
 2   infront and show hostile
@@ -642,7 +642,7 @@ static void ai_run_missile(edict_t *self)
 =============
 ai_run_slide
 
-Strafe sideways, but stay at aproximately the same range
+Strafe sideways, but stay at approximately the same range
 =============
 */
 static void ai_run_slide(edict_t *self, float distance)

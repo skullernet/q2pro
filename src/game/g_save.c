@@ -953,7 +953,7 @@ void WriteLevel(const char *filename)
 =================
 ReadLevel
 
-SpawnEntities will allready have been called on the
+SpawnEntities will already have been called on the
 level the same way it was when the level was saved.
 
 That is necessary to get the baselines

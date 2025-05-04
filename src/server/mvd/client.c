@@ -1335,7 +1335,7 @@ static bool parse_message(gtv_t *gtv, fifo_t *fifo)
         parse_stream_data(gtv);
         break;
     case GTS_ERROR:
-        gtv_destroyf(gtv, "Server side error occured.");
+        gtv_destroyf(gtv, "Server side error occurred.");
         break;
     case GTS_BADREQUEST:
         gtv_destroyf(gtv, "Server refused to process our request.");

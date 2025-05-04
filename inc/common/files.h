@@ -41,7 +41,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define FS_AllocTempMem(size)   FS_Malloc(size)
 #define FS_FreeTempMem(buf)     Z_Free(buf)
 
-// just regular caseless string comparsion
+// just regular caseless string comparison
 #define FS_pathcmp      Q_strcasecmp
 #define FS_pathcmpn     Q_strncasecmp
 

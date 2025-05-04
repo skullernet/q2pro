@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "server.h"
 
-server_static_t svs;                // persistant server info
+server_static_t svs;                // persistent server info
 server_t        sv;                 // local server
 
 void SV_ClientReset(client_t *client)
@@ -415,7 +415,7 @@ void SV_InitGame(unsigned mvd_spawn)
         }
 
         // dedicated servers can't be single player and are usually DM
-        // so unless they explicity set coop, force it to deathmatch
+        // so unless they explicitly set coop, force it to deathmatch
         if (COM_DEDICATED) {
             if (!Cvar_VariableInteger("coop"))
                 Cvar_Set("deathmatch", "1");

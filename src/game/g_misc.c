@@ -35,7 +35,7 @@ void Use_Areaportal(edict_t *ent, edict_t *other, edict_t *activator)
 /*QUAKED func_areaportal (0 0 0) ?
 
 This is a non-visible object that divides the world into
-areas that are seperated when this portal is not activated.
+areas that are separated when this portal is not activated.
 Usually enclosed in the middle of a door.
 */
 void SP_func_areaportal(edict_t *ent)
@@ -519,7 +519,7 @@ void SP_light(edict_t *self)
 This is just a solid wall if not inhibited
 
 TRIGGER_SPAWN   the wall will not be present until triggered
-                it will then blink in to existance; it will
+                it will then blink in to existence; it will
                 kill anything that was in it's way
 
 TOGGLE          only valid for TRIGGER_SPAWN walls

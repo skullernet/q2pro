@@ -741,8 +741,8 @@ static void emit_frame(void)
 
         if (PPS_INUSE(oldps)) {
             // delta update from old position
-            // because the force parm is false, this will not result
-            // in any bytes being emited if the player has not changed at all
+            // because the force param is false, this will not result
+            // in any bytes being emitted if the player has not changed at all
             MSG_WriteDeltaPlayerstate_Packet(oldps, &newps, i, mvd.psFlags);
         } else {
             // this is a new player, send it from the last state

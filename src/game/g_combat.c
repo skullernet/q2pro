@@ -389,7 +389,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t
     else
         te_sparks = TE_SPARKS;
 
-// bonus damage for suprising a monster
+// bonus damage for surprising a monster
     if (!(dflags & DAMAGE_RADIUS) && (targ->svflags & SVF_MONSTER) && (attacker->client) && (!targ->enemy) && (targ->health > 0))
         damage *= 2;
 

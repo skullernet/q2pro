@@ -385,7 +385,7 @@ typedef struct client_s {
 } client_t;
 
 // a client can leave the server in one of four ways:
-// dropping properly by quiting or disconnecting
+// dropping properly by quitting or disconnecting
 // timing out if no valid messages are received for timeout.value seconds
 // getting kicked off by the server operator
 // a program error, like an overflowed reliable buffer
@@ -509,7 +509,7 @@ extern list_t       sv_cvarbanlist;
 extern list_t       sv_infobanlist;
 extern list_t       sv_clientlist;  // linked list of non-free clients
 
-extern server_static_t      svs;        // persistant server info
+extern server_static_t      svs;        // persistent server info
 extern server_t             sv;         // local server
 
 extern cvar_t       *sv_hostname;
@@ -865,7 +865,7 @@ int SV_AreaEdicts(const vec3_t mins, const vec3_t maxs, edict_t **list, int maxc
 //===================================================================
 
 //
-// functions that interact with everything apropriate
+// functions that interact with everything appropriate
 //
 int SV_PointContents(const vec3_t p);
 // returns the CONTENTS_* value from the world at the given point.

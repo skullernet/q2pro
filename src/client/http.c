@@ -220,7 +220,7 @@ static bool start_download(dlqueue_t *entry, dlhandle_t *dl)
     char    escaped[MAX_QPATH * 4];
     int     err;
 
-    //yet another hack to accomodate filelists, how i wish i could push :(
+    //yet another hack to accommodate filelists, how i wish i could push :(
     //NULL file handle indicates filelist.
     if (entry->type == DL_LIST) {
         dl->file = NULL;
@@ -385,7 +385,7 @@ int HTTP_FetchFile(const char *url, void **data)
 ===============
 HTTP_CleanupDownloads
 
-Disconnected from server, or fatal HTTP error occured. Clean up.
+Disconnected from server, or fatal HTTP error occurred. Clean up.
 ===============
 */
 void HTTP_CleanupDownloads(void)
@@ -719,7 +719,7 @@ static void rescan_queue(void)
     }
 }
 
-// Fatal HTTP error occured, remove any special entries from
+// Fatal HTTP error occurred, remove any special entries from
 // queue and fall back to UDP downloading.
 static void abort_downloads(void)
 {
@@ -871,7 +871,7 @@ fail2:
         finished = true;
     }
 
-    //fatal error occured, disable HTTP
+    //fatal error occurred, disable HTTP
     if (fatal_error) {
         abort_downloads();
         return;

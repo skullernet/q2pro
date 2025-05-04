@@ -60,7 +60,7 @@ typedef struct {
     unsigned    last_reliable_sequence;     // sequence number of last send
     unsigned    fragment_sequence;
 
-    // message is copied to this buffer when it is first transfered
+    // message is copied to this buffer when it is first transferred
     unsigned    reliable_length;
     byte        *reliable_buf;      // unacked reliable message
 

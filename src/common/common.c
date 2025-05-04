@@ -55,7 +55,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include <setjmp.h>
 
-static jmp_buf  com_abortframe;    // an ERR_DROP occured, exit the entire frame
+static jmp_buf  com_abortframe;    // an ERR_DROP occurred, exit the entire frame
 
 static void     (*com_abort_func)(void *);
 static void     *com_abort_arg;
@@ -418,7 +418,7 @@ const char *Com_GetLastError(void)
 Com_Printf
 
 Both client and server can use this, and it will output
-to the apropriate place.
+to the appropriate place.
 =============
 */
 void Com_LPrintf(print_type_t type, const char *fmt, ...)
@@ -506,7 +506,7 @@ void Com_LPrintf(print_type_t type, const char *fmt, ...)
 Com_Error
 
 Both client and server can use this, and it will
-do the apropriate things.
+do the appropriate things.
 =============
 */
 void Com_Error(error_type_t code, const char *fmt, ...)
@@ -611,7 +611,7 @@ void Com_AbortFunc(void (*func)(void *), void *arg)
 Com_Quit
 
 Both client and server can use this, and it will
-do the apropriate things. This function never returns.
+do the appropriate things. This function never returns.
 =============
 */
 void Com_Quit(const char *reason, error_type_t type)
@@ -975,7 +975,7 @@ void Qcommon_Init(int argc, char **argv)
 
     // we need to add the early commands twice, because
     // a basedir or cddir needs to be set before execing
-    // config files, but we want other parms to override
+    // config files, but we want other params to override
     // the settings of the config files
     Com_AddEarlyCommands(false);
 

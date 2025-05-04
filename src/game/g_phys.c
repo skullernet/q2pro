@@ -469,8 +469,8 @@ static bool SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
             }
 
             // if it is ok to leave in the old position, do it
-            // this is only relevent for riding entities, not pushed
-            // FIXME: this doesn't acount for rotation
+            // this is only relevant for riding entities, not pushed
+            // FIXME: this doesn't account for rotation
             VectorSubtract(check->s.origin, move, check->s.origin);
             block = SV_TestEntityPosition(check);
             if (!block) {
@@ -519,7 +519,7 @@ static void SV_Physics_Pusher(edict_t *ent)
     if (ent->flags & FL_TEAMSLAVE)
         return;
 
-    // make sure all team slaves can move before commiting
+    // make sure all team slaves can move before committing
     // any moves or calling any think functions
     // if the move is blocked, all moved objects will be backed out
 //retry:

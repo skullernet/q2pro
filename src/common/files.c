@@ -1311,7 +1311,7 @@ fail:
 
 // Finds the file in the search path.
 // Fills file_t and returns file length.
-// Used for streaming data out of either a pak file or a seperate file.
+// Used for streaming data out of either a pak file or a separate file.
 static int64_t open_file_read(file_t *file, const char *normalized, size_t namelen)
 {
     char            fullpath[MAX_OSPATH];
@@ -3322,7 +3322,7 @@ static void FS_Stats_f(void)
 
     Com_Printf("File slots allocated: %d\n", fs_num_files);
     Com_Printf("Total calls to open_file_read: %u\n", fs_count_read);
-    Com_Printf("Total path comparsions: %u\n", fs_count_strcmp);
+    Com_Printf("Total path comparisons: %u\n", fs_count_strcmp);
     Com_Printf("Total calls to open_from_disk: %u\n", fs_count_open);
     Com_Printf("Total mixed-case reopens: %u\n", fs_count_strlwr);
 

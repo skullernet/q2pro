@@ -494,7 +494,7 @@ void MSG_WriteDir(const vec3_t dir)
 
 void MSG_PackEntity(entity_packed_t *out, const entity_state_t *in, const entity_state_extension_t *ext)
 {
-    // allow 0 to accomodate empty baselines
+    // allow 0 to accommodate empty baselines
     Q_assert(in->number >= 0 && in->number < MAX_EDICTS);
     out->number = in->number;
 

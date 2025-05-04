@@ -474,7 +474,7 @@ void CL_CheckEntityPresent(int entnum, const char *what)
 /*
 ==========================================================================
 
-INTERPOLATE BETWEEN FRAMES TO GET RENDERING PARMS
+INTERPOLATE BETWEEN FRAMES TO GET RENDERING PARAMS
 
 ==========================================================================
 */
@@ -852,7 +852,7 @@ static void CL_AddPacketEntities(void)
         // add to refresh list
         V_AddEntity(&ent);
 
-        // color shells generate a seperate entity for the main model
+        // color shells generate a separate entity for the main model
         if (effects & EF_COLOR_SHELL) {
             // PMM - at this point, all of the shells have been handled
             // if we're in the rogue pack, set up the custom mixing, otherwise just

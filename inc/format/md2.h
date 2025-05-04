@@ -65,7 +65,7 @@ typedef struct {
 // the glcmd format:
 // a positive integer starts a tristrip command, followed by that many
 // vertex structures.
-// a negative integer starts a trifan command, followed by -x vertexes
+// a negative integer starts a trifan command, followed by -x vertices
 // a zero indicates the end of the command list.
 // a vertex consists of a floating point s, a floating point t,
 // and an integer vertex index.

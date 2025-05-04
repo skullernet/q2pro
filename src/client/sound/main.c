@@ -659,7 +659,7 @@ void S_IssuePlaysound(playsound_t *ps)
 ====================
 S_StartSound
 
-Validates the parms and ques the sound up
+Validates the params and queues the sound up
 if pos is NULL, the sound will be dynamically sourced from the entity
 Entchannel 0 will never override a playing sound
 ====================
@@ -847,7 +847,7 @@ void S_SpatializeOrigin(const vec3_t origin, float master_vol, float dist_mult, 
     vec_t       lscale, rscale, scale;
     vec3_t      source_vec;
 
-// calculate stereo seperation and distance attenuation
+// calculate stereo separation and distance attenuation
     VectorSubtract(origin, listener_origin, source_vec);
 
     dist = VectorNormalize(source_vec);
@@ -896,7 +896,7 @@ void S_Update(void)
     if (!s_started)
         return;
 
-    // if the laoding plaque is up, clear everything
+    // if the loading plaque is up, clear everything
     // out to make sure we aren't looping a dirty
     // dma buffer while loading
     if (cls.state == ca_loading) {

@@ -67,7 +67,7 @@ typedef struct {
     qhandle_t   backImage;
     qhandle_t   charsetImage;
 
-    float   currentHeight;  // aproaches scr_conlines at scr_conspeed
+    float   currentHeight;  // approaches scr_conlines at scr_conspeed
     float   destHeight;     // 0.0 to 1.0 lines of console to display
 
     commandPrompt_t chatPrompt;

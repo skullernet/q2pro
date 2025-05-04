@@ -340,7 +340,7 @@ typedef struct {
 } level_locals_t;
 
 // spawn_temp_t is only used to hold entity field values that
-// can be set from the editor, but aren't actualy present
+// can be set from the editor, but aren't actually present
 // in edict_t during gameplay
 typedef struct {
     // world vars

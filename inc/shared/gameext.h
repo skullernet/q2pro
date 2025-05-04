@@ -24,7 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
  *
  * Unlike GetGameAPI(), passed game_import_ex_t * is valid as long as game
  * library is loaded. Pointed to structure can be used directly without making
- * a copy of it. If copying is neccessary, no more than structsize bytes must
+ * a copy of it. If copying is necessary, no more than structsize bytes must
  * be copied.
  *
  * New fields can be safely added at the end of game_import_ex_t and

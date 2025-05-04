@@ -89,7 +89,7 @@ typedef enum {
     NS_DISCONNECTED,// no socket opened
     NS_CONNECTING,  // connect() not yet completed
     NS_CONNECTED,   // may transmit data
-    NS_CLOSED,      // peer has preformed orderly shutdown
+    NS_CLOSED,      // peer has performed orderly shutdown
     NS_BROKEN       // fatal error has been signaled
 } netstate_t;
 

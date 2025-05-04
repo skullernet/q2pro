@@ -24,7 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MAX_PACKETENTITY_BYTES  70  // 68 bytes worst case + 2 byte eof
 
 // entity and player states are pre-quantized before sending to make delta
-// comparsion easier
+// comparison easier
 typedef struct {
     uint16_t    number;
     int16_t     angles[3];

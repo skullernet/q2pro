@@ -408,7 +408,7 @@ int CM_BoxLeafs_headnode(const vec3_t mins, const vec3_t maxs,
 ==================
 CM_TransformedPointContents
 
-Handles offseting and rotation of the end points for moving and
+Handles offsetting and rotation of the end points for moving and
 rotating entities
 ==================
 */
@@ -488,7 +488,7 @@ static void CM_ClipBoxToBrush(const vec3_t p1, const vec3_t p2, trace_t *trace, 
         // FIXME: special case for axial
         if (!trace_ispoint) {
             // general box case
-            // push the plane out apropriately for mins/maxs
+            // push the plane out appropriately for mins/maxs
             dist = DotProduct(trace_offsets[plane->signbits], plane->normal);
             dist = plane->dist - dist;
         } else {
@@ -577,7 +577,7 @@ static void CM_TestBoxInBrush(const vec3_t p1, trace_t *trace, const mbrush_t *b
 
         // FIXME: special case for axial
         // general box case
-        // push the plane out apropriately for mins/maxs
+        // push the plane out appropriately for mins/maxs
         dist = DotProduct(trace_offsets[plane->signbits], plane->normal);
         dist = plane->dist - dist;
 
@@ -678,7 +678,7 @@ recheck:
     }
 
     //
-    // find the point distances to the seperating plane
+    // find the point distances to the separating plane
     // and the offset for the size of the box
     //
     if (plane->type < 3) {
@@ -825,7 +825,7 @@ void CM_BoxTrace(trace_t *trace,
 ==================
 CM_TransformedBoxTrace
 
-Handles offseting and rotation of the end points for moving and
+Handles offsetting and rotation of the end points for moving and
 rotating entities
 ==================
 */

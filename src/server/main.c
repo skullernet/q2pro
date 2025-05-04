@@ -149,7 +149,7 @@ void SV_CleanClient(client_t *client)
     client->ac_bad_files = NULL;
 #endif
 
-    // close any existing donwload
+    // close any existing download
     SV_CloseDownload(client);
 
     Z_Freep(&client->version_string);
@@ -207,7 +207,7 @@ static void print_drop_reason(client_t *client, const char *reason, clstate_t ol
 SV_DropClient
 
 Called when the player is totally leaving the server, either willingly
-or unwillingly.  This is NOT called if the entire server is quiting
+or unwillingly.  This is NOT called if the entire server is quitting
 or crashing.
 =====================
 */
@@ -1649,7 +1649,7 @@ void SV_ErrorEvent(const netadr_t *from, int ee_errno, int ee_info)
 SV_CheckTimeouts
 
 If a packet has not been received from a client for timeout->value
-seconds, drop the conneciton.
+seconds, drop the connection.
 
 When a client is normally dropped, the client_t goes into a zombie state
 for a few seconds to make sure any final reliable message gets resent
@@ -1909,7 +1909,7 @@ static void SV_MasterShutdown(void)
 SV_Frame
 
 Some things like MVD client connections and command buffer
-processing are run even when server is not yet initalized.
+processing are run even when server is not yet initialized.
 
 Returns amount of extra frametime available for sleeping on IO.
 ==================
@@ -2006,7 +2006,7 @@ unsigned SV_Frame(unsigned msec)
 SV_UserinfoChanged
 
 Pull specific info from a newly changed userinfo string
-into a more C freindly form.
+into a more C friendly form.
 =================
 */
 void SV_UserinfoChanged(client_t *cl)
@@ -2308,7 +2308,7 @@ connected clients before the server goes down. The messages are sent
 immediately, not just stuck on the outgoing message list, because the
 server is going to totally exit after returning from this function.
 
-Also resposible for freeing all clients.
+Also responsible for freeing all clients.
 ==================
 */
 static void SV_FinalMessage(const char *message, error_type_t type)
@@ -2364,7 +2364,7 @@ static void SV_FinalMessage(const char *message, error_type_t type)
 SV_Shutdown
 
 Called when each game quits, from Com_Quit or Com_Error.
-Should be safe to call even if server is not fully initalized yet.
+Should be safe to call even if server is not fully initialized yet.
 ================
 */
 void SV_Shutdown(const char *finalmsg, error_type_t type)

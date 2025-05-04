@@ -392,7 +392,7 @@ static void Cmd_Drop_f(edict_t *ent)
         return;
     }
     if (!it->drop || ((coop->value) && (it->flags & IT_STAY_COOP))) {
-        gi.cprintf(ent, PRINT_HIGH, "Item is not dropable.\n");
+        gi.cprintf(ent, PRINT_HIGH, "Item is not droppable.\n");
         return;
     }
     index = ITEM_INDEX(it);
@@ -572,7 +572,7 @@ static void Cmd_InvDrop_f(edict_t *ent)
 
     it = &itemlist[ent->client->pers.selected_item];
     if (!it->drop || ((coop->value) && (it->flags & IT_STAY_COOP))) {
-        gi.cprintf(ent, PRINT_HIGH, "Item is not dropable.\n");
+        gi.cprintf(ent, PRINT_HIGH, "Item is not droppable.\n");
         return;
     }
     it->drop(ent, it);

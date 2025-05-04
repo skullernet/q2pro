@@ -158,7 +158,7 @@ static void MVD_ParseMulticast(mvd_t *mvd, multicast_t to, int extrabits)
         BSP_ClusterVis(mvd->cm.cache, &mask, leaf1->cluster, MULTICAST_PVS - to);
     }
 
-    // send the data to all relevent clients
+    // send the data to all relevant clients
     FOR_EACH_MVDCL(client, mvd) {
         cl = client->cl;
         if (cl->state < cs_primed) {
@@ -416,7 +416,7 @@ MVD_ParseSound
 
 Entity positioned sounds need special handling since origins need to be
 explicitly specified for entities out of client PVS, and not all clients
-are able to postition sounds on BSP models properly.
+are able to position sounds on BSP models properly.
 
 FIXME: this duplicates code in sv_game.c
 */
@@ -1040,7 +1040,7 @@ static void MVD_ParseServerData(mvd_t *mvd, int extrabits)
     // save base configstrings
     memcpy(mvd->baseconfigstrings, mvd->configstrings, sizeof(mvd->baseconfigstrings[0]) * mvd->csr->end);
 
-    // force inital snapshot
+    // force initial snapshot
     mvd->last_snapshot = INT_MIN;
 
     // if the channel has been just created, init some things
