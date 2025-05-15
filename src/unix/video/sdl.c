@@ -492,7 +492,9 @@ static void pump_events(void)
             break;
         case SDL_KEYDOWN:
         case SDL_KEYUP:
-            key_event(&event.key);
+            if (!event.key.repeat) {
+                key_event(&event.key);
+            }
             break;
         case SDL_MOUSEMOTION:
             if (sdl.win_width && sdl.win_height)
