@@ -506,16 +506,12 @@ static void V_Fog_f(void)
     float args[5];
 
     if (argc == 1) {
-        if (cl.custom_fog.density) {
+        if (cl.custom_fog.density || cl.custom_fog.sky_factor) {
             Com_Printf("User set global fog:\n");
             dump_fog(&cl.custom_fog);
             return;
         }
-        if (!cl.frame.ps.fog.density && !cl.frame.ps.heightfog.density) {
-            Com_Printf("No fog.\n");
-            return;
-        }
-        if (cl.frame.ps.fog.density) {
+        if (cl.frame.ps.fog.density || cl.frame.ps.fog.sky_factor) {
             Com_Printf("Global fog:\n");
             dump_fog(&cl.frame.ps.fog);
         }
@@ -523,6 +519,8 @@ static void V_Fog_f(void)
             Com_Printf("Height fog:\n");
             dump_heightfog(&cl.frame.ps.heightfog);
         }
+        if (!(cl.frame.ps.fog.density || cl.frame.ps.fog.sky_factor || cl.frame.ps.heightfog.density))
+            Com_Printf("No fog.\n");
         return;
     }
 
