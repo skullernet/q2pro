@@ -122,8 +122,8 @@ UTILS
 SCR_DrawStringEx
 ==============
 */
-int SCR_DrawStringEx(int x, int y, int flags, size_t maxlen,
-                     const char *s, qhandle_t font)
+static int SCR_DrawStringEx(int x, int y, int flags, size_t maxlen,
+                            const char *s, qhandle_t font)
 {
     size_t len = strlen(s);
 
@@ -146,8 +146,8 @@ int SCR_DrawStringEx(int x, int y, int flags, size_t maxlen,
 SCR_DrawStringMulti
 ==============
 */
-void SCR_DrawStringMulti(int x, int y, int flags, size_t maxlen,
-                         const char *s, qhandle_t font)
+static void SCR_DrawStringMulti(int x, int y, int flags, size_t maxlen,
+                                const char *s, qhandle_t font)
 {
     char    *p;
     size_t  len;
