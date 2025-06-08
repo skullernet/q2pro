@@ -2575,7 +2575,7 @@ static void add_game_dir(unsigned mode, const char *base, const char *game, bool
     }
 
     if (skip_if_not_exist && os_access(fs_gamedir, F_OK) == -1) {
-        Com_DPrintf("%s does not exist, skipping\n", path);
+        Com_DPrintf("%s does not exist, skipping\n", fs_gamedir);
         return;
     }
 
