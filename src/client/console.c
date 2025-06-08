@@ -965,12 +965,12 @@ static void Con_DrawSolidConsole(void)
     }
 
 #define APP_VERSION APPLICATION " " VERSION
-#define VER_WIDTH ((int)(sizeof(APP_VERSION) + 1) * CONCHAR_WIDTH)
+#define VER_WIDTH ((int)(sizeof(APP_VERSION) * CONCHAR_WIDTH))
 
     y = vislines - CON_PRESTEP + CONCHAR_HEIGHT;
     row = 0;
     // shift version upwards to prevent overdraw
-    if (x > con.vidWidth - VER_WIDTH) {
+    if (x > con.vidWidth - VER_WIDTH - CONCHAR_WIDTH) {
         y -= CONCHAR_HEIGHT;
         row++;
     }
@@ -979,17 +979,17 @@ static void Con_DrawSolidConsole(void)
 
 // draw clock
     if (con_clock->integer) {
-        x = Com_Time_m(buffer, sizeof(buffer)) * CONCHAR_WIDTH;
+        x = (Com_Time_m(buffer, sizeof(buffer)) + 1) * CONCHAR_WIDTH;
         if (widths[row] + x + CONCHAR_WIDTH <= con.vidWidth) {
-            R_DrawString(con.vidWidth - CONCHAR_WIDTH - x, y - CONCHAR_HEIGHT,
-                         UI_RIGHT, MAX_STRING_CHARS, buffer, con.charsetImage);
+            R_DrawString(con.vidWidth - x, y - CONCHAR_HEIGHT, UI_RIGHT,
+                         MAX_STRING_CHARS, buffer, con.charsetImage);
         }
     }
 
 // draw version
-    if (!row || widths[0] + VER_WIDTH <= con.vidWidth) {
-        SCR_DrawStringEx(con.vidWidth - CONCHAR_WIDTH, y, UI_RIGHT,
-                         MAX_STRING_CHARS, APP_VERSION, con.charsetImage);
+    if (!row || widths[0] + VER_WIDTH + CONCHAR_WIDTH <= con.vidWidth) {
+        R_DrawString(con.vidWidth - VER_WIDTH, y, UI_RIGHT,
+                     MAX_STRING_CHARS, APP_VERSION, con.charsetImage);
     }
 
     // restore rendering parameters
