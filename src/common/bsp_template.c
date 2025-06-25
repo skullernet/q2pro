@@ -58,8 +58,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 BSP_LOAD(Visibility)
 {
-    if (!count)
+    if (!count) {
+        Com_WPrintf("Map has no Visibility, expect bugs and bad performance!\n");
         return Q_ERR_SUCCESS;
+    }
 
     BSP_ENSURE(count >= 4, "Too small header");
 
