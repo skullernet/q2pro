@@ -52,7 +52,7 @@ static struct {
     Cursor      empty_cursor;
     vidFlags_t  flags;
     vrect_t     rc;
-    bool        mapped;
+    bool        mapped, configured;
     bool        evdev;
     char        *clipboard_data;
     int         dpi_scale;
@@ -68,6 +68,8 @@ static struct {
         bool    initialized;
         bool    grabbed;
         bool    grab_pending;
+        bool    warp_pending;
+        int     warp_x, warp_y;
         int     xi_opcode;
         double  x, y;
     } mouse;
@@ -480,6 +482,7 @@ static void set_fullscreen(bool fs)
 
 static void set_mode(void)
 {
+    x11.configured = false;
     if (!x11.mapped) {
         if (vid_fullscreen->integer && x11.atom.fs) {
             XChangeProperty(x11.dpy, x11.win, x11.atom.wm_state, XA_ATOM, 32,
@@ -522,6 +525,11 @@ static void configure_event(XConfigureEvent *event)
     if (!(x11.flags & QVF_FULLSCREEN))
         VID_SetGeometry(&x11.rc);
     mode_changed();
+    x11.configured = true;
+    if (x11.mouse.warp_pending) {
+        XWarpPointer(x11.dpy, None, x11.win, 0, 0, 0, 0, x11.mouse.warp_x, x11.mouse.warp_y);
+        x11.mouse.warp_pending = false;
+    }
 }
 
 static void key_event(XKeyEvent *event)
@@ -820,6 +828,12 @@ static void grab_mouse(bool grab)
 
 static void warp_mouse(int x, int y)
 {
+    if (!x11.configured) {
+        x11.mouse.warp_pending = true;
+        x11.mouse.warp_x = x;
+        x11.mouse.warp_y = y;
+        return;
+    }
     XWarpPointer(x11.dpy, None, x11.win, 0, 0, 0, 0, x, y);
 }
 
