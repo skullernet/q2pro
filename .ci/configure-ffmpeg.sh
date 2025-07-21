@@ -18,7 +18,6 @@ OPTS_COMMON="--disable-everything \
     --enable-protocol=file \
     --disable-avdevice \
     --disable-avfilter \
-    --disable-postproc \
     --disable-programs \
     --disable-autodetect \
     --disable-network \
