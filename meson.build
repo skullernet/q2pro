@@ -257,8 +257,9 @@ texture_formats = []
 fallback_opt = ['default_library=static']
 
 zlib = dependency('zlib',
+  fallback:        'zlib-ng',
   required:        get_option('zlib'),
-  default_options: fallback_opt + [ 'tests=disabled' ],
+  default_options: fallback_opt + [ 'tests=disabled', 'zlib-compat=true', 'force-sse2=true' ],
 )
 
 if not zlib.found()
