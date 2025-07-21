@@ -927,13 +927,13 @@ static void CL_AddPlayerBeams(void)
         } else {
             VectorCopy(b->start, org);
 
-            // calculate pitch and yaw
-            VectorSubtract(b->end, org, dist);
-            vectoangles2(dist, angles);
-
             // if it's a non-origin offset, it's a player, so use the hardcoded player offset
             if (!VectorEmpty(b->offset)) {
                 vec3_t  tmp, f, r, u;
+
+                // calculate pitch and yaw
+                VectorSubtract(b->end, org, dist);
+                vectoangles2(dist, angles);
 
                 tmp[0] = -angles[0];
                 tmp[1] = angles[1] + 180.0f;
@@ -947,6 +947,10 @@ static void CL_AddPlayerBeams(void)
                 // if it's a monster, do the particle effect
                 CL_MonsterPlasma_Shell(b->start);
             }
+
+            // calculate pitch and yaw
+            VectorSubtract(b->end, org, dist);
+            vectoangles2(dist, angles);
 
             framenum = 2;
         }
