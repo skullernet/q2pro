@@ -562,8 +562,12 @@ ch_health::
 ch_red::
 ch_green::
 ch_blue::
-    These variables specify the color of crosshair image. Default values are 1
-    (draw in white color). Ignored if ‘ch_health’ is enabled.
+    These variables specify the intensity levels of crosshair image color
+    channels. Default values are 1 (use original color). Ignored if
+    ‘ch_health’ is enabled.
+
+NOTE: Crosshair coloring only works as expected for monochrome crosshair
+images.
 
 ch_alpha::
     Opacity level of crosshair image. Default value is 1 (fully opaque).
