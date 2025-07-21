@@ -28,8 +28,7 @@ echo "$VER" > $SRC/VERSION
 rm -rf $SRC/.gitignore $SRC/.ci $SRC/.github
 fakeroot tar czf q2pro-source.tar.gz $SRC
 
-sed -e "s/##VER##/$VER/" -e "s/##DATE##/`date -R`/" $CI/readme-template.txt    > README
-sed -e "s/##VER##/$VER/" -e "s/##DATE##/`date -R`/" $CI/readme-template-rr.txt > README.rr
+sed -e "s/##VER##/$VER/" -e "s/##DATE##/`date -R`/" $CI/readme-template.txt > README
 
 ### FFmpeg ###
 
@@ -112,32 +111,6 @@ zip -9 ../q2pro-server_win64_x64.zip \
     LICENSE.txt \
     MANUAL.txt \
     README.txt
-
-### Win64-rerelease ###
-
-cd $TMP_DIR
-git clone https://github.com/skullernet/q2pro-rerelease-dll.git
-cd q2pro-rerelease-dll
-meson setup --cross-file $CI/x86_64-w64-mingw32.txt $MESON_OPTS_COMMON build-mingw
-ninja -C build-mingw
-x86_64-w64-mingw32-strip build-mingw/gamex86_64.dll
-cd etc
-zip -9 ../build-mingw/q2pro.pkz default.cfg q2pro.menu
-
-cd $TMP_DIR/build-mingw-64
-
-mv q2pro64.exe q2pro.exe
-cp -a ../q2pro-rerelease-dll/build-mingw/q2pro.pkz baseq2/
-cp -a ../q2pro-rerelease-dll/build-mingw/gamex86_64.dll baseq2/
-unix2dos -k -n ../$SRC/doc/client.asciidoc MANUAL.txt ../README.rr README.txt
-
-zip -9 ../q2pro-rerelease-client_win64_x64.zip \
-    q2pro.exe \
-    LICENSE.txt \
-    MANUAL.txt \
-    README.txt \
-    baseq2/q2pro.pkz \
-    baseq2/gamex86_64.dll
 
 ### Version ###
 
