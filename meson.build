@@ -336,12 +336,78 @@ if openal.found()
 endif
 
 # require FFmpeg >= 5.1.3
+ffmpeg_defaults = [
+  'tests=disabled',
+  'programs=disabled',
+  'devices=disabled',
+  'network=disabled',
+
+  'avdevice=disabled',
+  'avfilter=disabled',
+  'postproc=disabled',
+
+  # Start with a very small set of features, and bit by bit add what we need
+  'protocols=disabled',
+  'file_protocol=enabled',
+
+  'hwaccels=disabled',
+  'bsfs=disabled',
+
+  'parsers=disabled',
+  'vp3_parser=enabled',
+  'vorbis_parser=enabled',
+
+  'decoders=disabled',
+  'idcin_decoder=enabled',
+  'theora_decoder=enabled',
+  'vorbis_decoder=enabled',
+  'pcm_f16le_decoder=enabled',
+  'pcm_f24le_decoder=enabled',
+  'pcm_f32be_decoder=enabled',
+  'pcm_f32le_decoder=enabled',
+  'pcm_f64be_decoder=enabled',
+  'pcm_f64le_decoder=enabled',
+  'pcm_lxf_decoder=enabled',
+  'pcm_s8_decoder=enabled',
+  'pcm_s8_planar_decoder=enabled',
+  'pcm_s16be_decoder=enabled',
+  'pcm_s16be_planar_decoder=enabled',
+  'pcm_s16le_decoder=enabled',
+  'pcm_s16le_planar_decoder=enabled',
+  'pcm_s24be_decoder=enabled',
+  'pcm_s24daud_decoder=enabled',
+  'pcm_s24le_decoder=enabled',
+  'pcm_s24le_planar_decoder=enabled',
+  'pcm_s32be_decoder=enabled',
+  'pcm_s32le_decoder=enabled',
+  'pcm_s32le_planar_decoder=enabled',
+  'pcm_s64be_decoder=enabled',
+  'pcm_s64le_decoder=enabled',
+  'pcm_sga_decoder=enabled',
+  'pcm_u8_decoder=enabled',
+  'pcm_u16be_decoder=enabled',
+  'pcm_u16le_decoder=enabled',
+  'pcm_u24be_decoder=enabled',
+  'pcm_u24le_decoder=enabled',
+  'pcm_u32be_decoder=enabled',
+  'pcm_u32le_decoder=enabled',
+  'pcm_vidc_decoder=enabled',
+  'vp3_decoder=enabled',
+
+  'demuxers=disabled',
+  'idcin_demuxer=enabled',
+  'ogg_demuxer=enabled',
+  'wav_demuxer=enabled',
+
+  'encoders=disabled',
+  'muxers=disabled',
+]
 avcodec_opt = get_option('avcodec')
-avcodec = dependency('libavcodec', version: '>= 59.37.100', required: avcodec_opt)
-avformat = dependency('libavformat', version: '>= 59.27.100', required: avcodec_opt)
-avutil = dependency('libavutil', version: '>= 57.28.100', required: avcodec_opt)
-swresample = dependency('libswresample', version: '>= 4.7.100', required: avcodec_opt)
-swscale = dependency('libswscale', version: '>= 6.7.100', required: avcodec_opt)
+avcodec = dependency('libavcodec', version: '>= 59.37.100', default_options: ffmpeg_defaults, required: avcodec_opt)
+avformat = dependency('libavformat', version: '>= 59.27.100', default_options: ffmpeg_defaults, required: avcodec_opt)
+avutil = dependency('libavutil', version: '>= 57.28.100', default_options: ffmpeg_defaults, required: avcodec_opt)
+swresample = dependency('libswresample', version: '>= 4.7.100', default_options: ffmpeg_defaults, required: avcodec_opt)
+swscale = dependency('libswscale', version: '>= 6.7.100', default_options: ffmpeg_defaults, required: avcodec_opt)
 if avcodec.found() and avformat.found() and avutil.found() and swresample.found() and swscale.found()
   client_src += ['src/client/cin.c', 'src/client/sound/ogg.c']
   client_deps += [avcodec, avformat, avutil, swresample, swscale]
